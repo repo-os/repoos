@@ -66,8 +66,10 @@ import type { CheckSummary } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
 import { runGit } from "../core/git.js";
 import { formatRemotePoolQueueMessage } from "../core/remote-pool-queue.js";
+import { ConcurrencyGate, QueueDeadlineError } from "../core/concurrency-gate.js";
 
 export type { CheckSummary } from "./done.js";
+export { ConcurrencyGate, QueueDeadlineError } from "../core/concurrency-gate.js";
 import { createHetznerClient, type HetznerClient, type HetznerServer } from "./hetzner.js";
 
 /** Label every runner VM carries, so leaked ones are always findable. */
@@ -75,92 +77,11 @@ const RUNNER_LABEL_KEY = "repoos-ci";
 const RUNNER_LABEL_SELECTOR = `${RUNNER_LABEL_KEY}=1`;
 const SSH_PORT = 22;
 
-/** The caller's deadline passed while the job was still queued (#0521). */
-export class QueueDeadlineError extends Error {}
-
 export interface RemoteHost {
   ip: string;
   user: string;
   /** Path to the private key. Omit to let SSH use its default resolution (agent, ~/.ssh/config). */
   keyPath?: string;
-}
-
-/** A queued acquire: its resolve, plus the deadline timer that may cancel it. */
-interface GateWaiter {
-  resolve: () => void;
-  timer?: ReturnType<typeof setTimeout>;
-}
-
-/**
- * FIFO concurrency limiter for remote runs (#0520). Every caller in the server
- * process (handoff, close-out, release) shares one runner instance, so a limit
- * here serialises them: two full suites on one machine is exactly the memory
- * and CPU contention the runner exists to avoid, and a run that times out or
- * trips a timing-sensitive test under that load would be reported as a red gate
- * ("fix it in the branch") when the branch is fine.
- *
- * A released slot is handed straight to the next waiter (the active count does
- * not dip), so a burst cannot overshoot the limit.
- *
- * A waiter may carry the caller's `deadlineAt` (#0521 spec item 5): when it
- * expires the waiter is removed from the queue and rejected with
- * {@link QueueDeadlineError} without ever holding a slot — a queued run never
- * outlives the caller that gave up on it.
- */
-export class ConcurrencyGate {
-  private active = 0;
-  private readonly waiters: GateWaiter[] = [];
-
-  constructor(readonly limit: number) {}
-
-  /** Runs in flight plus runs waiting — what a new arrival queues behind. */
-  get pending(): number {
-    return this.active + this.waiters.length;
-  }
-
-  async acquire(
-    onQueued?: (ahead: number) => void,
-    opts: { deadlineAt?: number } = {},
-  ): Promise<() => void> {
-    if (this.active < this.limit) {
-      this.active++;
-    } else {
-      onQueued?.(this.pending);
-      await new Promise<void>((resolve, reject) => {
-        if (opts.deadlineAt !== undefined && opts.deadlineAt <= Date.now()) {
-          reject(
-            new QueueDeadlineError("the caller's deadline passed before a remote slot was free"),
-          );
-          return;
-        }
-        const waiter: GateWaiter = { resolve };
-        if (opts.deadlineAt !== undefined) {
-          waiter.timer = setTimeout(() => {
-            const i = this.waiters.indexOf(waiter);
-            if (i === -1) return; // already handed a slot; the release path owns it
-            this.waiters.splice(i, 1);
-            reject(
-              new QueueDeadlineError(
-                "the caller's deadline passed while this run was queued — it was cancelled",
-              ),
-            );
-          }, opts.deadlineAt - Date.now());
-          waiter.timer.unref?.();
-        }
-        this.waiters.push(waiter);
-      });
-    }
-    let released = false;
-    return () => {
-      if (released) return;
-      released = true;
-      const next = this.waiters.shift();
-      if (next) {
-        if (next.timer) clearTimeout(next.timer);
-        next.resolve();
-      } else this.active--;
-    };
-  }
 }
 
 /** Limit from config: a positive integer, default 1 (one run at a time). */

@@ -704,6 +704,10 @@ export const useRepoStore = defineStore("repo", () => {
   const runningIds = ref<string[]>([]);
   /** Ids waiting for a free maxConcurrentAgents slot — will spawn automatically. */
   const queuedIds = ref<string[]>([]);
+  /** Local check / Playwright / pressure queue markers from disk (#0836). */
+  const resourceQueueMarkers = ref<
+    import("../../../core/local-queue-marker.js").LocalQueueMarker[]
+  >([]);
   /**
    * Messages waiting to be read when a busy task/chat's turn ends (#0821),
    * keyed by task id or chat session key. Hydrated from `/api/agents/queued` so
@@ -3306,6 +3310,10 @@ export const useRepoStore = defineStore("repo", () => {
           { count: m.count, queuedAt: m.queuedAt, overdue: m.overdue },
         ]),
       );
+      const rq = await api<{
+        markers: import("../../../core/local-queue-marker.js").LocalQueueMarker[];
+      }>("/api/resource-queues");
+      resourceQueueMarkers.value = rq.markers ?? [];
     } catch {
       /* endpoint unavailable — queued state is best-effort */
     }
@@ -3774,6 +3782,7 @@ export const useRepoStore = defineStore("repo", () => {
     setDraggingTask,
     runningIds,
     queuedIds,
+    resourceQueueMarkers,
     queuedMessages,
     runningSince,
     agentActivityAt,

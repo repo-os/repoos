@@ -11,6 +11,30 @@ your tailnet). A tailscale host runs the gate one of two ways, set per host
 container (Linux or macOS via Docker Desktop), or, on macOS only, natively
 with no Docker at all. Both are real, maintained setup paths.
 
+## Local caps when remote is off or falls back (#0836)
+
+Even with remote validation, local guards, Playwright smoke/contrast/shots, and
+`fallbackToLocal` full suites still run on the laptop. Settings → **Performance**
+controls:
+
+- `localChecks.maxConcurrent` (default **2**) — cross-process cap on local
+  `repoos check`; extra runs queue with a visible position on the task card and
+  in Debug output (`[queue] waiting for a local check slot`).
+- `playwright.maxConcurrent` (default **1**) — one shared semaphore for smoke,
+  contrast audit, shot capture, and UI verification.
+- `remoteValidation.localFallback` — when a remote run falls back locally:
+  **`serialize`** (default) runs one full local suite at a time;
+  **`allow`** uses `localChecks.maxConcurrent`; **`off`** refuses the fallback
+  even when `fallbackToLocal` is true.
+- `remoteValidation.offloadBrowserSteps` (default **off**) — opt-in to run
+  browser gate steps on a runner when feasible; otherwise they stay local under
+  the Playwright cap.
+- `pressureGuard` — delays new local checks and engineer starts while load or
+  memory pressure exceeds configured thresholds.
+
+Queue markers live under `.repoos/queue-markers/`; stuck waiters time out with an
+actionable message (raise limits or free a stuck process).
+
 ## Why
 
 The close-out gate (`repoos check`) ends with the full `bun run test` suite. On

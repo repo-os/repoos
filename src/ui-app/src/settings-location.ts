@@ -47,6 +47,7 @@ export const GENERAL_SECTIONS: readonly SettingsSection[] = [
   { id: "themes", label: "Themes" },
   { id: "activity-animation", label: "Activity animation" },
   { id: "general", label: "General" },
+  { id: "performance", label: "Performance" },
   { id: "model-routing", label: "Model routing" },
   { id: "close-out", label: "Close-out" },
   { id: "automation", label: "Automation & approval" },
@@ -65,6 +66,7 @@ export const GENERAL_SECTIONS: readonly SettingsSection[] = [
  */
 export const GENERAL_FIELD_SECTIONS: readonly string[] = [
   "general",
+  "performance",
   "model-routing",
   "close-out",
   "automation",
@@ -97,6 +99,13 @@ export function generalSectionForKey(key: string): string {
   if (key === "tunnelEnabled") return "publishing";
   if (key === "remoteValidation.enabled") return "remote-validation";
   if (key === "storage.provider") return "attachments";
+  if (
+    key.startsWith("localChecks.") ||
+    key.startsWith("playwright.") ||
+    key.startsWith("pressureGuard.")
+  ) {
+    return "performance";
+  }
   if (key.startsWith("model_routing.")) return "model-routing";
   if (key.startsWith("closeOut.")) return "close-out";
   if (key === "shot.maxAutoShots") return "screenshots";

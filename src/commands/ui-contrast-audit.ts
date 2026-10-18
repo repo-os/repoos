@@ -1206,7 +1206,10 @@ async function runAudit(): Promise<{
     throw err;
   }
   try {
-    browser = await launchWebkit();
+    browser = await launchWebkit({
+      repoRoot,
+      onQueueLine: (line) => console.log(c.dim(`  ${line}`)),
+    });
     context = await browser.newContext({ serviceWorkers: "block" });
   } catch (err) {
     server.close();
