@@ -2,14 +2,15 @@
 id: "0821"
 title: "Message queue: deliver queued messages when a turn ends, persist them, and allow queued sends in every AI chat"
 type: bug
-status: inbox
+status: done
 priority: p1
 area: [server, web]
+merged_commit: f378ab4942112683723f1706056c44d960a5a1ed
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/message-queue-deliver-queued-messages-wh
 created_at: "2026-10-18T02:12:03Z"
-updated_at: "2026-10-18T05:34:42Z"
+updated_at: "2026-10-18T05:35:14Z"
 last_close_out_gate_ms: 87777
 last_close_out_gate_at: "2026-10-18T05:34:39.121Z"
 review_passes: 2
@@ -81,3 +82,4 @@ Start from the queue in src/server/agents.ts (queuedMessages, messageQueuedAt, c
 - 2026-10-18T05:34:39Z · close-out gate completed in 88s
 - 2026-10-18T05:34:41Z · note: handoff requested (cli)
 - 2026-10-18T05:34:42Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-18T05:35:14Z · status inbox→done, release:success
