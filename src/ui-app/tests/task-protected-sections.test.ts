@@ -557,6 +557,95 @@ describe("spec section clobber guard (#0613)", () => {
   });
 });
 
+const WITH_BUNDLE = `---
+id: "0822"
+title: Easter eggs bundle: example
+type: bug
+status: active
+---
+## Items
+
+- [ ] **E1 · First item** (web) — fix one. Source: #0001.
+- [ ] **E2 · Second item** (web) — fix two. Source: #0002.
+
+## E1 · First item
+
+### Problem
+One.
+
+### Acceptance criteria
+- [ ] test one
+
+## E2 · Second item
+
+### Problem
+Two.
+
+### Acceptance criteria
+- [ ] test two
+
+## Activity
+
+- 2026-01-01T00:00:00Z · created
+`;
+
+describe("easter-egg bundle item clobber guard (#0825)", () => {
+  it("refuses a full body replace that drops an E section, naming the id", () => {
+    const { root, absPath, clean } = setupFile(WITH_BUNDLE);
+    try {
+      const bodyWithoutE2 = WITH_BUNDLE.replace(/## E2 · Second item[\s\S]*?(?=\n## Activity)/, "");
+      expect(() => patchTaskFile(config(root), absPath, { body: bodyWithoutE2 })).toThrow(/E2/);
+      expect(() => patchTaskFile(config(root), absPath, { body: bodyWithoutE2 })).toThrow(
+        /repoos bundle/,
+      );
+    } finally {
+      clean();
+    }
+  });
+
+  it("allows the replace with --force", () => {
+    const { root, absPath, clean } = setupFile(WITH_BUNDLE);
+    try {
+      const bodyWithoutE2 = WITH_BUNDLE.replace(/## E2 · Second item[\s\S]*?(?=\n## Activity)/, "");
+      const updated = patchTaskFile(config(root), absPath, { body: bodyWithoutE2, force: true });
+      expect(updated.body).not.toContain("## E2 ·");
+      expect(updated.body).toContain("## E1 ·");
+    } finally {
+      clean();
+    }
+  });
+
+  it("accepts a body that keeps all E ids reordered or edited", () => {
+    const { root, absPath, clean } = setupFile(WITH_BUNDLE);
+    try {
+      const reordered = WITH_BUNDLE.replace(
+        /(## E1 · First item[\s\S]*?)(## E2 · Second item[\s\S]*?)(## Activity)/,
+        "$2\n\n$1\n\n$3",
+      ).replace("One.", "One updated.");
+      const updated = patchTaskFile(config(root), absPath, { body: reordered });
+      expect(updated.body).toContain("## E1 ·");
+      expect(updated.body).toContain("## E2 ·");
+      expect(updated.body).toContain("**E1 ·");
+      expect(updated.body).toContain("**E2 ·");
+      expect(updated.body).toContain("One updated.");
+    } finally {
+      clean();
+    }
+  });
+
+  it("does not apply the bundle guard to non-bundle tasks", () => {
+    const { root, absPath, clean } = setupFile(WITH_SPEC);
+    try {
+      const updated = patchTaskFile(config(root), absPath, {
+        body: "## Problem\n\nStill here.\n\n## Desired UX\n\nUX.\n\n## Acceptance criteria\n\n- [ ] x\n\n## Notes for AI\n\nn\n",
+      });
+      expect(updated.body).toContain("## Problem");
+    } finally {
+      clean();
+    }
+  });
+});
+
 /**
  * `isTaskFilePath` (#0636 review) gates the dev "open in editor" route to task
  * markdown under the configured work dir, so a directly-called endpoint cannot
