@@ -148,3 +148,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T03:15:32Z · note: handoff requested (cli)
 - 2026-10-18T03:23:49Z · status active→review
 - 2026-10-18T03:23:49Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
+- 2026-10-18T03:23:49Z · note: shots: skipped — 5 handoff shots already captured for this exact plan (2f5c5bc1d) during finalization (#0734)
