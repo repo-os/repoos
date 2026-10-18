@@ -29,7 +29,14 @@ interface CommandGroup {
 }
 
 /** Commands whose own argument parser already handles `--help`. */
-export const SELF_HELP_COMMANDS = new Set(["support", "tunnel", "shot", "uninstall", "override"]);
+export const SELF_HELP_COMMANDS = new Set([
+  "support",
+  "tunnel",
+  "shot",
+  "uninstall",
+  "override",
+  "bundle",
+]);
 
 const GROUPS: readonly CommandGroup[] = [
   {
@@ -195,6 +202,13 @@ const GROUPS: readonly CommandGroup[] = [
         usage: "update <id> " + flagUsageTokens(UPDATE_FLAG_HELP).join(" "),
         desc: "Edit a task's metadata or body",
         flags: flagSummary(UPDATE_FLAG_HELP),
+      },
+      {
+        name: "bundle",
+        usage:
+          'bundle add <id> --title "…" --area … --fix "…" --source "…" [--test "…"] | bundle edit <id> <En> --section "…" --section-body <text|-> | bundle done|undo <id> <En>',
+        desc: "Edit one easter-eggs bundle item (POST /api/tasks/:id/bundle); task status unchanged",
+        flags: "--force · --json · --port",
       },
       {
         name: "story",
