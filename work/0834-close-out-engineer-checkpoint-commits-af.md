@@ -106,3 +106,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T16:37:14Z · body
 - 2026-10-18T17:31:54Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/review-override.test.ts > review completion > reports the reviewer selected for the turn, not the global default on mini — fix it in the feature branch and re-run the gate
 - 2026-10-18T17:51:13Z · message_queued at 2026-10-18T17:51:13.280Z
+- 2026-10-18T17:51:13Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
