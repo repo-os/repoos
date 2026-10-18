@@ -206,6 +206,7 @@ done wait by default in human mode).
 | `repoos sync <id>` | `POST /api/tasks/:id/sync` — merge main into the task branch (lists conflicting paths and exits non-zero on conflict) |
 | `repoos message <id> "…" [--now]` | `POST /api/tasks/:id/message` (`now: true` interrupts a busy agent) |
 | `repoos review <id> [--wait]` | `PATCH /api/tasks/:id` (`status: review`) |
+| `repoos review again <id>` | `POST /api/tasks/:id/review/again` |
 | `repoos done <id> [--commit-dirty] [--wait]` | `POST /api/tasks/:id/done` |
 | `repoos override <id> --cli X --model Y` | `PATCH /api/tasks/:id` |
 | `repoos preview <id> [--stop]` | `POST /api/tasks/:id/preview` (+ `/stop`) |
@@ -561,6 +562,19 @@ repoos shot --selector ".sidebar"    # capture one element instead of the page
 repoos shot --wait 2000              # wait longer before capturing (default 900ms)
 repoos shot https://example.test/x   # capture an arbitrary URL
 repoos shot --target "macOS app"     # run a command capture target (non-web app)
+```
+
+### `repoos review again`
+
+Start a fresh reviewer run on a task that is already in `review` — the same
+action as **Review again** in the task drawer. Use this after
+`repoos verify <id>` refreshes stale evidence, or whenever you want another
+review pass without moving the task back to `active`. Refuses when an engineer
+turn, close-out, or another review is already in progress.
+
+```bash
+repoos review again 0832
+repoos review again 0832 --json
 ```
 
 ### `repoos verify`

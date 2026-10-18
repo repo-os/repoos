@@ -190,7 +190,44 @@ export async function cmdMessage(args: string[]): Promise<number> {
   }
 }
 
+export async function cmdReviewAgain(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const id = rest[0];
+  if (!id) {
+    printErr("Usage: repoos review again <id> [--json] [--port N]");
+    return 1;
+  }
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const res = await api.request("POST", `/api/tasks/${id}/review/again`, {});
+    const body = res.body;
+    if (res.status === 200 && body.ok === true) {
+      if (opts.json) printJson(body);
+      else console.log(c.green("  ✓ ") + c.dim(`review started for #${id}`));
+      return 0;
+    }
+    const errText =
+      typeof body.error === "string" && body.error.trim()
+        ? body.error.trim()
+        : `review again refused (HTTP ${res.status})`;
+    if (opts.json) printJson({ ok: false, error: errText, status: res.status, ...body });
+    else printErr(errText);
+    return 1;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
 export async function cmdReview(args: string[]): Promise<number> {
+  if (args[0] === "again") {
+    return cmdReviewAgain(args.slice(1));
+  }
   const { rest, opts, error } = parseCommonFlags(args);
   if (error) {
     printErr(error);
