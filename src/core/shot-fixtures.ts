@@ -36,6 +36,10 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // capture can show the "Worktree changed after handoff" modal listing the
   // changed files. Board-only: no drawer, so no fake-id task fetch.
   "card:handoffConflict",
+  // #0834 — a review task mid post-handoff checkpoint recovery, so a capture
+  // can show the card's "re-reviewing checkpoint…" hint. Board-only: no
+  // drawer, so no fake-id task fetch.
+  "card:checkpointRecovery",
   // #0776/#0795 — a multi-area, human-assigned card with seeded diff stats, so
   // a capture can show the combined area chip, the human chip and the
   // file-count chip.

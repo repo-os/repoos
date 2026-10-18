@@ -224,6 +224,19 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(conflict?.files?.[0]?.added).toBeGreaterThan(0);
   });
 
+  it("seeds post-handoff checkpoint recovery on a review card (#0834)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "card:checkpointRecovery");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task, "card:checkpointRecovery seeds the fixture task").toBeTruthy();
+    expect(task!.status).toBe("review");
+    // The card hint branches on this flag, not on the /api/board payload — the
+    // fixture must set it directly for the capture to show recovery.
+    expect(repo.checkpointRecoveryFor(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
+  });
+
   it("seeds an active task with requirement sections for Update requirements shots (#0817)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -405,6 +418,7 @@ describe("shot preview board fixtures (#0743)", () => {
         "board:activeCoding",
         "closeOut:stalled",
         "card:handoffConflict",
+        "card:checkpointRecovery",
         "drawer:shotEvidence",
         "integration:median15",
       ] as const) {

@@ -539,6 +539,14 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         ],
       });
       break;
+    case "card:checkpointRecovery":
+      // #0834 — a review task whose branch moved after handoff only by WIP self-
+      // check checkpoints, so the card renders "re-reviewing checkpoint…"
+      // instead of going silent. Like the other card fixtures: no branch, so
+      // the fake id fires no diff-stats request, and no drawer fetch either.
+      ensureFixtureTask(repo, "review");
+      repo.setCheckpointRecovery(SHOT_PREVIEW_FIXTURE_TASK_ID, true);
+      break;
     default:
       break;
   }

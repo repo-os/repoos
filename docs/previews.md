@@ -357,6 +357,9 @@ fixture the preview applies before capture (preview builds only, via
 - `card:doneError` — review card with done-error footer (`#9999` fixture task)
 - `card:humanStep` — ready card flagged by the decision-model human-step check,
   showing the model's bounded explanation (`#9999` fixture task, #0804)
+- `card:checkpointRecovery` — review fixture card mid post-handoff checkpoint
+  recovery, so the card shows the **re-reviewing checkpoint…** hint (#0834,
+  `#9999` fixture task)
 - `drawer:activeRequirements` — active fixture task with requirement sections
   so the task drawer shows **Update requirements** on the spec header (#0817,
   `#9999` fixture task)
