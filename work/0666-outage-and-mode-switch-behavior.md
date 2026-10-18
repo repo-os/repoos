@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-18T17:13:58.117Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Attachment storage outage and retrieval copy: highlight #setting-storage.provider matched nothing on /settings?tab=general&section=attachments (http://127.0.0.1:56978/settings?tab=general&section=attachments)"
 id: "0666"
 title: Outage and mode-switch behavior
 type: feature
@@ -66,3 +68,4 @@ When Neon (cloud storage provider) is unavailable — network outage, provider d
 - 2026-10-18T17:03:37Z · body
 - 2026-10-18T17:07:05Z · body
 - 2026-10-18T17:13:53Z · note: ui verification failed (1 issue(s)): [missing-target] Attachment storage outage and retrieval copy: highlight #setting-storage.provider matched nothing on /settings?tab=general&section=attachments (http://127.0.0.1:56978/settings?tab=general&section=attachments)
+
