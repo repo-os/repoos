@@ -2,14 +2,14 @@
 id: "0833"
 title: "Add RGB keystorm, Wheelie courier, and Halloween activity animations"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T08:58:09Z"
-updated_at: "2026-10-18T08:58:09Z"
+updated_at: "2026-10-18T09:09:36Z"
 ---
 ## Problem
 
@@ -102,3 +102,4 @@ path(c,p.purple,g=>{g.moveTo(-30,-18);g.quadraticCurveTo(-14,-29,-8,-61);g.bezie
 ## Activity
 
 - 2026-10-18T08:58:09Z · created · njachowski@gmail.com
+- 2026-10-18T09:09:36Z · status inbox→ready
