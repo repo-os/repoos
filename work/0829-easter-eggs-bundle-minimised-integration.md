@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T06:48:56Z"
+updated_at: "2026-10-18T06:49:00Z"
 ---
 ## Items
 - [ ] **E1 · Minimised pill shows only the median popup, centered** (web) — remove the extra native title tooltip over it. Source: Nick 2026-10-18.
@@ -64,6 +64,25 @@ See each item's Acceptance criteria (E1, E2); both must hold.
 ## Notes for AI
 Items are independent; never touch repoos.toml; edit per-item notes in the E1/E2 sections.
 
+## E3 · Debug logs: expanded row always shows the full message
+### Problem
+In the task drawer Debug tab Logs view, a long message is truncated with an ellipsis in the main row (CSS `text-overflow: ellipsis` in `src/ui-app/src/components/DebugPanel.vue`), but expanding it does not reliably show the full text. Rows with structured data show only the JSON payload below (e.g. "main advanced with bookkeeping-only commits — publishing without a …" expands to just `{"from":…,"to":…}`), some expansions only repeat the short message ("close-out gate completed in 422s"), and some rows have no expander at all ("close-out complete — published to main", "remote validation passed in 310s", "close-out gate: scoped — main advanced with code changes — scoped …"). Rows are built around lines 171–223 (`title` = message, `detail` only when there is extra data); the expand toggle is at ~329 and the detail `<pre>` at ~528.
+
+### Desired UX
+- Every log/activity/remote row is expandable, and the expanded area always starts with the full, wrapped, selectable message, followed by any structured data/detail (JSON payload, command output) below it.
+- Rows whose message fits on one line without truncation may skip the duplicate message block when there is no other detail (no empty expander), but any truncated row must be expandable.
+- A message that is identical to the detail is shown once.
+
+### Acceptance criteria
+- Test: a row whose message is truncated is expandable and the expanded area contains the complete message text.
+- Test: a row with a JSON payload shows the full message and the payload.
+- Test: a row whose detail equals its message shows the text once.
+- Test: short, non-truncated rows with no detail do not get an empty expander.
+- Declared shot of the Debug tab Logs with the long "main advanced…" row expanded (use a real task id and fixture, not 9999).
+
+### Notes for AI
+Detect truncation at render time (scrollWidth > clientWidth) or always allow expand for messages over a length threshold; pick one and say which. Do not change the data stored in the logs. Source: Nick 2026-10-18, screenshot of #0820 Debug logs.
+
 ## Activity
 
 - 2026-10-18T06:17:45Z · created · njachowski@gmail.com
@@ -74,3 +93,4 @@ Items are independent; never touch repoos.toml; edit per-item notes in the E1/E2
 - 2026-10-18T06:18:23Z · body: Notes for AI (added)
 - 2026-10-18T06:18:32Z · needs_input
 - 2026-10-18T06:48:56Z · body: Items (added 1)
+- 2026-10-18T06:49:00Z · body: E3 · Debug logs: expanded row always shows the full message (added)
