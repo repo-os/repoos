@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 4894fdc9 to 97fb8c6e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 4894fdc9ba768cce40f87fb1010bb88baa113cd1
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
@@ -13,7 +11,9 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T08:53:16Z"
+updated_at: "2026-10-18T08:54:18Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 4894fdc9 to 97fb8c6e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 4894fdc9ba768cce40f87fb1010bb88baa113cd1
 last_check_failure: "repoos check at 2026-10-18T08:29:42.192Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from ddcf9a91 to ae4f932f) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 4
 review_rounds: 2
@@ -268,4 +268,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T08:44:11Z · body
 - 2026-10-18T08:45:58Z · note: handoff requested (ui-review)
 - 2026-10-18T08:53:16Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 4894fdc9 to 97fb8c6e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-
+- 2026-10-18T08:54:18Z · body
