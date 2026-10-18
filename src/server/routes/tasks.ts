@@ -210,9 +210,10 @@ function withPendingHandoff<T extends { id: string }>(
 
 /** #0834: whether a post-handoff checkpoint recovery is running for the task. */
 function withCheckpointRecovery<T extends { id: string }>(
-  task: T,
+  task: T | null,
   config: RepoOSConfig,
-): T & { checkpointRecovery: boolean } {
+): (T & { checkpointRecovery: boolean }) | null {
+  if (!task) return null;
   return { ...task, checkpointRecovery: isPostHandoffCheckpointRecoveryActive(config, task.id) };
 }
 

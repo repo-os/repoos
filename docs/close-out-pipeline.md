@@ -191,7 +191,10 @@ checkpoint (`WIP: engineer self-check checkpoint (#<id>)` for this task), Move t
 not hard-fail. RepoOS re-runs the handoff gate on the new HEAD, runs a **delta-only** review
 since the approved SHA (the original numbered review pass stays tied to that commit), then
 resumes the authorized close-out if the delta review is `good to go`. A delta verdict of
-`needs some work` auto-bounces the task to `active` like any other review finding; any other
+`needs some work` auto-bounces the task to `active` like any other review finding; a gate
+that fails on the new HEAD leaves the task in `review` with the usual inline close-out error
+(Move to done retries, or send it back to the engineer). The card shows **re-reviewing
+checkpoint…** while this runs, so the task is never silently parked in `review`. Any other
 post-handoff drift still uses the hard error below.
 
 The same check runs again at the start of `syncing` and immediately

@@ -58,6 +58,49 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
     rmFixture(root);
   });
 
+  it("announces a failed recovery gate instead of leaving the task silent (#0834)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-phc-gatefail-"));
+    try {
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      mkdirSync(join(root, ".repoos"), { recursive: true });
+      const task = {
+        id: "0834",
+        status: "review",
+        branch: "feat/missing-worktree",
+        title: "t",
+      } as Task;
+      const events: Array<{ type: string; step?: string; detail?: string }> = [];
+      const started = await startPostHandoffCheckpointRecovery(
+        {
+          config,
+          index: { getTask: () => task } as any,
+          jobCoordinator: createJobCoordinator(root),
+          reviews: { isRunning: () => false, runCheckpointDelta: vi.fn() } as any,
+          reload: null,
+          emitEvent: (e) => events.push(e as never),
+          triggerJobProcessing: () => {},
+        },
+        task,
+        "aaa111",
+        "bbb222",
+      );
+      expect(started.ok).toBe(true);
+      // The pipeline cannot even find the worktree — it must fail CLOSED with
+      // a terminal signal the UI renders, not vanish (#0834 AC: never silent).
+      await vi.waitFor(() => {
+        const terminal = events.find((e) => e.step === "checkpoint-recovery-failed");
+        expect(terminal).toBeTruthy();
+        expect(terminal?.detail).toContain("checkpoint recovery failed");
+      });
+      const rec = readPostHandoffCheckpointRecovery(config, "0834");
+      expect(rec?.phase).toBe("failed");
+      expect(rec?.approvedSha).toBe("aaa111");
+    } finally {
+      clearPostHandoffCheckpointRecovery({ root } as RepoOSConfig, "0834");
+      rmFixture(root);
+    }
+  });
+
   it("resumeCloseOutAfterCheckpointRecovery enqueues close-out after delta review", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-phc-resume-"));
     const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
@@ -91,6 +134,7 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
       "utf8",
     );
     coordinator.enqueue(task as any);
+    const events: Array<{ type: string; step?: string }> = [];
     await resumeCloseOutAfterCheckpointRecovery(
       {
         config,
@@ -98,7 +142,7 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
         jobCoordinator: coordinator,
         reviews: { isRunning: () => false } as any,
         reload: null,
-        emitEvent: () => {},
+        emitEvent: (e) => events.push(e as never),
         triggerJobProcessing: vi.fn(),
       },
       task,
@@ -106,6 +150,11 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
     const job = coordinator.getJob("0834");
     expect(job?.handoffSha).toBe("newhead0000000000000000000000000000000001");
     expect(readPostHandoffCheckpointRecovery(config, "0834")).toBeNull();
+    // Terminal signal (#0834): the card drops its "re-reviewing checkpoint"
+    // hint exactly when close-out is actually enqueued.
+    expect(
+      events.some((e) => e.type === "task.progress" && e.step === "checkpoint-recovery-done"),
+    ).toBe(true);
     rmFixture(root);
   });
 
