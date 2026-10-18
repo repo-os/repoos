@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0834"
 title: "Close-out: engineer checkpoint commits after handoff trigger an automatic re-review of the delta, not a hard error"
 type: feature
@@ -11,7 +10,8 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T12:24:45Z"
+updated_at: "2026-10-18T12:50:29Z"
+handoff_signal_retry_count: 1
 dev_error_count: 5
 ---
 ## Problem
@@ -56,4 +56,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T11:53:13Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-18T12:18:27Z · body
 - 2026-10-18T12:24:45Z · message_delivered: 1 message(s)
-
+- 2026-10-18T12:50:29Z · handoff failed · remote validation failed: test failure: tests/review-override.test.ts > review completion > reports the reviewer selected for the turn, not the global default on mini — fix it in the feature branch and re-run the gate
