@@ -14,9 +14,15 @@ export const REPOOS_TOML_REL = "repoos.toml";
 /** Stable prefix for handoff / close-out refusal reasons — grep-friendly. */
 export const STRAY_REPOOS_TOML_ON_BRANCH_PREFIX = "stray repoos.toml on task branch";
 
+function bodyDeclaresRepoosTomlWork(body: string): boolean {
+  if (!body.includes("repoos.toml")) return false;
+  if (/\b(never|do not|don't)\s+touch\s+repoos\.toml\b/i.test(body)) return false;
+  return true;
+}
+
 /** True when the task record says changing `repoos.toml` is in scope. */
 export function taskDeclaresRepoosTomlWork(
-  task: Pick<Task, "title" | "paths"> & { area?: Task["area"] },
+  task: Pick<Task, "title" | "paths" | "body"> & { area?: Task["area"] },
 ): boolean {
   if (
     task.paths?.some((p) => p === REPOOS_TOML_REL || p.replace(/^\.\//, "") === REPOOS_TOML_REL)
@@ -27,7 +33,8 @@ export function taskDeclaresRepoosTomlWork(
   if (title.toLowerCase().includes("repoos.toml")) return true;
   if (/\bconfig schema\b/i.test(title)) return true;
   const areas = parseTaskAreas(task.area);
-  return areas.some((a) => a.toLowerCase() === "config");
+  if (areas.some((a) => a.toLowerCase() === "config")) return true;
+  return bodyDeclaresRepoosTomlWork(task.body ?? "");
 }
 
 function formatOffendingLines(diffText: string): string {
@@ -68,7 +75,7 @@ export async function repoosTomlBranchDiffSnippet(
 export async function guardStrayRepoosTomlOnTaskBranch(
   worktree: string,
   mainBranch: string,
-  task: Pick<Task, "title" | "paths" | "hotfix"> & { area?: Task["area"] },
+  task: Pick<Task, "title" | "paths" | "body" | "hotfix"> & { area?: Task["area"] },
 ): Promise<{ ok: true } | { ok: false; detail: string }> {
   if (task.hotfix) return { ok: true };
   if (taskDeclaresRepoosTomlWork(task)) return { ok: true };
