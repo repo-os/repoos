@@ -43,6 +43,10 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0787 — active engineer run on the board so captures can show the compact
   // coding indicator on a task card.
   "board:activeCoding",
+  // #0821 — a task with a running agent and a message queued for when the turn
+  // ends, so a capture can show the composer's "Queued — will be read when the
+  // current turn ends" notice (and a still-usable send control).
+  "drawer:queuedMessage",
   // #0775 — a failed dev target on the Dev page, so a capture can show the
   // plain-language failure summary, its port holder and the Stop action.
   "dev:failed",

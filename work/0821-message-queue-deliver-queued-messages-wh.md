@@ -1,17 +1,17 @@
 ---
-last_close_out_gate_ms: 87777
-last_close_out_gate_at: "2026-10-18T05:34:39.121Z"
 id: "0821"
 title: "Message queue: deliver queued messages when a turn ends, persist them, and allow queued sends in every AI chat"
 type: bug
-status: review
+status: inbox
 priority: p1
 area: [server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/message-queue-deliver-queued-messages-wh
 created_at: "2026-10-18T02:12:03Z"
-updated_at: "2026-10-18T05:34:39Z"
+updated_at: "2026-10-18T05:34:42Z"
+last_close_out_gate_ms: 87777
+last_close_out_gate_at: "2026-10-18T05:34:39.121Z"
 review_passes: 2
 close_out_repair_count: 1
 last_check_failure: "repoos check at 2026-10-18T03:18:28.872Z: repoos check failed: ui verification failed (6 issue(s)): [request] HTTP 404 for http://127.0.0.1:54905/api/tasks/9999/diff-stats (http://127.0.0.1:54905/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54905/api/tasks/9999/diff-stats); [request] HTTP 404 for http://127.0.0.1:54905/api/tasks/9999/shots (http://127.0.0.1:54905/api/tasks/9999/shots); [request] Failed to load resource: the server responded with a … (truncated)"
@@ -79,4 +79,5 @@ Start from the queue in src/server/agents.ts (queuedMessages, messageQueuedAt, c
 - 2026-10-18T04:45:40Z · status active→review
 - 2026-10-18T04:46:43Z · note: review pass 2: good to go
 - 2026-10-18T05:34:39Z · close-out gate completed in 88s
-
+- 2026-10-18T05:34:41Z · note: handoff requested (cli)
+- 2026-10-18T05:34:42Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
