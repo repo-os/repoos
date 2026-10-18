@@ -98,6 +98,9 @@ export function generalSectionForKey(key: string): string {
   }
   if (key === "tunnelEnabled") return "publishing";
   if (key === "remoteValidation.enabled") return "remote-validation";
+  if (key === "remoteValidation.offloadBrowserSteps" || key === "remoteValidation.localFallback") {
+    return "remote-validation";
+  }
   if (key === "storage.provider") return "attachments";
   if (
     key.startsWith("localChecks.") ||

@@ -704,6 +704,8 @@ export const useRepoStore = defineStore("repo", () => {
   const runningIds = ref<string[]>([]);
   /** Ids waiting for a free maxConcurrentAgents slot — will spawn automatically. */
   const queuedIds = ref<string[]>([]);
+  /** Why each queued id is waiting — pressure vs maxConcurrentAgents (#0836). */
+  const queuedAgentMeta = ref<Record<string, { reason: "pressure" | "slot"; detail: string }>>({});
   /** Local check / Playwright / pressure queue markers from disk (#0836). */
   const resourceQueueMarkers = ref<
     import("../../../core/local-queue-marker.js").LocalQueueMarker[]
@@ -1589,8 +1591,19 @@ export const useRepoStore = defineStore("repo", () => {
       if (!queuedIds.value.includes(e.id)) {
         queuedIds.value = [...queuedIds.value, e.id];
       }
+      if (e.reason && e.detail) {
+        queuedAgentMeta.value = {
+          ...queuedAgentMeta.value,
+          [e.id]: { reason: e.reason, detail: e.detail },
+        };
+      }
     } else if (e.type === "agent.dequeued") {
       queuedIds.value = queuedIds.value.filter((x) => x !== e.id);
+      if (queuedAgentMeta.value[e.id]) {
+        const next = { ...queuedAgentMeta.value };
+        delete next[e.id];
+        queuedAgentMeta.value = next;
+      }
     } else if (e.type === "agent.output") {
       if (e.id === CTO_SESSION_ID) {
         // CTO board-monitor conversation output — routed to the CTO panel's
@@ -3300,10 +3313,20 @@ export const useRepoStore = defineStore("repo", () => {
     if (typeof window !== "undefined" && isShotPreviewCaptureActive(window.location)) return;
     try {
       const r = await api<{
-        tasks: { id: string; queuedAt: string }[];
+        tasks: {
+          id: string;
+          queuedAt: string;
+          reason?: "pressure" | "slot";
+          detail?: string;
+        }[];
         messages?: { id: string; count: number; queuedAt: string; overdue: boolean }[];
       }>("/api/agents/queued");
       queuedIds.value = r.tasks.map((t) => t.id);
+      queuedAgentMeta.value = Object.fromEntries(
+        r.tasks
+          .filter((t) => t.reason && t.detail)
+          .map((t) => [t.id, { reason: t.reason!, detail: t.detail! }]),
+      );
       queuedMessages.value = Object.fromEntries(
         (r.messages ?? []).map((m) => [
           m.id,
@@ -3782,6 +3805,7 @@ export const useRepoStore = defineStore("repo", () => {
     setDraggingTask,
     runningIds,
     queuedIds,
+    queuedAgentMeta,
     resourceQueueMarkers,
     queuedMessages,
     runningSince,

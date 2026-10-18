@@ -441,6 +441,25 @@ const QUEUED_HINT: CardHint = {
   cls: "tc-queued",
 };
 
+function agentQueuedHint(taskId: string): CardHint {
+  const meta = repo.queuedAgentMeta[taskId];
+  if (meta?.reason === "pressure") {
+    return {
+      label: "queued · pressure",
+      title: meta.detail,
+      cls: "tc-queued",
+    };
+  }
+  if (meta?.reason === "slot" && meta.detail) {
+    return {
+      label: "queued · agent slot",
+      title: meta.detail,
+      cls: "tc-queued",
+    };
+  }
+  return QUEUED_HINT;
+}
+
 /** A PM run is live on this task (0381): the freeform flesh-out for a draft,
  *  or a PM chat turn. The same server-side registry backs both, so one hint
  *  serves them; only the title differs for drafts. */
@@ -564,7 +583,7 @@ const hint = computed<CardHint | null>(() => {
         cls: "tc-reviewing",
       };
     }
-    if (repo.isQueued(t.id)) return QUEUED_HINT;
+    if (repo.isQueued(t.id)) return agentQueuedHint(t.id);
     if (repo.isRunning(t.id)) {
       return (
         autoRepairHint({
@@ -620,7 +639,7 @@ const hint = computed<CardHint | null>(() => {
     return null;
   }
   if (t.status === "active") {
-    if (repo.isQueued(t.id)) return QUEUED_HINT;
+    if (repo.isQueued(t.id)) return agentQueuedHint(t.id);
     if (repo.isRunning(t.id)) {
       return (
         autoRepairHint({

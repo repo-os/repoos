@@ -9,9 +9,8 @@ describe("Settings — performance controls (#0836)", () => {
     "playwright.maxConcurrent",
     "playwright.queueTimeoutMs",
     "pressureGuard.enabled",
+    "pressureGuard.maxLoadPerCpu",
     "pressureGuard.minAvailableMemRatio",
-    "remoteValidation.offloadBrowserSteps",
-    "remoteValidation.localFallback",
   ];
 
   it("exposes schema rows for every new performance key", () => {
@@ -25,6 +24,12 @@ describe("Settings — performance controls (#0836)", () => {
     expect(generalSectionForKey("localChecks.maxConcurrent")).toBe("performance");
     expect(generalSectionForKey("playwright.maxConcurrent")).toBe("performance");
     expect(generalSectionForKey("pressureGuard.enabled")).toBe("performance");
+    expect(generalSectionForKey("pressureGuard.maxLoadPerCpu")).toBe("performance");
     expect(isGeneralSchemaFieldKey("localChecks.maxConcurrent")).toBe(true);
+  });
+
+  it("maps remote offload/fallback controls to Remote validation", () => {
+    expect(generalSectionForKey("remoteValidation.offloadBrowserSteps")).toBe("remote-validation");
+    expect(generalSectionForKey("remoteValidation.localFallback")).toBe("remote-validation");
   });
 });
