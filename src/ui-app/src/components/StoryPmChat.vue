@@ -28,6 +28,7 @@ import { useAuthStore } from "../stores/auth";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
 import { pendingToShots } from "../lib/screenshot-viewer";
+import { useQueuedSend } from "../composables/useQueuedSend";
 import AgentModelControl from "./AgentModelControl.vue";
 import PmChatSurface, { type PendingShot } from "./PmChatSurface.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
@@ -65,6 +66,8 @@ const pmAgentEnabled = computed(() => {
 
 const draft = ref("");
 const submitting = ref(false);
+/** True while a story-PM message queued during a turn waits to be read (#0821). */
+const { queued, markQueued } = useQueuedSend(() => repo.runningIds.includes(sessionId.value));
 
 // ---- agent + model selector (same control and look as the task PM tab) ----
 //
@@ -197,7 +200,7 @@ async function hydrate(): Promise<void> {
 
 async function send(): Promise<void> {
   const text = draft.value.trim();
-  if (!text || busy.value || !pmAgentEnabled.value) return;
+  if (!text || !pmAgentEnabled.value) return;
 
   submitting.value = true;
   const optimistic: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
@@ -213,7 +216,7 @@ async function send(): Promise<void> {
   }));
 
   try {
-    await api(
+    const res = await api<{ ok: boolean; queued?: boolean }>(
       `/api/stories/${encodeURIComponent(props.story.key)}/pm/message`,
       JSON_OPTS("POST", {
         text,
@@ -221,6 +224,7 @@ async function send(): Promise<void> {
         ...overrideBody(),
       }),
     );
+    if (res.queued) markQueued();
     shots.value = [];
   } catch (error) {
     repo.outputs[sessionId.value] = (repo.outputs[sessionId.value] ?? []).filter(
@@ -270,6 +274,7 @@ watch(
     log-label="Conversation with the PM about this story"
     :canned="cannedMessages"
     :shots="shots"
+    :queued="queued"
     @send="send"
     @interrupt="interrupt"
     @attach="addShots"
