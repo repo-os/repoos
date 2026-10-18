@@ -12,7 +12,7 @@ branch: feat/repoos-bundle-add-edit-and-tick-one-east
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:48:55Z"
-updated_at: "2026-10-18T05:56:05Z"
+updated_at: "2026-10-18T05:57:14Z"
 ---
 ## Problem
 Adding or changing an item in an easter-eggs bundle means editing the body. `repoos update --body` replaces the whole body, and full rewrites have deleted other items' specs (the #0819 bird spec had to be recovered from git history).
@@ -40,3 +40,4 @@ Depends on the layout in the "Easter-eggs bundle layout" task; implement against
 - 2026-10-18T05:51:30Z · cli_override, model_override
 - 2026-10-18T05:51:32Z · status ready→active, branch
 - 2026-10-18T05:56:05Z · body
+- 2026-10-18T05:57:14Z · body
