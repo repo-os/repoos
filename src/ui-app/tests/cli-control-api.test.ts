@@ -348,6 +348,7 @@ describe("control API CLI", () => {
       const port = Number(new URL(s.url).port);
       const id = await createReadyTask(s);
       await runJsonCmd(port, cmdStart, [id]);
+      await runJsonCmd(port, cmdPause, [id]);
       const synced = await runJsonCmd(port, cmdSync, [id]);
       expect(synced).toMatchObject({ ok: true });
     });
