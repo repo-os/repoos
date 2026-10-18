@@ -2,18 +2,19 @@
 id: "0666"
 title: Outage and mode-switch behavior
 type: feature
-status: inbox
+status: done
 priority: p1
 area: server
 story: Cloud attachment storage
 depends_on: ["0660", "0663"]
+merged_commit: "06cb84e7de369e8219a949206e350fdaca58ec08"
 assigned_to: ai
 created_by: ""
 branch: feat/outage-and-mode-switch-behavior
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:35Z"
-updated_at: "2026-10-18T17:30:30Z"
+updated_at: "2026-10-18T17:39:51Z"
 last_close_out_gate_ms: 522424
 last_close_out_gate_at: "2026-10-18T17:30:24.190Z"
 review_passes: 1
@@ -77,3 +78,4 @@ When Neon (cloud storage provider) is unavailable — network outage, provider d
 - 2026-10-18T17:30:24Z · close-out gate completed in 522s
 - 2026-10-18T17:30:29Z · note: handoff requested (cli)
 - 2026-10-18T17:30:30Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-18T17:39:51Z · status inbox→done, release:success
