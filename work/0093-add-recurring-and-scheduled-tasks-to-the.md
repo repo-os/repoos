@@ -11,7 +11,7 @@ branch: feat/add-recurring-and-scheduled-tasks-to-the
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-08-11T14:22:06Z"
-updated_at: "2026-10-18T19:21:10Z"
+updated_at: "2026-10-18T19:23:01Z"
 ---
 ## Problem
 
@@ -123,3 +123,4 @@ dependency constraint.
 - 2026-10-18T19:09:50Z · body
 - 2026-10-18T19:15:52Z · handoff failed · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate
 - 2026-10-18T19:21:10Z · body
+- 2026-10-18T19:23:01Z · body
