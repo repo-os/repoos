@@ -54,9 +54,13 @@ describe("Settings — performance controls (#0836)", () => {
     expect(isGeneralSchemaFieldKey("remoteValidation.offloadBrowserSteps")).toBe(true);
     expect(isGeneralSchemaFieldKey("remoteValidation.localFallback")).toBe(true);
     expect(
-      resolveSettingLocation("remoteValidation.offloadBrowserSteps", { tier: "restart" }, {
-        inspectorAvailable: true,
-      })?.hasUiRow,
+      resolveSettingLocation(
+        "remoteValidation.offloadBrowserSteps",
+        { tier: "restart" },
+        {
+          inspectorAvailable: true,
+        },
+      )?.hasUiRow,
     ).toBe(true);
   });
 });
@@ -102,9 +106,7 @@ describe("Settings — remote validation offload rows (#0836)", () => {
     expect(section.find('[id="setting-remoteValidation.offloadBrowserSteps"]').exists()).toBe(true);
     expect(section.find('[id="setting-remoteValidation.localFallback"]').exists()).toBe(true);
     expect(
-      section
-        .find('[id="setting-remoteValidation.localFallback"] [role="combobox"]')
-        .text(),
+      section.find('[id="setting-remoteValidation.localFallback"] [role="combobox"]').text(),
     ).toContain("Serialize");
     wrapper.unmount();
   });
