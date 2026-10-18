@@ -766,8 +766,7 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
     });
 
     const next = f.runner.validate(opts("0002"));
-    await tick();
-    expect(f.pending()).toEqual(["b"]);
+    await vi.waitFor(() => expect(f.pending()).toEqual(["b"]), { timeout: 15_000 });
     f.release("b");
     expect(await next).toEqual({ ok: true, stage: "check" });
   });

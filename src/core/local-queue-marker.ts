@@ -1,0 +1,62 @@
+import { mkdirSync, writeFileSync, rmSync, existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
+export type LocalQueueKind = "local-check" | "playwright" | "pressure";
+
+export interface LocalQueueMarker {
+  taskId: string;
+  kind: LocalQueueKind;
+  position: number;
+  ahead: number;
+  message: string;
+  since: string;
+}
+
+export function queueMarkersDir(repoRoot: string, cacheDir: string): string {
+  return join(repoRoot, cacheDir, "queue-markers");
+}
+
+export function writeQueueMarker(
+  repoRoot: string,
+  cacheDir: string,
+  marker: LocalQueueMarker,
+): void {
+  const dir = queueMarkersDir(repoRoot, cacheDir);
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, `${marker.taskId}-${marker.kind}.json`);
+  writeFileSync(file, JSON.stringify(marker), "utf8");
+}
+
+export function clearQueueMarker(
+  repoRoot: string,
+  cacheDir: string,
+  taskId: string,
+  kind: LocalQueueKind,
+): void {
+  const file = join(queueMarkersDir(repoRoot, cacheDir), `${taskId}-${kind}.json`);
+  if (existsSync(file)) {
+    try {
+      rmSync(file);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+export function readQueueMarkers(repoRoot: string, cacheDir: string): LocalQueueMarker[] {
+  const dir = queueMarkersDir(repoRoot, cacheDir);
+  try {
+    return readdirSync(dir)
+      .filter((f) => f.endsWith(".json"))
+      .map((f) => {
+        try {
+          return JSON.parse(readFileSync(join(dir, f), "utf8")) as LocalQueueMarker;
+        } catch {
+          return null;
+        }
+      })
+      .filter((m): m is LocalQueueMarker => m !== null && typeof m.taskId === "string");
+  } catch {
+    return [];
+  }
+}

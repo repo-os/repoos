@@ -17,6 +17,7 @@ export * from "./tasks.js";
 export * from "./ui.js";
 export * from "./utils.js";
 export * from "./info.js";
+export * from "./resource-queues.js";
 export * from "./debugger.js";
 export * from "./notify.js";
 export * from "./transcribe.js";

@@ -216,6 +216,8 @@ const REMOTE_VALIDATION_RULES: Record<string, RemoteValidationRule> = {
   retryOtherHosts: { kind: "boolean" },
   engineerSelfCheckRemote: { kind: "boolean" },
   useForReleases: { kind: "boolean" },
+  offloadBrowserSteps: { kind: "boolean" },
+  localFallback: { kind: "string" },
 };
 
 /** The `[remoteValidation]` keys an export file may carry. */

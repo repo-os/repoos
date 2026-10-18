@@ -3003,7 +3003,7 @@ export class CloseOutOrchestrator {
         // private skip env flag needed.
         const checkEnv = {
           ...process.env,
-          ...checkEnvAfterRemoteGate(remoteGateOutcome),
+          ...checkEnvAfterRemoteGate(remoteGateOutcome, this.config),
           // #0724: reuse skips the test step locally (the handoff gate already
           // ran it). This is the same flag a remote pass sets, so the run
           // records an explicit, auditable "skipped" tests step rather than a
