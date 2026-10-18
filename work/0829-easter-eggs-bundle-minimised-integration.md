@@ -2,7 +2,7 @@
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T07:22:58Z"
+updated_at: "2026-10-18T07:31:05Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -96,15 +96,15 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "route": "/",
 "highlight": "[data-test-id=integration-timer-tip]",
 "steps": [
-  {
-    "waitFor": "[data-test-id=integration-timer]"
-  },
-  {
-    "click": "[data-test-id=integration-timer]"
-  },
-  {
-    "waitFor": "[data-test-id=integration-timer-tip]"
-  }
+{
+  "waitFor": "[data-test-id=integration-timer]"
+},
+{
+  "click": "[data-test-id=integration-timer]"
+},
+{
+  "waitFor": "[data-test-id=integration-timer-tip]"
+}
 ],
 "state": "integration:median15",
 "theme": "light"
@@ -115,15 +115,15 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "route": "/",
 "highlight": "[data-test-id=integration-timer-tip]",
 "steps": [
-  {
-    "waitFor": "[data-test-id=integration-timer]"
-  },
-  {
-    "click": "[data-test-id=integration-timer]"
-  },
-  {
-    "waitFor": "[data-test-id=integration-timer-tip]"
-  }
+{
+  "waitFor": "[data-test-id=integration-timer]"
+},
+{
+  "click": "[data-test-id=integration-timer]"
+},
+{
+  "waitFor": "[data-test-id=integration-timer-tip]"
+}
 ],
 "state": "integration:median15",
 "theme": "dark"
@@ -134,18 +134,18 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "route": "/work?task=0820&tab=debug",
 "highlight": ".debug-event-message",
 "steps": [
-  {
-    "waitFor": "[data-debug-event*='main advanced']"
-  },
-  {
-    "click": "[data-debug-event*='main advanced']"
-  },
-  {
-    "waitFor": ".debug-event-message"
-  },
-  {
-    "waitMs": 200
-  }
+{
+  "waitFor": "[data-debug-event*='main advanced']"
+},
+{
+  "click": "[data-debug-event*='main advanced']"
+},
+{
+  "waitFor": ".debug-event-message"
+},
+{
+  "waitMs": 200
+}
 ]
 }
 ]
@@ -188,3 +188,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T07:21:03Z · status review→active
 - 2026-10-18T07:21:43Z · body
 - 2026-10-18T07:22:58Z · body
+- 2026-10-18T07:31:05Z · status active→review
