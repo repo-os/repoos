@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T06:50:55Z"
+updated_at: "2026-10-18T06:54:01Z"
 ---
 ## Items
 - [ ] **E1 · Minimised pill shows only the median popup, centered** (web) — remove the extra native title tooltip over it. Source: Nick 2026-10-18.
@@ -100,3 +100,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T06:50:50Z · status inbox→ready
 - 2026-10-18T06:50:53Z · cli_override, model_override
 - 2026-10-18T06:50:55Z · status ready→active, branch
+- 2026-10-18T06:54:01Z · body
