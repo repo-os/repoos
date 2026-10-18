@@ -309,3 +309,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T02:06:02Z · needs_input
 - 2026-10-18T02:06:45Z · message_queued at 2026-10-18T02:06:45.766Z
 - 2026-10-18T02:11:08Z · status active→review
+- 2026-10-18T02:11:08Z · note: shots: skipped — 8 handoff shots already captured for this exact plan (346573abc) during finalization (#0734)
