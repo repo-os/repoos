@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 365719
-last_close_out_gate_at: "2026-10-18T18:25:13.210Z"
 id: "0837"
 title: "Server reload orphans running engineers: adopt or stop them (one writer per worktree)"
 type: bug
-status: review
+status: done
 priority: p2
 area: server
+merged_commit: c01edb89e528c9238b1d032e25d8fbfaf2cdb6ed
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-reload-orphans-running-engineers-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:35Z"
-updated_at: "2026-10-18T18:25:13Z"
+updated_at: "2026-10-18T18:25:39Z"
+last_close_out_gate_ms: 365719
+last_close_out_gate_at: "2026-10-18T18:25:13.210Z"
 review_passes: 3
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-18T17:35:38.265Z: repoos check failed: ◆ Check plan"
@@ -62,4 +63,4 @@ Related: #0834 (post-handoff checkpoint recovery), watchdog and CTO restart path
 - 2026-10-18T18:14:43Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-18T18:15:45Z · note: review pass 3: good to go
 - 2026-10-18T18:25:13Z · close-out gate completed in 366s
-
+- 2026-10-18T18:25:39Z · status review→done, release:success
