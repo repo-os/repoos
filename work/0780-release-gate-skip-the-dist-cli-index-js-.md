@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0780"
 title: "Release gate: skip the dist/cli/index.js check for projects without a bin target"
 type: bug
@@ -13,7 +12,8 @@ branch: feat/release-gate-skip-the-dist-cli-index-js-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T08:20:29Z"
-updated_at: "2026-10-18T17:38:41Z"
+updated_at: "2026-10-18T18:27:11Z"
+handoff_signal_retry_count: 1
 last_close_out_gate_ms: 121907
 last_close_out_gate_at: "2026-10-14T08:47:47.001Z"
 review_passes: 1
@@ -62,4 +62,4 @@ Repro: Divot at ~/code/nick/divot, the Releases page, version 0.1.0, publish. Th
 - 2026-10-18T17:27:08Z · status ready→active
 - 2026-10-18T17:30:10Z · agent exited with an error (opencode) · error: Transport
 - 2026-10-18T17:38:41Z · needs_input
-
+- 2026-10-18T18:27:11Z · message_queued at 2026-10-18T18:27:11.094Z
