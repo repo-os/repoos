@@ -105,6 +105,20 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.doneErrors[SHOT_PREVIEW_FIXTURE_TASK_ID]?.step).toBe("check");
   });
 
+  it("seeds a review card with review-rounds-exhausted detail (#0832)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "card:reviewRoundsExhausted");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task, "card:reviewRoundsExhausted seeds the fixture task").toBeTruthy();
+    expect(task!.needsInputReason).toBe("review-rounds-exhausted");
+    expect(task!.needsInputDetail).toContain("needs some work");
+    expect(repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID]?.report?.markdown).toContain(
+      "contrast audit",
+    );
+  });
+
   it("seeds a ready card flagged by the decision-model human-step check (#0804)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
