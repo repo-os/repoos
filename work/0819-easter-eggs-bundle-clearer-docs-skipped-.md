@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-18T01:43:13.722Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from d6b69a01 to 346573ab) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: "0819"
 title: "Easter eggs bundle: shot warnings, viewer status, and timer tooltip"
 type: bug
@@ -16,7 +18,6 @@ model_override: composer-2.5
 created_at: "2026-10-17T12:52:42Z"
 updated_at: "2026-10-18T01:38:39Z"
 review_passes: 8
-last_check_failure: "repoos check at 2026-10-17T18:01:16.427Z: repoos check failed: ui verification failed (32 issue(s)): [request] HTTP 404 for http://127.0.0.1:53612/api/tasks/9999/diff-stats (http://127.0.0.1:53612/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:53612/api/tasks/9999/diff-stats); [request] HTTP 404 for http://127.0.0.1:53612/api/tasks/9999/diff (http://127.0.0.1:53612/api/tasks/9999/diff); [request] Failed to load resource: the server responded with a s… (truncated)"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -249,3 +250,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T01:38:39Z · note: click [data-test-id="integration-timer"]: click: Timeout 5000ms exceeded. on /
 - 2026-10-18T01:38:39Z · note: waitFor [data-test-id="integration-timer-tip"]: waitFor: Timeout 5000ms exceeded. on /
 - 2026-10-18T01:38:39Z · note: highlight [data-test-id="integration-timer-tip"] matched nothing on /
+
