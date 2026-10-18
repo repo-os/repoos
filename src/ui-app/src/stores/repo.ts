@@ -3214,6 +3214,10 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Hydrate the queued marker on reload — mirrors fetchRunning() above. */
   async function fetchQueued(): Promise<void> {
+    // A handoff capture keeps the fixture-seeded queue: the SSE reconnect
+    // fires this right after the fixture applies, and a real (empty) queue
+    // would wipe the state the shot exists to show (#0821).
+    if (typeof window !== "undefined" && isShotPreviewCaptureActive(window.location)) return;
     try {
       const r = await api<{
         tasks: { id: string; queuedAt: string }[];
