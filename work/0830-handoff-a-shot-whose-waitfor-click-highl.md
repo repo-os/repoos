@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-18T10:20:44.294Z: repoos check failed: ◆ Check plan"
 id: "0830"
 title: "Handoff: a shot whose waitFor/click/highlight target is missing fails the handoff (add hover step and fixture list)"
 type: feature
@@ -56,3 +58,4 @@ Related: #0734, #0755, #0613. Do not make a missing Playwright a failure (stays 
 - 2026-10-18T09:59:27Z · body
 - 2026-10-18T10:20:23Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-18T10:20:43Z · message_delivered: 1 message(s)
+
