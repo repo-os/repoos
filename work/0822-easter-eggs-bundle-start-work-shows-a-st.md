@@ -2,7 +2,7 @@
 id: "0822"
 title: "Easter eggs bundle: Start work pending state, and Bird quick trail animation"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T03:09:43Z"
+updated_at: "2026-10-18T03:15:32Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -144,3 +144,5 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T03:06:25Z · body
 - 2026-10-18T03:08:23Z · body
 - 2026-10-18T03:09:43Z · handoff failed · remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate
+- 2026-10-18T03:15:31Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-18T03:15:32Z · note: handoff requested (cli)
