@@ -261,6 +261,18 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.tasks.some((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(false);
   });
 
+  it("seeds a running task with a queued message for the composer notice (#0821)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "drawer:queuedMessage");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task, "drawer:queuedMessage seeds the fixture task").toBeTruthy();
+    expect(task!.status).toBe("active");
+    expect(repo.isRunning(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
+    expect(repo.queuedMessages[SHOT_PREVIEW_FIXTURE_TASK_ID]?.count).toBe(1);
+  });
+
   it("seeds a multi-area human task with diff stats for card-chip shots (#0776, #0795)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
