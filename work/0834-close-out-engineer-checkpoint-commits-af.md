@@ -2,7 +2,7 @@
 id: "0834"
 title: "Close-out: engineer checkpoint commits after handoff trigger an automatic re-review of the delta, not a hard error"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -103,4 +103,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T16:05:00Z · body
 - 2026-10-18T16:15:02Z · message_delivered: 1 message(s)
 - 2026-10-18T16:37:14Z · body
-- 2026-10-18T16:49:29Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-18T16:49:29Z · status active→review
