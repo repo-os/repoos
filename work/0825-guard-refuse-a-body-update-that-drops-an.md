@@ -2,14 +2,14 @@
 id: "0825"
 title: "Guard: refuse a --body update that drops an easter-egg item"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T02:49:07Z"
-updated_at: "2026-10-18T02:49:07Z"
+updated_at: "2026-10-18T02:57:33Z"
 ---
 ## Problem
 `repoos update <id> --body` already refuses a full replace that drops Problem/Desired UX/Acceptance criteria/Notes for AI, but a bundle's items are `## E<n> · ...` sections and the `## Items` list, which that guard does not know about. A rewrite can delete an item silently.
@@ -29,3 +29,4 @@ Extend the existing dropped-sections guard rather than adding a parallel one. So
 ## Activity
 
 - 2026-10-18T02:49:07Z · created · njachowski@gmail.com
+- 2026-10-18T02:57:33Z · status inbox→ready
