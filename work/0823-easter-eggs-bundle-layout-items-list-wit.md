@@ -2,7 +2,7 @@
 id: "0823"
 title: "Easter-eggs bundle layout: Items list with stable E-ids and one fixed section set per item"
 type: chore
-status: active
+status: review
 priority: p3
 area: docs
 assigned_to: ai
@@ -34,4 +34,4 @@ Docs/template only; no parser or format change. Related: #0722, #0808.
 - 2026-10-18T02:58:31Z · cli_override, model_override
 - 2026-10-18T02:58:33Z · status ready→active, branch
 - 2026-10-18T03:01:11Z · body
-- 2026-10-18T03:10:24Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-18T03:10:24Z · status active→review
