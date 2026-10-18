@@ -4,10 +4,10 @@ import { createPinia, setActivePinia } from "pinia";
 import { nextTick } from "vue";
 import DebugPanel from "../src/components/DebugPanel.vue";
 import {
-  DEBUG_TITLE_EXPAND_THRESHOLD,
   debugEventExpandable,
   debugEventExpandedDetail,
   debugEventExpandedMessage,
+  isTitleVisuallyTruncated,
 } from "../src/lib/debug-event-expand";
 import { useRepoStore } from "../src/stores/repo";
 import type { Task, TaskLogEntry } from "../src/types";
@@ -39,10 +39,23 @@ describe("debugEventExpandable (#0829)", () => {
     expect(debugEventExpandedDetail({ kind: "activity", title: text, detail: text })).toBeNull();
   });
 
-  it("skips an expander for short lines with no detail", () => {
-    const short = "ok";
-    expect(short.length).toBeLessThan(DEBUG_TITLE_EXPAND_THRESHOLD);
-    expect(debugEventExpandable({ kind: "log", title: short })).toBe(false);
+  it("relies on layout truncation for title-only rows", () => {
+    const medium = "close-out complete — published to main after a long merge gate";
+    expect(debugEventExpandable({ kind: "log", title: medium })).toBe(false);
+    expect(debugEventExpandable({ kind: "log", title: medium }, { titleTruncated: true })).toBe(
+      true,
+    );
+  });
+
+  it("detects ellipsis via scrollWidth", () => {
+    const truncated = document.createElement("span");
+    Object.defineProperty(truncated, "scrollWidth", { value: 200 });
+    Object.defineProperty(truncated, "clientWidth", { value: 80 });
+    expect(isTitleVisuallyTruncated(truncated)).toBe(true);
+    const fits = document.createElement("span");
+    Object.defineProperty(fits, "scrollWidth", { value: 80 });
+    Object.defineProperty(fits, "clientWidth", { value: 80 });
+    expect(isTitleVisuallyTruncated(fits)).toBe(false);
   });
 });
 
@@ -66,6 +79,7 @@ describe("DebugPanel expanded rows (#0829)", () => {
       global: { plugins: [pinia], stubs: { teleport: true } },
       attachTo: document.body,
     });
+    await nextTick();
     await nextTick();
 
     const row = wrapper.get(".debug-event");

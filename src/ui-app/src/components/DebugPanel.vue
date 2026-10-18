@@ -12,6 +12,8 @@ import {
   debugEventExpandable,
   debugEventExpandedDetail,
   debugEventExpandedMessage,
+  isTitleVisuallyTruncated,
+  type DebugEventExpandOpts,
 } from "../lib/debug-event-expand";
 import { shouldCopyMessageOnClick } from "../lib/chat-message-copy";
 import { copyToClipboard } from "../lib/clipboard";
@@ -261,6 +263,36 @@ const skippedLatestCheck = computed<boolean>(() => {
   return last.passed === true && (last.skipped === true || checkRunSkipped(last.output));
 });
 
+const expanded = ref<Set<string>>(new Set());
+/** Keys whose `.debug-event-title` is ellipsized in the current layout (#0829). */
+const truncatedTitleKeys = ref<Set<string>>(new Set());
+const debugEventsEl = ref<HTMLElement | null>(null);
+
+function expandOpts(e: DebugEvent): DebugEventExpandOpts {
+  return { titleTruncated: truncatedTitleKeys.value.has(e.key) };
+}
+
+function isEventExpandable(e: DebugEvent): boolean {
+  return debugEventExpandable(e, expandOpts(e));
+}
+
+function measureTruncatedTitles(): void {
+  const root = debugEventsEl.value;
+  if (!root) {
+    truncatedTitleKeys.value = new Set();
+    return;
+  }
+  const next = new Set<string>();
+  for (const row of root.querySelectorAll<HTMLElement>("[data-debug-event]")) {
+    const key = row.getAttribute("data-debug-event");
+    const title = row.querySelector<HTMLElement>(".debug-event-title");
+    if (key && title && isTitleVisuallyTruncated(title)) next.add(key);
+  }
+  truncatedTitleKeys.value = next;
+}
+
+let truncateObserver: ResizeObserver | undefined;
+
 /** Ticks once a second while a check is running, so its elapsed timer counts
  *  up live instead of freezing until the next output chunk (mirrors
  *  TestRunPanel's own timer). */
@@ -270,8 +302,30 @@ onMounted(() => {
   nowTimer = setInterval(() => {
     now.value = Date.now();
   }, 1000);
+  if (typeof ResizeObserver !== "undefined") {
+    truncateObserver = new ResizeObserver(() => measureTruncatedTitles());
+    if (debugEventsEl.value) truncateObserver.observe(debugEventsEl.value);
+  }
 });
-onUnmounted(() => clearInterval(nowTimer));
+onUnmounted(() => {
+  clearInterval(nowTimer);
+  truncateObserver?.disconnect();
+});
+watch(debugEventsEl, (el, prev) => {
+  if (!truncateObserver) return;
+  if (prev) truncateObserver.unobserve(prev);
+  if (el) {
+    truncateObserver.observe(el);
+    nextTick(measureTruncatedTitles);
+  }
+});
+watch(
+  filteredEvents,
+  () => {
+    nextTick(measureTruncatedTitles);
+  },
+  { flush: "post" },
+);
 const runningElapsed = computed(() => {
   if (!runningCheck.value) return "";
   return fmtDuration(Math.max(0, now.value - Date.parse(runningCheck.value.startedAt)));
@@ -295,7 +349,6 @@ watch(
   },
 );
 
-const expanded = ref<Set<string>>(new Set());
 function toggleExpanded(key: string): void {
   const next = new Set(expanded.value);
   if (next.has(key)) next.delete(key);
@@ -331,7 +384,7 @@ async function onDebugEventClick(e: DebugEvent, event: MouseEvent): Promise<void
   // lands on an interactive control, is the user's, not ours — don't toggle or
   // copy over it.
   if (!shouldCopyMessageOnClick(event)) return;
-  if (debugEventExpandable(e)) toggleExpanded(e.key);
+  if (isEventExpandable(e)) toggleExpanded(e.key);
   const text = copyTextForDebugEvent(copyableDebugEvent(e));
   if (text === null) return;
   if (await copyToClipboard(text)) {
@@ -471,7 +524,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
       <div v-if="filteredEvents.length === 0" class="agent-empty">
         <p>No debug events yet.</p>
       </div>
-      <div v-else class="debug-events">
+      <div v-else ref="debugEventsEl" class="debug-events">
         <div
           v-for="e in filteredEvents"
           :key="e.key"
@@ -479,7 +532,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
           :data-debug-event="e.key"
           :class="[
             `debug-level-${e.level}`,
-            { 'debug-event-expandable': debugEventExpandable(e) },
+            { 'debug-event-expandable': isEventExpandable(e) },
             { 'debug-event-copyable': isCopyable(e) },
           ]"
           @click="onDebugEventClick(e, $event)"
@@ -487,11 +540,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
           <div class="debug-event-row">
             <component
               :is="
-                debugEventExpandable(e)
-                  ? expanded.has(e.key)
-                    ? ChevronDown
-                    : ChevronRight
-                  : 'span'
+                isEventExpandable(e) ? (expanded.has(e.key) ? ChevronDown : ChevronRight) : 'span'
               "
               class="debug-event-chevron"
             />
@@ -527,8 +576,8 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
           </div>
           <p v-if="e.failureSummary" class="debug-event-summary">{{ e.failureSummary }}</p>
           <template v-if="expanded.has(e.key)">
-            <p v-if="debugEventExpandedMessage(e)" class="debug-event-message">
-              {{ debugEventExpandedMessage(e) }}
+            <p v-if="debugEventExpandedMessage(e, expandOpts(e))" class="debug-event-message">
+              {{ debugEventExpandedMessage(e, expandOpts(e)) }}
             </p>
             <pre v-if="e.kind === 'check' && e.checkRun" class="debug-log debug-log-inline">{{
               e.checkRun.output || "(no output captured)"
