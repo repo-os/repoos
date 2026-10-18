@@ -35,17 +35,6 @@ function parseTaskLogFile(root: string, taskId: string): LogEntry[] {
   }
 }
 
-function readIntegrationJobStartedAt(root: string, taskId: string): string | null {
-  const path = join(root, ".repoos", "integration-jobs", `${taskId}.json`);
-  if (!existsSync(path)) return null;
-  try {
-    const raw = JSON.parse(readFileSync(path, "utf8")) as { startedAt?: unknown };
-    return typeof raw.startedAt === "string" ? raw.startedAt : null;
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Derive close-out wall-clock timing from chronological integration log lines
  * for one successful publish, aligned to the outcome's `finishedAt`.
@@ -113,9 +102,8 @@ export function needsCloseOutDurationBackfill(event: CloseOutOutcomeEvent): bool
 }
 
 /**
- * Fill missing `durationMs` / `startedAt` on succeeded outcomes from task logs
- * (and, when still present, the integration job record). Returns a new array
- * when anything changed; otherwise the original reference.
+ * Fill missing `durationMs` / `startedAt` on succeeded outcomes from integration
+ * task logs only. Returns a new array when anything changed; otherwise the original.
  */
 export function backfillCloseOutOutcomeDurations(
   root: string,
@@ -126,16 +114,7 @@ export function backfillCloseOutOutcomeDurations(
     if (!needsCloseOutDurationBackfill(event)) return event;
 
     const logs = parseTaskLogFile(root, event.taskId);
-    let derived = deriveCloseOutDurationFromIntegrationLogs(logs, event.finishedAt);
-
-    if (!derived) {
-      const jobStartedAt = readIntegrationJobStartedAt(root, event.taskId);
-      const finishedMs = Date.parse(event.finishedAt);
-      const startedMs = jobStartedAt ? Date.parse(jobStartedAt) : Number.NaN;
-      if (Number.isFinite(finishedMs) && Number.isFinite(startedMs) && finishedMs >= startedMs) {
-        derived = { startedAt: jobStartedAt!, durationMs: finishedMs - startedMs };
-      }
-    }
+    const derived = deriveCloseOutDurationFromIntegrationLogs(logs, event.finishedAt);
 
     if (!derived) return event;
     changed = true;
