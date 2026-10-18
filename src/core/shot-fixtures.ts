@@ -29,6 +29,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // verdict and warning) plus a docs-target skip note, so a capture can show the
   // screenshot viewer header and the "no docs shot declared" warning + link.
   "drawer:shotEvidence",
+  // #0829 — task drawer Debug tab with a long log row for expand-to-full-message shots.
+  "drawer:debugLogs",
   // #0804 — a ready task flagged by the decision-model human-step check, so a
   // capture can show the flag's explanation on the card.
   "card:humanStep",
