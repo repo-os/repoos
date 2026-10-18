@@ -397,7 +397,23 @@ export async function cmdDone(args: string[]): Promise<number> {
         started.body,
       );
     }
-    if (started.status !== 200 || !started.body.ok) {
+    // #0834: HEAD moved after handoff only by engineer self-check checkpoint
+    // commits — the server started (or found already running) an automatic
+    // gate + delta re-review instead of refusing, and close-out resumes itself
+    // once the delta review is good to go. This is progress, not an error.
+    if (started.status === 202 && started.body.checkpointRecovery) {
+      const message = String(
+        started.body.message ?? "checkpoint recovery started after engineer checkpoint commit(s)",
+      );
+      if (!wait) {
+        if (opts.json) printJson(started.body);
+        else console.log(c.green("  ✓ ") + c.dim(message));
+        return 0;
+      }
+      if (!opts.json) console.log(c.dim(`  … ${message}\n`));
+      // Keep waiting: the delta review re-enqueues close-out, and a bounce
+      // back to `active` below ends the wait with the reviewer's verdict.
+    } else if (started.status !== 200 || !started.body.ok) {
       throw new RepoOsApiError(
         started.body.error ?? `close-out refused (${started.status})`,
         started.status,
@@ -409,6 +425,9 @@ export async function cmdDone(args: string[]): Promise<number> {
       else console.log(c.green("  ✓ ") + c.dim(`close-out enqueued for #${id}`));
       return 0;
     }
+    // True once the task had a real close-out job — before that, a 404 + an
+    // `active` task is the checkpoint-delta bounce (#0834), not a job hiccup.
+    let jobSeen = false;
     const jobResult = await pollUntil(
       async () => {
         let jobRes: { status: number; body: ApiJson };
@@ -420,9 +439,23 @@ export async function cmdDone(args: string[]): Promise<number> {
         if (jobRes.status === 404) {
           const task = await api.requestOk("GET", `/api/tasks/${id}`);
           if (task.status === "done") return { phase: "done", task };
+          // #0834: a failed checkpoint delta review bounces the task back to
+          // `active` and no job will ever be enqueued for this wait — end it
+          // with the verdict instead of spinning until the timeout.
+          if (task.status === "active" && !jobSeen) {
+            return {
+              job: {
+                taskId: id,
+                phase: "failed",
+                reason:
+                  "the post-handoff delta review asked for changes — the task was returned to the engineer",
+              },
+            };
+          }
           return null;
         }
         const phase = (jobRes.body.job as { phase?: string } | undefined)?.phase;
+        jobSeen = true;
         if (phase === "done" || phase === "failed") return jobRes.body;
         if (phase) {
           if (!opts.json) {

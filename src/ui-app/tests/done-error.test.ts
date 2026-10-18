@@ -464,6 +464,112 @@ describe("move-to-done toast suppression", () => {
   });
 });
 
+describe("post-handoff checkpoint recovery (#0834)", () => {
+  it("reads the /done 202 checkpoint response as in-progress success, never an error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+        if (url.includes("/api/board") || url.includes("/api/index"))
+          return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/done"))
+          return {
+            ok: true,
+            status: 202,
+            json: async () => ({
+              ok: true,
+              checkpointRecovery: true,
+              message:
+                "Engineer checkpoint commit(s) after handoff — re-running the handoff gate and a delta review before close-out continues.",
+            }),
+          };
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+    const repo = useRepoStore();
+    await repo.init();
+    const task = makeTask({ id: "0042" });
+
+    const result = await repo.completeTask(task);
+    expect(result.ok).toBe(true);
+    expect(result.checkpointRecovery).toBe(true);
+    // Recovery is announced and trackable — not a silent stay in review.
+    expect(repo.checkpointRecoveryFor("0042")).toBe(true);
+    expect(repo.doneErrorFor("0042")).toBeNull();
+    expect(repo.toasts.some((t) => t.type === "info" && /delta review/.test(t.message))).toBe(true);
+  });
+
+  it("follows the server's checkpoint-recovery progress events to a terminal state", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    const emit = (step: string, detail?: string) =>
+      es.emit("task.progress", {
+        type: "task.progress",
+        id: "0042",
+        step,
+        at: "2026-10-18T12:00:00.000Z",
+        ...(detail ? { detail } : {}),
+      });
+
+    emit("checkpoint-recovery");
+    expect(repo.checkpointRecoveryFor("0042")).toBe(true);
+    // The recovery steps stay out of the close-out vocabulary.
+    expect(repo.doneSteps["0042"]).toBeUndefined();
+
+    emit("checkpoint-recovery-done");
+    expect(repo.checkpointRecoveryFor("0042")).toBe(false);
+
+    // A failed gate clears the hint AND surfaces the inline error (the task
+    // stays in review, so without this the failure would be invisible).
+    emit("checkpoint-recovery");
+    emit("checkpoint-recovery-failed", "checkpoint recovery failed: repoos check failed: build");
+    expect(repo.checkpointRecoveryFor("0042")).toBe(false);
+    const err = repo.doneErrorFor("0042");
+    expect(err?.detail).toContain("repoos check failed: build");
+
+    // The delta-review bounce is the reviewer's own finding — it clears the
+    // hint without manufacturing a second error card.
+    es.emit("task.progress", { type: "task.progress", id: "0043", step: "checkpoint-recovery" });
+    es.emit("task.progress", {
+      type: "task.progress",
+      id: "0043",
+      step: "checkpoint-recovery-cancelled",
+      at: "2026-10-18T12:05:00.000Z",
+      detail: "delta review verdict: needs some work — the findings were sent back with the task",
+    });
+    expect(repo.checkpointRecoveryFor("0043")).toBe(false);
+    expect(repo.doneErrorFor("0043")).toBeNull();
+  });
+
+  it("hydrates an already-running recovery from the board payload after a reload", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+        if (url.includes("/api/board") || url.includes("/api/index"))
+          return json({
+            tasks: [
+              { ...makeTask({ id: "0042" }), checkpointRecovery: true },
+              { ...makeTask({ id: "0007" }) },
+            ],
+            counts: EMPTY_COUNTS,
+            taskCount: 1,
+          });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+    const repo = useRepoStore();
+    await repo.init();
+    expect(repo.checkpointRecoveryFor("0042")).toBe(true);
+    expect(repo.checkpointRecoveryFor("0007")).toBe(false);
+  });
+});
+
 describe("extractConflicts", () => {
   it("pulls conflicting file names out of the server message", () => {
     expect(extractConflicts("merge conflict: src/a.ts, src/b.ts")).toEqual([
