@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: Transport"
+debug_tldr: "The engineer run stopped on a Transport disconnect (harness/API), not a repoos check failure—resume or restart the engineer on #0780."
+debug_tldr_at: "2026-10-18T17:30:39Z"
+debug_tldr_key: "dev-error|error: Transport"
 priority: p0
 area: core
 merged_commit: 6844edf20bd8c9a9f481477423b6549f6bbe3981
@@ -15,7 +18,7 @@ branch: feat/release-gate-skip-the-dist-cli-index-js-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T08:20:29Z"
-updated_at: "2026-10-18T17:30:10Z"
+updated_at: "2026-10-18T17:30:39Z"
 last_close_out_gate_ms: 121907
 last_close_out_gate_at: "2026-10-14T08:47:47.001Z"
 review_passes: 1
