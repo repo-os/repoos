@@ -2,7 +2,7 @@
 id: "0093"
 title: Add recurring and scheduled tasks to the Agents page
 type: feature
-status: review
+status: active
 priority: p2
 area: agent
 assigned_to: ai
