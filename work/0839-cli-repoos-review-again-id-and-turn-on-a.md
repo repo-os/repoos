@@ -2,7 +2,7 @@
 id: "0839"
 title: "CLI: repoos review again <id>, and turn on Auto-refresh stale review evidence by default"
 type: feature
-status: active
+status: review
 priority: p3
 area: [core, web]
 assigned_to: ai
@@ -36,4 +36,4 @@ Do not bypass the review lock rules (no live engineer/close-out). Source: driver
 - 2026-10-18T16:58:22Z · status ready→active, branch
 - 2026-10-18T17:00:45Z · body
 - 2026-10-18T17:02:01Z · body
-- 2026-10-18T17:11:21Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-18T17:11:21Z · status active→review
