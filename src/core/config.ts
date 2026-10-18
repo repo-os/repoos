@@ -274,6 +274,19 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   check: {
     isolationRuns: 3,
   },
+  localChecks: {
+    maxConcurrent: 2,
+    queueTimeoutMs: 45 * 60 * 1000,
+  },
+  playwright: {
+    maxConcurrent: 1,
+    queueTimeoutMs: 45 * 60 * 1000,
+  },
+  pressureGuard: {
+    enabled: true,
+    maxLoadPerCpu: 4,
+    minAvailableMemRatio: 0.08,
+  },
   // Attachment storage (#0659): local gitignored `.attachments/` directories by
   // default; opt-in cloud providers must be configured before they take effect.
   storage: {
@@ -1743,6 +1756,51 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     ) {
       cfg.remoteValidation = { ...cfg.remoteValidation, engineerSelfCheckRemote: true };
     }
+    const rvOffloadBrowser = parsed["remoteValidation.offloadBrowserSteps"];
+    if (typeof rvOffloadBrowser === "boolean") {
+      cfg.remoteValidation = { ...cfg.remoteValidation, offloadBrowserSteps: rvOffloadBrowser };
+    }
+    const rvLocalFallback = parsed["remoteValidation.localFallback"];
+    if (
+      rvLocalFallback === "serialize" ||
+      rvLocalFallback === "allow" ||
+      rvLocalFallback === "off"
+    ) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, localFallback: rvLocalFallback };
+    } else if (rvLocalFallback !== undefined) {
+      console.warn(
+        `[remoteValidation] localFallback must be "serialize", "allow" or "off", got ${JSON.stringify(rvLocalFallback)} — using serialize`,
+      );
+    }
+
+    const lcMax = parsed["localChecks.maxConcurrent"];
+    if (typeof lcMax === "number" && Number.isInteger(lcMax) && lcMax >= 1 && lcMax <= 8) {
+      cfg.localChecks = { ...cfg.localChecks, maxConcurrent: lcMax };
+    }
+    const lcTimeout = parsed["localChecks.queueTimeoutMs"];
+    if (typeof lcTimeout === "number" && Number.isFinite(lcTimeout) && lcTimeout >= 60_000) {
+      cfg.localChecks = { ...cfg.localChecks, queueTimeoutMs: Math.floor(lcTimeout) };
+    }
+    const pwMax = parsed["playwright.maxConcurrent"];
+    if (typeof pwMax === "number" && Number.isInteger(pwMax) && pwMax >= 1 && pwMax <= 4) {
+      cfg.playwright = { ...cfg.playwright, maxConcurrent: pwMax };
+    }
+    const pwTimeout = parsed["playwright.queueTimeoutMs"];
+    if (typeof pwTimeout === "number" && Number.isFinite(pwTimeout) && pwTimeout >= 60_000) {
+      cfg.playwright = { ...cfg.playwright, queueTimeoutMs: Math.floor(pwTimeout) };
+    }
+    const pgEnabled = parsed["pressureGuard.enabled"];
+    if (typeof pgEnabled === "boolean") {
+      cfg.pressureGuard = { ...cfg.pressureGuard, enabled: pgEnabled };
+    }
+    const pgLoad = parsed["pressureGuard.maxLoadPerCpu"];
+    if (typeof pgLoad === "number" && Number.isFinite(pgLoad) && pgLoad > 0) {
+      cfg.pressureGuard = { ...cfg.pressureGuard, maxLoadPerCpu: pgLoad };
+    }
+    const pgMem = parsed["pressureGuard.minAvailableMemRatio"];
+    if (typeof pgMem === "number" && Number.isFinite(pgMem) && pgMem >= 0 && pgMem <= 1) {
+      cfg.pressureGuard = { ...cfg.pressureGuard, minAvailableMemRatio: pgMem };
+    }
 
     // [closeOut] section — wall-clock budget for one Move-to-done attempt
     // (#0573). Invalid/negative values are clamped back to the default with a
@@ -2568,6 +2626,109 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         `Default (${defaultMaxConcurrentAgents()}) is computed from this machine's CPU count.`,
     },
     {
+      key: "localChecks.maxConcurrent",
+      label: "Local check concurrency",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "2",
+      options: Array.from({ length: 8 }, (_, i) => ({
+        value: String(i + 1),
+        label: String(i + 1),
+      })),
+      description:
+        "How many local `repoos check` runs may execute at once on this machine. Extra runs wait with a visible queue position. Default 2.",
+    },
+    {
+      key: "playwright.maxConcurrent",
+      label: "Playwright concurrency",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "1",
+      options: Array.from({ length: 4 }, (_, i) => ({
+        value: String(i + 1),
+        label: String(i + 1),
+      })),
+      description:
+        "Shared limit for UI smoke, contrast audit, shot capture, and UI verification. Default 1 — extra browser work queues instead of spawning dozens of WebKit processes.",
+    },
+    {
+      key: "pressureGuard.enabled",
+      label: "Pressure guard",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: true,
+      description:
+        "When load or memory pressure is high, delay new local checks and engineer starts until the machine has headroom instead of piling on.",
+    },
+    {
+      key: "pressureGuard.maxLoadPerCpu",
+      label: "Pressure guard: max load per CPU",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 4,
+      description:
+        "Block new checks and starts when the 1-minute load average divided by CPU count exceeds this value. Default 4.",
+    },
+    {
+      key: "pressureGuard.minAvailableMemRatio",
+      label: "Pressure guard: minimum available memory",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 0.08,
+      description:
+        "Block new checks and engineer starts when reclaimable memory falls below this fraction of total RAM. Default 0.08 (8%).",
+    },
+    {
+      key: "localChecks.queueTimeoutMs",
+      label: "Local check queue timeout (ms)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 2_700_000,
+      description:
+        "How long a queued local `repoos check` waits for a slot before failing with an actionable timeout. Default 45 minutes (2_700_000 ms).",
+    },
+    {
+      key: "playwright.queueTimeoutMs",
+      label: "Playwright queue timeout (ms)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 2_700_000,
+      description:
+        "How long queued Playwright work waits for a browser slot before failing. Default 45 minutes (2_700_000 ms).",
+    },
+    {
+      key: "remoteValidation.offloadBrowserSteps",
+      label: "Remote validation: offload browser steps",
+      type: "boolean",
+      tier: "restart",
+      restartRequired: true,
+      default: false,
+      description:
+        "When remote validation passes on a runner, run ui-smoke and rendered-contrast there (validate.sh) and skip those local gate steps. Requires Playwright on the runner image. Off by default.",
+    },
+    {
+      key: "remoteValidation.localFallback",
+      label: "Remote validation: local fallback mode",
+      type: "select",
+      tier: "restart",
+      restartRequired: true,
+      default: "serialize",
+      options: [
+        { value: "serialize", label: "Serialize (one at a time)" },
+        { value: "allow", label: "Allow (use local check cap)" },
+        { value: "off", label: "Off (refuse local fallback)" },
+      ],
+      description:
+        "When remote validation falls back to a full local gate: serialize runs one suite at a time (default), allow uses localChecks.maxConcurrent, off refuses the fallback even if fallbackToLocal is on.",
+    },
+    {
       key: "whisper.provider",
       label: "Voice transcription provider",
       type: "select",
@@ -3108,6 +3269,13 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "worktrees.inheritEnv",
   // Agents
   "maxConcurrentAgents",
+  "localChecks.maxConcurrent",
+  "localChecks.queueTimeoutMs",
+  "playwright.maxConcurrent",
+  "playwright.queueTimeoutMs",
+  "pressureGuard.enabled",
+  "pressureGuard.maxLoadPerCpu",
+  "pressureGuard.minAvailableMemRatio",
   "watchdog.enabled",
   "watchdog.stalenessMs",
   "watchdog.autoTransition",
@@ -3296,6 +3464,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "remoteValidation.maxConcurrent",
   "remoteValidation.hangIdleMinutes",
   "remoteValidation.fallbackToLocal",
+  "remoteValidation.offloadBrowserSteps",
+  "remoteValidation.localFallback",
   "remoteValidation.retryOtherHosts",
   "remoteValidation.engineerSelfCheckRemote",
   "remoteValidation.useForReleases",

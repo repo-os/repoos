@@ -14,6 +14,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { c } from "../cli/colors.js";
+import { findRepoRoot } from "../core/config.js";
 import {
   startPreviewServer,
   launchWebkit,
@@ -97,7 +98,10 @@ async function runUISmokeTest(): Promise<void> {
   let browser: SmokeBrowser | undefined;
   let context: SmokeContext | undefined;
   try {
-    browser = await launchWebkit();
+    browser = await launchWebkit({
+      repoRoot: findRepoRoot(),
+      onQueueLine: (line) => console.log(c.dim(`  ${line}`)),
+    });
     context = await browser.newContext({ serviceWorkers: "block" });
   } catch (err) {
     server.close();

@@ -787,7 +787,13 @@ export type RepoEvent =
     }
   | { type: "agent.running"; id: string; at: string }
   | { type: "agent.exited"; id: string; at: string }
-  | { type: "agent.queued"; id: string; at: string }
+  | {
+      type: "agent.queued";
+      id: string;
+      at: string;
+      reason?: "pressure" | "slot";
+      detail?: string;
+    }
   | { type: "agent.dequeued"; id: string; at: string }
   | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" }
   | { type: "agent.stats"; id: string; stats: AgentSessionStats }

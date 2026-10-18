@@ -627,7 +627,10 @@ export async function cmdShot(args: string[]): Promise<number> {
   try {
     if (webPlan.length > 0) {
       try {
-        browser = await launchWebkit();
+        browser = await launchWebkit({
+          repoRoot: cwdRoot,
+          onQueueLine: (line) => console.log(c.dim(`  ${line}`)),
+        });
         context = await browser.newContext({ serviceWorkers: "block" });
       } catch (err) {
         const msg = (err as Error).message;

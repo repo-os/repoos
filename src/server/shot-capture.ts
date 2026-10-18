@@ -641,7 +641,10 @@ export async function runAutoShotCapture(
   try {
     if (webEntries.length > 0) {
       try {
-        browser = await launchWebkit();
+        browser = await launchWebkit({
+          repoRoot: config.root,
+          onQueueLine: (line) => log(task.id, "info", line),
+        });
         context = await browser.newContext({ serviceWorkers: "block" });
       } catch (err) {
         if (isShotCaptureUnavailable(err)) {
@@ -869,7 +872,7 @@ export async function captureDeclaredShot(
   let url = own?.info.url.replace(/\/$/, "");
   try {
     try {
-      browser = await launchWebkit();
+      browser = await launchWebkit({ repoRoot: config.root });
       context = await browser.newContext({ serviceWorkers: "block" });
     } catch (err) {
       if (isShotCaptureUnavailable(err)) {

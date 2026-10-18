@@ -481,6 +481,11 @@ const generalFields = computed(() =>
   config.visibleFields.filter((field) => isGeneralSchemaFieldKey(field.key)),
 );
 
+/** Browser offload + local fallback beside the runner card (#0836). */
+const remoteValidationGeneralFields = computed(() =>
+  generalFields.value.filter((f) => generalSectionForKey(f.key) === "remote-validation"),
+);
+
 // ── Named sections + section URLs (#0800) ─────────────────────────────
 // The General tab is rendered as focused, linkable sections. Which section a
 // schema row lands in is decided by generalSectionForKey — the same function
@@ -1375,6 +1380,7 @@ onUnmounted(() => {
           v-for="group in generalFieldSections"
           :key="group.section.id"
           :id="settingsSectionAnchor(group.section.id)"
+          :data-settings-section="group.section.id"
           class="settings-section"
           :aria-label="group.section.label"
         >
@@ -1556,6 +1562,7 @@ onUnmounted(() => {
 
         <section
           :id="settingsSectionAnchor('remote-validation')"
+          data-settings-section="remote-validation"
           class="settings-section"
           aria-label="Remote validation"
         >
@@ -1580,6 +1587,40 @@ onUnmounted(() => {
                   </Button>
                 </div>
               </div>
+              <template v-for="f in remoteValidationGeneralFields" :key="f.key">
+                <div :id="`setting-${f.key}`" :data-config-key="f.key" class="setting-row">
+                  <div class="setting-info">
+                    <div class="setting-label">{{ f.label }}</div>
+                    <div class="setting-desc">{{ f.description }}</div>
+                  </div>
+                  <div class="setting-input">
+                    <Select
+                      v-if="f.type === 'select'"
+                      :model-value="String(form[f.key])"
+                      :disabled="config.saving"
+                      @update:model-value="(v) => (form[f.key] = v)"
+                    >
+                      <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                          <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
+                            o.label
+                          }}</SelectItem>
+                        </SelectViewport>
+                      </SelectContent>
+                    </Select>
+                    <Switch
+                      v-else-if="f.type === 'boolean'"
+                      :checked="!!form[f.key]"
+                      :disabled="config.saving"
+                      @update:checked="(v: boolean) => (form[f.key] = v)"
+                    />
+                  </div>
+                  <span v-if="f.restartRequired" class="restart-badge">restart required</span>
+                </div>
+              </template>
             </div>
           </Card>
         </section>

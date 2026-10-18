@@ -730,7 +730,10 @@ export async function runUiHandoffGate(
         context = launched.context;
       } else {
         try {
-          browser = await launchWebkit();
+          browser = await launchWebkit({
+            repoRoot: config.root,
+            onQueueLine: (line) => log(task.id, "info", line),
+          });
           context = await browser.newContext({ serviceWorkers: "block" });
         } catch (err) {
           if (isShotCaptureUnavailable(err)) {
