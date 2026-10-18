@@ -14,6 +14,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0799 — an active close-out in the remote test run, so a capture can show
   // a non-upload stage heartbeat ("remote tests" + elapsed) on the card.
   "closeOut:remoteTests",
+  // #0819 — active close-out plus 15 succeeded duration samples so the
+  // integration timer tooltip shows "Median … · 15 runs" on a fresh preview.
+  "integration:median15",
   "card:doneError",
   "board:withReviewTask",
   // #0778 — review-status task with a non-empty branch, so the task drawer

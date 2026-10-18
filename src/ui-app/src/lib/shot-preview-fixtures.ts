@@ -9,7 +9,10 @@ import {
 } from "../../../core/shot-fixtures.js";
 import type { useConfigStore } from "../stores/config";
 import type { useRepoStore } from "../stores/repo";
+import { useNoticesStore } from "../stores/notices";
+import { useUiStore } from "../stores/ui";
 import type {
+  CloseOutOutcomeEvent,
   DevTargetView,
   IntegrationPipelineSnapshot,
   ShotMeta,
@@ -335,6 +338,22 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID);
       pinnedIntegration = repo.integration;
       break;
+    case "integration:median15": {
+      ensureFixtureTask(repo, "review");
+      const startedAt = new Date(Date.now() - 4 * 60 * 1000).toISOString();
+      repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID, null, startedAt, nowIso());
+      pinnedIntegration = repo.integration;
+      useUiStore().setIntegrationBarCollapsed(false);
+      const outcomes: CloseOutOutcomeEvent[] = Array.from({ length: 15 }, (_, i) => ({
+        taskId: `0${i}`,
+        outcome: "succeeded",
+        finishedAt: new Date(Date.now() - i * 60_000).toISOString(),
+        reason: "",
+        durationMs: (i + 1) * 60_000,
+      }));
+      useNoticesStore().closeOutOutcomes = outcomes;
+      break;
+    }
     case "closeOut:uploading":
       ensureFixtureTask(repo, "review");
       repo.integration = activePipeline(
