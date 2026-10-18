@@ -63,6 +63,12 @@ import {
   wrapPmMessageWithQuestionContext,
 } from "../../core/pm-question-context.js";
 import { buildCanaryPrompt, canaryRelPath, isCanaryTaskExplanation } from "../../core/canary.js";
+import {
+  applyBundleBodyMutation,
+  EasterEggsBundleError,
+  nextBundleItemId,
+  type BundleMutationInput,
+} from "../../core/easter-eggs-bundle.js";
 import { ensureCanaryReadyForTask } from "../../core/canary-repo.js";
 import { listInputs } from "../../core/input.js";
 import {
@@ -1837,6 +1843,69 @@ export const deleteTaskShot: RouteHandler = async (ctx, _req, res, params) => {
         }
       : {}),
   });
+};
+
+/** Surgical easter-eggs bundle edits (#0824) — POST /api/tasks/:id/bundle */
+export const postTaskBundle: RouteHandler = async (ctx, req, res, params) => {
+  const { config, index } = ctx;
+  const taskId = params.param1;
+  const task = index.getTask(taskId);
+  if (!task) {
+    return json(res, 404, { error: `Task #${taskId} not found` });
+  }
+  const raw = (await readBody(req)) as Record<string, unknown>;
+  const action = raw.action;
+  if (typeof action !== "string" || !["add", "edit", "done", "undo"].includes(action)) {
+    return json(res, 400, {
+      error: 'body.action must be "add", "edit", "done", or "undo"',
+    });
+  }
+  const input: BundleMutationInput = {
+    action: action as BundleMutationInput["action"],
+    force: raw.force === true,
+    title: typeof raw.title === "string" ? raw.title : undefined,
+    area: typeof raw.area === "string" ? raw.area : undefined,
+    fix: typeof raw.fix === "string" ? raw.fix : undefined,
+    source: typeof raw.source === "string" ? raw.source : undefined,
+    test: typeof raw.test === "string" ? raw.test : undefined,
+    item: typeof raw.item === "string" ? raw.item : undefined,
+    section: typeof raw.section === "string" ? raw.section : undefined,
+    sectionBody:
+      typeof raw.sectionBody === "string"
+        ? raw.sectionBody
+        : typeof raw["section-body"] === "string"
+          ? (raw["section-body"] as string)
+          : undefined,
+  };
+  const currentBody = readTaskBody(config, task.absPath);
+  const addedId = action === "add" ? nextBundleItemId(currentBody) : undefined;
+  let nextBody: string;
+  try {
+    nextBody = applyBundleBodyMutation(task.title, currentBody, input);
+  } catch (error) {
+    const status = error instanceof EasterEggsBundleError ? 400 : 500;
+    return json(res, status, { error: (error as Error).message });
+  }
+  try {
+    const updated = patchTaskFile(config, task.absPath, {
+      body: nextBody,
+      note:
+        action === "add"
+          ? `bundle add E${addedId}`
+          : `bundle ${action}${input.item ? ` ${input.item}` : ""}`,
+    });
+    index.applyFileChange(updated.absPath);
+    return json(res, 200, {
+      ok: true,
+      task: updated,
+      ...(addedId !== undefined ? { itemId: `E${addedId}` } : {}),
+    });
+  } catch (error) {
+    if (error instanceof WriteError) {
+      return json(res, 400, { error: error.message });
+    }
+    throw error;
+  }
 };
 
 // Task logs

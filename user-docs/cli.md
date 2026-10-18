@@ -219,6 +219,26 @@ done wait by default in human mode).
 Pass `--port N` when the server is not on the default port. If the server is
 down, the CLI exits with a clear message instead of a generic fetch error.
 
+### `repoos bundle` (easter-eggs bundles)
+
+Surgical edits to an open **Easter eggs bundle:** task without replacing the
+whole body. Writes go through `POST /api/tasks/<id>/bundle`; bundle task
+`status` is untouched.
+
+```bash
+repoos bundle add 0822 --title "Hub find bar" --area web --fix "keep find below title" --source "#0795"
+repoos bundle edit 0822 E2 --section "Desired UX" --section-body "New UX text."
+repoos bundle done 0822 E1
+repoos bundle undo 0822 E1
+```
+
+`add` appends one `## Items` checklist line and a matching `## E<n> · Title`
+section (next free id). `edit` changes one `###` subsection inside an item.
+`done` / `undo` tick or clear that item's `- [x]` checkbox in `## Items` only.
+
+Refuses tasks whose title does not start with `Easter eggs bundle:` unless
+`--force`. Pass `--port N` when the control plane is not on the default port.
+
 ### `repoos update <id>`
 
 Edits a task's metadata or body: `--title`, `--area`, `--story`,

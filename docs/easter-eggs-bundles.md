@@ -127,8 +127,8 @@ live bundle):
 
    `- [ ] **E1 · Short title** (area) — one-line fix. Source: #0719 or human report …`
 
-   Tick `- [x]` as items land (optional; `repoos bundle done` will automate this
-   in a follow-up).
+   Tick `- [x]` as items land with `repoos bundle done <id> <En>` (`bundle undo`
+   clears the checkbox).
 
 2. A short note that every item uses the same sub-headings and that edits go
    through `--section`, not `--body`.
