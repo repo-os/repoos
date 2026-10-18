@@ -1375,6 +1375,49 @@ export async function automaticStaleEvidenceRefresh(
   return locked.ok && locked.value;
 }
 
+/** Same locking contract as {@link automaticStaleEvidenceRefresh} (#0772). */
+export type AutomaticEvidenceGapRepairDeps = AutomaticStaleEvidenceRefreshDeps;
+
+/**
+ * Server-owned evidence-gap repair (#0831): re-capture handoff shots when the
+ * reviewer marked `EVIDENCE-GAP-ONLY`, without an engineer round trip.
+ */
+export async function automaticEvidenceGapRepair(
+  deps: AutomaticEvidenceGapRepairDeps,
+  task: Task,
+): Promise<boolean> {
+  const { config, previews, rootLock, closingOut, log } = deps;
+  if (!task.branch) return false;
+  const worktree = worktreePathForBranch(config.root, task.branch);
+  if (!worktree) return false;
+
+  const locked = await withEvidenceRefreshLock(task.id, async () => {
+    if (closingOut()) return false;
+    if (!rootLock.acquire(task.id, "close-out")) return false;
+    try {
+      const current = deps.getReviewTask(task.id) ?? task;
+      if (current.status !== "review" || current.isArchived) return false;
+      if (deps.isAgentRunning(task.id) || deps.isReviewRunning(task.id)) return false;
+      if (closingOut()) return false;
+
+      const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
+      if (dirty.status !== 0 || dirty.stdout.trim()) return false;
+
+      const captured = await guardedForceRefreshCapture(config, current, worktree, previews, log);
+      if (captured.error) {
+        log(task.id, "warn", `automatic evidence-gap repair failed: ${captured.error}`);
+      }
+      if (captured.skipped || captured.error || !captured.gateOk) return false;
+      const headResult = await runGit(worktree, ["rev-parse", "--short", "HEAD"], 10_000);
+      const head = headResult.status === 0 ? headResult.stdout.trim() : "";
+      return Boolean(head && captured.headIdentity === head);
+    } finally {
+      rootLock.release(task.id);
+    }
+  });
+  return locked.ok && locked.value;
+}
+
 /** Refresh handoff shots and verification against the reviewed worktree HEAD. */
 export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) => {
   const { config, index, runner, reviews, closeOutLock, previews } = ctx;
