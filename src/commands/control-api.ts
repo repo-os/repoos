@@ -818,6 +818,11 @@ export async function cmdRunners(args: string[]): Promise<number> {
 }
 
 export async function cmdAgentsRunning(args: string[]): Promise<number> {
+  if (args.includes("--help") || args.includes("-h")) {
+    console.log(c.cyan("Usage:") + " repoos agents [list] [--json] [--port N]");
+    console.log(c.cyan("       ") + ` ${AGENTS_PAUSE_USAGE}`);
+    return 0;
+  }
   if (args[0] === "pause" || args[0] === "resume") {
     return cmdAgentsPauseResume(args[0], args.slice(1));
   }
