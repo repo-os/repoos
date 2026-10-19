@@ -2,7 +2,7 @@
 id: "0858"
 title: "Investigate leaked repoos-* tmp fixture dirs ([global-reap] warning)"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: the agent process exited with an error — open the task to see the full output
@@ -14,7 +14,7 @@ branch: feat/investigate-leaked-repoos-tmp-fixture-di
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T19:04:41Z"
-updated_at: "2026-10-19T20:54:21Z"
+updated_at: "2026-10-19T21:01:45Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 1
@@ -83,3 +83,4 @@ Verification: a full pass now leaves 0 dirs in an isolated TMPDIR; a follow-up r
 - 2026-10-19T20:52:19Z · body
 - 2026-10-19T20:53:40Z · body
 - 2026-10-19T20:54:21Z · body
+- 2026-10-19T21:01:45Z · status active→review
