@@ -227,10 +227,54 @@ describe("on-demand previews (#0271 follow-up)", () => {
         await sleep(250);
       }
       expect(await previewUrl(server, "0001")).toBeNull();
+      // The evicted preview's PROCESS is gone too, not just its registry entry.
+      let firstGone = false;
+      for (let i = 0; i < 40; i++) {
+        try {
+          await fetch(firstUrl);
+          await sleep(100);
+        } catch {
+          firstGone = true;
+          break;
+        }
+      }
+      expect(firstGone).toBe(true);
       expect(await previewUrl(server, "0002")).toBe(secondUrl);
     } finally {
       await server.close();
       fx.clean();
     }
   }, 120_000);
+
+  it("stops a running preview when its task is archived", async () => {
+    const fx = makeFixture(1);
+    const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
+    try {
+      const started = await api(server, "POST", "/api/tasks/0001/preview");
+      expect(started.status).toBe(200);
+      const url = started.body.url as string;
+      expect(await (await fetch(url)).text()).toContain("AUTO-PREVIEW-OK");
+
+      const archived = await api(server, "POST", "/api/tasks/0001/archive", {});
+      expect(archived.status).toBe(200);
+      expect(await previewUrl(server, "0001")).toBeNull();
+
+      // The archived task's preview server is really gone (process torn down,
+      // not just deregistered).
+      let gone = false;
+      for (let i = 0; i < 40; i++) {
+        try {
+          await fetch(url);
+          await sleep(100);
+        } catch {
+          gone = true;
+          break;
+        }
+      }
+      expect(gone).toBe(true);
+    } finally {
+      await server.close();
+      fx.clean();
+    }
+  }, 90_000);
 });
