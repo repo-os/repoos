@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 131972
-last_close_out_gate_at: "2026-10-19T16:52:16.249Z"
 id: "0853"
 title: "Previews: tear down a task's preview server when it leaves active/review, and enforce one preview at a time"
 type: bug
-status: review
+status: done
 priority: p2
 area: server
+merged_commit: c7b44b1b1f12a82a263e24212face01c0522de12
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/previews-tear-down-a-task-s-preview-serv
 review_cli_override: pi
 review_model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-10-19T14:24:17Z"
-updated_at: "2026-10-19T16:52:16Z"
+updated_at: "2026-10-19T16:53:02Z"
+last_close_out_gate_ms: 131972
+last_close_out_gate_at: "2026-10-19T16:52:16.249Z"
 review_passes: 1
 dev_error_count: 2
 ---
@@ -60,4 +61,4 @@ Look at src/server/preview-manager (or the PreviewManager) and the task status t
 - 2026-10-19T16:48:55Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-19T16:49:53Z · note: review pass 1: good to go
 - 2026-10-19T16:52:16Z · close-out gate completed in 132s
-
+- 2026-10-19T16:53:02Z · status review→done, release:success
