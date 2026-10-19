@@ -381,6 +381,8 @@ fixture the preview applies before capture (preview builds only, via
 - `board:withReviewTask` — board shows a review-column fixture card
 - `board:cardChips` — multi-area human-assigned card with seeded diff stats,
   so the area, human and file chips all render (#0776, #0795)
+- `card:noChanges` — ready human-assigned card with a branch and zero diff
+  stats, for confirming the card has no empty file-change chip (#0847)
 - `dev:failed` — Dev page shows a failed target with its failure summary (#0775)
 - `editor:unconfigured` — clears the configured editor so the fallback
   "Set editor in Settings → General" hint renders instead of the
