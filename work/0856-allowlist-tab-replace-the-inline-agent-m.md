@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 65838
-last_close_out_gate_at: "2026-10-19T22:17:47.944Z"
 id: "0856"
 title: "Allowlist tab: replace the inline agent+model picker with an Add to allowlist modal (choose, then confirm)"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 depends_on: ["0850"]
+merged_commit: "02877391acc5d3d617e9827304c4a2d295c69b96"
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/allowlist-tab-replace-the-inline-agent-m
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T15:46:53Z"
-updated_at: "2026-10-19T22:17:47Z"
+updated_at: "2026-10-19T22:18:03Z"
+last_close_out_gate_ms: 65838
+last_close_out_gate_at: "2026-10-19T22:17:47.944Z"
 review_passes: 1
 ---
 ## Problem
@@ -107,4 +108,4 @@ This is the same panel #0850 (pause an agent or model) is changing, so it depend
 - 2026-10-19T20:10:27Z · status active→review
 - 2026-10-19T20:13:19Z · note: review pass 1: good to go
 - 2026-10-19T22:17:47Z · close-out gate completed in 66s
-
+- 2026-10-19T22:18:03Z · status review→done, release:success
