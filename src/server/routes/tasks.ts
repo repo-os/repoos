@@ -1080,7 +1080,7 @@ export const deleteTask: RouteHandler = async (ctx, _req, res, params) => {
   if (!existing) {
     return json(res, 404, { error: `Task #${id} not found` });
   }
-  await previews.stop(id);
+  await previews.stop(id, "task deleted");
   try {
     deleteTaskFile(config, existing.absPath);
   } catch (err) {
@@ -2384,7 +2384,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: `Task #${id} is waiting for automatic review to finish`,
       });
     }
-    await previews.stop(id);
+    await previews.stop(id, "task done");
     reviews.cancel(id);
     void runner.stop(id);
 
@@ -2864,7 +2864,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (existing.status === "review") {
       reviews.cancel(id);
     }
-    await previews.stop(id);
+    await previews.stop(id, "task abandoned");
     const stopRes = runner.stop(id);
     const updated = patchTaskFile(
       config,
@@ -2910,11 +2910,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: `Task #${id} has an in-progress review — stop work before archiving`,
       });
     }
-    if (previews.get(id)) {
-      return json(res, 409, {
-        error: `Task #${id} has a running preview — stop it before archiving`,
-      });
-    }
+    // Archiving is a teardown trigger (#0853), not a refusal: an archived
+    // task may never serve a preview. `stop` also cancels a start still
+    // booting, and only signals recorded PIDs/process groups.
+    await previews.stop(id, "task archived");
     // Job files persist after close-out ends, so only a job that has not reached
     // a terminal phase counts: a finished (`done`) or `failed` job leaves the
     // task free to be parked.
@@ -3101,7 +3100,7 @@ export const startPreview: RouteHandler = async (ctx, req, res, params) => {
 export const stopPreview: RouteHandler = async (ctx, _req, res, params) => {
   const { previews } = ctx;
   const id = params.param1;
-  await previews.stop(id);
+  await previews.stop(id, "stopped by request");
   return json(res, 200, { ok: true });
 };
 
