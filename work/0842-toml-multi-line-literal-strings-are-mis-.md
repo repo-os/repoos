@@ -3,9 +3,6 @@ id: "0842"
 title: TOML multi-line literal strings (''' ''') are mis-parsed in repoos.toml
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "ActionRequiredError: Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue."
 priority: p2
 area: core
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-10-19T15:06:48Z"
+updated_at: "2026-10-19T15:06:53Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -53,3 +50,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T12:50:44Z · handoff failed · remote validation failed: test failure: tests/cli-control-api.test.ts > control API CLI > re-authenticates on 401 via dev backdoor without printing the code, tests/config-docs.test.ts > repoos.toml and environment docs > has an annotated starter repoos.toml that the real parser accepts, tests/toml-line.test.ts > repoos.toml round-trip > loads a # inside an agent's instructions intact on bee — fix it in the feature branch and re-run the gate
 - 2026-10-19T14:41:40Z · note: handoff requested (ui-review)
 - 2026-10-19T15:06:48Z · cli_override, model_override
+- 2026-10-19T15:06:53Z · needs_input
