@@ -86,3 +86,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T15:08:47Z · cli_override, model_override
 - 2026-10-19T15:10:21Z · body
 - 2026-10-19T15:16:10Z · message_queued at 2026-10-19T15:16:10.135Z
+- 2026-10-19T15:16:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
