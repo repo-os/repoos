@@ -1812,6 +1812,55 @@ describe("DevTargetManager with services (#0843)", () => {
     }
   });
 
+  // Review round 3 — when a sibling's exit aborts a later service's readiness
+  // gate, the target's failure reason must stay the DEAD sibling's (it names
+  // the service that died), not the gate's generic abort notice.
+  it("keeps the dead sibling's name in the summary when its exit aborts a later service's gate", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcsibling-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              // Healthy within its first poll, gone shortly after — while the
+              // worker's gate is still polling a URL nothing serves.
+              command:
+                "bun -e \"const h=require('node:http');h.createServer((q,s)=>s.end('ok')).listen(Number(process.env.PORT),'127.0.0.1');setTimeout(()=>process.exit(3),800)\"",
+            }),
+            {
+              name: "worker",
+              command: 'bun -e "setTimeout(()=>{},60000)"',
+              healthCheck: { url: "http://localhost:{port}/never" },
+            },
+          ],
+          targets: [webTarget({ services: ["api", "worker"] })],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      // The reason names the service that died, with its exit code — not the
+      // worker whose gate merely noticed.
+      expect(result.error).toContain('service "api"');
+      expect(result.error).toContain("exited with code 3");
+      expect(result.error).not.toContain('service "worker"');
+      const view = mgr.get("app");
+      expect(view?.status).toBe("failed");
+      expect(view?.error).toContain('service "api"');
+      expect(view?.services?.find((s) => s.name === "api")?.status).toBe("failed");
+      // The aborted worker did not keep running: a failed start tears every
+      // companion down, whatever already-booted.
+      expect(
+        await waitForDead(mgr.get("app")?.services?.find((s) => s.name === "worker")?.pid!),
+      ).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   // Review round 2 — on reload, a service whose target died still gets reaped,
   // so a companion process cannot outlive the stack it belongs to; and a
   // service already dead at adoption degrades the target NOW, not later.

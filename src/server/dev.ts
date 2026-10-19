@@ -634,7 +634,15 @@ export class DevTargetManager {
       );
       if (!ready.ok) {
         this.appendServiceLog(t.name, def.name, `[repoos] ${ready.error}`);
-        return fail(`service "${def.name}" ${ready.error}`);
+        // A sibling's exit may have failed the target while this gate was
+        // polling: its reason names the service that died, so it wins over
+        // this gate's generic abort notice (#0843 review round 3).
+        const prior = this.states.get(t.name);
+        const message =
+          prior?.status === "failed" && prior.error
+            ? prior.error
+            : `service "${def.name}" ${ready.error}`;
+        return fail(message);
       }
       this.patchServiceState(t.name, def.name, { status: "running", error: undefined });
     }
@@ -669,6 +677,19 @@ export class DevTargetManager {
           `could not resolve a port for "${t.name}": auto-pick is off but no port is set`,
         );
       }
+    }
+    // #0843 review round 3: the reservation above is the last await before the
+    // target spawns, and a service exit delivered during it has already
+    // failed the target (the handler sees "starting") — which the
+    // `setState(starting)` below would otherwise clear, returning "success"
+    // with a dead service. Honor the standing failure instead: the services
+    // go down with the failed start and the reason (naming the service)
+    // stands. Exits delivered later are caught by the readiness gate's
+    // degraded checks; nothing else can fail the target across the sync span
+    // from here to that setState.
+    const standing = this.states.get(t.name);
+    if (standing?.status === "failed") {
+      return fail(standing.error ?? "a companion service failed during startup");
     }
     const command = expandServiceRefs(t.command, resolvedPort, tokens);
 
