@@ -197,16 +197,25 @@ private struct HubWindowAppearanceConfigurator: NSViewRepresentable {
 }
 
 /// Gives the workspace window a full-height sidebar with no visible titlebar or
-/// toolbar row (#0855). The traffic lights, window dragging, resizing,
-/// minimizing, and fullscreen all stay native because this remains a standard
-/// titled NSWindow: the title text is hidden, the titlebar is transparent, and
-/// the content view extends underneath it. The sidebar toggle and navigation
-/// controls live in the sidebar instead of a toolbar.
+/// toolbar row (#0855) while keeping the real native traffic lights in their
+/// standard upper-left position (#0857). Dragging, resizing, minimizing, and
+/// fullscreen all stay native because this remains a standard titled NSWindow:
+/// the title text is hidden, the titlebar is transparent, and the content view
+/// extends underneath it. The sidebar toggle and navigation controls live in
+/// the sidebar instead of a toolbar.
 func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
     window.titleVisibility = .hidden
     window.titlebarAppearsTransparent = true
     window.styleMask.insert(.fullSizeContentView)
     window.toolbar?.isVisible = false
+
+    // SwiftUI may hide the standard buttons when a scene's toolbar visibility
+    // changes. Keep the window's own close/minimize/fullscreen controls
+    // explicitly visible so the transparent titlebar never loses them.
+    let standardButtons: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+    for buttonType in standardButtons {
+        window.standardWindowButton(buttonType)?.isHidden = false
+    }
 }
 
 private func applyNativeSurfaceBackgrounds(
