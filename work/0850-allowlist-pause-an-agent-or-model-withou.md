@@ -3,9 +3,6 @@ id: "0850"
 title: "Allowlist: pause an agent or model without removing it (with optional resume date and reason)"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p1
 area: [core, server, web]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/allowlist-pause-an-agent-or-model-withou
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T19:03:53Z"
+updated_at: "2026-10-19T19:04:09Z"
 last_close_out_gate_ms: 459723
 last_close_out_gate_at: "2026-10-19T18:52:38.334Z"
 review_passes: 1
@@ -165,3 +162,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T18:52:48Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
 - 2026-10-19T19:03:06Z · status inbox→ready
 - 2026-10-19T19:03:53Z · status ready→active
+- 2026-10-19T19:04:09Z · needs_input
