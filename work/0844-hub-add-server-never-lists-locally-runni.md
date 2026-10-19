@@ -69,3 +69,4 @@ With a local `repoos serve` on a non-default port (e.g. **7559**), open Hub → 
 - 2026-10-19T05:37:08Z · message_delivered: 1 message(s)
 - 2026-10-19T05:37:08Z · status review→active
 - 2026-10-19T05:38:13Z · body: Manual check (added 3, removed 1)
+- 2026-10-19T05:38:13Z · message_queued at 2026-10-19T05:38:13.516Z
