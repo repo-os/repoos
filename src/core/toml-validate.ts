@@ -179,9 +179,16 @@ function readBasicEscape(sc: TomlScanner, allowLineEnding: boolean): void {
   if (ch === "u" || ch === "U") {
     const digits = ch === "u" ? 4 : 8;
     sc.advance();
+    let hex = "";
     for (let n = 0; n < digits; n++) {
       if (!/^[0-9A-Fa-f]$/.test(sc.peek())) sc.fail("invalid unicode escape");
-      sc.advance();
+      hex += sc.advance();
+    }
+    // TOML requires a valid Unicode scalar value: `\uD800` (a surrogate) and
+    // `\U00110000` (beyond the last code point) are invalid escapes.
+    const code = parseInt(hex, 16);
+    if (code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)) {
+      sc.fail(`invalid unicode escape \\${ch}${hex}`);
     }
     return;
   }
