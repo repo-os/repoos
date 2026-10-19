@@ -3,6 +3,9 @@ id: "0842"
 title: TOML multi-line literal strings (''' ''') are mis-parsed in repoos.toml
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ Server finalization stopped at check: remote validation failed: test failure: tests/cli-control-api.test.ts > control API CLI > re-authenticates on 401 via dev backdoor without printing the code, tests/config-docs.test.ts > repoos.toml and environment docs > has an annotated starter repoos.toml that the real parser accepts, tests/toml-line.test.ts > repoos.toml round-trip > loads a # inside an agent's instructions intact on bee — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried."
 priority: p2
 area: core
 assigned_to: ai
@@ -13,8 +16,8 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-10-19T15:26:10Z"
-dev_error_count: 1
+updated_at: "2026-10-19T15:27:25Z"
+dev_error_count: 2
 ---
 ## Problem
 `repoos.toml` values written as TOML multi-line literal strings (`'''...'''`) are mis-parsed: the stored value keeps literal leading and trailing `''`. Seen on the Dev page for a `[[dev.targets]]` command: `''bun install --frozen-lockfile && ... ''`. It only runs because a shell happens to ignore empty `''`; a command starting with an env assignment (`PORT=3001 bun ...`) failed with `/bin/sh: PORT=3001: command not found`. `'''` and `"""` are valid TOML, so the reader is non-conformant. Found while setting up dev targets for the lightingai project (2026-10-19).
@@ -55,3 +58,5 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T15:19:48Z · body
 - 2026-10-19T15:26:10Z · message_queued at 2026-10-19T15:26:10.202Z
 - 2026-10-19T15:26:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-19T15:27:25Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: remote validation failed: test failure: tests/cli-control-api.test.ts > control API CLI > re-authenticates on 401 via dev backdoor without printing the code, tests/config-docs.test.ts > repoos.toml and environment docs > has an annotated starter repoos.toml that the real parser accepts, tests/toml-line.test.ts > repoos.toml round-trip > loads a # inside an agent's instructions intact on bee — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.
+- 2026-10-19T15:27:25Z · message_delivered: 1 message(s)
