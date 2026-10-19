@@ -16,7 +16,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-10-19T16:57:08Z"
+updated_at: "2026-10-19T17:05:57Z"
 dev_error_count: 3
 ---
 ## Problem
@@ -61,3 +61,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T15:27:25Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: remote validation failed: test failure: tests/cli-control-api.test.ts > control API CLI > re-authenticates on 401 via dev backdoor without printing the code, tests/config-docs.test.ts > repoos.toml and environment docs > has an annotated starter repoos.toml that the real parser accepts, tests/toml-line.test.ts > repoos.toml round-trip > loads a # inside an agent's instructions intact on bee — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.
 - 2026-10-19T15:27:25Z · message_delivered: 1 message(s)
 - 2026-10-19T15:27:27Z · note: stopped orphaned engineer pid 97853
+- 2026-10-19T17:05:57Z · message_queued at 2026-10-19T17:05:57.982Z
