@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-19T14:04:10Z"
+review_passes: 3
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
@@ -15,11 +17,9 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T14:04:10Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: e48e99aa611ca1d23454e19fcf0927b651121671
 review_rounds: 2
-review_passes: 2
 ---
 ## Problem
 `[[dev.targets]]` supports a single `{port}` for one process, so a full-stack dev target (an API plus a frontend that proxies to it) must pin the API to a fixed port. In the lightingai project the Bun API is pinned to 3001 because the Vite proxy needs to know it, so two copies of the stack, or anything else on 3001, collide. `[[preview.targets]]` already solves this with `[[preview.services]]` and `{api.port}` (#0681), but dev targets have no equivalent. Suggested by the owner (2026-10-19): frontends can already be dynamic, the API should be able to be too.
@@ -109,3 +109,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T14:01:43Z · note: shots: failed — preview for target "default" did not start: Preview servers are read-only; only the main RepoOS control plane can start previews
 - 2026-10-19T14:04:10Z · note: review pass 1: needs some work
 - 2026-10-19T14:04:10Z · needs_input
+
