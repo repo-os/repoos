@@ -14,7 +14,7 @@ branch: feat/allowlist-pause-an-agent-or-model-withou
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T14:25:51Z"
+updated_at: "2026-10-19T14:31:27Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -44,26 +44,16 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 ```json
 [
 {
-"label": "Budget Controls: paused agent shows its reason and resume date",
-"target": "default",
-"route": "/agents?tab=budget-controls",
-"highlight": "[data-testid=\"budget-row-li-cursor\"]",
-"state": "budget:paused"
-},
-{
-"label": "Budget Controls: one model paused inside an agent row",
-"target": "default",
-"route": "/agents?tab=budget-controls",
-"highlight": "[data-testid=\"budget-model-paused-chip\"]",
-"steps": [
-{
-"click": "[data-testid=\"budget-row-li-opencode\"] .budget-row-head"
-},
-{
-"waitMs": 250
-}
-],
-"state": "budget:paused"
+  "label": "Budget Controls: paused agent and paused model, with reason and resume date",
+  "target": "default",
+  "route": "/agents?tab=budget-controls",
+  "highlight": "[data-testid=\"budget-list\"]",
+  "steps": [
+    {
+      "waitMs": 600
+    }
+  ],
+  "state": "budget:paused"
 }
 ]
 ```
@@ -89,3 +79,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T14:18:44Z · body
 - 2026-10-19T14:24:59Z · body
 - 2026-10-19T14:25:51Z · body
+- 2026-10-19T14:31:27Z · body
