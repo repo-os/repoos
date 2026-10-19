@@ -2,7 +2,7 @@
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -13,6 +13,7 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
 updated_at: "2026-10-19T12:21:29Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -80,3 +81,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T12:19:14Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-19T12:21:29Z · note: review pass 2: needs some work
 - 2026-10-19T12:21:29Z · message_delivered: 1 message(s)
+- 2026-10-19T12:21:29Z · status review→active
