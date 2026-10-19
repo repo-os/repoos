@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T15:08:47Z"
+updated_at: "2026-10-19T15:08:52Z"
 dev_error_count: 2
 ---
 ## Problem
