@@ -13,7 +13,7 @@ model_override: default
 review_cli_override: pi
 review_model_override: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
 created_at: "2026-10-19T07:50:02Z"
-updated_at: "2026-10-19T15:00:13Z"
+updated_at: "2026-10-19T15:05:23Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 198900f260fff3bc517084e2a76db31cad891aec
 ---
@@ -79,14 +79,14 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 "highlight": "[data-task-id=\"9999\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] .tc-human-chip"
+"waitFor": "[data-task-id=\"9999\"] .tc-human-chip"
 }
 ],
 "assert": [
 {
-  "selector": "[data-task-id=\"9999\"] .tc-file-chip",
-  "label": "no file-change chip is rendered",
-  "count": 0
+"selector": "[data-task-id=\"9999\"] .tc-file-chip",
+"label": "no file-change chip is rendered",
+"count": 0
 }
 ],
 "state": "card:noChanges",
@@ -99,14 +99,14 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 "highlight": "[data-task-id=\"9999\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] .tc-human-chip"
+"waitFor": "[data-task-id=\"9999\"] .tc-human-chip"
 }
 ],
 "assert": [
 {
-  "selector": "[data-task-id=\"9999\"] .tc-file-chip",
-  "label": "no file-change chip is rendered",
-  "count": 0
+"selector": "[data-task-id=\"9999\"] .tc-file-chip",
+"label": "no file-change chip is rendered",
+"count": 0
 }
 ],
 "state": "card:noChanges",
@@ -155,3 +155,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T14:52:35Z · body
 - 2026-10-19T14:53:25Z · body
 - 2026-10-19T15:00:13Z · handoff failed · remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate
+- 2026-10-19T15:05:23Z · message_queued at 2026-10-19T15:05:23.921Z
