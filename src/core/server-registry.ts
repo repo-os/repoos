@@ -148,10 +148,7 @@ export function checkServerRegistryPortConflict(
   return null;
 }
 
-export function writeServerRegistryEntry(
-  entry: ServerRegistryEntry,
-  registryDir?: string,
-): void {
+export function writeServerRegistryEntry(entry: ServerRegistryEntry, registryDir?: string): void {
   const dir = registryDir ?? serversRegistryDir();
   ensureRegistryDir(dir);
   const path = serverRegistryEntryPath(entry.port, dir);

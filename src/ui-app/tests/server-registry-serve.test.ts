@@ -101,10 +101,7 @@ describe("startServer running-server registry", () => {
 
     const ephemeral = await startServer({ root, host: "127.0.0.1", port: 0, disableAuth: true });
     expect(
-      shouldRegisterServerRegistry(
-        { root, previewOverrides: undefined },
-        { port: ephemeral.port },
-      ),
+      shouldRegisterServerRegistry({ root, previewOverrides: undefined }, { port: ephemeral.port }),
     ).toBe(false);
     expect(existsSync(join(registryDir, `${ephemeral.port}.json`))).toBe(false);
     await ephemeral.close();

@@ -1422,10 +1422,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             shouldRegisterServerRegistry(fresh, { port: runningServerRegistry.port })
           ) {
             try {
-              refreshRunningServerProjectName(
-                runningServerRegistry.port,
-                fresh.root,
-              );
+              refreshRunningServerProjectName(runningServerRegistry.port, fresh.root);
             } catch (e) {
               logServerRegistryError(logger, "refresh", e);
             }
