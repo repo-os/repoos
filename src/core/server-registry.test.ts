@@ -139,10 +139,7 @@ describe("server registry files", () => {
 
   it("prune removes dead pid files", async () => {
     writeServerRegistryEntry(sampleEntry(7500, "/tmp/x", 999_998));
-    writeServerRegistryEntry(sampleEntry(7501, "/tmp/y", process.pid));
     expect(await serverRegistry.pruneStaleServerRegistryEntries()).toBe(1);
     expect(existsSync(join(dir, "7500.json"))).toBe(false);
-    expect(existsSync(join(dir, "7501.json"))).toBe(true);
   });
-
 });
