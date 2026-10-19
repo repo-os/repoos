@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-19T05:37:08Z"
+review_passes: 2
 id: "0844"
 title: "Hub: Add server never lists locally running RepoOS servers (discovery probe times out)"
 type: bug
@@ -11,9 +13,7 @@ branch: feat/hub-add-server-never-lists-locally-runni
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:15:39Z"
-updated_at: "2026-10-19T05:37:08Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 In RepoOS Hub, **Add server** is meant to show a "Running locally" list of RepoOS instances (LocalServerDiscovery.swift, added in d76dbd24c) so you can click one to add it. In practice the sheet shows the spinner for about a second and then nothing appears, even with servers clearly running (reported 2026-10-19: a new project on http://127.0.0.1:7559/ never shows, while 7171 is also up).
@@ -63,3 +63,4 @@ _Record pass/fail and date when verified in Hub._
 - 2026-10-19T05:36:08Z · status active→review
 - 2026-10-19T05:36:09Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-19T05:37:08Z · note: review pass 2: needs some work
+
