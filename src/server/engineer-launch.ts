@@ -13,7 +13,13 @@ import type { AgentRunner } from "./agents.js";
 import { resolveAgentForTask, noAgentAvailableMessage, pausedAgentFallbackNote } from "./agents.js";
 import type { Logger } from "../core/logger.js";
 export type EngineerLaunchResult =
-  | { ok: true; pid?: number; queued?: boolean }
+  | {
+      ok: true;
+      pid?: number;
+      queued?: boolean;
+      /**#0850: what a paused allowlist entry changed, for the task activity log. */
+      pauseNote?: string;
+    }
   | { ok: false; reason: string };
 
 export interface EngineerLaunchDeps {
@@ -107,5 +113,5 @@ export async function relaunchEngineerOnActiveTask(
   }
 
   index.refreshBranches();
-  return { ok: true, pid: spawnRes.pid, queued: spawnRes.queued };
+  return { ok: true, pid: spawnRes.pid, queued: spawnRes.queued, pauseNote: pauseNote ?? undefined };
 }
