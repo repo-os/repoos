@@ -14,7 +14,7 @@ branch: feat/allowlist-pause-an-agent-or-model-withou
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T14:18:44Z"
+updated_at: "2026-10-19T14:20:16Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -57,10 +57,10 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 "highlight": "[data-testid=\"budget-model-paused-chip\"]",
 "steps": [
 {
-  "click": "[data-testid=\"budget-row-li-opencode\"] .budget-row-head"
+"click": "[data-testid=\"budget-row-li-opencode\"] .budget-row-head"
 },
 {
-  "waitMs": 250
+"waitMs": 250
 }
 ],
 "state": "budget:paused"
