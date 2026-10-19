@@ -11,10 +11,12 @@ area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/allowlist-pause-an-agent-or-model-withou
+cli_override: claude code
+model_override: haiku
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T14:49:26Z"
+updated_at: "2026-10-19T15:06:39Z"
 dev_error_count: 2
 ---
 ## Problem
@@ -81,3 +83,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T14:25:51Z · body
 - 2026-10-19T14:31:27Z · body
 - 2026-10-19T14:49:26Z · body
+- 2026-10-19T15:06:39Z · cli_override, model_override
