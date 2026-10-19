@@ -128,6 +128,14 @@ import {
   runGit,
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
+import {
+  checkServerRegistryPortConflict,
+  logServerRegistryError,
+  refreshRunningServerProjectName,
+  registerRunningServer,
+  removeServerRegistryEntry,
+  shouldRegisterServerRegistry,
+} from "../core/server-registry.js";
 import { onGitMutation } from "../core/git-activity.js";
 import { createRepoStatusNotifier, isSameCheckout } from "./repo-status.js";
 import { remoteJobCapabilities, summarizeRemoteFallbackDetail } from "./pre-review-remote-gate.js";
@@ -1393,6 +1401,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // object, so its target resolution updates without a restart — and tells the
   // UI to refetch. Control-plane only: preview children and ephemeral test
   // servers do not own config reconciliation.
+  let runningServerRegistry: { port: number; host: string; startedAt: string } | null = null;
+
   const configWatcher = isControlPlane
     ? new ConfigWatcher({
         root: config.root,
@@ -1406,6 +1416,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             fresh.taskExtensions !== prev.taskExtensions
           ) {
             index.refreshAll();
+          }
+          if (
+            runningServerRegistry &&
+            shouldRegisterServerRegistry(fresh, { port: runningServerRegistry.port })
+          ) {
+            try {
+              refreshRunningServerProjectName(
+                runningServerRegistry.port,
+                fresh.root,
+              );
+            } catch (e) {
+              logServerRegistryError(logger, "refresh", e);
+            }
           }
           emitEvent({ type: "config.changed", at: new Date().toISOString() });
         },
@@ -3919,6 +3942,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // lockfile can't mask a process that already owns this port (#0284).
           const conflict = await reaper.detectConflict(port, host);
           if (conflict) throw new Error(conflict);
+          if (shouldRegisterServerRegistry(config, { port })) {
+            const registryConflict = checkServerRegistryPortConflict(port, config.root);
+            if (registryConflict) throw new Error(registryConflict);
+          }
           try {
             await bindOnce(false);
           } catch (error) {
@@ -3987,6 +4014,25 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // Register this serve process in the lockfile so port conflicts can be
       // detected on the next startup (0168).
       reaper.register(actualPort, host);
+      const serverStartedAt = new Date().toISOString();
+      if (shouldRegisterServerRegistry(config, { port: actualPort })) {
+        try {
+          registerRunningServer({
+            port: actualPort,
+            host: connectHost,
+            root: config.root,
+            version: readBuildMeta().version,
+            startedAt: serverStartedAt,
+          });
+          runningServerRegistry = {
+            port: actualPort,
+            host: connectHost,
+            startedAt: serverStartedAt,
+          };
+        } catch (e) {
+          logServerRegistryError(logger, "register", e);
+        }
+      }
       const handle: ServerHandle = {
         url,
         port: actualPort,
@@ -4063,6 +4109,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             }
           }
           clients.clear();
+          if (runningServerRegistry) {
+            try {
+              removeServerRegistryEntry(runningServerRegistry.port);
+            } catch (e) {
+              logServerRegistryError(logger, "unregister", e);
+            }
+            runningServerRegistry = null;
+          }
           reaper.unregister();
           await closeHttp();
           if (isControlPlane) {
