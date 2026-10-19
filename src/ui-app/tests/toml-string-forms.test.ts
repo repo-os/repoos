@@ -140,4 +140,67 @@ describe("multi-line string round-trip through the writer", () => {
     patchTomlConfig(tomlPath, { theme: "light" });
     expect(loadConfig(root).dev?.targets?.[0]?.command).toBe("PORT=3001 bun run dev");
   });
+
+  it("does not rewrite a key-shaped line inside a multi-line value", () => {
+    const { root, tomlPath } = repo(
+      [
+        "maxActiveTasks = 5",
+        "[[dev.targets]]",
+        'name = "web"',
+        'kind = "process"',
+        "command = '''",
+        "maxActiveTasks = 7",
+        "'''",
+        "",
+      ].join("\n"),
+    );
+    patchTomlConfig(tomlPath, { maxActiveTasks: 3 });
+    const config = loadConfig(root);
+    expect(config.maxActiveTasks).toBe(3);
+    expect(config.dev?.targets?.[0]?.command).toBe("maxActiveTasks = 7");
+  });
+
+  it("rewrites a row whose string contains a header-shaped line", () => {
+    const command = "[not.a.header]\nPORT=3001 bun run dev";
+    const { root, tomlPath } = repo(
+      [
+        "[[dev.targets]]",
+        'name = "web"',
+        'kind = "process"',
+        "command = '''",
+        "[not.a.header]",
+        "PORT=3001 bun run dev",
+        "'''",
+        "",
+      ].join("\n"),
+    );
+    patchTomlConfig(tomlPath, {
+      "dev.targets": [{ name: "web", kind: "process", command }],
+    });
+    const text = readFileSync(tomlPath, "utf8");
+    expect(loadConfig(root).dev?.targets?.[0]?.command).toBe(command);
+    expect(text).not.toContain("'''");
+    expect(text.match(/\[\[dev\.targets\]\]/g)).toHaveLength(1);
+  });
+
+  it("drops the whole multi-line row when the row is replaced", () => {
+    const { root, tomlPath } = repo(
+      [
+        "[[dev.targets]]",
+        'name = "web"',
+        'kind = "process"',
+        "command = '''",
+        "[not.a.header]",
+        "'''",
+        "",
+      ].join("\n"),
+    );
+    patchTomlConfig(tomlPath, {
+      "dev.targets": [{ name: "worker", kind: "process", command: "bun run worker" }],
+    });
+    const text = readFileSync(tomlPath, "utf8");
+    expect(loadConfig(root).dev?.targets?.map((t) => t.name)).toEqual(["worker"]);
+    expect(text).not.toContain("[not.a.header]");
+    expect(text.match(/\[\[dev\.targets\]\]/g)).toHaveLength(1);
+  });
 });

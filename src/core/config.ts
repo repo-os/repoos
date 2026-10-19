@@ -63,7 +63,12 @@ import { ctoActionsSchemaDescription } from "./cto-actions.js";
 import { parseDevTargets } from "./dev-targets.js";
 import { parseTailscaleHosts } from "./remote-hosts.js";
 import { DEFAULT_STORAGE_PROVIDER_ID } from "./storage/registry.js";
-import { findTomlMultiLineClose, stripTomlComment, unquoteTomlString } from "./toml-line.js";
+import {
+  findTomlMultiLineClose,
+  stripTomlComment,
+  tomlContinuationLines,
+  unquoteTomlString,
+} from "./toml-line.js";
 
 // `parseDevTargets` (#0747) lives in the node-free `core/dev-targets.ts` so the
 // browser bundle can validate a target through the SAME function the server
@@ -3607,14 +3612,17 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
     let insertAt = -1;
     let section = "";
     let i = 0;
+    // A line inside a `'''`/`"""` string is content: a `[section]`-looking line
+    // there must not end the block early (#0842).
+    const scan = tomlContinuationLines(result);
     while (i < result.length) {
-      const stripped = stripTomlComment(result[i]).trim();
+      const stripped = scan[i] ? "" : stripTomlComment(result[i]!).trim();
       const blockHeader = stripped.match(/^\[\[([^\]]+)\]\]$/);
       if (blockHeader && blockHeader[1].trim() === key) {
         if (insertAt === -1) insertAt = withoutBlocks.length;
         i++;
         while (i < result.length) {
-          const s = stripTomlComment(result[i]).trim();
+          const s = scan[i] ? "" : stripTomlComment(result[i]!).trim();
           if (s.startsWith("[")) break;
           i++;
         }
@@ -3623,7 +3631,7 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
       const header = blockHeader ?? stripped.match(/^\[([^\]]+)\]$/);
       if (header) {
         section = header[1]!.trim();
-        withoutBlocks.push(result[i]);
+        withoutBlocks.push(result[i]!);
         i++;
         continue;
       }
@@ -3634,10 +3642,11 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
       const kv = stripped.match(/^([A-Za-z0-9_.-]+)\s*=\s*/);
       const full = kv ? (section ? `${section}.${kv[1]}` : kv[1]!) : null;
       if (full === key) {
-        i++; // drop the stray flat line for this key
+        i++; // drop the stray flat line for this key…
+        while (i < result.length && scan[i]) i++; // …and its multi-line value
         continue;
       }
-      withoutBlocks.push(result[i]);
+      withoutBlocks.push(result[i]!);
       i++;
     }
     if (insertAt === -1) {
@@ -3676,8 +3685,9 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
     }
     // Find the end of the [board.columns] section (next section header or EOF).
     let sectionEnd = result.length;
+    const sectionScan = tomlContinuationLines(result);
     for (let i = sectionIdx + 1; i < result.length; i++) {
-      const s = stripTomlComment(result[i]).trim();
+      const s = sectionScan[i] ? "" : stripTomlComment(result[i]!).trim();
       if (s.startsWith("[") && s !== sectionHeader) {
         sectionEnd = i;
         break;
@@ -3687,9 +3697,11 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
     for (const [key, rawVal] of boardColKeys) {
       const shortKey = key.slice("board.columns.".length);
       const serialized = serializeTomlVal(rawVal);
+      const scan = tomlContinuationLines(result);
       let found = false;
       for (let i = sectionIdx; i < sectionEnd; i++) {
-        const stripped = stripTomlComment(result[i]).trim();
+        if (scan[i]) continue;
+        const stripped = stripTomlComment(result[i]!).trim();
         const kv = stripped.match(/^([A-Za-z0-9_-]+)\s*=\s*/);
         if (kv && kv[1] === shortKey) {
           result[i] = `  ${shortKey} = ${serialized}`;
@@ -3725,9 +3737,12 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
     const leaf = dot === -1 ? key : key.slice(dot + 1);
 
     // Every existing line that resolves to this key, with the scope it sat in.
+    // Continuation lines of a multi-line string are content, never assignments.
     const matches: Array<{ line: number; inSection: boolean }> = [];
+    const scan = tomlContinuationLines(result);
     let section = "";
     for (let i = 0; i < result.length; i++) {
+      if (scan[i]) continue;
       const stripped = stripTomlComment(result[i]).trim();
       const header = stripped.match(/^\[\[([^\]]+)\]\]/) ?? stripped.match(/^\[([^\]]+)\]/);
       if (header) {
@@ -3745,10 +3760,24 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
       // Rewrite the first match in place — leaf name inside its section, full
       // dotted name at root — and drop any duplicates: two lines resolving to
       // one key is exactly how the old bug hid itself (the later line won).
+      // A multi-line value's continuation lines are replaced with it, so no
+      // orphaned string content is left behind.
       const first = matches[0]!;
       const indent = result[first.line].match(/^\s*/)?.[0] || "";
-      result[first.line] = `${indent}${first.inSection ? leaf : key} = ${serialized}`;
-      for (let m = matches.length - 1; m >= 1; m--) result.splice(matches[m]!.line, 1);
+      let firstEnd = first.line + 1;
+      while (firstEnd < result.length && scan[firstEnd]) firstEnd++;
+      const removed = firstEnd - first.line - 1;
+      result.splice(
+        first.line,
+        firstEnd - first.line,
+        `${indent}${first.inSection ? leaf : key} = ${serialized}`,
+      );
+      for (let m = matches.length - 1; m >= 1; m--) {
+        const line = matches[m]!.line;
+        let end = line + 1;
+        while (end < result.length && scan[end]) end++;
+        result.splice(line - removed, end - line);
+      }
       modified = true;
       continue;
     }
@@ -3759,13 +3788,14 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
     // only safe when no `[section]`/`[[array]]` follows, so a root key must
     // land before the first header to stay unambiguous).
     if (sectionPath) {
+      const headerScan = tomlContinuationLines(result);
       const headerIndex = result.findIndex(
-        (l) => stripTomlComment(l).trim() === `[${sectionPath}]`,
+        (l, i) => !headerScan[i] && stripTomlComment(l).trim() === `[${sectionPath}]`,
       );
       if (headerIndex !== -1) {
         let end = result.length;
         for (let i = headerIndex + 1; i < result.length; i++) {
-          if (stripTomlComment(result[i]).trim().startsWith("[")) {
+          if (!headerScan[i] && stripTomlComment(result[i]).trim().startsWith("[")) {
             end = i;
             break;
           }
@@ -3783,7 +3813,10 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
         continue;
       }
     }
-    const firstHeaderIndex = result.findIndex((l) => stripTomlComment(l).trim().startsWith("["));
+    const rootScan = tomlContinuationLines(result);
+    const firstHeaderIndex = result.findIndex(
+      (l, i) => !rootScan[i] && stripTomlComment(l).trim().startsWith("["),
+    );
     if (firstHeaderIndex === -1) {
       result.push(`${key} = ${serialized}`);
     } else {
