@@ -2,7 +2,7 @@
 id: "0850"
 title: "Allowlist: pause an agent or model without removing it (with optional resume date and reason)"
 type: feature
-status: active
+status: review
 priority: p1
 area: [core, server, web]
 assigned_to: ai
@@ -165,4 +165,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T19:04:09Z · needs_input
 - 2026-10-19T19:04:09Z · status active→review
 - 2026-10-19T19:04:09Z · note: handoff requested (cli)
-- 2026-10-19T19:10:51Z · note: shots: skipped — 10 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-19T19:10:51Z · status active→review
