@@ -1,11 +1,25 @@
 {
-  // Pure static site — no Worker script, just asset serving. `wrangler deploy`
-  // needs this file to know what to upload; without it, Cloudflare's
-  // git-connected "Create and deploy" flow has nothing to deploy.
   "name": "repoos-landing",
+  "main": "worker.ts",
   "compatibility_date": "2026-01-01",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "404-page"
-  }
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*"]
+  },
+  // Both limiters are required. Missing bindings fail closed without sending mail.
+  // Namespace IDs are account-wide; reserve these for landing enquiries.
+  "ratelimits": [
+    {
+      "name": "ENQUIRY_RATE_LIMITER",
+      "namespace_id": "84901",
+      "simple": { "limit": 5, "period": 60 }
+    },
+    {
+      "name": "ENQUIRY_GLOBAL_LIMITER",
+      "namespace_id": "84902",
+      "simple": { "limit": 30, "period": 60 }
+    }
+  ]
 }
