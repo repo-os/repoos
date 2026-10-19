@@ -14,7 +14,7 @@ model_override: default
 review_cli_override: pi
 review_model_override: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
 created_at: "2026-10-19T07:50:02Z"
-updated_at: "2026-10-19T16:01:17Z"
+updated_at: "2026-10-19T16:19:54Z"
 last_close_out_gate_ms: 344353
 last_close_out_gate_at: "2026-10-19T16:00:42.308Z"
 review_passes: 1
@@ -167,3 +167,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T15:49:35Z · note: review pass 1: good to go
 - 2026-10-19T16:00:42Z · close-out gate completed in 344s
 - 2026-10-19T16:01:17Z · status review→done, release:success
+- 2026-10-19T16:19:54Z · message_overdue: still queued after 60m without being delivered
