@@ -113,6 +113,7 @@ final class HubAppAppearanceTests: XCTestCase {
 
         XCTAssertEqual(window.titleVisibility, .hidden)
         XCTAssertTrue(window.titlebarAppearsTransparent)
+        XCTAssertEqual(window.titlebarSeparatorStyle, .none)
         XCTAssertTrue(window.styleMask.contains(.fullSizeContentView))
         XCTAssertTrue(window.styleMask.contains(.titled))
         XCTAssertTrue(window.styleMask.contains(.closable))
@@ -141,7 +142,12 @@ final class HubAppAppearanceTests: XCTestCase {
     /// Rounded on the trailing edge only, so the tab sits flush against the
     /// window's left edge.
     func testSidebarRevealTabShapeIsSquareOnLeadingEdge() {
-        let rect = CGRect(x: 0, y: 0, width: HubSidebarRevealTabMetrics.width, height: HubSidebarRevealTabMetrics.height)
+        let rect = CGRect(
+            x: 0,
+            y: 0,
+            width: HubSidebarRevealTabMetrics.width,
+            height: HubSidebarRevealTabMetrics.height
+        )
         let path = HubSidebarRevealTabShape(cornerRadius: HubSidebarRevealTabMetrics.cornerRadius)
             .path(in: rect)
 
