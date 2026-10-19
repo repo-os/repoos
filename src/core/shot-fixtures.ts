@@ -84,6 +84,7 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "panel:freeformFailedScreenshot",
   // #0841 — Agents scheduled tab with the New schedule drawer open.
   "schedule:newPanel",
+  "reminders:due",
 ] as const;
 
 export type ShotPreviewFixtureId = (typeof SHOT_PREVIEW_FIXTURE_IDS)[number];

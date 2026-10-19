@@ -1,0 +1,19 @@
+$ node scripts/run-tests.mjs src/ui-app/tests/reminders.test.ts src/ui-app/tests/reminders-panel.test.ts
+
+ RUN  v4.1.10 /Users/nick/code/nick/repoos-worktrees/feat/agents-page-reminders-tab-remind-me-when/src/ui-app
+
+
+ Test Files  2 passed (2)
+      Tests  7 passed (7)
+   Start at  21:32:03
+   Duration  1.30s (transform 856ms, setup 14ms, import 1.35s, tests 235ms, environment 626ms)
+
+
+ RUN  v4.1.10 /Users/nick/code/nick/repoos-worktrees/feat/agents-page-reminders-tab-remind-me-when/src/ui-app
+
+
+ Test Files  3 passed (3)
+      Tests  9 passed (9)
+   Start at  21:32:05
+   Duration  7.04s (transform 1.52s, setup 24ms, import 1.93s, tests 4.05s, environment 790ms)
+
