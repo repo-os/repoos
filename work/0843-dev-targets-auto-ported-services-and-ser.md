@@ -13,7 +13,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T17:27:55Z"
+updated_at: "2026-10-19T17:29:03Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -119,3 +119,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T17:21:37Z · note: Bugs src/server/dev.ts:953-978 — stop() does not cancel an in-flight doStart(). If Stop arrives while the first service port is being reserved, there is no target or service process to kill; startup then continues and launches the stack after Stop returned. src/server/dev.ts:744-756 — When the target process crashes, its exit handler marks the target failed but leaves its companion services running. The service can keep consuming resources and holding its port until a later Stop/restart or server shutdown. src/server/dev.ts:520-525 — Distinct service names can normalize to the same placeholder token (for example, api-v1 and api_v1). The implementation silently adds order-dependent suffixes, so the documented {<name>.port} reference can resolve to the wrong service or require an undocumented token.
 - 2026-10-19T17:27:04Z · body
 - 2026-10-19T17:27:55Z · body
+- 2026-10-19T17:29:03Z · body
