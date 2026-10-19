@@ -13,7 +13,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-10-19T18:37:16Z"
+updated_at: "2026-10-19T18:46:25Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 3
@@ -116,3 +116,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T18:29:53Z · needs_input (review-rounds-exhausted) dismissed by hello@repoos.org
 - 2026-10-19T18:32:50Z · body
 - 2026-10-19T18:37:16Z · body
+- 2026-10-19T18:46:25Z · message_queued at 2026-10-19T18:46:25.194Z
