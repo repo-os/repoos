@@ -88,9 +88,24 @@ struct RepoOSHealthChecker: HealthChecking {
     static let defaultTimeout: TimeInterval = 10
 
     var timeout: TimeInterval
+    /// When set, probes reuse this session (for example local discovery with bounded concurrency).
+    var urlSession: URLSession?
 
-    init(timeout: TimeInterval = defaultTimeout) {
+    init(timeout: TimeInterval = defaultTimeout, urlSession: URLSession? = nil) {
         self.timeout = timeout
+        self.urlSession = urlSession
+    }
+
+    /// One shared ephemeral session for localhost discovery probes.
+    /// Loopback `/api/health` does not redirect; per-origin `HealthCheckRedirectGuard` is only used
+    /// for one-off checks that create their own session.
+    static func makeSharedDiscoverySession(timeout: TimeInterval) -> URLSession {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = timeout
+        config.timeoutIntervalForResource = timeout
+        config.waitsForConnectivity = false
+        config.httpMaximumConnectionsPerHost = 8
+        return URLSession(configuration: config)
     }
 
     func checkHealth(origin: URL) async -> HealthCheckOutcome {
@@ -99,16 +114,30 @@ struct RepoOSHealthChecker: HealthChecking {
         guard let healthURL = components.url else {
             return .failure(.network("Invalid origin URL."))
         }
-        let redirectGuard = HealthCheckRedirectGuard(expectedOrigin: origin)
-        let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = timeout
-        config.timeoutIntervalForResource = timeout
-        config.waitsForConnectivity = false
-        let session = URLSession(configuration: config, delegate: redirectGuard, delegateQueue: nil)
+        let ownedSession: URLSession?
+        let session: URLSession
+        if let urlSession {
+            session = urlSession
+            ownedSession = nil
+        } else {
+            let redirectGuard = HealthCheckRedirectGuard(expectedOrigin: origin)
+            let config = URLSessionConfiguration.ephemeral
+            config.timeoutIntervalForRequest = timeout
+            config.timeoutIntervalForResource = timeout
+            config.waitsForConnectivity = false
+            let created = URLSession(configuration: config, delegate: redirectGuard, delegateQueue: nil)
+            session = created
+            ownedSession = created
+        }
 
         var request = URLRequest(url: healthURL)
         request.httpMethod = "GET"
         request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.timeoutInterval = timeout
+
+        defer {
+            ownedSession?.finishTasksAndInvalidate()
+        }
 
         do {
             let (data, response) = try await session.data(for: request)
