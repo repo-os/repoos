@@ -55,17 +55,17 @@ describe("reapStaleFixtures", () => {
 
   it("reaps a per-file tmpdir tree and kills the fixtures' spawned processes (#0858)", async () => {
     const runRoot = join(tmpdir(), `${PREFIX}RunRoot`);
-    const inner = join(runRoot, `${PREFIX}Fixture`);
-    mkdirSync(inner, { recursive: true });
+    const fileRoot = join(runRoot, "file-ABC123");
+    const fixture = join(fileRoot, `${PREFIX}Fixture`);
+    mkdirSync(fixture, { recursive: true });
     made.push(runRoot);
     const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], {
       stdio: "ignore",
     });
     const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
     try {
-      writeFileSync(join(inner, "spawns.log"), `${JSON.stringify({ pid: child.pid })}\n`);
-      // The run root is one level up from the fixture, exactly the shape a
-      // killed vitest worker leaves behind.
+      writeFileSync(join(fixture, "spawns.log"), `${JSON.stringify({ pid: child.pid })}\n`);
+      // Match production: runRoot/file-XXXXXX/repoos-XXXXXX/spawns.log.
       const old = new Date(Date.now() - STALE_FIXTURE_AGE_MS - 60_000);
       utimesSync(runRoot, old, old);
 

@@ -117,9 +117,8 @@ export default defineConfig({
     setupFiles: [
       "./tests/setup/web-storage.ts",
       "./tests/setup/check-env.ts",
-      // Isolate each file inside the global run root. This keeps fixture scans
-      // small while globalSetup's inherited TMPDIR also contains subprocesses
-      // whose runtime cached the temp path before this setup file ran.
+      // Isolate each test file under the run root that globalSetup exposes to
+      // workers. The setup file applies the per-file temp path before tests run.
       "./tests/setup/tmp-isolation.ts",
     ],
     // Runs once before the whole test run starts (not per test file) —

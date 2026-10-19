@@ -90,6 +90,21 @@ function killSpawnedFromLog(path: string): void {
   }
 }
 
+/** Find spawn logs a few levels below a stale root without following symlinks. */
+function killSpawnedLogs(root: string, remainingDepth = 4): void {
+  killSpawnedFromLog(join(root, "spawns.log"));
+  if (remainingDepth === 0) return;
+  try {
+    for (const entry of readdirSync(root, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        killSpawnedLogs(join(root, entry.name), remainingDepth - 1);
+      }
+    }
+  } catch {
+    /* unreadable — the rm below still removes it */
+  }
+}
+
 export function reapStaleFixtures(prefix: string): number {
   let entries: string[];
   try {
@@ -118,17 +133,9 @@ export function reapStaleFixtures(prefix: string): number {
     }
     if (mtimeMs >= cutoff) continue;
     if (!isWorktreesSibling) {
-      killSpawnedFromLog(join(root, "spawns.log"));
-      // Fixtures usually sit directly under `tmpdir()`, but a per-test-file
-      // tmpdir (#0858) nests them one level down. Scan that level too so a
-      // crashed worker's fake agents are still reaped along with the tree.
-      try {
-        for (const entry of readdirSync(root, { withFileTypes: true })) {
-          if (entry.isDirectory()) killSpawnedFromLog(join(root, entry.name, "spawns.log"));
-        }
-      } catch {
-        /* unreadable — the rm below still removes it */
-      }
+      // Scan a few levels because test fixtures can be nested under a
+      // per-file temp dir (runRoot/file-*/repoos-*/spawns.log).
+      killSpawnedLogs(root);
     }
     rmSync(root, { recursive: true, force: true });
     removed++;

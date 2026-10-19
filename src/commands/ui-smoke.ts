@@ -104,8 +104,11 @@ async function runUISmokeTest(): Promise<void> {
     });
     context = await browser.newContext({ serviceWorkers: "block" });
   } catch (err) {
-    await server.close();
-    rmSync(fixture, { recursive: true, force: true });
+    try {
+      await server.close();
+    } finally {
+      rmSync(fixture, { recursive: true, force: true });
+    }
     throw err;
   }
   try {
@@ -460,14 +463,15 @@ async function runUISmokeTest(): Promise<void> {
       throw new Error("Page errors (" + pageErrors.length + "): " + pageErrors.join("; "));
     }
   } finally {
-    if (context) await context.close();
-    if (browser) await browser.close();
-    // Await the server teardown BEFORE deleting its root: close() stops dev
-    // targets and previews asynchronously, and their state persist would
-    // recreate `.repoos/` under a root we already deleted — the fixture dir
-    // then survives every check run (#0858).
-    await server.close();
-    rmSync(fixture, { recursive: true, force: true });
+    try {
+      if (context) await context.close();
+      if (browser) await browser.close();
+      // Await teardown BEFORE deleting its root: async state persistence can
+      // recreate `.repoos/` underneath it. See #0858.
+      await server.close();
+    } finally {
+      rmSync(fixture, { recursive: true, force: true });
+    }
   }
 }
 
