@@ -3,16 +3,13 @@ id: "0850"
 title: "Allowlist: pause an agent or model without removing it (with optional resume date and reason)"
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p1
 area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T12:22:52Z"
+updated_at: "2026-10-19T12:22:55Z"
 ---
 ## Problem
 Cursor ran out of credit on 2026-10-19 and will not be usable again for about three days. Today the only ways to stop RepoOS using it are to delete its row from `[[budget.allowlist]]` (losing the entry and the config) or to hand-edit overrides on every task. Starts, auto-dispatch, the CTO's restart/failover and the agent drivers keep trying `cursor`/`composer-2.5`, fail, and loop (tasks bounce between engineer restarts and connection errors). Providers and agents will come and go like this regularly (credits, rate limits, outages).
@@ -42,3 +39,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T12:22:44Z · created · njachowski@gmail.com
 - 2026-10-19T12:22:45Z · needs_input
 - 2026-10-19T12:22:52Z · body: Acceptance criteria (added 2, removed 2)
+- 2026-10-19T12:22:55Z · needs_input
