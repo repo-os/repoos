@@ -113,5 +113,10 @@ export async function relaunchEngineerOnActiveTask(
   }
 
   index.refreshBranches();
-  return { ok: true, pid: spawnRes.pid, queued: spawnRes.queued, pauseNote: pauseNote ?? undefined };
+  return {
+    ok: true,
+    pid: spawnRes.pid,
+    queued: spawnRes.queued,
+    pauseNote: pauseNote ?? undefined,
+  };
 }
