@@ -1092,6 +1092,25 @@ export class DevTargetManager {
         }
         if (isAlivePid(state.pid)) void this.killPid(state.pid, process.platform !== "win32");
       }
+      // A target that was not re-adopted is gone: the reap above killed its
+      // live companions (or they died with it), so their rows must not keep
+      // claiming "running" under a stopped target. Only a reload needs this —
+      // a cold boot clears the seeded states wholesale below. (#0843 review
+      // round 3: the reap alone left a phantom "running" sub-row on the page.)
+      for (const state of Object.values(payload.targets)) {
+        if (this.adopted.has(state.name)) continue;
+        const seeded = this.states.get(state.name);
+        if (!seeded?.services?.some((s) => s.status === "running" || s.status === "starting"))
+          continue;
+        this.setServiceStates(
+          state.name,
+          seeded.services.map((s) =>
+            s.status === "running" || s.status === "starting"
+              ? { ...s, status: "stopped" as const, error: undefined }
+              : s,
+          ),
+        );
+      }
     }
     if (!isReload) this.states.clear();
     try {

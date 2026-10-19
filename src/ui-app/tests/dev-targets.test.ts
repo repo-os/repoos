@@ -1886,6 +1886,13 @@ describe("DevTargetManager with services (#0843)", () => {
       reaper.cleanupOrphans(/* isReload */ true);
       // The companion process did not outlive its dead target.
       expect(await waitForDead(svcPid)).toBe(true);
+      // Its row no longer claims "running" under the dead target — the reap
+      // settles the state, not just the process (#0843 review round 3). The
+      // target itself reads "failed" (the live first manager watched it die)
+      // or "stopped" (the exit event had not landed yet); never "running".
+      const reapView = reaper.get("app");
+      expect(reapView?.status).not.toBe("running");
+      expect(reapView?.services?.[0].status).toBe("stopped");
       await reaper.stopAll();
     } finally {
       await mgrA.stopAll();
