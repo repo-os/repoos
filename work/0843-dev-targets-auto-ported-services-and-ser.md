@@ -2,7 +2,10 @@
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ Server finalization stopped at check: remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate. The task stays active — fix the failure and ask again."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -12,11 +15,12 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T13:26:23Z"
+updated_at: "2026-10-19T13:30:05Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: e48e99aa611ca1d23454e19fcf0927b651121671
 review_rounds: 2
 review_passes: 2
+dev_error_count: 1
 ---
 ## Problem
 `[[dev.targets]]` supports a single `{port}` for one process, so a full-stack dev target (an API plus a frontend that proxies to it) must pin the API to a fixed port. In the lightingai project the Bun API is pinned to 3001 because the Vite proxy needs to know it, so two copies of the stack, or anything else on 3001, collide. `[[preview.targets]]` already solves this with `[[preview.services]]` and `{api.port}` (#0681), but dev targets have no equivalent. Suggested by the owner (2026-10-19): frontends can already be dynamic, the API should be able to be too.
@@ -103,3 +107,5 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T13:17:59Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate
 - 2026-10-19T13:24:54Z · body
 - 2026-10-19T13:26:23Z · body
+- 2026-10-19T13:30:05Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate. The task stays active — fix the failure and ask again.
+- 2026-10-19T13:30:05Z · status active→review
