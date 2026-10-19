@@ -76,3 +76,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T17:39:38Z · body
 - 2026-10-19T17:47:22Z · status active→review
 - 2026-10-19T17:47:22Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (aacc30d9d) during finalization (#0734)
+- 2026-10-19T17:47:22Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (aacc30d9d) during finalization (#0734)
