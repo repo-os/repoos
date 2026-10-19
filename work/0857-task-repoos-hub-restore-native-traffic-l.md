@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-19T19:05:50Z"
-review_passes: 1
 id: "0857"
 title: Restore native macOS window controls
 type: feature
@@ -13,6 +11,7 @@ branch: feat/restore-native-macos-window-controls
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T17:58:19Z"
+updated_at: "2026-10-19T19:02:02Z"
 ---
 ## Problem
 
@@ -83,12 +82,6 @@ Requirements:
 Acceptance criteria: Both changes are implemented without restoring the native titlebar, without introducing additional vertical whitespace, and without changing the embedded RepoOS web application.
 My overall assessment: The new expanded sidebar already looks substantially cleaner than the original. Once the traffic lights are restored and the collapsed toggle is refined, I think you'll have a genuinely polished native macOS shell for RepoOS.
 
-## Screenshots
-
-![Expanded sidebar: restored native close/minimize/fullscreen buttons in the standard upper-left position, with no visible titlebar or toolbar row and the full-height sidebar/content layout preserved.](/api/tasks/0857/attachments/att_444e6ffd-2629-4275-8e11-de3217336d5e.png)
-![Collapsed sidebar: the 24 px edge-attached chevron.right tab sits flush against the window's left edge below the traffic lights; native window buttons stay visible and unobstructed.](/api/tasks/0857/attachments/att_08981abc-06f2-4187-9e8d-cf0ff5a5153c.png)
-![Collapsed tab hover state: a subtle translucent fill appears under the chevron on hover.](/api/tasks/0857/attachments/att_5d62a589-a42f-4cca-a4a5-380502743b04.png)
-
 ## Activity
 
 - 2026-10-19T17:58:19Z · created · hello@repoos.org
@@ -97,14 +90,4 @@ My overall assessment: The new expanded sidebar already looks substantially clea
 - 2026-10-19T18:00:29Z · model_override
 - 2026-10-19T18:00:31Z · status inbox→ready
 - 2026-10-19T18:00:34Z · status ready→active, branch
-- 2026-10-19T18:07:54Z · message_queued at 2026-10-19T18:07:54.611Z
-- 2026-10-19T18:07:54Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-19T18:42:53Z · body
-- 2026-10-19T18:51:51Z · screenshots
-- 2026-10-19T18:52:21Z · screenshots
-- 2026-10-19T18:52:48Z · screenshots
-- 2026-10-19T18:53:45Z · body
 - 2026-10-19T19:02:02Z · status active→review
-- 2026-10-19T19:02:02Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-19T19:05:49Z · note: review pass 1: good to go
-
