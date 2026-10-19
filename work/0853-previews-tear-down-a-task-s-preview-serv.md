@@ -2,16 +2,16 @@
 id: "0853"
 title: "Previews: tear down a task's preview server when it leaves active/review, and enforce one preview at a time"
 type: bug
-status: ready
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/previews-tear-down-a-task-s-preview-serv
 review_cli_override: pi
 review_model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-10-19T14:24:17Z"
-updated_at: "2026-10-19T15:05:21Z"
+updated_at: "2026-10-19T15:05:25Z"
 ---
 ## Problem
 docs/previews.md and AGENTS.md say a task preview is reaped when the task leaves active/review, and that only ONE preview runs at a time (a new request evicts the old). Observed 2026-10-19 on the control-plane machine: the preview server for #0664 (`repoos serve --port 59122` from its worktree, started by `bun run build && bun dist/cli/index.js serve ...`) was still running **21 hours** after #0664 landed and was marked done, while a second preview (#0851, port 54534) was already running, so the one-at-a-time cap was not enforced either. Every preview also runs a full `bun run build` (vue-tsc + vite) in the task worktree before serving, which is a heavy memory/CPU spike on an already loaded laptop.
@@ -37,3 +37,4 @@ Look at src/server/preview-manager (or the PreviewManager) and the task status t
 - 2026-10-19T15:05:13Z · review_cli_override, review_model_override
 - 2026-10-19T15:05:20Z · review_model_override
 - 2026-10-19T15:05:21Z · status inbox→ready
+- 2026-10-19T15:05:25Z · status ready→active, branch
