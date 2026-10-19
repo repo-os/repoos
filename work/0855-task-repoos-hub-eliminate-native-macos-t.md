@@ -15,7 +15,7 @@ pm_model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T15:35:14Z"
-updated_at: "2026-10-19T16:22:01Z"
+updated_at: "2026-10-19T16:27:57Z"
 ---
 ## Problem
 
@@ -297,6 +297,18 @@ A few refinements I'd suggest:
 One correction to the drawing: Your actual sidebar is relatively narrow, so don't interpret the mockup as a request to widen it. The objective is to recover vertical space without increasing sidebar width.
 I would also avoid making navigation controls too prominent. They should feel like subtle macOS utilities, not another navigation system competing with the RepoOS web UI.
 
+## Shots
+```json
+[
+{
+  "label": "Hub docs: new Window layout section and relocated Settings",
+  "target": "Docs site",
+  "route": "/macos-hub",
+  "highlight": "#window-layout"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-19T15:35:14Z · created · hello@repoos.org
@@ -310,3 +322,4 @@ I would also avoid making navigation controls too prominent. They should feel li
 - 2026-10-19T15:43:27Z · status ready→active, branch
 - 2026-10-19T16:14:34Z · body
 - 2026-10-19T16:22:01Z · body
+- 2026-10-19T16:27:57Z · body
