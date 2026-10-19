@@ -13,7 +13,7 @@ model_override: default
 review_cli_override: pi
 review_model_override: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
 created_at: "2026-10-19T07:50:02Z"
-updated_at: "2026-10-19T14:24:12Z"
+updated_at: "2026-10-19T14:30:06Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 198900f260fff3bc517084e2a76db31cad891aec
 ---
@@ -133,3 +133,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T14:14:58Z · body
 - 2026-10-19T14:16:53Z · body
 - 2026-10-19T14:24:12Z · handoff failed · remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate
+- 2026-10-19T14:30:06Z · CTO action: restart-stalled-agent (fresh) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
