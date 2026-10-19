@@ -13,7 +13,7 @@ model_override: default
 review_cli_override: pi
 review_model_override: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
 created_at: "2026-10-19T07:50:02Z"
-updated_at: "2026-10-19T13:42:06Z"
+updated_at: "2026-10-19T13:48:30Z"
 ---
 ## Items
 
@@ -111,3 +111,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T13:36:31Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-19T13:42:06Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-19T13:42:06Z · note: handoff requested (cli)
+- 2026-10-19T13:48:30Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate
