@@ -82,6 +82,10 @@ Requirements:
 Acceptance criteria: Both changes are implemented without restoring the native titlebar, without introducing additional vertical whitespace, and without changing the embedded RepoOS web application.
 My overall assessment: The new expanded sidebar already looks substantially cleaner than the original. Once the traffic lights are restored and the collapsed toggle is refined, I think you'll have a genuinely polished native macOS shell for RepoOS.
 
+## Screenshots
+
+![Expanded sidebar: restored native close/minimize/fullscreen buttons in the standard upper-left position, with no visible titlebar or toolbar row and the full-height sidebar/content layout preserved.](/api/tasks/0857/attachments/att_444e6ffd-2629-4275-8e11-de3217336d5e.png)
+
 ## Activity
 
 - 2026-10-19T17:58:19Z · created · hello@repoos.org
@@ -93,3 +97,4 @@ My overall assessment: The new expanded sidebar already looks substantially clea
 - 2026-10-19T18:07:54Z · message_queued at 2026-10-19T18:07:54.611Z
 - 2026-10-19T18:07:54Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-19T18:42:53Z · body
+- 2026-10-19T18:51:51Z · screenshots
