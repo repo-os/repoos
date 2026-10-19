@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-19T19:34:37Z"
-review_passes: 7
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
@@ -13,11 +11,13 @@ area: [core, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-auto-ported-services-and-ser
-cli_override: pi
-model_override: openrouter/deepseek/deepseek-v4.1-flash
+cli_override: codex
+model_override: default
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
+updated_at: "2026-10-19T19:46:59Z"
+review_passes: 7
 review_rounds: 2
 dev_error_count: 1
 ---
@@ -156,4 +156,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T19:34:36Z · note: review pass 8: needs some work
 - 2026-10-19T19:34:36Z · needs_input
 - 2026-10-19T19:34:36Z · needs_input
-
+- 2026-10-19T19:46:59Z · cli_override, model_override
