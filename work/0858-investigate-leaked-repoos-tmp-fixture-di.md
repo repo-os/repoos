@@ -75,3 +75,4 @@ Verification: a full pass now leaves 0 dirs in an isolated TMPDIR; a follow-up r
 - 2026-10-19T20:37:26Z · body
 - 2026-10-19T20:38:16Z · body
 - 2026-10-19T20:45:44Z · status active→review
+- 2026-10-19T20:45:44Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (becf875fb) during finalization (#0734)
