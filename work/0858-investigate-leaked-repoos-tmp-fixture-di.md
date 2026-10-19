@@ -2,14 +2,14 @@
 id: "0858"
 title: "Investigate leaked repoos-* tmp fixture dirs ([global-reap] warning)"
 type: feature
-status: active
+status: review
 priority: p3
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/investigate-leaked-repoos-tmp-fixture-di
 created_at: "2026-10-19T19:04:41Z"
-updated_at: "2026-10-19T19:18:50Z"
+updated_at: "2026-10-19T20:32:37Z"
 ---
 ## Problem
 During a full local `bun run test` bulk pass (2026-10-20, task #0843 session), the test harness printed:
@@ -34,3 +34,4 @@ Repro: run `bun run test` on a loaded machine; the warning prints after the bulk
 - 2026-10-19T19:04:41Z · created · njachowski@gmail.com
 - 2026-10-19T19:18:47Z · status inbox→ready
 - 2026-10-19T19:18:50Z · status ready→active, branch
+- 2026-10-19T20:32:37Z · status active→review
