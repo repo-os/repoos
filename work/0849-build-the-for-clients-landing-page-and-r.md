@@ -10,7 +10,7 @@ assigned_to: human
 created_by: njachowski@gmail.com
 branch: codex/0849-for-clients
 created_at: "2026-10-19T10:22:29Z"
-updated_at: "2026-10-19T11:51:12Z"
+updated_at: "2026-10-19T11:51:23Z"
 ---
 ## Problem
 The human approved the For Clients prototype and wants it implemented in the existing landing app. This interactive Codex session owns implementation; do not dispatch a built-in engineer.
@@ -98,3 +98,4 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 - 2026-10-19T11:44:29Z · note: handoff requested (cli)
 - 2026-10-19T11:51:12Z · status active→review
 - 2026-10-19T11:51:12Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-19T11:51:23Z · note: review pass 1: failed — no usable report
