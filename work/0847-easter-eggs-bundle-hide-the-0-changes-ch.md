@@ -2,18 +2,18 @@
 id: "0847"
 title: "Easter eggs bundle: hide the \"0 changes\" chip on task cards"
 type: chore
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/easter-eggs-bundle-hide-the-0-changes-ch
 cli_override: github copilot
 model_override: default
 review_cli_override: pi
 review_model_override: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
 created_at: "2026-10-19T07:50:02Z"
-updated_at: "2026-10-19T13:21:36Z"
+updated_at: "2026-10-19T13:21:37Z"
 ---
 ## Items
 
@@ -82,3 +82,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T13:19:57Z · cli_override, model_override
 - 2026-10-19T13:20:03Z · review_cli_override, review_model_override
 - 2026-10-19T13:21:36Z · review_model_override
+- 2026-10-19T13:21:37Z · status ready→active, branch
