@@ -11,7 +11,7 @@ branch: feat/restore-native-macos-window-controls
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T17:58:19Z"
-updated_at: "2026-10-19T18:52:20Z"
+updated_at: "2026-10-19T18:52:21Z"
 ---
 ## Problem
 
@@ -85,6 +85,7 @@ My overall assessment: The new expanded sidebar already looks substantially clea
 ## Screenshots
 
 ![Expanded sidebar: restored native close/minimize/fullscreen buttons in the standard upper-left position, with no visible titlebar or toolbar row and the full-height sidebar/content layout preserved.](/api/tasks/0857/attachments/att_444e6ffd-2629-4275-8e11-de3217336d5e.png)
+![Collapsed sidebar: the 24 px edge-attached chevron.right tab sits flush against the window's left edge below the traffic lights; native window buttons stay visible and unobstructed.](/api/tasks/0857/attachments/att_08981abc-06f2-4187-9e8d-cf0ff5a5153c.png)
 
 ## Activity
 
@@ -98,3 +99,4 @@ My overall assessment: The new expanded sidebar already looks substantially clea
 - 2026-10-19T18:07:54Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-19T18:42:53Z · body
 - 2026-10-19T18:51:51Z · screenshots
+- 2026-10-19T18:52:21Z · screenshots
