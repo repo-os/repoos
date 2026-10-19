@@ -3,9 +3,6 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — service readiness can accept a stale health file, and overlapping Start/Stop calls can leave the target running."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T18:55:31Z"
+updated_at: "2026-10-19T18:55:32Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 1
@@ -136,3 +133,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T18:48:44Z · body
 - 2026-10-19T18:53:01Z · status active→review
 - 2026-10-19T18:55:31Z · note: review pass 6: needs some work
+- 2026-10-19T18:55:32Z · needs_input
