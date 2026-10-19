@@ -2,14 +2,14 @@
 id: "0841"
 title: "Scheduled tasks: the New/Edit schedule panel is unusable; rebuild it on the standard side-panel shell"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-19T00:15:48Z"
-updated_at: "2026-10-19T00:15:51Z"
+updated_at: "2026-10-19T00:16:06Z"
 ---
 ## Problem
 The scheduled-tasks feature (#0093) cannot be used because the **New schedule / Edit schedule** panel on the Agents page is unusable (see the attached screenshot): every single-line field (Schedule name, Timezone, Local time) renders as a giant textarea-sized box, the content is cramped against the screen edge with no panel header, close button or standard width, and the "Next run preview" shows **"Could not preview"** with the default Weekly / Asia/Singapore / 09:00 values. A user cannot reasonably create a schedule.
@@ -44,3 +44,4 @@ Start from NewDocPanel.vue and NewStoryPanel.vue as the model; reuse their struc
 
 - 2026-10-19T00:15:48Z · created · njachowski@gmail.com
 - 2026-10-19T00:15:51Z · screenshots
+- 2026-10-19T00:16:06Z · status inbox→ready
