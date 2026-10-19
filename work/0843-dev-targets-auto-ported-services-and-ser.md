@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-19T12:41:58Z"
-review_passes: 2
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
@@ -14,6 +12,8 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
+updated_at: "2026-10-19T12:41:59Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -90,4 +90,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T12:39:41Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (5a6c6ddae) during finalization (#0734)
 - 2026-10-19T12:39:42Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (5a6c6ddae) during finalization (#0734)
 - 2026-10-19T12:41:58Z · note: review pass 3: needs some work
-
+- 2026-10-19T12:41:59Z · message_delivered: 1 message(s)
