@@ -1,5 +1,4 @@
 ---
-close_out_repair_count: 1
 id: "0664"
 title: Upload state + retry UX
 type: feature
@@ -14,7 +13,8 @@ branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-19T00:04:31Z"
+updated_at: "2026-10-19T00:07:13Z"
+close_out_repair_count: 1
 review_passes: 5
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-18T17:32:06.903Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
@@ -104,4 +104,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-19T00:04:30Z · note: close-out repair: merge-conflict
 - 2026-10-19T00:04:31Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-19T00:04:31Z · message_delivered: 1 message(s)
-
+- 2026-10-19T00:07:13Z · body
