@@ -13,7 +13,7 @@ branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-19T00:27:23Z"
+updated_at: "2026-10-19T00:27:24Z"
 close_out_repair_count: 1
 review_passes: 5
 review_rounds: 2
@@ -107,3 +107,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-19T00:13:05Z · watchdog: auto-surfaced stuck task · status active→ready · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-19T00:27:23Z · status ready→review
 - 2026-10-19T00:27:23Z · note: handoff requested (cli)
+- 2026-10-19T00:27:24Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
