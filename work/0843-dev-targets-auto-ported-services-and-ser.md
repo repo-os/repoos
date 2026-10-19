@@ -2,7 +2,7 @@
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T17:29:03Z"
+updated_at: "2026-10-19T17:37:42Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -120,3 +120,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T17:27:04Z · body
 - 2026-10-19T17:27:55Z · body
 - 2026-10-19T17:29:03Z · body
+- 2026-10-19T17:37:42Z · status active→review
