@@ -301,27 +301,27 @@ function readBareValue(sc: TomlScanner): void {
   if (!isBareValue(token)) sc.fail(`invalid value ${JSON.stringify(token)}`);
 }
 
-function readValue(sc: TomlScanner): void {
+function readValue(sc: TomlScanner): boolean {
   const ch = sc.peek();
   if (ch === '"') {
     if (sc.peek(1) === '"' && sc.peek(2) === '"') {
       readMultiLineBasicString(sc);
-      return;
+      return true;
     }
     readBasicString(sc);
-    return;
+    return false;
   }
   if (ch === "'") {
     if (sc.peek(1) === "'" && sc.peek(2) === "'") {
       readMultiLineLiteralString(sc);
-      return;
+      return true;
     }
     readLiteralString(sc);
-    return;
+    return false;
   }
   if (ch === "[") {
     readArray(sc);
-    return;
+    return false;
   }
   if (ch === "{") {
     sc.fail(
@@ -329,6 +329,7 @@ function readValue(sc: TomlScanner): void {
     );
   }
   readBareValue(sc);
+  return false;
 }
 
 function readTableHeader(sc: TomlScanner): void {
@@ -361,7 +362,12 @@ function readKeyValue(sc: TomlScanner): void {
   sc.advance();
   sc.skipInlineWhitespace();
   const startLine = sc.lineNumber;
-  readValue(sc);
+  const isMultiLineString = readValue(sc);
+  if (sc.lineNumber !== startLine && !isMultiLineString) {
+    sc.fail(
+      "multi-line values aren't supported by RepoOS's config reader — keep arrays on a single line",
+    );
+  }
   sc.finishStatement();
 }
 
