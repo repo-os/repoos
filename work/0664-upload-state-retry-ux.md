@@ -2,7 +2,7 @@
 id: "0664"
 title: Upload state + retry UX
 type: feature
-status: ready
+status: active
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -13,11 +13,11 @@ branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-19T00:27:24Z"
+updated_at: "2026-10-19T02:47:04Z"
+review_passes: 6
+last_check_failure: "repoos check at 2026-10-19T00:14:49.221Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 0b513be8 to a4e43a0b) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 close_out_repair_count: 1
-review_passes: 5
 review_rounds: 2
-last_check_failure: "repoos check at 2026-10-18T17:32:06.903Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 handoff_signal_retry_count: 1
 ---
 Slice 7: Uploading / retrying / failed states visible in UI. Attachment never shown as available before upload succeeds. Retry without re-deriving user input.
@@ -104,7 +104,9 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-19T00:04:30Z · note: close-out repair: merge-conflict
 - 2026-10-19T00:04:31Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-19T00:04:31Z · message_delivered: 1 message(s)
-- 2026-10-19T00:13:05Z · watchdog: auto-surfaced stuck task · status active→ready · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
-- 2026-10-19T00:27:23Z · status ready→review
-- 2026-10-19T00:27:23Z · note: handoff requested (cli)
-- 2026-10-19T00:27:24Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
+- 2026-10-19T00:07:13Z · body
+- 2026-10-19T00:15:42Z · body
+- 2026-10-19T00:27:23Z · status active→review
+- 2026-10-19T00:27:24Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Notes for AI
+- 2026-10-19T00:28:48Z · note: review pass 6: good to go
+- 2026-10-19T02:46:58Z · status review→active
