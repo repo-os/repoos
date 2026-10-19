@@ -726,6 +726,59 @@ comes down, not just the shell. A preview child is identified for orphan
 cleanup by its recorded resolved command; every preview is recorded in
 `<cacheDir>/previews.json` for crash recovery.
 
+### Teardown rules (#0853)
+
+A preview is only valid while its task is `active` or `review` and not
+archived. It is stopped, within a short grace period, by any of:
+
+- a status transition out of `active`/`review` (done, ready, paused-to-ready,
+  abandon) — the status-change hook stops it immediately;
+- archiving the task — the archive action stops the preview instead of
+  refusing;
+- the periodic safety sweep (30s) — covers a missed file-watcher event or a
+  preview that finished booting after its task had already left the previewable
+  states;
+- a manual Stop, or another preview taking the one slot.
+
+Tearing down sends SIGTERM to the recorded process group (the build shell and
+the server it launched), then SIGKILL after a 400ms grace period. It only ever
+signals PIDs and process groups RepoOS recorded when it spawned the preview —
+never a process matched by name or command line. The teardown is logged both on
+the server's stderr and on the task's log as:
+
+```
+preview for #0001 stopped (task done)
+```
+
+Evictions log `preview for #0001 stopped (evicted to keep concurrent previews
+at 1)` plus the `evicted` lifecycle line.
+
+### One preview at a time (#0198/#0853)
+
+`MAX_PREVIEWS` is 1. A new request evicts the previous holder — oldest first —
+before its own child spawns. The cap counts **starts still in flight**, not just
+registered previews: a preview is recorded immediately after spawn (with
+`starting: true`) and becomes usable only after readiness, so two concurrent
+starts for different tasks cannot both pass a registry-only check. Capacity
+decisions are serialized, and a stop/eviction during a long build cancels that
+start and kills the child instead of letting it register late.
+
+### Restart and reload adoption
+
+The registry is durable. On boot (including a reload handover wrapped by
+`REPOOS_RELOAD=1`) the replacement reads it and reconciles each entry against
+the current tasks:
+
+- a preview whose task is still `active`/`review` is **adopted** in place: it
+  keeps serving, stays stop/restart-able, and the cap/teardown rules keep
+  applying (there is no `ChildProcess` handle, so PID liveness is the truth);
+- a preview for a done, archived, or missing task is **stopped**;
+- if more than one survived, the oldest are stopped until the cap holds.
+
+On a reload the outgoing server therefore stops only starts that are still
+booting; it leaves registered previews running for the replacement to adopt. A
+real (cold) shutdown still tears everything down.
+
 **Windows:** `detached` stays `false` there (no portable process-group
 equivalent), so stopping a preview only signals the immediate `cmd.exe` child —
 a shell command with its own subprocess tree (`&&`-chained scripts, an `npm`
