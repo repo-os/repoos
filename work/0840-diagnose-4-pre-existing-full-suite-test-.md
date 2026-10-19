@@ -3,9 +3,6 @@ id: "0840"
 title: "Diagnose 4 pre-existing full-suite test failures (activity-indicator-motion ×3, agent-contract ×1)"
 type: bug
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX, Acceptance criteria, Notes for AI"
 paths: [src/ui-app/tests/activity-indicator-motion.test.ts, src/ui-app/tests/agent-contract.test.ts]
 priority: p3
 area: [web, core]
@@ -13,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T22:39:47Z"
-updated_at: "2026-10-19T02:46:26Z"
+updated_at: "2026-10-19T02:46:34Z"
 ---
 ## Problem
 `bun run test` (full suite) fails 4 tests on the work machine, reproducibly — twice in full-suite runs AND in isolation on an idle machine via `bun run test -- --failed-first <files>`:
@@ -59,3 +56,4 @@ Start from the Problem and Attribution sections above (the #0834 engineer alread
 - 2026-10-19T02:46:20Z · body: Desired UX (added)
 - 2026-10-19T02:46:23Z · body: Acceptance criteria (added)
 - 2026-10-19T02:46:26Z · body: Notes for AI (added)
+- 2026-10-19T02:46:34Z · needs_input
