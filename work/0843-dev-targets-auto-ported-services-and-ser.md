@@ -2,7 +2,7 @@
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — service readiness can accept a stale health file, and overlapping Start/Stop calls can leave the target running."
@@ -16,7 +16,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T18:48:44Z"
+updated_at: "2026-10-19T18:53:01Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 1
@@ -56,11 +56,11 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 ```json
 [
 {
-  "label": "Dev target running with its auto-ported api service sub-row",
-  "target": "default",
-  "route": "/dev",
-  "highlight": "[data-test-id=\"dev-services\"] .dev-service",
-  "state": "dev:running"
+"label": "Dev target running with its auto-ported api service sub-row",
+"target": "default",
+"route": "/dev",
+"highlight": "[data-test-id=\"dev-services\"] .dev-service",
+"state": "dev:running"
 }
 ]
 ```
@@ -134,3 +134,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T18:40:07Z · body
 - 2026-10-19T18:41:00Z · body
 - 2026-10-19T18:48:44Z · body
+- 2026-10-19T18:53:01Z · status active→review
