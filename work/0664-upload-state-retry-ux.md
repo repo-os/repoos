@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-19T02:58:25Z"
-review_passes: 7
 id: "0664"
 title: Upload state + retry UX
 type: feature
-status: review
+status: ready
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -15,6 +13,8 @@ branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
+updated_at: "2026-10-19T03:12:05Z"
+review_passes: 6
 last_check_failure: "repoos check at 2026-10-19T00:14:49.221Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 0b513be8 to a4e43a0b) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 close_out_repair_count: 1
 review_rounds: 2
@@ -110,8 +110,7 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-19T00:27:24Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Notes for AI
 - 2026-10-19T00:28:48Z · note: review pass 6: good to go
 - 2026-10-19T02:46:58Z · status review→active
-- 2026-10-19T02:49:21Z · body
-- 2026-10-19T02:57:11Z · status active→review
-- 2026-10-19T02:57:11Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Notes for AI
-- 2026-10-19T02:58:24Z · note: review pass 7: good to go
-
+- 2026-10-19T02:57:10Z · status active→review
+- 2026-10-19T02:57:10Z · note: handoff requested (cli)
+- 2026-10-19T02:57:18Z · handoff failed · task-file handoff failed at commit · task #0664 has no registered worktree for branch feat/upload-state-retry-ux
+- 2026-10-19T03:12:05Z · watchdog: auto-surfaced stuck task · status active→ready · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
