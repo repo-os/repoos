@@ -39,3 +39,4 @@ Look at src/server/preview-manager (or the PreviewManager) and the task status t
 - 2026-10-19T15:05:21Z · status inbox→ready
 - 2026-10-19T15:05:25Z · status ready→active, branch
 - 2026-10-19T15:11:10Z · message_queued at 2026-10-19T15:11:10.211Z
+- 2026-10-19T15:11:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
