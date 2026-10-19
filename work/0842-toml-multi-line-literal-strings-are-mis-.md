@@ -11,7 +11,7 @@ branch: feat/toml-multi-line-literal-strings-are-mis-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-10-19T17:33:36Z"
+updated_at: "2026-10-19T18:01:54Z"
 ---
 ## Problem
 `repoos.toml` values written as TOML multi-line literal strings (`'''...'''`) are mis-parsed: the stored value keeps literal leading and trailing `''`. Seen on the Dev page for a `[[dev.targets]]` command: `''bun install --frozen-lockfile && ... ''`. It only runs because a shell happens to ignore empty `''`; a command starting with an env assignment (`PORT=3001 bun ...`) failed with `/bin/sh: PORT=3001: command not found`. `'''` and `"""` are valid TOML, so the reader is non-conformant. Found while setting up dev targets for the lightingai project (2026-10-19).
@@ -37,3 +37,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T11:38:15Z · model_override
 - 2026-10-19T11:38:20Z · status ready→active, branch
 - 2026-10-19T17:33:36Z · status active→review
+- 2026-10-19T18:01:54Z · note: review pass 1: failed — no usable report
