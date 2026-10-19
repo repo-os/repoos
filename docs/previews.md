@@ -731,8 +731,8 @@ cleanup by its recorded resolved command; every preview is recorded in
 A preview is only valid while its task is `active` or `review` and not
 archived. It is stopped, within a short grace period, by any of:
 
-- a status transition out of `active`/`review` (done, ready, paused-to-ready,
-  abandon) — the status-change hook stops it immediately;
+- a status transition out of `active`/`review` (done, ready, abandon) — the
+  status-change hook stops it immediately;
 - archiving the task — the archive action stops the preview instead of
   refusing;
 - the periodic safety sweep (30s) — covers a missed file-watcher event or a
