@@ -16,7 +16,7 @@ model_override: openrouter/openrouter/free
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-10-19T12:41:55Z"
+updated_at: "2026-10-19T12:50:44Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -50,3 +50,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T12:29:37Z · body
 - 2026-10-19T12:40:06Z · body
 - 2026-10-19T12:41:55Z · body
+- 2026-10-19T12:50:44Z · handoff failed · remote validation failed: test failure: tests/cli-control-api.test.ts > control API CLI > re-authenticates on 401 via dev backdoor without printing the code, tests/config-docs.test.ts > repoos.toml and environment docs > has an annotated starter repoos.toml that the real parser accepts, tests/toml-line.test.ts > repoos.toml round-trip > loads a # inside an agent's instructions intact on bee — fix it in the feature branch and re-run the gate
