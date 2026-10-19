@@ -47,6 +47,7 @@ export const GENERAL_SECTIONS: readonly SettingsSection[] = [
   { id: "themes", label: "Themes" },
   { id: "activity-animation", label: "Activity animation" },
   { id: "general", label: "General" },
+  { id: "performance", label: "Performance" },
   { id: "model-routing", label: "Model routing" },
   { id: "close-out", label: "Close-out" },
   { id: "automation", label: "Automation & approval" },
@@ -65,6 +66,7 @@ export const GENERAL_SECTIONS: readonly SettingsSection[] = [
  */
 export const GENERAL_FIELD_SECTIONS: readonly string[] = [
   "general",
+  "performance",
   "model-routing",
   "close-out",
   "automation",
@@ -96,7 +98,17 @@ export function generalSectionForKey(key: string): string {
   }
   if (key === "tunnelEnabled") return "publishing";
   if (key === "remoteValidation.enabled") return "remote-validation";
+  if (key === "remoteValidation.offloadBrowserSteps" || key === "remoteValidation.localFallback") {
+    return "remote-validation";
+  }
   if (key === "storage.provider") return "attachments";
+  if (
+    key.startsWith("localChecks.") ||
+    key.startsWith("playwright.") ||
+    key.startsWith("pressureGuard.")
+  ) {
+    return "performance";
+  }
   if (key.startsWith("model_routing.")) return "model-routing";
   if (key.startsWith("closeOut.")) return "close-out";
   if (key === "shot.maxAutoShots") return "screenshots";
@@ -162,6 +174,12 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   "model_routing.baseUrl",
 ]);
 
+/** Remote-validation keys with General-tab rows beside the runner card (#0836). */
+export const REMOTE_VALIDATION_GENERAL_FIELD_KEYS = new Set([
+  "remoteValidation.offloadBrowserSteps",
+  "remoteValidation.localFallback",
+]);
+
 /** Mirrors `isFieldVisible` in SettingsView.vue */
 function isInspectorFieldVisible(key: string, ctx: SettingLocationContext): boolean {
   if (key === "dev.inspector.enabled" || key === "dev.inspector.editorCommand") {
@@ -173,6 +191,7 @@ function isInspectorFieldVisible(key: string, ctx: SettingLocationContext): bool
 /** Mirrors `generalFields` in SettingsView.vue — schema keys rendered in the General group. */
 export function isGeneralSchemaFieldKey(key: string): boolean {
   if (GENERAL_EXCLUDED_KEYS.has(key)) return false;
+  if (REMOTE_VALIDATION_GENERAL_FIELD_KEYS.has(key)) return true;
   if (key.startsWith("remoteValidation.")) return false;
   if (key.startsWith("board.columns.")) return false;
   return true;
@@ -188,6 +207,9 @@ export function resolveSettingLocation(
   ctx: SettingLocationContext,
 ): SettingLocation | null {
   if (key === "tunnelEnabled" || key === "remoteValidation.enabled") {
+    return { tab: "general", hasUiRow: true };
+  }
+  if (REMOTE_VALIDATION_GENERAL_FIELD_KEYS.has(key)) {
     return { tab: "general", hasUiRow: true };
   }
   if (key.startsWith("remoteValidation.")) {

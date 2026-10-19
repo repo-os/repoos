@@ -70,6 +70,14 @@ onMounted(async () => {
   // resolves, so it's normally already loaded by the time we mount.
   if (!auth.loaded) await auth.loadMe();
   await repo.init();
+  // Board/state fixtures seed client store state only — apply them before the
+  // doc/config loads below, which can take seconds. A capture settles (and
+  // queries its highlight) right after the board first paints, so a fixture
+  // applied later never makes the screenshot: the card:checkpointRecovery
+  // fixture task missed the capture entirely and its highlight matched an
+  // unrelated card instead (#0834). Config-touching fixtures still wait for
+  // config.load() below — they need the loaded config, not just the board.
+  applyShotFixturesFromLocation({ config: false });
   // Release-event notices (#0606): poll /api/release/run from anywhere in the
   // app so the bell badge is live on every page, not just /releases.
   notices.start();
@@ -86,13 +94,13 @@ onMounted(async () => {
   void config.loadModels();
 });
 
-function applyShotFixturesFromLocation(): void {
+function applyShotFixturesFromLocation(opts: { config?: boolean } = {}): void {
   const shotFixture = readShotPreviewFixtureFromLocation(window.location);
   if (!shotFixture || !repo.health?.isPreviewBuild) return;
   applyShotPreviewFixture(repo, shotFixture);
   // Config-touching fixtures run AFTER config.load(), and again on navigation
   // so capture navigations cannot miss bird-trail / editor seeds (#0822).
-  if (isShotPreviewConfigFixture(shotFixture)) {
+  if (opts.config !== false && isShotPreviewConfigFixture(shotFixture)) {
     applyShotPreviewConfigFixture(config, shotFixture);
   }
 }

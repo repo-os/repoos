@@ -20,6 +20,8 @@ process.stdout.write("done\\n");
 interface Fixture {
   bin: string;
   log: string;
+  /** One workdir per task — #0837 refuses two live engineers in the same worktree. */
+  workdir: (taskId: string) => string;
   clean: () => void;
 }
 
@@ -31,6 +33,11 @@ function makeFixture(): Fixture {
   return {
     bin,
     log: join(root, "spawns.log"),
+    workdir: (taskId: string) => {
+      const wt = join(root, `wt-${taskId}`);
+      mkdirSync(wt, { recursive: true });
+      return wt;
+    },
     clean: () => rmSync(root, { recursive: true, force: true }),
   };
 }
@@ -108,12 +115,11 @@ describe("agent start concurrency cap", () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
-    const cwd = fx.bin;
-    const runner = new AgentRunner(config(cwd, 1), () => {});
+    const runner = new AgentRunner(config(fx.bin, 1), () => {});
     try {
-      const r1 = runner.start(task("0001"), "feat/0001", agent, { cwd });
-      const r2 = runner.start(task("0002"), "feat/0002", agent, { cwd });
-      const r3 = runner.start(task("0003"), "feat/0003", agent, { cwd });
+      const r1 = runner.start(task("0001"), "feat/0001", agent, { cwd: fx.workdir("0001") });
+      const r2 = runner.start(task("0002"), "feat/0002", agent, { cwd: fx.workdir("0002") });
+      const r3 = runner.start(task("0003"), "feat/0003", agent, { cwd: fx.workdir("0003") });
 
       expect(r1.ok).toBe(true);
       expect(r1.queued).toBeFalsy();
@@ -143,14 +149,13 @@ describe("agent start concurrency cap", () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
-    const cwd = fx.bin;
-    const runner = new AgentRunner(config(cwd, 1), () => {});
+    const runner = new AgentRunner(config(fx.bin, 1), () => {});
     try {
-      runner.start(task("0001"), "feat/0001", agent, { cwd });
-      const queued = runner.start(task("0002"), "feat/0002", agent, { cwd });
+      runner.start(task("0001"), "feat/0001", agent, { cwd: fx.workdir("0001") });
+      const queued = runner.start(task("0002"), "feat/0002", agent, { cwd: fx.workdir("0002") });
       expect(queued.queued).toBe(true);
 
-      const dupe = runner.start(task("0002"), "feat/0002", agent, { cwd });
+      const dupe = runner.start(task("0002"), "feat/0002", agent, { cwd: fx.workdir("0002") });
       expect(dupe.ok).toBe(false);
 
       await waitFor(() => spawnOrder(fx).length === 2, "both turns to have spawned");

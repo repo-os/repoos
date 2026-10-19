@@ -6,6 +6,8 @@
  */
 import { createRequire } from "node:module";
 import type { ServeOptions } from "../server/server.js";
+import { findRepoRoot, loadConfig } from "../core/config.js";
+import { acquirePlaywrightSlot } from "../core/local-gates.js";
 
 export interface PreviewServer {
   close: () => void;
@@ -120,7 +122,18 @@ export async function startPreviewServer(root?: string): Promise<PreviewServer> 
  * error when the package isn't installed so callers can report it as a
  * graceful skip rather than a gate failure.
  */
-export async function launchWebkit(): Promise<SmokeBrowser> {
+export interface LaunchWebkitOptions {
+  /** Repo root for cross-process Playwright slot (#0836). Omit in tests that mock launch. */
+  repoRoot?: string;
+  onQueueLine?: (line: string) => void;
+}
+
+export async function launchWebkit(opts: LaunchWebkitOptions = {}): Promise<SmokeBrowser> {
+  let releaseSlot: (() => void) | undefined;
+  if (opts.repoRoot) {
+    const cfg = loadConfig(opts.repoRoot);
+    releaseSlot = await acquirePlaywrightSlot(opts.repoRoot, cfg, process.env, opts.onQueueLine);
+  }
   // @playwright/test is a CJS package. Bun's ESM `import()` of it resolves the
   // named browser exports to `undefined` (root cause of #0200), so load it via
   // createRequire, which handles the CJS interop under both Bun and Node.
@@ -132,9 +145,18 @@ export async function launchWebkit(): Promise<SmokeBrowser> {
   try {
     playwright = require("@playwright/test");
   } catch {
+    releaseSlot?.();
     throw new Error("Cannot find module @playwright/test (not installed)");
   }
-  return playwright.webkit.launch({ headless: true });
+  const browser = await playwright.webkit.launch({ headless: true });
+  if (releaseSlot) {
+    const origClose = browser.close.bind(browser);
+    browser.close = async () => {
+      await origClose();
+      releaseSlot!();
+    };
+  }
+  return browser;
 }
 
 /**

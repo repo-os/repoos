@@ -273,6 +273,12 @@ export interface ReviewHandoffOptions extends HandoffSink {
   actor?: string;
   /** Which route asked — surfaced in progress/sys lines for debugging. */
   origin?: HandoffOrigin;
+  /**
+   * Re-run the handoff gate on a new HEAD while the task stays in `review`
+   * (#0834). The prior review at `approvedSha` is preserved; only the delta
+   * is re-reviewed before close-out resumes.
+   */
+  checkpointRecovery?: { approvedSha: string };
 }
 
 /** The worktree-side facts the finalization body needs, once resolved. */
@@ -452,7 +458,7 @@ async function runHandoffFinalization(
   // instead of orphaning it (#0521).
   const handoffDeadlineAt = Date.now() + HANDOFF_DEADLINE_MS;
 
-  if (task.status === "review" && worktreeTask.status === "review") {
+  if (task.status === "review" && worktreeTask.status === "review" && !opts.checkpointRecovery) {
     onProgress?.("done");
     return { ok: true, step: "done", detail: "handoff was already finalized" };
   }
@@ -604,7 +610,7 @@ async function runHandoffFinalization(
       workdir,
       config,
       checkHandle?.chunk,
-      checkEnvAfterRemoteGate(remoteOutcome),
+      checkEnvAfterRemoteGate(remoteOutcome, config),
       remoteOutcome,
       task.id,
       changedBase,
@@ -662,7 +668,10 @@ async function runHandoffFinalization(
   }
 
   onProgress?.("review");
-  if (worktreeTask.status !== "review" || worktreeTask.branch !== task.branch) {
+  if (
+    !opts.checkpointRecovery &&
+    (worktreeTask.status !== "review" || worktreeTask.branch !== task.branch)
+  ) {
     try {
       patchTaskFile({ ...config, root: workdir }, worktreeTaskPath, {
         status: "review",
@@ -674,7 +683,7 @@ async function runHandoffFinalization(
   }
 
   onProgress?.("main");
-  if (task.status !== "review") {
+  if (!opts.checkpointRecovery && task.status !== "review") {
     try {
       // A branch-mode hotfix runs in the root checkout, so task.absPath points
       // at the hotfix branch's copy. Before the checkout returns to main (for

@@ -138,6 +138,8 @@ import {
   resolveRemoteHosts,
 } from "../core/remote-hosts.js";
 import { runBuiltInAgent, isDueForScheduledRun, builtInAgentLabel } from "./built-in-agents.js";
+import { runScheduleTick } from "./schedule-runner.js";
+import { shouldRunScheduledTaskAutomation } from "./schedule-automation.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { AutoEngineeringOrchestrator } from "./auto-engineering.js";
 import { WorkWatcher } from "./watcher.js";
@@ -204,6 +206,10 @@ import { runAutoShotCapture } from "./shot-capture.js";
 import { ReviewManager } from "./review.js";
 import { notifyEngineerOfRequirementsChange } from "./requirements-notice.js";
 import { tryAutoApproveAfterCleanReview } from "./approval-policy.js";
+import {
+  abandonCheckpointRecoveryAfterFailedDelta,
+  resumeCloseOutAfterCheckpointRecovery,
+} from "./post-handoff-checkpoint-recovery.js";
 import { SkillSuggestionManager, markOriginTask } from "./skill-suggestions.js";
 import { DebugTldrManager } from "./debug-tldr.js";
 import { TestRunManager } from "./test-run.js";
@@ -287,6 +293,7 @@ import {
   installRegistry,
   getSystem,
   getSystemLogs,
+  getResourceQueues,
   getTunnelStatus,
   getChat,
   sendChatMessage,
@@ -313,6 +320,12 @@ import {
   deleteInput,
   uploadInputAttachment,
   getInputAttachment,
+  getSchedules,
+  postSchedule,
+  patchSchedule,
+  deleteSchedule,
+  postScheduleRun,
+  postSchedulePreview,
   getStoryDefinitions,
   createFreeformStory,
   createStoryDefinition,
@@ -1796,6 +1809,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       getTask: (taskId) => index.getTask(taskId),
       onTaskFilePatched: (absPath) => index.applyFileChange(absPath),
       onDiagnosableFailure: (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
+      onOrphanEngineerNote: (taskId, note) => {
+        const task = index.getTask(taskId);
+        if (!task) return;
+        const updated = patchTaskFile(config, task.absPath, { note });
+        index.applyFileChange(updated.absPath, { guarded: true });
+      },
       onHandoff: async (request) => {
         let reachedFinalization = false;
         try {
@@ -1954,6 +1973,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // leaving the task stuck `active` with its work uncommitted.
   const runHandoffRecovery = (): void => runner.recoverPendingHandoffs();
   void indexReady.then(runHandoffRecovery, runHandoffRecovery).catch(() => {});
+
+  const runOrphanEngineerReconcile = (): void => {
+    runner.reconcileOrphanedEngineers(index.getTasks());
+  };
+  void indexReady.then(runOrphanEngineerReconcile, runOrphanEngineerReconcile).catch(() => {});
 
   // The one-time area-format migration (#0583) runs once AFTER the index has
   // populated: any task file whose `area` frontmatter still carries a legacy
@@ -2157,6 +2181,43 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         `[repoos] approval policy handler failed for #${task.id}: ${(err as Error).message}`,
       );
     });
+  });
+
+  reviews.bindCheckpointDeltaReviewHandler((task, report, verdict) => {
+    if (verdict === "good to go") {
+      void resumeCloseOutAfterCheckpointRecovery(
+        {
+          config,
+          index,
+          jobCoordinator,
+          reload,
+          emitEvent,
+          triggerJobProcessing,
+          reviews,
+          taskChecks,
+          onTaskCheckEvent,
+          remoteValidator,
+          previews,
+        },
+        task,
+      ).catch((err) => {
+        console.error(
+          `[repoos] could not resume close-out after checkpoint delta review for #${task.id}: ${(err as Error).message}`,
+        );
+      });
+    } else {
+      abandonCheckpointRecoveryAfterFailedDelta(config, task.id, report.markdown.slice(0, 200));
+      // Terminal signal (#0834): auto-bounce carries the findings; this only
+      // tells the UI the automatic recovery is over and the task is back with
+      // the engineer.
+      emitEvent({
+        type: "task.progress",
+        id: task.id,
+        step: "checkpoint-recovery-cancelled",
+        detail: `delta review verdict: ${verdict} — the findings were sent back with the task`,
+        at: new Date().toISOString(),
+      });
+    }
   });
 
   // Skill suggestions (#0429): only after a task genuinely reaches `done` does
@@ -2481,6 +2542,28 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       reviews.cancel(task.id);
     }
   };
+
+  const scheduleAutoStart = {
+    config: repoos.config,
+    index,
+    runner,
+    logger,
+    onServerStatusChange,
+  };
+  if (shouldRunScheduledTaskAutomation(config, process.env, requestedPort)) {
+    const runScheduleTickNow = (): void => {
+      runScheduleTick({
+        config: repoos.config,
+        repoos,
+        autoStart: scheduleAutoStart,
+        emitEvent: (event) => emitEvent(event),
+      });
+    };
+    const SCHEDULE_CHECK_INTERVAL_MS = 60_000;
+    const scheduleTimer = setInterval(runScheduleTickNow, SCHEDULE_CHECK_INTERVAL_MS);
+    scheduleTimer.unref?.();
+    void indexReady.then(runScheduleTickNow);
+  }
 
   // Durable freeform PM runs (#0403): the freeform-create route spawns the PM
   // agent through this manager instead of a fire-and-forget closure, so the
@@ -2867,6 +2950,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/docs/freeform", createFreeformDoc);
   router.register("GET", "/api/inputs", getInputs);
   router.register("POST", "/api/inputs", postInput);
+  router.register("GET", "/api/schedules", getSchedules);
+  router.register("POST", "/api/schedules", postSchedule);
+  router.register("POST", "/api/schedules/preview", postSchedulePreview);
+  router.register("PATCH", /^\/api\/schedules\/([^/]+)$/, patchSchedule);
+  router.register("DELETE", /^\/api\/schedules\/([^/]+)$/, deleteSchedule);
+  router.register("POST", /^\/api\/schedules\/([^/]+)\/run$/, postScheduleRun);
   router.register("PATCH", /^\/api\/inputs\/([^/]+)$/, patchInput);
   router.register("DELETE", /^\/api\/inputs\/([^/]+)$/, deleteInput);
   router.register("POST", /^\/api\/inputs\/([^/]+)\/resolve$/, postResolveInput);
@@ -2894,6 +2983,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/stories\/([^/]+)\/pm\/interrupt$/, pmStoryInterrupt);
   router.register("GET", "/api/system", getSystem);
   router.register("GET", "/api/system/logs", getSystemLogs);
+  router.register("GET", "/api/resource-queues", getResourceQueues);
   router.register("GET", "/api/support/bundle", getSupportBundlePreview);
   router.register("POST", "/api/support/bundle", createSupportBundle);
   router.register("POST", "/api/support/bundle/open", revealSupportBundle);
@@ -3657,6 +3747,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // Create the route context with all necessary dependencies
       const routeContext: RouteContext = {
         config,
+        servePort: requestedPort,
         index,
         indexReady,
         runner,

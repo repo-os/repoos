@@ -758,3 +758,16 @@ export function deleteInputFile(config: RepoOSConfig, absPath: string, commitMes
 export function deleteStoryFile(config: RepoOSConfig, absPath: string, commitMessage: string) {
   return deleteDataFile(config, guardDataDir(config, absPath, storiesDirOf(config)), commitMessage);
 }
+
+/** Remove a schedule definition file under `schedules/`. */
+export function deleteScheduleDataFile(
+  config: RepoOSConfig,
+  absPath: string,
+  commitMessage: string,
+) {
+  return deleteDataFile(
+    config,
+    guardDataDir(config, absPath, config.schedulesDir ?? "schedules"),
+    commitMessage,
+  );
+}

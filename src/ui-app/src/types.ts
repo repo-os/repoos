@@ -162,6 +162,9 @@ export interface Task {
   /** True when the agent emitted a handoff signal that is pending or actively
    *  finalizing — shows "Requested review" instead of "Paused" on the card. */
   pendingHandoff?: boolean;
+  /** #0834: an automatic post-handoff checkpoint recovery (gate + delta
+   *  re-review) is running — the card says so instead of going silent. */
+  checkpointRecovery?: boolean;
   /** Automatic check-failure retries used on this task's most recent handoff
    *  (capped at 2) — distinguishes a post-handoff check-fix loop from
    *  ordinary coding once a review-status task shows a running agent. */
@@ -176,6 +179,11 @@ export interface Task {
   handoffSignalRetryCount?: number;
   /** Present on PATCH when a requirements body edit ran the #0817 engineer notice. */
   requirementsNotice?: RequirementsNotice;
+  /**
+   * Cloud upload delivery for embedded task attachment images (#0666).
+   * Keys are object names; values are `pending` until the cloud copy is verified.
+   */
+  attachmentCloud?: Record<string, "pending" | "available">;
 }
 
 /** Result of the automatic engineer notice after a requirements edit (#0817). */
@@ -203,6 +211,8 @@ export interface ScreenshotMeta {
   url: string;
   size: number;
   mime: string;
+  /** Cloud sync state when a cloud provider is configured (#0666). */
+  cloudUpload?: "pending" | "available";
 }
 
 /**
@@ -777,7 +787,13 @@ export type RepoEvent =
     }
   | { type: "agent.running"; id: string; at: string }
   | { type: "agent.exited"; id: string; at: string }
-  | { type: "agent.queued"; id: string; at: string }
+  | {
+      type: "agent.queued";
+      id: string;
+      at: string;
+      reason?: "pressure" | "slot";
+      detail?: string;
+    }
   | { type: "agent.dequeued"; id: string; at: string }
   | { type: "agent.output"; id: string; entry: AgentOutputEntry; stream: "out" | "err" }
   | { type: "agent.stats"; id: string; stats: AgentSessionStats }
@@ -841,6 +857,15 @@ export type RepoEvent =
       findings: number;
       taskId: string | null;
       runDoc: string | null;
+      at: string;
+    }
+  | { type: "schedule.changed"; at: string }
+  | {
+      type: "schedule.run";
+      scheduleId: string;
+      taskId: string | null;
+      ok: boolean;
+      error?: string;
       at: string;
     };
 

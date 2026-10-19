@@ -183,10 +183,14 @@ who owns approval and merging:
   should check it too). Move to done compares the worktree to the handoff
   snapshot and refuses when HEAD moved or the tree is dirty after handoff,
   except commits that change only `work/*.md` task files (RepoOS bookkeeping or
-  a main sync bringing in other tasks' task files — #0600), and a conflict-free
+  a main sync bringing in other tasks' task files — #0600), a conflict-free
   merge of main into the branch that is exactly what git computes on its
   own (the committed tree equals a `merge-tree` replay of the merge's parents; hand
-  resolutions or edits slipped into the merge still fail — #0624). Real source edits still block close-out. Incident: 2026-09-30, #0594 — four files edited
+  resolutions or edits slipped into the merge still fail — #0624), or **only**
+  engineer self-check WIP checkpoint commit(s) on that task while the tree stays
+  clean (#0834 — Move to done re-runs the handoff gate and a delta review, then
+  resumes close-out; a failed delta review bounces to `active` like any other
+  review finding). Real source edits still block close-out. Incident: 2026-09-30, #0594 — four files edited
   mid-close-out never landed.
 - If explicitly taking over a newly created task, claim it through RepoOS
   directly as `active`, without leaving it in `ready` for auto-dispatch to grab.

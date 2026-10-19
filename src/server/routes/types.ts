@@ -30,6 +30,8 @@ export interface SyncResult {
 
 export interface RouteContext {
   config: RepoOSConfig;
+  /** Bound HTTP port for this server (undefined in partial route tests). */
+  servePort?: number;
   index: LiveIndex;
   /**
    * Resolves once the full background index build finishes on server boot

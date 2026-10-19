@@ -23,6 +23,7 @@ import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import AgentCard from "../components/AgentCard.vue";
 import BuiltInAgentCard from "../components/BuiltInAgentCard.vue";
+import ScheduledTasksPanel from "../components/ScheduledTasksPanel.vue";
 import { sortHeadlessAgents } from "../lib/headless-agent-order";
 import ModelPlaygroundPanel from "../components/ModelPlaygroundPanel.vue";
 import ModelProvidersPanel from "../components/ModelProvidersPanel.vue";
@@ -46,6 +47,7 @@ type AgentTab =
   | "default"
   | "custom"
   | "team"
+  | "scheduled"
   | "detected"
   | "playground"
   | "providers"
@@ -56,6 +58,7 @@ const AGENT_TAB_LABELS: Record<AgentTab, string> = {
   default: "Default Agents",
   custom: "Custom Agents",
   team: "Build Your Team",
+  scheduled: "Scheduled Tasks",
   detected: "Detected Coding Agents",
   playground: "Model Playground",
   providers: "Model providers",
@@ -67,6 +70,7 @@ const AGENT_TABS: AgentTab[] = [
   "default",
   "custom",
   "team",
+  "scheduled",
   "detected",
   "playground",
   "providers",
@@ -863,6 +867,14 @@ onUnmounted(() => {
           <BuiltInAgentCard agent="architect" />
           <BuiltInAgentCard agent="design" />
           <BuiltInAgentCard agent="docs-debt" />
+        </div>
+
+        <div
+          class="agent-tab-panel"
+          v-show="activeTab === 'scheduled'"
+          style="padding: 0 18px 6px; margin-bottom: 16px"
+        >
+          <ScheduledTasksPanel />
         </div>
 
         <div

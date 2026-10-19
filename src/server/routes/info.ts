@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import type { RouteHandler } from "./types.js";
 import { readWorktreeReviewLock } from "../worktree-handoff-guard.js";
+import { isPostHandoffCheckpointRecoveryActive } from "../post-handoff-checkpoint-recovery.js";
 import { json, readBody } from "./utils.js";
 import { loadBuildInfo, listDocs, listSkills, repoGuideContext } from "./helpers.js";
 import { copyInspectorApiEnabled } from "./copy-inspector.js";
@@ -95,6 +96,9 @@ export const getIndex: RouteHandler = async (ctx, _req, res) => {
       enabled: reviews.enabled(),
     },
     worktreeReviewLock: readWorktreeReviewLock(config.root, config.cacheDir, t.id),
+    // #0834: a post-handoff checkpoint recovery in flight, so a reload keeps
+    // showing it instead of going silent until the next SSE event.
+    checkpointRecovery: isPostHandoffCheckpointRecoveryActive(config, t.id),
   });
   return json(res, 200, {
     ...snapshot,
@@ -121,6 +125,8 @@ export const getBoard: RouteHandler = async (ctx, _req, res) => {
       enabled: reviews.enabled(),
     },
     worktreeReviewLock: readWorktreeReviewLock(config.root, config.cacheDir, t.id),
+    // #0834: see getIndex — keep the card's recovery hint alive across reloads.
+    checkpointRecovery: isPostHandoffCheckpointRecoveryActive(config, t.id),
     // #0379: preview target identity/multiplicity, same as GET /api/tasks/:id.
     previewTargets: previewTargetOptions(config, t),
   });
