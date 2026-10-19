@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 298612
+last_close_out_gate_at: "2026-10-19T07:48:47.981Z"
 id: "0845"
 title: "Running-server registry: repoos serve registers itself in ~/.repoos/servers (plus repoos servers)"
 type: feature
@@ -11,7 +13,7 @@ branch: feat/running-server-registry-repoos-serve-reg
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:59:37Z"
-updated_at: "2026-10-19T07:46:07Z"
+updated_at: "2026-10-19T07:48:47Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-19T07:27:53.466Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
@@ -69,5 +71,5 @@ Look at src/server/server.ts (listen callback and shutdown hooks), src/core/runt
 - 2026-10-19T07:37:56Z · status active→review
 - 2026-10-19T07:37:58Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-19T07:39:23Z · note: review pass 3: good to go
-
+- 2026-10-19T07:48:47Z · close-out gate completed in 299s
 
