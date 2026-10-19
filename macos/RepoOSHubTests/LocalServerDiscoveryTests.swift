@@ -151,6 +151,32 @@ final class LocalServerDiscoveryTests: XCTestCase {
         XCTAssertEqual(snapshots.last, [7010, 7020])
     }
 
+    func testDiscoverCancelsInFlightWorkAtOverallDeadline() async {
+        let checker = LatencyTrackingHealthChecker(
+            latency: .seconds(3),
+            responders: [
+                7010: .success(projectName: "Late", runtimeInfo: nil, projectPath: nil),
+            ]
+        )
+
+        let start = ContinuousClock.now
+        let found = await LocalServerDiscovery.discover(
+            knownLocalPorts: [],
+            configuration: LocalServerDiscoveryConfiguration(
+                maxConcurrency: 1,
+                probeTimeout: 5.0,
+                overallDeadline: 0.35
+            ),
+            healthChecker: checker,
+            listeningPortEnumerator: { _ in nil },
+            portsToProbe: Array(7000 ... 7020)
+        )
+
+        let elapsed = start.duration(to: .now)
+        XCTAssertTrue(found.isEmpty)
+        XCTAssertLessThan(elapsed, .seconds(1.5))
+    }
+
     func testDiscoverUsesListeningPortsWhenEnumeratorSucceeds() async {
         let checker = LatencyTrackingHealthChecker(
             latency: .zero,
@@ -199,6 +225,7 @@ private final class LatencyTrackingHealthChecker: HealthChecking, @unchecked Sen
 
         if latency != .zero {
             try? await Task.sleep(for: latency)
+            if Task.isCancelled { return .failure(.network("cancelled")) }
         }
 
         lock.lock()
