@@ -104,3 +104,4 @@ My overall assessment: The new expanded sidebar already looks substantially clea
 - 2026-10-19T18:52:48Z · screenshots
 - 2026-10-19T18:53:45Z · body
 - 2026-10-19T19:02:02Z · status active→review
+- 2026-10-19T19:02:02Z · note: shots: skipped — Docs site skipped: no docs shot declared
