@@ -14,7 +14,7 @@ branch: feat/investigate-leaked-repoos-tmp-fixture-di
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T19:04:41Z"
-updated_at: "2026-10-19T20:52:19Z"
+updated_at: "2026-10-19T20:53:40Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 1
@@ -81,3 +81,4 @@ Verification: a full pass now leaves 0 dirs in an isolated TMPDIR; a follow-up r
 - 2026-10-19T20:49:52Z · status review→active
 - 2026-10-19T20:51:31Z · body
 - 2026-10-19T20:52:19Z · body
+- 2026-10-19T20:53:40Z · body
