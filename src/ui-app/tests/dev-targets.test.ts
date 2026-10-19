@@ -2196,6 +2196,99 @@ describe("DevTargetManager with services (#0843)", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  // #0843 review — a service crash during an artifact build must not be erased
+  // by the build's successful exit: the stack is still failed.
+  itSlow("reports an artifact target failed when a service crashed during the build", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-artifactcrash-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              // Alive at its 500ms settle, then crashes while the artifact runs.
+              command: 'bun -e "setTimeout(()=>process.exit(1),1200)"',
+              healthCheck: undefined,
+            }),
+          ],
+          targets: [
+            {
+              name: "app",
+              kind: "artifact",
+              services: ["api"],
+              // Exits 0 well AFTER the service crash above.
+              command: 'bun -e "setTimeout(()=>{},2500)"',
+              artifactPath: "dist/out.txt",
+            },
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('service "api"');
+      const view = mgr.get("app");
+      expect(view?.status).toBe("failed");
+      expect(view?.services?.[0].status).toBe("failed");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review — a service that fails before it can spawn (port reservation,
+  // cwd, launch) must surface as a failed sub-row with its reason, not as an
+  // unexplained "stopped".
+  itSlow("records a service whose port reservation failed as failed, with the reason", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcportrow-"));
+    const held = await holdPort();
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [apiService({ autoPort: false, port: held.port })],
+          targets: [webTarget()],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      const svc = mgr.get("app")?.services?.[0];
+      expect(svc?.status).toBe("failed");
+      expect(svc?.error).toContain(`service "api" port ${held.port} is already in use`);
+      expect(mgr.get("app")?.status).toBe("failed");
+    } finally {
+      await mgr.stopAll();
+      await held.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  itSlow("records a service with an escaping cwd as failed, with the reason", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svccwd-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [apiService({ cwd: "../outside", healthCheck: undefined })],
+          targets: [webTarget()],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      const svc = mgr.get("app")?.services?.[0];
+      expect(svc?.status).toBe("failed");
+      expect(svc?.error).toContain("escapes the project root");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("dev target services API shape (#0843)", () => {
