@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-19T02:58:25Z"
-review_passes: 7
+last_close_out_gate_ms: 177133
+last_close_out_gate_at: "2026-10-19T03:15:40.714Z"
 id: "0664"
 title: Upload state + retry UX
 type: feature
@@ -15,6 +15,8 @@ branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
+updated_at: "2026-10-19T03:15:40Z"
+review_passes: 7
 last_check_failure: "repoos check at 2026-10-19T00:14:49.221Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 0b513be8 to a4e43a0b) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 close_out_repair_count: 1
 review_rounds: 2
@@ -114,4 +116,5 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-19T02:57:11Z · status active→review
 - 2026-10-19T02:57:11Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Notes for AI
 - 2026-10-19T02:58:24Z · note: review pass 7: good to go
+- 2026-10-19T03:15:40Z · close-out gate completed in 177s
 
