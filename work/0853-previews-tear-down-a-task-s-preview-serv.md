@@ -11,7 +11,8 @@ branch: feat/previews-tear-down-a-task-s-preview-serv
 review_cli_override: pi
 review_model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-10-19T14:24:17Z"
-updated_at: "2026-10-19T15:05:25Z"
+updated_at: "2026-10-19T16:19:51Z"
+dev_error_count: 2
 ---
 ## Problem
 docs/previews.md and AGENTS.md say a task preview is reaped when the task leaves active/review, and that only ONE preview runs at a time (a new request evicts the old). Observed 2026-10-19 on the control-plane machine: the preview server for #0664 (`repoos serve --port 59122` from its worktree, started by `bun run build && bun dist/cli/index.js serve ...`) was still running **21 hours** after #0664 landed and was marked done, while a second preview (#0851, port 54534) was already running, so the one-at-a-time cap was not enforced either. Every preview also runs a full `bun run build` (vue-tsc + vite) in the task worktree before serving, which is a heavy memory/CPU spike on an already loaded laptop.
@@ -38,3 +39,13 @@ Look at src/server/preview-manager (or the PreviewManager) and the task status t
 - 2026-10-19T15:05:20Z · review_model_override
 - 2026-10-19T15:05:21Z · status inbox→ready
 - 2026-10-19T15:05:25Z · status ready→active, branch
+- 2026-10-19T15:11:10Z · message_queued at 2026-10-19T15:11:10.211Z
+- 2026-10-19T15:11:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-19T15:20:07Z · body
+- 2026-10-19T15:27:24Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-19T15:27:24Z · message_delivered: 1 message(s)
+- 2026-10-19T15:27:26Z · note: stopped orphaned engineer pid 97756
+- 2026-10-19T15:40:53Z · body
+- 2026-10-19T15:48:12Z · body
+- 2026-10-19T15:51:28Z · body
+- 2026-10-19T16:19:51Z · needs_input

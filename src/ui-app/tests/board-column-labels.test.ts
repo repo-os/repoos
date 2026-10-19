@@ -212,6 +212,29 @@ describe("WorkView board column labels", () => {
     const inboxCol = boardCols.find((c) => c.props("col").id === "inbox");
     expect(inboxCol?.props("col").label).toBe("Inbox");
   });
+
+  it("uses the same dash for an empty Draft column in board and filtered views", async () => {
+    await loadConfig();
+    const repo = useRepoStore();
+    repo.tasks = [];
+    Object.assign(repo.counts, { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 });
+    const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
+    await flushPromises();
+
+    let draftColumn = wrapper.findAllComponents({ name: "BoardColumn" })[0]!;
+    expect(draftColumn.props("col").id).toBe("draft");
+    expect(draftColumn.props("emptyText")).toBe("—");
+
+    routeState.query = { status: "draft" };
+    await flushPromises();
+    draftColumn = wrapper.findComponent({ name: "BoardColumn" });
+    expect(draftColumn.props("col").id).toBe("draft");
+    expect(draftColumn.props("emptyText")).toBe("—");
+    expect(wrapper.text()).not.toContain("No drafts yet");
+    routeState.query = {};
+    await flushPromises();
+    wrapper.unmount();
+  });
 });
 
 describe("DashboardView column labels", () => {
