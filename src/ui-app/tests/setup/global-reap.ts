@@ -57,15 +57,18 @@ export async function setup(): Promise<void> {
   // Nested fixture writes do not necessarily update the run root's mtime. Keep
   // a long-running worker's root younger than the stale-age gate so a
   // concurrent test run cannot reap its live fixtures.
-  runRootHeartbeat = setInterval(() => {
-    if (!runRoot) return;
-    const now = new Date();
-    try {
-      utimesSync(runRoot, now, now);
-    } catch {
-      /* teardown may already have removed it */
-    }
-  }, Math.floor(STALE_FIXTURE_AGE_MS / 3));
+  runRootHeartbeat = setInterval(
+    () => {
+      if (!runRoot) return;
+      const now = new Date();
+      try {
+        utimesSync(runRoot, now, now);
+      } catch {
+        /* teardown may already have removed it */
+      }
+    },
+    Math.floor(STALE_FIXTURE_AGE_MS / 3),
+  );
   runRootHeartbeat.unref();
 }
 
