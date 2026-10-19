@@ -320,6 +320,12 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--port N",
       },
       {
+        name: "servers",
+        usage: "servers [--json] [--prune]",
+        desc: "List locally running RepoOS servers from ~/.repoos/servers",
+        flags: "--json · --prune",
+      },
+      {
         name: "service",
         usage: "service <sub>",
         desc: "Manage background services",
