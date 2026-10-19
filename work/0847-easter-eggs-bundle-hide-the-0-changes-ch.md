@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 344353
-last_close_out_gate_at: "2026-10-19T16:00:42.308Z"
 id: "0847"
 title: "Easter eggs bundle: hide the \"0 changes\" chip on task cards"
 type: chore
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: d8b8bc84d6020aba373f6d87081feb878a9b29d3
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-hide-the-0-changes-ch
@@ -15,7 +14,9 @@ model_override: default
 review_cli_override: pi
 review_model_override: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
 created_at: "2026-10-19T07:50:02Z"
-updated_at: "2026-10-19T16:00:42Z"
+updated_at: "2026-10-19T16:01:17Z"
+last_close_out_gate_ms: 344353
+last_close_out_gate_at: "2026-10-19T16:00:42.308Z"
 review_passes: 1
 ---
 ## Items
@@ -165,4 +166,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T15:48:13Z · status active→review
 - 2026-10-19T15:49:35Z · note: review pass 1: good to go
 - 2026-10-19T16:00:42Z · close-out gate completed in 344s
-
+- 2026-10-19T16:01:17Z · status review→done, release:success
