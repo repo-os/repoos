@@ -2,7 +2,7 @@
 id: "0849"
 title: Build the For Clients landing page and Resend project enquiry form
 type: feature
-status: active
+status: review
 hold: true
 priority: p2
 area: landing
@@ -10,7 +10,7 @@ assigned_to: human
 created_by: njachowski@gmail.com
 branch: codex/0849-for-clients
 created_at: "2026-10-19T10:22:29Z"
-updated_at: "2026-10-19T11:39:06Z"
+updated_at: "2026-10-19T11:44:29Z"
 ---
 ## Problem
 The human approved the For Clients prototype and wants it implemented in the existing landing app. This interactive Codex session owns implementation; do not dispatch a built-in engineer.
@@ -45,33 +45,33 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 ```json
 [
 {
-  "label": "Mobile client page in Gruvbox dark",
-  "target": "Landing page",
-  "route": "/for-clients?theme=gruvbox&appearance=dark",
-  "highlight": ".clients-hero",
-  "viewportWidth": 390
+"label": "Mobile client page in Gruvbox dark",
+"target": "Landing page",
+"route": "/for-clients?theme=gruvbox&appearance=dark",
+"highlight": ".clients-hero",
+"viewportWidth": 390
 },
 {
-  "label": "Mobile client page in Gruvbox light",
-  "target": "Landing page",
-  "route": "/for-clients?theme=gruvbox&appearance=light",
-  "highlight": ".clients-hero",
-  "viewportWidth": 390
+"label": "Mobile client page in Gruvbox light",
+"target": "Landing page",
+"route": "/for-clients?theme=gruvbox&appearance=light",
+"highlight": ".clients-hero",
+"viewportWidth": 390
 },
 {
-  "label": "Mobile project enquiry with required work email",
-  "target": "Landing page",
-  "route": "/for-clients?theme=classic&appearance=dark",
-  "highlight": ".clients-dialog",
-  "steps": [
-    {
-      "click": ".clients-actions .clients-primary"
-    },
-    {
-      "waitFor": "dialog[open]"
-    }
-  ],
-  "viewportWidth": 390
+"label": "Mobile project enquiry with required work email",
+"target": "Landing page",
+"route": "/for-clients?theme=classic&appearance=dark",
+"highlight": ".clients-dialog",
+"steps": [
+{
+  "click": ".clients-actions .clients-primary"
+},
+{
+  "waitFor": "dialog[open]"
+}
+],
+"viewportWidth": 390
 }
 ]
 ```
@@ -94,3 +94,5 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 - 2026-10-19T11:39:03Z · body
 - 2026-10-19T11:39:03Z · note: shot removed: Mobile project enquiry with required work email
 - 2026-10-19T11:39:06Z · body
+- 2026-10-19T11:44:29Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-19T11:44:29Z · note: handoff requested (cli)
