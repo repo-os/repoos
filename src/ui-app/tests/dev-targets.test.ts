@@ -7,7 +7,7 @@
  * the server, and no request body can ever supply a command.
  */
 import { describe, expect, it } from "vitest";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -1366,6 +1366,39 @@ describe("devTargetServiceErrors", () => {
       ),
     ).toEqual([]);
   });
+
+  // #0843 review — two distinct names can normalize to the SAME placeholder
+  // token; that is a config error, never a silent undocumented suffix.
+  it("rejects two service names that normalize to the same token", () => {
+    const colliding = [
+      {
+        name: "web",
+        kind: "server" as const,
+        command: "x",
+        url: "http://x",
+        services: ["api-v1", "api_v1"],
+      },
+    ];
+    const errors = devTargetServiceErrors(colliding, [
+      { name: "api-v1", command: "x" },
+      { name: "api_v1", command: "y" },
+    ]);
+    expect(errors).toEqual([
+      '[dev.targets] web: services "api-v1" and "api_v1" both map to the placeholder "{api_v1.port}" — rename one so each has a distinct token',
+    ]);
+    // A collision across two DIFFERENT targets' service lists is not an error:
+    // each target's placeholders are scoped to the services it lists.
+    const separateTargets = [
+      { name: "a", kind: "server" as const, command: "x", url: "http://x", services: ["api-v1"] },
+      { name: "b", kind: "server" as const, command: "x", url: "http://x", services: ["api_v1"] },
+    ];
+    expect(
+      devTargetServiceErrors(separateTargets, [
+        { name: "api-v1", command: "x" },
+        { name: "api_v1", command: "y" },
+      ]),
+    ).toEqual([]);
+  });
 });
 
 describe("loadConfig dev services wiring", () => {
@@ -1924,6 +1957,137 @@ describe("DevTargetManager with services (#0843)", () => {
     } finally {
       await mgrB.stopAll();
       rmSync(dirB, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review — a target's own crash must not leave its companion services
+  // running: they would otherwise hold ports (and resources) until a later
+  // stop or a server shutdown.
+  it("stops the companion services when the target itself crashes", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svctargetcrash-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [apiService({ healthCheck: undefined })],
+          // A process target is running as soon as it is alive, then crashes
+          // well after the start has settled, so this exercises the RUNNING
+          // exit handler, not the readiness gate.
+          targets: [
+            webTarget({
+              kind: "process",
+              url: undefined,
+              command: 'bun -e "setTimeout(()=>process.exit(1),3000)"',
+            }),
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const started = await mgr.start("app");
+      expect(started.ok).toBe(true);
+      expect(mgr.get("app")?.status).toBe("running");
+      const svcPid = mgr.get("app")?.services?.[0].pid;
+      expect(typeof svcPid).toBe("number");
+
+      // Wait for the target to crash.
+      const deadline = Date.now() + 8000;
+      while (Date.now() < deadline && mgr.get("app")?.status !== "failed") {
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      expect(mgr.get("app")?.status).toBe("failed");
+      // The companion process is genuinely gone and its row settles to
+      // stopped once the asynchronous teardown completes.
+      expect(await waitForDead(svcPid!)).toBe(true);
+      const settleDeadline = Date.now() + 4000;
+      while (
+        Date.now() < settleDeadline &&
+        mgr.get("app")?.services?.[0].status !== "stopped"
+      ) {
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      expect(mgr.get("app")?.services?.[0].status).toBe("stopped");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review — a Stop that lands while an in-flight start is still booting
+  // must cancel it: the start may not launch the stack after Stop returned.
+  it("cancels an in-flight start when stopped before it launches anything", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcstoprace-"));
+    const targetMarker = join(dir, "target-launched.txt");
+    const serviceMarker = join(dir, "service-launched.txt");
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              command: `bun -e "require('node:fs').writeFileSync('${serviceMarker}','yes');setTimeout(()=>{},60000)"`,
+              healthCheck: undefined,
+            }),
+          ],
+          targets: [
+            webTarget({
+              kind: "process",
+              url: undefined,
+              command: `bun -e "require('node:fs').writeFileSync('${targetMarker}','yes');setTimeout(()=>{},60000)"`,
+            }),
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      // Start and Stop in the same tick: the stop lands while `doStart` is
+      // still at its first await, before any service port is even reserved.
+      const startPromise = mgr.start("app");
+      const stopResult = await mgr.stop("app");
+      const startResult = await startPromise;
+      expect(stopResult.ok).toBe(true);
+      expect(startResult.ok).toBe(true);
+      const view = mgr.get("app");
+      expect(view?.status).toBe("stopped");
+      expect(view?.services?.[0].status).toBe("stopped");
+      // Nothing was ever launched: neither marker exists, and no PID is held.
+      expect(existsSync(serviceMarker)).toBe(false);
+      expect(existsSync(targetMarker)).toBe(false);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review — two services that normalize to the same placeholder token
+  // must fail the start loudly rather than resolve `{api_v1.port}` to whichever
+  // happened to boot last.
+  it("refuses to start when two services collide on the placeholder token", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svctokenclash-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            { name: "api-v1", command: 'bun -e "setTimeout(()=>{},60000)"', healthCheck: undefined },
+            { name: "api_v1", command: 'bun -e "setTimeout(()=>{},60000)"', healthCheck: undefined },
+          ],
+          targets: [webTarget({ services: ["api-v1", "api_v1"] })],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("both map to the placeholder");
+      expect(result.error).toContain("{api_v1.port}");
+      expect(mgr.get("app")?.status).toBe("failed");
+      expect(
+        (mgr.get("app")?.services ?? []).every((s) => s.status === "stopped"),
+      ).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });

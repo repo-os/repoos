@@ -1832,7 +1832,11 @@ to `_`), passed as `PORT` and `REPOOS_DEV_<NAME>_PORT` / `REPOOS_DEV_<NAME>_URL`
 to the service, and passed as the same `REPOOS_DEV_*` variables to the main
 command. Inside a service's own `command` and `healthCheck.url`, `{port}` (and
 `PORT`) is the service's own port. Services boot in the order listed, so a
-service may reference a sibling declared before it.
+service may reference a sibling declared before it. Service names referenced by
+one target must map to distinct placeholder tokens: two names that normalize to
+the same `{<token>.port}` (for example `api-v1` and `api_v1`) are a config
+error, not silently disambiguated, so a documented token can never resolve to
+the wrong service.
 
 | Key | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -1852,7 +1856,9 @@ crashes while the target runs (including after a reload handover, where the
 same PID-liveness check that re-adopts services catches the death) marks the
 target failed with the service's name in the reason, so the degradation is
 visible on the Dev page (each service has
-its own sub-row there — status, real port, PID, and its own output). Every
+its own sub-row there — status, real port, PID, and its own output). The
+target's own crash tears its services down with it, so a companion can never
+outlive the stack it was booted for. Every
 declared service also answers on `repoos dev <name> status|logs --service <name>`.
 
 > **`[[dev.services]]` are deliberately TOML-only**, like
