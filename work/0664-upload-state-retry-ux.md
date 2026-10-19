@@ -2,18 +2,19 @@
 id: "0664"
 title: Upload state + retry UX
 type: feature
-status: inbox
+status: done
 priority: p1
 area: ui
 story: Cloud attachment storage
 depends_on: ["0660"]
+merged_commit: 0ad404a67d7ec817c3d2b9e140877802a02fadda
 assigned_to: ai
 created_by: ""
 branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-19T03:15:46Z"
+updated_at: "2026-10-19T03:17:06Z"
 last_close_out_gate_ms: 177133
 last_close_out_gate_at: "2026-10-19T03:15:40.714Z"
 review_passes: 7
@@ -119,3 +120,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-19T03:15:40Z · close-out gate completed in 177s
 - 2026-10-19T03:15:45Z · note: handoff requested (cli)
 - 2026-10-19T03:15:46Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-19T03:17:06Z · status inbox→done, release:success
