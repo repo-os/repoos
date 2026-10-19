@@ -207,9 +207,9 @@ function readMultiLineBasicString(sc: TomlScanner): void {
   }
   while (!sc.eof()) {
     if (sc.peek() === '"' && sc.peek(1) === '"' && sc.peek(2) === '"') {
-      sc.advance();
-      sc.advance();
-      sc.advance();
+      // One or two quotes immediately before the delimiter are content; the
+      // last three close the string (TOML allows up to five in the run).
+      for (let n = 0; n < 5 && sc.peek() === '"'; n++) sc.advance();
       return;
     }
     if (sc.peek() === "\\") {
@@ -242,9 +242,8 @@ function readMultiLineLiteralString(sc: TomlScanner): void {
   }
   while (!sc.eof()) {
     if (sc.peek() === "'" && sc.peek(1) === "'" && sc.peek(2) === "'") {
-      sc.advance();
-      sc.advance();
-      sc.advance();
+      // One or two quotes immediately before the delimiter are content.
+      for (let n = 0; n < 5 && sc.peek() === "'"; n++) sc.advance();
       return;
     }
     sc.advance();
