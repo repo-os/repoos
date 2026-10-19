@@ -45,8 +45,10 @@ Example `7559.json`:
 
 - **Written** once the HTTP listener has bound.
 - **Refreshed** when `repoos.toml` is reloaded and the project display name changes.
-- **Removed** on clean shutdown (`handle.close`, including SIGINT/SIGTERM from
-  `repoos serve`).
+- **Removed** on clean shutdown when the registry file still names this process's
+  PID (`handle.close`, including SIGINT/SIGTERM from `repoos serve`). After an
+  auto-reload handover the replacement overwrites the file first; the exiting
+  parent does not delete that entry.
 
 Registry I/O is best-effort: failures are logged once and never block startup.
 
