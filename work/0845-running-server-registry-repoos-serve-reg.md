@@ -2,7 +2,7 @@
 id: "0845"
 title: "Running-server registry: repoos serve registers itself in ~/.repoos/servers (plus repoos servers)"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, cli]
 assigned_to: ai
@@ -46,4 +46,4 @@ Look at src/server/server.ts (listen callback and shutdown hooks), src/core/runt
 - 2026-10-19T06:13:54Z · body
 - 2026-10-19T06:14:46Z · body
 - 2026-10-19T06:16:28Z · body
-- 2026-10-19T06:25:08Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-19T06:25:08Z · status active→review
