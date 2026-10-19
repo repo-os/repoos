@@ -14,7 +14,7 @@ branch: feat/allowlist-pause-an-agent-or-model-withou
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T18:12:35Z"
+updated_at: "2026-10-19T18:15:21Z"
 dev_error_count: 4
 ---
 ## Problem
@@ -48,7 +48,23 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
   "target": "default",
   "route": "/agents?tab=budget-controls",
   "highlight": "[data-testid=\"budget-paused-chip\"]",
-  "state": "budget:paused"
+  "assert": [
+    {
+      "selector": "[data-testid=\"budget-paused-chip\"]",
+      "label": "paused chip present",
+      "minCount": 1
+    }
+  ],
+  "state": "budget:paused",
+  "theme": "light"
+},
+{
+  "label": "Budget Controls: paused allowlist rows in dark theme",
+  "target": "default",
+  "route": "/agents?tab=budget-controls",
+  "highlight": "[data-testid=\"budget-paused-chip\"]",
+  "state": "budget:paused",
+  "theme": "dark"
 },
 {
   "label": "Per-model Paused chip with reason and resume date",
@@ -63,7 +79,8 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
       "waitMs": 400
     }
   ],
-  "state": "budget:paused"
+  "state": "budget:paused",
+  "theme": "light"
 },
 {
   "label": "Pause dialog: optional resume date and reason",
@@ -78,7 +95,8 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
       "waitMs": 400
     }
   ],
-  "state": "budget:paused"
+  "state": "budget:paused",
+  "theme": "light"
 }
 ]
 ```
@@ -127,3 +145,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T18:01:37Z · model_override
 - 2026-10-19T18:04:30Z · body
 - 2026-10-19T18:12:35Z · body
+- 2026-10-19T18:15:21Z · body
