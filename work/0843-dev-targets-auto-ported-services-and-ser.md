@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-19T20:04:33Z"
+review_passes: 8
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
@@ -16,8 +18,6 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T20:04:33Z"
-review_passes: 7
 review_rounds: 2
 dev_error_count: 1
 ---
@@ -166,3 +166,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T20:04:32Z · note: review pass 9: needs some work
 - 2026-10-19T20:04:33Z · needs_input
 - 2026-10-19T20:04:33Z · needs_input
+
