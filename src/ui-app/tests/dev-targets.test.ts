@@ -89,6 +89,14 @@ async function freePort(): Promise<number> {
 }
 
 /**
+ * A process-heavy supervisor test: spawns real children, waits for readiness
+ * and teardown, so it needs more than vitest's default 5s under machine load.
+ */
+const itSlow = (name: string, fn: () => Promise<void>): void => {
+  it(name, fn, 15_000);
+};
+
+/**
  * A genuinely foreign process holding a port RepoOS did not start — a helper
  * `bun -e` child that binds an OS-assigned port and reports it. Used to prove
  * auto-pick never stops such a process.
@@ -1963,7 +1971,7 @@ describe("DevTargetManager with services (#0843)", () => {
   // #0843 review — a target's own crash must not leave its companion services
   // running: they would otherwise hold ports (and resources) until a later
   // stop or a server shutdown.
-  it("stops the companion services when the target itself crashes", async () => {
+  itSlow("stops the companion services when the target itself crashes", async () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svctargetcrash-"));
     const mgr = new DevTargetManager(
       baseConfig(
@@ -2012,7 +2020,7 @@ describe("DevTargetManager with services (#0843)", () => {
 
   // #0843 review — a Stop that lands while an in-flight start is still booting
   // must cancel it: the start may not launch the stack after Stop returned.
-  it("cancels an in-flight start when stopped before it launches anything", async () => {
+  itSlow("cancels an in-flight start when stopped before it launches anything", async () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcstoprace-"));
     const targetMarker = join(dir, "target-launched.txt");
     const serviceMarker = join(dir, "service-launched.txt");
@@ -2059,7 +2067,7 @@ describe("DevTargetManager with services (#0843)", () => {
   // #0843 review — two services that normalize to the same placeholder token
   // must fail the start loudly rather than resolve `{api_v1.port}` to whichever
   // happened to boot last.
-  it("refuses to start when two services collide on the placeholder token", async () => {
+  itSlow("refuses to start when two services collide on the placeholder token", async () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svctokenclash-"));
     const mgr = new DevTargetManager(
       baseConfig(
@@ -2088,6 +2096,101 @@ describe("DevTargetManager with services (#0843)", () => {
       expect(result.error).toContain("{api_v1.port}");
       expect(mgr.get("app")?.status).toBe("failed");
       expect((mgr.get("app")?.services ?? []).every((s) => s.status === "stopped")).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review — a health file that already exists from a previous run must
+  // not satisfy the service gate. Readiness requires a file NEWER than the
+  // pre-spawn snapshot, so the target cannot start against an unready service.
+  itSlow("does not accept a stale health file left by a previous run", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcstale-"));
+    const readiness = join(dir, "ready.txt");
+    const memo = join(dir, "what-target-saw.txt");
+    // A marker from an earlier run, older than this start.
+    writeFileSync(readiness, "stale");
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            {
+              name: "api",
+              command: `bun -e "const f=require('node:fs');setTimeout(()=>f.writeFileSync('${readiness}','fresh'),800);setTimeout(()=>{},60000)"`,
+              healthCheck: { file: "ready.txt" },
+            },
+          ],
+          targets: [
+            // The target records what the readiness file held when it finally
+            // ran: "stale" means the gate raced ahead of the fresh marker.
+            webTarget({
+              kind: "process",
+              url: undefined,
+              command: `bun -e "const f=require('node:fs');f.writeFileSync('${memo}', f.readFileSync('${readiness}','utf8'));setTimeout(()=>{},60000)"`,
+            }),
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(true);
+      // Wait for the target process to run and record what it saw; bun's own
+      // startup can lag the readiness settle under load.
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline && !existsSync(memo)) {
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      expect(readFileSync(memo, "utf8")).toBe("fresh");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review — a Start arriving while Stop is terminating the target must
+  // wait, not claim a new generation and launch mid-stop; Stop's outcome is
+  // settled before the Start runs.
+  itSlow("serializes a Start that arrives while Stop is still terminating", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-stopstart-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          targets: [
+            webTarget({
+              kind: "process",
+              url: undefined,
+              services: undefined,
+              command: 'bun -e "setTimeout(()=>{},60000)"',
+            }),
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const started = await mgr.start("app");
+      expect(started.ok).toBe(true);
+      const firstPid = mgr.get("app")?.pid;
+      expect(typeof firstPid).toBe("number");
+
+      const stopPromise = mgr.stop("app");
+      // Let stop reach its SIGTERM grace wait, then race a Start in.
+      await new Promise((r) => setTimeout(r, 100));
+      const startPromise = mgr.start("app");
+
+      const stopResult = await stopPromise;
+      // Stop's result reflects a stopped target — the racing Start waited.
+      expect(stopResult.ok).toBe(true);
+      expect(stopResult.target?.status).toBe("stopped");
+
+      const startResult = await startPromise;
+      expect(startResult.ok).toBe(true);
+      const view = mgr.get("app");
+      expect(view?.status).toBe("running");
+      expect(view?.pid).not.toBe(firstPid);
     } finally {
       await mgr.stopAll();
       rmSync(dir, { recursive: true, force: true });

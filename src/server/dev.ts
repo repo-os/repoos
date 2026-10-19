@@ -233,6 +233,12 @@ export class DevTargetManager {
    */
   private startSeq = new Map<string, number>();
   /**
+   * Per-target stop gates (#0843 review). `stop()` publishes one for the whole
+   * duration of a teardown; `start()` waits on it, so the two can never
+   * interleave and a stop's outcome always wins at the moment it returns.
+   */
+  private stopping = new Map<string, Promise<void>>();
+  /**
    * Targets re-adopted across a reload handover (#0747): we have their PID
    * but no ChildProcess handle, so PID liveness is the only truth for them.
    */
@@ -458,6 +464,12 @@ export class DevTargetManager {
   async start(name: string): Promise<DevActionResult> {
     const t = this.target(name);
     if (!t) return { ok: false, error: `Unknown dev target "${name}"` };
+    // Wait out any stop in progress (and any stop that begins while we wait),
+    // so a start can never launch in the middle of a stop and leave the target
+    // running after Stop returned (#0843 review).
+    for (let stopping = this.stopping.get(name); stopping; stopping = this.stopping.get(name)) {
+      await stopping;
+    }
     const existing = this.running.get(name);
     if (existing) {
       // Already running (or a server we started that is still alive).
@@ -589,6 +601,12 @@ export class DevTargetManager {
       if (!serviceCwd) {
         return fail(`service "${def.name}" cwd "${def.cwd}" escapes the project root`);
       }
+      // Snapshot the health file BEFORE the service spawns, so a stale marker
+      // left by a previous run cannot satisfy the readiness gate (#0843 review).
+      const healthPath = def.healthCheck?.file
+        ? this.resolveHealthPath(def.healthCheck.file, serviceCwd)
+        : null;
+      const healthBaseline = healthFileStamp(healthPath);
       // PORT names the service's own reserved port; every sibling reserved so
       // far (and itself) is also reachable by environment variable, the way
       // the preview supervisor passes `REPOOS_PREVIEW_*`. A declared `env`
@@ -668,6 +686,7 @@ export class DevTargetManager {
         tokens,
         serviceCwd,
         t.name,
+        healthBaseline,
       );
       if (superseded()) return this.abortSupersededStart(t);
       if (!ready.ok) {
@@ -927,10 +946,11 @@ export class DevTargetManager {
    * Wait until a started companion service (#0843) is ready, with the same
    * contract as a target's readiness gate: its `healthCheck.url` answers (with
    * the service's own `{port}` and any sibling `{<token>.port}` substituted),
-   * or a `healthCheck.file` exists (resolved against the SERVICE's cwd), or —
-   * with no health check at all — the process is still alive after a short
-   * settle. Returns `{ ok:false }` with a reason on failure, never throwing;
-   * the caller prefixes the reason with the service's name.
+   * or a `healthCheck.file` exists (resolved against the SERVICE's cwd) AND is
+   * newer than its pre-spawn stamp — a stale marker from an earlier run does
+   * not count — or, with no health check at all, the process is still alive
+   * after a short settle. Returns `{ ok:false }` with a reason on failure, never
+   * throwing; the caller prefixes the reason with the service's name.
    */
   private async waitForServiceReady(
     def: DevServiceConfig,
@@ -939,6 +959,7 @@ export class DevTargetManager {
     tokens: Record<string, number>,
     cwd: string,
     target: string,
+    healthBaseline: number | null,
   ): Promise<{ ok: boolean; error: string }> {
     /** Abort when a sibling's crash has (or the target state has) failed. */
     const degraded = (): boolean => this.states.get(target)?.status === "failed";
@@ -949,7 +970,10 @@ export class DevTargetManager {
         return { ok: false, error: `healthCheck file "${hc.file}" escapes the project root` };
       const deadline = Date.now() + HEALTH_TIMEOUT_MS;
       while (Date.now() < deadline) {
-        if (existsSync(path)) return { ok: true, error: "" };
+        // Liveness first, then freshness: an exited service is never ready, and
+        // a file that predates this start is not this run's readiness signal.
+        if (this.isAlive(child) && healthFileIsFresh(path, healthBaseline))
+          return { ok: true, error: "" };
         if (degraded())
           return { ok: false, error: "startup aborted: a sibling companion service failed" };
         if (!this.isAlive(child)) {
@@ -1003,6 +1027,24 @@ export class DevTargetManager {
   async stop(name: string): Promise<DevActionResult> {
     const t = this.target(name);
     if (!t) return { ok: false, error: `Unknown dev target "${name}"` };
+    // Publish a stop gate BEFORE the first await: a `start()` arriving while
+    // this stop is still tearing the target down must wait it out rather than
+    // claim a new generation and launch mid-stop, which would leave the target
+    // running after Stop returned (#0843 review).
+    let releaseStop!: () => void;
+    const gate = new Promise<void>((resolveGate) => (releaseStop = resolveGate));
+    this.stopping.set(name, gate);
+    try {
+      return await this.stopInternal(t);
+    } finally {
+      releaseStop();
+      if (this.stopping.get(name) === gate) this.stopping.delete(name);
+    }
+  }
+
+  /** The body of {@link stop}, run behind the per-target stop gate. */
+  private async stopInternal(t: DevTargetConfig): Promise<DevActionResult> {
+    const name = t.name;
     // Cancel an in-flight start (#0843 review): bump the generation so the
     // running `doStart` stops at its next checkpoint. Without this, a Stop that
     // arrives while the first service port is being reserved would find no
@@ -1533,6 +1575,30 @@ function resolveWithin(base: string, relPath: string | undefined): string | null
   const rel = relative(root, full);
   if (rel.startsWith("..") || isAbsolute(rel)) return null;
   return full;
+}
+
+/**
+ * The mtime of a health-check file, or null when it does not exist. Captured
+ * BEFORE a process starts (#0843 review), so a marker left by an earlier run is
+ * distinguishable from one this run wrote.
+ */
+function healthFileStamp(path: string | null): number | null {
+  if (!path) return null;
+  try {
+    return statSync(path).mtimeMs;
+  } catch {
+    return null;
+  }
+}
+
+/** Whether a health file now exists and is NEWER than its pre-start stamp. */
+function healthFileIsFresh(path: string, baseline: number | null): boolean {
+  try {
+    const mtime = statSync(path).mtimeMs;
+    return baseline === null || mtime > baseline;
+  } catch {
+    return false;
+  }
 }
 
 const execFileAsync = promisify(execFile);
