@@ -193,7 +193,54 @@ function readLiteralString(sc: TomlScanner): void {
   sc.fail("unterminated string");
 }
 
-const MULTILINE_UNSUPPORTED = "multi-line strings aren't supported — keep each value on one line";
+function readMultiLineBasicString(sc: TomlScanner): void {
+  // Opening """
+  sc.advance(); sc.advance(); sc.advance();
+  // TOML trims the first newline after opening
+  if (sc.peek() === "\n") {
+    sc.advance();
+  } else if (sc.peek() === "\r" && sc.peek(1) === "\n") {
+    sc.advance(); sc.advance();
+  }
+  while (!sc.eof()) {
+    if (sc.peek() === '"' && sc.peek(1) === '"' && sc.peek(2) === '"') {
+      sc.advance(); sc.advance(); sc.advance();
+      return;
+    }
+    if (sc.peek() === "\\") {
+      sc.advance();
+      if (sc.eof()) sc.fail("unterminated multi-line basic string");
+      sc.advance();
+      continue;
+    }
+    if (sc.peek() === "\r") {
+      sc.advance();
+      if (sc.peek() === "\n") sc.advance();
+      continue;
+    }
+    sc.advance();
+  }
+  sc.fail("unterminated multi-line basic string");
+}
+
+function readMultiLineLiteralString(sc: TomlScanner): void {
+  // Opening '''
+  sc.advance(); sc.advance(); sc.advance();
+  // TOML trims the first newline after opening
+  if (sc.peek() === "\n") {
+    sc.advance();
+  } else if (sc.peek() === "\r" && sc.peek(1) === "\n") {
+    sc.advance(); sc.advance();
+  }
+  while (!sc.eof()) {
+    if (sc.peek() === "'" && sc.peek(1) === "'" && sc.peek(2) === "'") {
+      sc.advance(); sc.advance(); sc.advance();
+      return;
+    }
+    sc.advance();
+  }
+  sc.fail("unterminated multi-line literal string");
+}
 
 function readArray(sc: TomlScanner): void {
   sc.advance(); // [
@@ -247,12 +294,18 @@ function readBareValue(sc: TomlScanner): void {
 function readValue(sc: TomlScanner): void {
   const ch = sc.peek();
   if (ch === '"') {
-    if (sc.peek(1) === '"' && sc.peek(2) === '"') sc.fail(MULTILINE_UNSUPPORTED);
+    if (sc.peek(1) === '"' && sc.peek(2) === '"') {
+      readMultiLineBasicString(sc);
+      return;
+    }
     readBasicString(sc);
     return;
   }
   if (ch === "'") {
-    if (sc.peek(1) === "'" && sc.peek(2) === "'") sc.fail(MULTILINE_UNSUPPORTED);
+    if (sc.peek(1) === "'" && sc.peek(2) === "'") {
+      readMultiLineLiteralString(sc);
+      return;
+    }
     readLiteralString(sc);
     return;
   }
@@ -299,11 +352,6 @@ function readKeyValue(sc: TomlScanner): void {
   sc.skipInlineWhitespace();
   const startLine = sc.lineNumber;
   readValue(sc);
-  if (sc.lineNumber !== startLine) {
-    sc.fail(
-      "multi-line values aren't supported by RepoOS's config reader — keep arrays on a single line",
-    );
-  }
   sc.finishStatement();
 }
 

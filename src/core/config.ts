@@ -547,7 +547,12 @@ export function parseFlatToml(text: string): Record<string, unknown> {
   let section = "";
   let arrayTable: Record<string, unknown> | null = null;
   let arrayTableKey = "";
-  for (const rawLine of text.replace(/\r\n/g, "\n").split("\n")) {
+  const rawLines = text.replace(/\r\n/g, "\n").split("\n");
+  let idx = 0;
+
+  while (idx < rawLines.length) {
+    const rawLine = rawLines[idx];
+    idx++;
     const line = stripTomlComment(rawLine).trim();
     if (!line) continue;
     const arrSec = line.match(/^\[\[([^\]]+)\]\]$/);
@@ -566,10 +571,44 @@ export function parseFlatToml(text: string): Record<string, unknown> {
       arrayTable = null;
       continue;
     }
-    const kv = line.match(/^([A-Za-z0-9_.-]+)\s*=\s*(.+)$/);
-    if (!kv) continue;
-    const key = section ? `${section}.${kv[1]}` : kv[1];
-    let val: unknown = kv[2].trim();
+    const kvMatch = rawLine.match(/^([A-Za-z0-9_.-]+)\s*=\s*(.*)$/);
+    if (!kvMatch) continue;
+    const key = section ? `${section}.${kvMatch[1]}` : kvMatch[1];
+    let valueStr = kvMatch[2]!.trim();
+
+    // Multi-line literal (''') or basic (""") strings: accumulate from raw lines
+    if (valueStr.startsWith("'''") || valueStr.startsWith('"""')) {
+      const delimiter = valueStr.startsWith("'''") ? "'''" : '"""';
+      const valueParts: string[] = [];
+      const firstRest = valueStr.slice(delimiter.length);
+      if (firstRest.includes(delimiter)) {
+        valueStr = delimiter + firstRest.slice(0, firstRest.indexOf(delimiter)) + delimiter;
+      } else {
+        valueParts.push(firstRest);
+        while (idx < rawLines.length) {
+          const nextRaw = rawLines[idx];
+          const closeIdx = nextRaw.indexOf(delimiter);
+          if (closeIdx !== -1) {
+            valueParts.push(nextRaw.slice(0, closeIdx));
+            idx++;
+            valueStr = delimiter + valueParts.join("\n") + delimiter;
+            break;
+          } else {
+            valueParts.push(nextRaw);
+            idx++;
+          }
+        }
+      }
+      let val: unknown = unquoteTomlString(valueStr);
+      if (arrayTable && arrayTableKey) {
+        arrayTable[kvMatch[1]] = val;
+      } else {
+        out[key] = val;
+      }
+      continue;
+    }
+
+    let val: unknown = valueStr;
     const s = val as string;
     if (s.startsWith("[") && s.endsWith("]")) {
       val = s
@@ -585,7 +624,7 @@ export function parseFlatToml(text: string): Record<string, unknown> {
       val = unquoteTomlString(s);
     }
     if (arrayTable && arrayTableKey) {
-      arrayTable[kv[1]] = val;
+      arrayTable[kvMatch[1]] = val;
     } else {
       out[key] = val;
     }
