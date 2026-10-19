@@ -13,7 +13,7 @@ model_override: default
 review_cli_override: pi
 review_model_override: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
 created_at: "2026-10-19T07:50:02Z"
-updated_at: "2026-10-19T15:08:46Z"
+updated_at: "2026-10-19T15:25:20Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 198900f260fff3bc517084e2a76db31cad891aec
 ---
@@ -159,3 +159,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T15:05:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-19T15:06:36Z · body
 - 2026-10-19T15:08:46Z · body
+- 2026-10-19T15:25:20Z · body
