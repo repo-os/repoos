@@ -11,7 +11,7 @@ branch: feat/previews-tear-down-a-task-s-preview-serv
 review_cli_override: pi
 review_model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-10-19T14:24:17Z"
-updated_at: "2026-10-19T16:22:12Z"
+updated_at: "2026-10-19T16:24:26Z"
 dev_error_count: 2
 ---
 ## Problem
@@ -50,3 +50,4 @@ Look at src/server/preview-manager (or the PreviewManager) and the task status t
 - 2026-10-19T15:51:28Z · body
 - 2026-10-19T16:19:51Z · needs_input
 - 2026-10-19T16:22:12Z · body
+- 2026-10-19T16:24:26Z · body
