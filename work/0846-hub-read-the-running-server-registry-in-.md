@@ -2,7 +2,7 @@
 id: "0846"
 title: "Hub: read the running-server registry in Add server (scan as fallback)"
 type: feature
-status: active
+status: review
 priority: p2
 area: macos
 depends_on: ["0845"]
@@ -39,4 +39,4 @@ Depends on #0845 for the file format; develop against fixtures of that format an
 - 2026-10-19T07:51:13Z · cli_override, model_override
 - 2026-10-19T07:51:15Z · status ready→active, branch
 - 2026-10-19T07:56:31Z · body
-- 2026-10-19T08:05:02Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-19T08:05:02Z · status active→review
