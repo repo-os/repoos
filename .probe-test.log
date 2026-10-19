@@ -1,0 +1,121 @@
+$ node scripts/run-tests.mjs
+
+ RUN  v4.1.10 /Users/nick/code/nick/repoos-worktrees/feat/investigate-leaked-repoos-tmp-fixture-di/src/ui-app
+
+/var/folders/0r/4_d4rftj7t57174mrzqkhhsw0000gn/T/repoos-probe-NU8rzD/repoos-0717-URVTrC/candidate.bundle is okay
+Switched to a new branch 'feat/current'
+Switched to a new branch 'feat/current'
+Switched to a new branch 'feat/preflight'
+Switched to branch 'main'
+Switched to a new branch 'feat/conflict'
+Switched to branch 'main'
+Switched to a new branch 'side/wip'
+Switched to branch 'main'
+Automatic merge went well; stopped before committing as requested
+ ❯ tests/context-pack.test.ts (34 tests | 1 failed) 2066ms
+     × generates a context pack in the supported Node ESM runtime 18ms
+ ❯ tests/serve-reaper.test.ts (25 tests | 2 failed) 457ms
+     × flags a deleted cwd under the system temp dir, and nothing else 7ms
+     × reaps a real serve-shaped process whose tmpdir root is deleted (#0216) 364ms
+Switched to a new branch 'side'
+Switched to branch 'main'
+Switched to branch 'feat/other'
+Switched to branch 'main'
+Preparing worktree (new branch 'other/thing')
+Switched to a new branch 'other'
+Switched to a new branch 'hotfix/0999-already'
+ ❯ tests/agent-serve-guard.test.ts (6 tests | 1 failed) 160ms
+     × rejects an agent's direct repoos serve and leaves the port free 158ms
+error: pathspec 'work/0290-in-review.md' did not match any file(s) known to git
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/serve-reaper.test.ts > orphaned-root sweep classification (#0216) > flags a deleted cwd under the system temp dir, and nothing else
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/serve-reaper.test.ts:432:40
+    430|     const goneUnderTmp = join(tmpdir(), `repoos-autoprev-gone-${Date.n…
+    431|     // The dir was never created — a stand-in for a deleted fixture ro…
+    432|     expect(isOrphanRoot(goneUnderTmp)).toBe(true);
+       |                                        ^
+    433|
+    434|     // An existing temp-dir path is a healthy preview, not an orphan.
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/serve-reaper.test.ts > orphaned-root sweep classification (#0216) > reaps a real serve-shaped process whose tmpdir root is deleted (#0216)
+AssertionError: expected 0 to be greater than or equal to 1
+ ❯ tests/serve-reaper.test.ts:460:22
+    458|       const reaped = await sweep.cleanupOrphanedRoots();
+    459|
+    460|       expect(reaped).toBeGreaterThanOrEqual(1);
+       |                      ^
+    461|       const outcome = await exited;
+    462|       // The sweep's SIGTERM terminated it; the child must not have su…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  tests/context-pack.test.ts > context pack > generates a context pack in the supported Node ESM runtime
+AssertionError: error: Cannot find module '/Users/nick/code/nick/repoos-worktrees/feat/investigate-leaked-repoos-tmp-fixture-di/dist/core/context-pack.js' from '/Users/nick/code/nick/repoos-worktrees/feat/investigate-leaked-repoos-tmp-fixture-di/[eval]'
+
+Bun v1.4.2 (macOS arm64)
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ tests/context-pack.test.ts:255:59
+    253|     });
+    254|
+    255|     expect(result.status, result.stderr || result.stdout).toBe(0);
+       |                                                           ^
+    256|   });
+    257|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  tests/agent-serve-guard.test.ts > CLI rejection (real process) > rejects an agent's direct repoos serve and leaves the port free
+AssertionError: expected 'error: Module not found "/Users/nick/…' to match /may not launch `repoos serve`/i
+
+- Expected:
+/may not launch `repoos serve`/i
+
++ Received:
+"error: Module not found \"/Users/nick/code/nick/repoos-worktrees/feat/investigate-leaked-repoos-tmp-fixture-di/dist/cli/index.js\"
+"
+
+ ❯ tests/agent-serve-guard.test.ts:110:22
+    108|       // Guidance points the agent at the managed preview — the one sa…
+    109|       // way to verify a UI.
+    110|       expect(stderr).toMatch(/may not launch `repoos serve`/i);
+       |                      ^
+    111|       expect(stderr).toMatch(/preview/i);
+    112|     } finally {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  3 failed | 536 passed (539)
+      Tests  4 failed | 6600 passed | 24 skipped (6628)
+   Start at  03:20:39
+   Duration  446.74s (transform 7.16s, setup 2.01s, import 41.79s, tests 702.27s, environment 124.53s)
+
+
+ RUN  v4.1.10 /Users/nick/code/nick/repoos-worktrees/feat/investigate-leaked-repoos-tmp-fixture-di/src/ui-app
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  03:28:06
+   Duration  3.88s (transform 747ms, setup 6ms, import 883ms, tests 2.78s, environment 160ms)
+
+error: script "test" exited with code 1

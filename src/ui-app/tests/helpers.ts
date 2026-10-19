@@ -68,6 +68,28 @@ export async function waitFor(
  */
 export const STALE_FIXTURE_AGE_MS = 10 * 60 * 1000;
 
+/**
+ * SIGKILL every pid recorded in a fixture's `spawns.log`, if the file exists.
+ * A missing/malformed log means there is nothing to kill.
+ */
+function killSpawnedFromLog(path: string): void {
+  let log: string;
+  try {
+    log = readFileSync(path, "utf8");
+  } catch {
+    return;
+  }
+  for (const line of log.trim().split("\n")) {
+    if (!line) continue;
+    try {
+      const rec = JSON.parse(line) as { pid?: number };
+      if (typeof rec.pid === "number") process.kill(rec.pid, "SIGKILL");
+    } catch {
+      /* already gone */
+    }
+  }
+}
+
 export function reapStaleFixtures(prefix: string): number {
   let entries: string[];
   try {
@@ -96,19 +118,16 @@ export function reapStaleFixtures(prefix: string): number {
     }
     if (mtimeMs >= cutoff) continue;
     if (!isWorktreesSibling) {
+      killSpawnedFromLog(join(root, "spawns.log"));
+      // Fixtures usually sit directly under `tmpdir()`, but a per-test-file
+      // tmpdir (#0858) nests them one level down. Scan that level too so a
+      // crashed worker's fake agents are still reaped along with the tree.
       try {
-        const log = readFileSync(join(root, "spawns.log"), "utf8");
-        for (const line of log.trim().split("\n")) {
-          if (!line) continue;
-          try {
-            const rec = JSON.parse(line) as { pid?: number };
-            if (typeof rec.pid === "number") process.kill(rec.pid, "SIGKILL");
-          } catch {
-            /* already gone */
-          }
+        for (const entry of readdirSync(root, { withFileTypes: true })) {
+          if (entry.isDirectory()) killSpawnedFromLog(join(root, entry.name, "spawns.log"));
         }
       } catch {
-        /* no log — nothing to kill */
+        /* unreadable — the rm below still removes it */
       }
     }
     rmSync(root, { recursive: true, force: true });

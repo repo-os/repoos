@@ -22,9 +22,22 @@
  * file that adopts the same fixture convention — so this gap can't
  * silently reopen per-file again.
  */
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { reapStaleFixtures } from "../helpers";
 
-export default function setup(): void {
+/**
+ * Every file's isolated tmpdir (see tmp-isolation.ts) lives under this run's
+ * root, and `teardown` removes the root after all workers have exited. Doing
+ * the final sweep here — not only in each file's `afterAll` — catches dirs a
+ * late best-effort write recreated after that hook ran (a killed agent's exit
+ * handler persisting its session, for example) and dirs left by a worker that
+ * died mid-file.
+ */
+let runRoot: string | undefined;
+
+export async function setup(): Promise<void> {
   const removed = reapStaleFixtures("repoos-");
   // A steady trickle is normal (each run leaves a few dirs a torn-down worker
   // never cleaned). A big number means a test is leaking on every run — surface
@@ -37,4 +50,16 @@ export default function setup(): void {
         `(\`ls "$TMPDIR" | grep '^repoos-' | sed 's/-[A-Za-z0-9]\\{6\\}.*//' | sort | uniq -c | sort -rn\`).`,
     );
   }
+
+  // Workers inherit this and put their per-file tmpdir under it.
+  runRoot = mkdtempSync(join(tmpdir(), "repoos-vitest-"));
+  process.env.REPOOS_TEST_TMP_ROOT = runRoot;
+}
+
+/** Runs once after every worker has exited (normal completion or test failure). */
+export async function teardown(): Promise<void> {
+  const root = runRoot ?? process.env.REPOOS_TEST_TMP_ROOT;
+  if (!root) return;
+  rmSync(root, { recursive: true, force: true });
+  delete process.env.REPOOS_TEST_TMP_ROOT;
 }
