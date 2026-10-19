@@ -166,3 +166,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T19:04:09Z · status active→review
 - 2026-10-19T19:04:09Z · note: handoff requested (cli)
 - 2026-10-19T19:10:51Z · status active→review
+- 2026-10-19T19:10:51Z · note: shots: skipped — 10 shots already captured — an engineer-made capture pre-empts the automatic one
