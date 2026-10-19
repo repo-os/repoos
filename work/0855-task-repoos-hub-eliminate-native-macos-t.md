@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-19T16:51:14Z"
-review_passes: 8
 id: "0855"
 title: RepoOS Hub — remove native macOS titlebar and consolidate controls into the sidebar
 type: refactor
@@ -17,6 +15,7 @@ pm_model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T15:35:14Z"
+updated_at: "2026-10-19T16:39:25Z"
 ---
 ## Problem
 
@@ -298,23 +297,6 @@ A few refinements I'd suggest:
 One correction to the drawing: Your actual sidebar is relatively narrow, so don't interpret the mockup as a request to widen it. The objective is to recover vertical space without increasing sidebar width.
 I would also avoid making navigation controls too prominent. They should feel like subtle macOS utilities, not another navigation system competing with the RepoOS web UI.
 
-## Shots
-```json
-[
-{
-"label": "Hub docs: new Window layout section and relocated Settings",
-"target": "Docs site",
-"route": "/macos-hub",
-"highlight": "#window-layout"
-}
-]
-```
-
-## Screenshots
-
-![Native Hub built from this branch (sidebar visible): full-height sidebar with no titlebar, navigation row at the top, Settings in the footer, WebView reclaiming the top space.](/api/tasks/0855/attachments/att_f1c92509-dc5f-40d7-8dab-3af7dc263c23.png)
-![Native Hub from this branch (sidebar collapsed): WebView fills the width and a floating reveal toggle sits in the content's upper-left, below the traffic lights.](/api/tasks/0855/attachments/att_81413d92-0637-4312-8de1-a8e08215fd64.png)
-
 ## Activity
 
 - 2026-10-19T15:35:14Z · created · hello@repoos.org
@@ -326,18 +308,4 @@ I would also avoid making navigation controls too prominent. They should feel li
 - 2026-10-19T15:43:22Z · model_override
 - 2026-10-19T15:43:25Z · review_cli_override, review_model_override
 - 2026-10-19T15:43:27Z · status ready→active, branch
-- 2026-10-19T16:14:34Z · body
-- 2026-10-19T16:22:01Z · body
-- 2026-10-19T16:27:57Z · body
-- 2026-10-19T16:28:40Z · screenshots
-- 2026-10-19T16:29:22Z · screenshots
-- 2026-10-19T16:39:26Z · status active→review
-- 2026-10-19T16:41:11Z · note: review pass 1: needs some work
-- 2026-10-19T16:43:02Z · note: review pass 2: needs some work
-- 2026-10-19T16:44:20Z · note: review pass 3: needs some work
-- 2026-10-19T16:45:49Z · note: review pass 4: needs some work
-- 2026-10-19T16:47:20Z · note: review pass 5: needs some work
-- 2026-10-19T16:48:38Z · note: review pass 6: needs some work
-- 2026-10-19T16:49:48Z · note: review pass 7: needs some work
-- 2026-10-19T16:51:14Z · note: review pass 8: needs some work
-
+- 2026-10-19T16:39:25Z · status active→review

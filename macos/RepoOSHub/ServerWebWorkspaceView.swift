@@ -24,8 +24,12 @@ struct ServerWebWorkspaceView: View {
                     .ignoresSafeArea()
                 // Theme isolation lives in ServerWebView (pinned to the
                 // system appearance): the Hub shell override above never
-                // reaches server content.
+                // reaches server content. The page extends to the window's top
+                // edge only, so the detail reclaims the space the native
+                // titlebar used to reserve (#0855) without bleeding sideways
+                // under the sidebar column.
                 ServerWebView(model: webModel, appState: appState)
+                    .ignoresSafeArea(edges: .top)
                     .id(entry.id)
             } else {
                 invalidOriginState
@@ -67,7 +71,6 @@ struct ServerWebWorkspaceView: View {
                 onDismiss: webModel.dismissExternalPrompt
             )
         }
-        .navigationTitle(entry.name)
         .onDisappear {
             if appState.selectedServerID == entry.id {
                 appState.updateWorkspaceNavigation(.placeholder)
