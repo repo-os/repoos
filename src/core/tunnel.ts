@@ -231,12 +231,24 @@ export function upsertTunnelSection(text: string, cfg: TunnelConfig): string {
     if (kept.length && kept[kept.length - 1].trim() !== "") kept.push("");
     kept.push(serializeTunnelSection(cfg));
   }
-  return (
-    kept
-      .join("\n")
-      .replace(/\n{3,}/g, "\n\n")
-      .trimEnd() + "\n"
-  );
+  // Collapse a run of 2+ blank lines introduced around the replaced block to
+  // one — but never a blank line that is content inside a `'''`/`"""` string.
+  // The old global `\n{3,}` replace did exactly that: it rewrote string content.
+  const finalScan = tomlContinuationLines(kept);
+  const collapsed: string[] = [];
+  let k = 0;
+  while (k < kept.length) {
+    if (!finalScan[k] && kept[k]!.trim() === "") {
+      let j = k;
+      while (j < kept.length && !finalScan[j] && kept[j]!.trim() === "") j++;
+      collapsed.push("");
+      k = j;
+    } else {
+      collapsed.push(kept[k]!);
+      k++;
+    }
+  }
+  return collapsed.join("\n").trimEnd() + "\n";
 }
 
 /** Read the `[tunnel]` state out of this repo's repoos.toml. */
