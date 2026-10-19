@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-19T06:42:11Z"
+review_passes: 2
 id: "0845"
 title: "Running-server registry: repoos serve registers itself in ~/.repoos/servers (plus repoos servers)"
 type: feature
@@ -11,9 +13,7 @@ branch: feat/running-server-registry-repoos-serve-reg
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:59:37Z"
-updated_at: "2026-10-19T06:42:11Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 RepoOS Hub's Add server sheet wants to list locally running RepoOS servers, but there is no central place that says what is running. It brute-force probes ports 7000-7999 (unreliable, #0844). The only machine-wide file today is `~/.repoos/services.json`, which lists just the repos installed with `repoos service` (launchd), including stale `status: running` entries, and nothing for a plain `repoos serve` (for example the lightingai project on 7559).
@@ -57,3 +57,4 @@ Look at src/server/server.ts (listen callback and shutdown hooks), src/core/runt
 - 2026-10-19T06:40:45Z · status active→review
 - 2026-10-19T06:40:47Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-19T06:42:11Z · note: review pass 2: needs some work
+
