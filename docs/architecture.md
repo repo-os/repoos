@@ -132,6 +132,12 @@ writes a serve lock but never appears there). This is the tuk-private failure
 said so. The `build` line always describes *this checkout*, so for a project
 repo it reads "no RepoOS build" rather than the misleading "source checkout".
 
+**Machine-wide running servers:** each control-plane `repoos serve` also
+registers under `~/.repoos/servers/<port>.json` (atomic, user-only permissions).
+`repoos servers` lists and validates those entries for Hub and scripts; see
+[server-registry.md](./server-registry.md). This is not `~/.repoos/services.json`
+(managed OS services only).
+
 `repoos status --json` emits the same snapshot for agents/tooling (stable
 shape, covered by test):
 

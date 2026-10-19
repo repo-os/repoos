@@ -429,6 +429,19 @@ path so separate repos never collide.
 Stops this repo's server, identified by its own lockfile. It will not touch a
 server belonging to a different repo.
 
+### `repoos servers [--json] [--prune]`
+
+Lists every control-plane `repoos serve` that registered itself under
+`~/.repoos/servers/` (one `<port>.json` per listener). Shows port, project
+name, repo root, PID, uptime, and whether the entry still looks healthy (PID
+alive and `/api/health` reports the same root).
+
+`--prune` removes stale registry files (dead PID, or a live PID whose
+`/api/health` is unreachable or reports a different root), then lists the rest.
+`--json` prints the same data for scripts. Preview servers and task worktree
+serves never register. See [Running-server registry](/docs/server-registry.md)
+for the Hub JSON contract.
+
 ### `repoos status [--json]`
 
 One-screen health snapshot: server, build freshness, board counts, worktrees,
