@@ -226,6 +226,13 @@ export class DevTargetManager {
   /** Starts in flight per target, so concurrent calls never double-spawn. */
   private inflight = new Map<string, Promise<DevActionResult>>();
   /**
+   * Monotonic start generation per target (#0843). A `stop()` (or `stopAll()`)
+   * bumps it, so an in-flight `doStart` sees itself superseded at its next
+   * checkpoint and tears down instead of launching the stack after Stop has
+   * already returned.
+   */
+  private startSeq = new Map<string, number>();
+  /**
    * Targets re-adopted across a reload handover (#0747): we have their PID
    * but no ChildProcess handle, so PID liveness is the only truth for them.
    */
@@ -462,11 +469,15 @@ export class DevTargetManager {
     const inflight = this.inflight.get(name);
     if (inflight) return inflight;
 
+    // Claim a new start generation (#0843): a stop bumps this same counter to
+    // cancel the start before it launches anything.
+    const seq = (this.startSeq.get(name) ?? 0) + 1;
+    this.startSeq.set(name, seq);
     // An `artifact` target is a one-shot build that exits; a re-start must
     // begin from a clean slate rather than refuse because the prior run is
     // recorded as "failed".
     this.setState(name, { status: "starting", error: undefined, log: [] });
-    const p = this.doStart(t);
+    const p = this.doStart(t, seq);
     this.inflight.set(name, p);
     p.finally(() => this.inflight.delete(name)).catch(() => {
       /* handled by callers */
@@ -474,9 +485,15 @@ export class DevTargetManager {
     return p;
   }
 
-  private async doStart(t: DevTargetConfig): Promise<DevActionResult> {
+  private async doStart(t: DevTargetConfig, seq: number): Promise<DevActionResult> {
     const cwd = this.config.root;
     const processGroup = process.platform !== "win32";
+    /**
+     * True once a concurrent stop has superseded this start (#0843 review).
+     * Checked at every await boundary so a Stop that arrives while a port is
+     * being reserved cannot be outrun by the rest of the startup.
+     */
+    const superseded = (): boolean => this.startSeq.get(t.name) !== seq;
 
     // A degraded target (a service crashed while it ran) still has a live main
     // process, and a stale stop can leave a lagging one: starting over it would
@@ -487,9 +504,13 @@ export class DevTargetManager {
       await this.killProcess(t.name);
     }
     await this.killServiceRuns(t.name);
+    if (superseded()) return this.abortSupersededStart(t);
 
     /** Fail the whole start: tear down what booted, record, log, report. */
     const fail = async (message: string): Promise<DevActionResult> => {
+      // A stop that landed during an await already owns the outcome; report the
+      // neutral stopped state rather than a failure the user did not cause.
+      if (superseded()) return this.abortSupersededStart(t);
       await this.killServiceRuns(t.name);
       this.setState(t.name, { status: "failed", error: message });
       this.appendLog(t.name, `[repoos] ${message}`);
@@ -515,14 +536,28 @@ export class DevTargetManager {
      * main command) can reference an earlier one by `{<token>.port}`.
      */
     const tokens: Record<string, number> = {};
+    // Reject placeholder collisions BEFORE booting anything: two distinct names
+    // that normalize to the same token (`api-v1` and `api_v1`) make the
+    // documented `{<token>.port}` reference ambiguous, so fail loudly rather
+    // than silently disambiguating it (#0843 review).
+    const seenTokens = new Map<string, string>();
+    for (const def of resolved.defs) {
+      const token = servicePortToken(def.name) || "service";
+      const clash = seenTokens.get(token);
+      if (clash) {
+        return fail(
+          `services "${clash}" and "${def.name}" both map to the placeholder ` +
+            `"{${token}.port}" — rename one so each has a distinct token`,
+        );
+      }
+      seenTokens.set(token, def.name);
+    }
 
     for (const def of resolved.defs) {
-      // The token names the service's port in every sibling's placeholders;
-      // sanitized identically to `[[preview.services]]` and disambiguated
-      // deterministically when two names collide after sanitization.
-      const base = servicePortToken(def.name) || "service";
-      let token = base;
-      for (let n = 2; Object.keys(tokens).includes(token); n++) token = `${base}_${n}`;
+      if (superseded()) return this.abortSupersededStart(t);
+      // The token names the service's port in every sibling's placeholders,
+      // sanitized identically to `[[preview.services]]`.
+      const token = servicePortToken(def.name) || "service";
 
       let servicePort: number;
       // #0802 handling mirrored per service: auto-pick (the default) prefers
@@ -548,6 +583,7 @@ export class DevTargetManager {
         }
       }
       tokens[token] = servicePort;
+      if (superseded()) return this.abortSupersededStart(t);
 
       const serviceCwd = def.cwd ? resolveWithin(cwd, def.cwd) : cwd;
       if (!serviceCwd) {
@@ -564,6 +600,7 @@ export class DevTargetManager {
         ...(def.env ?? {}),
       };
 
+      if (superseded()) return this.abortSupersededStart(t);
       let child: ChildProcess;
       try {
         child = spawn(expandServiceRefs(def.command, servicePort, tokens), {
@@ -632,6 +669,7 @@ export class DevTargetManager {
         serviceCwd,
         t.name,
       );
+      if (superseded()) return this.abortSupersededStart(t);
       if (!ready.ok) {
         this.appendServiceLog(t.name, def.name, `[repoos] ${ready.error}`);
         // A sibling's exit may have failed the target while this gate was
@@ -691,6 +729,7 @@ export class DevTargetManager {
     if (standing?.status === "failed") {
       return fail(standing.error ?? "a companion service failed during startup");
     }
+    if (superseded()) return this.abortSupersededStart(t);
     const command = expandServiceRefs(t.command, resolvedPort, tokens);
 
     let child: ChildProcess;
@@ -739,6 +778,9 @@ export class DevTargetManager {
       if (this.running.get(t.name)?.child === child) {
         this.running.delete(t.name);
         this.setState(t.name, { status: "failed", error: err.message });
+        // The stack is dead: its companion services must not outlive it
+        // (#0843 review). They can otherwise hold ports the next start needs.
+        void this.killServiceRuns(t.name);
       }
     });
     child.on("exit", (code, signal) => {
@@ -754,6 +796,10 @@ export class DevTargetManager {
         }`;
         this.setState(t.name, { status: "failed", error: reason, stoppedAt: now() });
         this.appendLog(t.name, `[repoos] ${reason}`);
+        // A crashed target takes its companion services down with it, so a
+        // dead API/frontend pair cannot leave a stranded process holding its
+        // port until a later stop or server shutdown (#0843 review).
+        void this.killServiceRuns(t.name);
       } else if (ok) {
         this.setState(t.name, { status: "running", error: undefined, stoppedAt: now() });
         this.appendLog(t.name, "[repoos] build finished (exit 0)");
@@ -761,6 +807,7 @@ export class DevTargetManager {
         const reason = `exited with code ${code ?? "?"}${signal ? ` (${signal})` : ""}`;
         this.setState(t.name, { status: "failed", error: reason, stoppedAt: now() });
         this.appendLog(t.name, `[repoos] ${reason}`);
+        void this.killServiceRuns(t.name);
       }
     });
 
@@ -771,6 +818,7 @@ export class DevTargetManager {
         child.once("exit", () => resolvePromise());
         child.once("error", () => resolvePromise());
       });
+      if (superseded()) return this.abortSupersededStart(t);
       const state = this.states.get(t.name);
       if (state?.status === "failed") {
         // A failed build tears its companion services down with it (#0843
@@ -787,6 +835,7 @@ export class DevTargetManager {
     // which is exactly how a `process` target is healthy.
     const ready = await this.waitForReady(t, child, resolvedPort, tokens);
     if (!ready.ok) {
+      if (superseded()) return this.abortSupersededStart(t);
       await this.killProcess(t.name);
       if (this.states.get(t.name)?.status !== "failed") {
         this.setState(t.name, { status: "failed", error: ready.error });
@@ -797,6 +846,7 @@ export class DevTargetManager {
       await this.killServiceRuns(t.name);
       return { ok: false, error: ready.error, target: this.view(t) };
     }
+    if (superseded()) return this.abortSupersededStart(t);
     if (this.states.get(t.name)?.status !== "failed") {
       this.setState(t.name, { status: "running", error: undefined });
     }
@@ -953,6 +1003,11 @@ export class DevTargetManager {
   async stop(name: string): Promise<DevActionResult> {
     const t = this.target(name);
     if (!t) return { ok: false, error: `Unknown dev target "${name}"` };
+    // Cancel an in-flight start (#0843 review): bump the generation so the
+    // running `doStart` stops at its next checkpoint. Without this, a Stop that
+    // arrives while the first service port is being reserved would find no
+    // process to kill yet and the start would go on to launch the whole stack.
+    this.startSeq.set(name, (this.startSeq.get(name) ?? 0) + 1);
     this.adopted.delete(name);
     // Capture the live service PIDs BEFORE the state flips to `stopped` —
     // after the flip they no longer read as live, but they are exactly the
@@ -979,6 +1034,11 @@ export class DevTargetManager {
     for (const pid of liveServicePids) {
       if (isAlivePid(pid)) await this.killPid(pid, process.platform !== "win32");
     }
+    // Let a cancelled start finish unwinding before returning (#0843 review),
+    // so a following restart cannot pick up the same in-flight promise and a
+    // Stop that returns has provably launched nothing further.
+    const inflight = this.inflight.get(name);
+    if (inflight) await inflight.catch(() => {});
     return { ok: true, target: this.view(t) };
   }
 
@@ -994,8 +1054,16 @@ export class DevTargetManager {
 
   /** Stop every target we started — used on server shutdown. */
   async stopAll(): Promise<void> {
-    const names = [...new Set([...this.running.keys(), ...this.serviceRuns.keys()])];
+    const names = [
+      ...new Set([
+        ...this.running.keys(),
+        ...this.serviceRuns.keys(),
+        ...this.inflight.keys(),
+      ]),
+    ];
     for (const name of names) {
+      // Cancel any in-flight start so it cannot relaunch after this shutdown.
+      this.startSeq.set(name, (this.startSeq.get(name) ?? 0) + 1);
       this.setState(name, { status: "stopped", stoppedAt: now() });
       await this.killProcess(name);
       await this.killServiceRuns(name);
@@ -1350,6 +1418,22 @@ export class DevTargetManager {
         ),
       );
     }
+  }
+
+  /**
+   * Tear down a start that a concurrent stop superseded (#0843 review): kill
+   * anything it booted and report the neutral stopped state, rather than a
+   * failure the user did not cause. `stop()` already owns the target's state,
+   * so this only settles what the unwinding start had not reached yet.
+   */
+  private async abortSupersededStart(t: DevTargetConfig): Promise<DevActionResult> {
+    await this.killServiceRuns(t.name);
+    await this.killProcess(t.name);
+    const state = this.states.get(t.name);
+    if (state && (state.status === "starting" || state.status === "running")) {
+      this.setState(t.name, { status: "stopped", error: undefined, stoppedAt: now() });
+    }
+    return { ok: true, target: this.view(t) };
   }
 
   private async killProcess(name: string): Promise<void> {

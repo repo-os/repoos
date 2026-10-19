@@ -451,6 +451,7 @@ export function devTargetServiceErrors(
   const known = new Set((services ?? []).map((s) => s.name));
   for (const t of targets) {
     const listed = new Set<string>();
+    const tokenNames = new Map<string, string>();
     for (const name of t.services ?? []) {
       if (!known.has(name)) {
         errors.push(
@@ -463,6 +464,19 @@ export function devTargetServiceErrors(
         continue;
       }
       listed.add(name);
+      // Two distinct names can normalize to the same placeholder token
+      // (`api-v1` / `api_v1`); the documented `{<name>.port}` reference would
+      // then be ambiguous, so reject it as a config error rather than silently
+      // disambiguating it with an undocumented suffix (#0843 review).
+      const token = servicePortToken(name) || "service";
+      const clash = tokenNames.get(token);
+      if (clash) {
+        errors.push(
+          `[dev.targets] ${t.name}: services "${clash}" and "${name}" both map to the placeholder "{${token}.port}" — rename one so each has a distinct token`,
+        );
+        continue;
+      }
+      tokenNames.set(token, name);
     }
   }
   return errors;
