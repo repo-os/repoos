@@ -334,6 +334,9 @@ export class DevTargetManager {
    * Stop the process holding a port a failed target could not bind (#0775).
    * Only ever kills a PID RepoOS recorded for one of its own dev targets — a
    * foreign process is left alone, with its PID and command shown instead.
+   * The holder's whole stack stops: when the holder is a companion service,
+   * its target and sibling services stop with it, so freeing a service's port
+   * cannot leave the rest running (#0843 review).
    */
   async stopHolder(name: string): Promise<DevActionResult> {
     const t = this.target(name);
@@ -349,15 +352,15 @@ export class DevTargetManager {
         error: `Process ${holder.pid} was not started by RepoOS — stop it yourself with the command shown.`,
       };
     }
-    const live = this.running.get(holder.target);
-    if (live) {
-      await this.killProcess(holder.target);
-    } else {
+    // Stop the WHOLE stack that owns the port — the target process and its
+    // companion services. A declared target goes through the gated `stop()`;
+    // a persisted target no longer in config is torn down directly.
+    if (this.target(holder.target)) await this.stop(holder.target);
+    else await this.teardownStack(holder.target);
+    // A target re-adopted across a reload has no live handle, so the teardown
+    // above does not kill its own process; make sure the holder itself is gone.
+    if (isAlivePid(holder.pid)) {
       await this.killPid(holder.pid, process.platform !== "win32");
-    }
-    const state = this.states.get(holder.target);
-    if (state && (state.status === "running" || state.status === "starting")) {
-      this.setState(holder.target, { status: "stopped", error: undefined, stoppedAt: now() });
     }
     return { ok: true, target: this.view(t) };
   }
@@ -1059,7 +1062,17 @@ export class DevTargetManager {
 
   /** The body of {@link stop}, run behind the per-target stop gate. */
   private async stopInternal(t: DevTargetConfig): Promise<DevActionResult> {
-    const name = t.name;
+    await this.teardownStack(t.name);
+    return { ok: true, target: this.view(t) };
+  }
+
+  /**
+   * Tear down a target's running stack — its process and its companion
+   * services — and mark its state stopped. Works from persisted state, so the
+   * port-conflict Stop action can free a port held by a target that is no
+   * longer declared in config (#0843 review).
+   */
+  private async teardownStack(name: string): Promise<void> {
     // Cancel an in-flight start (#0843 review): bump the generation so the
     // running `doStart` stops at its next checkpoint. Without this, a Stop that
     // arrives while the first service port is being reserved would find no
@@ -1068,7 +1081,7 @@ export class DevTargetManager {
     this.adopted.delete(name);
     // Capture the live service PIDs BEFORE the state flips to `stopped` —
     // after the flip they no longer read as live, but they are exactly the
-    // processes this stop is for.
+    // processes this teardown is for.
     const liveServicePids = (this.states.get(name)?.services ?? [])
       .filter((s) => s.status === "running" || s.status === "starting")
       .map((s) => s.pid)
@@ -1096,7 +1109,6 @@ export class DevTargetManager {
     // Stop that returns has provably launched nothing further.
     const inflight = this.inflight.get(name);
     if (inflight) await inflight.catch(() => {});
-    return { ok: true, target: this.view(t) };
   }
 
   /** Restart a target: stop, then start fresh. */
@@ -1644,9 +1656,12 @@ function isAlivePid(pid: number): boolean {
 }
 
 /**
- * Which dev target (if any) recorded `pid`, and whether that target has no live
- * handle (a leftover from an earlier run). Exported for the port-holder
- * ownership test (#0775); the manager itself is the only caller.
+ * Which dev target (if any) recorded `pid` — either as the target's own process
+ * or as one of its companion services (#0843) — and whether that target has no
+ * live handle (a leftover from an earlier run). A service PID resolves to its
+ * TARGET, so the port-conflict Stop action can stop the whole stack. Exported
+ * for the port-holder ownership test (#0775); the manager itself is the only
+ * caller.
  */
 export function devPidOwner(
   states: ReadonlyMap<string, DevTargetState>,
@@ -1655,6 +1670,9 @@ export function devPidOwner(
 ): { target: string; stale: boolean } | null {
   for (const [name, state] of states) {
     if (state.pid === pid) return { target: name, stale: !live.has(name) };
+    if ((state.services ?? []).some((s) => s.pid === pid)) {
+      return { target: name, stale: !live.has(name) };
+    }
   }
   return null;
 }

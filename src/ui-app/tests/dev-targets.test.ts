@@ -2289,6 +2289,83 @@ describe("DevTargetManager with services (#0843)", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  // #0843 review — the port-conflict Stop action must stop the WHOLE stack that
+  // owns the port. A listener held by a companion service resolves to its
+  // target, and stopping it tears the target and its services down.
+  itSlow("stop-holder stops the target stack that owns a service-held port", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-stopholder-"));
+    const heldPort = await freePort();
+    // Seed a failed `web` whose port clash names `heldPort`.
+    mkdirSync(join(dir, ".repoos"), { recursive: true });
+    writeFileSync(
+      join(dir, ".repoos", "dev-targets.json"),
+      JSON.stringify({
+        mainPid: 999999,
+        targets: {
+          web: {
+            name: "web",
+            status: "failed",
+            error: "process exited with code 1",
+            log: [`Error: listen EADDRINUSE: address already in use :::${heldPort}`],
+          },
+        },
+      }),
+    );
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [apiService({ autoPort: false, port: heldPort, healthCheck: undefined })],
+          targets: [
+            webTarget({
+              name: "holder",
+              kind: "process",
+              url: undefined,
+              command: 'bun -e "setTimeout(()=>{},60000)"',
+            }),
+            webTarget({
+              name: "web",
+              kind: "process",
+              url: undefined,
+              services: undefined,
+              command: 'bun -e "setTimeout(()=>{},60000)"',
+            }),
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const started = await mgr.start("holder");
+      expect(started.ok).toBe(true);
+      const targetPid = mgr.get("holder")?.pid;
+      const svcPid = mgr.get("holder")?.services?.[0].pid;
+      expect(typeof targetPid).toBe("number");
+      expect(typeof svcPid).toBe("number");
+      // Resolve the holder to the SERVICE's PID without depending on lsof/ss:
+      // the ownership mapping (service PID -> target) is what is under test.
+      (
+        mgr as unknown as {
+          lookupPortHolder: (port: number) => Promise<{ pid: number; command: string } | null>;
+        }
+      ).lookupPortHolder = async () => ({ pid: svcPid!, command: "api" });
+
+      const detailed = await mgr.getDetailed("web");
+      expect(detailed?.failure?.canStopHolder).toBe(true);
+      expect(detailed?.failure?.holder?.target).toBe("holder");
+      expect(detailed?.failure?.holder?.pid).toBe(svcPid);
+
+      const stopped = await mgr.stopHolder("web");
+      expect(stopped.ok).toBe(true);
+      expect(mgr.get("holder")?.status).toBe("stopped");
+      expect(mgr.get("holder")?.services?.[0].status).toBe("stopped");
+      expect(await waitForDead(targetPid!)).toBe(true);
+      expect(await waitForDead(svcPid!)).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("dev target services API shape (#0843)", () => {
