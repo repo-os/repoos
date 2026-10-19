@@ -583,6 +583,61 @@ describe("failed-release version-bump handling (#0780)", () => {
     expect(calls.some((c) => c.includes("reset --soft"))).toBe(false);
     expect(calls).not.toContain("git log -1 --format=%s");
   });
+
+  it("explains an unpushed bump left by a prior attempt when it is still HEAD", async () => {
+    // A retry after a previous attempt committed the bump: this run creates no
+    // commit of its own (`status.version === version`), so the rollback path
+    // cannot fire — but the operator still needs to know the commit is there.
+    const cfg = config();
+    writeFileSync(join(cfg.root, "package.json"), JSON.stringify({ version: "1.2.4" }));
+    const calls: string[] = [];
+    const result = await cutNewRelease(
+      cfg,
+      "1.2.4",
+      "v1.2.4",
+      releaseRunner(cfg, calls, {
+        check: failingCheck,
+        gitOverrides: {
+          "log -1 --format=%s": { code: 0, stdout: "release: v1.2.4\n", stderr: "" },
+        },
+      }),
+    );
+    expect(result.ok).toBe(false);
+    expect(result.output).toContain("gate red");
+    expect(result.output).toContain('version-bump commit ("release: v1.2.4")');
+    expect(result.output).toContain("still HEAD");
+    expect(result.output).toContain("git reset --soft HEAD~1");
+    // We never rewrite a commit this run did not create.
+    expect(calls.some((c) => c.includes("reset --soft"))).toBe(false);
+    expect(calls).not.toContain("git push origin main");
+  });
+
+  it("points at an older unpushed bump rather than claiming this run cut it", async () => {
+    const cfg = config();
+    writeFileSync(join(cfg.root, "package.json"), JSON.stringify({ version: "1.2.4" }));
+    const calls: string[] = [];
+    const result = await cutNewRelease(
+      cfg,
+      "1.2.4",
+      "v1.2.4",
+      releaseRunner(cfg, calls, {
+        check: failingCheck,
+        gitOverrides: {
+          "log origin/main..HEAD --format=%s": {
+            code: 0,
+            stdout: "docs: bookkeeping\nrelease: v1.2.4\n",
+            stderr: "",
+          },
+        },
+      }),
+    );
+    expect(result.ok).toBe(false);
+    expect(result.output).toContain("gate red");
+    expect(result.output).toContain('version-bump commit ("release: v1.2.4")');
+    expect(result.output).toContain("git log --oneline --grep='^release: v1.2.4$'");
+    expect(result.output).not.toContain("still HEAD");
+    expect(calls.some((c) => c.includes("reset --soft"))).toBe(false);
+  });
 });
 
 /** A `%x1e%H%x1f%h%x1f%s` + --name-only log chunk, one commit per record. */
