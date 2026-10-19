@@ -1765,7 +1765,8 @@ label = "Divot bar"
 | `dev.targets[].autoPort` | boolean | no | Auto-pick a free port for `{port}` (#0802). Default `true`; set `false` to pin the target to `port` and let a clash fail with the summary. |
 | `dev.targets[].artifactPath` | string | for `artifact` | Repo-relative path of the build output. |
 | `dev.targets[].label` | string | no | Human label shown in the UI; defaults to `name`. |
-| `dev.targets[].healthCheck.url` | string | no | URL polled until it answers before a `server` target is reported running. Defaults to `url`; may contain `{port}`. |
+| `dev.targets[].services` | array of strings | no | Names of `[[dev.services]]` rows (#0843) booted before this target, in order, each on its own port. The target's `command`, `url` and `healthCheck.url` reference one as `{name.port}` / `{name.url}`. Unknown or repeated names are validation errors. |
+| `dev.targets[].healthCheck.url` | string | no | URL polled until it answers before a `server` target is reported running. Defaults to `url`; may contain `{port}` and `{name.port}`. |
 | `dev.targets[].healthCheck.file` | string | no | Repo-relative file that must exist before the target is reported running. |
 
 `{port}` in a target's `command`, `url` or `healthCheck.url` is replaced with a
@@ -1791,6 +1792,64 @@ the browser; it stops only when you ask, when the server stops, or when it
 crashes. Status is one of `running`, `stopped`, `starting` or `failed`, and the
 last 2000 lines of a target's combined output are kept and shown in a scrollable
 panel on the Dev page.
+
+### Dev target services
+
+A full-stack target — a web dev server whose backend proxies to it — does not
+need either port pinned in config. Declare companion services as a repeatable
+`[[dev.services]]` table next to `[[dev.targets]]` (the dev counterpart of
+`[[preview.services]]`), and reference them from a target's `services` list
+(#0843):
+
+```toml
+[[dev.services]]
+name = "api"
+command = "bun --watch src/server/index.ts"   # reads PORT
+healthCheck = { url = "http://localhost:{port}/api/health" }
+
+[[dev.targets]]
+name = "app"
+kind = "server"
+services = ["api"]
+command = "bun run dev -- --port {port} --api-port {api.port}"
+url = "http://localhost:{port}"
+```
+
+On **Start**, every listed service boots BEFORE the target, each on its own
+port, and is health-gated: a service whose health check (or, with none
+declared, a short alive-settle) does not pass fails the start with the
+service's name in the reason, and everything started so far is torn down — the
+target otherwise starts fine and then proxies to a dead API. Each service's
+port is substituted into the target's `command`, `url` and `healthCheck.url` as
+`{<name>.port}` / `{<name>.url}` (name lowercased, non-alphanumerics collapsed
+to `_`), passed as `PORT` and `REPOOS_DEV_<NAME>_PORT` / `REPOOS_DEV_<NAME>_URL`
+to the service, and passed as the same `REPOOS_DEV_*` variables to the main
+command. Inside a service's own `command` and `healthCheck.url`, `{port}` (and
+`PORT`) is the service's own port. Services boot in the order listed, so a
+service may reference a sibling declared before it.
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `dev.services[].name` | string | yes | Label used to reference the service from a target's `services` list and in diagnostics. |
+| `dev.services[].command` | string | yes | Command that boots the service. Its own `{port}`/`PORT` is the port RepoOS assigns it. |
+| `dev.services[].cwd` | string | repo root | Repo-relative subdirectory to run the command in. |
+| `dev.services[].port` | number | no | The service's preferred/fixed port, handled exactly like a target's `port` (#0802). |
+| `dev.services[].autoPort` | boolean | no | Auto-pick a free port; default `true`. With `false` the `port` is fixed and an occupied one fails with a message naming the service. |
+| `dev.services[].healthCheck.url` | string | no | URL polled (with ports substituted) until it answers before the service counts as ready. |
+| `dev.services[].healthCheck.file` | string | no | Repo-relative file (resolved against the service's `cwd`) that must exist. |
+| `dev.services[].env` | table | no | Extra environment variables for the service's process, e.g. `env = { LOG_LEVEL = "debug" }`. |
+
+Stopping or restarting the target stops its services with it. A service that
+crashes while the target runs marks the target failed with the service's name
+in the reason, so the degradation is visible on the Dev page (each service has
+its own sub-row there — status, real port, PID, and its own output). Every
+declared service also answers on `repoos dev <name> status|logs --service <name>`.
+
+> **`[[dev.services]]` are deliberately TOML-only**, like
+> `[[preview.services]]`: a service is a command + port + health check + env
+> table no Settings row can express. Edit them in `repoos.toml`; a target's
+> `services` name list can also be edited in the Dev targets card
+> (Settings → Advanced) and round-trips through it.
 
 When a target fails, the Dev page shows a plain-language summary above its
 output — what failed, the most likely cause, and how to fix it. A port already

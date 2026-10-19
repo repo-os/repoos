@@ -305,6 +305,67 @@ url = "http://localhost:5173"
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  // #0843 — a target's companion-service name list round-trips through the
+  // PATCH and is validated against the declared [[dev.services]] rows.
+  it("writes a target's services list and rejects one naming an undeclared service", async () => {
+    // The round-trip needs a declared [[dev.services]] row to validate against.
+    const root = repo(
+      ["[[dev.services]]", 'name = "api"', 'command = "bun --watch src/server/index.ts"', ""].join(
+        "\n",
+      ),
+    );
+    try {
+      const res = await patch(root, { devTargets: [{ ...WEB, services: ["api"] }] });
+      expect(res.status).toBe(200);
+      const text = readFileSync(join(root, "repoos.toml"), "utf8");
+      expect(text).toContain('services = ["api"]');
+      const cfg = loadConfig(root);
+      expect(cfg.dev?.targets?.[0].services).toEqual(["api"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+    // With no [[dev.services]] block, "api" resolves nowhere: a 400.
+    const res2 = await patch(root, { devTargets: [{ ...WEB, services: ["api"] }] });
+    expect(res2.status).toBe(400);
+    expect(String(res2.payload.error)).toContain('unknown service "api"');
+  });
+
+  it("is a no-op when a services-holding list already matches disk", async () => {
+    const root = repo(
+      [
+        "[[dev.services]]",
+        'name = "api"',
+        'command = "bun --watch src/server/index.ts"',
+        "",
+        "[[dev.targets]]",
+        'name = "web"',
+        'kind = "server"',
+        'services = ["api"]',
+        'command = "bun run dev"',
+        'url = "http://localhost:5173"',
+        "",
+      ].join("\n"),
+    );
+    try {
+      const before = readFileSync(join(root, "repoos.toml"), "utf8");
+      const res = await patch(root, {
+        devTargets: [
+          {
+            name: "web",
+            kind: "server",
+            command: "bun run dev",
+            url: "http://localhost:5173",
+            services: ["api"],
+          },
+        ],
+      });
+      expect(res.status).toBe(200);
+      expect(readFileSync(join(root, "repoos.toml"), "utf8")).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("Settings control client-side validation (#0749)", () => {
@@ -316,6 +377,8 @@ describe("Settings control client-side validation (#0749)", () => {
       url: "http://localhost:5173",
       label: "Web app",
       healthCheck: { url: "http://localhost:5173/health" },
+      // #0843: the companion-service name list survives a Settings edit.
+      services: ["api", "db"],
     };
     const draft = draftFromTarget(row);
     expect(draft).toEqual({
@@ -329,12 +392,16 @@ describe("Settings control client-side validation (#0749)", () => {
       healthCheckFile: "",
       autoPort: true,
       port: "",
+      services: "api, db",
     });
     expect(targetFromDraft(draft)).toMatchObject({
       name: "web",
       url: "http://localhost:5173",
       healthCheckUrl: "http://localhost:5173/health",
+      services: ["api", "db"],
     });
+    // Whitespace and a trailing comma never leak into the wire row.
+    expect(targetFromDraft({ ...draft, services: " api , db, " }).services).toEqual(["api", "db"]);
   });
 
   it("uses the parser's own message for a bad row (no second copy of the rules)", () => {
