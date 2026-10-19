@@ -147,6 +147,15 @@ import {
 } from "../core/remote-hosts.js";
 import { runBuiltInAgent, isDueForScheduledRun, builtInAgentLabel } from "./built-in-agents.js";
 import { runScheduleTick } from "./schedule-runner.js";
+import { runReminderTick, shouldRunReminderAutomation } from "./reminder-tick.js";
+import {
+  getReminders,
+  postReminder,
+  patchReminder,
+  postReminderDone,
+  postReminderSnooze,
+  removeReminder,
+} from "./routes/reminders.js";
 import { shouldRunScheduledTaskAutomation } from "./schedule-automation.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { AutoEngineeringOrchestrator } from "./auto-engineering.js";
@@ -2561,6 +2570,23 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   };
 
+  let reminderTimer: ReturnType<typeof setInterval> | undefined;
+  if (shouldRunReminderAutomation(config, process.env, requestedPort)) {
+    const tick = (): void => {
+      try {
+        runReminderTick(repoos.config, emitEvent, process.env, requestedPort);
+      } catch (error) {
+        logger.system(
+          "warn",
+          `Reminder tick failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    };
+    reminderTimer = setInterval(tick, 30_000);
+    reminderTimer.unref?.();
+    tick();
+  }
+
   const scheduleAutoStart = {
     config: repoos.config,
     index,
@@ -2968,6 +2994,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/docs/freeform", createFreeformDoc);
   router.register("GET", "/api/inputs", getInputs);
   router.register("POST", "/api/inputs", postInput);
+  router.register("GET", "/api/reminders", getReminders);
+  router.register("POST", "/api/reminders", postReminder);
+  router.register("PATCH", /^\/api\/reminders\/([^/]+)$/, patchReminder);
+  router.register("DELETE", /^\/api\/reminders\/([^/]+)$/, removeReminder);
+  router.register("POST", /^\/api\/reminders\/([^/]+)\/done$/, postReminderDone);
+  router.register("POST", /^\/api\/reminders\/([^/]+)\/snooze$/, postReminderSnooze);
   router.register("GET", "/api/schedules", getSchedules);
   router.register("POST", "/api/schedules", postSchedule);
   router.register("POST", "/api/schedules/preview", postSchedulePreview);
@@ -3980,6 +4012,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         clearInterval(systemSampleTimer);
         if (reapTimer) clearInterval(reapTimer);
         clearInterval(builtInTimer);
+        if (reminderTimer) clearInterval(reminderTimer);
         clearInterval(worktreeSweepTimer);
         clearTimeout(initialWorktreeSweep);
         ctoMonitor.stop();
@@ -4046,6 +4079,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           clearInterval(worktreeSweepTimer);
           clearTimeout(initialWorktreeSweep);
           clearInterval(builtInTimer);
+          if (reminderTimer) clearInterval(reminderTimer);
           ctoMonitor.stop();
           runner.dispose();
           // Stop the Telegram polling transport (if armed) with the rest of

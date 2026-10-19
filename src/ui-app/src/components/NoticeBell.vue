@@ -135,7 +135,10 @@ function openTask(t: { id: string }): void {
 /** Template helper: the dot/accent color for a notice kind. */
 const noticeColor = (kind: NoticeKind): string => NOTICE_KIND_COLOR[kind] ?? "var(--cyan)";
 
-const shownNotices = computed(() => activeNotices.value.slice(0, NOTICE_FEED_LIMIT));
+const shownNotices = computed(() => [
+  ...activeNotices.value.filter((n) => n.kind === "reminderDue"),
+  ...activeNotices.value.filter((n) => n.kind !== "reminderDue").slice(0, NOTICE_FEED_LIMIT),
+]);
 const shownTasks = computed(() => humanNeeds.value.slice(0, 4));
 
 function timeOf(iso: string): string {
@@ -214,6 +217,7 @@ watch(open, (o) => {
               <button
                 type="button"
                 class="notice-x"
+                v-if="n.kind !== 'reminderDue'"
                 aria-label="Dismiss notice"
                 @click="notices.dismiss(n.id)"
               >
