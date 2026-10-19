@@ -14,7 +14,7 @@ branch: feat/investigate-leaked-repoos-tmp-fixture-di
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T19:04:41Z"
-updated_at: "2026-10-19T20:45:44Z"
+updated_at: "2026-10-19T20:49:52Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 1
@@ -77,3 +77,4 @@ Verification: a full pass now leaves 0 dirs in an isolated TMPDIR; a follow-up r
 - 2026-10-19T20:45:44Z · status active→review
 - 2026-10-19T20:45:44Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (becf875fb) during finalization (#0734)
 - 2026-10-19T20:45:44Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (becf875fb) during finalization (#0734)
+- 2026-10-19T20:49:52Z · note: review pass 2: needs some work
