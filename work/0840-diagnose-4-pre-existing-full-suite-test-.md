@@ -1,20 +1,21 @@
 ---
-last_close_out_gate_ms: 116390
-last_close_out_gate_at: "2026-10-19T03:11:47.656Z"
 id: "0840"
 title: "Diagnose 4 pre-existing full-suite test failures (activity-indicator-motion ×3, agent-contract ×1)"
 type: bug
-status: review
+status: done
 paths: [src/ui-app/tests/activity-indicator-motion.test.ts, src/ui-app/tests/agent-contract.test.ts]
 priority: p3
 area: [web, core]
+merged_commit: 445279d35cb3ed79d3fbf95bec338f5e17872729
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/diagnose-4-pre-existing-full-suite-test-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T22:39:47Z"
-updated_at: "2026-10-19T03:11:47Z"
+updated_at: "2026-10-19T03:12:35Z"
+last_close_out_gate_ms: 116390
+last_close_out_gate_at: "2026-10-19T03:11:47.656Z"
 review_passes: 1
 ---
 ## Problem
@@ -98,4 +99,4 @@ Start from the Problem and Attribution sections above (the #0834 engineer alread
 - 2026-10-19T03:03:22Z · status active→review
 - 2026-10-19T03:04:10Z · note: review pass 1: good to go
 - 2026-10-19T03:11:47Z · close-out gate completed in 116s
-
+- 2026-10-19T03:12:35Z · status review→done, release:success
