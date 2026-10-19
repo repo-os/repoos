@@ -2,20 +2,37 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var appState: HubAppState
+    @AppStorage(HubSidebarVisibility.collapsedDefaultsKey) private var isSidebarCollapsed = false
+
+    /// The split view drives its own visibility, but the persisted flag is the
+    /// source of truth so collapsing the sidebar survives a relaunch (#0855).
+    private var columnVisibility: Binding<NavigationSplitViewVisibility> {
+        Binding(
+            get: { HubSidebarVisibility.visibility(isCollapsed: isSidebarCollapsed) },
+            set: { isSidebarCollapsed = HubSidebarVisibility.isCollapsed($0) }
+        )
+    }
 
     var body: some View {
-        NavigationSplitView {
-            ServerSidebarView()
+        NavigationSplitView(columnVisibility: columnVisibility) {
+            ServerSidebarView(columnVisibility: columnVisibility)
         } detail: {
             WorkspaceDetailView()
-                .toolbar { HubWorkspaceToolbar() }
+                .overlay(alignment: .topLeading) {
+                    if isSidebarCollapsed {
+                        HubSidebarRevealButton {
+                            isSidebarCollapsed = false
+                        }
+                        .padding(.leading, 10)
+                        .padding(.top, 8)
+                    }
+                }
         }
-        // The system may otherwise keep a dark titlebar material even when
-        // the Hub shell is set to Light. Render the window toolbar explicitly
-        // from the selected shell appearance instead.
-        .toolbarBackground(toolbarBackground, for: .windowToolbar)
-        .toolbarBackground(.visible, for: .windowToolbar)
-        .toolbarColorScheme(appState.hubGlobalPreferences.appearance.colorScheme, for: .windowToolbar)
+        // The Hub has no native titlebar or toolbar row: the sidebar runs to
+        // the window's top edge and the workspace fills the reclaimed space.
+        // Traffic lights, dragging, resizing, minimize, and fullscreen stay
+        // native because this is still an ordinary titled NSWindow (#0855).
+        .toolbar(.hidden, for: .windowToolbar)
         // NavigationSplitView leaves a narrow native frame around the sidebar
         // and its bottom inset. Keep that exposed frame on the same surface.
         .background {
@@ -69,10 +86,6 @@ struct ContentView: View {
                     .environmentObject(appState)
             }
         }
-    }
-
-    private var toolbarBackground: Color {
-        shellBackground
     }
 
     private var shellBackground: Color {

@@ -126,10 +126,8 @@ final class HubAppDelegate: NSObject, NSApplicationDelegate {
         NSApp.appearance = appKitAppearance
         NSApp.windows.forEach { window in
             window.appearance = appKitAppearance
-            window.titlebarAppearsTransparent = false
             window.isOpaque = true
             window.backgroundColor = hubAppearance.appKitWindowBackgroundColor
-            window.toolbarStyle = .unified
             window.contentView?.wantsLayer = true
             window.contentView?.layer?.backgroundColor = hubAppearance.appKitWindowBackgroundColor.cgColor
 
@@ -176,10 +174,9 @@ private struct HubWindowAppearanceConfigurator: NSViewRepresentable {
             guard let window = view.window else { return }
             let appKitAppearance = appearance.appKitAppearance
             window.appearance = appKitAppearance
-            window.titlebarAppearsTransparent = false
+            configureHubWorkspaceWindowChrome(window)
             window.isOpaque = true
             window.backgroundColor = appearance.appKitWindowBackgroundColor
-            window.toolbarStyle = .unified
             window.contentView?.wantsLayer = true
             window.contentView?.layer?.backgroundColor = appearance.appKitWindowBackgroundColor.cgColor
 
@@ -197,6 +194,19 @@ private struct HubWindowAppearanceConfigurator: NSViewRepresentable {
             )
         }
     }
+}
+
+/// Gives the workspace window a full-height sidebar with no visible titlebar or
+/// toolbar row (#0855). The traffic lights, window dragging, resizing,
+/// minimizing, and fullscreen all stay native because this remains a standard
+/// titled NSWindow: the title text is hidden, the titlebar is transparent, and
+/// the content view extends underneath it. The sidebar toggle and navigation
+/// controls live in the sidebar instead of a toolbar.
+func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
+    window.titleVisibility = .hidden
+    window.titlebarAppearsTransparent = true
+    window.styleMask.insert(.fullSizeContentView)
+    window.toolbar?.isVisible = false
 }
 
 private func applyNativeSurfaceBackgrounds(
