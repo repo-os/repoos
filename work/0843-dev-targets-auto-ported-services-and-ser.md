@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/dev-targets-auto-ported-services-and-ser
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T11:34:09Z"
+updated_at: "2026-10-19T11:35:47Z"
 ---
 ## Problem
 `[[dev.targets]]` supports a single `{port}` for one process, so a full-stack dev target (an API plus a frontend that proxies to it) must pin the API to a fixed port. In the lightingai project the Bun API is pinned to 3001 because the Vite proxy needs to know it, so two copies of the stack, or anything else on 3001, collide. `[[preview.targets]]` already solves this with `[[preview.services]]` and `{api.port}` (#0681), but dev targets have no equivalent. Suggested by the owner (2026-10-19): frontends can already be dynamic, the API should be able to be too.
@@ -43,6 +43,19 @@ On the Dev page the target shows its services as sub-rows with their own status,
 ## Notes for AI
 RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/config.ts`, the dev process manager (grep `dev/targets` in `src/server/routes`), `src/ui-app/src/views/DevView.vue`, and how `[[preview.services]]` (#0681) substitutes `{api.port}`. Keep the zero-runtime-dependency rule. Related bug filed separately: TOML `'''` multi-line literal strings are mis-parsed (stray quotes on the Dev page); do not depend on it.
 
+## Shots
+```json
+[
+{
+  "label": "Dev page: target with an auto-ported service sub-row (status pill, real port, PID, collapsible output)",
+  "target": "default",
+  "route": "/dev",
+  "highlight": "[data-test-id=dev-services]",
+  "state": "dev:running"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-19T05:12:47Z · created · njachowski@gmail.com
@@ -53,3 +66,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T09:53:59Z · message_queued at 2026-10-19T09:53:59.706Z
 - 2026-10-19T09:53:59Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-19T11:34:09Z · body
+- 2026-10-19T11:35:47Z · body
