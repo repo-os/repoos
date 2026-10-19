@@ -3,9 +3,6 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "✗ Server finalization stopped at check: remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate. The task stays active — fix the failure and ask again."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T17:21:01Z"
+updated_at: "2026-10-19T17:21:05Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -117,3 +114,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T14:32:58Z · note: review pass 4: needs some work
 - 2026-10-19T17:20:55Z · cli_override, model_override
 - 2026-10-19T17:21:01Z · model_override
+- 2026-10-19T17:21:05Z · needs_input (dev-error) dismissed by hello@repoos.org
