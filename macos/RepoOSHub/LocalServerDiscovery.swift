@@ -14,7 +14,7 @@ struct LocalServerDiscoveryConfiguration: Sendable {
     var maxConcurrency: Int = 48
     /// Per health probe; connection refused fails immediately.
     var probeTimeout: TimeInterval = 1.25
-    /// Stop scheduling new probes after this; return whatever succeeded so far.
+    /// Stops dequeuing new ports after this, cancels in-flight probes, and returns partial results.
     var overallDeadline: TimeInterval = 2.0
 }
 
@@ -87,9 +87,11 @@ enum LocalListeningPortEnumerator {
 enum LocalServerDiscovery {
     /// Probes localhost RepoOS servers for the Add-server sheet.
     ///
-    /// **Port selection:** When `listeningPortEnumerator` succeeds (macOS `lsof` listeners in
-    /// `configuration.portRange`), only those ports are health-checked. Otherwise every port in
-    /// the range is scanned with bounded concurrency.
+    /// **Port selection:** When `listeningPortEnumerator` returns a port list (including `[]` when
+    /// `lsof` reports no listeners), only those ports are health-checked. When it returns `nil`
+    /// (`lsof` missing or failed), every port in the range is scanned with bounded concurrency.
+    /// An empty `lsof` result intentionally does not trigger a full scan — a false-empty `lsof`
+    /// would be rare; use the manual URL field if discovery misses a server.
     static func discover(
         knownLocalPorts: Set<Int>,
         configuration: LocalServerDiscoveryConfiguration = LocalServerDiscoveryConfiguration(),
@@ -117,6 +119,7 @@ enum LocalServerDiscovery {
         let deadline = Date().addingTimeInterval(configuration.overallDeadline)
         let collector = DiscoveryResultCollector()
         let portQueue = SharedPortIterator(ports: candidatePorts)
+        let ownsNetworkSession = healthChecker == nil
 
         await withTaskGroup(of: Void.self) { group in
             let workerCount = min(configuration.maxConcurrency, candidatePorts.count)
@@ -124,7 +127,6 @@ enum LocalServerDiscovery {
             for _ in 0 ..< workerCount {
                 group.addTask {
                     while !Task.isCancelled {
-                        if Date() >= deadline { return }
                         guard let port = await portQueue.nextPort() else { return }
                         if let server = await Self.probe(port: port, checker: checker) {
                             await collector.append(server, onUpdate: onUpdate)
@@ -132,10 +134,22 @@ enum LocalServerDiscovery {
                     }
                 }
             }
+
+            group.addTask {
+                let remaining = deadline.timeIntervalSinceNow
+                if remaining > 0 {
+                    try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
+                }
+                if ownsNetworkSession {
+                    sharedSession.invalidateAndCancel()
+                }
+                group.cancelAll()
+            }
+
             await group.waitForAll()
         }
 
-        if healthChecker == nil {
+        if ownsNetworkSession {
             sharedSession.finishTasksAndInvalidate()
         }
 
@@ -157,6 +171,7 @@ enum LocalServerDiscovery {
         guard let url = URL(string: "http://localhost:\(port)") else { return nil }
 
         for attempt in 0 ..< 2 {
+            if Task.isCancelled { return nil }
             switch await checker.checkHealth(origin: url) {
             case .success(let name, _, _):
                 return DiscoveredLocalServer(port: port, projectName: name)

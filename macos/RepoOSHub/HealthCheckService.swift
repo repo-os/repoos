@@ -97,6 +97,8 @@ struct RepoOSHealthChecker: HealthChecking {
     }
 
     /// One shared ephemeral session for localhost discovery probes.
+    /// Loopback `/api/health` does not redirect; per-origin `HealthCheckRedirectGuard` is only used
+    /// for one-off checks that create their own session.
     static func makeSharedDiscoverySession(timeout: TimeInterval) -> URLSession {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = timeout
