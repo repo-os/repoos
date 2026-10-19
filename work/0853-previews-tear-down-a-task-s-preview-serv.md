@@ -2,7 +2,7 @@
 id: "0853"
 title: "Previews: tear down a task's preview server when it leaves active/review, and enforce one preview at a time"
 type: bug
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/previews-tear-down-a-task-s-preview-serv
 review_cli_override: pi
 review_model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-10-19T14:24:17Z"
-updated_at: "2026-10-19T16:40:58Z"
+updated_at: "2026-10-19T16:48:54Z"
 dev_error_count: 2
 ---
 ## Problem
@@ -53,3 +53,4 @@ Look at src/server/preview-manager (or the PreviewManager) and the task status t
 - 2026-10-19T16:24:26Z · body
 - 2026-10-19T16:31:53Z · handoff failed · remote validation failed: test failure: tests/task-archive.test.ts > POST /api/tasks/:id/archive (#0657) > refuses while a preview is running on bee — fix it in the feature branch and re-run the gate
 - 2026-10-19T16:40:58Z · body
+- 2026-10-19T16:48:54Z · status active→review
