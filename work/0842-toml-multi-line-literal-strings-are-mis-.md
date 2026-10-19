@@ -16,7 +16,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-10-19T18:02:04Z"
+updated_at: "2026-10-19T18:04:05Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 3
@@ -81,3 +81,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T17:49:57Z · status review→active
 - 2026-10-19T17:52:17Z · body
 - 2026-10-19T18:02:04Z · status active→review
+- 2026-10-19T18:04:05Z · note: review pass 3: needs some work
