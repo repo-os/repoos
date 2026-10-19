@@ -120,21 +120,18 @@ enum LocalServerDiscovery {
         let collector = DiscoveryResultCollector()
         let portQueue = SharedPortIterator(ports: candidatePorts)
         let ownsNetworkSession = healthChecker == nil
+        let workerCount = min(configuration.maxConcurrency, candidatePorts.count)
 
         await withTaskGroup(of: Void.self) { group in
-            let workerCount = min(configuration.maxConcurrency, candidatePorts.count)
-
-            for _ in 0 ..< workerCount {
-                group.addTask {
-                    while !Task.isCancelled {
-                        guard let port = await portQueue.nextPort() else { return }
-                        if let server = await Self.probe(port: port, checker: checker) {
-                            await collector.append(server, onUpdate: onUpdate)
-                        }
-                    }
-                }
+            group.addTask {
+                await Self.runProbeWorkers(
+                    workerCount: workerCount,
+                    portQueue: portQueue,
+                    checker: checker,
+                    collector: collector,
+                    onUpdate: onUpdate
+                )
             }
-
             group.addTask {
                 let remaining = deadline.timeIntervalSinceNow
                 if remaining > 0 {
@@ -143,9 +140,9 @@ enum LocalServerDiscovery {
                 if ownsNetworkSession {
                     sharedSession.invalidateAndCancel()
                 }
-                group.cancelAll()
             }
-
+            await group.next()
+            group.cancelAll()
             await group.waitForAll()
         }
 
@@ -154,6 +151,28 @@ enum LocalServerDiscovery {
         }
 
         return await collector.sortedResults()
+    }
+
+    private static func runProbeWorkers(
+        workerCount: Int,
+        portQueue: SharedPortIterator,
+        checker: HealthChecking,
+        collector: DiscoveryResultCollector,
+        onUpdate: (@Sendable ([DiscoveredLocalServer]) -> Void)?
+    ) async {
+        await withTaskGroup(of: Void.self) { workers in
+            for _ in 0 ..< workerCount {
+                workers.addTask {
+                    while !Task.isCancelled {
+                        guard let port = await portQueue.nextPort() else { return }
+                        if let server = await Self.probe(port: port, checker: checker) {
+                            await collector.append(server, onUpdate: onUpdate)
+                        }
+                    }
+                }
+            }
+            await workers.waitForAll()
+        }
     }
 
     private static func portsToProbe(
