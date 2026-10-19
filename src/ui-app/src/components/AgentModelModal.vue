@@ -273,7 +273,9 @@ watch(
                 @click="!m.disabled && selectModel(m.value)"
               >
                 <span class="am-model-label">{{ m.label }}</span>
-                <span v-if="m.disabled" class="am-model-disabled-hint">— unavailable</span>
+                <span v-if="m.disabled" class="am-model-disabled-hint"
+                  >— {{ m.hint || "unavailable" }}</span
+                >
                 <div class="am-model-actions">
                   <span v-if="m.value === model" class="am-model-check">✓</span>
                   <button
@@ -305,7 +307,9 @@ watch(
               @click="!m.disabled && selectModel(m.value)"
             >
               <span class="am-model-label">{{ m.label }}</span>
-              <span v-if="m.disabled" class="am-model-disabled-hint">— unavailable</span>
+              <span v-if="m.disabled" class="am-model-disabled-hint"
+                >— {{ m.hint || "unavailable" }}</span
+              >
               <div class="am-model-actions">
                 <span v-if="m.value === model" class="am-model-check">✓</span>
                 <button
