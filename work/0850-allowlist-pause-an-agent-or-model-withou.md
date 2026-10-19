@@ -14,7 +14,7 @@ branch: feat/allowlist-pause-an-agent-or-model-withou
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T18:52:42Z"
+updated_at: "2026-10-19T18:52:43Z"
 last_close_out_gate_ms: 459723
 last_close_out_gate_at: "2026-10-19T18:52:38.334Z"
 review_passes: 1
@@ -158,3 +158,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T18:40:24Z · note: review pass 1: good to go
 - 2026-10-19T18:52:38Z · close-out gate completed in 460s
 - 2026-10-19T18:52:41Z · note: handoff requested (cli)
+- 2026-10-19T18:52:43Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
