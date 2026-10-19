@@ -3,6 +3,9 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — Stop can race startup and allow a target to launch after Stop returns.
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -105,3 +108,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T14:01:41Z · status active→review
 - 2026-10-19T14:01:43Z · note: shots: failed — preview for target "default" did not start: Preview servers are read-only; only the main RepoOS control plane can start previews
 - 2026-10-19T14:04:10Z · note: review pass 1: needs some work
+- 2026-10-19T14:04:10Z · needs_input
