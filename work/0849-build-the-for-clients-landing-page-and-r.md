@@ -3,6 +3,9 @@ id: "0849"
 title: Build the For Clients landing page and Resend project enquiry form
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the cursor agent exited without output: ActionRequiredError: Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue. ⚠ After this turn ended, 6 process(es) escaped its process group (PIDs: 88254, 88270, 88301, 88302, 88303, 88305). They may need manual cleanup."
 hold: true
 priority: p2
 area: landing
@@ -99,3 +102,4 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 - 2026-10-19T11:51:12Z · status active→review
 - 2026-10-19T11:51:12Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-19T11:51:23Z · note: review pass 1: failed — no usable report
+- 2026-10-19T11:51:23Z · needs_input
