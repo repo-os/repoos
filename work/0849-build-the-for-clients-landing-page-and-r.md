@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-19T12:31:21Z"
-review_passes: 1
 id: "0849"
 title: Build the For Clients landing page and Resend project enquiry form
 type: feature
@@ -14,6 +12,8 @@ branch: codex/0849-for-clients
 review_cli_override: opencode
 review_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T10:22:29Z"
+updated_at: "2026-10-19T13:41:32Z"
+review_passes: 1
 ---
 ## Problem
 The human approved the For Clients prototype and wants it implemented in the existing landing app. This interactive Codex session owns implementation; do not dispatch a built-in engineer.
@@ -107,4 +107,4 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 - 2026-10-19T12:18:39Z · review_model_override
 - 2026-10-19T12:19:00Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-19T12:31:21Z · note: review pass 2: good to go
-
+- 2026-10-19T13:41:32Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
