@@ -29,11 +29,8 @@ import { reapStaleFixtures } from "../helpers";
 
 /**
  * Every file's isolated tmpdir (see tmp-isolation.ts) lives under this run's
- * root, and `teardown` removes the root after all workers have exited. Doing
- * the final sweep here — not only in each file's `afterAll` — catches dirs a
- * late best-effort write recreated after that hook ran (a killed agent's exit
- * handler persisting its session, for example) and dirs left by a worker that
- * died mid-file.
+ * root, and `teardown` removes it after all workers have exited. This catches
+ * dirs a worker left behind after a failed test or abrupt exit.
  */
 let runRoot: string | undefined;
 
@@ -53,7 +50,7 @@ export async function setup(): Promise<void> {
     );
   }
 
-  // Workers inherit this and put their per-file tmpdir under it.
+  // Workers use this run-scoped parent for their per-file temp roots.
   runRoot = mkdtempSync(join(tmpdir(), "repoos-vitest-"));
   process.env.REPOOS_TEST_TMP_ROOT = runRoot;
 }
