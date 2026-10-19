@@ -124,34 +124,75 @@ private struct HubSidebarIconButton: View {
     }
 }
 
-/// Floating affordance shown over the workspace while the native sidebar is
+/// Fixed geometry and labelling for the collapsed-sidebar reveal tab.
+///
+/// The tab is deliberately narrow (22–26 pt) and rounded on its trailing edge
+/// only so it can sit flush against the window edge (#0857).
+enum HubSidebarRevealTabMetrics {
+    static let width: CGFloat = 24
+    static let height: CGFloat = 32
+    static let cornerRadius: CGFloat = 6
+    static let systemImage = "chevron.right"
+    static let accessibilityLabel = "Show Sidebar"
+}
+
+/// Edge-attached tab shown over the workspace while the native sidebar is
 /// collapsed, so it can be reopened without relying on a keyboard shortcut.
 ///
-/// It sits inside the window's safe area, just below the traffic lights, and is
-/// deliberately small and translucent so it reads as a utility rather than a
-/// competing control over the embedded web UI.
-struct HubSidebarRevealButton: View {
+/// It hugs the window's leading edge inside the safe area, just below the
+/// native traffic lights, and stays quiet: a small chevron, a subtle translucent
+/// fill, and a hover state only, so it never competes with the embedded web UI
+/// (#0857).
+struct HubSidebarRevealTab: View {
     let action: () -> Void
 
     @State private var isHovering = false
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "sidebar.leading")
-                .font(.system(size: 13, weight: .semibold))
-                .frame(width: 26, height: 26)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
+            Image(systemName: HubSidebarRevealTabMetrics.systemImage)
+                .font(.system(size: 10, weight: .semibold))
+                .frame(
+                    width: HubSidebarRevealTabMetrics.width,
+                    height: HubSidebarRevealTabMetrics.height
+                )
+                .background {
+                    HubSidebarRevealTabShape(cornerRadius: HubSidebarRevealTabMetrics.cornerRadius)
+                        .fill(Color.primary.opacity(isHovering ? 0.16 : 0.08))
                 }
-                .contentShape(Rectangle())
+                .contentShape(
+                    HubSidebarRevealTabShape(cornerRadius: HubSidebarRevealTabMetrics.cornerRadius)
+                )
         }
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
         .onHover { isHovering = $0 }
-        .opacity(isHovering ? 1 : 0.9)
         .help("Show the native sidebar")
-        .accessibilityLabel("Show sidebar")
+        .accessibilityLabel(HubSidebarRevealTabMetrics.accessibilityLabel)
+    }
+}
+
+/// A tab silhouette rounded on its trailing edge only. The leading edge stays
+/// square so the control sits flush against the window's left edge.
+struct HubSidebarRevealTabShape: Shape {
+    var cornerRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let radius = min(cornerRadius, rect.width / 2, rect.height / 2)
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - radius, y: rect.minY))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: rect.minY + radius),
+            control: CGPoint(x: rect.maxX, y: rect.minY)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - radius))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX - radius, y: rect.maxY),
+            control: CGPoint(x: rect.maxX, y: rect.maxY)
+        )
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
     }
 }

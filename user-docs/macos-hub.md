@@ -212,20 +212,20 @@ at least once, so it knows where the project lives.
 
 ## Window layout
 
-The Hub has **no native titlebar or toolbar row**: the sidebar runs to the top
-edge of the window and the embedded web page fills the reclaimed space, with
-the standard red/yellow/green window controls still in their usual place. The
-controls that used to live in the titlebar are now quiet icon buttons in the
-sidebar:
+The Hub has **no visible titlebar or toolbar row**: the sidebar runs to the top
+edge of the window and the embedded web page fills the reclaimed space, while
+the native red/yellow/green window controls stay in their usual upper-left
+position. The controls that used to live in the titlebar are now quiet icon
+buttons in the sidebar:
 
 - **Back / Forward / Reload** sit in a compact row at the top of the sidebar.
   Back and forward are disabled when there is no history, and each has a native
   tooltip.
 - The **sidebar toggle** on the right of that row hides the native sidebar;
   the embedded RepoOS web app's own sidebar is unaffected. When the native
-  sidebar is hidden, a small floating toggle appears in the top-left of the
-  content area to bring it back, and the collapsed state is remembered across
-  launches.
+  sidebar is hidden, a slim chevron tab flush against the window's left edge,
+  just below the window controls, brings it back. The collapsed state is
+  remembered across launches.
 - **Settings** (the gear) sits in the sidebar footer, next to **Add server**.
 
 The existing window behavior is unchanged — dragging, resizing, minimizing,
