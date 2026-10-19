@@ -1,6 +1,6 @@
 # repoos.org
 
-The RepoOS marketing/landing site. A standalone static site — own
+The RepoOS marketing/landing site. A standalone marketing app with static pages and a small enquiry Worker — own
 `package.json`, own lockfile, own build/deploy pipeline, no bun workspaces
 (same pattern as `mobile/`). Independent of `src/ui-app` and of the docs site
 (`docs/`, #0339); shares the Classic visual identity (palette, Sora +
@@ -52,6 +52,8 @@ script is bundled from `src/theme-boot.ts` into `index.html` at dev/build time
 ```
 landing/
   src/            the site — Vue 3 + TypeScript + Tailwind
+  for-clients/    second HTML entry, with page-specific social metadata
+  worker.ts       same-origin enquiry endpoint and asset fallback
   public/         static assets copied as-is (favicon, og:image)
   dist/           build output (gitignored)
   index.html      entry point + meta tags (title, description, Open Graph/Twitter)
@@ -105,18 +107,110 @@ root-directory/output-directory pair to fill in; deployment is driven by
 - **API token:** let it auto-create one; no manual token or secret needed
 - **Protect with Cloudflare Access:** off — it's a public marketing site
 
-`wrangler.jsonc` here is a pure static-assets config (no Worker script) — see
-that file's comments. Verify locally before deploying:
-`cd landing && bunx wrangler deploy --dry-run`.
+`wrangler.jsonc` serves the static assets and the dependency-free `worker.ts`.
+`/api/*` always reaches the Worker; other assets retain static serving. Both
+`/for-clients` and `/for-clients/` load the dedicated HTML entry, with absolute
+asset paths and page-specific title, description and social metadata. Unknown
+pages still 404 (this is not an unrestricted SPA fallback).
+
+Verify locally before deploying: `cd landing && bunx wrangler deploy --dry-run`.
+See the enquiry setup below before enabling the form in production.
 
 ## Notes for future edits
 
 - The board stats (task counts, version) in `src/App.vue` (and the `og:image`/
   `og:description` meta tags in `index.html`) are **hand-written snapshots**,
-  not fetched live — there's no backend here to source them from. Copy is
+  not fetched live — there's no stats backend here to source them from. Copy is
   deliberately phrased as "as of vX.Y.Z" / "N+ tasks" rather than implying a
   live figure, so it doesn't need updating on every commit; still worth a
   glance whenever RepoOS cuts a meaningfully newer release.
 - `og:image`/`twitter:image` are absolute URLs (`https://repoos.org/...`) —
   both platforms require an absolute URL to render a link preview image, a
   relative path silently fails.
+
+
+## For Clients and enquiries (#0849)
+
+`src/components/ForClients.vue` reproduces the approved page concept. It uses
+`src/clients.css` with the landing app's existing theme tokens. The nav, theme
+controls, docs theme handoff and footer are shared through `App.vue`. Six nav
+links use the existing mobile menu below 1024px. The content uses we/us/our;
+the illustrative board is labelled. Real project showcases are deliberately
+not included until approved content arrives (held task #0848).
+
+`EnquiryForm.vue` collects name/company, **work email**, a project brief and
+one of three timing options. Work email is a required email field, not a
+free-email-provider blocklist. The form explains that the details go to
+hello@repoos.org via Resend to respond to the enquiry; it does not subscribe
+anyone to a mailing list. Drafts stay in component memory only, not storage,
+URLs or analytics. Closing/reopening the dialog preserves a draft. A disabled
+fieldset and submit guard prevent duplicate clicks. Retries of an unchanged
+draft reuse the same submission ID; success is shown only after the endpoint
+confirms Resend accepted the message (not a guarantee of inbox delivery).
+
+### Server and secrets
+
+`POST /api/enquiry` runs on the **landing Cloudflare Worker**, never the local
+RepoOS control plane. It uses native `fetch` to call the existing Resend email
+provider, with no SDK/runtime dependency. The recipient is hard-coded to
+`hello@repoos.org`; the visitor's validated email becomes `reply_to`, never
+`from` or `to`. Emails are plain text with a fixed subject. Credentials are
+never bundled into Vite assets or written to tracked files.
+
+Before launch, configure the landing Worker in Cloudflare (the local RepoOS
+server's `.env` does **not** automatically configure hosted Workers):
+
+- Set the existing `REPOOS_RESEND_API_KEY` as a **Worker secret** using the
+  dashboard or `bunx wrangler secret put REPOOS_RESEND_API_KEY` from `landing/`.
+  Use the secure prompt; never pass or paste its value into source, tasks,
+  command arguments, chat, TOML, or a `VITE_*` variable.
+- Set `ENQUIRY_FROM` as a second Worker secret (also preserved across deploys)
+  using `bunx wrangler secret put ENQUIRY_FROM`, with a sender on an
+  **already verified Resend domain**, e.g. a display name and that verified
+  email address. Do not use the visitor's address. The application deliberately
+  does not guess the project's verified sender.
+- Keep both `ENQUIRY_RATE_LIMITER` and `ENQUIRY_GLOBAL_LIMITER` bindings in
+  `wrangler.jsonc`. Namespace IDs `84901`/`84902` are reserved for this endpoint;
+  confirm they are unused by other account services before first deployment.
+  Limits are 5 attempts/source/minute and 30 valid send attempts/site/minute,
+  per Cloudflare location. These edge limits are best-effort abuse controls,
+  not a strict worldwide spend cap. Shared networks share the source limit.
+- Test a controlled enquiry after deployment, confirm receipt at
+  hello@repoos.org, and verify Reply goes to the entered work email. Provider
+  acceptance alone does not prove deliverability. No live email is sent by
+  the automated tests.
+
+Missing secrets/sender/limiters fail closed with 503; there is no fake success
+or browser-side mail fallback. Cross-origin/non-JSON requests, invalid input,
+header injection, unsupported timing, and bodies above 24 KB are refused.
+Both declared length and streamed bytes are bounded. A honeypot discards bot
+submissions. Source IPs are hashed before rate-limit use; neither project
+content nor provider error details are logged or returned. Provider calls have
+a ten-second timeout and content-bound Resend idempotency keys (Resend retains
+them for 24 hours). Visitor errors retain the draft and offer
+hello@repoos.org as a fallback.
+
+### Local checks
+
+`bun run dev` previews the marketing pages and dialog only; it does not read
+or send real email, and its `/api/enquiry` is not wired to a live provider.
+To exercise the Worker locally, build first, then use `bunx wrangler dev`
+with a gitignored `landing/.dev.vars` holding the two server variables. Do
+not use real email delivery for routine UI verification. The focused tests
+mock Resend and limiter bindings:
+
+```bash
+# From the repo root:
+bun run --bun test:vitest src/ui-app/tests/landing-clients.test.ts src/ui-app/tests/landing-enquiry.test.ts
+# From landing/:
+bun run build
+```
+
+For review evidence, declare the client route and dialog with
+`repoos update <id> --shots` and capture with `repoos shot --task <id>
+--target "Landing page"`; `--viewport 390x844` captures the mobile layout.
+Screenshots stay in RepoOS's gitignored attachment store.
+
+References: [Resend send email](https://resend.com/docs/api-reference/emails/send-email),
+[Worker asset routing](https://developers.cloudflare.com/workers/static-assets/routing/worker-script/),
+[Cloudflare rate limit bindings](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/).

@@ -6,3 +6,8 @@ node_modules/
 
 # macOS
 .DS_Store
+
+# Local Worker secrets must never enter version control.
+.dev.vars
+.dev.vars.*
+.wrangler/
