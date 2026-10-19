@@ -12,6 +12,8 @@ import {
 import {
   resolveAgentForTask,
   resolvePmAgent,
+  noAgentAvailableMessage,
+  pausedAgentFallbackNote,
   taskPmPrompt,
   deriveBranch,
   isModelOverridePinned,
@@ -46,6 +48,7 @@ import type { Logger } from "../../core/logger.js";
 import { getCurrentUser } from "./auth.js";
 import { requestUsedLocalCliToken } from "../local-token.js";
 import { overrideRefusal } from "../agent-model-allowlist.js";
+import { availableAllowPairs } from "../../core/budget-allowlist.js";
 import { resolveApiCreator } from "../../core/record-creator.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
 import { needsInputClearsOnNewEngineerRun } from "../../core/needs-input.js";
@@ -859,9 +862,10 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     if (refusal) {
       return json(res, 403, {
         error: refusal,
-        allowedPairs: (config.budget?.allowlist ?? []).flatMap((row) =>
-          row.models.map((model) => ({ cli: row.cli, model })),
-        ),
+        allowedPairs: availableAllowPairs(config.budget?.allowlist ?? []).map((p) => ({
+          cli: p.cli,
+          model: p.model,
+        })),
       });
     }
   }
@@ -2174,7 +2178,15 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     const baseEngineer = resolveAgentForTask(config, existing);
     if (!baseEngineer) {
       return json(res, 400, {
-        error: "No enabled engineer agent is configured on the Agents page",
+        error: noAgentAvailableMessage(config, "engineer"),
+      });
+    }
+    // #0850: a paused default pair falls back to the next selectable allowed
+    // pair; record that, and why, on the task so it is not a silent swap.
+    const pauseNote = pausedAgentFallbackNote(config, existing);
+    if (pauseNote) {
+      logger.task(id, "info", "Agent selection adjusted for a paused allowlist entry", {
+        note: pauseNote,
       });
     }
     // Automatic model routing (#0793) may replace the engineer configuration
@@ -2219,6 +2231,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     }
     const isHotfix = existing.hotfix === true;
     const patch: TaskPatch = { status: "active" };
+    if (pauseNote) patch.note = pauseNote;
     // Starting acknowledges ordinary question/underspecified flags and clears
     // recoverable run-health flags (#0716), but must not erase a failure
     // reason owned by another subsystem.
@@ -2782,7 +2795,16 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     const baseEngineerMessage = resolveAgentForTask(config, existing);
     if (!baseEngineerMessage) {
       return json(res, 400, {
-        error: "No enabled engineer agent is configured on the Agents page",
+        error: noAgentAvailableMessage(config, "engineer"),
+      });
+    }
+    // #0850: sending a turn to an active task resolves the same paused-default
+    // fallback as Start; record the swap so the message is not silently run on
+    // a different pair than the task's configured engineer.
+    const messagePauseNote = pausedAgentFallbackNote(config, existing);
+    if (messagePauseNote) {
+      logger.task(id, "info", "Agent selection adjusted for a paused allowlist entry", {
+        note: messagePauseNote,
       });
     }
     const routedMessage = await resolveRoutedAgent(

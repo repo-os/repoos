@@ -7,9 +7,9 @@
  *
  * 1. The human-approved budget allowlist (`[[budget.allowlist]]`) is the
  *    ceiling. An empty allowlist is the documented unrestricted no-op; a
- *    non-empty one admits only its listed cli+model pairs. This reuses
- *    `isPairOnAllowlist`, the same function agent-driver enforcement uses, so
- *    the two can never disagree.
+ *    non-empty one admits only its listed, not-paused cli+model pairs. This
+ *    reuses `isPairSelectable`, the same predicate agent-driver enforcement
+ *    uses, so the two can never disagree.
  * 2. The candidate's CLI must be a drivable harness and installed/authenticated.
  * 3. A reasoning setting, if present, must be one the harness supports.
  * 4. The harness must support the run's role (pm, engineer, reviewer).
@@ -19,7 +19,7 @@
  *
  * Pure and node-free so it is trivially unit-testable.
  */
-import { isPairOnAllowlist } from "../budget-allowlist.js";
+import { isPairSelectable, isPairPaused } from "../budget-allowlist.js";
 import type { AgentModelAllowRow } from "../types.js";
 import type { RoutingRole } from "./types.js";
 
@@ -78,8 +78,13 @@ export function filterCandidates(input: CandidateFilterInput): CandidateFilterRe
     if (seen.has(key)) continue;
     seen.add(key);
 
-    if (!isPairOnAllowlist(input.allowlist, candidate.cli, candidate.model)) {
-      rejected.push({ candidate, reason: "not on the budget allowlist" });
+    if (!isPairSelectable(input.allowlist, candidate.cli, candidate.model)) {
+      rejected.push({
+        candidate,
+        reason: isPairPaused(input.allowlist, candidate.cli, candidate.model)
+          ? "paused on the budget allowlist"
+          : "not on the budget allowlist",
+      });
       continue;
     }
     const harness = input.harnesses[candidate.cli];

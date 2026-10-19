@@ -311,6 +311,17 @@ human-approved subset.
   `cliOverride`/`modelOverride`) to a pair outside the allowlist, the server
   refuses with an error listing every allowed pair. `repoos override --help`
   also prints the allowlist.
+- **Pause** an agent or a single model instead of removing it when a provider
+  runs out of credit or is rate-limited. A paused row keeps its Paused chip,
+  optional resume date and reason, and is never selected — engineer/reviewer/
+  PM/CTO defaults, Start, auto-dispatch, failover and agent drivers all skip it and
+  fall back to the next allowed pair, recording the swap and reason in the task
+  activity log. If every allowed pair is paused, starting a task fails with
+  "All allowed agent+model pairs are paused". Pause from the row or model chip
+  (with an optional resume date/time and reason) or from a shell:
+  `repoos agents pause <agent> [--model <model>] [--until <date>] [--reason "…"]`
+  and `repoos agents resume <agent> [--model <model>]`. An expired resume date
+  takes effect automatically, with no restart.
 
 The allowlist is stored in `repoos.toml` as `[[budget.allowlist]]` rows; see
 [Configuration](/configuration#budget-controls-agent-drivers).

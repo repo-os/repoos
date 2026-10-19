@@ -1867,12 +1867,34 @@ export interface AttentionConfig {
 /** Default `attention.slowRunMultiplier` (#0720). */
 export const DEFAULT_SLOW_RUN_MULTIPLIER = 1.5;
 
+/** One per-model pause on an allowlist row (#0850). */
+export interface AgentModelPause {
+  /** Model id that is paused. */
+  model: string;
+  /** Optional ISO timestamp when the model resumes automatically. */
+  pausedUntil?: string;
+  /** Optional free-text reason shown in the UI and logs. */
+  pausedReason?: string;
+}
+
 /** One allowlist row: a coding agent and its human-approved models (#0764). */
 export interface AgentModelAllowRow {
   /** Coding-agent CLI id — the `AGENT_CLIS` string, e.g. "claude code". */
   cli: string;
   /** Allowed model ids for that CLI. */
   models: string[];
+  /**
+   * Pause the whole agent (every model on this row) without removing it
+   * (#0850). A paused row is never selected by defaults, Start, dispatch,
+   * failover or agent drivers.
+   */
+  paused?: boolean;
+  /** Optional ISO timestamp when the row resumes automatically. */
+  pausedUntil?: string;
+  /** Optional free-text reason for the pause. */
+  pausedReason?: string;
+  /** Per-model pauses on this row. */
+  pausedModels?: AgentModelPause[];
 }
 
 /**

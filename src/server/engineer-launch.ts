@@ -10,10 +10,16 @@ import { ensureWorktree } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import type { LiveIndex } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";
-import { resolveAgentForTask } from "./agents.js";
+import { resolveAgentForTask, noAgentAvailableMessage, pausedAgentFallbackNote } from "./agents.js";
 import type { Logger } from "../core/logger.js";
 export type EngineerLaunchResult =
-  | { ok: true; pid?: number; queued?: boolean }
+  | {
+      ok: true;
+      pid?: number;
+      queued?: boolean;
+      /**#0850: what a paused allowlist entry changed, for the task activity log. */
+      pauseNote?: string;
+    }
   | { ok: false; reason: string };
 
 export interface EngineerLaunchDeps {
@@ -64,7 +70,13 @@ export async function relaunchEngineerOnActiveTask(
 
   const agent = resolveAgentForTask(config, fresh);
   if (!agent) {
-    return { ok: false, reason: "No enabled engineer agent is configured" };
+    return { ok: false, reason: noAgentAvailableMessage(config, "engineer") };
+  }
+  const pauseNote = pausedAgentFallbackNote(config, fresh);
+  if (pauseNote) {
+    logger.task(id, "info", "Agent selection adjusted for a paused allowlist entry", {
+      note: pauseNote,
+    });
   }
 
   const branch = fresh.branch;
@@ -101,5 +113,10 @@ export async function relaunchEngineerOnActiveTask(
   }
 
   index.refreshBranches();
-  return { ok: true, pid: spawnRes.pid, queued: spawnRes.queued };
+  return {
+    ok: true,
+    pid: spawnRes.pid,
+    queued: spawnRes.queued,
+    pauseNote: pauseNote ?? undefined,
+  };
 }

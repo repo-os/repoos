@@ -214,6 +214,7 @@ done wait by default in human mode).
 | `repoos config get\|set <key> [value]` | `GET` / `PATCH /api/config` |
 | `repoos runners [--probe]` | remote-validation status + test |
 | `repoos agents` | `GET /api/agents/running` |
+| `repoos agents pause\|resume <agent> [--model M] [--until <date>] [--reason "…"]` | `PATCH /api/config` — pause/resume an allowlist agent or model (#0850) |
 | `repoos stats` | `GET /api/stats/board` |
 | `repoos decisions` (`repoos attention`) | `GET /api/decisions` — CTO escalation digest with cause, evidence, and actions |
 | `repoos driver brief` | `GET /api/driver/brief` — the CTO board brief from live state (#0731) |

@@ -231,6 +231,36 @@ describe("candidate filtering", () => {
     expect(rejected.find((r) => r.candidate.model === "gpt-9")?.reason).toContain("allowlist");
   });
 
+  it("skips a paused allowlist pair and explains why (#0850)", () => {
+    const paused = [
+      { cli: "claude code", models: ["default"], paused: true, pausedReason: "credits exhausted" },
+      { cli: "codex", models: ["gpt-5"] },
+    ];
+    const { eligible, rejected } = filterCandidates({
+      ...defaultFilter,
+      candidates: [claude, codex],
+      allowlist: paused,
+      harnesses: allHarnesses,
+    });
+    expect(eligible.map(candidateKey)).toEqual([candidateKey(codex)]);
+    expect(rejected.find((r) => r.candidate.cli === "claude code")?.reason).toContain("paused");
+  });
+
+  it("skips a paused model while keeping the rest of its row selectable (#0850)", () => {
+    const paused = [
+      { cli: "codex", models: ["gpt-5"], pausedModels: [{ model: "gpt-5" }] },
+      { cli: "claude code", models: ["default"] },
+    ];
+    const { eligible, rejected } = filterCandidates({
+      ...defaultFilter,
+      candidates: [claude, codex],
+      allowlist: paused,
+      harnesses: allHarnesses,
+    });
+    expect(eligible.map(candidateKey)).toEqual([candidateKey(claude)]);
+    expect(rejected.find((r) => r.candidate.cli === "codex")?.reason).toContain("paused");
+  });
+
   it("refuses a candidate whose harness is not installed or authenticated", () => {
     const { eligible, rejected } = filterCandidates({
       ...defaultFilter,

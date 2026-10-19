@@ -16,6 +16,7 @@ import {
   allowlistIsEmpty,
   describeAllowlistPairs,
   isPairOnAllowlist,
+  pairPauseInfo,
 } from "../core/budget-allowlist.js";
 import { isModelOverridePinned, resolveAgentForTask } from "./agents.js";
 
@@ -52,13 +53,26 @@ export function overrideRefusal(
     modelOverride: settingModel ? (input.modelOverride as string) : task.modelOverride,
   });
   if (!merged) return null;
-  if (isPairOnAllowlist(rows, merged.cli, merged.model)) return null;
-
   const requestedModel =
     merged.model && merged.model !== "default" ? merged.model : "(its default model)";
-  return (
-    `Agent driver override not allowed: ${merged.cli} + ${requestedModel} is not on the ` +
-    `budget allowlist. Allowed pairs: ${describeAllowlistPairs(rows)}. ` +
-    `A human can change the allowlist on the Agents page's Budget Controls tab.`
-  );
+  if (!isPairOnAllowlist(rows, merged.cli, merged.model)) {
+    return (
+      `Agent driver override not allowed: ${merged.cli} + ${requestedModel} is not on the ` +
+      `budget allowlist. Allowed pairs: ${describeAllowlistPairs(rows)}. ` +
+      `A human can change the allowlist on the Agents page's Budget Controls tab.`
+    );
+  }
+  // Pausing is enforced like the allowlist itself (#0850): an agent driver may
+  // not pin a paused pair, and the refusal names the pause and how to resume it.
+  const pause = pairPauseInfo(rows, merged.cli, merged.model);
+  if (pause.paused) {
+    return (
+      `Agent driver override not allowed: ${merged.cli} + ${requestedModel} is paused` +
+      `${pause.reason ? ` (${pause.reason})` : ""}` +
+      `${pause.until ? ` until ${pause.until}` : ""}. ` +
+      `Allowed pairs: ${describeAllowlistPairs(rows)}. ` +
+      `A human can resume it on the Agents page's Budget Controls tab.`
+    );
+  }
+  return null;
 }
