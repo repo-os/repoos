@@ -2,7 +2,7 @@
 id: "0850"
 title: "Allowlist: pause an agent or model without removing it (with optional resume date and reason)"
 type: feature
-status: review
+status: inbox
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: the agent process exited with an error — open the task to see the full output
@@ -14,7 +14,7 @@ branch: feat/allowlist-pause-an-agent-or-model-withou
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T18:52:41Z"
+updated_at: "2026-10-19T18:52:42Z"
 last_close_out_gate_ms: 459723
 last_close_out_gate_at: "2026-10-19T18:52:38.334Z"
 review_passes: 1
