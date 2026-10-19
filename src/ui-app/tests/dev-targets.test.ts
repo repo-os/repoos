@@ -1288,6 +1288,16 @@ describe("parseDevServices", () => {
     ).toContain("healthCheck needs a url or a file");
   });
 
+  it("rejects auto-pick off without a port at CONFIG time (review round 1)", () => {
+    const { errors } = parseDevServices({
+      "dev.services": [
+        { name: "api", command: "bun --watch src/server/index.ts", autoPort: false },
+      ],
+    });
+    // The exact same message the live start would produce (dev.ts), now upfront.
+    expect(errors[0]).toContain("auto-pick is off but no port is set");
+  });
+
   it("parses env from an object, the inline-table string, or dotted env.KEY keys", () => {
     const obj = parseDevServices({
       "dev.services": [{ name: "api", command: "x", env: { FOO: "bar" } }],
@@ -1663,6 +1673,95 @@ describe("DevTargetManager with services (#0843)", () => {
       }
     } finally {
       await held.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // Review round 1 — a start that fails AT THE TARGET tears the companion
+  // services down with it: the target owns their lifecycle, so a half-booted
+  // stack never outlives the failed start.
+  it("stops already-booted services when the target's readiness check fails", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svclaunch-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [apiService()],
+          // A process target whose command exits immediately: readiness
+          // (alive-settle) fails, the target fails, and the services — already
+          // running — are stopped with the failed start.
+          targets: [webTarget({ kind: "process", url: undefined, command: "exit 7" })],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      expect(mgr.get("app")?.status).toBe("failed");
+      const view = mgr.get("app");
+      expect(view?.status).toBe("failed");
+      expect(view?.services?.[0].status).toBe("stopped");
+      const svcPid = view?.services?.[0].pid;
+      // The service process is actually gone.
+      expect(await waitForDead(svcPid!)).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // Review round 1 — after a reload handover an adopted service has no
+  // process handle; the same lazy PID-liveness check that guards adopted
+  // targets guards their services, so a crash degrades the target visibly.
+  it("marks an adopted service's crash after reload on the target", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcreload-"));
+    const mgr1 = new DevTargetManager(
+      baseConfig(
+        {
+          services: [apiService()],
+          targets: [webTarget()],
+        },
+        dir,
+      ),
+    );
+    try {
+      const started = await mgr1.start("app");
+      expect(started.ok).toBe(true);
+      const svcPid = mgr1.get("app")?.services?.[0].pid;
+      expect(typeof svcPid).toBe("number");
+      // The registration file persists every state change; a reload handover
+      // is a NEW manager over the same root re-adopting the recorded PIDs.
+      const mgr2 = new DevTargetManager(
+        baseConfig({ services: [apiService()], targets: [webTarget()] }, dir),
+      );
+      mgr2.cleanupOrphans(/* isReload */ true);
+      expect(mgr2.get("app")?.status).toBe("running");
+      expect(mgr2.get("app")?.services?.[0].status).toBe("running");
+
+      // The service now crashes with no live handle watching it.
+      let verifiedDead = await waitForDead(svcPid!);
+      if (!verifiedDead) process.kill(svcPid!, "SIGKILL");
+      verifiedDead = await waitForDead(svcPid!);
+      expect(verifiedDead).toBe(true);
+
+      // The next lazy view discovers the death: the service is failed, and
+      // the target is degraded naming it.
+      const deadline = Date.now() + 5000;
+      let status: string | undefined;
+      let error: string | undefined;
+      while (Date.now() < deadline) {
+        const view = mgr2.get("app");
+        status = view?.status;
+        error = view?.error;
+        if (status === "failed") break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      expect(status).toBe("failed");
+      expect(error).toContain('service "api"');
+      expect(mgr2.get("app")?.services?.[0].status).toBe("failed");
+      await mgr2.stopAll();
+    } finally {
+      await mgr1.stopAll();
       rmSync(dir, { recursive: true, force: true });
     }
   });
