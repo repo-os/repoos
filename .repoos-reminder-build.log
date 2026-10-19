@@ -1,0 +1,2 @@
+$ bun scripts/build.mjs
+build: up to date (src/ unchanged) — skipping rebuild. Use --force or REPOOS_FORCE_BUILD=1 to rebuild anyway.

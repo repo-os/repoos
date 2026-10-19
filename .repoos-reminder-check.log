@@ -20,4 +20,4 @@
       telegram-manager-build: bun install --frozen-lockfile && bun run build (in telegram-manager) · when telegram-manager/** changes
       telegram-manager-test: bun run test (in telegram-manager) · when telegram-manager/** changes
       macos-hub-icon-transparency: bash macos/scripts/verify-dock-icon-transparency.sh · when macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh changes
-  · Changed-path mode: 24 path(s) differ from main (fast pre-review pass — close-out still runs the full plan)
+  · Changed-path mode: 25 path(s) differ from main (fast pre-review pass — close-out still runs the full plan)
