@@ -13,7 +13,7 @@ model_override: openrouter/openrouter/auto-beta
 review_cli_override: pi
 review_model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-10-19T12:23:10Z"
-updated_at: "2026-10-19T13:39:21Z"
+updated_at: "2026-10-19T13:40:16Z"
 ---
 ## Problem
 Agents and providers become unavailable for known periods (Cursor is out of credit for about 3 days, rate limits reset at a set time, a provider is down until a stated date), and the human has to remember to switch them back on. There is no place in RepoOS to record "tell me when X is available again", so it lives in the human's head.
@@ -37,6 +37,31 @@ The Agents page gets a **Reminders** tab (alongside the existing tabs, built wit
 ## Notes for AI
 Model the storage, tick and SSE-update pattern on scheduled tasks (src/server/schedule-*.ts, src/core/schedule.ts, docs/scheduled-tasks.md) and the UI on ScheduledTasksPanel.vue after #0841 fixes it; the bell integration is in the notices/attention store. Keep it small and independent of #0850: the "resume this entry" link is optional and may land as a follow-up if #0850 is not merged. Do not touch repoos.toml. Source: Nick, 2026-10-19.
 
+## Shots
+```json
+[
+{
+  "label": "Due and upcoming availability reminders with countdowns",
+  "target": "default",
+  "route": "/agents?tab=reminders",
+  "highlight": "[data-testid=reminders-panel]",
+  "state": "reminders:due"
+},
+{
+  "label": "Shared reminder drawer with local date/time and linked entry",
+  "target": "default",
+  "route": "/agents?tab=reminders",
+  "highlight": "[data-testid=reminder-editor-drawer]",
+  "steps": [
+    {
+      "click": "[data-testid=new-reminder]"
+    }
+  ],
+  "state": "reminders:due"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-19T12:23:10Z · created · njachowski@gmail.com
@@ -48,3 +73,4 @@ Model the storage, tick and SSE-update pattern on scheduled tasks (src/server/sc
 - 2026-10-19T13:19:45Z · status ready→active, branch
 - 2026-10-19T13:37:23Z · body
 - 2026-10-19T13:39:21Z · body
+- 2026-10-19T13:40:16Z · body
