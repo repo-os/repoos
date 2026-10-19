@@ -12,8 +12,10 @@ cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 pm_cli_override: pi
 pm_model_override: openrouter/deepseek/deepseek-v4.1-flash
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-10-19T15:35:14Z"
-updated_at: "2026-10-19T15:43:22Z"
+updated_at: "2026-10-19T15:43:25Z"
 ---
 ## Problem
 
@@ -304,3 +306,4 @@ I would also avoid making navigation controls too prominent. They should feel li
 - 2026-10-19T15:43:10Z · status inbox→ready
 - 2026-10-19T15:43:17Z · cli_override, model_override
 - 2026-10-19T15:43:22Z · model_override
+- 2026-10-19T15:43:25Z · review_cli_override, review_model_override
