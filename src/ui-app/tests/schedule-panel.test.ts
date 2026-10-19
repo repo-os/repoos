@@ -24,6 +24,12 @@ function drawer(): HTMLElement | null {
   return document.body.querySelector('[data-testid="schedule-editor-drawer"]');
 }
 
+function buttons(root: ParentNode, label: (t: string) => boolean): HTMLButtonElement | undefined {
+  return Array.from(root.querySelectorAll("button")).find((b) => label(b.textContent ?? "")) as
+    | HTMLButtonElement
+    | undefined;
+}
+
 function makeSchedule(over: Partial<TaskSchedule> = {}): TaskSchedule {
   return {
     id: "0001",
@@ -182,9 +188,7 @@ describe("schedule CRUD from the panel", () => {
     repo.schedules = [created];
     await flushPromises();
 
-    const editBtn = Array.from(wrapper.element.querySelectorAll<HTMLButtonElement>("button")).find(
-      (b) => b.textContent?.includes("Edit"),
-    );
+    const editBtn = buttons(wrapper.element, (t) => t.includes("Edit"));
     expect(editBtn).toBeTruthy();
     editBtn!.click();
     await flushPromises();
@@ -199,17 +203,11 @@ describe("schedule CRUD from the panel", () => {
     await flushPromises();
     expect(repo.patchSchedule).toHaveBeenCalledWith("0099", { enabled: false });
 
-    const runBtn = Array.from(card.element.querySelectorAll<HTMLButtonElement>("button")).find(
-      (b) => b.textContent?.includes("Run now"),
-    );
-    runBtn!.click();
+    buttons(card.element, (t) => t.includes("Run now"))!.click();
     await flushPromises();
     expect(repo.runSchedule).toHaveBeenCalledWith("0099");
 
-    const deleteBtn = Array.from(card.element.querySelectorAll<HTMLButtonElement>("button")).find(
-      (b) => b.textContent === "Delete",
-    );
-    deleteBtn!.click();
+    buttons(card.element, (t) => t === "Delete")!.click();
     await flushPromises();
     const modal = document.body.querySelector(".delete-confirm-modal")!;
     expect(modal).toBeTruthy();
