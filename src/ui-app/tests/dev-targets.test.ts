@@ -13,8 +13,9 @@ import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { RepoOSConfig, DevTargetConfig } from "../../core/types";
+import type { RepoOSConfig, DevTargetConfig, DevServiceConfig } from "../../core/types";
 import { loadConfig, parseDevTargets } from "../../core/config";
+import { devTargetServiceErrors, parseDevServices } from "../../core/dev-targets";
 import { PORT_IN_USE } from "../../core/dev-failure";
 import { DevTargetManager, DEV_LOG_MAX_LINES } from "../../server/dev";
 import type { RouteContext } from "../../server/routes/types";
@@ -1164,6 +1165,555 @@ describe("dev target routes", () => {
       await restartDevTarget(makeCtx(mgr), req, res, { param1: "web" });
       expect(fake.status).toBe(200);
       expect(fake.payload.target.status).toBe("running");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---- [[dev.services]] (#0843): companion processes booted on their own ports ----
+
+/** A long-lived fake API the manager boots as a companion service. */
+function apiService(over: Partial<DevServiceConfig> = {}): DevServiceConfig {
+  return {
+    name: "api",
+    command:
+      "bun -e \"const h=require('node:http');h.createServer((q,s)=>s.end('ok')).listen(Number(process.env.PORT),'127.0.0.1');setTimeout(()=>{},60000)\"",
+    healthCheck: { url: "http://localhost:{port}/api/health" },
+    ...over,
+  };
+}
+
+/** A long-lived fake web target that boots after its services. */
+function webTarget(over: Partial<DevTargetConfig> = {}): DevTargetConfig {
+  return {
+    name: "app",
+    kind: "server",
+    services: ["api"],
+    command: `bun -e "setTimeout(()=>{},60000)"`,
+    url: "http://localhost:{api.port}",
+    ...over,
+  };
+}
+
+describe("parseDevServices", () => {
+  it("parses a valid service with every optional field", () => {
+    const { services, errors } = parseDevServices({
+      "dev.services": [
+        {
+          name: "api",
+          command: "bun --watch src/server/index.ts",
+          cwd: "server",
+          port: "4100",
+          autoPort: false,
+          healthCheck: { url: "http://x/health" },
+          env: { FOO: "bar" },
+        },
+      ],
+    });
+    expect(errors).toEqual([]);
+    expect(services[0]).toMatchObject({
+      name: "api",
+      command: "bun --watch src/server/index.ts",
+      cwd: "server",
+      port: 4100,
+      autoPort: false,
+      healthCheck: { url: "http://x/health" },
+      env: { FOO: "bar" },
+    });
+  });
+
+  it("returns nothing when there is no dev.services section", () => {
+    expect(parseDevServices({})).toEqual({ services: [], errors: [] });
+  });
+
+  it("rejects a missing name, a missing command, and duplicates", () => {
+    expect(parseDevServices({ "dev.services": [{ command: "x" }] }).errors[0]).toContain(
+      "missing a name",
+    );
+    expect(parseDevServices({ "dev.services": [{ name: "api" }] }).errors[0]).toContain(
+      "a command is required",
+    );
+    const dup = parseDevServices({
+      "dev.services": [
+        { name: "api", command: "x" },
+        { name: "api", command: "y" },
+      ],
+    });
+    expect(dup.errors[0]).toContain('duplicate service name "api"');
+    expect(dup.services).toHaveLength(1);
+  });
+
+  it("rejects an out-of-range port and a non-boolean autoPort", () => {
+    expect(
+      parseDevServices({ "dev.services": [{ name: "api", command: "x", port: "99999" }] })
+        .errors[0],
+    ).toContain("port must be a whole number between 1 and 65535");
+    expect(
+      parseDevServices({ "dev.services": [{ name: "api", command: "x", autoPort: "yes" }] })
+        .errors[0],
+    ).toContain("autoPort must be true or false");
+  });
+
+  it("parses healthCheck in the same three shapes a target's takes", () => {
+    const obj = parseDevServices({
+      "dev.services": [{ name: "api", command: "x", healthCheck: { url: "http://x/health" } }],
+    });
+    expect(obj.errors).toEqual([]);
+    expect(obj.services[0].healthCheck).toEqual({ url: "http://x/health" });
+    const inline = parseDevServices({
+      "dev.services": [
+        {
+          name: "api",
+          command: "x",
+          healthCheck: '{ url = "http://localhost:{port}/api/health" }',
+        },
+      ],
+    });
+    expect(inline.errors).toEqual([]);
+    // The flat TOML parser leaves the inline table as a string; the documented
+    // `{ url = ... }` syntax must work through it.
+    expect(inline.services[0].healthCheck).toEqual({
+      url: "http://localhost:{port}/api/health",
+    });
+    const dotted = parseDevServices({
+      "dev.services": [{ name: "api", command: "x", "healthCheck.file": "ready.txt" }],
+    });
+    expect(dotted.errors).toEqual([]);
+    expect(dotted.services[0].healthCheck).toEqual({ file: "ready.txt" });
+    expect(
+      parseDevServices({ "dev.services": [{ name: "api", command: "x", healthCheck: {} }] })
+        .errors[0],
+    ).toContain("healthCheck needs a url or a file");
+  });
+
+  it("parses env from an object, the inline-table string, or dotted env.KEY keys", () => {
+    const obj = parseDevServices({
+      "dev.services": [{ name: "api", command: "x", env: { FOO: "bar" } }],
+    });
+    expect(obj.services[0].env).toEqual({ FOO: "bar" });
+    const inline = parseDevServices({
+      "dev.services": [{ name: "api", command: "x", env: '{ FOO = "bar", BAZ = "qux" }' }],
+    });
+    expect(inline.errors).toEqual([]);
+    expect(inline.services[0].env).toEqual({ FOO: "bar", BAZ: "qux" });
+    const dotted = parseDevServices({
+      "dev.services": [{ name: "api", command: "x", "env.FOO": "bar" }],
+    });
+    expect(dotted.errors).toEqual([]);
+    expect(dotted.services[0].env).toEqual({ FOO: "bar" });
+    expect(
+      parseDevServices({ "dev.services": [{ name: "api", command: "x", env: "{ }" }] }).errors[0],
+    ).toContain("env must be a table");
+  });
+});
+
+describe("devTargetServiceErrors", () => {
+  const targets = [
+    {
+      name: "web",
+      kind: "server" as const,
+      command: "x",
+      url: "http://x",
+      services: ["api", "api", "db"],
+    },
+    { name: "solo", kind: "server" as const, command: "x", url: "http://x", services: [] },
+  ];
+
+  it("rejects unknown and repeated service names", () => {
+    const errors = devTargetServiceErrors(targets, [{ name: "api", command: "x" }]);
+    expect(errors).toEqual([
+      '[dev.targets] web: service "api" is listed more than once',
+      '[dev.targets] web: references unknown service "db" — declare it as a [[dev.services]] block in repoos.toml',
+    ]);
+  });
+
+  it("passes a clean reference list", () => {
+    const clean = [
+      {
+        name: "web",
+        kind: "server" as const,
+        command: "x",
+        url: "http://x",
+        services: ["api", "db"],
+      },
+    ];
+    expect(
+      devTargetServiceErrors(clean, [
+        { name: "api", command: "x" },
+        { name: "db", command: "y" },
+      ]),
+    ).toEqual([]);
+    // A target with no `services` list passes with or without declarations.
+    expect(
+      devTargetServiceErrors(
+        [clean[0]!, { name: "solo", kind: "server", command: "x" }],
+        [
+          { name: "api", command: "x" },
+          { name: "db", command: "y" },
+        ],
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe("loadConfig dev services wiring", () => {
+  it("parses [[dev.services]] and a referencing target", () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svc-"));
+    try {
+      writeFileSync(
+        join(dir, "repoos.toml"),
+        [
+          "[[dev.services]]",
+          'name = "api"',
+          'command = "bun --watch src/server/index.ts"',
+          'healthCheck = { url = "http://localhost:{port}/api/health" }',
+          "",
+          "[[dev.targets]]",
+          'name = "app"',
+          'kind = "server"',
+          'services = ["api"]',
+          'command = "bun run dev -- --port {port} --api-port {api.port}"',
+          'url = "http://localhost:{port}"',
+          "",
+        ].join("\n"),
+      );
+      const cfg = loadConfig(dir);
+      expect(cfg.dev?.services).toHaveLength(1);
+      expect(cfg.dev?.services?.[0]).toMatchObject({ name: "api" });
+      expect(cfg.dev?.targets?.[0].services).toEqual(["api"]);
+      expect(cfg.devTargetErrors).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("records an unknown service reference as a config error", () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcerr-"));
+    try {
+      writeFileSync(
+        join(dir, "repoos.toml"),
+        [
+          "[[dev.services]]",
+          'name = "api"',
+          'command = "bun --watch src/server/index.ts"',
+          "",
+          "[[dev.targets]]",
+          'name = "app"',
+          'kind = "server"',
+          'services = ["api", "nope"]',
+          'command = "bun run dev"',
+          'url = "http://localhost:5173"',
+          "",
+        ].join("\n"),
+      );
+      const cfg = loadConfig(dir);
+      // Both targets parse, and the unknown reference is surfaced loudly.
+      expect(cfg.dev?.targets).toHaveLength(1);
+      expect(cfg.devTargetErrors).toEqual([
+        '[dev.targets] app: references unknown service "nope" — declare it as a [[dev.services]] block in repoos.toml',
+      ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("DevTargetManager with services (#0843)", () => {
+  it("boots the service first, then the target, and exposes both states", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcorder-"));
+    // The target command only records success if the API answers its health
+    // check before the target's own command runs — the boot-order proof.
+    const proof = join(dir, "boot-order.json");
+    const ordered = webTarget({
+      command: [
+        "bun -e \"const h=require('node:http');const f=require('node:fs');",
+        `h.get('http://127.0.0.1:' + process.env.REPOOS_DEV_API_PORT + '/api/health', (r) => f.writeFileSync('${proof}', JSON.stringify({first:'api', status:r.statusCode})));`,
+        'setTimeout(()=>{},60000)"',
+      ].join(""),
+    });
+    const mgr = new DevTargetManager(
+      baseConfig({ services: [apiService()], targets: [ordered] }, dir),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(true);
+      const view = mgr.get("app");
+      expect(view?.status).toBe("running");
+      const svc = view?.services?.[0];
+      expect(svc).toMatchObject({ name: "api", status: "running" });
+      expect(typeof svc?.port).toBe("number");
+      expect(typeof svc?.pid).toBe("number");
+      // `{api.port}` in the target's url resolves to the service's real port.
+      expect(view?.url).toBe(`http://localhost:${svc?.port}`);
+      // The service genuinely answered before the target command ran: poll for
+      // the proof file the target command writes after its own GET succeeds.
+      const deadline = Date.now() + 5000;
+      let proofData: string | null = null;
+      while (Date.now() < deadline) {
+        try {
+          proofData = readFileSync(proof, "utf8");
+          break;
+        } catch {
+          await new Promise((r) => setTimeout(r, 50));
+        }
+      }
+      expect(JSON.parse(proofData ?? "{}")).toEqual({ first: "api", status: 200 });
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("fails the target when a service never becomes ready, naming the service", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcfail-"));
+    const mgr = new DevTargetManager(
+      baseConfig({ services: [apiService({ command: "exit 3" })], targets: [webTarget()] }, dir),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('service "api"');
+      const view = mgr.get("app");
+      expect(view?.status).toBe("failed");
+      expect(view?.error).toContain('service "api"');
+      // The service records its own failed state — its exit ran before the
+      // readiness gate noticed — so nothing is left recorded as live.
+      expect(view?.services?.[0].status).toBe("failed");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses a target referencing a service no [[dev.services]] block declares", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcmis-"));
+    const mgr = new DevTargetManager(baseConfig({ targets: [webTarget()] }, dir));
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('unknown dev service(s) "api"');
+      expect(mgr.get("app")?.status).toBe("failed");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("stops the services with the target", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcstop-"));
+    const mgr = new DevTargetManager(
+      baseConfig({ services: [apiService()], targets: [webTarget()] }, dir),
+    );
+    try {
+      await mgr.start("app");
+      const svcPid = mgr.get("app")?.services?.[0].pid;
+      expect(typeof svcPid).toBe("number");
+      const targetPid = mgr.get("app")?.pid;
+      const stop = await mgr.stop("app");
+      expect(stop.ok).toBe(true);
+      const view = mgr.get("app");
+      expect(view?.status).toBe("stopped");
+      expect(view?.services?.[0].status).toBe("stopped");
+      // Both processes are actually gone.
+      expect(await waitForDead(targetPid!)).toBe(true);
+      expect(await waitForDead(svcPid!)).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("restarts the target and its services together", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcrestart-"));
+    const mgr = new DevTargetManager(
+      baseConfig({ services: [apiService()], targets: [webTarget()] }, dir),
+    );
+    try {
+      await mgr.start("app");
+      const firstServicePid = mgr.get("app")?.services?.[0].pid;
+      const restart = await mgr.restart("app");
+      expect(restart.ok).toBe(true);
+      const view = mgr.get("app");
+      expect(view?.status).toBe("running");
+      expect(view?.services?.[0].status).toBe("running");
+      expect(view?.services?.[0].pid).not.toBe(firstServicePid);
+      // The first service process is gone.
+      expect(await waitForDead(firstServicePid!)).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps the service's own {port} and PORT env consistent", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcenv-"));
+    const memo = join(dir, "env.json");
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              command: `bun -e "const f=require('node:fs');f.writeFileSync('${memo}', JSON.stringify({port:Number(process.env.PORT), foo:process.env.FOO}));setTimeout(()=>{},60000)"`,
+              env: { FOO: "bar" },
+              // No HTTP services in this fixture: ready = alive-after-settle.
+              healthCheck: undefined,
+            }),
+          ],
+          // A process target is running as soon as it is alive — no probe, so
+          // the test doesn't wait on a URL nothing serves in this fixture.
+          targets: [webTarget({ kind: "process", url: undefined })],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(true);
+      const svc = mgr.get("app")?.services?.[0];
+      const recorded = JSON.parse(readFileSync(memo, "utf8"));
+      // PORT (and therefore `{port}`) is the same reserved port the state carries.
+      expect(recorded).toEqual({ port: svc?.port, foo: "bar" });
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("marks the target failed, naming the service, when a running service crashes", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svccrash-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              command: 'bun -e "setTimeout(()=>process.exit(1),1200)"',
+              healthCheck: undefined,
+            }),
+          ],
+          // A process target is "running" as soon as it is alive — no probe,
+          // so the timeline is deterministic: service alive at the 500ms
+          // settle, target running at ~1s, service exits at 1.2s and the
+          // crash must degrade the target naming the service.
+          targets: [webTarget({ kind: "process", url: undefined })],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(true);
+      // Wait for the service to exit and the crash to degrade the target.
+      const deadline = Date.now() + 6000;
+      let seen: { status?: string; error?: string } = {};
+      while (Date.now() < deadline) {
+        seen = { status: mgr.get("app")?.status, error: mgr.get("app")?.error };
+        if (seen.status === "failed") break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      expect(seen.status).toBe("failed");
+      expect(seen.error).toContain('service "api"');
+      expect(mgr.get("app")?.services?.[0].status).toBe("failed");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("pinned service port: used when free, refused when taken, named in the error", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcpin-"));
+    const free = await freePort();
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [apiService({ autoPort: false, port: free })],
+          targets: [webTarget()],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(true);
+      expect(mgr.get("app")?.services?.[0].port).toBe(free);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+    // Now hold the same port and expect a refusal that names the service.
+    const held = await holdPort();
+    try {
+      const takenPort = held.port;
+      const mgr2 = new DevTargetManager(
+        baseConfig(
+          {
+            services: [apiService({ autoPort: false, port: takenPort })],
+            targets: [webTarget()],
+          },
+          dir,
+        ),
+      );
+      try {
+        const result = await mgr2.start("app");
+        expect(result.ok).toBe(false);
+        expect(result.error).toContain(`service "api" port ${takenPort} is already in use`);
+      } finally {
+        await mgr2.stopAll();
+      }
+    } finally {
+      await held.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("dev target services API shape (#0843)", () => {
+  const req = {} as IncomingMessage;
+  function makeRes(): { res: ServerResponse; fake: { status: number; payload: any } } {
+    const fake = { status: 0, payload: undefined as any };
+    const res = {
+      setHeader() {},
+      writeHead(code: number) {
+        fake.status = code;
+      },
+      end(p: string) {
+        fake.payload = JSON.parse(p);
+      },
+    };
+    return { res: res as unknown as ServerResponse, fake };
+  }
+  function makeCtx(mgr: DevTargetManager): RouteContext {
+    return { devTargets: mgr } as unknown as RouteContext;
+  }
+
+  it("includes services and their state in GET /api/dev/targets", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcapi-"));
+    const mgr = new DevTargetManager(
+      baseConfig({ services: [apiService()], targets: [webTarget()] }, dir),
+    );
+    try {
+      const first = makeRes();
+      await getDevTargets(makeCtx(mgr), req, first.res, {});
+      expect(first.fake.status).toBe(200);
+      const view = first.fake.payload.targets[0];
+      expect(view.services).toHaveLength(1);
+      expect(view.services[0]).toMatchObject({
+        name: "api",
+        status: "stopped",
+        token: "api",
+      });
+      expect(typeof view.services[0].command).toBe("string");
+      // No readiness url is advertised before the service ever resolved a port.
+      expect(view.services[0].url).toBeUndefined();
+      // After a start the real port is in the row; after a stop the state flips.
+      const started = makeRes();
+      await startDevTarget(makeCtx(mgr), req, started.res, { param1: "app" });
+      expect(started.fake.payload.target.services[0].status).toBe("running");
+      expect(typeof started.fake.payload.target.services[0].port).toBe("number");
+      const stopped = makeRes();
+      await stopDevTarget(makeCtx(mgr), req, stopped.res, { param1: "app" });
+      expect(stopped.fake.payload.target.services[0].status).toBe("stopped");
     } finally {
       await mgr.stopAll();
       rmSync(dir, { recursive: true, force: true });

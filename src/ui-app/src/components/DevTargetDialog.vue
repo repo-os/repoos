@@ -162,6 +162,30 @@ function close(): void {
           <p class="dev-target-hint">Runs in the project's root checkout, never a task worktree.</p>
         </div>
 
+        <div class="field">
+          <label for="dev-target-services">Services (optional)</label>
+          <input
+            id="dev-target-services"
+            v-model="draft.services"
+            type="text"
+            class="mono"
+            placeholder="api, db"
+            spellcheck="false"
+            autocomplete="off"
+            :disabled="busy"
+            @blur="touched = true"
+          />
+          <!-- #0843: services are defined as [[dev.services]] tables in
+               repoos.toml (TOML-only, [[preview.services]]-style) and only
+               referenced here by name, so an edit through this form keeps the
+               list instead of silently dropping it. -->
+          <p class="dev-target-hint">
+            Comma-separated names of <code>[[dev.services]]</code> tables in
+            <code>repoos.toml</code>. Each one boots before this target, on its own free port, and
+            its port is available as <code>{api.port}</code> / <code>{api.url}</code>.
+          </p>
+        </div>
+
         <div v-if="draft.kind === 'server'" class="field">
           <label for="dev-target-url">URL</label>
           <input

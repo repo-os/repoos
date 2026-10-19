@@ -13,7 +13,7 @@
  * is a loud validation error rather than a silent drop: a target with a missing
  * name/command/kind or a conflicting field is reported with a clear message.
  */
-import type { DevTargetConfig } from "./types.js";
+import type { DevServiceConfig, DevTargetConfig } from "./types.js";
 
 /**
  * Parse the flat TOML parser's leftover inline-table string for `healthCheck`
@@ -40,6 +40,13 @@ function parseInlineHealthCheck(raw: string): { url?: string; file?: string } | 
  * as a literal here so this node-free module never imports the server.
  */
 const DEV_PORT_TOKEN = "{port}";
+
+/** Read a flat string list (the flat TOML parser's shape for a string array). */
+function stringList(v: unknown): string[] {
+  if (v === undefined || v === null) return [];
+  const items = Array.isArray(v) ? v : [v];
+  return items.map((x) => (typeof x === "string" ? x.trim() : "")).filter(Boolean);
+}
 
 /** Whether any of a target's fields use the `{port}` placeholder. */
 function usesPortPlaceholder(t: DevTargetConfig): boolean {
@@ -136,6 +143,12 @@ export function parseDevTargets(parsed: Record<string, unknown>): {
     const label = typeof r.label === "string" ? r.label.trim() : "";
     if (label) target.label = label;
 
+    // #0843: the companion services this target boots before its own command,
+    // by name. Names are cross-validated against `[[dev.services]]` by
+    // `devTargetServiceErrors` (the loader runs it for both lists together).
+    const targetServices = stringList(r.services);
+    if (targetServices.length) target.services = targetServices;
+
     // #0802: per-target port handling. `autoPort` defaults to on; an explicit
     // `false` opts into a fixed `port`. The value is accepted for any kind — a
     // process's command may still use `{port}` — but only `server` targets get
@@ -222,4 +235,251 @@ export function parseDevTargets(parsed: Record<string, unknown>): {
     targets.push(target);
   }
   return { targets, errors };
+}
+
+/**
+ * Turn a service name into a placeholder/env token: lowercase, runs of
+ * non-alphanumerics collapsed to `_`, edges trimmed. Shared with the preview
+ * supervisor so `[[preview.services]]` and `[[dev.services]]` substitute
+ * identically (#0681, #0843).
+ */
+export function servicePortToken(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+/**
+ * Parse the flat TOML parser's leftover inline-table string for a service's
+ * `env` (`'{ KEY = "value" }'` — `parseFlatToml` has no inline-table support).
+ * Quoted string values only, which is all an env var needs. Returns null when
+ * the string is not a `{ … }` table at all, so the caller can report the right
+ * error.
+ */
+function parseInlineEnvTable(raw: string): Record<string, string> | null {
+  const s = raw.trim();
+  if (!s.startsWith("{") || !s.endsWith("}")) return null;
+  const out: Record<string, string> = {};
+  for (const m of s.slice(1, -1).matchAll(/([A-Za-z0-9_]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) {
+    const key = m[1] ?? "";
+    const value = (m[2] ?? m[3] ?? "").trim();
+    if (!key) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
+/** Validate one service's port field; shared with the target parser's shape. */
+function parsePortField(
+  raw: unknown,
+  message: (problem: string) => string,
+): { port?: number; error?: string } {
+  if (raw === undefined || raw === "") return {};
+  const port =
+    typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw.trim()) : Number.NaN;
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    return { error: message("port must be a whole number between 1 and 65535") };
+  }
+  return { port };
+}
+
+/**
+ * Parse the `[[dev.services]]` array of tables — companion processes a dev
+ * target boots before its main command, each on its own port (#0843). Same
+ * contract as `parseDevTargets`: bad rows are loud validation errors, never
+ * silent drops, so a typo is visible on the Dev page instead of a half-booted
+ * stack.
+ */
+export function parseDevServices(parsed: Record<string, unknown>): {
+  services: DevServiceConfig[];
+  errors: string[];
+} {
+  const raw = parsed["dev.services"];
+  const services: DevServiceConfig[] = [];
+  const errors: string[] = [];
+  if (raw === undefined) return { services, errors };
+  if (!Array.isArray(raw)) {
+    errors.push("[dev.services] must be an array of tables");
+    return { services, errors };
+  }
+  const seen = new Set<string>();
+  for (const entry of raw) {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+      errors.push("[dev.services] ignoring a non-table row");
+      continue;
+    }
+    const r = entry as Record<string, unknown>;
+    const name = typeof r.name === "string" ? r.name.trim() : "";
+    if (!name) {
+      errors.push("[dev.services] a service is missing a name");
+      continue;
+    }
+    if (seen.has(name)) {
+      errors.push(`[dev.services] duplicate service name "${name}"`);
+      continue;
+    }
+    const command = typeof r.command === "string" ? r.command.trim() : "";
+    if (!command) {
+      errors.push(`[dev.services] ${name}: a command is required`);
+      continue;
+    }
+    const service: DevServiceConfig = { name, command };
+
+    const cwd = typeof r.cwd === "string" ? r.cwd.trim() : "";
+    if (cwd) service.cwd = cwd;
+
+    // Same per-service port handling as a target's (#0802): auto-pick defaults
+    // on (the configured `port` is only a preference); auto-pick off pins it.
+    const autoPortRaw = r.autoPort;
+    if (autoPortRaw !== undefined && typeof autoPortRaw !== "boolean") {
+      errors.push(`[dev.services] ${name}: autoPort must be true or false`);
+      continue;
+    }
+    if (typeof autoPortRaw === "boolean") service.autoPort = autoPortRaw;
+    const port = parsePortField(r.port, (problem) => `[dev.services] ${name}: ${problem}`);
+    if (port.error) {
+      errors.push(port.error);
+      continue;
+    }
+    if (port.port !== undefined) service.port = port.port;
+
+    // healthCheck arrives in the same three shapes a target's does (an object,
+    // the raw inline-table string, or dotted keys) — one shared reader keeps
+    // the two parsers honest.
+    const hcRaw = r.healthCheck;
+    let hcUrl =
+      typeof r["healthCheck.url"] === "string" ? (r["healthCheck.url"] as string).trim() : "";
+    let hcFile =
+      typeof r["healthCheck.file"] === "string" ? (r["healthCheck.file"] as string).trim() : "";
+    const hasInlineKeys = r["healthCheck.url"] !== undefined || r["healthCheck.file"] !== undefined;
+    if (hcRaw !== undefined) {
+      if (typeof hcRaw === "string") {
+        const parsedHc = parseInlineHealthCheck(hcRaw);
+        if (!parsedHc) {
+          errors.push(`[dev.services] ${name}: healthCheck must be a table with url or file`);
+          continue;
+        }
+        hcUrl = hcUrl || parsedHc.url || "";
+        hcFile = hcFile || parsedHc.file || "";
+      } else if (typeof hcRaw === "object" && hcRaw !== null && !Array.isArray(hcRaw)) {
+        const hc = hcRaw as Record<string, unknown>;
+        hcUrl = hcUrl || (typeof hc.url === "string" ? hc.url.trim() : "");
+        hcFile = hcFile || (typeof hc.file === "string" ? hc.file.trim() : "");
+      } else {
+        errors.push(`[dev.services] ${name}: healthCheck must be a table with url or file`);
+        continue;
+      }
+    }
+    if (hcUrl || hcFile) {
+      service.healthCheck = {
+        ...(hcUrl ? { url: hcUrl } : {}),
+        ...(hcFile ? { file: hcFile } : {}),
+      };
+    } else if (hcRaw !== undefined || hasInlineKeys) {
+      errors.push(`[dev.services] ${name}: healthCheck needs a url or a file`);
+      continue;
+    }
+
+    // env arrives in the same three shapes: an object (a real parser or a
+    // test), the inline-table string the flat parser leaves, or dotted
+    // `env.KEY` keys on the row.
+    const envRaw = r.env;
+    let env: Record<string, string> | undefined;
+    if (envRaw !== undefined) {
+      if (typeof envRaw === "string") {
+        const parsedEnv = parseInlineEnvTable(envRaw);
+        if (!parsedEnv || !Object.keys(parsedEnv).length) {
+          errors.push(
+            `[dev.services] ${name}: env must be a table with at least one KEY = "value"`,
+          );
+          continue;
+        }
+        env = parsedEnv;
+      } else if (typeof envRaw === "object" && envRaw !== null && !Array.isArray(envRaw)) {
+        const e = envRaw as Record<string, unknown>;
+        for (const [k, v] of Object.entries(e)) {
+          if (typeof v !== "string") continue;
+          env = { ...(env ?? {}), [k]: v };
+        }
+        if (!env || !Object.keys(env).length) {
+          errors.push(
+            `[dev.services] ${name}: env must be a table with at least one KEY = "value"`,
+          );
+          continue;
+        }
+      } else {
+        errors.push(`[dev.services] ${name}: env must be a table with at least one KEY = "value"`);
+        continue;
+      }
+    }
+    const dottedEnv: Record<string, string> = {};
+    for (const [k, v] of Object.entries(r)) {
+      if (!k.startsWith("env.")) continue;
+      const key = k.slice("env.".length).trim();
+      if (key && typeof v === "string") dottedEnv[key] = v.trim();
+    }
+    if (Object.keys(dottedEnv).length) env = { ...(env ?? {}), ...dottedEnv };
+    if (env) service.env = env;
+
+    seen.add(name);
+    services.push(service);
+  }
+  return { services, errors };
+}
+
+/**
+ * Cross-validate a target's `services` name list against the declared
+ * `[[dev.services]]` rows (#0843): an unknown name or a repeated entry is a
+ * config error, never a silently partial boot. Returns one message per
+ * problem; empty when everything resolves.
+ */
+export function devTargetServiceErrors(
+  targets: readonly DevTargetConfig[],
+  services: readonly DevServiceConfig[] | undefined,
+): string[] {
+  const errors: string[] = [];
+  const known = new Set((services ?? []).map((s) => s.name));
+  for (const t of targets) {
+    const listed = new Set<string>();
+    for (const name of t.services ?? []) {
+      if (!known.has(name)) {
+        errors.push(
+          `[dev.targets] ${t.name}: references unknown service "${name}" — declare it as a [[dev.services]] block in repoos.toml`,
+        );
+        continue;
+      }
+      if (listed.has(name)) {
+        errors.push(`[dev.targets] ${t.name}: service "${name}" is listed more than once`);
+        continue;
+      }
+      listed.add(name);
+    }
+  }
+  return errors;
+}
+
+/** The dev services' placeholder host — the same one the preview supervisor uses. */
+const SERVICE_URL_HOST = "127.0.0.1";
+
+/**
+ * Expand a dev-target template (#0843): `{port}` for the target's OWN port,
+ * plus `{<token>.port}` / `{<token>.url}` for every companion service — the
+ * same expansion rule the preview supervisor applies (#0681). Left untouched:
+ * the own-port token when no port was resolved (a target that never started
+ * keeps the value it declared), and any service token without a reserved port.
+ */
+export function expandServiceRefs(
+  template: string,
+  port: number | undefined,
+  tokens: Record<string, number>,
+): string {
+  let out = port !== undefined ? template.replaceAll("{port}", String(port)) : template;
+  for (const [token, servicePort] of Object.entries(tokens)) {
+    out = out
+      .replaceAll(`{${token}.port}`, String(servicePort))
+      .replaceAll(`{${token}.url}`, `http://${SERVICE_URL_HOST}:${servicePort}`);
+  }
+  return out;
 }
