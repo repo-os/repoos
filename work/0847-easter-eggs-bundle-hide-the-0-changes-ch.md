@@ -13,7 +13,7 @@ model_override: default
 review_cli_override: pi
 review_model_override: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
 created_at: "2026-10-19T07:50:02Z"
-updated_at: "2026-10-19T13:24:42Z"
+updated_at: "2026-10-19T13:26:11Z"
 ---
 ## Items
 
@@ -71,20 +71,20 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 ```json
 [
 {
-  "label": "Ready human task with no changes (light)",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-task-id=\"9999\"]",
-  "state": "card:noChanges",
-  "theme": "light"
+"label": "Ready human task with no changes (light)",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"]",
+"state": "card:noChanges",
+"theme": "light"
 },
 {
-  "label": "Ready human task with no changes (dark)",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-task-id=\"9999\"]",
-  "state": "card:noChanges",
-  "theme": "dark"
+"label": "Ready human task with no changes (dark)",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"]",
+"state": "card:noChanges",
+"theme": "dark"
 }
 ]
 ```
@@ -106,3 +106,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T13:21:36Z · review_model_override
 - 2026-10-19T13:21:37Z · status ready→active, branch
 - 2026-10-19T13:24:42Z · body
+- 2026-10-19T13:26:11Z · body
