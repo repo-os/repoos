@@ -3,9 +3,6 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — the stop-holder path can leave companion services running, and the handoff capture is stale."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -154,3 +151,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T19:23:57Z · body
 - 2026-10-19T19:32:55Z · status active→review
 - 2026-10-19T19:34:36Z · note: review pass 8: needs some work
+- 2026-10-19T19:34:36Z · needs_input
