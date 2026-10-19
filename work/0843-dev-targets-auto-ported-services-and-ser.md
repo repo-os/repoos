@@ -2,7 +2,7 @@
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -12,7 +12,7 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T12:31:36Z"
+updated_at: "2026-10-19T12:39:41Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -86,3 +86,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T12:27:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-19T12:29:50Z · body
 - 2026-10-19T12:31:36Z · body
+- 2026-10-19T12:39:41Z · status active→review
