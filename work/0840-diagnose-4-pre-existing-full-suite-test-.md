@@ -13,7 +13,7 @@ branch: feat/diagnose-4-pre-existing-full-suite-test-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T22:39:47Z"
-updated_at: "2026-10-19T03:12:35Z"
+updated_at: "2026-10-19T03:24:40Z"
 last_close_out_gate_ms: 116390
 last_close_out_gate_at: "2026-10-19T03:11:47.656Z"
 review_passes: 1
@@ -53,7 +53,15 @@ No UI change intended. A maintainer running bun run test on this machine gets a 
 - No test is skipped or loosened without a written reason in the commit and in this task.
 
 ## Notes for AI
-Start from the Problem and Attribution sections above (the #0834 engineer already proved the failures are not caused by #0834/#0664 and reproduce at their merge-base). First reproduce on current main in a clean worktree. Files: src/ui-app/tests/activity-indicator-motion.test.ts, src/ui-app/tests/agent-contract.test.ts, src/ui-app/src/components/ActivityIndicator.vue, src/core/activity-animation.ts, src/core/agent-contract.ts, the bird-quick-trail CSS in style.css. Do not touch repoos.toml. Source: #0834 handoff session 2026-10-19.
+Start from the Problem and Attribution sections above (the #0834 engineer already proved the failures are not caused by #0834/#0664 and reproduce at their merge-base). Files: src/ui-app/tests/activity-indicator-motion.test.ts, src/ui-app/tests/agent-contract.test.ts, src/ui-app/src/components/ActivityIndicator.vue, src/core/activity-animation.ts, src/core/agent-contract.ts, the bird-quick-trail CSS in style.css. Do not touch repoos.toml.
+
+## Root cause (2026-10-19, #0840)
+
+**activity-indicator-motion ×3 (bird-quick-trail only, local WebKit):** `.ai-bird-quick` reused the mark element but set `display:block; width/height:100%`, overriding `.ai-mark`'s `inline-flex` + `1.1em` slot. In WebKit, `height:100%` on the mark collapsed to 0 under `prefers-reduced-motion`, so static mark height assertions failed. Separately, rotated toes extended the mark's `scrollWidth` to 23px at the 20px reserved width (JetBrains Mono `ch` on this Mac); `overflow:hidden` on the mark + feet clips subpixel overhang without changing footprint geometry.
+
+**agent-contract cancellation ×1:** Vitest runs `adapter contract suite` tests concurrently; `REPOOS_CONTRACT_BROKEN` is process-global. Another test could clear the flag while a broken-stream run was still in its cancellation probe, so the fixture stayed alive for SIGTERM and reported `ok:true`. Fixed with per-run `fixtureBrokenStream` child env in `runAdapterContract` and `describe.sequential` for the file.
+
+Runner comparison: failures reproduce on current `main` in this worktree (same WebKit); CI runner WebKit/fonts not re-measured in this session — human should confirm runner still green on merge.
 
 ## Diagnosis (2026-10-19)
 ### activity-indicator-motion ×3 (bird-quick-trail)
@@ -100,3 +108,4 @@ Start from the Problem and Attribution sections above (the #0834 engineer alread
 - 2026-10-19T03:04:10Z · note: review pass 1: good to go
 - 2026-10-19T03:11:47Z · close-out gate completed in 116s
 - 2026-10-19T03:12:35Z · status review→done, release:success
+- 2026-10-19T03:24:40Z · body: Notes for AI (added 1, removed 1); Root cause (2026-10-19, #0840) (added)
