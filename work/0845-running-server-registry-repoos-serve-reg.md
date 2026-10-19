@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-19T07:39:24Z"
-review_passes: 3
 id: "0845"
 title: "Running-server registry: repoos serve registers itself in ~/.repoos/servers (plus repoos servers)"
 type: feature
@@ -13,9 +11,7 @@ branch: feat/running-server-registry-repoos-serve-reg
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:59:37Z"
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-19T07:27:53.466Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
-review_rounds: 2
+updated_at: "2026-10-19T06:25:07Z"
 ---
 ## Problem
 RepoOS Hub's Add server sheet wants to list locally running RepoOS servers, but there is no central place that says what is running. It brute-force probes ports 7000-7999 (unreliable, #0844). The only machine-wide file today is `~/.repoos/services.json`, which lists just the repos installed with `repoos service` (launchd), including stale `status: running` entries, and nothing for a plain `repoos serve` (for example the lightingai project on 7559).
@@ -47,27 +43,4 @@ Look at src/server/server.ts (listen callback and shutdown hooks), src/core/runt
 - 2026-10-19T06:09:11Z · status inbox→ready
 - 2026-10-19T06:09:14Z · cli_override, model_override
 - 2026-10-19T06:09:16Z · status ready→active, branch
-- 2026-10-19T06:13:54Z · body
-- 2026-10-19T06:14:46Z · body
-- 2026-10-19T06:16:28Z · body
-- 2026-10-19T06:25:08Z · status active→review
-- 2026-10-19T06:25:09Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-19T06:26:52Z · note: review pass 1: needs some work
-- 2026-10-19T06:26:53Z · status review→active
-- 2026-10-19T06:29:40Z · body
-- 2026-10-19T06:32:24Z · body
-- 2026-10-19T06:40:45Z · status active→review
-- 2026-10-19T06:40:47Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-19T06:42:11Z · note: review pass 2: needs some work
-- 2026-10-19T06:42:12Z · status review→active
-- 2026-10-19T06:44:04Z · body
-- 2026-10-19T06:47:11Z · body
-- 2026-10-19T07:27:52Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
-- 2026-10-19T07:27:53Z · message_queued at 2026-10-19T07:27:53.123Z
-- 2026-10-19T07:32:00Z · body
-- 2026-10-19T07:34:58Z · body
-- 2026-10-19T07:36:54Z · body
-- 2026-10-19T07:37:56Z · status active→review
-- 2026-10-19T07:37:58Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-19T07:39:23Z · note: review pass 3: good to go
-
+- 2026-10-19T06:25:07Z · status active→review
