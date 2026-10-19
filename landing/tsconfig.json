@@ -21,5 +21,5 @@
     },
     "types": ["vite/client"]
   },
-  "include": ["src/**/*.ts", "src/**/*.vue", "vite.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.vue", "worker.ts", "vite.config.ts"]
 }

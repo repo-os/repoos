@@ -4,15 +4,30 @@ import tailwindcss from "@tailwindcss/vite";
 import { fileURLToPath } from "node:url";
 import { themeBootPlugin } from "./vite-plugin-theme-boot.js";
 
-// repoos.org landing page — a standalone static site, like mobile/.
-// Independent of src/ui-app: its own package.json, lockfile and deploy
-// pipeline. Output is plain static files, deployable to Cloudflare Pages.
+// repoos.org marketing app. Static pages plus a separate Worker for enquiries.
+// Independent of src/ui-app, with its own package and deployment pipeline.
 const appRoot = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({
   root: appRoot,
-  plugins: [themeBootPlugin(), vue(), tailwindcss()],
-  base: "./",
+  plugins: [
+    themeBootPlugin(),
+    vue(),
+    tailwindcss(),
+    {
+      name: "repoos:client-page-entry",
+      configureServer(server) {
+        server.middlewares.use((request, _response, next) => {
+          const url = new URL(request.url || "/", "http://localhost");
+          if (url.pathname === "/for-clients" || url.pathname === "/for-clients/") {
+            request.url = "/for-clients/index.html" + url.search;
+          }
+          next();
+        });
+      },
+    },
+  ],
+  base: "/",
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -21,5 +36,11 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    rolldownOptions: {
+      input: {
+        home: fileURLToPath(new URL("./index.html", import.meta.url)),
+        clients: fileURLToPath(new URL("./for-clients/index.html", import.meta.url)),
+      },
+    },
   },
 });
