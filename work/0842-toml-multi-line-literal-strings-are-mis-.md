@@ -2,7 +2,7 @@
 id: "0842"
 title: TOML multi-line literal strings (''' ''') are mis-parsed in repoos.toml
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: "the cursor agent exited without output: ActionRequiredError: Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue. ⚠ After this turn ended, 2 process(es) escaped its process group (PIDs: 46168, 46533). They may need manual cleanup."
@@ -14,7 +14,7 @@ branch: feat/toml-multi-line-literal-strings-are-mis-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-10-19T18:24:06Z"
+updated_at: "2026-10-19T18:29:21Z"
 ---
 ## Problem
 `repoos.toml` values written as TOML multi-line literal strings (`'''...'''`) are mis-parsed: the stored value keeps literal leading and trailing `''`. Seen on the Dev page for a `[[dev.targets]]` command: `''bun install --frozen-lockfile && ... ''`. It only runs because a shell happens to ignore empty `''`; a command starting with an env assignment (`PORT=3001 bun ...`) failed with `/bin/sh: PORT=3001: command not found`. `'''` and `"""` are valid TOML, so the reader is non-conformant. Found while setting up dev targets for the lightingai project (2026-10-19).
@@ -44,3 +44,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T18:01:55Z · needs_input
 - 2026-10-19T18:07:51Z · status review→active
 - 2026-10-19T18:24:06Z · status active→review
+- 2026-10-19T18:29:21Z · status review→active
