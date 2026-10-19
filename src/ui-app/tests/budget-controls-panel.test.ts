@@ -3,12 +3,33 @@
  * rows with counts, expansion, the empty-state copy, and the deep-linkable tab.
  */
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { mount, flushPromises } from "@vue/test-utils";
+import { defineComponent } from "vue";
+import { mount, flushPromises, type VueWrapper } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import BudgetControlsPanel from "../src/components/BudgetControlsPanel.vue";
 import AgentsView from "../src/views/AgentsView.vue";
 import { useConfigStore } from "../src/stores/config";
+import { useRepoStore } from "../src/stores/repo";
+
+/**
+ * Stands in for the shared coding-agent + model picker (#0856). Clicking it
+ * chooses "opencode + deepseek v4", so the add modal can be driven without
+ * opening the nested AgentModelModal.
+ */
+const AgentModelControlStub = defineComponent({
+  name: "AgentModelControl",
+  props: {
+    cli: { type: String, default: "" },
+    model: { type: String, default: "" },
+    memoryKey: { type: String, default: "" },
+    placeholder: { type: String, default: "" },
+    disabled: { type: Boolean, default: false },
+  },
+  emits: ["update:cli", "update:model"],
+  template:
+    "<button type=\"button\" class=\"am-control\" data-testid=\"am-stub\" @click=\"$emit('update:cli', 'opencode'); $emit('update:model', 'deepseek v4')\">{{ placeholder }}</button>",
+});
 
 function seedConfig(data: Record<string, unknown> | null): ReturnType<typeof useConfigStore> {
   const pinia = createPinia();
@@ -336,6 +357,157 @@ describe("BudgetControlsPanel pause/resume (#0850)", () => {
     });
     expect(wrapper.find("[data-testid='budget-paused-chip']").exists()).toBe(false);
     expect(wrapper.find("[data-testid='budget-pause-agent']").exists()).toBe(true);
+    wrapper.unmount();
+  });
+});
+
+describe("BudgetControlsPanel add-to-allowlist modal (#0856)", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+    vi.unstubAllGlobals();
+  });
+
+  function mountPanel(): VueWrapper {
+    return mount(BudgetControlsPanel, {
+      attachTo: document.body,
+      global: { stubs: { AgentModelControl: AgentModelControlStub } },
+    });
+  }
+
+  const settle = async (): Promise<void> => {
+    await flushPromises();
+  };
+
+  const dialog = (): HTMLElement | null =>
+    document.body.querySelector("[data-testid='budget-add-dialog']");
+  const confirmBtn = (): HTMLButtonElement | null =>
+    document.body.querySelector("[data-testid='budget-add-confirm']");
+  const picker = (): HTMLButtonElement | null =>
+    document.body.querySelector("[data-testid='am-stub']");
+  const cancelBtn = (): HTMLButtonElement | undefined =>
+    Array.from(document.body.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "Cancel",
+    ) as HTMLButtonElement | undefined;
+
+  it("shows no inline agent/model selector; the button opens the modal", async () => {
+    seedConfig({ "budget.allowlist": [] });
+    const wrapper = mountPanel();
+    // The old always-visible picker + Add button are gone.
+    expect(wrapper.find(".budget-add .am-control").exists()).toBe(false);
+    expect(wrapper.find("[data-testid='budget-add-pair']").exists()).toBe(false);
+    expect(dialog()).toBeNull();
+
+    await wrapper.find("[data-testid='budget-add-open']").trigger("click");
+    await settle();
+    expect(dialog()).toBeTruthy();
+    // Starts with nothing chosen: Add is disabled.
+    expect(confirmBtn()!.disabled).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("enables Add on a pick, adds exactly one row, closes, and toasts", async () => {
+    const config = seedConfig({ "budget.allowlist": [] });
+    const patched: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: { body?: string }) => {
+        patched.push(JSON.parse(init?.body ?? "{}"));
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      }),
+    );
+    const repo = useRepoStore();
+    const wrapper = mountPanel();
+
+    await wrapper.find("[data-testid='budget-add-open']").trigger("click");
+    await settle();
+    expect(confirmBtn()!.disabled).toBe(true);
+
+    picker()!.click();
+    await settle();
+    expect(confirmBtn()!.disabled).toBe(false);
+
+    confirmBtn()!.click();
+    await settle();
+
+    expect(patched).toEqual([
+      { "budget.allowlist": [{ cli: "opencode", models: ["deepseek v4"] }] },
+    ]);
+    expect(config.data?.["budget.allowlist"]).toEqual([
+      { cli: "opencode", models: ["deepseek v4"] },
+    ]);
+    // Modal closed, new row visible and briefly highlighted, toast confirms.
+    expect(dialog()).toBeNull();
+    const row = wrapper.find("[data-testid='budget-row-li-opencode']");
+    expect(row.exists()).toBe(true);
+    expect(row.classes()).toContain("budget-row-added");
+    expect(repo.toasts.some((t) => t.message.includes("Added opencode"))).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("refuses a pair already on the allowlist and never duplicates a row", async () => {
+    seedConfig({ "budget.allowlist": [{ cli: "opencode", models: ["deepseek v4"] }] });
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const wrapper = mountPanel();
+
+    await wrapper.find("[data-testid='budget-add-open']").trigger("click");
+    await settle();
+    picker()!.click();
+    await settle();
+    confirmBtn()!.click();
+    await settle();
+
+    // The stub bypasses the disabled-option guard, so the refusal is the
+    // backstop: nothing is written and a clear message is shown.
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(document.body.querySelector("[data-testid='budget-add-error']")?.textContent).toContain(
+      "already on the allowlist",
+    );
+    expect(wrapper.findAll("[data-testid='budget-row-li-opencode']")).toHaveLength(1);
+    expect(dialog()).toBeTruthy();
+    wrapper.unmount();
+  });
+
+  it("adds nothing on cancel, Escape or an outside click", async () => {
+    seedConfig({ "budget.allowlist": [] });
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const wrapper = mountPanel();
+
+    const reopen = async (): Promise<void> => {
+      await wrapper.find("[data-testid='budget-add-open']").trigger("click");
+      await settle();
+    };
+
+    await reopen();
+    cancelBtn()!.click();
+    await settle();
+    expect(dialog()).toBeNull();
+
+    await reopen();
+    picker()!.click();
+    await settle();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    await settle();
+    expect(dialog()).toBeNull();
+
+    await reopen();
+    const overlay = document.body.querySelector<HTMLElement>(".overlay")!;
+    overlay.dispatchEvent(
+      new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 1 }),
+    );
+    await settle();
+    expect(dialog()).toBeNull();
+
+    expect(fetchMock).not.toHaveBeenCalled();
     wrapper.unmount();
   });
 });
