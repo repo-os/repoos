@@ -3,14 +3,15 @@ id: "0852"
 title: "Launch the For Clients enquiry form: Cloudflare secrets, bindings, deploy and a live mail test (human)"
 type: chore
 status: inbox
+hold: true
 priority: p2
 area: landing
 depends_on: ["0849"]
-assigned_to: ""
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-19T13:28:08Z"
-updated_at: "2026-10-19T13:28:08Z"
+updated_at: "2026-10-19T13:28:22Z"
 ---
 ## Problem
 #0849 landed the For Clients page and a Cloudflare Worker endpoint (`POST /api/enquiry`) that emails enquiries to hello@repoos.org through Resend. By design it fails closed (HTTP 503, no mail) until the production prerequisites exist, and none of them can be done by an AI agent or the test suite: they need Cloudflare and Resend dashboard access, a verified sending domain, and a real mailbox. #0849 documents them in landing/README.md ("Server and secrets") but nothing tracks them, so the form would silently stay off.
@@ -38,3 +39,4 @@ Human-only task: assigned to a human and held; do not dispatch an engineer. Sour
 ## Activity
 
 - 2026-10-19T13:28:08Z · created · njachowski@gmail.com
+- 2026-10-19T13:28:22Z · held, assigned_to
