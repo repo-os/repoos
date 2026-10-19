@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-19T08:06:03Z"
-review_passes: 1
 id: "0846"
 title: "Hub: read the running-server registry in Add server (scan as fallback)"
 type: feature
@@ -14,6 +12,7 @@ branch: feat/hub-read-the-running-server-registry-in-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:59:53Z"
+updated_at: "2026-10-19T08:05:01Z"
 ---
 ## Problem
 After #0845, every real `repoos serve` writes `~/.repoos/servers/<port>.json`. The Hub's Add server sheet should use it instead of relying on the port scan, so a new local server (for example http://127.0.0.1:7559/) shows up instantly and reliably, on any port.
@@ -39,8 +38,4 @@ Depends on #0845 for the file format; develop against fixtures of that format an
 - 2026-10-19T07:51:09Z · status inbox→ready
 - 2026-10-19T07:51:13Z · cli_override, model_override
 - 2026-10-19T07:51:15Z · status ready→active, branch
-- 2026-10-19T07:56:31Z · body
-- 2026-10-19T08:05:02Z · status active→review
-- 2026-10-19T08:05:03Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-10-19T08:06:02Z · note: review pass 1: good to go
-
+- 2026-10-19T08:05:01Z · status active→review
