@@ -112,3 +112,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-19T02:46:58Z · status review→active
 - 2026-10-19T02:49:21Z · body
 - 2026-10-19T02:57:11Z · status active→review
+- 2026-10-19T02:57:11Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Notes for AI
