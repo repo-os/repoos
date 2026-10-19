@@ -46,20 +46,20 @@ Start from NewDocPanel.vue and NewStoryPanel.vue as the model; reuse their struc
 ```json
 [
 {
-  "label": "New schedule panel (light)",
-  "target": "default",
-  "route": "/agents?tab=scheduled",
-  "highlight": "[data-testid=\"schedule-editor-drawer\"]",
-  "state": "schedule:newPanel",
-  "theme": "light"
+"label": "New schedule panel (light)",
+"target": "default",
+"route": "/agents?tab=scheduled",
+"highlight": "[data-testid=\"schedule-editor-drawer\"]",
+"state": "schedule:newPanel",
+"theme": "light"
 },
 {
-  "label": "New schedule panel (dark)",
-  "target": "default",
-  "route": "/agents?tab=scheduled",
-  "highlight": "[data-testid=\"schedule-editor-drawer\"]",
-  "state": "schedule:newPanel",
-  "theme": "dark"
+"label": "New schedule panel (dark)",
+"target": "default",
+"route": "/agents?tab=scheduled",
+"highlight": "[data-testid=\"schedule-editor-drawer\"]",
+"state": "schedule:newPanel",
+"theme": "dark"
 }
 ]
 ```
