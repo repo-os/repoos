@@ -11,7 +11,7 @@ branch: feat/scheduled-tasks-the-new-edit-schedule-pa
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T00:15:48Z"
-updated_at: "2026-10-19T00:18:18Z"
+updated_at: "2026-10-19T00:28:24Z"
 ---
 ## Problem
 The scheduled-tasks feature (#0093) cannot be used because the **New schedule / Edit schedule** panel on the Agents page is unusable (see the attached screenshot): every single-line field (Schedule name, Timezone, Local time) renders as a giant textarea-sized box, the content is cramped against the screen edge with no panel header, close button or standard width, and the "Next run preview" shows **"Could not preview"** with the default Weekly / Asia/Singapore / 09:00 values. A user cannot reasonably create a schedule.
@@ -38,10 +38,6 @@ The panel must look and behave exactly like our other side panels (New task, New
 ## Notes for AI
 Start from NewDocPanel.vue and NewStoryPanel.vue as the model; reuse their structure and the `drawer*` classes rather than writing new CSS. Do not change the scheduler's backend behaviour (#0093: opt-in, off in previews/worktrees/tests). Never touch repoos.toml. Source: Nick, 2026-10-19, screenshot of the broken panel.
 
-## Screenshots
-
-![New schedule panel: huge inputs, no panel chrome, 'Could not preview'](/api/tasks/0841/attachments/att_6e263238-7eca-4025-b215-2529a5bd7c65.webp)
-
 ## Shots
 ```json
 [
@@ -64,6 +60,10 @@ Start from NewDocPanel.vue and NewStoryPanel.vue as the model; reuse their struc
 ]
 ```
 
+## Screenshots
+
+![New schedule panel: huge inputs, no panel chrome, 'Could not preview'](/api/tasks/0841/attachments/att_6e263238-7eca-4025-b215-2529a5bd7c65.webp)
+
 ## Activity
 
 - 2026-10-19T00:15:48Z · created · njachowski@gmail.com
@@ -72,3 +72,4 @@ Start from NewDocPanel.vue and NewStoryPanel.vue as the model; reuse their struc
 - 2026-10-19T00:16:11Z · cli_override, model_override
 - 2026-10-19T00:16:14Z · status ready→active, branch
 - 2026-10-19T00:18:18Z · body
+- 2026-10-19T00:28:24Z · body
