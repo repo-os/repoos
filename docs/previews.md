@@ -388,6 +388,9 @@ fixture the preview applies before capture (preview builds only, via
   "Set editor in Settings → General" hint renders instead of the
   "Open in editor" button (Task drawer Spec row, Context doc viewer,
   failed-tests list, #0805)
+- `budget:paused` — Agents → Budget Controls with one whole-agent pause and one
+  per-model pause, each with a reason and a future resume date, so the Paused
+  chip and Resume controls render (#0850)
 
 **Preview Settings saves (#0828).** A preview child (`REPOOS_PREVIEW_CHILD=1`)
 applies curated and raw config saves to a gitignored cache-dir overlay only —

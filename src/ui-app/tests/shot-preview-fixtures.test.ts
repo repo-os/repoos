@@ -51,7 +51,26 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(isShotPreviewConfigFixture("settings:booSwoop")).toBe(true);
     expect(isShotPreviewConfigFixture("settings:pumpkinSpell")).toBe(true);
     expect(isShotPreviewConfigFixture("editor:unconfigured")).toBe(true);
+    expect(isShotPreviewConfigFixture("budget:paused")).toBe(true);
     expect(isShotPreviewConfigFixture("board:startWorkPending")).toBe(false);
+  });
+
+  it("seeds a paused budget allowlist for Budget Controls shots (#0850)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const config = useConfigStore();
+    config.data = {};
+
+    applyShotPreviewConfigFixture(config, "budget:paused");
+
+    const rows = config.data?.["budget.allowlist"] as Array<Record<string, unknown>>;
+    expect(rows[0]).toMatchObject({
+      cli: "cursor",
+      paused: true,
+      pausedReason: "Cursor credits exhausted",
+    });
+    expect(String(rows[0]?.pausedUntil)).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(rows[1]?.pausedModels).toMatchObject([{ model: "big pickle" }]);
   });
 
   it("seeds bird quick trail on the settings form (#0822)", () => {
