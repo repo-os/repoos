@@ -309,6 +309,10 @@ I would also avoid making navigation controls too prominent. They should feel li
 ]
 ```
 
+## Screenshots
+
+![Native Hub built from this branch (sidebar visible): full-height sidebar with no titlebar, navigation row at the top, Settings in the footer, WebView reclaiming the top space.](/api/tasks/0855/attachments/att_f1c92509-dc5f-40d7-8dab-3af7dc263c23.png)
+
 ## Activity
 
 - 2026-10-19T15:35:14Z · created · hello@repoos.org
@@ -323,3 +327,4 @@ I would also avoid making navigation controls too prominent. They should feel li
 - 2026-10-19T16:14:34Z · body
 - 2026-10-19T16:22:01Z · body
 - 2026-10-19T16:27:57Z · body
+- 2026-10-19T16:28:40Z · screenshots
