@@ -16,7 +16,7 @@ model_override: openrouter/openrouter/auto-beta
 review_cli_override: pi
 review_model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-10-19T12:23:10Z"
-updated_at: "2026-10-19T14:22:37Z"
+updated_at: "2026-10-19T14:25:53Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -45,33 +45,33 @@ Model the storage, tick and SSE-update pattern on scheduled tasks (src/server/sc
 ```json
 [
 {
-  "label": "Due and upcoming reminders in dark theme",
-  "target": "default",
-  "route": "/agents?tab=reminders",
-  "highlight": "[data-testid=reminders-panel]",
-  "state": "reminders:due",
-  "theme": "dark"
+"label": "Due and upcoming reminders in dark theme",
+"target": "default",
+"route": "/agents?tab=reminders",
+"highlight": "[data-testid=reminders-panel]",
+"state": "reminders:due",
+"theme": "dark"
 },
 {
-  "label": "Due and upcoming reminders in light theme",
-  "target": "default",
-  "route": "/agents?tab=reminders",
-  "highlight": "[data-testid=reminders-panel]",
-  "state": "reminders:due",
-  "theme": "light"
+"label": "Due and upcoming reminders in light theme",
+"target": "default",
+"route": "/agents?tab=reminders",
+"highlight": "[data-testid=reminders-panel]",
+"state": "reminders:due",
+"theme": "light"
 },
 {
-  "label": "Reminder drawer with styled link and local date/time controls",
-  "target": "default",
-  "route": "/agents?tab=reminders",
-  "highlight": "[data-testid=reminder-editor-drawer]",
-  "steps": [
-    {
-      "click": "[data-testid=new-reminder]"
-    }
-  ],
-  "state": "reminders:due",
-  "theme": "light"
+"label": "Reminder drawer with styled link and local date/time controls",
+"target": "default",
+"route": "/agents?tab=reminders",
+"highlight": "[data-testid=reminder-editor-drawer]",
+"steps": [
+  {
+    "click": "[data-testid=new-reminder]"
+  }
+],
+"state": "reminders:due",
+"theme": "light"
 }
 ]
 ```
@@ -90,3 +90,4 @@ Model the storage, tick and SSE-update pattern on scheduled tasks (src/server/sc
 - 2026-10-19T13:40:16Z · body
 - 2026-10-19T13:41:41Z · agent exited with an error (pi) · Warning: No project session found with id 'repoos-0851-engineer'; creating a new session with that id.
 - 2026-10-19T14:22:37Z · body
+- 2026-10-19T14:25:53Z · body
