@@ -8,12 +8,12 @@ area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/allowlist-pause-an-agent-or-model-withou
-cli_override: claude code
-model_override: haiku
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T15:08:40Z"
+updated_at: "2026-10-19T15:08:47Z"
 dev_error_count: 2
 ---
 ## Problem
@@ -83,3 +83,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T15:06:39Z · cli_override, model_override
 - 2026-10-19T15:06:44Z · needs_input
 - 2026-10-19T15:08:01Z · body
+- 2026-10-19T15:08:47Z · cli_override, model_override
