@@ -12,7 +12,7 @@ branch: feat/diagnose-4-pre-existing-full-suite-test-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T22:39:47Z"
-updated_at: "2026-10-19T02:56:14Z"
+updated_at: "2026-10-19T02:56:15Z"
 ---
 ## Problem
 `bun run test` (full suite) fails 4 tests on the work machine, reproducibly — twice in full-suite runs AND in isolation on an idle machine via `bun run test -- --failed-first <files>`:
@@ -91,3 +91,4 @@ Start from the Problem and Attribution sections above (the #0834 engineer alread
 - 2026-10-19T02:55:49Z · body: Diagnosis (2026-10-19) (added)
 - 2026-10-19T02:55:49Z · message_queued at 2026-10-19T02:55:49.755Z
 - 2026-10-19T02:56:14Z · body: Diagnosis (2026-10-19) (added 5, removed 5)
+- 2026-10-19T02:56:15Z · message_queued at 2026-10-19T02:56:15.067Z
