@@ -13,7 +13,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-10-19T18:10:53Z"
+updated_at: "2026-10-19T18:14:11Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 3
@@ -85,3 +85,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T18:07:51Z · status review→active
 - 2026-10-19T18:07:51Z · note: Bugs src/core/config.ts:561: .trim() runs before the parser recognizes a multi-line string, removing significant whitespace from its opening line. For example, a valid """first \nsecond""" parses as "first\nsecond"; the validator accepts it. Handoff verification: the only shot is a nonblank / Control-board capture with zero console errors, not the Dev page showing the parsed command. It was captured at a5503144f; reviewed HEAD is 4ba3c8aa8 (the intervening change is task-file-only, but the tree identity differs). It does not verify the visual acceptance criterion. Edge cases None found beyond the whitespace loss above.  Suggestions Declare and capture the Dev route on the final tree so the corrected command display is verified.
 - 2026-10-19T18:10:53Z · body
+- 2026-10-19T18:14:11Z · body
