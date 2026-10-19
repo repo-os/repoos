@@ -2,7 +2,7 @@
 id: "0849"
 title: Build the For Clients landing page and Resend project enquiry form
 type: feature
-status: review
+status: active
 hold: true
 priority: p2
 area: landing
@@ -65,10 +65,10 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 "highlight": ".clients-dialog",
 "steps": [
 {
-  "click": ".clients-actions .clients-primary"
+"click": ".clients-actions .clients-primary"
 },
 {
-  "waitFor": "dialog[open]"
+"waitFor": "dialog[open]"
 }
 ],
 "viewportWidth": 390
