@@ -1055,11 +1055,7 @@ export class DevTargetManager {
   /** Stop every target we started — used on server shutdown. */
   async stopAll(): Promise<void> {
     const names = [
-      ...new Set([
-        ...this.running.keys(),
-        ...this.serviceRuns.keys(),
-        ...this.inflight.keys(),
-      ]),
+      ...new Set([...this.running.keys(), ...this.serviceRuns.keys(), ...this.inflight.keys()]),
     ];
     for (const name of names) {
       // Cancel any in-flight start so it cannot relaunch after this shutdown.
