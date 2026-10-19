@@ -164,3 +164,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T19:03:53Z · status ready→active
 - 2026-10-19T19:04:09Z · needs_input
 - 2026-10-19T19:04:09Z · status active→review
+- 2026-10-19T19:04:09Z · note: handoff requested (cli)
