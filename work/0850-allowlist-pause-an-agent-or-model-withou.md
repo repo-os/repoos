@@ -3,6 +3,9 @@ id: "0850"
 title: "Allowlist: pause an agent or model without removing it (with optional resume date and reason)"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p1
 area: [core, server, web]
 assigned_to: ai
@@ -13,8 +16,8 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T15:16:10Z"
-dev_error_count: 2
+updated_at: "2026-10-19T15:27:25Z"
+dev_error_count: 3
 ---
 ## Problem
 Cursor ran out of credit on 2026-10-19 and will not be usable again for about three days. Today the only ways to stop RepoOS using it are to delete its row from `[[budget.allowlist]]` (losing the entry and the config) or to hand-edit overrides on every task. Starts, auto-dispatch, the CTO's restart/failover and the agent drivers keep trying `cursor`/`composer-2.5`, fail, and loop (tasks bounce between engineer restarts and connection errors). Providers and agents will come and go like this regularly (credits, rate limits, outages).
@@ -87,3 +90,5 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T15:10:21Z · body
 - 2026-10-19T15:16:10Z · message_queued at 2026-10-19T15:16:10.135Z
 - 2026-10-19T15:16:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-19T15:27:25Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-19T15:27:25Z · message_delivered: 1 message(s)
