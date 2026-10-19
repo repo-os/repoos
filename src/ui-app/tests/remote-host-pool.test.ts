@@ -753,7 +753,11 @@ describe("background host probing (#0683)", () => {
 
 describe("TailscaleRunner pool dispatch (#0521)", () => {
   it("skips a host after its SSH bundle upload fails", async () => {
-    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
+    // A long health cooldown keeps the failed host inside its retry window for
+    // the whole test: the second dispatch must skip it because the upload
+    // failure marked it unhealthy, not because a 40 ms cooldown happened to
+    // elapse (which re-probed it healthy and re-picked it on a loaded runner).
+    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }], healthRetryMs: 60_000 });
     vi.mocked(f.exec.uploadFile).mockImplementation(async (host) =>
       host.ip === "a" ? { ok: false, detail: "ssh: Connection timed out" } : { ok: true },
     );
