@@ -12,11 +12,11 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-auto-ported-services-and-ser
 cli_override: pi
-model_override: default
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T17:20:55Z"
+updated_at: "2026-10-19T17:21:01Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -116,3 +116,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T14:30:27Z · status active→review
 - 2026-10-19T14:32:58Z · note: review pass 4: needs some work
 - 2026-10-19T17:20:55Z · cli_override, model_override
+- 2026-10-19T17:21:01Z · model_override
