@@ -2,7 +2,7 @@
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — service readiness can accept a stale health file, and overlapping Start/Stop calls can leave the target running."
