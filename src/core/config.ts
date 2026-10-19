@@ -3682,10 +3682,15 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
   const boardColKeys = Object.entries(patch).filter(([k]) => k.startsWith("board.columns."));
   if (boardColKeys.length) {
     const sectionHeader = "[board.columns]";
-    let sectionIdx = result.findIndex((l) => stripTomlComment(l).trim() === sectionHeader);
+    const boardScan = tomlContinuationLines(result);
+    let sectionIdx = result.findIndex(
+      (l, i) => !boardScan[i] && stripTomlComment(l).trim() === sectionHeader,
+    );
     if (sectionIdx === -1) {
       // Create the section — insert before the first existing header or at end.
-      const firstHeader = result.findIndex((l) => stripTomlComment(l).trim().startsWith("["));
+      const firstHeader = result.findIndex(
+        (l, i) => !boardScan[i] && stripTomlComment(l).trim().startsWith("["),
+      );
       sectionIdx = firstHeader === -1 ? result.length : firstHeader;
       result.splice(sectionIdx, 0, sectionHeader, "");
       sectionIdx += 1; // skip past the header itself
