@@ -13,10 +13,8 @@ created_by: njachowski@gmail.com
 branch: feat/allowlist-pause-an-agent-or-model-withou
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
-review_cli_override: pi
-review_model_override: openrouter/openrouter/free
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T16:15:53Z"
+updated_at: "2026-10-19T18:01:03Z"
 dev_error_count: 4
 ---
 ## Problem
@@ -94,3 +92,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T16:03:55Z · body
 - 2026-10-19T16:12:00Z · body
 - 2026-10-19T16:15:53Z · body
+- 2026-10-19T18:01:03Z · review_cli_override, review_model_override
