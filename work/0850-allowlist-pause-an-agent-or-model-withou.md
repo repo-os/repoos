@@ -2,16 +2,16 @@
 id: "0850"
 title: "Allowlist: pause an agent or model without removing it (with optional resume date and reason)"
 type: feature
-status: ready
+status: active
 priority: p1
 area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/allowlist-pause-an-agent-or-model-withou
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T13:19:06Z"
+updated_at: "2026-10-19T13:19:09Z"
 ---
 ## Problem
 Cursor ran out of credit on 2026-10-19 and will not be usable again for about three days. Today the only ways to stop RepoOS using it are to delete its row from `[[budget.allowlist]]` (losing the entry and the config) or to hand-edit overrides on every task. Starts, auto-dispatch, the CTO's restart/failover and the agent drivers keep trying `cursor`/`composer-2.5`, fail, and loop (tasks bounce between engineer restarts and connection errors). Providers and agents will come and go like this regularly (credits, rate limits, outages).
@@ -45,3 +45,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T13:19:02Z · review_cli_override, review_model_override
 - 2026-10-19T13:19:05Z · review_model_override
 - 2026-10-19T13:19:06Z · status inbox→ready
+- 2026-10-19T13:19:09Z · status ready→active, branch
