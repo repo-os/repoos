@@ -1238,6 +1238,9 @@ export class PreviewManager {
         continue;
       }
       if (!pidAlive(info.pid)) {
+        // The main process is gone; tear down any companion services the
+        // recorded preview owned, exactly as the live exit handler does.
+        if (info.pids?.length) void this.killMany(info.pids, info.processGroup ?? false);
         this.registry.delete(taskId);
         this.adopted.delete(taskId);
         this.logLifecycle("exited", taskId, `preview process ${info.pid} is gone`);
