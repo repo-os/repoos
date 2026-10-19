@@ -571,6 +571,20 @@ export class DevTargetManager {
       // sanitized identically to `[[preview.services]]`.
       const token = servicePortToken(def.name) || "service";
 
+      // Register the service BEFORE any fallible step (port reservation, cwd
+      // resolution, spawn), so a startup failure is recorded against THIS
+      // service instead of leaving it an unexplained "stopped" row
+      // (#0843 review).
+      this.setServiceStates(t.name, [
+        ...(this.states.get(t.name)?.services ?? []).filter((s) => s.name !== def.name),
+        { name: def.name, token, status: "starting", log: [] },
+      ]);
+      /** Record `def` as failed — with the reason — before failing the target. */
+      const failService = async (message: string): Promise<DevActionResult> => {
+        this.patchServiceState(t.name, def.name, { status: "failed", error: message });
+        return fail(message);
+      };
+
       let servicePort: number;
       // #0802 handling mirrored per service: auto-pick (the default) prefers
       // the configured `port` when it is free and falls back to an
@@ -578,28 +592,29 @@ export class DevTargetManager {
       // fails with a message naming the service instead of silently moving.
       if (def.autoPort === false) {
         if (def.port === undefined) {
-          return fail(`service "${def.name}" has auto-pick off but no port is set`);
+          return failService(`service "${def.name}" has auto-pick off but no port is set`);
         }
         try {
           servicePort = await reservePort(def.port, { fixed: true });
         } catch {
-          return fail(`service "${def.name}" port ${def.port} is already in use`);
+          return failService(`service "${def.name}" port ${def.port} is already in use`);
         }
       } else {
         try {
           servicePort = await reservePort(def.port);
         } catch (err) {
-          return fail(
+          return failService(
             `could not reserve a port for service "${def.name}": ${(err as Error).message}`,
           );
         }
       }
       tokens[token] = servicePort;
+      this.patchServiceState(t.name, def.name, { port: servicePort });
       if (superseded()) return this.abortSupersededStart(t);
 
       const serviceCwd = def.cwd ? resolveWithin(cwd, def.cwd) : cwd;
       if (!serviceCwd) {
-        return fail(`service "${def.name}" cwd "${def.cwd}" escapes the project root`);
+        return failService(`service "${def.name}" cwd "${def.cwd}" escapes the project root`);
       }
       // Snapshot the health file BEFORE the service spawns, so a stale marker
       // left by a previous run cannot satisfy the readiness gate (#0843 review).
@@ -629,24 +644,13 @@ export class DevTargetManager {
           env: { ...process.env, ...env },
         });
       } catch (err) {
-        return fail(`could not launch service "${def.name}": ${(err as Error).message}`);
+        return failService(`could not launch service "${def.name}": ${(err as Error).message}`);
       }
       if (!child.pid) {
-        return fail(`could not launch service "${def.name}" (no pid)`);
+        return failService(`could not launch service "${def.name}" (no pid)`);
       }
 
-      const state: DevServiceState = {
-        name: def.name,
-        token,
-        status: "starting",
-        pid: child.pid,
-        log: [],
-        ...(servicePort !== undefined ? { port: servicePort } : {}),
-      };
-      this.setServiceStates(t.name, [
-        ...(this.states.get(t.name)?.services ?? []).filter((s) => s.name !== def.name),
-        state,
-      ]);
+      this.patchServiceState(t.name, def.name, { status: "starting", pid: child.pid });
       this.serviceRuns.set(t.name, [
         ...(this.serviceRuns.get(t.name) ?? []),
         { child, processGroup, longLived: true },
@@ -693,13 +697,11 @@ export class DevTargetManager {
         this.appendServiceLog(t.name, def.name, `[repoos] ${ready.error}`);
         // A sibling's exit may have failed the target while this gate was
         // polling: its reason names the service that died, so it wins over
-        // this gate's generic abort notice (#0843 review round 3).
+        // this gate's generic abort notice (#0843 review round 3). This
+        // service itself is left to be torn down as stopped, not blamed.
         const prior = this.states.get(t.name);
-        const message =
-          prior?.status === "failed" && prior.error
-            ? prior.error
-            : `service "${def.name}" ${ready.error}`;
-        return fail(message);
+        if (prior?.status === "failed" && prior.error) return fail(prior.error);
+        return failService(`service "${def.name}" ${ready.error}`);
       }
       this.patchServiceState(t.name, def.name, { status: "running", error: undefined });
     }
@@ -820,8 +822,13 @@ export class DevTargetManager {
         // port until a later stop or server shutdown (#0843 review).
         void this.killServiceRuns(t.name);
       } else if (ok) {
-        this.setState(t.name, { status: "running", error: undefined, stoppedAt: now() });
         this.appendLog(t.name, "[repoos] build finished (exit 0)");
+        // A companion service that crashed while this build ran has already
+        // marked the target failed; the build finishing does not erase that
+        // (#0843 review). Only a clean stack is promoted back to running.
+        if (current?.status !== "failed") {
+          this.setState(t.name, { status: "running", error: undefined, stoppedAt: now() });
+        }
       } else {
         const reason = `exited with code ${code ?? "?"}${signal ? ` (${signal})` : ""}`;
         this.setState(t.name, { status: "failed", error: reason, stoppedAt: now() });
@@ -839,10 +846,18 @@ export class DevTargetManager {
       });
       if (superseded()) return this.abortSupersededStart(t);
       const state = this.states.get(t.name);
-      if (state?.status === "failed") {
+      // A service that crashed while this build ran makes the stack failed even
+      // if the build itself exited 0 (#0843 review) — never report success with
+      // a dead companion.
+      const failedService = (state?.services ?? []).find((s) => s.status === "failed");
+      if (state?.status === "failed" || failedService) {
         // A failed build tears its companion services down with it (#0843
         // review round 1) — the start they were booted for failed.
-        await fail(state.error ?? "build failed");
+        const reason =
+          state?.status === "failed"
+            ? (state.error ?? "build failed")
+            : (failedService?.error ?? `service "${failedService?.name}" failed`);
+        await fail(reason);
         return { ok: false, error: this.states.get(t.name)?.error, target: this.view(t) };
       }
       return { ok: true, target: this.view(t) };
