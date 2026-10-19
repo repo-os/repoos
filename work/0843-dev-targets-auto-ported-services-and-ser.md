@@ -56,11 +56,11 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 ```json
 [
 {
-  "label": "Dev page: a running target with an auto-ported companion service sub-row (status, real port, PID)",
-  "target": "default",
-  "route": "/dev",
-  "highlight": "[data-test-id=\"dev-services\"]",
-  "state": "dev:running"
+"label": "Dev page: a running target with an auto-ported companion service sub-row (status, real port, PID)",
+"target": "default",
+"route": "/dev",
+"highlight": "[data-test-id=\"dev-services\"]",
+"state": "dev:running"
 }
 ]
 ```
