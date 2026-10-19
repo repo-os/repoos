@@ -16,7 +16,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T19:51:37Z"
+updated_at: "2026-10-19T19:53:02Z"
 review_passes: 7
 review_rounds: 2
 dev_error_count: 1
@@ -56,11 +56,11 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 ```json
 [
 {
-"label": "Dev page: a running target with an auto-ported companion service sub-row (status, real port, PID)",
-"target": "default",
-"route": "/dev",
-"highlight": "[data-test-id=\"dev-services\"]",
-"state": "dev:running"
+  "label": "Dev target with running companion service",
+  "target": "default",
+  "route": "/dev",
+  "highlight": "[data-test-id=\"dev-services\"]",
+  "state": "dev:running"
 }
 ]
 ```
@@ -161,3 +161,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T19:47:24Z · status review→active
 - 2026-10-19T19:48:47Z · body
 - 2026-10-19T19:51:37Z · body
+- 2026-10-19T19:53:02Z · body
