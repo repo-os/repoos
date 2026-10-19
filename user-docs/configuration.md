@@ -1871,7 +1871,9 @@ When a target fails, the Dev page shows a plain-language summary above its
 output — what failed, the most likely cause, and how to fix it. A port already
 in use is detected from the output and names the port plus the process holding
 it (its PID and command), with a **Stop** action when that process is one RepoOS
-started; any other process is shown for you to stop yourself. An optional
+started — including a companion service, in which case the owning target and
+all its services stop together; any other process is shown for you to stop
+yourself. An optional
 AI-written summary can be layered on top:
 
 | Key | Type | Default | Restart | Description |
