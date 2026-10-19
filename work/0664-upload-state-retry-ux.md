@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-19T00:14:49.221Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 0b513be8 to a4e43a0b) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: "0664"
 title: Upload state + retry UX
 type: feature
@@ -17,7 +19,6 @@ updated_at: "2026-10-19T00:07:13Z"
 close_out_repair_count: 1
 review_passes: 5
 review_rounds: 2
-last_check_failure: "repoos check at 2026-10-18T17:32:06.903Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 handoff_signal_retry_count: 1
 ---
 Slice 7: Uploading / retrying / failed states visible in UI. Attachment never shown as available before upload succeeds. Retry without re-deriving user input.
@@ -105,3 +106,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-19T00:04:31Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-19T00:04:31Z · message_delivered: 1 message(s)
 - 2026-10-19T00:07:13Z · body
+
