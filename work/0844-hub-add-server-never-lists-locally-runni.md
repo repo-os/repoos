@@ -11,7 +11,7 @@ branch: feat/hub-add-server-never-lists-locally-runni
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:15:39Z"
-updated_at: "2026-10-19T05:37:08Z"
+updated_at: "2026-10-19T05:38:13Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -44,7 +44,10 @@ With a local `repoos serve` on a non-default port (e.g. **7559**), open Hub → 
 1. **Running locally** lists the instance (project name + `localhost:7559`).
 2. Clicking **+** fills the Server URL field with `localhost:7559`.
 
-_Record pass/fail and date when verified in Hub._
+### Recorded verification
+
+- **2026-10-19 — PASS (discovery + lsof path):** On this machine with `repoos serve` on **7559** (`lightingai`), `LocalServerDiscoveryTests.testLiveDiscoveryFindsLocalRepoOSWhenServingOn7559` passed: `lsof` enumerated the listener and `LocalServerDiscovery.discover(knownLocalPorts: [])` returned `localhost:7559` with the health-reported project name.
+- **2026-10-19 — Hub UI (+ click):** Not clicked in this automated run; the sheet uses the same `discover` API and sets `draft.originText = server.originString` on **+** (`ServerEditorSheet`). Confirm in Hub when signing off if you want a full UI pass.
 
 ## Activity
 
@@ -65,3 +68,4 @@ _Record pass/fail and date when verified in Hub._
 - 2026-10-19T05:37:08Z · note: review pass 2: needs some work
 - 2026-10-19T05:37:08Z · message_delivered: 1 message(s)
 - 2026-10-19T05:37:08Z · status review→active
+- 2026-10-19T05:38:13Z · body: Manual check (added 3, removed 1)
