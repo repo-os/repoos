@@ -11,7 +11,7 @@ branch: ""
 pm_cli_override: pi
 pm_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T15:35:14Z"
-updated_at: "2026-10-19T15:35:37Z"
+updated_at: "2026-10-19T15:42:23Z"
 ---
 ## Problem
 
@@ -182,35 +182,29 @@ The internal NSWindow.title can remain populated if needed for accessibility, wi
 Preserve the existing sidebar hierarchy and server-switching functionality.
 Suggested visual organization:
 ┌──────────────────────────┐
-│ 🔴 🟡 🟢                │
+│ 🔴 🟡 🟢                  │
 │                          │
-│  ‹   ›   ↻          ◧   │  ← Navigation + sidebar toggle
+│  ‹   ›   ↻          ◧    │  ← Navigation + sidebar toggle
 │                          │
 │ PERSONAL                 │
 │                          │
-│ 🟢 RepoOS               │
+│ 🟢 RepoOS                │
 │                          │
 │ SERVERS                  │
 │                          │
-│ 🔴 squishy              │
-│ 🔴 celleris             │
-│ 🟢 pn                   │
-│ 🟢 divot                │
-│ 🟢 lightingai           │
-│                          │
-│                          │
-│                          │
-│                          │
-│ ┌──────────────────────┐ │
-│ │ Server Status        │ │
-│ │ Tasks / Events       │ │
-│ └──────────────────────┘ │
-│                          │
-│ Classic   Clear   Gen Z  │
-│                          │
-│ ⚙ Settings              │
+│ 🔴 squishy               │
+│ 🔴 celleris              │
+│ 🟢 pn                    │
+│ 🟢 divot                 │
+│ 🟢 lightingai            │
 │                          │
 │ + Add server             │
+│                          │
+│                          │
+│                          │
+│                          │
+│                          │
+│ ⚙ Settings               │
 └──────────────────────────┘
 
 This is a conceptual layout, not a pixel-perfect specification.
@@ -294,3 +288,4 @@ I would also avoid making navigation controls too prominent. They should feel li
 
 - 2026-10-19T15:35:14Z · created · hello@repoos.org
 - 2026-10-19T15:35:37Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added); Related (added)
+- 2026-10-19T15:42:23Z · body
