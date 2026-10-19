@@ -1846,7 +1846,7 @@ the wrong service.
 | `dev.services[].port` | number | no | The service's preferred/fixed port, handled exactly like a target's `port` (#0802). |
 | `dev.services[].autoPort` | boolean | no | Auto-pick a free port; default `true`. With `false` the `port` is required and fixed — an occupied one fails with a message naming the service (and `autoPort = false` with no `port` is rejected as a config error, not only at Start). |
 | `dev.services[].healthCheck.url` | string | no | URL polled (with ports substituted) until it answers before the service counts as ready. |
-| `dev.services[].healthCheck.file` | string | no | Repo-relative file (resolved against the service's `cwd`) that must exist. |
+| `dev.services[].healthCheck.file` | string | no | Repo-relative file (resolved against the service's `cwd`) that must exist AND be newer than when the service started — a stale marker left by a previous run does not count as ready (#0843 review). |
 | `dev.services[].env` | table | no | Extra environment variables for the service's process, e.g. `env = { LOG_LEVEL = "debug" }`. |
 
 Stopping or restarting the target stops its services with it, and a start
