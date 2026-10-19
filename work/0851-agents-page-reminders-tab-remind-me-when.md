@@ -16,7 +16,7 @@ model_override: openrouter/openrouter/auto-beta
 review_cli_override: pi
 review_model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-10-19T12:23:10Z"
-updated_at: "2026-10-19T14:25:53Z"
+updated_at: "2026-10-19T14:34:21Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -66,9 +66,9 @@ Model the storage, tick and SSE-update pattern on scheduled tasks (src/server/sc
 "route": "/agents?tab=reminders",
 "highlight": "[data-testid=reminder-editor-drawer]",
 "steps": [
-  {
-    "click": "[data-testid=new-reminder]"
-  }
+{
+  "click": "[data-testid=new-reminder]"
+}
 ],
 "state": "reminders:due",
 "theme": "light"
@@ -91,3 +91,4 @@ Model the storage, tick and SSE-update pattern on scheduled tasks (src/server/sc
 - 2026-10-19T13:41:41Z · agent exited with an error (pi) · Warning: No project session found with id 'repoos-0851-engineer'; creating a new session with that id.
 - 2026-10-19T14:22:37Z · body
 - 2026-10-19T14:25:53Z · body
+- 2026-10-19T14:34:21Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
