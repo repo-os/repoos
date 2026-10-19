@@ -38,7 +38,6 @@ import {
 } from "../lib/shot-preview-fixtures.js";
 import type { Task } from "../types";
 
-const DRAFT_EMPTY = "No drafts yet. Agent proposals land here.";
 const DRAFT_BAR = "#3a4055";
 
 const STATUS_IDS = new Set(["draft", "inbox", "ready", "active", "review", "done"]);
@@ -347,7 +346,7 @@ function openHuman(task: Task): void {
         <BoardColumn
           :col="filterCol!"
           :bar-color="filterCol!.id === 'draft' ? DRAFT_BAR : ''"
-          :empty-text="filterCol!.id === 'draft' ? DRAFT_EMPTY : '—'"
+          empty-text="—"
           force-expand
           :drag-enabled="false"
           :highlight-id="boardKey.highlightId.value"
@@ -357,7 +356,7 @@ function openHuman(task: Task): void {
         <BoardColumn
           :col="DRAFT_COL"
           :bar-color="DRAFT_BAR"
-          :empty-text="DRAFT_EMPTY"
+          empty-text="—"
           :highlight-id="boardKey.highlightId.value"
         />
         <BoardColumn

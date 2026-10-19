@@ -531,6 +531,23 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(task!.branch).toBe("");
   });
 
+  it("seeds a ready human task with a branch and zero diff stats (#0847)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "card:noChanges");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task).toBeTruthy();
+    expect(task!.status).toBe("ready");
+    expect(task!.branch).toBe("feat/no-changes");
+    expect(task!.assignee).toBe("human");
+    expect(repo.diffStatsFor(SHOT_PREVIEW_FIXTURE_TASK_ID)).toEqual({
+      filesChanged: 0,
+      additions: 0,
+      deletions: 0,
+    });
+  });
+
   it(
     "gives the fixture task no branch so a mounted card never requests its diff stats " +
       "(#0768) — the server 404s for the fake id and the handoff UI gate records that " +
