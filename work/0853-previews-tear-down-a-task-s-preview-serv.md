@@ -14,7 +14,7 @@ branch: feat/previews-tear-down-a-task-s-preview-serv
 review_cli_override: pi
 review_model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-10-19T14:24:17Z"
-updated_at: "2026-10-19T15:27:24Z"
+updated_at: "2026-10-19T15:27:26Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -47,3 +47,4 @@ Look at src/server/preview-manager (or the PreviewManager) and the task status t
 - 2026-10-19T15:20:07Z · body
 - 2026-10-19T15:27:24Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-19T15:27:24Z · message_delivered: 1 message(s)
+- 2026-10-19T15:27:26Z · note: stopped orphaned engineer pid 97756
