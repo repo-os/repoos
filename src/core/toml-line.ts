@@ -126,6 +126,21 @@ function decodeBasicMultiLine(inner: string): string {
         case "r":
           out.push("\r");
           break;
+        case "\n":
+        case "\r": {
+          // Line-ending backslash: trim the newline and every following
+          // space/tab/newline up to the next non-whitespace character.
+          let j = i + 2;
+          if (next === "\r" && inner[j] === "\n") j++;
+          while (
+            j < inner.length &&
+            (inner[j] === " " || inner[j] === "\t" || inner[j] === "\n" || inner[j] === "\r")
+          ) {
+            j++;
+          }
+          i = j - 2; // the switch's trailing `i++` and the loop's own advance land on j
+          break;
+        }
         case "u": {
           if (i + 5 < inner.length) {
             const hex = inner.slice(i + 2, i + 6);

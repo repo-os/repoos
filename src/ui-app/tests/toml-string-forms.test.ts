@@ -59,6 +59,24 @@ describe("multi-line TOML strings", () => {
     expect(parsed.x).toBe('line1\nline2"quote"');
   });
 
+  it('honours a line-ending backslash in a """ string', () => {
+    // TOML trims the backslash, the newline and the following indentation.
+    const parsed = parseFlatToml('x = """a\\\n   b"""');
+    expect(parsed.x).toBe("ab");
+  });
+
+  it("keeps header- and comment-shaped lines inside a multi-line value", () => {
+    const parsed = parseFlatToml("x = '''\n[not.a.header]\nkey = value # kept\n'''\ny = 1\n");
+    expect(parsed.x).toBe("[not.a.header]\nkey = value # kept\n");
+    expect(parsed.y).toBe(1);
+  });
+
+  it("keeps parsing the keys after a multi-line value", () => {
+    const parsed = parseFlatToml("x = '''\na\n'''\ny = 2\n");
+    expect(parsed.x).toBe("a\n");
+    expect(parsed.y).toBe(2);
+  });
+
   it("keeps a # inside every string form", () => {
     for (const value of ["'''see #0348'''", '"""see #0348"""', "'see #0348'", '"see #0348"']) {
       expect(unquoteTomlString(parseFlatToml(`x = ${value} # comment`).x as string)).toBe(
@@ -70,6 +88,30 @@ describe("multi-line TOML strings", () => {
   it("still strips a real comment after a single-line multi-line string", () => {
     expect(parseFlatToml("x = '''a''' # comment").x).toBe("a");
     expect(parseFlatToml('x = """a""" # comment').x).toBe("a");
+  });
+
+  it("keeps each [[dev.targets]] row when one command spans lines", () => {
+    const { root } = repo(
+      [
+        "[[dev.targets]]",
+        'name = "web"',
+        'kind = "process"',
+        "command = '''",
+        "PORT=3001 bun run dev",
+        "'''",
+        "",
+        "[[dev.targets]]",
+        'name = "worker"',
+        'kind = "process"',
+        'command = "bun run worker"',
+        "",
+      ].join("\n"),
+    );
+    const targets = loadConfig(root).dev?.targets ?? [];
+    expect(targets.map((t) => [t.name, t.command])).toEqual([
+      ["web", "PORT=3001 bun run dev"],
+      ["worker", "bun run worker"],
+    ]);
   });
 });
 
