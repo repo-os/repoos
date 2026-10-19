@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-19T05:46:33Z"
-review_passes: 3
 id: "0844"
 title: "Hub: Add server never lists locally running RepoOS servers (discovery probe times out)"
 type: bug
@@ -13,7 +11,9 @@ branch: feat/hub-add-server-never-lists-locally-runni
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:15:39Z"
+updated_at: "2026-10-19T05:45:38Z"
 review_rounds: 2
+review_passes: 2
 ---
 ## Problem
 In RepoOS Hub, **Add server** is meant to show a "Running locally" list of RepoOS instances (LocalServerDiscovery.swift, added in d76dbd24c) so you can click one to add it. In practice the sheet shows the spinner for about a second and then nothing appears, even with servers clearly running (reported 2026-10-19: a new project on http://127.0.0.1:7559/ never shows, while 7171 is also up).
@@ -46,8 +46,8 @@ With a local `repoos serve` on a non-default port (e.g. **7559**), open Hub → 
 
 ### Recorded verification
 
-- **2026-10-19 — PASS (discovery + lsof path):** On this machine with `repoos serve` on **7559** (`lightingai`), `LocalServerDiscoveryTests.testLiveDiscoveryFindsLocalRepoOSWhenServingOn7559` passed: `lsof` enumerated the listener and `LocalServerDiscovery.discover(knownLocalPorts: [])` returned `localhost:7559` with the health-reported project name.
-- **2026-10-19 — Hub UI (+ click):** Not clicked in this automated run; the sheet uses the same `discover` API and sets `draft.originText = server.originString` on **+** (`ServerEditorSheet`). Confirm in Hub when signing off if you want a full UI pass.
+- **2026-10-19 — PASS (discovery + lsof path):** With `repoos serve` on **7559** (`lightingai`), `LocalServerDiscoveryTests.testLiveDiscoveryFindsLocalRepoOSWhenServingOn7559` passed: `lsof` listed the listener and `LocalServerDiscovery.discover(knownLocalPorts: [])` returned `localhost:7559` with the health-reported project name.
+- **2026-10-19 — Hub UI (+ click):** Not clicked in this automated run; the sheet uses the same `discover` API and sets `draft.originText = server.originString` on **+** (`ServerEditorSheet`). Confirm in Hub at sign-off if a full UI pass is required.
 
 ## Activity
 
@@ -68,10 +68,4 @@ With a local `repoos serve` on a non-default port (e.g. **7559**), open Hub → 
 - 2026-10-19T05:37:08Z · note: review pass 2: needs some work
 - 2026-10-19T05:37:08Z · message_delivered: 1 message(s)
 - 2026-10-19T05:37:08Z · status review→active
-- 2026-10-19T05:38:13Z · body: Manual check (added 3, removed 1)
-- 2026-10-19T05:38:13Z · message_queued at 2026-10-19T05:38:13.516Z
-- 2026-10-19T05:39:03Z · body
-- 2026-10-19T05:45:39Z · status active→review
-- 2026-10-19T05:45:40Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-10-19T05:46:33Z · note: review pass 3: good to go
-
+- 2026-10-19T05:45:38Z · status active→review

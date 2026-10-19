@@ -117,7 +117,14 @@ struct ServerEditorSheet: View {
             else { return nil }
             return url.port
         })
-        discoveredServers = await LocalServerDiscovery.discover(knownLocalPorts: knownPorts)
+        discoveredServers = await LocalServerDiscovery.discover(
+            knownLocalPorts: knownPorts,
+            onUpdate: { partial in
+                Task { @MainActor in
+                    discoveredServers = partial
+                }
+            }
+        )
         isDiscovering = false
     }
 }
