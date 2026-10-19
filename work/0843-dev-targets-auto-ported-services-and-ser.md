@@ -16,7 +16,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T19:05:50Z"
+updated_at: "2026-10-19T19:06:34Z"
 review_passes: 5
 review_rounds: 2
 dev_error_count: 1
@@ -56,11 +56,11 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 ```json
 [
 {
-"label": "Dev target running with its auto-ported api service sub-row",
-"target": "default",
-"route": "/dev",
-"highlight": "[data-test-id=\"dev-services\"] .dev-service",
-"state": "dev:running"
+  "label": "Dev page: a running target with an auto-ported companion service sub-row (status, real port, PID)",
+  "target": "default",
+  "route": "/dev",
+  "highlight": "[data-test-id=\"dev-services\"]",
+  "state": "dev:running"
 }
 ]
 ```
@@ -142,3 +142,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T18:59:38Z · message_delivered: 1 message(s)
 - 2026-10-19T19:04:19Z · body
 - 2026-10-19T19:05:50Z · body
+- 2026-10-19T19:06:34Z · body
