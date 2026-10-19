@@ -26,6 +26,7 @@ const re =
 /** Routes implemented by the server-backed control CLI (#0723). */
 const CONTROL_API_MATCHERS: Matcher[] = [
   re("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/.source),
+  re("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/.source),
   // `repoos dev …` (#0747): list/status/get and start/stop/restart.
@@ -54,6 +55,13 @@ const FILE_CLI_MATCHERS: Matcher[] = [
   exact("POST", "/api/tasks"),
   re("DELETE", /^\/api\/tasks\/([^/]+)$/.source),
   exact("GET", "/api/check-plan"),
+  // `repoos schedule …` (#0093): task schedule definitions under schedules/.
+  exact("GET", "/api/schedules"),
+  exact("POST", "/api/schedules"),
+  exact("POST", "/api/schedules/preview"),
+  re("PATCH", /^\/api\/schedules\/([^/]+)$/.source),
+  re("DELETE", /^\/api\/schedules\/([^/]+)$/.source),
+  re("POST", /^\/api\/schedules\/([^/]+)\/run$/.source),
 ];
 
 /** UI-only, SSE/hub, auth, or internal routes — no CLI required. */
@@ -93,13 +101,13 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   exact("GET", "/api/attention"),
   exact("GET", "/api/decisions"),
   exact("GET", "/api/check-runs"),
+  exact("GET", "/api/resource-queues"),
   (r) => r.pattern.startsWith("/api/integration"),
   exact("GET", "/api/close-out/outcomes"),
   re("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/done\/cancel$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/worktree-handoff\/discard$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)\/review$/.source),
-  re("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/pm\/message$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/pm\/interrupt$/.source),

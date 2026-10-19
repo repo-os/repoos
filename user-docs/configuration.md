@@ -264,6 +264,7 @@ workDir = "work"
 docsDir = "docs"
 skillsDir = "skills"
 inputsDir = "inputs"
+schedulesDir = "schedules"
 storiesDir = "stories"
 cacheDir = ".repoos"
 taskExtensions = [".md"]
@@ -275,6 +276,8 @@ taskExtensions = [".md"]
 | `docsDir` | string | `docs` | yes | Directory holding context docs an agent reads before working. |
 | `skillsDir` | string | `skills` | yes | Directory holding reusable skills (`skills/<name>/SKILL.md`). |
 | `inputsDir` | string | `inputs` | yes | Directory holding user-submitted inputs and their attachments. Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
+| `schedulesDir` | string | `schedules` | yes | Directory holding scheduled task definitions (Agents → Scheduled Tasks). Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
+| `scheduledTasks.enabled` | boolean | `false` | no | When true, the control-plane server runs enabled schedules on a cadence. Off by default; previews and task worktrees never run schedules. |
 | `storiesDir` | string | `stories` | yes | Directory holding story definitions (used when Stories are enabled). Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
 | `cacheDir` | string | `.repoos` | yes | Derived state only — logs, indexes, cached databases. Delete it and RepoOS rebuilds from the task files; nothing of record is lost. |
 | `taskExtensions` | array of strings | `[".md"]` | yes | File extensions treated as tasks. |
@@ -742,13 +745,13 @@ not transferred — only the host list is.
 ```toml
 uiVerification.enabled = true
 uiVerification.viewportWidths = [1024, 375]
-uiVerification.autoRefreshStaleOnce = false
+uiVerification.autoRefreshStaleOnce = true
 ```
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `uiVerification.enabled` | boolean | `true` | yes | When enabled, tasks with a shot capture plan run browser checks at handoff (console errors, failed same-origin requests, horizontal overflow, blank captures) before review. It also blocks on missing or wrong visual evidence: a declared `highlight`/`selector` that matched nothing, a login/redirect that landed away from the declared route, or a declared `assert` condition (element count/text) that failed. Missing Playwright skips with a visible note. |
-| `uiVerification.autoRefreshStaleOnce` | boolean | `false` | yes | When enabled, a reviewer must explicitly mark stale UI evidence as the only blocker. RepoOS then refreshes it at the current HEAD once and starts one new review; if the evidence still cannot be refreshed (or the task moved on), it stays in review for a human. |
+| `uiVerification.autoRefreshStaleOnce` | boolean | `true` | yes | When enabled (default), a reviewer must explicitly mark stale UI evidence as the only blocker. RepoOS then refreshes it at the current HEAD once and starts one new review; if the evidence still cannot be refreshed (or the task moved on), it stays in review for a human. Set `false` to wait for a manual refresh and **Review again**. |
 | `uiVerification.viewportWidths` | number[] | `[1024, 375]` | yes | Viewport widths (px) used for horizontal overflow checks during handoff verification. |
 
 Edit all three keys in **Settings → General**. Evidence is written under `.repoos/ui-verification/<task-id>.json` and surfaced on the task drawer **Changes** tab; it records the exact captured URL, whether the declared route matched, every assertion's outcome, and the tested tree/plan identity. Each capture also carries **its own** console errors, failed same-origin requests, overflow and blank-capture issues, so the Changes tab can show a green check or red cross per shot: hover, focus or tap the icon for that shot's plain-words verdict and its own issues, while an issue tied to no single shot appears once under the list. The record shape therefore includes a per-capture `issues` array (added in #0753) alongside the handoff-wide `issues` — capture behaviour and gating are unchanged. Captured PNGs live under `work/.attachments/<task-id>/shots/` in the **main checkout** (not the task worktree), which is where a reviewer looks.
@@ -849,6 +852,15 @@ provider = "none"
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `maxConcurrentAgents` | number | derived from CPU count | yes | How many agent CLI processes (start/send/chat) may run at once; extras queue. Must be 1–16. The default is computed from this machine's CPU count and capped sensibly. |
+| `localChecks.maxConcurrent` | select (1–8) | `2` | yes | Cross-process cap on local `repoos check` runs on this machine; extras queue with a visible position (#0836). |
+| `localChecks.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long a queued local check may wait for a slot before failing with an actionable timeout (minimum 60000). |
+| `playwright.maxConcurrent` | select (1–4) | `1` | yes | Shared cap on headless Playwright work (smoke, contrast audit, shots, UI verification). |
+| `playwright.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long queued Playwright work may wait for the shared browser slot before timing out (minimum 60000). |
+| `pressureGuard.enabled` | boolean | `true` | yes | When on, delay new local checks and engineer starts while load or memory pressure is high. |
+| `pressureGuard.maxLoadPerCpu` | number | `4` | yes | Block starts when the 1-minute load average per CPU exceeds this value. |
+| `pressureGuard.minAvailableMemRatio` | number | `0.08` | yes | Block starts when reclaimable memory falls below this fraction of total RAM. |
+| `remoteValidation.offloadBrowserSteps` | boolean | `false` | yes | Opt-in: run browser gate steps on a runner when feasible; otherwise local under the Playwright cap. |
+| `remoteValidation.localFallback` | select | `serialize` | yes | When remote validation falls back locally: `serialize` (one suite at a time), `allow` (use `localChecks.maxConcurrent`), or `off` (refuse fallback). |
 | `ctoSkipHealthy` | boolean | `true` | yes | When true (the default), the CTO monitor skips its model call while the board is healthy — no stuck tasks, a fresh build and a normal process check — and only calls the model when something needs attention. Set `false` to run a full CTO pass whenever the material signal changes. |
 | `cto.actions` | string[] | `[]` | yes | Opt-in allowlist of bounded recovery actions the CTO may run automatically (rate limited, audited in the bell). Values: `restart-stalled-agent` (dead active engineer), `refresh-main-install` (lockfile install in main), `requeue-closeout-after-env-fix` (refresh main then re-queue a failed env close-out). Empty means report-only. Humans can also invoke `POST /api/cto/actions/<id>`. Every automatic action is recorded in the task activity log and the notification bell, and all of them stop at once when `automation.paused = true`. |
 
@@ -1517,6 +1529,19 @@ and secret come from a storage-scoped credential
 verified details, limits and pricing: [`docs/neon-object-storage.md`](https://github.com/repoos/repoos/blob/main/docs/neon-object-storage.md).
 Until every required variable is set, `neon` reports itself unavailable and
 attachments continue to use local storage.
+
+When `neon` is configured and in effect, attachment bytes are still written to
+the local gitignored `.attachments/` tree first. If Neon is unreachable, reads
+serve the local original (when it exists), embedded task references keep
+working, and the UI labels the attachment **upload pending** until a verified
+cloud copy exists — never as available on faith. Local originals are not deleted
+by outage or provider-mode changes; lifecycle rules apply only after verified
+upload (see the cloud attachment storage story).
+
+**Retrieval:** viewing or downloading an attachment always requires the
+RepoOS server that owns the repository (or the local file on disk). Cloud
+storage is durability for those bytes, not remote access from another machine
+without that server.
 
 ## Notifications
 

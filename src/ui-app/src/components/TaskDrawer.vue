@@ -52,6 +52,7 @@ import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
 import { useNoticesStore } from "../stores/notices";
 import { renderMarkdown } from "../lib/markdown";
+import { annotateAttachmentCloudUploads } from "../lib/attachment-cloud-markdown";
 import { fmtTime, formatDuration, relTime } from "../lib/time";
 import { fmtTokens } from "../lib/format";
 import { api, JSON_OPTS } from "../api";
@@ -148,6 +149,7 @@ import { GENERIC_PATCH_TARGETS } from "../lib/taskTransitions";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { reportPredatesLatestHandoff, reviewSupersededByFixRound } from "../lib/reviewFreshness";
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
+import { localQueueHintForTask } from "../lib/local-queue-hint";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import { resolveEffectiveAgent } from "../lib/effective-agent";
 import CopyableNumber from "./CopyableNumber.vue";
@@ -446,6 +448,7 @@ const checkChip = computed(() => {
     const elapsed = formatDuration(Math.max(0, checkNow.value - Date.parse(run.startedAt)));
     const machine = checkMachine.value;
     const taskId = ui.active?.id;
+    const localQueue = taskId ? localQueueHintForTask(repo.resourceQueueMarkers, taskId) : null;
     const poolQueue = taskId ? remotePoolQueueHintForTaskChecks(repo.taskChecks[taskId]) : null;
     // #0720: the server flags an in-flight run past 1.5x its kind median; the
     // badge keeps that visible on the task itself, not only in the bell.
@@ -454,16 +457,20 @@ const checkChip = computed(() => {
       state: "running" as const,
       slow: !!slow,
       slowDetail: slow?.detail ?? null,
-      label: poolQueue
-        ? `${poolQueue.label} · ${elapsed}`
-        : `Checks running${machine ? ` on ${machine}` : ""} · ${elapsed}`,
-      title: poolQueue
-        ? poolQueue.title
-        : slow
-          ? "Checks are running slower than usual — focus the slow badge for timing details"
-          : run.scope === "full"
-            ? "The check gate is running — open the Debug tab for live output"
-            : `Changed-path check (${run.scope}) — open the Debug tab for live output`,
+      label: localQueue
+        ? `${localQueue.label} · ${elapsed}`
+        : poolQueue
+          ? `${poolQueue.label} · ${elapsed}`
+          : `Checks running${machine ? ` on ${machine}` : ""} · ${elapsed}`,
+      title: localQueue
+        ? localQueue.title
+        : poolQueue
+          ? poolQueue.title
+          : slow
+            ? "Checks are running slower than usual — focus the slow badge for timing details"
+            : run.scope === "full"
+              ? "The check gate is running — open the Debug tab for live output"
+              : `Changed-path check (${run.scope}) — open the Debug tab for live output`,
     };
   }
   // Done state: the in-memory run when we have one; otherwise the durable
@@ -1536,6 +1543,9 @@ function stopDoneTimer(): void {
 /** Human-readable progress label, driven by server `task.progress` events. */
 const doneLabel = computed(() => {
   const step = ui.active ? repo.doneSteps[ui.active.id] : undefined;
+  // #0834: checkpoint recovery is its own vocabulary — the close-out map's
+  // default would read "Merging branch…" while no merge has been asked yet.
+  if (ui.active && repo.checkpointRecoveryFor(ui.active.id)) return "Re-reviewing checkpoint…";
   switch (step) {
     case "merge":
       return "Merging branch…";
@@ -2028,7 +2038,12 @@ const specExpanded = ref(true);
 const specModalOpen = ref(false);
 
 /** Rendered (safe) Markdown for the read-mode spec card. */
-const specHtml = computed(() => renderMarkdown(draft.body));
+const specHtml = computed(() => {
+  const html = renderMarkdown(draft.body);
+  const taskId = ui.active?.id;
+  if (!taskId) return html;
+  return annotateAttachmentCloudUploads(html, taskId, ui.active?.attachmentCloud);
+});
 
 function openSpecModal(): void {
   specModalOpen.value = true;

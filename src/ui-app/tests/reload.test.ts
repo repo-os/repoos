@@ -5,7 +5,8 @@
  * hash-change detection, deferred-while-running, and the replacement
  * readiness handoff without touching a real `repoos serve` process.
  */
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import * as orphanEngineers from "../../server/orphan-engineers.js";
 import { createServer as createTcpServer } from "node:net";
 import { createServer as createHttpServer } from "node:http";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -951,6 +952,7 @@ branch: feat/adopt-test
       expect(runner.isRunning("0001")).toBe(false); // not running yet
       expect(runner.isRunning("0002")).toBe(false);
 
+      vi.spyOn(orphanEngineers, "verifyRecordedHarnessPid").mockReturnValue(true);
       runner.adoptRunningAgents();
 
       // The live entry (our own PID) should be adopted
@@ -989,6 +991,7 @@ branch: feat/adopt-test
         expect(updated.entries[0].taskId).toBe("0001");
       }
 
+      vi.restoreAllMocks();
       runner.dispose();
     } finally {
       rmSync(root, { recursive: true, force: true });

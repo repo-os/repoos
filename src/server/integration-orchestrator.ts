@@ -114,6 +114,7 @@ import {
   verifyWorktreeHandoffIntegrity,
   WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX,
 } from "./worktree-handoff-guard.js";
+import { preserveClosingTaskReviewStatusOnMain } from "./close-out-task-status.js";
 import {
   analyzeConflictForResolution,
   canResumeAuthorizedCloseOut,
@@ -1297,6 +1298,7 @@ export class CloseOutOrchestrator {
       this.config.cacheDir ?? ".repoos",
       job.taskId,
     );
+    preserveClosingTaskReviewStatusOnMain(this.config, job.taskId, this.getTask);
     // A budget-exhausted close-out is recorded as a `failed` job (so it stays
     // retryable) but reported as a distinct `timedOut` outcome (#0640): the
     // bell's advice differs from a real gate failure.
@@ -3003,7 +3005,7 @@ export class CloseOutOrchestrator {
         // private skip env flag needed.
         const checkEnv = {
           ...process.env,
-          ...checkEnvAfterRemoteGate(remoteGateOutcome),
+          ...checkEnvAfterRemoteGate(remoteGateOutcome, this.config),
           // #0724: reuse skips the test step locally (the handoff gate already
           // ran it). This is the same flag a remote pass sets, so the run
           // records an explicit, auditable "skipped" tests step rather than a

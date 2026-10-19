@@ -185,7 +185,19 @@ edited different lines of the same file) therefore passes, while a conflict reso
 merge that conflicts fails. Only the task's first-parent chain is checked, and
 reachability from main does not exempt a commit on it: a post-handoff source edit —
 including a mode-only change, and even one main later absorbed — or a merge of a branch
-main never contained still fails. The same check runs again at the start of `syncing` and immediately
+main never contained still fails. **Exception (#0834):** when the worktree is clean and
+every commit on the first-parent chain since the handoff SHA is an engineer self-check WIP
+checkpoint (`WIP: engineer self-check checkpoint (#<id>)` for this task), Move to done does
+not hard-fail. RepoOS re-runs the handoff gate on the new HEAD, runs a **delta-only** review
+since the approved SHA (the original numbered review pass stays tied to that commit), then
+resumes the authorized close-out if the delta review is `good to go`. A delta verdict of
+`needs some work` auto-bounces the task to `active` like any other review finding; a gate
+that fails on the new HEAD leaves the task in `review` with the usual inline close-out error
+(Move to done retries, or send it back to the engineer). The card shows **re-reviewing
+checkpoint…** while this runs, so the task is never silently parked in `review`. Any other
+post-handoff drift still uses the hard error below.
+
+The same check runs again at the start of `syncing` and immediately
 before publish; a change mid-close-out aborts before main is mutated and leaves the task
 in `review` with a failed job reason.
 
@@ -579,6 +591,22 @@ the whole job before the `autoResolve` fix above, and even now just means "the b
 version wins," silently discarding whatever you hand-edited on main. **Don't hand-edit
 task frontmatter. Use the API** (`PATCH /api/tasks/:id`, the `message`/`review/message`
 routes, or the CLI) **so the change is tracked, logged, and synced correctly.**
+
+### Failed close-out must not demote the task to `inbox` (#0838)
+
+Move to done only runs from `review`. When publish-time merge auto-resolve fails
+(for example `auto-resolve failed for work/<id>-*.md` after a corrupt or
+binary task file, #0835), main's canonical `work/<id>-*.md` must stay in
+`review` with the failure recorded on the integration job — never fall back to
+`inbox` (which blocks the next handoff with "task must be active or review, but
+is inbox").
+
+`failOrReconcile` now calls `preserveClosingTaskReviewStatusOnMain`
+(`src/server/close-out-task-status.ts`): discard any half-applied merge debris
+on the task file (`git checkout HEAD -- <file>`), then patch back to `review`
+when the on-disk status is anything other than `review` or `done`. A failed job
+is re-enqueued normally on the next Move to done; no `repoos mv … active` repair
+step.
 
 ## Known failure classes and their guards
 

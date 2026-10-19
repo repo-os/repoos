@@ -60,7 +60,7 @@ describe("uiVerification config (#0680)", () => {
 
   it("exposes the auto-refresh stale evidence setting (#0772)", () => {
     const auto = getConfigSchema().find((f) => f.key === "uiVerification.autoRefreshStaleOnce");
-    expect(auto).toMatchObject({ type: "boolean", tier: "live", default: false });
+    expect(auto).toMatchObject({ type: "boolean", tier: "live", default: true });
     expect(SUPPORTED_TOML_KEYS).toContain("uiVerification.autoRefreshStaleOnce");
     expect(
       resolveSettingLocation("uiVerification.autoRefreshStaleOnce", auto, {
@@ -82,10 +82,18 @@ describe("uiVerification config (#0680)", () => {
 
   it("only auto-refreshes an explicit stale-only marker when enabled (#0772)", () => {
     const enabled = { uiVerification: { autoRefreshStaleOnce: true } } as RepoOSConfig;
+    const defaultOn = {} as RepoOSConfig;
     const disabled = { uiVerification: { autoRefreshStaleOnce: false } } as RepoOSConfig;
     expect(
       shouldAutoRefreshStaleEvidence(
         enabled,
+        "## Verdict\nneeds some work. STALE-EVIDENCE-ONLY",
+        "needs some work",
+      ),
+    ).toBe(true);
+    expect(
+      shouldAutoRefreshStaleEvidence(
+        defaultOn,
         "## Verdict\nneeds some work. STALE-EVIDENCE-ONLY",
         "needs some work",
       ),
@@ -150,6 +158,7 @@ describe("stale-only review stays in review (#0766)", () => {
   /** A manager whose engineer session is genuinely resumable, so a bounce would change status. */
   function makeManager(
     opts: {
+      /** When omitted, auto-refresh follows the product default (on). Pass `false` to disable. */
       autoRefresh?: boolean;
       onRefresh?: (task: Task) => Promise<boolean>;
       onEvidenceRepair?: (task: Task) => Promise<boolean>;
@@ -172,7 +181,7 @@ describe("stale-only review stays in review (#0766)", () => {
       defaultStatus: "inbox",
       defaultAssignee: "unassigned",
       cacheDir: ".repoos",
-      ...(opts.autoRefresh ? { uiVerification: { autoRefreshStaleOnce: true } } : {}),
+      ...(opts.autoRefresh === false ? { uiVerification: { autoRefreshStaleOnce: false } } : {}),
       agents: [
         { name: "reviewer", cli: "fake", model: "m", enabled: true },
         { name: "engineer", cli: "fake", model: "m", enabled: true },
@@ -201,7 +210,7 @@ describe("stale-only review stays in review (#0766)", () => {
         runner as never,
         undefined,
         undefined,
-        opts.autoRefresh ? onRefresh : undefined,
+        opts.autoRefresh === false ? undefined : onRefresh,
         onEvidenceRepair,
       ),
       sent: () => sent,
@@ -244,6 +253,21 @@ describe("stale-only review stays in review (#0766)", () => {
     expect(sent()).toBe(1);
   });
 
+  it("stale-only with default auto-refresh refreshes once and never bounces (#0839)", async () => {
+    const { reviews, sent, refreshed } = makeManager();
+    const { task, absPath } = writeTask();
+    finalize(reviews, task, "## Verdict\n`needs some work` — STALE-EVIDENCE-ONLY\n");
+    await vi.waitFor(() => {
+      expect(refreshed()).toBe(1);
+    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(sent()).toBe(0);
+    expect(refreshed()).toBe(1);
+    const content = readFileSync(absPath, "utf8");
+    expect(content).toContain("status: review");
+    expect(content).not.toContain("status: active");
+  });
+
   it("stale-only with auto-refresh enabled refreshes once and never bounces (#0772)", async () => {
     const { reviews, sent, refreshed } = makeManager({ autoRefresh: true });
     const { task, absPath } = writeTask();
@@ -261,7 +285,7 @@ describe("stale-only review stays in review (#0766)", () => {
   });
 
   it("stale-only with the setting off does not even attempt a refresh (#0772)", async () => {
-    const { reviews, sent, refreshed } = makeManager();
+    const { reviews, sent, refreshed } = makeManager({ autoRefresh: false });
     const { task } = writeTask();
     finalize(reviews, task, "## Verdict\n`needs some work` — STALE-EVIDENCE-ONLY\n");
     await new Promise((resolve) => setTimeout(resolve, 100));

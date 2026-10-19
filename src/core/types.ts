@@ -480,6 +480,13 @@ export interface RepoOSConfig {
   skillsDir: string;
   /** Directory holding human-submitted inputs, relative to root. */
   inputsDir?: string;
+  /** Git-tracked task schedule definitions (`schedules/*.md`). */
+  schedulesDir?: string;
+  /**
+   * Automatic schedule ticks (boot catch-up and minute loop). Off by default so
+   * serving a checkout never creates tasks until explicitly enabled in Settings.
+   */
+  scheduledTasks?: ScheduledTasksConfig;
   /** Directory holding story definitions, relative to root. Default "stories". */
   storiesDir?: string;
   /** Glob-ish: file extensions treated as tasks. Default [".md"]. */
@@ -578,6 +585,12 @@ export interface RepoOSConfig {
   modelProviders?: ModelProviderKeysConfig;
   /** Remote validation runner — runs the close-out build+test off this machine. */
   remoteValidation?: RemoteValidationConfig;
+  /** Local `repoos check` concurrency on this machine (#0836). */
+  localChecks?: LocalChecksConfig;
+  /** Shared Playwright concurrency (#0836). */
+  playwright?: PlaywrightLimitsConfig;
+  /** Load/memory guard before checks and engineer starts (#0836). */
+  pressureGuard?: PressureGuardConfig;
   /** Optional product-release integration. Omitted means the Releases UI is hidden. */
   release?: ReleaseConfig;
   /**
@@ -990,6 +1003,34 @@ export interface DistributionConfig {
  * run locally. Master switch defaults off: enabling it sends repo contents to a
  * third-party host (see docs/remote-validation.md).
  */
+/** How concurrent local runs may be when remote validation falls back (#0836). */
+export type LocalFallbackMode = "serialize" | "allow" | "off";
+
+/** Cross-process cap on local `repoos check` runs on this machine (#0836). */
+export interface LocalChecksConfig {
+  /** Max concurrent local check processes. Default 2. */
+  maxConcurrent?: number;
+  /** Ms to wait in queue before failing with an actionable timeout. Default 45 min. */
+  queueTimeoutMs?: number;
+}
+
+/** Shared cap on headless Playwright work (#0836). */
+export interface PlaywrightLimitsConfig {
+  /** Max concurrent Playwright browser sessions. Default 1. */
+  maxConcurrent?: number;
+  queueTimeoutMs?: number;
+}
+
+/** Delay new checks and engineer starts when the host is overloaded (#0836). */
+export interface PressureGuardConfig {
+  /** Default true — waits instead of piling on when load or memory is high. */
+  enabled?: boolean;
+  /** 1-minute load average per CPU above this blocks new work. Default 4. */
+  maxLoadPerCpu?: number;
+  /** Block when available memory falls below this fraction of RAM. Default 0.08. */
+  minAvailableMemRatio?: number;
+}
+
 export interface RemoteValidationConfig {
   /** Master switch. Default false. */
   enabled?: boolean;
@@ -1106,6 +1147,19 @@ export interface RemoteValidationConfig {
    * Handoff reuses a green pass at the same HEAD (#0694).
    */
   engineerSelfCheckRemote?: boolean;
+  /**
+   * Run UI smoke, contrast audit, and shot/verification capture on a runner when
+   * one is available (#0836). Default false — browser steps stay local under the
+   * playwright cap until explicitly enabled.
+   */
+  offloadBrowserSteps?: boolean;
+  /**
+   * When `fallbackToLocal` runs the full gate here, control concurrency:
+   * `serialize` (default) — one local fallback suite at a time; `allow` — use
+   * `localChecks.maxConcurrent`; `off` — refuse local fallback even when
+   * `fallbackToLocal` is true.
+   */
+  localFallback?: LocalFallbackMode;
 }
 
 /**
@@ -1670,6 +1724,12 @@ export interface BuiltInAgentConfig {
   cli?: string;
   /** Model to use for this built-in agent. */
   model?: string;
+}
+
+/** Automatic schedule ticks on the control-plane server (#0093). */
+export interface ScheduledTasksConfig {
+  /** When true, enabled schedules fire on boot catch-up and each minute tick. */
+  enabled?: boolean;
 }
 
 /** Task watchdog configuration (#0180). */

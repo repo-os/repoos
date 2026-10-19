@@ -42,6 +42,7 @@ import {
   integrationQueuedCopy,
 } from "../lib/integration-pipeline-ui";
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
+import { localQueueHintForTask } from "../lib/local-queue-hint";
 
 const props = withDefaults(
   defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(),
@@ -398,6 +399,10 @@ async function retryStalledPipeline(): Promise<void> {
 /** A live agent process that has gone silent past STUCK_SILENCE_MS, or the
  *  normal "coding" hint when it's still producing output. */
 function codingOrStuckHint(taskId: string): CardHint {
+  const localQueued = localQueueHintForTask(repo.resourceQueueMarkers, taskId);
+  if (localQueued) {
+    return { label: localQueued.label, title: localQueued.title, cls: "tc-queued" };
+  }
   const queued = remotePoolQueueHintForTaskChecks(repo.taskChecks[taskId]);
   if (queued) {
     return { label: queued.label, title: queued.title, cls: "tc-queued" };
@@ -435,6 +440,25 @@ const QUEUED_HINT: CardHint = {
     "waiting for a free agent slot (maxConcurrentAgents) — will start automatically once one frees up",
   cls: "tc-queued",
 };
+
+function agentQueuedHint(taskId: string): CardHint {
+  const meta = repo.queuedAgentMeta[taskId];
+  if (meta?.reason === "pressure") {
+    return {
+      label: "queued · pressure",
+      title: meta.detail,
+      cls: "tc-queued",
+    };
+  }
+  if (meta?.reason === "slot" && meta.detail) {
+    return {
+      label: "queued · agent slot",
+      title: meta.detail,
+      cls: "tc-queued",
+    };
+  }
+  return QUEUED_HINT;
+}
 
 /** A PM run is live on this task (0381): the freeform flesh-out for a draft,
  *  or a PM chat turn. The same server-side registry backs both, so one hint
@@ -548,6 +572,17 @@ const hint = computed<CardHint | null>(() => {
         };
       }
     }
+    // #0834: a post-handoff checkpoint recovery is running — gate + delta
+    // re-review before close-out resumes. More specific than "Reviewing…", so
+    // it wins while the delta review runs; the task is mid-recovery, not idle.
+    if (repo.checkpointRecoveryFor(t.id)) {
+      return {
+        label: "re-reviewing checkpoint…",
+        title:
+          "checkpoint commit(s) landed after handoff — RepoOS is re-running the handoff gate and a delta review, then close-out continues",
+        cls: "tc-reviewing",
+      };
+    }
     if (repo.reviewFor(t.id)?.running) {
       return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
     }
@@ -559,7 +594,7 @@ const hint = computed<CardHint | null>(() => {
         cls: "tc-reviewing",
       };
     }
-    if (repo.isQueued(t.id)) return QUEUED_HINT;
+    if (repo.isQueued(t.id)) return agentQueuedHint(t.id);
     if (repo.isRunning(t.id)) {
       return (
         autoRepairHint({
@@ -615,7 +650,7 @@ const hint = computed<CardHint | null>(() => {
     return null;
   }
   if (t.status === "active") {
-    if (repo.isQueued(t.id)) return QUEUED_HINT;
+    if (repo.isQueued(t.id)) return agentQueuedHint(t.id);
     if (repo.isRunning(t.id)) {
       return (
         autoRepairHint({

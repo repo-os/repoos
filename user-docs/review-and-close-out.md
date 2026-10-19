@@ -68,13 +68,14 @@ The one exception is a `needs some work` whose *only* stated blocker is stale
 handoff evidence (the reviewer marks it `STALE-EVIDENCE-ONLY`): the change is
 fine, only the captures are old, so bouncing the engineer would burn a turn on
 nothing. That task **stays in `review`** — never bounced back to engineering.
-With **Auto-refresh stale review evidence once** enabled (Settings → General),
+**Auto-refresh stale review evidence once** is on by default (Settings → General).
 RepoOS re-captures the evidence at the current HEAD and starts one new review
 automatically, and a capture is attempted at most once per reviewed HEAD so a
 stubborn stale marker cannot loop. With the setting off, or when the automatic
 capture cannot run (a live engineer/reviewer, a dirty worktree, or a moved
 HEAD), it simply waits: use **Refresh evidence** in the Changes tab (or
-`repoos verify <id>`) to re-capture on the current HEAD, then review again.
+`repoos verify <id>`) to re-capture on the current HEAD, then **Review again**
+in the UI or `repoos review again <id>`.
 
 A second exception is **`EVIDENCE-GAP-ONLY`**: the code is acceptable but
 handoff shots or verification are missing or unusable (not stale). The task stays
@@ -233,6 +234,19 @@ if either has uncommitted files, stops with a dialog listing them:
 through the same commit path a handoff uses, so the close-out's own build and
 check then validate the result. **Cancel** changes nothing: the task stays in
 `review` with every file exactly where it was.
+
+**Engineer checkpoint after handoff (#0834):** if the only new commits on the
+branch since handoff are automatic `WIP: engineer self-check checkpoint` commits
+(from a scoped `repoos check` while the task sat in `review`), Move to done
+starts **checkpoint recovery** instead of showing "Worktree changed after
+handoff": the handoff gate runs again on the new HEAD, a delta-only review
+covers just those commits, and close-out continues when that review is
+`good to go`. While it runs the card shows **re-reviewing checkpoint…** so the
+task never sits silently in review; a delta verdict that asks for changes bounces
+the task back to `active` with the findings, and a gate failure leaves the usual
+close-out error in place (retry Move to done, or send the task back to the
+engineer). Any real source edit or a dirty tree still blocks with the usual
+dialog (discard or send back to the engineer).
 
 RepoOS never deletes a worktree that has uncommitted work on its own. If one is
 left over (for example a close-out that raced a new edit), it is kept, named in

@@ -2,21 +2,22 @@
 id: "0093"
 title: Add recurring and scheduled tasks to the Agents page
 type: feature
-status: inbox
+status: done
 priority: p2
 area: agent
+merged_commit: c6ddf9e57fa81a28ebfecd58585a282b178ac67a
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-recurring-and-scheduled-tasks-to-the
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-08-11T14:22:06Z"
-updated_at: "2026-08-11T15:37:46Z"
+updated_at: "2026-10-18T20:22:00Z"
+last_close_out_gate_ms: 97205
+last_close_out_gate_at: "2026-10-18T20:20:53.541Z"
+review_passes: 3
+review_rounds: 1
 ---
-## Activity
-
-- 2026-08-11T14:22:06Z · created · unknown
-- 2026-08-11T15:37:46Z · updated · narrow the first release to one-time, daily, and weekly schedules
-
-
 ## Problem
 
 RepoOS tasks can only be created or started manually. Repeated maintenance work
@@ -102,3 +103,49 @@ dependency constraint.
 ## Related
 
 - 0092 — recurring product-documentation audit use case
+
+## Shots
+```json
+[
+{
+"label": "Scheduled Tasks tab on Agents page",
+"target": "default",
+"route": "/agents?tab=scheduled",
+"highlight": ".scheduled-tasks-panel",
+"state": "board:withReviewTask"
+}
+]
+```
+
+## Activity
+
+- 2026-08-11T14:22:06Z · created · unknown
+- 2026-08-11T15:37:46Z · updated · narrow the first release to one-time, daily, and weekly schedules
+- 2026-10-18T19:02:40Z · status inbox→ready
+- 2026-10-18T19:02:43Z · cli_override, model_override
+- 2026-10-18T19:02:46Z · status ready→active, branch
+- 2026-10-18T19:08:36Z · body
+- 2026-10-18T19:09:50Z · body
+- 2026-10-18T19:15:52Z · handoff failed · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate
+- 2026-10-18T19:21:10Z · body
+- 2026-10-18T19:23:01Z · body
+- 2026-10-18T19:30:49Z · status active→review
+- 2026-10-18T19:31:53Z · note: review pass 1: needs some work
+- 2026-10-18T19:31:53Z · status review→active
+- 2026-10-18T19:35:01Z · body
+- 2026-10-18T19:37:54Z · body
+- 2026-10-18T19:40:04Z · body
+- 2026-10-18T19:40:56Z · note: handoff requested (ui-review)
+- 2026-10-18T19:47:49Z · status active→review
+- 2026-10-18T19:48:37Z · note: review pass 2: good to go
+- 2026-10-18T19:51:25Z · status review→active
+- 2026-10-18T19:51:32Z · status active→review
+- 2026-10-18T19:51:33Z · note: handoff requested (cli)
+- 2026-10-18T19:54:40Z · body
+- 2026-10-18T19:58:28Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 19ea7cf5 to 0c8d57f7) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-18T20:03:51Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-18T20:03:51Z · note: handoff requested (cli)
+- 2026-10-18T20:10:38Z · status active→review
+- 2026-10-18T20:11:29Z · note: review pass 3: good to go
+- 2026-10-18T20:20:53Z · close-out gate completed in 97s
+- 2026-10-18T20:22:00Z · status review→done, release:success

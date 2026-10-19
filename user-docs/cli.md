@@ -206,6 +206,7 @@ done wait by default in human mode).
 | `repoos sync <id>` | `POST /api/tasks/:id/sync` — merge main into the task branch (lists conflicting paths and exits non-zero on conflict) |
 | `repoos message <id> "…" [--now]` | `POST /api/tasks/:id/message` (`now: true` interrupts a busy agent) |
 | `repoos review <id> [--wait]` | `PATCH /api/tasks/:id` (`status: review`) |
+| `repoos review again <id>` | `POST /api/tasks/:id/review/again` |
 | `repoos done <id> [--commit-dirty] [--wait]` | `POST /api/tasks/:id/done` |
 | `repoos override <id> --cli X --model Y` | `PATCH /api/tasks/:id` |
 | `repoos preview <id> [--stop]` | `POST /api/tasks/:id/preview` (+ `/stop`) |
@@ -370,6 +371,34 @@ repoos story show 0007                                  # definition + member ta
 repoos story show "Project updates email" --json
 repoos story update 0007 --body "Rewritten scope."      # keeps the stable number
 repoos story update 0007 --name "Project update emails" # rename keeps the number
+
+### `repoos schedule list|run|enable|disable|new|update|preview|delete`
+
+Manage **scheduled tasks** — markdown definitions under `schedules/` that create
+ordinary `work/*.md` tasks on a cadence (the same files the Agents → Scheduled
+Tasks UI edits). Writes land on the board root and commit when git tracks the
+file.
+
+```bash
+repoos schedule list
+repoos schedule list --json
+repoos schedule preview --cadence weekly --timezone UTC --time-of-day 09:00 --day-of-week 1 --title "Doc audit" --task-title "Audit docs"
+repoos schedule new --title "Doc audit" --task-title "Audit docs" --cadence weekly --timezone UTC --time-of-day 09:00 --day-of-week 1 --body -
+repoos schedule update 0001 --enabled false
+repoos schedule enable 0001
+repoos schedule disable 0001
+repoos schedule run 0001
+repoos schedule delete 0001 --yes
+```
+
+| Subcommand | API equivalent |
+| --- | --- |
+| `list` | `GET /api/schedules` |
+| `new` | `POST /api/schedules` |
+| `update`, `enable`, `disable` | `PATCH /api/schedules/:id` |
+| `delete` | `DELETE /api/schedules/:id` |
+| `run` | `POST /api/schedules/:id/run` |
+| `preview` | `POST /api/schedules/preview` |
 ```
 
 `new` and `update` write and commit the definition under `storiesDir`, exactly
@@ -561,6 +590,19 @@ repoos shot --selector ".sidebar"    # capture one element instead of the page
 repoos shot --wait 2000              # wait longer before capturing (default 900ms)
 repoos shot https://example.test/x   # capture an arbitrary URL
 repoos shot --target "macOS app"     # run a command capture target (non-web app)
+```
+
+### `repoos review again`
+
+Start a fresh reviewer run on a task that is already in `review` — the same
+action as **Review again** in the task drawer. Use this after
+`repoos verify <id>` refreshes stale evidence, or whenever you want another
+review pass without moving the task back to `active`. Refuses when an engineer
+turn, close-out, or another review is already in progress.
+
+```bash
+repoos review again 0832
+repoos review again 0832 --json
 ```
 
 ### `repoos verify`
