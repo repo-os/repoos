@@ -13,7 +13,7 @@ model_override: openrouter/openrouter/auto-beta
 review_cli_override: pi
 review_model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-10-19T12:23:10Z"
-updated_at: "2026-10-19T13:19:45Z"
+updated_at: "2026-10-19T13:37:23Z"
 ---
 ## Problem
 Agents and providers become unavailable for known periods (Cursor is out of credit for about 3 days, rate limits reset at a set time, a provider is down until a stated date), and the human has to remember to switch them back on. There is no place in RepoOS to record "tell me when X is available again", so it lives in the human's head.
@@ -46,3 +46,4 @@ Model the storage, tick and SSE-update pattern on scheduled tasks (src/server/sc
 - 2026-10-19T13:19:41Z · review_model_override
 - 2026-10-19T13:19:42Z · status inbox→ready
 - 2026-10-19T13:19:45Z · status ready→active, branch
+- 2026-10-19T13:37:23Z · body
