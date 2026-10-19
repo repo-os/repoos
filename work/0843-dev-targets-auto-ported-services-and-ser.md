@@ -16,7 +16,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T18:30:18Z"
+updated_at: "2026-10-19T18:36:01Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 1
@@ -129,3 +129,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T18:25:17Z · body
 - 2026-10-19T18:27:00Z · body
 - 2026-10-19T18:30:14Z · status review→active
+- 2026-10-19T18:36:01Z · message_queued at 2026-10-19T18:36:01.728Z
