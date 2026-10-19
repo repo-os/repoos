@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-19T12:21:29Z"
-review_passes: 1
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
@@ -14,6 +12,8 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
+updated_at: "2026-10-19T12:21:29Z"
+review_passes: 1
 ---
 ## Problem
 `[[dev.targets]]` supports a single `{port}` for one process, so a full-stack dev target (an API plus a frontend that proxies to it) must pin the API to a fixed port. In the lightingai project the Bun API is pinned to 3001 because the Vite proxy needs to know it, so two copies of the stack, or anything else on 3001, collide. `[[preview.targets]]` already solves this with `[[preview.services]]` and `{api.port}` (#0681), but dev targets have no equivalent. Suggested by the owner (2026-10-19): frontends can already be dynamic, the API should be able to be too.
@@ -79,4 +79,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T12:19:11Z · review_cli_override, review_model_override
 - 2026-10-19T12:19:14Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-19T12:21:29Z · note: review pass 2: needs some work
-
+- 2026-10-19T12:21:29Z · message_delivered: 1 message(s)
