@@ -11,7 +11,7 @@ branch: feat/hub-add-server-never-lists-locally-runni
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:15:39Z"
-updated_at: "2026-10-19T05:28:30Z"
+updated_at: "2026-10-19T05:29:11Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -59,3 +59,4 @@ _Record pass/fail and date when verified in Hub._
 - 2026-10-19T05:27:46Z · status review→active
 - 2026-10-19T05:28:30Z · body: Manual check (added)
 - 2026-10-19T05:28:30Z · message_queued at 2026-10-19T05:28:30.974Z
+- 2026-10-19T05:29:11Z · body
