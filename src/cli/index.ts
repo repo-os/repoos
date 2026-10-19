@@ -32,6 +32,7 @@ import { cmdDoctor } from "../commands/doctor.js";
 import { cmdCertify } from "../commands/certify.js";
 import { cmdSupport } from "../commands/support.js";
 import { cmdService } from "../commands/service.js";
+import { cmdServers } from "../commands/servers.js";
 import {
   cmdAgentsRunning,
   cmdConfig,
@@ -243,6 +244,9 @@ function main(): void {
       break;
     case "service":
       void cmdService(rest);
+      break;
+    case "servers":
+      void cmdServers(rest);
       break;
     case "check":
       void cmdCheck(rest);
