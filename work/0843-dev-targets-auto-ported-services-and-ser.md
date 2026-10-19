@@ -109,3 +109,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T13:26:23Z · body
 - 2026-10-19T13:30:05Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate. The task stays active — fix the failure and ask again.
 - 2026-10-19T13:30:05Z · status active→review
+- 2026-10-19T13:30:05Z · note: handoff requested (cli)
