@@ -77,6 +77,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0805 — clears the configured editor so the fallback "Set editor in
   // Settings → General" hint renders instead of the "Open in editor" button.
   "editor:unconfigured",
+  // #0841 — Agents scheduled tab with the New schedule drawer open.
+  "schedule:newPanel",
 ] as const;
 
 export type ShotPreviewFixtureId = (typeof SHOT_PREVIEW_FIXTURE_IDS)[number];
