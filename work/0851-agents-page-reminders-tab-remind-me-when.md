@@ -67,7 +67,7 @@ Model the storage, tick and SSE-update pattern on scheduled tasks (src/server/sc
 "highlight": "[data-testid=reminder-editor-drawer]",
 "steps": [
 {
-  "click": "[data-testid=new-reminder]"
+"click": "[data-testid=new-reminder]"
 }
 ],
 "state": "reminders:due",
@@ -92,3 +92,4 @@ Model the storage, tick and SSE-update pattern on scheduled tasks (src/server/sc
 - 2026-10-19T14:22:37Z · body
 - 2026-10-19T14:25:53Z · body
 - 2026-10-19T14:34:22Z · status active→review
+- 2026-10-19T14:34:22Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
