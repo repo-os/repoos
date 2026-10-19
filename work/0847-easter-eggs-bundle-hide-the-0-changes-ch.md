@@ -2,7 +2,7 @@
 id: "0847"
 title: "Easter eggs bundle: hide the \"0 changes\" chip on task cards"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
