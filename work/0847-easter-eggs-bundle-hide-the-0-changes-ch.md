@@ -108,3 +108,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T13:24:42Z · body
 - 2026-10-19T13:26:11Z · body
 - 2026-10-19T13:36:31Z · handoff failed · remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate
+- 2026-10-19T13:36:31Z · handoff failed · handoff recovery attempted · finalization failed
