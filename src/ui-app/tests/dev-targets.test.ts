@@ -2000,10 +2000,7 @@ describe("DevTargetManager with services (#0843)", () => {
       // stopped once the asynchronous teardown completes.
       expect(await waitForDead(svcPid!)).toBe(true);
       const settleDeadline = Date.now() + 4000;
-      while (
-        Date.now() < settleDeadline &&
-        mgr.get("app")?.services?.[0].status !== "stopped"
-      ) {
+      while (Date.now() < settleDeadline && mgr.get("app")?.services?.[0].status !== "stopped") {
         await new Promise((r) => setTimeout(r, 50));
       }
       expect(mgr.get("app")?.services?.[0].status).toBe("stopped");
@@ -2068,8 +2065,16 @@ describe("DevTargetManager with services (#0843)", () => {
       baseConfig(
         {
           services: [
-            { name: "api-v1", command: 'bun -e "setTimeout(()=>{},60000)"', healthCheck: undefined },
-            { name: "api_v1", command: 'bun -e "setTimeout(()=>{},60000)"', healthCheck: undefined },
+            {
+              name: "api-v1",
+              command: 'bun -e "setTimeout(()=>{},60000)"',
+              healthCheck: undefined,
+            },
+            {
+              name: "api_v1",
+              command: 'bun -e "setTimeout(()=>{},60000)"',
+              healthCheck: undefined,
+            },
           ],
           targets: [webTarget({ services: ["api-v1", "api_v1"] })],
         },
@@ -2082,9 +2087,7 @@ describe("DevTargetManager with services (#0843)", () => {
       expect(result.error).toContain("both map to the placeholder");
       expect(result.error).toContain("{api_v1.port}");
       expect(mgr.get("app")?.status).toBe("failed");
-      expect(
-        (mgr.get("app")?.services ?? []).every((s) => s.status === "stopped"),
-      ).toBe(true);
+      expect((mgr.get("app")?.services ?? []).every((s) => s.status === "stopped")).toBe(true);
     } finally {
       await mgr.stopAll();
       rmSync(dir, { recursive: true, force: true });
