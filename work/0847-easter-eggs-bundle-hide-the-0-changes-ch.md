@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-19T15:49:35Z"
-review_passes: 1
 id: "0847"
 title: "Easter eggs bundle: hide the \"0 changes\" chip on task cards"
 type: chore
@@ -15,6 +13,7 @@ model_override: default
 review_cli_override: pi
 review_model_override: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
 created_at: "2026-10-19T07:50:02Z"
+updated_at: "2026-10-19T15:48:12Z"
 ---
 ## Items
 
@@ -68,52 +67,6 @@ See E1 (and the E-sections of any items added later); all items must hold.
 ## Notes for AI
 Items are independent; edit them with `repoos bundle edit`, never a full `--body`. Never touch repoos.toml.
 
-## Shots
-```json
-[
-{
-"label": "Ready human task with no changes chip (light)",
-"target": "default",
-"route": "/work?status=ready",
-"highlight": "[data-task-id=\"9999\"]",
-"steps": [
-{
-"waitFor": "[data-task-id=\"9999\"] .tc-human-chip"
-}
-],
-"assert": [
-{
-"selector": "[data-task-id=\"9999\"] .tc-file-chip",
-"label": "no file-change chip is rendered",
-"count": 0
-}
-],
-"state": "card:noChanges",
-"theme": "light"
-},
-{
-"label": "Ready human task with no changes chip (dark)",
-"target": "default",
-"route": "/work?status=ready",
-"highlight": "[data-task-id=\"9999\"]",
-"steps": [
-{
-"waitFor": "[data-task-id=\"9999\"] .tc-human-chip"
-}
-],
-"assert": [
-{
-"selector": "[data-task-id=\"9999\"] .tc-file-chip",
-"label": "no file-change chip is rendered",
-"count": 0
-}
-],
-"state": "card:noChanges",
-"theme": "dark"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-19T07:50:02Z · created · njachowski@gmail.com
@@ -130,36 +83,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T13:20:03Z · review_cli_override, review_model_override
 - 2026-10-19T13:21:36Z · review_model_override
 - 2026-10-19T13:21:37Z · status ready→active, branch
-- 2026-10-19T13:24:42Z · body
-- 2026-10-19T13:26:11Z · body
-- 2026-10-19T13:36:31Z · handoff failed · remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate
-- 2026-10-19T13:36:31Z · handoff failed · handoff recovery attempted · finalization failed
-- 2026-10-19T13:42:06Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
-- 2026-10-19T13:42:06Z · note: handoff requested (cli)
-- 2026-10-19T13:48:30Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate
-- 2026-10-19T13:55:07Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
-- 2026-10-19T13:56:23Z · body
-- 2026-10-19T13:57:04Z · body
-- 2026-10-19T14:04:19Z · handoff failed · remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate
-- 2026-10-19T14:10:06Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
-- 2026-10-19T14:14:16Z · body
-- 2026-10-19T14:14:58Z · body
-- 2026-10-19T14:16:53Z · body
-- 2026-10-19T14:24:12Z · handoff failed · remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate
-- 2026-10-19T14:30:06Z · CTO action: restart-stalled-agent (fresh) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
-- 2026-10-19T14:31:58Z · body
-- 2026-10-19T14:32:43Z · body
-- 2026-10-19T14:41:09Z · handoff failed · remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate
-- 2026-10-19T14:51:12Z · CTO action: restart-stalled-agent (fresh) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
-- 2026-10-19T14:52:35Z · body
-- 2026-10-19T14:53:25Z · body
-- 2026-10-19T15:00:13Z · handoff failed · remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate
-- 2026-10-19T15:05:23Z · message_queued at 2026-10-19T15:05:23.921Z
-- 2026-10-19T15:05:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-19T15:06:36Z · body
-- 2026-10-19T15:08:46Z · body
-- 2026-10-19T15:25:20Z · body
-- 2026-10-19T15:39:48Z · body
-- 2026-10-19T15:48:13Z · status active→review
-- 2026-10-19T15:49:35Z · note: review pass 1: good to go
-
+- 2026-10-19T15:48:12Z · status active→review

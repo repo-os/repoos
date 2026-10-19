@@ -48,6 +48,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // a capture can show the combined area chip, the human chip and the
   // file-count chip.
   "board:cardChips",
+  // #0847 — a ready human task with a branch and zero diff stats, so shots
+  // verify the card has no empty file-change chip.
+  "card:noChanges",
   // #0787 — active engineer run on the board so captures can show the compact
   // coding indicator on a task card.
   "board:activeCoding",
