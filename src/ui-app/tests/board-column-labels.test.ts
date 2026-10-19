@@ -217,7 +217,7 @@ describe("WorkView board column labels", () => {
     await loadConfig();
     const repo = useRepoStore();
     repo.tasks = [];
-    repo.counts = { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 };
+    Object.assign(repo.counts, { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 });
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
 
@@ -231,6 +231,9 @@ describe("WorkView board column labels", () => {
     expect(draftColumn.props("col").id).toBe("draft");
     expect(draftColumn.props("emptyText")).toBe("—");
     expect(wrapper.text()).not.toContain("No drafts yet");
+    routeState.query = {};
+    await flushPromises();
+    wrapper.unmount();
   });
 });
 
