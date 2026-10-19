@@ -104,7 +104,7 @@ async function runUISmokeTest(): Promise<void> {
     });
     context = await browser.newContext({ serviceWorkers: "block" });
   } catch (err) {
-    server.close();
+    await server.close();
     rmSync(fixture, { recursive: true, force: true });
     throw err;
   }
@@ -462,7 +462,11 @@ async function runUISmokeTest(): Promise<void> {
   } finally {
     if (context) await context.close();
     if (browser) await browser.close();
-    server.close();
+    // Await the server teardown BEFORE deleting its root: close() stops dev
+    // targets and previews asynchronously, and their state persist would
+    // recreate `.repoos/` under a root we already deleted — the fixture dir
+    // then survives every check run (#0858).
+    await server.close();
     rmSync(fixture, { recursive: true, force: true });
   }
 }

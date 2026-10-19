@@ -1245,7 +1245,7 @@ async function runAudit(): Promise<{
     });
     context = await browser.newContext({ serviceWorkers: "block" });
   } catch (err) {
-    server.close();
+    await server.close();
     rmSync(fixture, { recursive: true, force: true });
     throw err;
   }
@@ -1299,7 +1299,9 @@ async function runAudit(): Promise<{
   } finally {
     if (context) await context.close();
     if (browser) await browser.close();
-    server.close();
+    // Await teardown BEFORE deleting the root — see ui-smoke.ts (#0858).
+    // Dev-target state persistence is async and would recreate `.repoos/`.
+    await server.close();
     rmSync(fixture, { recursive: true, force: true });
   }
 
