@@ -2,7 +2,7 @@
 id: "0844"
 title: "Hub: Add server never lists locally running RepoOS servers (discovery probe times out)"
 type: bug
-status: review
+status: active
 priority: p2
 area: macos
 assigned_to: ai
@@ -11,7 +11,9 @@ branch: feat/hub-add-server-never-lists-locally-runni
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:15:39Z"
-updated_at: "2026-10-19T05:26:58Z"
+updated_at: "2026-10-19T05:37:08Z"
+review_rounds: 2
+review_passes: 2
 ---
 ## Problem
 In RepoOS Hub, **Add server** is meant to show a "Running locally" list of RepoOS instances (LocalServerDiscovery.swift, added in d76dbd24c) so you can click one to add it. In practice the sheet shows the spinner for about a second and then nothing appears, even with servers clearly running (reported 2026-10-19: a new project on http://127.0.0.1:7559/ never shows, while 7171 is also up).
@@ -36,10 +38,30 @@ So the probe is not reliable: creating a thousand sessions at once means request
 ## Notes for AI
 Start from macos/RepoOSHub/LocalServerDiscovery.swift, ServerEditorSheet.swift (runDiscovery and LocalDiscoverySection) and HealthCheckService.swift. The repro harness is a ~30-line Swift script (TaskGroup over 7000...7999 with ephemeral sessions); recreate it to confirm the fix. Build with xcodebuild for the Hub scheme and run the Hub unit tests; no device or signing needed. Do not touch repoos.toml. Source: Nick, 2026-10-19, screenshot of the Add server sheet.
 
+## Manual check
+With a local `repoos serve` on a non-default port (e.g. **7559**), open Hub → **Add server** and confirm:
+
+1. **Running locally** lists the instance (project name + `localhost:7559`).
+2. Clicking **+** fills the Server URL field with `localhost:7559`.
+
+_Record pass/fail and date when verified in Hub._
+
 ## Activity
 
 - 2026-10-19T05:15:39Z · created · njachowski@gmail.com
 - 2026-10-19T05:15:51Z · status inbox→ready
 - 2026-10-19T05:15:56Z · cli_override, model_override
 - 2026-10-19T05:15:58Z · status ready→active, branch
-- 2026-10-19T05:26:58Z · status active→review
+- 2026-10-19T05:19:20Z · body
+- 2026-10-19T05:26:59Z · status active→review
+- 2026-10-19T05:27:00Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-19T05:27:45Z · note: review pass 1: needs some work
+- 2026-10-19T05:27:46Z · status review→active
+- 2026-10-19T05:28:30Z · body: Manual check (added)
+- 2026-10-19T05:28:30Z · message_queued at 2026-10-19T05:28:30.974Z
+- 2026-10-19T05:29:11Z · body
+- 2026-10-19T05:36:08Z · status active→review
+- 2026-10-19T05:36:09Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-19T05:37:08Z · note: review pass 2: needs some work
+- 2026-10-19T05:37:08Z · message_delivered: 1 message(s)
+- 2026-10-19T05:37:08Z · status review→active

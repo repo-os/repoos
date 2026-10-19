@@ -67,6 +67,19 @@ release workflow; no signing identity or credential is committed here.
 
 The `macos/.derived-data/` directory is ignored and may be removed at any time.
 
+## Local server discovery (Add server)
+
+The **Add server** sheet calls `LocalServerDiscovery` to populate **Running locally**.
+Discovery prefers **`/usr/sbin/lsof`** (`-iTCP:7000-7999 -sTCP:LISTEN`) to learn which
+ports have listeners, then health-checks only those ports. If `lsof` is missing, errors,
+or is blocked (for example sandbox denial), Hub falls back to a bounded scan of the full
+7000–7999 range. An empty `lsof` result means “no listeners” and does not trigger a scan.
+
+The Hub process must be allowed to execute `lsof` for the fast path; denial is not fatal.
+
+`LocalServerDiscoveryTests` includes an optional live test (`testLiveDiscoveryFindsLocalRepoOSWhenServingOn7559`)
+that skips unless `GET http://localhost:7559/api/health` reports `ok: true`.
+
 ## Project boundary
 
 `macos/RepoOSHub.xcodeproj` is the native build entry point. Root commands such
