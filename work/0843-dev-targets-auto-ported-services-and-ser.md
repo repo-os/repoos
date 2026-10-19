@@ -51,3 +51,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T09:41:53Z · model_override
 - 2026-10-19T09:41:55Z · status ready→active, branch
 - 2026-10-19T09:53:59Z · message_queued at 2026-10-19T09:53:59.706Z
+- 2026-10-19T09:53:59Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
