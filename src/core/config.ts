@@ -558,7 +558,11 @@ export function parseFlatToml(text: string): Record<string, unknown> {
   while (idx < rawLines.length) {
     const rawLine = rawLines[idx];
     idx++;
-    const line = stripTomlComment(rawLine).trim();
+    // Keep the raw (comment-stripped) form so a multi-line string's opening
+    // line keeps significant trailing whitespace; the trimmed form is only for
+    // recognizing headers and blank lines.
+    const stripped = stripTomlComment(rawLine);
+    const line = stripped.trim();
     if (!line) continue;
     const arrSec = line.match(/^\[\[([^\]]+)\]\]$/);
     if (arrSec) {
@@ -576,15 +580,18 @@ export function parseFlatToml(text: string): Record<string, unknown> {
       arrayTable = null;
       continue;
     }
-    const kvMatch = line.match(/^([A-Za-z0-9_.-]+)\s*=\s*(.*)$/);
+    const kvMatch = stripped.match(/^\s*([A-Za-z0-9_.-]+)\s*=\s*(.*)$/);
     if (!kvMatch) continue;
     const key = section ? `${section}.${kvMatch[1]}` : kvMatch[1];
-    let valueStr = kvMatch[2]!.trim();
+    // Leading whitespace after `=` is insignificant; trailing whitespace is
+    // string content for a multi-line value, so only trim before non-multi-line
+    // decoding.
+    const multiStart = kvMatch[2]!.trimStart();
 
     // Multi-line literal (''') or basic (""") strings: accumulate from raw lines
-    if (valueStr.startsWith("'''") || valueStr.startsWith('"""')) {
-      const delimiter = valueStr.startsWith("'''") ? "'''" : '"""';
-      let raw = valueStr;
+    if (multiStart.startsWith("'''") || multiStart.startsWith('"""')) {
+      const delimiter = multiStart.startsWith("'''") ? "'''" : '"""';
+      let raw = multiStart;
       let close = findTomlMultiLineClose(raw, 3, delimiter);
       // The closing delimiter may sit on a later line. Continuation lines are
       // string content, so they are consumed verbatim — even one that looks
@@ -604,6 +611,7 @@ export function parseFlatToml(text: string): Record<string, unknown> {
       continue;
     }
 
+    let valueStr = kvMatch[2]!.trim();
     let val: unknown = valueStr;
     const s = val as string;
     if (s.startsWith("[") && s.endsWith("]")) {

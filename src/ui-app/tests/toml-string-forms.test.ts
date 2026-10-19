@@ -54,6 +54,30 @@ describe("multi-line TOML strings", () => {
     expect(parsed.x).toBe('it\'s "great"');
   });
 
+  it("keeps significant whitespace on a multi-line string's opening line", () => {
+    // The value is trimmed only for recognition, not before decoding: trailing
+    // spaces before the first newline are string content (review finding).
+    expect(parseFlatToml('x = """first   \nsecond"""').x).toBe("first   \nsecond");
+    expect(parseFlatToml("x = '''first   \nsecond'''").x).toBe("first   \nsecond");
+  });
+
+  it("keeps whitespace before the closing delimiter and on continuation lines", () => {
+    expect(parseFlatToml("x = '''a   '''").x).toBe("a   ");
+    expect(parseFlatToml('x = """a   """').x).toBe("a   ");
+    expect(parseFlatToml("x = '''\n  indented\n\ttabbed\n'''").x).toBe("  indented\n\ttabbed\n");
+  });
+
+  it("still trims insignificant whitespace around a single-line value", () => {
+    expect(parseFlatToml('x = "a"   ').x).toBe("a");
+    expect(parseFlatToml("x =   'a'").x).toBe("a");
+    expect(parseFlatToml("x =   42   ").x).toBe(42);
+  });
+
+  it("keeps whitespace inside a single-line basic/literal string", () => {
+    expect(parseFlatToml('x = "a   "').x).toBe("a   ");
+    expect(parseFlatToml("x = 'a   '").x).toBe("a   ");
+  });
+
   it("handles closing-quote runs at the TOML limit", () => {
     expect(parseFlatToml("x = ''''''").x).toBe("");
     expect(parseFlatToml("x = '''''''").x).toBe("'");
