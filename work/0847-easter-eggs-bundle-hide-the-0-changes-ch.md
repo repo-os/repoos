@@ -2,9 +2,10 @@
 id: "0847"
 title: "Easter eggs bundle: hide the \"0 changes\" chip on task cards"
 type: chore
-status: active
+status: done
 priority: p3
 area: web
+merged_commit: d8b8bc84d6020aba373f6d87081feb878a9b29d3
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-hide-the-0-changes-ch
@@ -13,9 +14,10 @@ model_override: default
 review_cli_override: pi
 review_model_override: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
 created_at: "2026-10-19T07:50:02Z"
-updated_at: "2026-10-19T15:05:24Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 198900f260fff3bc517084e2a76db31cad891aec
+updated_at: "2026-10-19T16:19:54Z"
+last_close_out_gate_ms: 344353
+last_close_out_gate_at: "2026-10-19T16:00:42.308Z"
+review_passes: 1
 ---
 ## Items
 
@@ -157,3 +159,12 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T15:00:13Z · handoff failed · remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate
 - 2026-10-19T15:05:23Z · message_queued at 2026-10-19T15:05:23.921Z
 - 2026-10-19T15:05:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-19T15:06:36Z · body
+- 2026-10-19T15:08:46Z · body
+- 2026-10-19T15:25:20Z · body
+- 2026-10-19T15:39:48Z · body
+- 2026-10-19T15:48:13Z · status active→review
+- 2026-10-19T15:49:35Z · note: review pass 1: good to go
+- 2026-10-19T16:00:42Z · close-out gate completed in 344s
+- 2026-10-19T16:01:17Z · status review→done, release:success
+- 2026-10-19T16:19:54Z · message_overdue: still queued after 60m without being delivered
