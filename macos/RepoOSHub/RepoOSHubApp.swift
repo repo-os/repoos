@@ -206,6 +206,7 @@ private struct HubWindowAppearanceConfigurator: NSViewRepresentable {
 func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
     window.titleVisibility = .hidden
     window.titlebarAppearsTransparent = true
+    window.titlebarSeparatorStyle = .none
     window.styleMask.insert(.fullSizeContentView)
     window.toolbar?.isVisible = false
 
