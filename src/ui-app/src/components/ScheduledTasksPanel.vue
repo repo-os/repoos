@@ -374,7 +374,9 @@ onMounted(() => {
           <div class="drawer-head-title">
             <DialogTitle>{{ editingId ? "Edit schedule" : "New schedule" }}</DialogTitle>
             <DialogDescription class="sr-only">
-              {{ editingId ? "Edit a scheduled task template" : "Create a scheduled task template" }}
+              {{
+                editingId ? "Edit a scheduled task template" : "Create a scheduled task template"
+              }}
             </DialogDescription>
           </div>
           <DialogClose class="close-x" data-testid="schedule-editor-close">
@@ -418,11 +420,7 @@ onMounted(() => {
           </div>
           <div v-if="form.cadence === 'once'" class="field">
             <label for="sched-run-at">Run at (ISO)</label>
-            <Input
-              id="sched-run-at"
-              v-model="form.runAt"
-              placeholder="2026-10-20T09:00:00Z"
-            />
+            <Input id="sched-run-at" v-model="form.runAt" placeholder="2026-10-20T09:00:00Z" />
           </div>
           <div v-if="form.cadence === 'weekly'" class="field">
             <label>Day of week</label>
@@ -449,7 +447,11 @@ onMounted(() => {
           </p>
           <div class="field">
             <label for="sched-task-title">Task title</label>
-            <Input id="sched-task-title" v-model="form.taskTitle" placeholder="Same as schedule name" />
+            <Input
+              id="sched-task-title"
+              v-model="form.taskTitle"
+              placeholder="Same as schedule name"
+            />
           </div>
           <div class="field">
             <label for="sched-body">Task specification</label>
@@ -478,11 +480,7 @@ onMounted(() => {
             </div>
             <div class="field">
               <label for="sched-assignee">Assignee</label>
-              <Input
-                id="sched-assignee"
-                v-model="form.taskAssignedTo"
-                placeholder="ai or human"
-              />
+              <Input id="sched-assignee" v-model="form.taskAssignedTo" placeholder="ai or human" />
             </div>
           </div>
           <div class="field">

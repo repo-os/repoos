@@ -211,7 +211,9 @@ describe("schedule CRUD from the panel", () => {
     await flushPromises();
     const modal = document.body.querySelector(".delete-confirm-modal")!;
     expect(modal).toBeTruthy();
-    const confirmBtn = modal.querySelectorAll(".delete-confirm-actions button")[1] as HTMLButtonElement;
+    const confirmBtn = modal.querySelectorAll(
+      ".delete-confirm-actions button",
+    )[1] as HTMLButtonElement;
     confirmBtn.click();
     await flushPromises();
     expect(repo.deleteSchedule).toHaveBeenCalledWith("0099");
