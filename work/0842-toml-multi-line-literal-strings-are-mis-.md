@@ -117,3 +117,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T18:32:50Z · body
 - 2026-10-19T18:37:16Z · body
 - 2026-10-19T18:46:25Z · message_queued at 2026-10-19T18:46:25.194Z
+- 2026-10-19T18:46:25Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
