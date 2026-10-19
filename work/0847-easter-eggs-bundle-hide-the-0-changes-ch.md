@@ -2,14 +2,14 @@
 id: "0847"
 title: "Easter eggs bundle: hide the \"0 changes\" chip on task cards"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-19T07:50:02Z"
-updated_at: "2026-10-19T08:05:52Z"
+updated_at: "2026-10-19T09:42:07Z"
 ---
 ## Items
 
@@ -74,3 +74,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T08:05:47Z · note: bundle edit E2
 - 2026-10-19T08:05:52Z · body: E2 · Empty Draft column shows a dash, not help text (added 1)
 - 2026-10-19T08:05:52Z · note: bundle edit E2
+- 2026-10-19T09:42:07Z · status inbox→ready
