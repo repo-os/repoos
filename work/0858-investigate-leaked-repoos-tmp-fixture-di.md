@@ -1,0 +1,34 @@
+---
+id: "0858"
+title: "Investigate leaked repoos-* tmp fixture dirs ([global-reap] warning)"
+type: feature
+status: inbox
+priority: p3
+area: core
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-19T19:04:41Z"
+updated_at: "2026-10-19T19:04:41Z"
+---
+## Problem
+During a full local `bun run test` bulk pass (2026-10-20, task #0843 session), the test harness printed:
+
+`[global-reap] removed 74 stale repoos-* fixture dirs from the tmpdir — a test is likely leaking.`
+
+The wrapper reaped them, but 74 leaked dirs means at least one suite creates fixture dirs it never cleans up (mkdtemp without afterEach rm, or a crashed worker mid-suite). Under pool contention a leaking fixture can also break a later run that assumes a clean tmpdir.
+
+## Desired UX
+The full suite leaves ~zero stale repoos-* fixture dirs behind; the [global-reap] warning either never fires or fires on a handful of dirs after a crashed worker.
+
+## Acceptance criteria
+- Identify which suite(s) leak (the warning's advice: `ls "$TMPDIR" | grep '^repoos-' | sed 's/-[A-Za-z0-9]\{6\}.*//' | sort | uniq -c | sort -rn`).
+- Fix the leaking fixture cleanup (afterEach/afterAll rm or try/finally around the worker body).
+- A full bulk pass completes without the [global-reap] warning (or documents the expected residual).
+
+## Notes for AI
+Repro: run `bun run test` on a loaded machine; the warning prints after the bulk pass. Suspects: suites using mkdtempSync under src/ui-app/tests (remote-host-pool, remote-validation) — both are subprocess-heavy and run long.
+
+## Activity
+
+- 2026-10-19T19:04:41Z · created · njachowski@gmail.com
