@@ -298,25 +298,6 @@ export function allAllowlistPairsPaused(
   return rows.length > 0 && availableAllowPairs(rows, now).length === 0;
 }
 
-/** The soonest future pause deadline across the allowlist, or null. */
-export function nextPauseExpiry(
-  rows: AgentModelAllowRow[],
-  now: number = Date.now(),
-): number | null {
-  let next: number | null = null;
-  const consider = (until: string | undefined): void => {
-    if (!until) return;
-    const at = Date.parse(until);
-    if (!Number.isFinite(at) || at <= now) return;
-    if (next === null || at < next) next = at;
-  };
-  for (const row of rows) {
-    consider(row.pausedUntil);
-    for (const pause of row.pausedModels ?? []) consider(pause.pausedUntil);
-  }
-  return next;
-}
-
 /** A short, human-readable rendering of every allowed pair, for error copy. */
 export function describeAllowlistPairs(
   rows: AgentModelAllowRow[],
