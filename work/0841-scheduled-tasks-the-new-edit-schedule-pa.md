@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 195979
-last_close_out_gate_at: "2026-10-19T00:45:22.211Z"
 id: "0841"
 title: "Scheduled tasks: the New/Edit schedule panel is unusable; rebuild it on the standard side-panel shell"
 type: bug
-status: review
+status: done
 priority: p1
 area: web
+merged_commit: 7465beb9e939b88a6e2932c868d99c78806e360d
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/scheduled-tasks-the-new-edit-schedule-pa
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T00:15:48Z"
-updated_at: "2026-10-19T00:45:22Z"
+updated_at: "2026-10-19T00:46:02Z"
+last_close_out_gate_ms: 195979
+last_close_out_gate_at: "2026-10-19T00:45:22.211Z"
 review_passes: 1
 ---
 ## Problem
@@ -80,4 +81,4 @@ Start from NewDocPanel.vue and NewStoryPanel.vue as the model; reuse their struc
 - 2026-10-19T00:36:57Z · status active→review
 - 2026-10-19T00:37:58Z · note: review pass 1: good to go
 - 2026-10-19T00:45:22Z · close-out gate completed in 196s
-
+- 2026-10-19T00:46:02Z · status review→done, release:success
