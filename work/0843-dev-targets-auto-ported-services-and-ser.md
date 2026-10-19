@@ -3,9 +3,6 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — artifact targets can hide a companion-service crash, and failed service startup appears stopped."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -146,3 +143,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T19:09:12Z · body
 - 2026-10-19T19:14:31Z · status active→review
 - 2026-10-19T19:16:29Z · note: review pass 7: needs some work
+- 2026-10-19T19:16:29Z · needs_input
