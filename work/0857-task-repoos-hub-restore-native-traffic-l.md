@@ -2,7 +2,7 @@
 id: "0857"
 title: Restore native macOS window controls
 type: feature
-status: active
+status: review
 priority: p2
 area: [macos, desktop]
 assigned_to: ai
@@ -103,4 +103,4 @@ My overall assessment: The new expanded sidebar already looks substantially clea
 - 2026-10-19T18:52:21Z · screenshots
 - 2026-10-19T18:52:48Z · screenshots
 - 2026-10-19T18:53:45Z · body
-- 2026-10-19T19:02:02Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-19T19:02:02Z · status active→review
