@@ -22,10 +22,10 @@
  * file that adopts the same fixture convention — so this gap can't
  * silently reopen per-file again.
  */
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { reapStaleFixtures } from "../helpers";
+import { killSpawnedLogs, reapStaleFixtures, STALE_FIXTURE_AGE_MS } from "../helpers";
 
 /**
  * Every file's isolated tmpdir (see tmp-isolation.ts) lives under this run's
@@ -33,6 +33,7 @@ import { reapStaleFixtures } from "../helpers";
  * dirs a worker left behind after a failed test or abrupt exit.
  */
 let runRoot: string | undefined;
+let runRootHeartbeat: ReturnType<typeof setInterval> | undefined;
 
 export async function setup(): Promise<void> {
   const removed = reapStaleFixtures("repoos-");
@@ -53,12 +54,33 @@ export async function setup(): Promise<void> {
   // Workers use this run-scoped parent for their per-file temp roots.
   runRoot = mkdtempSync(join(tmpdir(), "repoos-vitest-"));
   process.env.REPOOS_TEST_TMP_ROOT = runRoot;
+  // Nested fixture writes do not necessarily update the run root's mtime. Keep
+  // a long-running worker's root younger than the stale-age gate so a
+  // concurrent test run cannot reap its live fixtures.
+  runRootHeartbeat = setInterval(() => {
+    if (!runRoot) return;
+    const now = new Date();
+    try {
+      utimesSync(runRoot, now, now);
+    } catch {
+      /* teardown may already have removed it */
+    }
+  }, Math.floor(STALE_FIXTURE_AGE_MS / 3));
+  runRootHeartbeat.unref();
 }
 
-/** Runs once after every worker has exited (normal completion or test failure). */
-export async function teardown(): Promise<void> {
-  const root = runRoot ?? process.env.REPOOS_TEST_TMP_ROOT;
+/** Kill recorded fixture processes, then remove the root after every worker exits. */
+export async function teardown(rootOverride?: string): Promise<void> {
+  const root = rootOverride ?? runRoot ?? process.env.REPOOS_TEST_TMP_ROOT;
   if (!root) return;
+  if (!rootOverride && runRootHeartbeat) {
+    clearInterval(runRootHeartbeat);
+    runRootHeartbeat = undefined;
+  }
+  // Per-file afterAll normally removes fixtures, but a killed worker can leave
+  // both its spawns.log and live fake agents here. Reap pids before deleting
+  // the only remaining record of them.
+  killSpawnedLogs(root);
   rmSync(root, { recursive: true, force: true });
-  delete process.env.REPOOS_TEST_TMP_ROOT;
+  if (!rootOverride) delete process.env.REPOOS_TEST_TMP_ROOT;
 }

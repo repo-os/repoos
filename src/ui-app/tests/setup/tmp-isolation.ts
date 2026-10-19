@@ -13,7 +13,7 @@ process.env.TEMP = root;
 
 afterAll(() => {
   // The next file in this worker starts from the run root. Global teardown
-  // removes it after all workers exit, including anything a child left behind.
+  // kills pids from any surviving spawns.log, then removes the run root.
   process.env.TMPDIR = base;
   process.env.TMP = base;
   process.env.TEMP = base;

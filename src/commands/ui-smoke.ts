@@ -106,6 +106,8 @@ async function runUISmokeTest(): Promise<void> {
   } catch (err) {
     try {
       await server.close();
+    } catch (closeErr) {
+      console.warn("UI smoke server cleanup also failed:", closeErr);
     } finally {
       rmSync(fixture, { recursive: true, force: true });
     }

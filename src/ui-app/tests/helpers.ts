@@ -91,7 +91,7 @@ function killSpawnedFromLog(path: string): void {
 }
 
 /** Find spawn logs a few levels below a stale root without following symlinks. */
-function killSpawnedLogs(root: string, remainingDepth = 4): void {
+export function killSpawnedLogs(root: string, remainingDepth = 4): void {
   killSpawnedFromLog(join(root, "spawns.log"));
   if (remainingDepth === 0) return;
   try {
