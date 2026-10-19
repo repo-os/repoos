@@ -285,8 +285,8 @@ human-approved subset.
   also prints the allowlist.
 - **Pause** an agent or a single model instead of removing it when a provider
   runs out of credit or is rate-limited. A paused row keeps its Paused chip,
-  optional resume date and reason, and is never selected — engine/reviewer/PM/
-  CTO defaults, Start, auto-dispatch, failover and agent drivers all skip it and
+  optional resume date and reason, and is never selected — engineer/reviewer/
+  PM/CTO defaults, Start, auto-dispatch, failover and agent drivers all skip it and
   fall back to the next allowed pair, recording the swap and reason in the task
   activity log. If every allowed pair is paused, starting a task fails with
   "All allowed agent+model pairs are paused". Pause from the row or model chip
