@@ -2,6 +2,27 @@ import XCTest
 @testable import RepoOSHub
 
 final class LocalServerDiscoveryTests: XCTestCase {
+    func testListeningPortEnumeratorUsesLsofWhenAvailable() {
+        let ports = LocalListeningPortEnumerator.listeningPorts(in: 7000 ... 7999)
+        XCTAssertNotNil(ports, "lsof should be available on macOS CI and dev machines")
+    }
+
+    func testLiveDiscoveryFindsLocalRepoOSWhenServingOn7559() async throws {
+        let origin = URL(string: "http://localhost:7559")!
+        let probe = RepoOSHealthChecker(timeout: 1.25)
+        guard case .success(let projectName, _, _) = await probe.checkHealth(origin: origin) else {
+            throw XCTSkip("No RepoOS server on localhost:7559")
+        }
+
+        let found = await LocalServerDiscovery.discover(knownLocalPorts: [])
+        let match = found.first { $0.port == 7559 }
+        XCTAssertNotNil(match)
+        XCTAssertEqual(match?.originString, "localhost:7559")
+        if let projectName {
+            XCTAssertEqual(match?.projectName, projectName)
+        }
+    }
+
     func testParseLsofFieldOutputExtractsPortsInRange() {
         let sample = """
         p1234
