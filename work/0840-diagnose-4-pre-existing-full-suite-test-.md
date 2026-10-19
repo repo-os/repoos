@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T22:39:47Z"
-updated_at: "2026-10-19T02:46:23Z"
+updated_at: "2026-10-19T02:46:26Z"
 ---
 ## Problem
 `bun run test` (full suite) fails 4 tests on the work machine, reproducibly — twice in full-suite runs AND in isolation on an idle machine via `bun run test -- --failed-first <files>`:
@@ -49,9 +49,13 @@ No UI change intended. A maintainer running bun run test on this machine gets a 
 - bun run test passes fully on this machine, and the runner's full-suite gate still passes.
 - If the bird-quick-trail failures come from #0822's artwork or CSS, fix the artwork (the reserved width/height envelope), do not change the approved geometry.
 
+## Notes for AI
+Start from the Problem and Attribution sections above (the #0834 engineer already proved the failures are not caused by #0834/#0664 and reproduce at their merge-base). First reproduce on current main in a clean worktree. Files: src/ui-app/tests/activity-indicator-motion.test.ts, src/ui-app/tests/agent-contract.test.ts, src/ui-app/src/components/ActivityIndicator.vue, src/core/activity-animation.ts, src/core/agent-contract.ts, the bird-quick-trail CSS in style.css. Do not touch repoos.toml. Source: #0834 handoff session 2026-10-19.
+
 ## Activity
 
 - 2026-10-18T22:39:47Z · created · njachowski@gmail.com
 - 2026-10-18T22:39:49Z · needs_input
 - 2026-10-19T02:46:20Z · body: Desired UX (added)
 - 2026-10-19T02:46:23Z · body: Acceptance criteria (added)
+- 2026-10-19T02:46:26Z · body: Notes for AI (added)
