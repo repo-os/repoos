@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T22:39:47Z"
-updated_at: "2026-10-18T22:39:49Z"
+updated_at: "2026-10-19T02:46:20Z"
 ---
 ## Problem
 `bun run test` (full suite) fails 4 tests on the work machine, reproducibly — twice in full-suite runs AND in isolation on an idle machine via `bun run test -- --failed-first <files>`:
@@ -38,7 +38,11 @@ Not caused by #0834 or its base branch #0664:
 - Suspect either a machine-environment difference (WebKit/fonts/timing on this Mac) or a landed regression nobody's full run has caught. Start by reproducing on `main` itself and diffing the runner environment.
 Source: #0834 handoff session 2026-10-19.
 
+## Desired UX
+No UI change intended. A maintainer running bun run test on this machine gets a green suite, and CI/remote runs stay green. If the failures are real regressions (the bird-quick-trail artwork overflowing its width at size 20, reduced-motion marks collapsing to height 0, the agent-contract cancellation seam reporting ok instead of 'not exercised'), they are fixed in the product code; if they are environment-dependent, the tests are made robust without weakening what they check.
+
 ## Activity
 
 - 2026-10-18T22:39:47Z · created · njachowski@gmail.com
 - 2026-10-18T22:39:49Z · needs_input
+- 2026-10-19T02:46:20Z · body: Desired UX (added)
