@@ -2,7 +2,7 @@
 id: "0664"
 title: Upload state + retry UX
 type: feature
-status: review
+status: ready
 priority: p1
 area: ui
 story: Cloud attachment storage
