@@ -2,14 +2,14 @@
 id: "0844"
 title: "Hub: Add server never lists locally running RepoOS servers (discovery probe times out)"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: macos
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-19T05:15:39Z"
-updated_at: "2026-10-19T05:15:39Z"
+updated_at: "2026-10-19T05:15:51Z"
 ---
 ## Problem
 In RepoOS Hub, **Add server** is meant to show a "Running locally" list of RepoOS instances (LocalServerDiscovery.swift, added in d76dbd24c) so you can click one to add it. In practice the sheet shows the spinner for about a second and then nothing appears, even with servers clearly running (reported 2026-10-19: a new project on http://127.0.0.1:7559/ never shows, while 7171 is also up).
@@ -37,3 +37,4 @@ Start from macos/RepoOSHub/LocalServerDiscovery.swift, ServerEditorSheet.swift (
 ## Activity
 
 - 2026-10-19T05:15:39Z · created · njachowski@gmail.com
+- 2026-10-19T05:15:51Z · status inbox→ready
