@@ -121,7 +121,33 @@ final class HubAppAppearanceTests: XCTestCase {
         XCTAssertNotNil(window.standardWindowButton(.closeButton))
         XCTAssertNotNil(window.standardWindowButton(.miniaturizeButton))
         XCTAssertNotNil(window.standardWindowButton(.zoomButton))
+        // The transparent titlebar must never take the traffic lights with it
+        // (#0857).
+        XCTAssertEqual(window.standardWindowButton(.closeButton)?.isHidden, false)
+        XCTAssertEqual(window.standardWindowButton(.miniaturizeButton)?.isHidden, false)
+        XCTAssertEqual(window.standardWindowButton(.zoomButton)?.isHidden, false)
         XCTAssertEqual(window.toolbar?.isVisible, false)
+    }
+
+    /// The collapsed-sidebar reveal tab is a narrow, edge-attached chevron with
+    /// the required accessibility label (#0857).
+    func testSidebarRevealTabSpecification() {
+        XCTAssertGreaterThanOrEqual(HubSidebarRevealTabMetrics.width, 22)
+        XCTAssertLessThanOrEqual(HubSidebarRevealTabMetrics.width, 26)
+        XCTAssertEqual(HubSidebarRevealTabMetrics.systemImage, "chevron.right")
+        XCTAssertEqual(HubSidebarRevealTabMetrics.accessibilityLabel, "Show Sidebar")
+    }
+
+    /// Rounded on the trailing edge only, so the tab sits flush against the
+    /// window's left edge.
+    func testSidebarRevealTabShapeIsSquareOnLeadingEdge() {
+        let rect = CGRect(x: 0, y: 0, width: HubSidebarRevealTabMetrics.width, height: HubSidebarRevealTabMetrics.height)
+        let path = HubSidebarRevealTabShape(cornerRadius: HubSidebarRevealTabMetrics.cornerRadius)
+            .path(in: rect)
+
+        XCTAssertTrue(path.contains(CGPoint(x: rect.minX + 1, y: rect.minY + 1)))
+        XCTAssertFalse(path.contains(CGPoint(x: rect.maxX - 1, y: rect.minY + 1)))
+        XCTAssertFalse(path.contains(CGPoint(x: rect.maxX - 1, y: rect.maxY - 1)))
     }
 
     func testDockIconFollowsChosenAppearanceRegardlessOfSystem() throws {

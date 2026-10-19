@@ -18,21 +18,26 @@ struct ContentView: View {
             ServerSidebarView(columnVisibility: columnVisibility)
         } detail: {
             WorkspaceDetailView()
-                .overlay(alignment: .topLeading) {
-                    if isSidebarCollapsed {
-                        HubSidebarRevealButton {
-                            isSidebarCollapsed = false
-                        }
-                        .padding(.leading, 10)
-                        .padding(.top, 8)
-                    }
-                }
         }
-        // The Hub has no native titlebar or toolbar row: the sidebar runs to
+        // The reveal tab lives on the split view, not the detail column, so it
+        // sits flush against the window's left edge when the sidebar collapses
+        // instead of inheriting the detail column's leading inset (#0857).
+        .overlay(alignment: .topLeading) {
+            if isSidebarCollapsed {
+                HubSidebarRevealTab {
+                    isSidebarCollapsed = false
+                }
+                .padding(.top, 8)
+            }
+        }
+        // The Hub has no visible titlebar or toolbar row: the sidebar runs to
         // the window's top edge and the workspace fills the reclaimed space.
-        // Traffic lights, dragging, resizing, minimize, and fullscreen stay
-        // native because this is still an ordinary titled NSWindow (#0855).
-        .toolbar(.hidden, for: .windowToolbar)
+        // The titlebar stays transparent and button-only so the native
+        // traffic lights remain visible over the sidebar (#0855, #0857).
+        // Never use `.toolbar(.hidden, for: .windowToolbar)` here: SwiftUI
+        // hides the whole titlebar container with it, taking the native
+        // traffic lights with it. The AppKit configurator hides only the
+        // toolbar row.
         // NavigationSplitView leaves a narrow native frame around the sidebar
         // and its bottom inset. Keep that exposed frame on the same surface.
         .background {
