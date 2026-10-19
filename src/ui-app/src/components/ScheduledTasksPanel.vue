@@ -1,10 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import { X } from "lucide-vue-next";
 import type { TaskSchedule } from "../../../core/schedule.js";
-import { api, JSON_OPTS } from "../api";
+import {
+  computeNextRun,
+  formatNextRunPreview,
+  isValidIanaTimezone,
+  parseTimeOfDay,
+  type ScheduleTimingInput,
+} from "../../../core/schedule-time.js";
 import { useRepoStore } from "../stores/repo";
+import { useUiStore } from "../stores/ui";
 import Button from "./ui/button.vue";
+import Input from "./ui/input.vue";
 import Switch from "./ui/switch.vue";
 import Select from "./ui/select/root.vue";
 import SelectContent from "./ui/select/content.vue";
@@ -14,11 +23,14 @@ import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
 import DeleteConfirmDialog from "./DeleteConfirmDialog.vue";
 import Dialog from "./ui/dialog/root.vue";
+import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
+import DialogDescription from "./ui/dialog/description.vue";
 import DialogTitle from "./ui/dialog/title.vue";
 import DialogOverlay from "./ui/dialog/overlay.vue";
 
 const repo = useRepoStore();
+const ui = useUiStore();
 const router = useRouter();
 
 const loading = ref(false);
@@ -27,7 +39,6 @@ const editorOpen = ref(false);
 const editingId = ref<string | null>(null);
 const deleteTarget = ref<TaskSchedule | null>(null);
 const preview = ref("—");
-const previewLoading = ref(false);
 const formError = ref("");
 
 const form = ref({
@@ -49,6 +60,56 @@ const form = ref({
 });
 
 const schedules = computed(() => repo.schedules);
+
+function timingInput(): ScheduleTimingInput {
+  return {
+    cadence: form.value.cadence,
+    timezone: form.value.timezone.trim(),
+    timeOfDay: form.value.timeOfDay,
+    runAt: form.value.cadence === "once" ? form.value.runAt : undefined,
+    dayOfWeek: form.value.cadence === "weekly" ? form.value.dayOfWeek : undefined,
+  };
+}
+
+function timingValidationError(): string | null {
+  const tz = form.value.timezone.trim();
+  if (!tz) return "Timezone is required";
+  if (!isValidIanaTimezone(tz)) {
+    return "Timezone must be a valid IANA name (e.g. Asia/Singapore)";
+  }
+  if (!parseTimeOfDay(form.value.timeOfDay)) {
+    return "Local time must be HH:MM (24-hour)";
+  }
+  if (
+    form.value.cadence === "weekly" &&
+    (form.value.dayOfWeek == null || form.value.dayOfWeek < 0 || form.value.dayOfWeek > 6)
+  ) {
+    return "Day of week is required for weekly schedules";
+  }
+  if (form.value.cadence === "once") {
+    if (!form.value.runAt.trim()) return "Run at is required for one-time schedules";
+    if (Number.isNaN(Date.parse(form.value.runAt))) {
+      return "Run at must be a valid ISO timestamp";
+    }
+  }
+  return null;
+}
+
+const timezoneError = computed(() => {
+  const tz = form.value.timezone.trim();
+  if (!tz) return "Timezone is required";
+  if (!isValidIanaTimezone(tz)) {
+    return "Timezone must be a valid IANA name (e.g. Asia/Singapore)";
+  }
+  return "";
+});
+
+const formIsValid = computed(() => {
+  if (!form.value.title.trim()) return false;
+  const taskTitle = (form.value.taskTitle || form.value.title).trim();
+  if (!taskTitle) return false;
+  return timingValidationError() === null;
+});
 
 function resetForm(): void {
   form.value = {
@@ -76,6 +137,7 @@ function openCreate(): void {
   editingId.value = null;
   resetForm();
   editorOpen.value = true;
+  refreshPreview();
 }
 
 function openEdit(row: TaskSchedule): void {
@@ -99,22 +161,21 @@ function openEdit(row: TaskSchedule): void {
   };
   formError.value = "";
   editorOpen.value = true;
-  void refreshPreview();
+  refreshPreview();
 }
 
-async function refreshPreview(): Promise<void> {
-  previewLoading.value = true;
-  try {
-    const data = await api<{ preview: string }>(
-      "/api/schedules/preview",
-      JSON_OPTS("POST", payload()),
-    );
-    preview.value = data.preview || "—";
-  } catch {
-    preview.value = "Could not preview";
-  } finally {
-    previewLoading.value = false;
+function refreshPreview(): void {
+  const err = timingValidationError();
+  if (err) {
+    preview.value = err;
+    return;
   }
+  const next = computeNextRun(timingInput(), new Date(), false);
+  if (!next) {
+    preview.value = "No upcoming run with these settings";
+    return;
+  }
+  preview.value = formatNextRunPreview(next, form.value.timezone.trim());
 }
 
 watch(
@@ -126,9 +187,19 @@ watch(
     form.value.dayOfWeek,
   ],
   () => {
-    if (editorOpen.value) void refreshPreview();
+    if (editorOpen.value) refreshPreview();
   },
 );
+
+function setEditorOpen(v: boolean): void {
+  editorOpen.value = v;
+}
+
+function onOpenAutoFocus(e: Event): void {
+  if (!editorOpen.value) return;
+  e.preventDefault();
+  requestAnimationFrame(() => document.getElementById("sched-title")?.focus());
+}
 
 function payload() {
   return {
@@ -151,6 +222,7 @@ function payload() {
 }
 
 async function saveSchedule(): Promise<void> {
+  if (!formIsValid.value) return;
   formError.value = "";
   try {
     if (editingId.value) {
@@ -201,8 +273,17 @@ function openTask(id: string): void {
   void router.push({ path: "/work", query: { task: id } });
 }
 
+function consumeShotEditorOpen(): void {
+  if (!ui.scheduleEditorShotOpen) return;
+  ui.scheduleEditorShotOpen = false;
+  openCreate();
+}
+
+watch(() => ui.scheduleEditorShotOpen, consumeShotEditorOpen);
+
 onMounted(() => {
   void repo.refreshSchedules();
+  consumeShotEditorOpen();
 });
 </script>
 
@@ -211,7 +292,13 @@ onMounted(() => {
     <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
       <span class="live-dot" style="background: var(--cyan)"></span>
       Scheduled tasks
-      <Button variant="outline" size="sm" style="margin-left: 12px" @click="openCreate">
+      <Button
+        variant="outline"
+        size="sm"
+        style="margin-left: 12px"
+        data-testid="new-schedule"
+        @click="openCreate"
+      >
         New schedule
       </Button>
     </div>
@@ -231,13 +318,18 @@ onMounted(() => {
         :key="row.id"
         class="schedule-card"
         :class="{ off: !row.enabled }"
+        :data-testid="`schedule-card-${row.id}`"
       >
         <div class="schedule-card-head">
           <div>
             <strong>{{ row.title }}</strong>
             <span class="schedule-id">#{{ row.id }}</span>
           </div>
-          <Switch :checked="row.enabled" @update:checked="(v) => toggleEnabled(row, v)" />
+          <Switch
+            :data-testid="`schedule-enabled-${row.id}`"
+            :checked="row.enabled"
+            @update:checked="(v) => toggleEnabled(row, v)"
+          />
         </div>
         <dl class="kv-rows schedule-kv">
           <dt>Cadence</dt>
@@ -269,114 +361,143 @@ onMounted(() => {
       </article>
     </div>
 
-    <Dialog :open="editorOpen" @update:open="(v) => (editorOpen = v)">
+    <Dialog :open="editorOpen" @update:open="setEditorOpen">
       <DialogOverlay />
-      <DialogContent class="schedule-editor">
-        <DialogTitle>{{ editingId ? "Edit schedule" : "New schedule" }}</DialogTitle>
-        <div class="field">
-          <label>Schedule name</label>
-          <input v-model="form.title" class="ff-textarea" type="text" />
+      <DialogContent
+        data-testid="schedule-editor-drawer"
+        :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
+        @open-auto-focus="onOpenAutoFocus"
+      >
+        <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
+
+        <div class="drawer-head">
+          <div class="drawer-head-title">
+            <DialogTitle>{{ editingId ? "Edit schedule" : "New schedule" }}</DialogTitle>
+            <DialogDescription class="sr-only">
+              {{
+                editingId ? "Edit a scheduled task template" : "Create a scheduled task template"
+              }}
+            </DialogDescription>
+          </div>
+          <DialogClose class="close-x" data-testid="schedule-editor-close">
+            <X class="size-[15px]" />
+          </DialogClose>
         </div>
-        <div class="field">
-          <label>Cadence</label>
-          <Select v-model="form.cadence">
-            <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              <SelectViewport>
-                <SelectItem value="once">One-time</SelectItem>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-              </SelectViewport>
-            </SelectContent>
-          </Select>
-        </div>
-        <div class="field">
-          <label>Timezone (IANA)</label>
-          <input v-model="form.timezone" class="ff-textarea" type="text" />
-        </div>
-        <div v-if="form.cadence !== 'once'" class="field">
-          <label>Local time (HH:MM)</label>
-          <input v-model="form.timeOfDay" class="ff-textarea" type="text" />
-        </div>
-        <div v-if="form.cadence === 'once'" class="field">
-          <label>Run at (ISO)</label>
-          <input
-            v-model="form.runAt"
-            class="ff-textarea"
-            type="text"
-            placeholder="2026-10-20T09:00:00Z"
-          />
-        </div>
-        <div v-if="form.cadence === 'weekly'" class="field">
-          <label>Day of week</label>
-          <Select v-model="form.dayOfWeek">
-            <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              <SelectViewport>
-                <SelectItem :value="0">Sunday</SelectItem>
-                <SelectItem :value="1">Monday</SelectItem>
-                <SelectItem :value="2">Tuesday</SelectItem>
-                <SelectItem :value="3">Wednesday</SelectItem>
-                <SelectItem :value="4">Thursday</SelectItem>
-                <SelectItem :value="5">Friday</SelectItem>
-                <SelectItem :value="6">Saturday</SelectItem>
-              </SelectViewport>
-            </SelectContent>
-          </Select>
-        </div>
-        <p class="ff-notice">
-          Next run preview:
-          <strong>{{ previewLoading ? "…" : preview }}</strong>
-        </p>
-        <div class="field">
-          <label>Task title</label>
-          <input v-model="form.taskTitle" class="ff-textarea" type="text" />
-        </div>
-        <div class="field">
-          <label>Task specification</label>
-          <textarea v-model="form.body" class="ff-textarea" rows="6" />
-        </div>
-        <div class="field-row">
+
+        <div class="drawer-body">
           <div class="field">
-            <label>Type</label>
-            <input v-model="form.taskType" class="ff-textarea" type="text" />
+            <label for="sched-title">Schedule name</label>
+            <Input id="sched-title" v-model="form.title" placeholder="Weekly doc audit" />
           </div>
           <div class="field">
-            <label>Area</label>
-            <input v-model="form.taskArea" class="ff-textarea" type="text" />
+            <label>Cadence</label>
+            <Select v-model="form.cadence">
+              <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectViewport>
+                  <SelectItem value="once">One-time</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
-        <div class="field-row">
           <div class="field">
-            <label>Priority</label>
-            <input v-model="form.taskPriority" class="ff-textarea" type="text" />
+            <label for="sched-timezone">Timezone (IANA)</label>
+            <Input
+              id="sched-timezone"
+              v-model="form.timezone"
+              placeholder="Asia/Singapore"
+              :aria-invalid="timezoneError ? 'true' : undefined"
+            />
+            <p v-if="timezoneError" class="ff-error">{{ timezoneError }}</p>
           </div>
+          <div v-if="form.cadence !== 'once'" class="field">
+            <label for="sched-time">Local time (HH:MM)</label>
+            <Input id="sched-time" v-model="form.timeOfDay" placeholder="09:00" />
+          </div>
+          <div v-if="form.cadence === 'once'" class="field">
+            <label for="sched-run-at">Run at (ISO)</label>
+            <Input id="sched-run-at" v-model="form.runAt" placeholder="2026-10-20T09:00:00Z" />
+          </div>
+          <div v-if="form.cadence === 'weekly'" class="field">
+            <label>Day of week</label>
+            <Select v-model="form.dayOfWeek">
+              <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectViewport>
+                  <SelectItem :value="0">Sunday</SelectItem>
+                  <SelectItem :value="1">Monday</SelectItem>
+                  <SelectItem :value="2">Tuesday</SelectItem>
+                  <SelectItem :value="3">Wednesday</SelectItem>
+                  <SelectItem :value="4">Thursday</SelectItem>
+                  <SelectItem :value="5">Friday</SelectItem>
+                  <SelectItem :value="6">Saturday</SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </Select>
+          </div>
+          <p class="ff-notice" data-testid="schedule-next-preview">
+            Next run preview:
+            <strong>{{ preview }}</strong>
+          </p>
           <div class="field">
-            <label>Assignee</label>
-            <input
-              v-model="form.taskAssignedTo"
-              class="ff-textarea"
-              type="text"
-              placeholder="ai or human"
+            <label for="sched-task-title">Task title</label>
+            <Input
+              id="sched-task-title"
+              v-model="form.taskTitle"
+              placeholder="Same as schedule name"
             />
           </div>
-        </div>
-        <div class="field">
-          <label>Initial status</label>
-          <input v-model="form.taskStatus" class="ff-textarea" type="text" />
-        </div>
-        <div class="field inline-toggle">
-          <label>Start engineer automatically</label>
-          <Switch v-model:checked="form.autoStartAgent" />
-        </div>
-        <p v-if="formError" class="ff-error">{{ formError }}</p>
-        <div class="btn-row" style="margin-top: 12px">
-          <Button variant="outline" @click="editorOpen = false">Cancel</Button>
-          <Button @click="saveSchedule">Save schedule</Button>
+          <div class="field">
+            <label for="sched-body">Task specification</label>
+            <textarea
+              id="sched-body"
+              v-model="form.body"
+              class="ff-textarea"
+              rows="6"
+              placeholder="## Problem&#10;…"
+            />
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="sched-type">Type</label>
+              <Input id="sched-type" v-model="form.taskType" />
+            </div>
+            <div class="field">
+              <label for="sched-area">Area</label>
+              <Input id="sched-area" v-model="form.taskArea" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="sched-priority">Priority</label>
+              <Input id="sched-priority" v-model="form.taskPriority" />
+            </div>
+            <div class="field">
+              <label for="sched-assignee">Assignee</label>
+              <Input id="sched-assignee" v-model="form.taskAssignedTo" placeholder="ai or human" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="sched-status">Initial status</label>
+            <Input id="sched-status" v-model="form.taskStatus" />
+          </div>
+          <div class="field inline-toggle">
+            <label>Start engineer automatically</label>
+            <Switch v-model:checked="form.autoStartAgent" />
+          </div>
+          <p v-if="formError" class="ff-error">{{ formError }}</p>
+          <div class="btn-row" style="margin-top: 20px">
+            <Button variant="outline" @click="editorOpen = false">Cancel</Button>
+            <Button :disabled="!formIsValid" data-testid="schedule-save" @click="saveSchedule">
+              Save schedule
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -456,8 +577,5 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-.schedule-editor {
-  max-width: 520px;
 }
 </style>
