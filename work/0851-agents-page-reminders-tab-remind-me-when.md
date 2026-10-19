@@ -3,6 +3,9 @@ id: "0851"
 title: "Agents page: Reminders tab (remind me when an AI agent or provider is available again)"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Warning: No project session found with id 'repoos-0851-engineer'; creating a new session with that id."
 priority: p2
 area: [web, server, core]
 assigned_to: ai
@@ -13,7 +16,8 @@ model_override: openrouter/openrouter/auto-beta
 review_cli_override: pi
 review_model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-10-19T12:23:10Z"
-updated_at: "2026-10-19T13:40:16Z"
+updated_at: "2026-10-19T13:41:41Z"
+dev_error_count: 1
 ---
 ## Problem
 Agents and providers become unavailable for known periods (Cursor is out of credit for about 3 days, rate limits reset at a set time, a provider is down until a stated date), and the human has to remember to switch them back on. There is no place in RepoOS to record "tell me when X is available again", so it lives in the human's head.
@@ -41,23 +45,23 @@ Model the storage, tick and SSE-update pattern on scheduled tasks (src/server/sc
 ```json
 [
 {
-  "label": "Due and upcoming availability reminders with countdowns",
-  "target": "default",
-  "route": "/agents?tab=reminders",
-  "highlight": "[data-testid=reminders-panel]",
-  "state": "reminders:due"
+"label": "Due and upcoming availability reminders with countdowns",
+"target": "default",
+"route": "/agents?tab=reminders",
+"highlight": "[data-testid=reminders-panel]",
+"state": "reminders:due"
 },
 {
-  "label": "Shared reminder drawer with local date/time and linked entry",
-  "target": "default",
-  "route": "/agents?tab=reminders",
-  "highlight": "[data-testid=reminder-editor-drawer]",
-  "steps": [
-    {
-      "click": "[data-testid=new-reminder]"
-    }
-  ],
-  "state": "reminders:due"
+"label": "Shared reminder drawer with local date/time and linked entry",
+"target": "default",
+"route": "/agents?tab=reminders",
+"highlight": "[data-testid=reminder-editor-drawer]",
+"steps": [
+  {
+    "click": "[data-testid=new-reminder]"
+  }
+],
+"state": "reminders:due"
 }
 ]
 ```
@@ -74,3 +78,4 @@ Model the storage, tick and SSE-update pattern on scheduled tasks (src/server/sc
 - 2026-10-19T13:37:23Z · body
 - 2026-10-19T13:39:21Z · body
 - 2026-10-19T13:40:16Z · body
+- 2026-10-19T13:41:41Z · agent exited with an error (pi) · Warning: No project session found with id 'repoos-0851-engineer'; creating a new session with that id.
