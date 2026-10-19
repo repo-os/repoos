@@ -309,16 +309,22 @@ describe("POST /api/tasks/:id/archive (#0657)", () => {
     }
   });
 
-  it("refuses while a preview is running", async () => {
+  it("stops a running preview instead of refusing, then archives the task", async () => {
     const fx = makeFixture("review");
     try {
       const { res, fake } = makeRes();
-      await taskAction(makeCtx(fx, { previewRunning: true }), makeReq({}), res, {
+      const ctx = makeCtx(fx, { previewRunning: true });
+      await taskAction(ctx, makeReq({}), res, {
         param1: "0657",
         param2: "archive",
       });
-      expect(fake.status).toBe(409);
-      expect(readTaskFile(fx).isArchived).toBe(false);
+      // #0853: archiving is a teardown trigger, not a refusal.
+      expect(fake.status).toBe(200);
+      expect(ctx.previews.stop).toHaveBeenCalledWith("0657", "task archived");
+      const t = readTaskFile(fx);
+      expect(t.isArchived).toBe(true);
+      // Archiving is orthogonal to lifecycle: the status is unchanged.
+      expect(t.status).toBe("review");
     } finally {
       fx.clean();
     }
