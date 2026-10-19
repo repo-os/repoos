@@ -2,7 +2,7 @@
  * #0764 — the Budget Controls tab and its allowlist panel: collapsed-by-default
  * rows with counts, expansion, the empty-state copy, and the deep-linkable tab.
  */
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, afterEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
@@ -171,5 +171,171 @@ describe("AgentsView Budget Controls tab (#0764)", () => {
 
     wrapper.unmount();
     vi.unstubAllGlobals();
+  });
+});
+
+describe("BudgetControlsPanel pause/resume (#0850)", () => {
+  const FUTURE = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("shows a paused chip with the reason and resume date", () => {
+    seedConfig({
+      "budget.allowlist": [
+        {
+          cli: "cursor",
+          models: ["composer-2.5"],
+          paused: true,
+          pausedUntil: FUTURE,
+          pausedReason: "Cursor credits exhausted",
+        },
+      ],
+    });
+    const wrapper = mount(BudgetControlsPanel, {
+      global: { stubs: { AgentModelControl: true, teleport: true } },
+    });
+    const chip = wrapper.find("[data-testid='budget-paused-chip']");
+    expect(chip.exists()).toBe(true);
+    expect(chip.text()).toContain("Paused");
+    expect(chip.text()).toContain("Cursor credits exhausted");
+    expect(chip.text()).toContain("until");
+    expect(wrapper.find("[data-testid='budget-resume-agent']").exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("pauses an agent through the shared dialog and writes the config", async () => {
+    const config = seedConfig({
+      "budget.allowlist": [{ cli: "cursor", models: ["composer-2.5"] }],
+    });
+    const patched: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: { body?: string }) => {
+        patched.push(JSON.parse(init?.body ?? "{}"));
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      }),
+    );
+    const wrapper = mount(BudgetControlsPanel, {
+      attachTo: document.body,
+      global: { stubs: { AgentModelControl: true } },
+    });
+    await wrapper.find("[data-testid='budget-pause-agent']").trigger("click");
+    await flushPromises();
+    const body = document.body;
+    (body.querySelector("[data-testid='budget-pause-reason']") as HTMLInputElement).value =
+      "Credits exhausted";
+    (body.querySelector("[data-testid='budget-pause-reason']") as HTMLInputElement).dispatchEvent(
+      new Event("input", { bubbles: true }),
+    );
+    (body.querySelector("[data-testid='budget-pause-until']") as HTMLInputElement).value =
+      "2099-01-01T09:00";
+    (body.querySelector("[data-testid='budget-pause-until']") as HTMLInputElement).dispatchEvent(
+      new Event("input", { bubbles: true }),
+    );
+    await flushPromises();
+    (body.querySelector("[data-testid='budget-pause-confirm']") as HTMLButtonElement).click();
+    await flushPromises();
+
+    const rows = patched[0]?.["budget.allowlist"] as Array<Record<string, unknown>>;
+    expect(rows[0]).toMatchObject({
+      cli: "cursor",
+      paused: true,
+      pausedReason: "Credits exhausted",
+    });
+    expect(String(rows[0]?.pausedUntil)).toContain("2099-01-01");
+    expect(config.data?.["budget.allowlist"]).toMatchObject([{ cli: "cursor", paused: true }]);
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+  });
+
+  it("resumes a paused agent without opening a dialog", async () => {
+    const config = seedConfig({
+      "budget.allowlist": [
+        {
+          cli: "cursor",
+          models: ["composer-2.5"],
+          paused: true,
+          pausedReason: "Credits exhausted",
+        },
+      ],
+    });
+    const patched: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: { body?: string }) => {
+        patched.push(JSON.parse(init?.body ?? "{}"));
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      }),
+    );
+    const wrapper = mount(BudgetControlsPanel, {
+      global: { stubs: { AgentModelControl: true, teleport: true } },
+    });
+    await wrapper.find("[data-testid='budget-resume-agent']").trigger("click");
+    await flushPromises();
+
+    const rows = patched[0]?.["budget.allowlist"] as Array<Record<string, unknown>>;
+    expect(rows[0]).toEqual({ cli: "cursor", models: ["composer-2.5"] });
+    expect(config.data?.["budget.allowlist"]).toEqual([
+      { cli: "cursor", models: ["composer-2.5"] },
+    ]);
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+  });
+
+  it("pauses and resumes one model", async () => {
+    seedConfig({
+      "budget.allowlist": [{ cli: "opencode", models: ["big pickle", "deepseek v4"] }],
+    });
+    const patched: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: { body?: string }) => {
+        patched.push(JSON.parse(init?.body ?? "{}"));
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      }),
+    );
+    const wrapper = mount(BudgetControlsPanel, {
+      attachTo: document.body,
+      global: { stubs: { AgentModelControl: true } },
+    });
+    await wrapper.find(".budget-row-head").trigger("click");
+    await wrapper.findAll("[data-testid='budget-pause-model']")[0]!.trigger("click");
+    await flushPromises();
+    (
+      document.body.querySelector("[data-testid='budget-pause-confirm']") as HTMLButtonElement
+    ).click();
+    await flushPromises();
+
+    const pausedRows = patched[0]?.["budget.allowlist"] as Array<Record<string, unknown>>;
+    expect(pausedRows[0]?.pausedModels).toEqual([{ model: "big pickle" }]);
+    expect(wrapper.find("[data-testid='budget-model-paused-chip']").exists()).toBe(true);
+
+    await wrapper.find("[data-testid='budget-resume-model']").trigger("click");
+    await flushPromises();
+    const resumedRows = patched[1]?.["budget.allowlist"] as Array<Record<string, unknown>>;
+    expect(resumedRows[0]?.pausedModels).toBeUndefined();
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+  });
+
+  it("does not show a paused chip once pausedUntil has passed", () => {
+    seedConfig({
+      "budget.allowlist": [
+        {
+          cli: "cursor",
+          models: ["composer-2.5"],
+          paused: true,
+          pausedUntil: "2020-01-01T00:00:00.000Z",
+        },
+      ],
+    });
+    const wrapper = mount(BudgetControlsPanel, {
+      global: { stubs: { AgentModelControl: true, teleport: true } },
+    });
+    expect(wrapper.find("[data-testid='budget-paused-chip']").exists()).toBe(false);
+    expect(wrapper.find("[data-testid='budget-pause-agent']").exists()).toBe(true);
+    wrapper.unmount();
   });
 });

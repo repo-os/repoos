@@ -85,6 +85,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "panel:newInputOutstandingUpload",
   // #0664 — New-task freeform panel with a failed screenshot retry row.
   "panel:freeformFailedScreenshot",
+  // #0850 — Agents page Budget Controls with a paused allowlist row, so a
+  // capture can show the Paused chip, reason and resume date.
+  "budget:paused",
   // #0841 — Agents scheduled tab with the New schedule drawer open.
   "schedule:newPanel",
   "reminders:due",

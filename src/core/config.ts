@@ -547,6 +547,71 @@ export function boardRoot(start?: string): { root: string; fromWorktree: boolean
  * `repoos doctor`'s unknown-key check) read the same parse `loadConfig` does,
  * rather than re-implementing the tokenizer.
  */
+/**
+ * Split a `[...]` body on top-level commas. Quote- and brace-aware so an array
+ * of inline tables (`pausedModels = [{ model = "x", pausedReason = "y" }]`,
+ * #0850) is not split inside an object.
+ */
+function splitTomlListItems(body: string): string[] {
+  const items: string[] = [];
+  let cur = "";
+  let quote: '"' | "'" | null = null;
+  let depth = 0;
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i]!;
+    if (quote) {
+      cur += ch;
+      if (quote === '"' && ch === "\\" && i + 1 < body.length) {
+        cur += body[i + 1];
+        i++;
+        continue;
+      }
+      if (ch === quote) quote = null;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+      cur += ch;
+    } else if (ch === "{") {
+      depth++;
+      cur += ch;
+    } else if (ch === "}") {
+      depth = Math.max(0, depth - 1);
+      cur += ch;
+    } else if (ch === "," && depth === 0) {
+      items.push(cur.trim());
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  if (cur.trim()) items.push(cur.trim());
+  return items;
+}
+
+/** Parse one TOML scalar/array/inline-table value. */
+function parseTomlInlineValue(raw: string): unknown {
+  const s = raw.trim();
+  if (s.startsWith("[") && s.endsWith("]")) {
+    return splitTomlListItems(s.slice(1, -1)).map((item) => {
+      const trimmed = item.trim();
+      if (trimmed.startsWith("{")) return parseTomlInlineValue(trimmed);
+      return unquoteTomlString(trimmed);
+    });
+  }
+  if (s.startsWith("{") && s.endsWith("}")) {
+    const obj: Record<string, unknown> = {};
+    for (const part of splitTomlListItems(s.slice(1, -1))) {
+      const eq = part.indexOf("=");
+      if (eq === -1) continue;
+      const key = part.slice(0, eq).trim();
+      if (key) obj[key] = parseTomlInlineValue(part.slice(eq + 1));
+    }
+    return obj;
+  }
+  if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
+  if (s === "true" || s === "false") return s === "true";
+  return unquoteTomlString(s);
+}
+
 export function parseFlatToml(text: string): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   let section = "";
@@ -615,11 +680,7 @@ export function parseFlatToml(text: string): Record<string, unknown> {
     let val: unknown = valueStr;
     const s = val as string;
     if (s.startsWith("[") && s.endsWith("]")) {
-      val = s
-        .slice(1, -1)
-        .split(",")
-        .map((x) => unquoteTomlString(x.trim()))
-        .filter(Boolean);
+      val = parseTomlInlineValue(s);
     } else if (/^-?\d+(\.\d+)?$/.test(s)) {
       val = Number(s);
     } else if (s === "true" || s === "false") {
@@ -3186,8 +3247,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description:
         "Human-approved coding-agent + model pairs an agent driver (a CLI/API caller, not a human " +
         "in the UI) may set as an engineer/reviewer override. Empty or unset means nothing is " +
-        "restricted. Declared in repoos.toml as [[budget.allowlist]] rows (cli + models); edit it " +
-        "on the Agents page's Budget Controls tab.",
+        "restricted. Declared in repoos.toml as [[budget.allowlist]] rows (cli + models); pause a " +
+        "row or one model with paused / pausedUntil / pausedReason / pausedModels instead of " +
+        "removing it. Edit it on the Agents page's Budget Controls tab.",
     },
     // Adaptive agent/model routing (#0791). Default off; shadow recommended first.
     {
@@ -3395,6 +3457,11 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   // Agent-driver budget controls (#0764) — the `[[budget.allowlist]]` rows.
   "budget.allowlist.cli",
   "budget.allowlist.models",
+  // Pausing an allowlist row/model without removing it (#0850).
+  "budget.allowlist.paused",
+  "budget.allowlist.pausedUntil",
+  "budget.allowlist.pausedReason",
+  "budget.allowlist.pausedModels",
   // Dev targets (#0747) — the user-runnable things the Dev page controls.
   // Declared as a repeatable `[[dev.targets]]` table; each row is one target.
   "dev.targets.name",
@@ -3554,7 +3621,16 @@ function serializeTomlVal(val: unknown): string {
   if (typeof val === "number") return String(val);
   if (typeof val === "boolean") return val ? "true" : "false";
   if (Array.isArray(val)) {
-    return `[${val.map((v) => JSON.stringify(v)).join(", ")}]`;
+    return `[${val.map((v) => serializeTomlVal(v)).join(", ")}]`;
+  }
+  if (typeof val === "object" && val !== null) {
+    // Inline table, e.g. `pausedModels = [{ model = "x", pausedReason = "..." }]`
+    // (#0850). `[[table]]` is the top-level form, but a nested value (a row's
+    // per-model pause list) has to be inline TOML.
+    const entries = Object.entries(val as Record<string, unknown>).filter(
+      ([, v]) => v !== undefined,
+    );
+    return `{ ${entries.map(([k, v]) => `${k} = ${serializeTomlVal(v)}`).join(", ")} }`;
   }
   return String(val);
 }

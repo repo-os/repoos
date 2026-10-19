@@ -34,6 +34,32 @@ server reload.
 
 Full table: [`user-docs/cli.md`](../user-docs/cli.md) (Control plane).
 
+### Paused allowlist entries (#0850)
+
+When a provider runs out of credit, is rate-limited or has an outage, **pause**
+its `[[budget.allowlist]]` entry instead of deleting the row:
+
+```sh
+repoos agents pause cursor --until 2026-10-22T09:00:00Z --reason "credits exhausted"
+repoos agents pause opencode --model "big pickle"
+repoos agents resume cursor
+```
+
+A paused agent (every model) or one paused model stays configured, shows a
+Paused chip with its reason and resume date on the Agents page's **Budget
+Controls** tab, and is **never selected**: engineer/reviewer/PM/CTO defaults,
+Start, auto-dispatch, the CTO's restart-stalled-agent failover, model routing
+and agent-driver overrides all skip it. Selection falls back to the next
+allowed pair that is not paused and records the swap and reason in the task
+activity log; with every pair paused a Start fails with "All allowed
+agent+model pairs are paused" instead of retrying a broken harness. An expired
+`pausedUntil` takes effect automatically — no restart or config rewrite.
+
+The pause is enforced for **agent drivers**, not just defaults: `repoos
+override --cli cursor --model composer-2.5` on a paused pair is refused with the
+same message as an off-allowlist pair. A human who set a per-task override in
+the UI keeps it; a driver cannot pin a paused pair.
+
 ### Handoff and status flips
 
 - A task flipping **`active` ↔ `review` within seconds** is often the server's

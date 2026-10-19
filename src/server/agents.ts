@@ -43,6 +43,13 @@ import {
   defaultMaxConcurrentAgents,
   loadConfig,
 } from "../core/config.js";
+import {
+  allAllowlistPairsPaused,
+  firstSelectablePair,
+  isPairPaused,
+  isPairSelectable,
+  pairPauseInfo,
+} from "../core/budget-allowlist.js";
 import { pressureReason } from "../core/pressure-guard.js";
 import { clearQueueMarker, writeQueueMarker } from "../core/local-queue-marker.js";
 import { isProviderFailureReason } from "../core/attention.js";
@@ -2783,16 +2790,67 @@ function matchesRole(a: { name: string }, role: string): boolean {
   return a.name.toLowerCase() === role;
 }
 
+/**
+ * Apply allowlist pausing to a resolved agent (#0850): if its pair is paused,
+ * fall back to the first allowed pair that is not. Returns null when the agent
+ * itself is paused and every allowed pair is paused too — callers turn that
+ * into a clear "all allowed agents are paused" message instead of looping.
+ *
+ * A pair that is not on the allowlist at all is left alone: pausing is a
+ * property of allowlist entries, and this must be a no-op for unrestricted
+ * configs. Keeping the base agent's name/instructions/skills while swapping
+ * cli+model means the role keeps its prompt on the fallback harness.
+ */
+function applyPauseFallback(
+  config: RepoOSConfig,
+  base: Agent,
+  now: number = Date.now(),
+): Agent | null {
+  const rows = config.budget?.allowlist ?? [];
+  if (!rows.length) return base;
+  if (!isPairPaused(rows, base.cli, base.model, now)) return base;
+  // Prefer a pair some enabled agent already uses: it is a harness this project
+  // actually runs, and — because the pair must also be selectable — still on
+  // the allowlist and not paused. Fall back to the first selectable allowlist
+  // pair only when no configured agent qualifies.
+  const configured = agentsForConfig(config).find(
+    (a) => a.enabled && isPairSelectable(rows, a.cli, a.model, now),
+  );
+  const fallback =
+    (configured ? { cli: configured.cli, model: configured.model } : null) ??
+    firstSelectablePair(rows, now);
+  if (!fallback) return null;
+  return { ...base, cli: fallback.cli, model: fallback.model };
+}
+
+/** Resolve the enabled agent for a role, skipping (and falling back from) a paused pair. */
+function resolveRoleAgent(config: RepoOSConfig, role: string): Agent | null {
+  const list = agentsForConfig(config);
+  const base = list.find((a) => a.enabled && matchesRole(a, role)) ?? null;
+  return base ? applyPauseFallback(config, base) : null;
+}
+
+/**
+ * The message a start/dispatch should show when no agent could be resolved.
+ * Distinguishes "all allowed pairs are paused" from "nothing configured" so a
+ * paused allowlist never presents as a missing engineer (#0850).
+ */
+export function noAgentAvailableMessage(config: RepoOSConfig, role = "engineer"): string {
+  const label = role.toLowerCase() === "engineer" ? "engineer agent" : `${role} agent`;
+  if (allAllowlistPairsPaused(config.budget?.allowlist ?? [])) {
+    return `All allowed agent+model pairs are paused — resume one on the Agents page's Budget Controls tab, then start again`;
+  }
+  return `No enabled ${label} is configured on the Agents page`;
+}
+
 /** Resolve the enabled `engineer` agent, or null when none is configured. */
 export function resolveEngineer(config: RepoOSConfig): Agent | null {
-  const list = agentsForConfig(config);
-  return list.find((a) => a.enabled && matchesRole(a, "engineer")) ?? null;
+  return resolveRoleAgent(config, "engineer");
 }
 
 /** Resolve the enabled `pm` agent, or null when none is configured. */
 export function resolvePmAgent(config: RepoOSConfig): Agent | null {
-  const list = agentsForConfig(config);
-  return list.find((a) => a.enabled && matchesRole(a, "pm")) ?? null;
+  return resolveRoleAgent(config, "pm");
 }
 
 /**
@@ -2803,8 +2861,7 @@ export function resolvePmAgent(config: RepoOSConfig): Agent | null {
  * into `repoos.toml`, and null here means "no agent review runs".
  */
 export function resolveReviewer(config: RepoOSConfig): Agent | null {
-  const list = agentsForConfig(config);
-  return list.find((a) => a.enabled && matchesRole(a, "reviewer")) ?? null;
+  return resolveRoleAgent(config, "reviewer");
 }
 
 /**
@@ -2831,8 +2888,7 @@ export function resolveReviewerForTask(config: RepoOSConfig, task: Task): Agent 
 }
 
 export function resolveCto(config: RepoOSConfig): Agent | null {
-  const list = agentsForConfig(config);
-  return list.find((a) => a.enabled && matchesRole(a, "cto")) ?? null;
+  return resolveRoleAgent(config, "cto");
 }
 
 /**
@@ -2913,7 +2969,9 @@ export function resolveAgentForTask(
   const modelPinned = isModelOverridePinned(task.modelOverride);
   const hasOverride = task.agentOverride || task.cliOverride || modelPinned;
   if (!hasOverride) {
-    return list.find((a) => a.enabled && a.name === role) ?? null;
+    // No explicit override: honor allowlist pausing and fall back to the next
+    // selectable allowed pair (#0850).
+    return resolveRoleAgent(config, role);
   }
 
   // Resolve the base agent: use the override name if set, else the role.
@@ -2921,7 +2979,57 @@ export function resolveAgentForTask(
   const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
   if (!base) return null;
 
+  // An explicit override is kept even when paused: an agent driver's attempt
+  // to set one is refused up front (overrideRefusal), so anything persisted
+  // here was chosen by a human in the UI and must keep working.
   return mergeAgentOverride(base, task.cliOverride, task.modelOverride);
+}
+
+/** Configured (non-fallback) agent+pair for a task, used to explain a fallback. */
+function configuredAgentForTask(
+  config: RepoOSConfig,
+  task: Task,
+  role: string = "engineer",
+): Agent | null {
+  const list = agentsForConfig(config);
+  const modelPinned = isModelOverridePinned(task.modelOverride);
+  const hasOverride = task.agentOverride || task.cliOverride || modelPinned;
+  const baseName = task.agentOverride || role;
+  const base = list.find((a) => a.enabled && matchesRole(a, baseName)) ?? null;
+  if (!base) return null;
+  return hasOverride ? mergeAgentOverride(base, task.cliOverride, task.modelOverride) : base;
+}
+
+/**
+ * A task activity note when `resolveAgentForTask` swapped out a paused pair
+ * (#0850), or null when nothing was paused. Callers write it so the fallback
+ * and its reason are visible, not silent.
+ */
+export function pausedAgentFallbackNote(
+  config: RepoOSConfig,
+  task: Task,
+  role: string = "engineer",
+): string | null {
+  const configured = configuredAgentForTask(config, task, role);
+  if (!configured) return null;
+  const rows = config.budget?.allowlist ?? [];
+  const info = pairPauseInfo(rows, configured.cli, configured.model);
+  if (!info.paused) return null;
+  const selected = resolveAgentForTask(config, task, role);
+  if (!selected) {
+    return (
+      `agent ${configured.cli} + ${configured.model} is paused` +
+      `${info.reason ? ` (${info.reason})` : ""} and every allowed pair is paused — start blocked`
+    );
+  }
+  // An explicit human override is kept even when paused, so there was no swap
+  // and no fallback to explain.
+  if (selected.cli === configured.cli && selected.model === configured.model) return null;
+  return (
+    `agent fallback: ${configured.cli} + ${configured.model} is paused` +
+    `${info.reason ? ` (${info.reason})` : ""}` +
+    `${info.until ? ` until ${info.until}` : ""} — using ${selected.cli} + ${selected.model}`
+  );
 }
 
 /** Resolve the enabled built-in repository assistant (by current "Ross" name or legacy "RepoOS Guide"). */
