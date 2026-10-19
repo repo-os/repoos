@@ -1002,6 +1002,12 @@ one non-slash character — `landing/**` matches every changed file under
 `landing/`. When no target's globs match, `repoos shot` falls back to the
 area match (then the default command); `--target` overrides either way.
 
+The dev-target counterpart of these services is `[[dev.services]]` (#0843):
+the same companion-service model — boot before the target, its own port,
+`{<name>.port}`/`{<name>.url}` substitution — for the things you start
+yourself from the Dev page rather than for task previews. See
+[Dev target services](#dev-target-services) below.
+
 > **`[[preview.targets]]` and `[[preview.services]]` are deliberately TOML-only.**
 > The Settings UI is built on a flat `key = value` schema, which cannot express a
 > per-row sub-field of an array of tables; there is no control for target or
