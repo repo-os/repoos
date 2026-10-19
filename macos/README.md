@@ -70,15 +70,30 @@ The `macos/.derived-data/` directory is ignored and may be removed at any time.
 ## Local server discovery (Add server)
 
 The **Add server** sheet calls `LocalServerDiscovery` to populate **Running locally**.
-Discovery prefers **`/usr/sbin/lsof`** (`-iTCP:7000-7999 -sTCP:LISTEN`) to learn which
-ports have listeners, then health-checks only those ports. If `lsof` is missing, errors,
-or is blocked (for example sandbox denial), Hub falls back to a bounded scan of the full
-7000–7999 range. An empty `lsof` result means “no listeners” and does not trigger a scan.
 
-The Hub process must be allowed to execute `lsof` for the fast path; denial is not fatal.
+**Primary source:** `~/.repoos/servers/<port>.json` files written by `repoos serve` (#0845).
+Hub reads every `*.json` in that directory, skips malformed or unknown-schema files, and
+validates each entry before showing it: the recorded PID must still be alive, and
+`GET /api/health` must return `ok: true` with a `root` that matches the registry entry
+(parallel probes, ~1.25 s timeout, one retry on timeout). Stale files are left on disk;
+Hub does not delete them.
 
-`LocalServerDiscoveryTests` includes an optional live test (`testLiveDiscoveryFindsLocalRepoOSWhenServingOn7559`)
-that skips unless `GET http://localhost:7559/api/health` reports `ok: true`.
+When the registry directory is **missing or empty**, Hub falls back to the bounded port
+scan from #0844: it prefers **`/usr/sbin/lsof`** (`-iTCP:7000-7999 -sTCP:LISTEN`) to learn
+which ports have listeners, then health-checks only those ports. If `lsof` is missing,
+errors, or is blocked, Hub scans the full 7000–7999 range with bounded concurrency. An
+empty `lsof` result means “no listeners” and does not trigger a full-range scan.
+
+**Scan again** in the sheet re-runs the port scan and appends any new hits after the
+registry-validated rows (same port is not duplicated).
+
+If the Hub app is sandboxed, reading `~/.repoos/servers` may fail; discovery degrades to
+the scan fallback without crashing. Distribution signing should grant read access to that
+path (see signing tasks #0577–#0580).
+
+`LocalServerDiscoveryTests` and `RunningServerRegistryDiscoveryTests` cover registry and
+scan behaviour with fakes. An optional live test (`testLiveDiscoveryFindsLocalRepoOSWhenServingOn7559`)
+skips unless `GET http://localhost:7559/api/health` reports `ok: true`.
 
 ## Project boundary
 
