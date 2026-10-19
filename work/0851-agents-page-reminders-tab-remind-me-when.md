@@ -10,8 +10,10 @@ created_by: njachowski@gmail.com
 branch: ""
 cli_override: pi
 model_override: openrouter/openrouter/auto-beta
+review_cli_override: pi
+review_model_override: default
 created_at: "2026-10-19T12:23:10Z"
-updated_at: "2026-10-19T13:19:34Z"
+updated_at: "2026-10-19T13:19:38Z"
 ---
 ## Problem
 Agents and providers become unavailable for known periods (Cursor is out of credit for about 3 days, rate limits reset at a set time, a provider is down until a stated date), and the human has to remember to switch them back on. There is no place in RepoOS to record "tell me when X is available again", so it lives in the human's head.
@@ -40,3 +42,4 @@ Model the storage, tick and SSE-update pattern on scheduled tasks (src/server/sc
 - 2026-10-19T12:23:10Z · created · njachowski@gmail.com
 - 2026-10-19T13:19:21Z · cli_override, model_override
 - 2026-10-19T13:19:34Z · model_override
+- 2026-10-19T13:19:38Z · review_cli_override, review_model_override
