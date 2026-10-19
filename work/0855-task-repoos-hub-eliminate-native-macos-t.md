@@ -9,11 +9,11 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: pi
-model_override: default
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 pm_cli_override: pi
 pm_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T15:35:14Z"
-updated_at: "2026-10-19T15:43:17Z"
+updated_at: "2026-10-19T15:43:22Z"
 ---
 ## Problem
 
@@ -303,3 +303,4 @@ I would also avoid making navigation controls too prominent. They should feel li
 - 2026-10-19T15:43:08Z · body: Desired UX (added 17, removed 10)
 - 2026-10-19T15:43:10Z · status inbox→ready
 - 2026-10-19T15:43:17Z · cli_override, model_override
+- 2026-10-19T15:43:22Z · model_override
