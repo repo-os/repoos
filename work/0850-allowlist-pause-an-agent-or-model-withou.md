@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 437048
-last_close_out_gate_at: "2026-10-19T19:24:31.646Z"
 id: "0850"
 title: "Allowlist: pause an agent or model without removing it (with optional resume date and reason)"
 type: feature
-status: review
+status: done
 priority: p1
 area: [core, server, web]
+merged_commit: 98a2fe117665c20a86604cfce1c192d7708b0cd6
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/allowlist-pause-an-agent-or-model-withou
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T19:24:31Z"
+updated_at: "2026-10-19T19:25:06Z"
+last_close_out_gate_ms: 437048
+last_close_out_gate_at: "2026-10-19T19:24:31.646Z"
 review_passes: 2
 dev_error_count: 4
 ---
@@ -169,4 +170,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T19:10:51Z · note: shots: skipped — 10 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-19T19:14:31Z · note: review pass 2: good to go
 - 2026-10-19T19:24:31Z · close-out gate completed in 437s
-
+- 2026-10-19T19:25:06Z · status review→done, release:success
