@@ -5,15 +5,16 @@ type: chore
 status: inbox
 priority: p3
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-19T07:50:02Z"
-updated_at: "2026-10-19T07:50:02Z"
+updated_at: "2026-10-19T08:05:29Z"
 ---
 ## Items
 
 - [ ] **E1 · No "0 changes" chip on task cards** (web) — show the file-count chip only when a task has file or code changes; show nothing at zero. Source: Nick 2026-10-19, screenshot of #0794's card.
+- [ ] **E2 · Empty Draft column shows a dash, not help text** (web) — Replace the empty Draft column text 'No drafts yet. Agent proposals land here.' (DRAFT_EMPTY in src/ui-app/src/views/WorkView.vue) with the same '-' placeholder the other empty columns use.. Source: Nick 2026-10-19, screenshot of the Work Queue.
 
 Add further small, independent web fixes here with `repoos bundle add <id> ...` (one open bundle at a time).
 
@@ -37,6 +38,23 @@ A card for a task that has a branch but no changes yet shows a "0 changes" chip 
 ### Notes for AI
 Smallest possible change: delete the `v-else-if` "0 changes" span and its CSS. Do not touch the `filesChanged > 0` chip. Never touch repoos.toml.
 
+
+## E2 · Empty Draft column shows a dash, not help text
+
+### Problem
+
+
+### Desired UX
+
+
+### Acceptance criteria
+
+- Test: The empty Draft column renders the same dash as the other empty columns and no 'No drafts yet' text; a non-empty Draft column is unchanged; existing tests referencing the old copy are updated.
+
+### Notes for AI
+
+
+
 ## Problem
 See E1: the card shows a "0 changes" chip when there is nothing to show.
 
@@ -52,3 +70,5 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 ## Activity
 
 - 2026-10-19T07:50:02Z · created · njachowski@gmail.com
+- 2026-10-19T08:05:29Z · body: Items (added 1); E2 · Empty Draft column shows a dash, not help text (added)
+- 2026-10-19T08:05:29Z · note: bundle add E2
