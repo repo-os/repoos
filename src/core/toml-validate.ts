@@ -17,11 +17,12 @@
  * hatch stricter than the loader it feeds.
  *
  * Crucially, it rejects the *valid TOML* shapes that `parseFlatToml`
- * (`config.ts`) cannot read: multi-line strings, multi-line arrays, and inline
- * tables. Those would otherwise sail through a save and then be silently
- * misread (the first line of a multi-line array parses as the string `"["`,
- * an inline table as a plain string), so a whole save could take no effect
- * with no error — the exact silent-config failure this gate exists to stop.
+ * (`config.ts`) cannot read: multi-line arrays and inline tables (multi-line
+ * strings are supported by both). Those would otherwise sail through a save and
+ * then be silently misread (the first line of a multi-line array parses as the
+ * string `"["`, an inline table as a plain string), so a whole save could take
+ * no effect with no error — the exact silent-config failure this gate exists to
+ * stop.
  */
 
 export interface TomlValidationResult {
@@ -159,6 +160,61 @@ function parseSimpleKey(sc: TomlScanner): void {
   if (!key) sc.fail("expected a key");
 }
 
+const BASIC_ESCAPES = new Set(["b", "t", "n", "f", "r", '"', "\\"]);
+
+/**
+ * Read the escape sequence after a `\`. TOML allows only `\b \t \n \f \r \" \\`,
+ * `\uXXXX`/`\UXXXXXXXX`, and (in multi-line basic strings) a line-ending
+ * backslash. Anything else — `\q`, a short unicode escape, `\ ` with no newline
+ * — is invalid TOML, not "drop the backslash".
+ */
+function readBasicEscape(sc: TomlScanner, allowLineEnding: boolean): void {
+  sc.advance(); // backslash
+  if (sc.eof()) sc.fail("unterminated string");
+  const ch = sc.peek();
+  if (BASIC_ESCAPES.has(ch)) {
+    sc.advance();
+    return;
+  }
+  if (ch === "u" || ch === "U") {
+    const digits = ch === "u" ? 4 : 8;
+    sc.advance();
+    let hex = "";
+    for (let n = 0; n < digits; n++) {
+      if (!/^[0-9A-Fa-f]$/.test(sc.peek())) sc.fail("invalid unicode escape");
+      hex += sc.advance();
+    }
+    // TOML requires a valid Unicode scalar value: `\uD800` (a surrogate) and
+    // `\U00110000` (beyond the last code point) are invalid escapes.
+    const code = parseInt(hex, 16);
+    if (code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)) {
+      sc.fail(`invalid unicode escape \\${ch}${hex}`);
+    }
+    return;
+  }
+  if (allowLineEnding && (ch === " " || ch === "\t" || ch === "\n" || ch === "\r")) {
+    // A line-ending backslash trims all whitespace through the newline; a run
+    // of spaces with no newline is still an invalid escape.
+    let sawNewline = false;
+    while (!sc.eof()) {
+      const c = sc.peek();
+      if (c === "\n" || c === "\r") {
+        sawNewline = true;
+        sc.advance();
+        continue;
+      }
+      if (c === " " || c === "\t") {
+        sc.advance();
+        continue;
+      }
+      break;
+    }
+    if (!sawNewline) sc.fail("invalid escape sequence");
+    return;
+  }
+  sc.fail(`invalid escape sequence \\${ch}`);
+}
+
 function readBasicString(sc: TomlScanner): void {
   sc.advance(); // opening quote
   while (!sc.eof()) {
@@ -169,9 +225,7 @@ function readBasicString(sc: TomlScanner): void {
       return;
     }
     if (ch === "\\") {
-      sc.advance();
-      if (sc.eof()) sc.fail("unterminated string");
-      sc.advance();
+      readBasicEscape(sc, false);
       continue;
     }
     sc.advance();
@@ -193,7 +247,61 @@ function readLiteralString(sc: TomlScanner): void {
   sc.fail("unterminated string");
 }
 
-const MULTILINE_UNSUPPORTED = "multi-line strings aren't supported — keep each value on one line";
+function readMultiLineBasicString(sc: TomlScanner): void {
+  // Opening """
+  sc.advance();
+  sc.advance();
+  sc.advance();
+  // TOML trims the first newline after opening
+  if (sc.peek() === "\n") {
+    sc.advance();
+  } else if (sc.peek() === "\r" && sc.peek(1) === "\n") {
+    sc.advance();
+    sc.advance();
+  }
+  while (!sc.eof()) {
+    if (sc.peek() === '"' && sc.peek(1) === '"' && sc.peek(2) === '"') {
+      // One or two quotes immediately before the delimiter are content; the
+      // last three close the string (TOML allows up to five in the run).
+      for (let n = 0; n < 5 && sc.peek() === '"'; n++) sc.advance();
+      return;
+    }
+    if (sc.peek() === "\\") {
+      readBasicEscape(sc, true);
+      continue;
+    }
+    if (sc.peek() === "\r") {
+      sc.advance();
+      if (sc.peek() === "\n") sc.advance();
+      continue;
+    }
+    sc.advance();
+  }
+  sc.fail("unterminated multi-line basic string");
+}
+
+function readMultiLineLiteralString(sc: TomlScanner): void {
+  // Opening '''
+  sc.advance();
+  sc.advance();
+  sc.advance();
+  // TOML trims the first newline after opening
+  if (sc.peek() === "\n") {
+    sc.advance();
+  } else if (sc.peek() === "\r" && sc.peek(1) === "\n") {
+    sc.advance();
+    sc.advance();
+  }
+  while (!sc.eof()) {
+    if (sc.peek() === "'" && sc.peek(1) === "'" && sc.peek(2) === "'") {
+      // One or two quotes immediately before the delimiter are content.
+      for (let n = 0; n < 5 && sc.peek() === "'"; n++) sc.advance();
+      return;
+    }
+    sc.advance();
+  }
+  sc.fail("unterminated multi-line literal string");
+}
 
 function readArray(sc: TomlScanner): void {
   sc.advance(); // [
@@ -244,21 +352,27 @@ function readBareValue(sc: TomlScanner): void {
   if (!isBareValue(token)) sc.fail(`invalid value ${JSON.stringify(token)}`);
 }
 
-function readValue(sc: TomlScanner): void {
+function readValue(sc: TomlScanner): boolean {
   const ch = sc.peek();
   if (ch === '"') {
-    if (sc.peek(1) === '"' && sc.peek(2) === '"') sc.fail(MULTILINE_UNSUPPORTED);
+    if (sc.peek(1) === '"' && sc.peek(2) === '"') {
+      readMultiLineBasicString(sc);
+      return true;
+    }
     readBasicString(sc);
-    return;
+    return false;
   }
   if (ch === "'") {
-    if (sc.peek(1) === "'" && sc.peek(2) === "'") sc.fail(MULTILINE_UNSUPPORTED);
+    if (sc.peek(1) === "'" && sc.peek(2) === "'") {
+      readMultiLineLiteralString(sc);
+      return true;
+    }
     readLiteralString(sc);
-    return;
+    return false;
   }
   if (ch === "[") {
     readArray(sc);
-    return;
+    return false;
   }
   if (ch === "{") {
     sc.fail(
@@ -266,6 +380,7 @@ function readValue(sc: TomlScanner): void {
     );
   }
   readBareValue(sc);
+  return false;
 }
 
 function readTableHeader(sc: TomlScanner): void {
@@ -298,10 +413,10 @@ function readKeyValue(sc: TomlScanner): void {
   sc.advance();
   sc.skipInlineWhitespace();
   const startLine = sc.lineNumber;
-  readValue(sc);
-  if (sc.lineNumber !== startLine) {
+  const isMultiLineString = readValue(sc);
+  if (sc.lineNumber !== startLine && !isMultiLineString) {
     sc.fail(
-      "multi-line values aren't supported by RepoOS's config reader — keep arrays on a single line",
+      "multi-line arrays aren't supported by RepoOS's config reader — keep the array on a single line",
     );
   }
   sc.finishStatement();
