@@ -3,6 +3,9 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — service readiness can accept a stale health file, and overlapping Start/Stop calls can leave the target running."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -122,3 +125,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T17:29:03Z · body
 - 2026-10-19T17:37:42Z · status active→review
 - 2026-10-19T17:41:03Z · note: review pass 5: needs some work
+- 2026-10-19T17:41:03Z · needs_input
