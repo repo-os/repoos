@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 85418
-last_close_out_gate_at: "2026-10-19T19:08:18.544Z"
 id: "0857"
 title: Restore native macOS window controls
 type: feature
-status: review
+status: done
 priority: p2
 area: [macos, desktop]
+merged_commit: cf79b120958e638f489a184e543e29dd03e1fc6f
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/restore-native-macos-window-controls
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T17:58:19Z"
-updated_at: "2026-10-19T19:08:18Z"
+updated_at: "2026-10-19T19:08:23Z"
+last_close_out_gate_ms: 85418
+last_close_out_gate_at: "2026-10-19T19:08:18.544Z"
 review_passes: 1
 ---
 ## Problem
@@ -110,4 +111,4 @@ My overall assessment: The new expanded sidebar already looks substantially clea
 - 2026-10-19T19:02:02Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-19T19:05:49Z · note: review pass 1: good to go
 - 2026-10-19T19:08:18Z · close-out gate completed in 85s
-
+- 2026-10-19T19:08:23Z · status review→done, release:success
