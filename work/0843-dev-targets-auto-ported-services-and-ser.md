@@ -2,7 +2,7 @@
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — artifact targets can hide a companion-service crash, and failed service startup appears stopped."
@@ -16,7 +16,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T19:09:12Z"
+updated_at: "2026-10-19T19:14:31Z"
 review_passes: 5
 review_rounds: 2
 dev_error_count: 1
@@ -144,3 +144,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T19:05:50Z · body
 - 2026-10-19T19:06:34Z · body
 - 2026-10-19T19:09:12Z · body
+- 2026-10-19T19:14:31Z · status active→review
