@@ -181,9 +181,10 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "agents",
-        usage: "agents [--json] [--port N]",
-        desc: "List running agents (GET /api/agents/running)",
-        flags: "--json · --port",
+        usage:
+          'agents [list] · agents pause|resume <agent> [--model <model>] [--until <date>] [--reason "..."] [--json] [--port N]',
+        desc: "List running agents, or pause/resume an allowlist agent or model without removing it",
+        flags: "--model · --until · --reason · --json · --port",
       },
       {
         name: "stats",

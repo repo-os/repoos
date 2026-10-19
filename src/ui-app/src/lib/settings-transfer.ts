@@ -58,9 +58,19 @@ export const AGENT_MODEL_FAVORITES_KEY = "agent-model-favorites";
 export const AGENT_FAVORITES_KEY = "agent-cli-favorites";
 export const FAVORITE_THEMES_KEY = "repoos.favoriteThemes";
 
+export interface BudgetAllowlistPause {
+  model: string;
+  pausedUntil?: string;
+  pausedReason?: string;
+}
+
 export interface BudgetAllowlistRow {
   cli: string;
   models: string[];
+  paused?: boolean;
+  pausedUntil?: string;
+  pausedReason?: string;
+  pausedModels?: BudgetAllowlistPause[];
 }
 
 export interface AgentModelFavorite {
@@ -118,7 +128,35 @@ export function sanitizeBudgetAllowlist(value: unknown): BudgetAllowlistRow[] {
       .map((m) => (typeof m === "string" ? m.trim() : ""))
       .filter(Boolean);
     if (!models.length) continue;
-    out.push({ cli, models });
+    const row: BudgetAllowlistRow = { cli, models };
+    if (r.paused === true) row.paused = true;
+    const pausedUntil = nonEmptyString(r.pausedUntil);
+    if (pausedUntil) row.pausedUntil = pausedUntil;
+    const pausedReason = nonEmptyString(r.pausedReason);
+    if (pausedReason) row.pausedReason = pausedReason;
+    if (Array.isArray(r.pausedModels)) {
+      const pauses: BudgetAllowlistPause[] = [];
+      for (const item of r.pausedModels) {
+        let model: string | null = null;
+        let until: string | null = null;
+        let reason: string | null = null;
+        if (typeof item === "string") model = nonEmptyString(item);
+        else if (typeof item === "object" && item !== null && !Array.isArray(item)) {
+          const p = item as Record<string, unknown>;
+          model = nonEmptyString(p.model);
+          until = nonEmptyString(p.pausedUntil);
+          reason = nonEmptyString(p.pausedReason);
+        }
+        if (!model) continue;
+        pauses.push({
+          model,
+          ...(until ? { pausedUntil: until } : {}),
+          ...(reason ? { pausedReason: reason } : {}),
+        });
+      }
+      if (pauses.length) row.pausedModels = pauses;
+    }
+    out.push(row);
   }
   return out;
 }
@@ -310,6 +348,12 @@ function tomlStringArray(values: string[]): string {
   return `[${values.map((v) => JSON.stringify(v)).join(", ")}]`;
 }
 
+function tomlInlineTable(entries: Record<string, string>): string {
+  return `{ ${Object.entries(entries)
+    .map(([k, v]) => `${k} = ${v}`)
+    .join(", ")} }`;
+}
+
 function tomlScalar(value: unknown): string {
   if (typeof value === "string") return tomlString(value);
   if (typeof value === "boolean") return value ? "true" : "false";
@@ -351,6 +395,18 @@ export function serializeSettingsExport(
       lines.push("[[budget.allowlist]]");
       lines.push(`cli = ${tomlString(row.cli)}`);
       lines.push(`models = ${tomlStringArray(row.models)}`);
+      if (row.paused) lines.push("paused = true");
+      if (row.pausedUntil) lines.push(`pausedUntil = ${tomlString(row.pausedUntil)}`);
+      if (row.pausedReason) lines.push(`pausedReason = ${tomlString(row.pausedReason)}`);
+      if (row.pausedModels?.length) {
+        const pauses = row.pausedModels.map((pause) => {
+          const fields: Record<string, string> = { model: tomlString(pause.model) };
+          if (pause.pausedUntil) fields.pausedUntil = tomlString(pause.pausedUntil);
+          if (pause.pausedReason) fields.pausedReason = tomlString(pause.pausedReason);
+          return tomlInlineTable(fields);
+        });
+        lines.push(`pausedModels = [${pauses.join(", ")}]`);
+      }
     }
     lines.push("");
   }
@@ -440,11 +496,12 @@ function unquoteScalar(s: string): string {
   return s.replace(/^["']|["']$/g, "");
 }
 
-/** Split a `[...]` body on top-level commas (quote-aware). */
+/** Split a `[...]` body on top-level commas (quote- and brace-aware). */
 function splitArrayItems(body: string): string[] {
   const items: string[] = [];
   let cur = "";
   let quote: '"' | "'" | null = null;
+  let depth = 0;
   for (let i = 0; i < body.length; i++) {
     const ch = body[i];
     if (quote) {
@@ -458,7 +515,13 @@ function splitArrayItems(body: string): string[] {
     } else if (ch === '"' || ch === "'") {
       quote = ch;
       cur += ch;
-    } else if (ch === ",") {
+    } else if (ch === "{") {
+      depth++;
+      cur += ch;
+    } else if (ch === "}") {
+      depth = Math.max(0, depth - 1);
+      cur += ch;
+    } else if (ch === "," && depth === 0) {
       items.push(cur.trim());
       cur = "";
     } else {
@@ -469,13 +532,33 @@ function splitArrayItems(body: string): string[] {
   return items;
 }
 
+/** Parse one `{ key = value, … }` inline table (used by `pausedModels`). */
+function parseInlineTable(raw: string): Record<string, unknown> | null {
+  const s = raw.trim();
+  if (!s.startsWith("{") || !s.endsWith("}")) return null;
+  const out: Record<string, unknown> = {};
+  for (const part of splitArrayItems(s.slice(1, -1))) {
+    const eq = part.indexOf("=");
+    if (eq === -1) continue;
+    const key = part.slice(0, eq).trim();
+    if (!key) continue;
+    out[key] = parseValue(part.slice(eq + 1));
+  }
+  return out;
+}
+
 function parseValue(raw: string): unknown {
   const s = raw.trim();
   if (s.startsWith("[") && s.endsWith("]")) {
     return splitArrayItems(s.slice(1, -1))
-      .map((item) => unquoteScalar(item.trim()))
+      .map((item) => {
+        const trimmed = item.trim();
+        if (trimmed.startsWith("{")) return parseInlineTable(trimmed) ?? trimmed;
+        return unquoteScalar(trimmed);
+      })
       .filter((item) => item !== "");
   }
+  if (s.startsWith("{") && s.endsWith("}")) return parseInlineTable(s);
   if (/^-?\d+$/.test(s)) return Number(s);
   if (s === "true" || s === "false") return s === "true";
   return unquoteScalar(s);

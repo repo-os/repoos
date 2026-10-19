@@ -757,7 +757,11 @@ const SETTINGS_FIXTURE_STYLE: Partial<Record<ShotPreviewFixtureId, ActivityAnima
 
 /** Config-only shot fixtures (applied after `/api/config` loads, #0805). */
 export function isShotPreviewConfigFixture(fixture: ShotPreviewFixtureId): boolean {
-  return fixture === "editor:unconfigured" || fixture in SETTINGS_FIXTURE_STYLE;
+  return (
+    fixture === "editor:unconfigured" ||
+    fixture === "budget:paused" ||
+    fixture in SETTINGS_FIXTURE_STYLE
+  );
 }
 
 export function applyShotPreviewConfigFixture(
@@ -771,6 +775,35 @@ export function applyShotPreviewConfigFixture(
     if (editor) editor.command = "";
     const dev = data.dev as { inspector?: { editorCommand?: string } } | undefined;
     if (dev?.inspector) dev.inspector.editorCommand = "";
+    return;
+  }
+  if (fixture === "budget:paused") {
+    // #0850 — one whole-agent pause and one per-model pause, with a reason and
+    // a future resume date so the chip renders exactly as a real paused row.
+    const until = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    if (config.data) {
+      config.data["budget.allowlist"] = [
+        {
+          cli: "cursor",
+          models: ["composer-2.5"],
+          paused: true,
+          pausedUntil: until,
+          pausedReason: "Cursor credits exhausted",
+        },
+        {
+          cli: "opencode",
+          models: ["deepseek v4", "big pickle"],
+          pausedModels: [
+            {
+              model: "big pickle",
+              pausedReason: "Rate limited",
+              pausedUntil: until,
+            },
+          ],
+        },
+        { cli: "claude code", models: ["sonnet"] },
+      ];
+    }
     return;
   }
   const style = SETTINGS_FIXTURE_STYLE[fixture];

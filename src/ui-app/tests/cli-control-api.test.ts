@@ -342,6 +342,44 @@ describe("control API CLI", () => {
     killSpawns(fx);
   });
 
+  it("agents pause/resume writes the allowlist config (#0850)", async () => {
+    const fx = makeFixture(false);
+    await withServer(fx.root, async (s) => {
+      const port = Number(new URL(s.url).port);
+      const put = await api(s, "PATCH", "/api/config", {
+        "budget.allowlist": [{ cli: "opencode", models: ["big pickle", "deepseek v4"] }],
+      });
+      expect(put.status).toBe(200);
+
+      const paused = (await runJsonCmd(port, cmdAgentsRunning, [
+        "pause",
+        "opencode",
+        "--model",
+        "big pickle",
+        "--reason",
+        "credits",
+        "--until",
+        "2099-01-01T00:00:00Z",
+      ])) as { action: string; rows: Array<Record<string, unknown>> };
+      expect(paused.action).toBe("pause");
+      expect(paused.rows[0]?.pausedModels).toMatchObject([
+        { model: "big pickle", pausedReason: "credits" },
+      ]);
+      const text = readFileSync(join(fx.root, "repoos.toml"), "utf8");
+      expect(text).toContain("pausedModels");
+      expect(text).toContain("credits");
+
+      const resumed = (await runJsonCmd(port, cmdAgentsRunning, [
+        "resume",
+        "opencode",
+        "--model",
+        "big pickle",
+      ])) as { rows: Array<Record<string, unknown>> };
+      expect(resumed.rows[0]?.pausedModels).toBeUndefined();
+    });
+    killSpawns(fx);
+  }, 30_000);
+
   it("sync --json on an active task with a worktree", async () => {
     const fx = makeFixture(false);
     useAgentPath(fx);
