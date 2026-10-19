@@ -312,6 +312,7 @@ I would also avoid making navigation controls too prominent. They should feel li
 ## Screenshots
 
 ![Native Hub built from this branch (sidebar visible): full-height sidebar with no titlebar, navigation row at the top, Settings in the footer, WebView reclaiming the top space.](/api/tasks/0855/attachments/att_f1c92509-dc5f-40d7-8dab-3af7dc263c23.png)
+![Native Hub from this branch (sidebar collapsed): WebView fills the width and a floating reveal toggle sits in the content's upper-left, below the traffic lights.](/api/tasks/0855/attachments/att_81413d92-0637-4312-8de1-a8e08215fd64.png)
 
 ## Activity
 
@@ -328,3 +329,4 @@ I would also avoid making navigation controls too prominent. They should feel li
 - 2026-10-19T16:22:01Z · body
 - 2026-10-19T16:27:57Z · body
 - 2026-10-19T16:28:40Z · screenshots
+- 2026-10-19T16:29:22Z · screenshots
