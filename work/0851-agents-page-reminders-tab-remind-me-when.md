@@ -16,7 +16,7 @@ model_override: openrouter/openrouter/auto-beta
 review_cli_override: pi
 review_model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-10-19T12:23:10Z"
-updated_at: "2026-10-19T13:41:41Z"
+updated_at: "2026-10-19T14:21:10Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -57,9 +57,9 @@ Model the storage, tick and SSE-update pattern on scheduled tasks (src/server/sc
 "route": "/agents?tab=reminders",
 "highlight": "[data-testid=reminder-editor-drawer]",
 "steps": [
-  {
-    "click": "[data-testid=new-reminder]"
-  }
+{
+  "click": "[data-testid=new-reminder]"
+}
 ],
 "state": "reminders:due"
 }
