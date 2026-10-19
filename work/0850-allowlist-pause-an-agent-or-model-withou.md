@@ -14,7 +14,7 @@ branch: feat/allowlist-pause-an-agent-or-model-withou
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T13:42:28Z"
+updated_at: "2026-10-19T13:44:50Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -69,7 +69,7 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
   "highlight": "[data-testid=\"budget-pause-until\"]",
   "steps": [
     {
-      "click": "[data-testid=\"budget-pause-agent\"]"
+      "click": "[data-testid=\"budget-row-li-opencode\"] [data-testid=\"budget-pause-agent\"]"
     }
   ],
   "state": "budget:paused"
@@ -90,3 +90,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T13:30:05Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-19T13:38:14Z · body
 - 2026-10-19T13:42:28Z · body
+- 2026-10-19T13:44:50Z · body
