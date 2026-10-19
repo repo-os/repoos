@@ -2,7 +2,7 @@
 id: "0849"
 title: Build the For Clients landing page and Resend project enquiry form
 type: feature
-status: inbox
+status: active
 hold: true
 priority: p2
 area: landing
@@ -10,7 +10,7 @@ assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-19T10:22:29Z"
-updated_at: "2026-10-19T10:22:30Z"
+updated_at: "2026-10-19T10:22:42Z"
 ---
 ## Problem
 The human approved the For Clients prototype and wants it implemented in the existing landing app. This interactive Codex session owns implementation; do not dispatch a built-in engineer.
@@ -45,3 +45,4 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 
 - 2026-10-19T10:22:29Z · created · njachowski@gmail.com
 - 2026-10-19T10:22:30Z · screenshots
+- 2026-10-19T10:22:42Z · status inbox→active
