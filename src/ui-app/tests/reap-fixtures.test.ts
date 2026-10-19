@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -50,5 +51,36 @@ describe("reapStaleFixtures", () => {
     made.push(fresh);
     reapStaleFixtures(PREFIX);
     expect(existsSync(fresh)).toBe(true);
+  });
+
+  it("reaps a per-file tmpdir tree and kills the fixtures' spawned processes (#0858)", async () => {
+    const runRoot = join(tmpdir(), `${PREFIX}RunRoot`);
+    const inner = join(runRoot, `${PREFIX}Fixture`);
+    mkdirSync(inner, { recursive: true });
+    made.push(runRoot);
+    const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], {
+      stdio: "ignore",
+    });
+    const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
+    try {
+      writeFileSync(join(inner, "spawns.log"), `${JSON.stringify({ pid: child.pid })}\n`);
+      // The run root is one level up from the fixture, exactly the shape a
+      // killed vitest worker leaves behind.
+      const old = new Date(Date.now() - STALE_FIXTURE_AGE_MS - 60_000);
+      utimesSync(runRoot, old, old);
+
+      expect(reapStaleFixtures(PREFIX)).toBeGreaterThanOrEqual(1);
+      expect(existsSync(runRoot)).toBe(false);
+      await expect(
+        Promise.race([
+          exited,
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("spawned fixture process survived the reap")), 2_000),
+          ),
+        ]),
+      ).resolves.toBeUndefined();
+    } finally {
+      if (child.exitCode === null) child.kill("SIGKILL");
+    }
   });
 });

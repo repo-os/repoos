@@ -39,10 +39,12 @@ let runRoot: string | undefined;
 
 export async function setup(): Promise<void> {
   const removed = reapStaleFixtures("repoos-");
-  // A steady trickle is normal (each run leaves a few dirs a torn-down worker
-  // never cleaned). A big number means a test is leaking on every run — surface
-  // it instead of silently absorbing it, the way the `-worktrees` orphan leak
-  // went unnoticed until the tmpdir held ~18k of them.
+  // A normal run now leaves nothing behind (each test file's tmpdir is
+  // isolated and the run root is removed at teardown), so the only expected
+  // residue is a handful from a worker that was killed mid-file. A big number
+  // means a leak source is back — surface it instead of silently absorbing it,
+  // the way the `-worktrees` orphan leak went unnoticed until the tmpdir held
+  // ~18k of them.
   if (removed > 50) {
     console.warn(
       `[global-reap] removed ${removed} stale repoos-* fixture dirs from the tmpdir — ` +
