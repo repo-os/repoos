@@ -3022,6 +3022,9 @@ export function pausedAgentFallbackNote(
       `${info.reason ? ` (${info.reason})` : ""} and every allowed pair is paused — start blocked`
     );
   }
+  // An explicit human override is kept even when paused, so there was no swap
+  // and no fallback to explain.
+  if (selected.cli === configured.cli && selected.model === configured.model) return null;
   return (
     `agent fallback: ${configured.cli} + ${configured.model} is paused` +
     `${info.reason ? ` (${info.reason})` : ""}` +

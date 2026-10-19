@@ -208,8 +208,9 @@ function pauseIsActive(until: string | undefined, now: number): boolean {
 
 /**
  * Pause state for `cli + model`. A whole-row pause (`paused`) outranks a
- * per-model pause; `model` may be `"default"`/empty, which only matches a
- * whole-row pause.
+ * per-model pause. When `model` is `"default"`/empty the pair cannot be matched
+ * to one model, so any active per-model pause on the row makes it paused too
+ * (fail closed).
  */
 export function pairPauseInfo(
   rows: AgentModelAllowRow[],

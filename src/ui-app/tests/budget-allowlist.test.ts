@@ -473,6 +473,42 @@ pausedModels = [{ model = "sonnet", pausedReason = "rate limited", pausedUntil =
     expect(note).toContain("using claude code + sonnet");
   });
 
+  it("falls back when only the engineer's model is paused, and records the swap", () => {
+    const config = configWith([
+      {
+        cli: "opencode",
+        models: ["big pickle", "deepseek v4"],
+        pausedModels: [{ model: "big pickle", pausedReason: "rate limited" }],
+      },
+      { cli: "claude code", models: ["sonnet"] },
+    ]);
+    const selected = resolveAgentForTask(config, task());
+    // The configured engineer pair is paused; the next selectable allowlist
+    // pair wins (the row's other model, or another agent's pair).
+    expect(selected).not.toBeNull();
+    expect({ cli: selected?.cli, model: selected?.model }).not.toEqual({
+      cli: "opencode",
+      model: "big pickle",
+    });
+    const note = pausedAgentFallbackNote(config, task());
+    expect(note).toContain("opencode + big pickle is paused");
+    expect(note).toContain("rate limited");
+    expect(note).toContain(`using ${selected?.cli} + ${selected?.model}`);
+  });
+
+  it("does not report a fallback for a paused pair a human pinned explicitly", () => {
+    const config = configWith([
+      { cli: "opencode", models: ["big pickle"], paused: true, pausedReason: "credits" },
+      { cli: "claude code", models: ["sonnet"] },
+    ]);
+    const pinned = task({ cliOverride: "opencode", modelOverride: "big pickle" });
+    expect(resolveAgentForTask(config, pinned)).toMatchObject({
+      cli: "opencode",
+      model: "big pickle",
+    });
+    expect(pausedAgentFallbackNote(config, pinned)).toBeNull();
+  });
+
   it("fails closed with a clear message when all allowed pairs are paused", () => {
     const config = configWith([
       { cli: "opencode", models: ["big pickle"], paused: true },

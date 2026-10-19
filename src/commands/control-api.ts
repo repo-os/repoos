@@ -67,9 +67,15 @@ function printBudgetAllowlist(config: RepoOSConfig): void {
   console.log(
     c.dim("  Budget allowlist for agent drivers — allowed agent + model pairs (paused shown):"),
   );
+  const now = Date.now();
   for (const row of rows) {
     if (row.paused) {
-      const info = pairPauseInfo(rows, row.cli, row.models[0] ?? "");
+      const info = pairPauseInfo(rows, row.cli, row.models[0] ?? "", now);
+      if (!info.paused) {
+        // `pausedUntil` has passed — the row is already selectable again.
+        console.log(`  · ${row.cli} + ${row.models.join(", ")}`);
+        continue;
+      }
       const detail = [info.reason, info.until ? `until ${info.until}` : ""]
         .filter(Boolean)
         .join(", ");
@@ -79,7 +85,7 @@ function printBudgetAllowlist(config: RepoOSConfig): void {
       continue;
     }
     for (const model of row.models) {
-      const info = pairPauseInfo(rows, row.cli, model);
+      const info = pairPauseInfo(rows, row.cli, model, now);
       const detail = [info.reason, info.until ? `until ${info.until}` : ""]
         .filter(Boolean)
         .join(", ");
