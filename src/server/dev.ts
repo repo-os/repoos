@@ -1177,6 +1177,17 @@ export class DevTargetManager {
             void this.killPid(service.pid, process.platform !== "win32");
           }
         }
+        // A service exit marks the whole stack failed, but the target process
+        // may still be alive. Failed stacks are deliberately not re-adopted;
+        // reap that PID on reload so it cannot become an unmanaged orphan.
+        if (
+          state.status === "failed" &&
+          typeof state.pid === "number" &&
+          state.pid > 0 &&
+          isAlivePid(state.pid)
+        ) {
+          void this.killPid(state.pid, process.platform !== "win32");
+        }
         if (state.status !== "running" && state.status !== "starting") continue;
         if (typeof state.pid !== "number" || state.pid <= 0) continue;
         if (isReload && isAlivePid(state.pid)) {
