@@ -14,7 +14,7 @@ branch: feat/allowlist-pause-an-agent-or-model-withou
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T18:35:58Z"
+updated_at: "2026-10-19T18:40:24Z"
 dev_error_count: 4
 ---
 ## Problem
@@ -152,3 +152,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T18:25:51Z · body
 - 2026-10-19T18:35:57Z · status active→review
 - 2026-10-19T18:35:58Z · note: shots: skipped — 10 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-19T18:40:24Z · note: review pass 1: good to go
