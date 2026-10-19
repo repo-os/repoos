@@ -2,7 +2,7 @@
 id: "0849"
 title: Build the For Clients landing page and Resend project enquiry form
 type: feature
-status: active
+status: review
 hold: true
 priority: p2
 area: landing
@@ -96,4 +96,4 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 - 2026-10-19T11:39:06Z · body
 - 2026-10-19T11:44:29Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-19T11:44:29Z · note: handoff requested (cli)
-- 2026-10-19T11:51:12Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-19T11:51:12Z · status active→review
