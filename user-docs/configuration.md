@@ -38,7 +38,8 @@ compatibility.
 
 A write from Settings or `repoos config set` rewrites the rows it touches as
 single-line basic strings (`"..."`), so a hand-written `'''...'''` value keeps
-the same decoded text — only its quoting style may change.
+the same decoded text — only its quoting style may change. Rows it does not
+touch are preserved byte-for-byte, including their multi-line strings.
 
 The Settings UI edits the most common fields directly, and its raw
 `repoos.toml` editor can edit the whole file — including `[preview]`, `[check]`,
