@@ -2,7 +2,7 @@
 id: "0856"
 title: "Allowlist tab: replace the inline agent+model picker with an Add to allowlist modal (choose, then confirm)"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 depends_on: ["0850"]
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-19T15:46:53Z"
-updated_at: "2026-10-19T15:46:54Z"
+updated_at: "2026-10-19T17:01:46Z"
 ---
 ## Problem
 On the Agents page, Budget Controls -> "Agent+models allowlists for agent drivers" shows an always-visible agent+model picker ("opencode + Big Pickle") with a separate **Add to allowlist** button under it (`src/ui-app/src/components/BudgetControlsPanel.vue`, ~lines 114-131). Because the picker already shows a selected pair, it looks like a status display rather than a form, so it is easy to click Add to allowlist and re-add whatever default is selected, over and over, and then delete the duplicates. The UX is confusing and error-prone.
@@ -41,3 +41,4 @@ This is the same panel #0850 (pause an agent or model) is changing, so it depend
 
 - 2026-10-19T15:46:53Z · created · njachowski@gmail.com
 - 2026-10-19T15:46:54Z · screenshots
+- 2026-10-19T17:01:46Z · status inbox→ready
