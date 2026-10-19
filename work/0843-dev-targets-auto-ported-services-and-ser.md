@@ -15,7 +15,7 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T14:01:20Z"
+updated_at: "2026-10-19T14:20:35Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: e48e99aa611ca1d23454e19fcf0927b651121671
 review_rounds: 2
@@ -57,11 +57,11 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 ```json
 [
 {
-  "label": "Dev target with auto-ported api service sub-row",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".dev-services",
-  "state": "dev:running"
+"label": "Dev target with auto-ported api service sub-row",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-services",
+"state": "dev:running"
 }
 ]
 ```
