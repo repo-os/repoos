@@ -195,16 +195,21 @@ function readLiteralString(sc: TomlScanner): void {
 
 function readMultiLineBasicString(sc: TomlScanner): void {
   // Opening """
-  sc.advance(); sc.advance(); sc.advance();
+  sc.advance();
+  sc.advance();
+  sc.advance();
   // TOML trims the first newline after opening
   if (sc.peek() === "\n") {
     sc.advance();
   } else if (sc.peek() === "\r" && sc.peek(1) === "\n") {
-    sc.advance(); sc.advance();
+    sc.advance();
+    sc.advance();
   }
   while (!sc.eof()) {
     if (sc.peek() === '"' && sc.peek(1) === '"' && sc.peek(2) === '"') {
-      sc.advance(); sc.advance(); sc.advance();
+      sc.advance();
+      sc.advance();
+      sc.advance();
       return;
     }
     if (sc.peek() === "\\") {
@@ -225,16 +230,21 @@ function readMultiLineBasicString(sc: TomlScanner): void {
 
 function readMultiLineLiteralString(sc: TomlScanner): void {
   // Opening '''
-  sc.advance(); sc.advance(); sc.advance();
+  sc.advance();
+  sc.advance();
+  sc.advance();
   // TOML trims the first newline after opening
   if (sc.peek() === "\n") {
     sc.advance();
   } else if (sc.peek() === "\r" && sc.peek(1) === "\n") {
-    sc.advance(); sc.advance();
+    sc.advance();
+    sc.advance();
   }
   while (!sc.eof()) {
     if (sc.peek() === "'" && sc.peek(1) === "'" && sc.peek(2) === "'") {
-      sc.advance(); sc.advance(); sc.advance();
+      sc.advance();
+      sc.advance();
+      sc.advance();
       return;
     }
     sc.advance();

@@ -66,13 +66,27 @@ function decodeBasicMultiLine(inner: string): string {
     if (ch === "\\" && i + 1 < inner.length) {
       const next = inner[i + 1];
       switch (next) {
-        case '"': out.push('"'); break;
-        case "\\": out.push("\\"); break;
-        case "b": out.push("\b"); break;
-        case "t": out.push("\t"); break;
-        case "n": out.push("\n"); break;
-        case "f": out.push("\f"); break;
-        case "r": out.push("\r"); break;
+        case '"':
+          out.push('"');
+          break;
+        case "\\":
+          out.push("\\");
+          break;
+        case "b":
+          out.push("\b");
+          break;
+        case "t":
+          out.push("\t");
+          break;
+        case "n":
+          out.push("\n");
+          break;
+        case "f":
+          out.push("\f");
+          break;
+        case "r":
+          out.push("\r");
+          break;
         case "u": {
           if (i + 5 < inner.length) {
             const hex = inner.slice(i + 2, i + 6);
@@ -94,7 +108,9 @@ function decodeBasicMultiLine(inner: string): string {
           }
           break;
         }
-        default: out.push(next); break;
+        default:
+          out.push(next);
+          break;
       }
       i++;
     } else {

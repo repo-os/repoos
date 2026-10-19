@@ -8,7 +8,7 @@ describe("multi-line TOML strings", () => {
     expect((parsed as Record<string, unknown>)["command"]).toBe("echo hi && echo there");
   });
 
-  it("parses \"\"\" basic strings exactly", () => {
+  it('parses """ basic strings exactly', () => {
     const parsed = parseFlatToml('command = """echo hi && echo there"""');
     expect((parsed as Record<string, unknown>)["command"]).toBe("echo hi && echo there");
   });
@@ -20,10 +20,10 @@ describe("multi-line TOML strings", () => {
 
   it("handles embedded single and double quotes", () => {
     const parsed = parseFlatToml("x = '''it's \"great\"'''");
-    expect((parsed as Record<string, unknown>).x).toBe("it's \"great\"");
+    expect((parsed as Record<string, unknown>).x).toBe('it\'s "great"');
   });
 
-  it("handles \"\"\" escapes", () => {
+  it('handles """ escapes', () => {
     const parsed = parseFlatToml('x = """line1\\nline2\\\"quote"""');
     expect((parsed as Record<string, unknown>).x).toBe('line1\nline2"quote');
   });
