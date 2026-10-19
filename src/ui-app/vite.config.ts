@@ -117,9 +117,9 @@ export default defineConfig({
     setupFiles: [
       "./tests/setup/web-storage.ts",
       "./tests/setup/check-env.ts",
-      // Give each test file its own tmpdir and remove it afterwards (#0858).
-      // Must be a setupFile (not globalSetup): it has to run per file in the
-      // worker before that file's module-scope fixtures call mkdtemp.
+      // Isolate each file inside the global run root. This keeps fixture scans
+      // small while globalSetup's inherited TMPDIR also contains subprocesses
+      // whose runtime cached the temp path before this setup file ran.
       "./tests/setup/tmp-isolation.ts",
     ],
     // Runs once before the whole test run starts (not per test file) —
