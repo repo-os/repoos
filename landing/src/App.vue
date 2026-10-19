@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
+import ForClients from "./components/ForClients.vue";
 import InstallBox from "./components/InstallBox.vue";
 import SiteLogo from "./components/SiteLogo.vue";
 import {
@@ -15,6 +16,18 @@ import {
   syncThemeToUrl,
   appendThemeToUrl,
 } from "./theme-resolve";
+
+const isForClients = /^\/for-clients(?:\/(?:index\.html)?)?$/.test(window.location.pathname);
+function siteLink(path: string): string {
+  const url = new URL(
+    appendThemeToUrl(
+      new URL(path, window.location.origin).href,
+      designTheme.value,
+      appearance.value,
+    ),
+  );
+  return url.pathname + url.search + url.hash;
+}
 
 const appearance = ref<Appearance>("dark");
 const designTheme = ref<DesignThemeId>("classic");
@@ -62,10 +75,10 @@ function onDocumentClick(e: MouseEvent): void {
   }
 }
 
-// Mobile nav. The inline links need ~686px to fit beside the logo, so they're
-// hidden below Tailwind's md (768px) and reachable through this menu instead.
+// Six inline links plus the existing theme/GitHub controls need desktop width.
+// Keep the shared mobile menu below lg (1024px) on both marketing pages.
 const menuOpen = ref(false);
-const DESKTOP_NAV = "(min-width: 768px)";
+const DESKTOP_NAV = "(min-width: 1024px)";
 
 function closeMenu(): void {
   menuOpen.value = false;
@@ -179,17 +192,33 @@ const year = new Date().getFullYear();
 <template>
   <header class="site-nav">
     <div class="wrap flex h-[58px] items-center justify-between">
-      <a href="#top" class="flex items-center gap-2.5">
+      <a :href="isForClients ? siteLink('/') : '#top'" class="flex items-center gap-2.5">
         <SiteLogo class="h-7 w-7" :size="28" />
         <span class="text-[15px] font-bold tracking-tight">RepoOS</span>
       </a>
-      <nav class="flex min-w-0 shrink items-center gap-3 md:gap-6">
-        <a href="#why" class="nav-link hidden md:block">The problem</a>
-        <a href="#how" class="nav-link hidden md:block">How it works</a>
-        <a href="#team" class="nav-link hidden md:block">The team</a>
-        <a href="#principles" class="nav-link hidden md:block">Design</a>
-        <a :href="docsLink()" class="nav-link hidden md:block">Docs</a>
-        <div class="theme-controls hidden md:inline-flex">
+      <nav class="flex min-w-0 shrink items-center gap-3 lg:gap-6">
+        <a :href="isForClients ? siteLink('/#why') : '#why'" class="nav-link hidden lg:block"
+          >The problem</a
+        >
+        <a :href="isForClients ? siteLink('/#how') : '#how'" class="nav-link hidden lg:block"
+          >How it works</a
+        >
+        <a :href="isForClients ? siteLink('/#team') : '#team'" class="nav-link hidden lg:block"
+          >The team</a
+        >
+        <a
+          :href="isForClients ? siteLink('/#principles') : '#principles'"
+          class="nav-link hidden lg:block"
+          >Design</a
+        >
+        <a :href="docsLink()" class="nav-link hidden lg:block">Docs</a>
+        <a
+          :href="siteLink('/for-clients')"
+          class="nav-link hidden lg:block"
+          :aria-current="isForClients ? 'page' : undefined"
+          >For Clients</a
+        >
+        <div class="theme-controls hidden lg:inline-flex">
           <div class="theme-picker">
             <button
               type="button"
@@ -284,7 +313,7 @@ const year = new Date().getFullYear();
         </a>
         <button
           type="button"
-          class="nav-burger inline-flex md:hidden"
+          class="nav-burger inline-flex lg:hidden"
           :aria-expanded="menuOpen"
           aria-controls="mobile-menu"
           :aria-label="menuOpen ? 'Close menu' : 'Open menu'"
@@ -310,13 +339,40 @@ const year = new Date().getFullYear();
       </nav>
     </div>
 
-    <div v-if="menuOpen" id="mobile-menu" class="nav-menu md:hidden">
+    <div v-if="menuOpen" id="mobile-menu" class="nav-menu lg:hidden">
       <div class="wrap flex flex-col py-2">
-        <a href="#why" class="nav-menu-link" @click="closeMenu">The problem</a>
-        <a href="#how" class="nav-menu-link" @click="closeMenu">How it works</a>
-        <a href="#team" class="nav-menu-link" @click="closeMenu">The team</a>
-        <a href="#principles" class="nav-menu-link" @click="closeMenu">Design</a>
+        <a
+          :href="isForClients ? siteLink('/#why') : '#why'"
+          class="nav-menu-link"
+          @click="closeMenu"
+          >The problem</a
+        >
+        <a
+          :href="isForClients ? siteLink('/#how') : '#how'"
+          class="nav-menu-link"
+          @click="closeMenu"
+          >How it works</a
+        >
+        <a
+          :href="isForClients ? siteLink('/#team') : '#team'"
+          class="nav-menu-link"
+          @click="closeMenu"
+          >The team</a
+        >
+        <a
+          :href="isForClients ? siteLink('/#principles') : '#principles'"
+          class="nav-menu-link"
+          @click="closeMenu"
+          >Design</a
+        >
         <a :href="docsLink()" class="nav-menu-link" @click="closeMenu">Docs</a>
+        <a
+          :href="siteLink('/for-clients')"
+          class="nav-menu-link"
+          :aria-current="isForClients ? 'page' : undefined"
+          @click="closeMenu"
+          >For Clients</a
+        >
         <a href="https://github.com/repo-os/repoos" class="nav-menu-link" @click="closeMenu"
           >GitHub</a
         >
@@ -410,7 +466,8 @@ const year = new Date().getFullYear();
     </div>
   </header>
 
-  <main id="top">
+  <ForClients v-if="isForClients" :home-link="siteLink('/')" />
+  <main v-else id="top">
     <!-- ============ HERO ============ -->
     <section class="wrap pt-16 pb-14 sm:pt-24 sm:pb-20">
       <div class="grid items-center gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
@@ -836,9 +893,9 @@ const year = new Date().getFullYear();
       </div>
       <p class="text-[12px] text-[var(--txt-faint)]">
         This page was built as task
-        <a href="https://github.com/repo-os/repoos" class="text-[var(--violet)] hover:underline"
-          >#0338</a
-        >
+        <a href="https://github.com/repo-os/repoos" class="text-[var(--violet)] hover:underline">{{
+          isForClients ? "#0849" : "#0338"
+        }}</a>
         on RepoOS's own board &middot; &copy; {{ year }}
       </p>
     </div>
