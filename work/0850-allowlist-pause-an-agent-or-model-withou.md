@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T15:10:21Z"
+updated_at: "2026-10-19T15:16:10Z"
 dev_error_count: 2
 ---
 ## Problem
@@ -85,3 +85,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T15:08:01Z · body
 - 2026-10-19T15:08:47Z · cli_override, model_override
 - 2026-10-19T15:10:21Z · body
+- 2026-10-19T15:16:10Z · message_queued at 2026-10-19T15:16:10.135Z
