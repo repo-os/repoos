@@ -10,7 +10,7 @@ assigned_to: human
 created_by: njachowski@gmail.com
 branch: codex/0849-for-clients
 created_at: "2026-10-19T10:22:29Z"
-updated_at: "2026-10-19T11:33:27Z"
+updated_at: "2026-10-19T11:37:32Z"
 ---
 ## Problem
 The human approved the For Clients prototype and wants it implemented in the existing landing app. This interactive Codex session owns implementation; do not dispatch a built-in engineer.
@@ -45,45 +45,45 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 ```json
 [
 {
-  "label": "For Clients approved layout and shared desktop navigation",
-  "target": "Landing page",
-  "route": "/for-clients?theme=classic&appearance=dark",
-  "highlight": ".clients-hero"
+"label": "For Clients approved layout and shared desktop navigation",
+"target": "Landing page",
+"route": "/for-clients?theme=classic&appearance=dark",
+"highlight": ".clients-hero"
 },
 {
-  "label": "Client page in Classic light appearance",
-  "target": "Landing page",
-  "route": "/for-clients?theme=classic&appearance=light",
-  "highlight": ".clients-hero"
+"label": "Client page in Classic light appearance",
+"target": "Landing page",
+"route": "/for-clients?theme=classic&appearance=light",
+"highlight": ".clients-hero"
 },
 {
-  "label": "Mobile client page in Gruvbox dark",
-  "target": "Landing page",
-  "route": "/for-clients?theme=gruvbox&appearance=dark",
-  "highlight": ".clients-hero",
-  "viewportWidth": 390
+"label": "Mobile client page in Gruvbox dark",
+"target": "Landing page",
+"route": "/for-clients?theme=gruvbox&appearance=dark",
+"highlight": ".clients-hero",
+"viewportWidth": 390
 },
 {
-  "label": "Mobile client page in Gruvbox light",
-  "target": "Landing page",
-  "route": "/for-clients?theme=gruvbox&appearance=light",
-  "highlight": ".clients-hero",
-  "viewportWidth": 390
+"label": "Mobile client page in Gruvbox light",
+"target": "Landing page",
+"route": "/for-clients?theme=gruvbox&appearance=light",
+"highlight": ".clients-hero",
+"viewportWidth": 390
 },
 {
-  "label": "Mobile project enquiry with required work email",
-  "target": "Landing page",
-  "route": "/for-clients?theme=classic&appearance=dark",
-  "highlight": ".clients-dialog",
-  "steps": [
-    {
-      "click": ".clients-actions .clients-primary"
-    },
-    {
-      "waitFor": "dialog[open]"
-    }
-  ],
-  "viewportWidth": 390
+"label": "Mobile project enquiry with required work email",
+"target": "Landing page",
+"route": "/for-clients?theme=classic&appearance=dark",
+"highlight": ".clients-dialog",
+"steps": [
+  {
+    "click": ".clients-actions .clients-primary"
+  },
+  {
+    "waitFor": "dialog[open]"
+  }
+],
+"viewportWidth": 390
 }
 ]
 ```
@@ -98,3 +98,4 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 - 2026-10-19T11:30:36Z · status ready→active
 - 2026-10-19T11:30:36Z · note: Interactive Codex implementation is in progress in codex/0849-for-clients; keep hold and human assignment to prevent built-in engineer dispatch.
 - 2026-10-19T11:33:27Z · body
+- 2026-10-19T11:37:32Z · note: Implemented directly in isolated Codex worktree /Users/nick/.codex/worktrees/for-clients/repoos on codex/0849-for-clients (f66125387). No built-in engineer was started. Scoped RepoOS check passed: format/lint/build/guards, rendered contrast, 27 focused tests, UI smoke, landing build. Cloudflare Wrangler dry-run passed. Browser checked at 320/390/1024/1280px with no horizontal overflow, four theme/appearance combinations and mobile dialog/menu. Five declared Shots captured through repoos shot. Production deployment is out of scope; configure the landing Worker Resend secret and verified sender per landing/README.md and verify controlled mailbox receipt before launch. #0848 showcase remains deferred.
