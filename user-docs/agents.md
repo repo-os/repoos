@@ -299,8 +299,9 @@ human-approved subset.
 - **Agent+Models Allowlists for Agent Drivers** lists the allowed coding agents;
   each one has its own list of allowed models, collapsed by default with a
   model count (for example `claude code · 2 models`). Expand a row to see its
-  models; add or remove entries with the same coding agent + model selector the
-  rest of the page uses.
+  models and remove a model or agent from the row. Add a pair with **+ Add to
+  allowlist**, which opens a modal using the same coding agent + model selector
+  the rest of the page uses; a pair already on the list can't be added twice.
 - The allowlist is **optional**. Leave it empty and nothing is restricted —
   agent drivers behave exactly as they do today.
 - A **human using the web UI is never restricted** and always sees the full
