@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T12:22:45Z"
+updated_at: "2026-10-19T12:22:52Z"
 ---
 ## Problem
 Cursor ran out of credit on 2026-10-19 and will not be usable again for about three days. Today the only ways to stop RepoOS using it are to delete its row from `[[budget.allowlist]]` (losing the entry and the config) or to hand-edit overrides on every task. Starts, auto-dispatch, the CTO's restart/failover and the agent drivers keep trying `cursor`/`composer-2.5`, fail, and loop (tasks bounce between engineer restarts and connection errors). Providers and agents will come and go like this regularly (credits, rate limits, outages).
@@ -31,8 +31,8 @@ Config shape (documented in docs and `getConfigSchema()`): rows in `[[budget.all
 - Tests: a paused agent/model is skipped by dispatch, Start, failover and the drivers; the chosen fallback and the reason are recorded; with all pairs paused a start fails with a clear message; an expired `pausedUntil` auto-resumes without a restart.
 - Tests: the config parser round-trips the new keys, ignores unknown ones, and old configs behave exactly as before; `repoos agents pause/resume` writes the config and the Budget Controls UI reflects it live.
 - UI: Budget Controls shows paused rows with chip, reason and resume date; pause/resume works from the UI with the shared components; light and dark checked; declared shots use a real fixture (add a `budget:paused` fixture if needed) and every PNG is opened.
-- docs/agent-run-operations.md (or the allowlist doc), user-docs/configuration.md and AGENTS.md's "Agent drivers pick from the budget allowlist" paragraph are updated.
-- No new runtime dependency; never write API keys or secrets into config.
+- docs/agent-run-operations.md (or the allowlist doc), user-docs/configuration.md and AGENTS.md's 'Agent drivers pick from the budget allowlist' paragraph are updated.
+- No new runtime dependency.
 
 ## Notes for AI
 Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config.ts (~line 1870), src/ui-app/src/components/BudgetControlsPanel.vue, and wherever the CTO failover and `repoos override` pick pairs (grep restart-stalled-agent and `override`). This changes how every engineer start picks an agent: keep the default behaviour identical when nothing is paused, and fail closed (never silently pick a paused pair). Do not touch repoos.toml. Source: Nick, 2026-10-19 (cursor credits exhausted for ~3 days).
@@ -41,3 +41,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 
 - 2026-10-19T12:22:44Z · created · njachowski@gmail.com
 - 2026-10-19T12:22:45Z · needs_input
+- 2026-10-19T12:22:52Z · body: Acceptance criteria (added 2, removed 2)
