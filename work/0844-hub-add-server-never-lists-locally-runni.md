@@ -11,7 +11,7 @@ branch: feat/hub-add-server-never-lists-locally-runni
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:15:39Z"
-updated_at: "2026-10-19T05:27:46Z"
+updated_at: "2026-10-19T05:28:30Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -38,6 +38,14 @@ So the probe is not reliable: creating a thousand sessions at once means request
 ## Notes for AI
 Start from macos/RepoOSHub/LocalServerDiscovery.swift, ServerEditorSheet.swift (runDiscovery and LocalDiscoverySection) and HealthCheckService.swift. The repro harness is a ~30-line Swift script (TaskGroup over 7000...7999 with ephemeral sessions); recreate it to confirm the fix. Build with xcodebuild for the Hub scheme and run the Hub unit tests; no device or signing needed. Do not touch repoos.toml. Source: Nick, 2026-10-19, screenshot of the Add server sheet.
 
+## Manual check
+With a local `repoos serve` on a non-default port (e.g. **7559**), open Hub → **Add server** and confirm:
+
+1. **Running locally** lists the instance (project name + `localhost:7559`).
+2. Clicking **+** fills the Server URL field with `localhost:7559`.
+
+_Record pass/fail and date when verified in Hub._
+
 ## Activity
 
 - 2026-10-19T05:15:39Z · created · njachowski@gmail.com
@@ -49,3 +57,4 @@ Start from macos/RepoOSHub/LocalServerDiscovery.swift, ServerEditorSheet.swift (
 - 2026-10-19T05:27:00Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-19T05:27:45Z · note: review pass 1: needs some work
 - 2026-10-19T05:27:46Z · status review→active
+- 2026-10-19T05:28:30Z · body: Manual check (added)
