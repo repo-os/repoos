@@ -77,6 +77,11 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0805 — clears the configured editor so the fallback "Set editor in
   // Settings → General" hint renders instead of the "Open in editor" button.
   "editor:unconfigured",
+  // #0664 — New input panel with a failed attachment upload still retryable
+  // after "Create another input".
+  "panel:newInputOutstandingUpload",
+  // #0664 — New-task freeform panel with a failed screenshot retry row.
+  "panel:freeformFailedScreenshot",
   // #0841 — Agents scheduled tab with the New schedule drawer open.
   "schedule:newPanel",
 ] as const;
