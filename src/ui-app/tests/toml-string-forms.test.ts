@@ -75,6 +75,12 @@ describe("multi-line TOML strings", () => {
     expect(parsed.x).toBe('line1\nline2"quote"');
   });
 
+  it("decodes a single-line \\UXXXXXXXX escape with TOML rules", () => {
+    // JSON.parse rejects `\U`, so the reader must not use JSON rules here.
+    expect(parseFlatToml('x = "\\U0001F600"').x).toBe("😀");
+    expect(parseFlatToml('x = "\\u0041\\U0001F600"').x).toBe("A😀");
+  });
+
   it('honours a line-ending backslash in a """ string', () => {
     // TOML trims the backslash, the newline and the following indentation.
     const parsed = parseFlatToml('x = """a\\\n   b"""');
