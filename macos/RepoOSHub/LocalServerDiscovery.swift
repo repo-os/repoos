@@ -47,9 +47,15 @@ enum LocalListeningPortEnumerator {
 
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
-        guard process.terminationStatus == 0 else { return nil }
-
-        return parsePorts(from: data, in: range)
+        // lsof exits 1 when nothing matches; that is an empty listener set, not a tool failure.
+        switch process.terminationStatus {
+        case 0:
+            return parsePorts(from: data, in: range)
+        case 1 where data.isEmpty:
+            return []
+        default:
+            return nil
+        }
     }
 
     static func parsePorts(from data: Data, in range: ClosedRange<Int>) -> [Int] {
