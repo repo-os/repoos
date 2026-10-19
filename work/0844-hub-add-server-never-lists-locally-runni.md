@@ -2,7 +2,7 @@
 id: "0844"
 title: "Hub: Add server never lists locally running RepoOS servers (discovery probe times out)"
 type: bug
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -60,4 +60,4 @@ _Record pass/fail and date when verified in Hub._
 - 2026-10-19T05:28:30Z · body: Manual check (added)
 - 2026-10-19T05:28:30Z · message_queued at 2026-10-19T05:28:30.974Z
 - 2026-10-19T05:29:11Z · body
-- 2026-10-19T05:36:08Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-19T05:36:08Z · status active→review
