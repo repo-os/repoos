@@ -13,7 +13,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-10-19T18:15:21Z"
+updated_at: "2026-10-19T18:16:13Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 3
@@ -38,16 +38,16 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 ```json
 [
 {
-  "label": "Dev page: [[dev.targets]] commands parsed from repoos.toml",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".dev-command"
+"label": "Dev page: [[dev.targets]] commands parsed from repoos.toml",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-command"
 },
 {
-  "label": "Settings repoos.toml tab: supported string forms copy",
-  "target": "default",
-  "route": "/settings?tab=toml",
-  "highlight": ".toml-raw-head .setting-desc"
+"label": "Settings repoos.toml tab: supported string forms copy",
+"target": "default",
+"route": "/settings?tab=toml",
+"highlight": ".toml-raw-head .setting-desc"
 }
 ]
 ```
@@ -106,3 +106,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T18:14:11Z · body
 - 2026-10-19T18:15:05Z · body
 - 2026-10-19T18:15:21Z · body
+- 2026-10-19T18:16:13Z · body
