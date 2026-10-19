@@ -174,6 +174,26 @@ describe("upsertTunnelSection", () => {
     expect(updated).toContain('name = "repoos-local"');
     expect(parseTunnelSection(updated).name).toBe("repoos-local");
   });
+
+  it("preserves blank lines inside a multi-line string across an upsert", () => {
+    // The old global blank-line collapse turned `a\n\n\nb` into `a\n\nb`,
+    // rewriting string content.
+    const base = [
+      "instructions = '''",
+      "a",
+      "",
+      "",
+      "b",
+      "'''",
+      "",
+      "[tunnel]",
+      'name = "old"',
+      "",
+    ].join("\n");
+    const updated = upsertTunnelSection(base, cfg);
+    expect(updated).toContain("a\n\n\nb");
+    expect(parseTunnelSection(updated).name).toBe("repoos-local");
+  });
 });
 
 describe("hostname inference + validation", () => {
