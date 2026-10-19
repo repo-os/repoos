@@ -47,6 +47,7 @@ import {
   allAllowlistPairsPaused,
   firstSelectablePair,
   isPairPaused,
+  isPairSelectable,
   pairPauseInfo,
 } from "../core/budget-allowlist.js";
 import { pressureReason } from "../core/pressure-guard.js";
@@ -2808,7 +2809,16 @@ function applyPauseFallback(
   const rows = config.budget?.allowlist ?? [];
   if (!rows.length) return base;
   if (!isPairPaused(rows, base.cli, base.model, now)) return base;
-  const fallback = firstSelectablePair(rows, now);
+  // Prefer a pair some enabled agent already uses: it is a harness this project
+  // actually runs, and — because the pair must also be selectable — still on
+  // the allowlist and not paused. Fall back to the first selectable allowlist
+  // pair only when no configured agent qualifies.
+  const configured = agentsForConfig(config).find(
+    (a) => a.enabled && isPairSelectable(rows, a.cli, a.model, now),
+  );
+  const fallback =
+    (configured ? { cli: configured.cli, model: configured.model } : null) ??
+    firstSelectablePair(rows, now);
   if (!fallback) return null;
   return { ...base, cli: fallback.cli, model: fallback.model };
 }

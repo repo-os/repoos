@@ -255,6 +255,7 @@ async function resumeModel(cli: string, model: string): Promise<void> {
         :key="row.cli"
         class="budget-row"
         :class="{ 'budget-row-paused': rowPaused(row) }"
+        :data-testid="`budget-row-li-${row.cli}`"
       >
         <button
           type="button"
@@ -427,7 +428,7 @@ async function resumeModel(cli: string, model: string): Promise<void> {
   background: var(--panel-solid);
 }
 .budget-row-paused {
-  border-color: var(--yellow-border, var(--border-bright));
+  border-color: var(--amber-border-tint);
 }
 .budget-row-head {
   display: flex;
@@ -473,8 +474,8 @@ async function resumeModel(cli: string, model: string): Promise<void> {
   gap: 5px;
   padding: 2px 8px;
   border-radius: 999px;
-  border: 1px solid var(--yellow-border, var(--border-bright));
-  background: var(--yellow-tint, var(--panel));
+  border: 1px solid var(--amber-border-tint);
+  background: var(--amber-tint);
   color: var(--txt);
   font-size: 11px;
   font-weight: 600;
@@ -510,8 +511,8 @@ async function resumeModel(cli: string, model: string): Promise<void> {
   background: var(--panel);
 }
 .budget-model-paused {
-  border-color: var(--yellow-border, var(--border-bright));
-  background: var(--yellow-tint, var(--panel));
+  border-color: var(--amber-border-tint);
+  background: var(--amber-tint);
 }
 .budget-model-action {
   background: none;
