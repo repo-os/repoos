@@ -377,11 +377,16 @@ cannot tell from the code alone:
 - **Agent drivers pick from the budget allowlist.** When you (an AI session, not
   a human in the UI) set an engineer/reviewer override — `repoos override`, or a
   `PATCH` on `cliOverride`/`modelOverride` — the server refuses a pair outside
-  the human-approved allowlist in `repoos.toml` (`[[budget.allowlist]]`). Run
-  `repoos override --help` to print the allowed agent + model pairs, or read
-  them on the Agents page's **Budget Controls** tab. A human in the UI keeps the
-  full list, and an empty allowlist restricts nothing. Don't work around a
-  refusal; ask a human to change the allowlist if you need another pair.
+  the human-approved allowlist in `repoos.toml` (`[[budget.allowlist]]`) and
+  refuses a **paused** pair the same way. Run `repoos override --help` to print
+  the allowed agent + model pairs (paused ones are marked), or read them on the
+  Agents page's **Budget Controls** tab. A paused entry stays configured:
+  `repoos agents pause <agent> [--model <model>] [--until <date>] [--reason "…"]`
+  stops starts/dispatch/failover/drivers from selecting it, and
+  `repoos agents resume <agent> [--model <model>]` brings it back. A human in
+  the UI keeps the full list, and an empty allowlist restricts nothing. Don't
+  work around a refusal; ask a human to change the allowlist or resume the pair
+  if you need another one.
 - Keep frontmatter tidy; `repoos` normalizes key order on write.
 - One task = one focused worktree.
 - **Never `git add` binaries under `work/` or `inputs/`.** Task and input
