@@ -8,7 +8,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { stripTomlComment, unquoteTomlString } from "../../core/toml-line.js";
+import {
+  stripTomlComment,
+  tomlContinuationLines,
+  unquoteTomlString,
+} from "../../core/toml-line.js";
 import { loadConfig, patchTomlConfig } from "../../core/config.js";
 import { parseToml } from "../../core/tunnel.js";
 
@@ -47,6 +51,39 @@ describe("stripTomlComment", () => {
     expect(stripTomlComment('x = "the task\'s #1 rule" # c').trim()).toBe(
       'x = "the task\'s #1 rule"',
     );
+  });
+});
+
+describe("tomlContinuationLines", () => {
+  it("marks only the lines that begin inside a multi-line string", () => {
+    const lines = [
+      'a = "one line"',
+      "b = '''",
+      "[not.a.header]",
+      "key = value # content",
+      "'''",
+      "[section]",
+      'c = """x"""',
+      "",
+    ];
+    expect(tomlContinuationLines(lines)).toEqual([
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  it("does not let a comment open a string", () => {
+    expect(tomlContinuationLines(["# a ''' comment", "x = 1"])).toEqual([false, false]);
+  });
+
+  it("handles a one-line multi-line string without leaking state", () => {
+    expect(tomlContinuationLines(["x = '''a''' # c", "y = 1"])).toEqual([false, false]);
   });
 });
 

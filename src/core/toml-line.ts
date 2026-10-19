@@ -174,6 +174,69 @@ function decodeBasicMultiLine(inner: string): string {
   return out.join("");
 }
 
+/**
+ * For each line of a TOML document, whether that line *begins* inside a
+ * multi-line string. Writers that work line-by-line use this to avoid treating
+ * string content as structure: a `[section]` or `key = …` line between
+ * `'''`/`"""` delimiters is content, not a header or assignment.
+ */
+export function tomlContinuationLines(lines: readonly string[]): boolean[] {
+  const continuation: boolean[] = [];
+  let delimiter: '"""' | "'''" | null = null;
+  for (const line of lines) {
+    continuation.push(delimiter !== null);
+    let i = 0;
+    while (i < line.length) {
+      const ch = line[i]!;
+      if (delimiter) {
+        if (delimiter === '"""' && ch === "\\") {
+          i += 2;
+          continue;
+        }
+        if (line.startsWith(delimiter, i)) {
+          let run = 0;
+          while (line[i + run] === delimiter[0]) run++;
+          i += run;
+          delimiter = null;
+          continue;
+        }
+        i++;
+        continue;
+      }
+      if (ch === "#") break;
+      if (ch === '"' || ch === "'") {
+        if (line.startsWith('"""', i)) {
+          delimiter = '"""';
+          i += 3;
+          continue;
+        }
+        if (line.startsWith("'''", i)) {
+          delimiter = "'''";
+          i += 3;
+          continue;
+        }
+        // Single-line string: skip to its closing quote (honouring escapes).
+        const quote = ch;
+        i++;
+        while (i < line.length) {
+          if (quote === '"' && line[i] === "\\") {
+            i += 2;
+            continue;
+          }
+          if (line[i] === quote) {
+            i++;
+            break;
+          }
+          i++;
+        }
+        continue;
+      }
+      i++;
+    }
+  }
+  return continuation;
+}
+
 export function unquoteTomlString(s: string): string {
   if (s.length >= 6 && (s.startsWith("'''") || s.startsWith('"""'))) {
     const delimiter = s.startsWith("'''") ? "'''" : '"""';
