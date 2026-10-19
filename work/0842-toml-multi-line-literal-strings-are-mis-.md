@@ -54,3 +54,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T15:08:53Z · cli_override, model_override
 - 2026-10-19T15:19:48Z · body
 - 2026-10-19T15:26:10Z · message_queued at 2026-10-19T15:26:10.202Z
+- 2026-10-19T15:26:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
