@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-19T18:04:06Z"
-review_passes: 3
 id: "0842"
 title: TOML multi-line literal strings (''' ''') are mis-parsed in repoos.toml
 type: bug
@@ -13,11 +11,13 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/toml-multi-line-literal-strings-are-mis-
-cli_override: opencode
-model_override: opencode-go/deepseek-v4.1-flash
+cli_override: pi
+model_override: openrouter/openrouter/free
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:40Z"
+updated_at: "2026-10-19T18:07:14Z"
+review_passes: 3
 review_rounds: 2
 dev_error_count: 3
 ---
@@ -82,4 +82,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T17:52:17Z · body
 - 2026-10-19T18:02:04Z · status active→review
 - 2026-10-19T18:04:05Z · note: review pass 3: needs some work
-
+- 2026-10-19T18:07:14Z · cli_override, model_override
