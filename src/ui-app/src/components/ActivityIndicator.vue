@@ -169,11 +169,13 @@ const matrixPositions = [
       class="ai-mark ai-bird-quick quick"
       aria-hidden="true"
     >
-      <span class="foot">
-        <i class="toe l"></i><i class="toe"></i><i class="toe r"></i><i class="heel"></i>
-      </span>
-      <span class="foot second">
-        <i class="toe l"></i><i class="toe"></i><i class="toe r"></i><i class="heel"></i>
+      <span class="ai-bird-quick-stage">
+        <span class="foot">
+          <i class="toe l"></i><i class="toe"></i><i class="toe r"></i><i class="heel"></i>
+        </span>
+        <span class="foot second">
+          <i class="toe l"></i><i class="toe"></i><i class="toe r"></i><i class="heel"></i>
+        </span>
       </span>
     </span>
   </span>
