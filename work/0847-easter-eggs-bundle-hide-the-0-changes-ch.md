@@ -86,10 +86,10 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 "highlight": ".tc-human-chip",
 "steps": [
 {
-  "click": "button.theme-toggle"
+"click": "button.theme-toggle"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "state": "card:noChanges"
