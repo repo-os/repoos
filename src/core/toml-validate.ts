@@ -17,11 +17,12 @@
  * hatch stricter than the loader it feeds.
  *
  * Crucially, it rejects the *valid TOML* shapes that `parseFlatToml`
- * (`config.ts`) cannot read: multi-line strings, multi-line arrays, and inline
- * tables. Those would otherwise sail through a save and then be silently
- * misread (the first line of a multi-line array parses as the string `"["`,
- * an inline table as a plain string), so a whole save could take no effect
- * with no error — the exact silent-config failure this gate exists to stop.
+ * (`config.ts`) cannot read: multi-line arrays and inline tables (multi-line
+ * strings are supported by both). Those would otherwise sail through a save and
+ * then be silently misread (the first line of a multi-line array parses as the
+ * string `"["`, an inline table as a plain string), so a whole save could take
+ * no effect with no error — the exact silent-config failure this gate exists to
+ * stop.
  */
 
 export interface TomlValidationResult {
@@ -364,7 +365,7 @@ function readKeyValue(sc: TomlScanner): void {
   const isMultiLineString = readValue(sc);
   if (sc.lineNumber !== startLine && !isMultiLineString) {
     sc.fail(
-      "multi-line values aren't supported by RepoOS's config reader — keep arrays on a single line",
+      "multi-line arrays aren't supported by RepoOS's config reader — keep the array on a single line",
     );
   }
   sc.finishStatement();
