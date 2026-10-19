@@ -14,7 +14,7 @@ branch: feat/allowlist-pause-an-agent-or-model-withou
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T13:38:14Z"
+updated_at: "2026-10-19T13:42:28Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -40,6 +40,43 @@ Config shape (documented in docs and `getConfigSchema()`): rows in `[[budget.all
 ## Notes for AI
 Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config.ts (~line 1870), src/ui-app/src/components/BudgetControlsPanel.vue, and wherever the CTO failover and `repoos override` pick pairs (grep restart-stalled-agent and `override`). This changes how every engineer start picks an agent: keep the default behaviour identical when nothing is paused, and fail closed (never silently pick a paused pair). Do not touch repoos.toml. Source: Nick, 2026-10-19 (cursor credits exhausted for ~3 days).
 
+## Shots
+```json
+[
+{
+  "label": "Budget Controls: paused agent chip with reason and resume date",
+  "target": "default",
+  "route": "/agents?tab=budget-controls",
+  "highlight": "[data-testid=\"budget-paused-chip\"]",
+  "state": "budget:paused"
+},
+{
+  "label": "Budget Controls: per-model paused chip (opencode)",
+  "target": "default",
+  "route": "/agents?tab=budget-controls",
+  "highlight": "[data-testid=\"budget-model-paused-chip\"]",
+  "steps": [
+    {
+      "click": "[data-testid=\"budget-row-opencode\"]"
+    }
+  ],
+  "state": "budget:paused"
+},
+{
+  "label": "Budget Controls: pause dialog with optional resume date and reason",
+  "target": "default",
+  "route": "/agents?tab=budget-controls",
+  "highlight": "[data-testid=\"budget-pause-until\"]",
+  "steps": [
+    {
+      "click": "[data-testid=\"budget-pause-agent\"]"
+    }
+  ],
+  "state": "budget:paused"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-19T12:22:44Z · created · njachowski@gmail.com
@@ -52,3 +89,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T13:19:09Z · status ready→active, branch
 - 2026-10-19T13:30:05Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-19T13:38:14Z · body
+- 2026-10-19T13:42:28Z · body
