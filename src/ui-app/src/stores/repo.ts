@@ -3,6 +3,11 @@ import { defineStore } from "pinia";
 import { api, API_TIMEOUT_MS, ApiError, JSON_OPTS } from "../api";
 import type { DeclaredShot } from "../../../core/shot-plan.js";
 import { checkUiBuild, isstaleDismissed, showStaleUi, uiRecoveryState } from "../lib/uiRecovery";
+import {
+  clearAttachmentUploadState,
+  markAttachmentUploadFailed,
+  markAttachmentUploading,
+} from "../lib/attachment-upload-ui";
 import { useUiStore, type PendingScreenshot } from "./ui";
 import { useNotificationsStore, type NotificationType } from "./notifications";
 import { useNoticesStore } from "./notices";
@@ -61,6 +66,14 @@ export interface ToastItem {
   id: number;
   message: string;
   type: "error" | "success" | "info";
+}
+
+/** One in-flight or failed input attachment upload (#0664). */
+export interface InputAttachmentUploadJob {
+  /** Groups uploads from one New input submit. */
+  batchId: string;
+  inputId: string;
+  attachment: PendingScreenshot;
 }
 
 /** Summary returned by the review→done close-out endpoint. */
@@ -3718,6 +3731,61 @@ export const useRepoStore = defineStore("repo", () => {
     void refreshInputs();
   }
 
+  const inputAttachmentUploads = reactive<InputAttachmentUploadJob[]>([]);
+
+  function removeInputAttachmentUploadJob(job: InputAttachmentUploadJob): void {
+    const idx = inputAttachmentUploads.indexOf(job);
+    if (idx >= 0) inputAttachmentUploads.splice(idx, 1);
+  }
+
+  async function runInputAttachmentUpload(job: InputAttachmentUploadJob): Promise<void> {
+    markAttachmentUploading(job.attachment);
+    try {
+      await uploadInputAttachment(job.inputId, job.attachment);
+      removeInputAttachmentUploadJob(job);
+      clearAttachmentUploadState(job.attachment);
+    } catch (err) {
+      markAttachmentUploadFailed(job.attachment, err);
+      onError(err);
+    }
+  }
+
+  async function retryInputAttachmentUpload(job: InputAttachmentUploadJob): Promise<void> {
+    await runInputAttachmentUpload(job);
+  }
+
+  function dismissInputAttachmentUpload(job: InputAttachmentUploadJob): void {
+    removeInputAttachmentUploadJob(job);
+    clearAttachmentUploadState(job.attachment);
+  }
+
+  function inputAttachmentUploadsForBatch(batchId: string): InputAttachmentUploadJob[] {
+    return inputAttachmentUploads.filter((j) => j.batchId === batchId);
+  }
+
+  function outstandingInputAttachmentUploads(): InputAttachmentUploadJob[] {
+    return inputAttachmentUploads.filter(
+      (j) => j.attachment.uploadPhase === "uploading" || j.attachment.uploadPhase === "failed",
+    );
+  }
+
+  /**
+   * Upload one task screenshot with visible uploading / failed state (#0664).
+   * Returns true when the server accepted the attachment.
+   */
+  async function uploadTaskScreenshot(taskId: string, s: PendingScreenshot): Promise<boolean> {
+    markAttachmentUploading(s);
+    try {
+      await uploadScreenshot(taskId, s);
+      clearAttachmentUploadState(s);
+      return true;
+    } catch (err) {
+      markAttachmentUploadFailed(s, err);
+      onError(err);
+      return false;
+    }
+  }
+
   /**
    * Create an input in the background on behalf of the New input panel: POST
    * the text, upload each attachment against the created id, then announce the
@@ -3727,7 +3795,11 @@ export const useRepoStore = defineStore("repo", () => {
    * been created, the capture is restored for retry (only if the user has not
    * started a new one); once created, a retry would duplicate it.
    */
-  async function submitInput(text: string, attachments: PendingScreenshot[]): Promise<void> {
+  async function submitInput(
+    text: string,
+    attachments: PendingScreenshot[],
+    batchId = `input-${Date.now()}`,
+  ): Promise<void> {
     const ui = useUiStore();
     let created = false;
     try {
@@ -3743,7 +3815,11 @@ export const useRepoStore = defineStore("repo", () => {
       // the timeout below is a pure SSE-loss backstop — the terminal outcome
       // always arrives as an `input.enriched` event, success or failure.
       if (input.enriching) markEnriching(input.id);
-      for (const s of attachments) await uploadInputAttachment(input.id, s);
+      for (const s of attachments) {
+        const job: InputAttachmentUploadJob = { batchId, inputId: input.id, attachment: s };
+        inputAttachmentUploads.push(job);
+        await runInputAttachmentUpload(job);
+      }
       window.dispatchEvent(new Event("repoos:inputs-updated"));
     } catch (err) {
       onError(err);
@@ -4024,6 +4100,12 @@ export const useRepoStore = defineStore("repo", () => {
     patchTask,
     createTask,
     uploadScreenshot,
+    uploadTaskScreenshot,
+    inputAttachmentUploads,
+    inputAttachmentUploadsForBatch,
+    outstandingInputAttachmentUploads,
+    retryInputAttachmentUpload,
+    dismissInputAttachmentUpload,
     createFreeformTask,
     deleteTask,
     createDocument,
