@@ -99,6 +99,32 @@ describe("startServer running-server registry", () => {
     expect(existsSync(path)).toBe(false);
   });
 
+  it("keeps registry entry on close after reload handover overwrote the pid", async () => {
+    const root = minimalRepo();
+    const port = await reservePort();
+    const handle = await startServer({
+      root,
+      host: "127.0.0.1",
+      port,
+      disableAuth: true,
+    });
+    const path = join(registryDir, `${port}.json`);
+    const replacementPid = 424_243;
+    const live = JSON.parse(readFileSync(path, "utf8")) as ServerRegistryEntry;
+    writeFileSync(
+      path,
+      JSON.stringify({
+        ...live,
+        pid: replacementPid,
+        startedAt: "2026-10-19T00:00:01.000Z",
+      }) + "\n",
+    );
+    await handle.close();
+    expect(existsSync(path)).toBe(true);
+    expect(JSON.parse(readFileSync(path, "utf8")).pid).toBe(replacementPid);
+    rmSync(path);
+  });
+
   it("does not register preview child or harness port 0", async () => {
     const root = minimalRepo();
     process.env.REPOOS_PREVIEW_CHILD = "1";
