@@ -12,11 +12,11 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-auto-ported-services-and-ser
 cli_override: codex
-model_override: default
+model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T19:46:59Z"
+updated_at: "2026-10-19T19:47:00Z"
 review_passes: 7
 review_rounds: 2
 dev_error_count: 1
@@ -157,3 +157,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T19:34:36Z · needs_input
 - 2026-10-19T19:34:36Z · needs_input
 - 2026-10-19T19:46:59Z · cli_override, model_override
+- 2026-10-19T19:47:00Z · model_override
