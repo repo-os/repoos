@@ -41,6 +41,8 @@ describe("validateToml accepts", () => {
       "d = 1979-05-27T07:32:00Z\nh = 0xDEAD_beef\nf = -1.5e3\nn = inf\n",
     ],
     ["crlf line endings", 'a = 1\r\nb = "x"\r\n'],
+    ["multi-line basic string", 'a = """x\ny"""\n'],
+    ["multi-line literal string", "a = '''x\ny'''\n"],
   ])("%s", (_name, source) => {
     expect(validateToml(source)).toEqual({ ok: true });
   });
@@ -68,8 +70,6 @@ describe("validateToml rejects", () => {
   // a save would be accepted and then silently ignored (#0375 review).
   it.each([
     ["multi-line array", "a = [\n  1,\n  2,\n]\n"],
-    ["multi-line basic string", 'a = """x\ny"""\n'],
-    ["multi-line literal string", "a = '''x\ny'''\n"],
     ["inline table", 'a = { b = 1, c = "x" }\n'],
   ])("refuses %s as unsupported by the config reader", (_name, source) => {
     const result = validateToml(source);

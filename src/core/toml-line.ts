@@ -17,9 +17,18 @@ export function stripTomlComment(line: string): string {
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
     if (multilineDelimiter) {
-      if (line.slice(i, i + multilineDelimiter.length) === multilineDelimiter) {
+      // Escapes only exist in basic strings; `\"` must not be read as a close.
+      if (multilineDelimiter === '"""' && ch === "\\") {
+        i++;
+        continue;
+      }
+      if (line.slice(i, i + 3) === multilineDelimiter) {
+        // A run of 3+ quotes closes it; up to two leading quotes in the run
+        // belong to the content (TOML allows `"""""` before the close).
+        let run = 0;
+        while (line[i + run] === multilineDelimiter[0]) run++;
+        i += run - 1;
         multilineDelimiter = "";
-        i += multilineDelimiter.length - 1;
         continue;
       }
       continue;
@@ -47,6 +56,36 @@ export function stripTomlComment(line: string): string {
     }
   }
   return line;
+}
+
+/**
+ * Find where a multi-line string's content ends (the start of its closing
+ * delimiter) when the opening delimiter sits just before `start`. Honours `\"`
+ * escapes in `"""` strings and TOML's rule that one or two quotes immediately
+ * before the closing delimiter are content, not part of it. Returns -1 when the
+ * string is unterminated in `text`.
+ */
+export function findTomlMultiLineClose(
+  text: string,
+  start: number,
+  delimiter: '"""' | "'''",
+): number {
+  let i = start;
+  while (i < text.length) {
+    if (delimiter === '"""' && text[i] === "\\") {
+      i += 2; // skip the escaped character, including an escaped quote
+      continue;
+    }
+    if (text.startsWith(delimiter, i)) {
+      let run = 0;
+      while (text[i + run] === delimiter[0]) run++;
+      // Content keeps at most two of the run's leading quotes; the last three
+      // are the delimiter.
+      return i + Math.min(Math.max(run - 3, 0), 2);
+    }
+    i++;
+  }
+  return -1;
 }
 
 /**
@@ -121,18 +160,16 @@ function decodeBasicMultiLine(inner: string): string {
 }
 
 export function unquoteTomlString(s: string): string {
-  if (s.length >= 6 && s.startsWith("'''") && s.endsWith("'''")) {
-    let inner = s.slice(3, -3);
-    // TOML trims the first newline after opening ''' (and first \r\n too)
+  if (s.length >= 6 && (s.startsWith("'''") || s.startsWith('"""'))) {
+    const delimiter = s.startsWith("'''") ? "'''" : '"""';
+    const close = findTomlMultiLineClose(s, 3, delimiter);
+    // A value the parser reconstructed always ends at the closing delimiter;
+    // fall back to the old outer-slice when it is genuinely unterminated.
+    let inner = close === -1 ? s.slice(3, -3) : s.slice(3, close);
+    // TOML trims the first newline after the opening delimiter.
     if (inner.startsWith("\n")) inner = inner.slice(1);
     else if (inner.startsWith("\r\n")) inner = inner.slice(2);
-    return inner;
-  }
-  if (s.length >= 6 && s.startsWith('"""') && s.endsWith('"""')) {
-    let inner = s.slice(3, -3);
-    if (inner.startsWith("\n")) inner = inner.slice(1);
-    else if (inner.startsWith("\r\n")) inner = inner.slice(2);
-    return decodeBasicMultiLine(inner);
+    return delimiter === "'''" ? inner : decodeBasicMultiLine(inner);
   }
   if (s.length >= 2 && s.startsWith('"') && s.endsWith('"')) {
     try {

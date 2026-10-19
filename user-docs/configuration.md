@@ -36,6 +36,10 @@ and inline tables are not accepted; the only place the parser accepts both
 `[check]` and `[checks]` spellings is the `[check]` section, kept for backwards
 compatibility.
 
+A write from Settings or `repoos config set` rewrites the rows it touches as
+single-line basic strings (`"..."`), so a hand-written `'''...'''` value keeps
+the same decoded text — only its quoting style may change.
+
 The Settings UI edits the most common fields directly, and its raw
 `repoos.toml` editor can edit the whole file — including `[preview]`, `[check]`,
 `[release]`, `[stories]`, `[[deployments]]`, `[[distribution]]`, `[worktrees]`,

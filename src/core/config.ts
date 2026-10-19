@@ -63,7 +63,7 @@ import { ctoActionsSchemaDescription } from "./cto-actions.js";
 import { parseDevTargets } from "./dev-targets.js";
 import { parseTailscaleHosts } from "./remote-hosts.js";
 import { DEFAULT_STORAGE_PROVIDER_ID } from "./storage/registry.js";
-import { stripTomlComment, unquoteTomlString } from "./toml-line.js";
+import { findTomlMultiLineClose, stripTomlComment, unquoteTomlString } from "./toml-line.js";
 
 // `parseDevTargets` (#0747) lives in the node-free `core/dev-targets.ts` so the
 // browser bundle can validate a target through the SAME function the server
@@ -571,7 +571,7 @@ export function parseFlatToml(text: string): Record<string, unknown> {
       arrayTable = null;
       continue;
     }
-    const kvMatch = rawLine.match(/^([A-Za-z0-9_.-]+)\s*=\s*(.*)$/);
+    const kvMatch = line.match(/^([A-Za-z0-9_.-]+)\s*=\s*(.*)$/);
     if (!kvMatch) continue;
     const key = section ? `${section}.${kvMatch[1]}` : kvMatch[1];
     let valueStr = kvMatch[2]!.trim();
@@ -579,27 +579,18 @@ export function parseFlatToml(text: string): Record<string, unknown> {
     // Multi-line literal (''') or basic (""") strings: accumulate from raw lines
     if (valueStr.startsWith("'''") || valueStr.startsWith('"""')) {
       const delimiter = valueStr.startsWith("'''") ? "'''" : '"""';
-      const valueParts: string[] = [];
-      const firstRest = valueStr.slice(delimiter.length);
-      if (firstRest.includes(delimiter)) {
-        valueStr = delimiter + firstRest.slice(0, firstRest.indexOf(delimiter)) + delimiter;
-      } else {
-        valueParts.push(firstRest);
-        while (idx < rawLines.length) {
-          const nextRaw = rawLines[idx];
-          const closeIdx = nextRaw.indexOf(delimiter);
-          if (closeIdx !== -1) {
-            valueParts.push(nextRaw.slice(0, closeIdx));
-            idx++;
-            valueStr = delimiter + valueParts.join("\n") + delimiter;
-            break;
-          } else {
-            valueParts.push(nextRaw);
-            idx++;
-          }
-        }
+      let raw = valueStr;
+      let close = findTomlMultiLineClose(raw, 3, delimiter);
+      // The closing delimiter may sit on a later line. Continuation lines are
+      // string content, so they are consumed verbatim — even one that looks
+      // like a header or contains a `#`.
+      while (close === -1 && idx < rawLines.length) {
+        raw += "\n" + rawLines[idx];
+        idx++;
+        close = findTomlMultiLineClose(raw, 3, delimiter);
       }
-      let val: unknown = unquoteTomlString(valueStr);
+      const inner = close === -1 ? raw.slice(3) : raw.slice(3, close);
+      let val: unknown = unquoteTomlString(delimiter + inner + delimiter);
       if (arrayTable && arrayTableKey) {
         arrayTable[kvMatch[1]] = val;
       } else {
