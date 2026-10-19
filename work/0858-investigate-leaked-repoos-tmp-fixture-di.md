@@ -14,7 +14,7 @@ branch: feat/investigate-leaked-repoos-tmp-fixture-di
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T19:04:41Z"
-updated_at: "2026-10-19T19:46:36Z"
+updated_at: "2026-10-19T19:46:44Z"
 dev_error_count: 1
 ---
 ## Problem
