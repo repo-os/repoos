@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-19T14:41:39Z"
-review_passes: 1
+last_close_out_gate_ms: 164694
+last_close_out_gate_at: "2026-10-19T14:45:12.526Z"
 id: "0851"
 title: "Agents page: Reminders tab (remind me when an AI agent or provider is available again)"
 type: feature
@@ -18,6 +18,8 @@ model_override: openrouter/openrouter/auto-beta
 review_cli_override: pi
 review_model_override: openrouter/z-ai/glm-5.3-flash
 created_at: "2026-10-19T12:23:10Z"
+updated_at: "2026-10-19T14:45:12Z"
+review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -95,4 +97,5 @@ Model the storage, tick and SSE-update pattern on scheduled tasks (src/server/sc
 - 2026-10-19T14:34:22Z · status active→review
 - 2026-10-19T14:34:22Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-19T14:41:38Z · note: review pass 1: good to go
+- 2026-10-19T14:45:12Z · close-out gate completed in 165s
 
