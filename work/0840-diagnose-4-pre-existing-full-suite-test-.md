@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: rendered-contrast — gruvbox-light (1):"
+last_handoff_failure_sha: 686f1dce86ef6050eef03959818a769f9d1eeb9f
 id: "0840"
 title: "Diagnose 4 pre-existing full-suite test failures (activity-indicator-motion ×3, agent-contract ×1)"
 type: bug
@@ -65,3 +67,4 @@ Start from the Problem and Attribution sections above (the #0834 engineer alread
 - 2026-10-19T03:00:05Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-19T03:00:05Z · note: handoff requested (cli)
 - 2026-10-19T03:06:58Z · handoff failed · task-file handoff failed at check · repoos check failed: rendered-contrast — gruvbox-light (1):
+
