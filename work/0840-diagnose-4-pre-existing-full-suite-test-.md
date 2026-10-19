@@ -2,7 +2,7 @@
 id: "0840"
 title: "Diagnose 4 pre-existing full-suite test failures (activity-indicator-motion ×3, agent-contract ×1)"
 type: bug
-status: inbox
+status: ready
 paths: [src/ui-app/tests/activity-indicator-motion.test.ts, src/ui-app/tests/agent-contract.test.ts]
 priority: p3
 area: [web, core]
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T22:39:47Z"
-updated_at: "2026-10-19T02:46:34Z"
+updated_at: "2026-10-19T02:46:39Z"
 ---
 ## Problem
 `bun run test` (full suite) fails 4 tests on the work machine, reproducibly — twice in full-suite runs AND in isolation on an idle machine via `bun run test -- --failed-first <files>`:
@@ -57,3 +57,4 @@ Start from the Problem and Attribution sections above (the #0834 engineer alread
 - 2026-10-19T02:46:23Z · body: Acceptance criteria (added)
 - 2026-10-19T02:46:26Z · body: Notes for AI (added)
 - 2026-10-19T02:46:34Z · needs_input
+- 2026-10-19T02:46:39Z · status inbox→ready
