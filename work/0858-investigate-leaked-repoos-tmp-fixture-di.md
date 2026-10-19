@@ -14,7 +14,7 @@ branch: feat/investigate-leaked-repoos-tmp-fixture-di
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T19:04:41Z"
-updated_at: "2026-10-19T19:47:39Z"
+updated_at: "2026-10-19T20:02:25Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -44,3 +44,4 @@ Repro: run `bun run test` on a loaded machine; the warning prints after the bulk
 - 2026-10-19T19:46:35Z · cli_override, model_override
 - 2026-10-19T19:46:36Z · model_override
 - 2026-10-19T19:47:39Z · body
+- 2026-10-19T20:02:25Z · body
