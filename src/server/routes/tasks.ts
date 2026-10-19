@@ -2798,6 +2798,15 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: noAgentAvailableMessage(config, "engineer"),
       });
     }
+    // #0850: sending a turn to an active task resolves the same paused-default
+    // fallback as Start; record the swap so the message is not silently run on
+    // a different pair than the task's configured engineer.
+    const messagePauseNote = pausedAgentFallbackNote(config, existing);
+    if (messagePauseNote) {
+      logger.task(id, "info", "Agent selection adjusted for a paused allowlist entry", {
+        note: messagePauseNote,
+      });
+    }
     const routedMessage = await resolveRoutedAgent(
       { config },
       {
