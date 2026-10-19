@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: pi
-model_override: default
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T17:58:19Z"
-updated_at: "2026-10-19T17:59:07Z"
+updated_at: "2026-10-19T18:00:29Z"
 ---
 ## Problem
 
@@ -87,3 +87,4 @@ My overall assessment: The new expanded sidebar already looks substantially clea
 - 2026-10-19T17:58:19Z · created · hello@repoos.org
 - 2026-10-19T17:58:44Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-10-19T17:59:07Z · cli_override, model_override
+- 2026-10-19T18:00:29Z · model_override
