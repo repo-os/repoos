@@ -160,6 +160,54 @@ function parseSimpleKey(sc: TomlScanner): void {
   if (!key) sc.fail("expected a key");
 }
 
+const BASIC_ESCAPES = new Set(["b", "t", "n", "f", "r", '"', "\\"]);
+
+/**
+ * Read the escape sequence after a `\`. TOML allows only `\b \t \n \f \r \" \\`,
+ * `\uXXXX`/`\UXXXXXXXX`, and (in multi-line basic strings) a line-ending
+ * backslash. Anything else — `\q`, a short unicode escape, `\ ` with no newline
+ * — is invalid TOML, not "drop the backslash".
+ */
+function readBasicEscape(sc: TomlScanner, allowLineEnding: boolean): void {
+  sc.advance(); // backslash
+  if (sc.eof()) sc.fail("unterminated string");
+  const ch = sc.peek();
+  if (BASIC_ESCAPES.has(ch)) {
+    sc.advance();
+    return;
+  }
+  if (ch === "u" || ch === "U") {
+    const digits = ch === "u" ? 4 : 8;
+    sc.advance();
+    for (let n = 0; n < digits; n++) {
+      if (!/^[0-9A-Fa-f]$/.test(sc.peek())) sc.fail("invalid unicode escape");
+      sc.advance();
+    }
+    return;
+  }
+  if (allowLineEnding && (ch === " " || ch === "\t" || ch === "\n" || ch === "\r")) {
+    // A line-ending backslash trims all whitespace through the newline; a run
+    // of spaces with no newline is still an invalid escape.
+    let sawNewline = false;
+    while (!sc.eof()) {
+      const c = sc.peek();
+      if (c === "\n" || c === "\r") {
+        sawNewline = true;
+        sc.advance();
+        continue;
+      }
+      if (c === " " || c === "\t") {
+        sc.advance();
+        continue;
+      }
+      break;
+    }
+    if (!sawNewline) sc.fail("invalid escape sequence");
+    return;
+  }
+  sc.fail(`invalid escape sequence \\${ch}`);
+}
+
 function readBasicString(sc: TomlScanner): void {
   sc.advance(); // opening quote
   while (!sc.eof()) {
@@ -170,9 +218,7 @@ function readBasicString(sc: TomlScanner): void {
       return;
     }
     if (ch === "\\") {
-      sc.advance();
-      if (sc.eof()) sc.fail("unterminated string");
-      sc.advance();
+      readBasicEscape(sc, false);
       continue;
     }
     sc.advance();
@@ -214,9 +260,7 @@ function readMultiLineBasicString(sc: TomlScanner): void {
       return;
     }
     if (sc.peek() === "\\") {
-      sc.advance();
-      if (sc.eof()) sc.fail("unterminated multi-line basic string");
-      sc.advance();
+      readBasicEscape(sc, true);
       continue;
     }
     if (sc.peek() === "\r") {

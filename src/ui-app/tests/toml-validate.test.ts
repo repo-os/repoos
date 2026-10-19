@@ -43,6 +43,12 @@ describe("validateToml accepts", () => {
     ["crlf line endings", 'a = 1\r\nb = "x"\r\n'],
     ["multi-line basic string", 'a = """x\ny"""\n'],
     ["multi-line literal string", "a = '''x\ny'''\n"],
+    ["multi-line closing run with empty content", 'a = """"""\n'],
+    ["multi-line closing run with one content quote", 'a = """""""\n'],
+    ["multi-line closing run with two content quotes", 'a = """"""""\n'],
+    ["multi-line literal closing run at the limit", "a = '''''''\n"],
+    ["valid escapes in a basic string", 'a = "a\\tb\\n\\"c\\\\d\\u0041\\U0001F600"\n'],
+    ["line-ending backslash in a multi-line string", 'a = """x \\\n   y"""\n'],
   ])("%s", (_name, source) => {
     expect(validateToml(source)).toEqual({ ok: true });
   });
@@ -59,6 +65,10 @@ describe("validateToml rejects", () => {
     ["unclosed table header", "[a\n", 1],
     ["unclosed array on one line", "a = [1, 2", 1],
     ["junk after statement", "[a] extra\n", 1],
+    ["invalid escape in a basic string", 'a = "bad\\q"\n', 1],
+    ["invalid escape in a multi-line basic string", 'a = """bad\\q"""\n', 1],
+    ["short unicode escape", 'a = """\\u12G4"""\n', 1],
+    ["backslash before a space with no newline", 'a = """x \\ y"""\n', 1],
   ])("%s reports line %i", (_name, source, line) => {
     const result = validateToml(source);
     expect(result.ok).toBe(false);
