@@ -3,8 +3,6 @@ id: "0842"
 title: TOML multi-line literal strings (''' ''') are mis-parsed in repoos.toml
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-failed
 priority: p2
 area: core
 assigned_to: ai
@@ -125,3 +123,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T19:00:04Z · needs_input
 - 2026-10-19T19:07:23Z · status active→review
 - 2026-10-19T19:09:46Z · note: review pass 5: needs some work
+- 2026-10-19T19:09:46Z · needs_input
