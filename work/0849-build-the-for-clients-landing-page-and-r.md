@@ -10,7 +10,7 @@ assigned_to: human
 created_by: njachowski@gmail.com
 branch: codex/0849-for-clients
 created_at: "2026-10-19T10:22:29Z"
-updated_at: "2026-10-19T11:30:36Z"
+updated_at: "2026-10-19T11:33:27Z"
 ---
 ## Problem
 The human approved the For Clients prototype and wants it implemented in the existing landing app. This interactive Codex session owns implementation; do not dispatch a built-in engineer.
@@ -41,6 +41,53 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 ![for-clients-preview](/api/tasks/0849/attachments/att_073af8fb-f014-4a11-a858-c4567b685fdd.png)
 ![Screenshot-2026-10-19-at-18.12.35](/api/tasks/0849/attachments/att_a6c7a170-befa-4417-9893-1fec5577ea3b.png)
 
+## Shots
+```json
+[
+{
+  "label": "For Clients approved layout and shared desktop navigation",
+  "target": "Landing page",
+  "route": "/for-clients?theme=classic&appearance=dark",
+  "highlight": ".clients-hero"
+},
+{
+  "label": "Client page in Classic light appearance",
+  "target": "Landing page",
+  "route": "/for-clients?theme=classic&appearance=light",
+  "highlight": ".clients-hero"
+},
+{
+  "label": "Mobile client page in Gruvbox dark",
+  "target": "Landing page",
+  "route": "/for-clients?theme=gruvbox&appearance=dark",
+  "highlight": ".clients-hero",
+  "viewportWidth": 390
+},
+{
+  "label": "Mobile client page in Gruvbox light",
+  "target": "Landing page",
+  "route": "/for-clients?theme=gruvbox&appearance=light",
+  "highlight": ".clients-hero",
+  "viewportWidth": 390
+},
+{
+  "label": "Mobile project enquiry with required work email",
+  "target": "Landing page",
+  "route": "/for-clients?theme=classic&appearance=dark",
+  "highlight": ".clients-dialog",
+  "steps": [
+    {
+      "click": ".clients-actions .clients-primary"
+    },
+    {
+      "waitFor": "dialog[open]"
+    }
+  ],
+  "viewportWidth": 390
+}
+]
+```
+
 ## Activity
 
 - 2026-10-19T10:22:29Z · created · njachowski@gmail.com
@@ -50,3 +97,4 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 - 2026-10-19T10:45:26Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-19T11:30:36Z · status ready→active
 - 2026-10-19T11:30:36Z · note: Interactive Codex implementation is in progress in codex/0849-for-clients; keep hold and human assignment to prevent built-in engineer dispatch.
+- 2026-10-19T11:33:27Z · body
