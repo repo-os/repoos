@@ -1762,6 +1762,8 @@ export interface DevFailureView {
  */
 export interface DevTargetService {
   name: string;
+  /** Sanitized placeholder token, as used in `{<token>.port}` (#0843). */
+  token?: string;
   status: DevTargetStatus;
   /** Failure reason, present only while `status` is `failed`. */
   error?: string;
