@@ -11,7 +11,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T23:45:14Z"
+updated_at: "2026-10-19T02:47:38Z"
 last_close_out_gate_ms: 375582
 last_close_out_gate_at: "2026-10-18T18:03:56.494Z"
 review_passes: 4
@@ -143,3 +143,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T22:37:04Z · body
 - 2026-10-18T23:00:39Z · body
 - 2026-10-18T23:45:14Z · body
+- 2026-10-19T02:47:38Z · message_overdue: still queued after 60m without being delivered

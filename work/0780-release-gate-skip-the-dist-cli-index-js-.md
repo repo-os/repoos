@@ -5,19 +5,19 @@ type: bug
 status: done
 priority: p0
 area: core
-merged_commit: 6844edf20bd8c9a9f481477423b6549f6bbe3981
+merged_commit: 84ebb9617a5fa5a902cb5fec2dfff2f777a9699f
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-gate-skip-the-dist-cli-index-js-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T08:20:29Z"
-updated_at: "2026-10-19T00:05:13Z"
+updated_at: "2026-10-19T00:20:10Z"
+last_close_out_gate_ms: 460735
+last_close_out_gate_at: "2026-10-19T00:19:45.468Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-18T18:38:03.952Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 handoff_signal_retry_count: 1
-last_close_out_gate_ms: 121907
-last_close_out_gate_at: "2026-10-14T08:47:47.001Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -72,5 +72,5 @@ Repro: Divot at ~/code/nick/divot, the Releases page, version 0.1.0, publish. Th
 - 2026-10-18T18:41:31Z · status active→review
 - 2026-10-18T18:41:31Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-18T18:42:23Z · note: review pass 2: good to go
-- 2026-10-19T00:05:12Z · note: handoff requested (cli)
-- 2026-10-19T00:05:13Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is done
+- 2026-10-19T00:19:45Z · close-out gate completed in 461s
+- 2026-10-19T00:20:10Z · status review→done, release:success

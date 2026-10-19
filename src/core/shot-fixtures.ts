@@ -82,6 +82,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "panel:newInputOutstandingUpload",
   // #0664 — New-task freeform panel with a failed screenshot retry row.
   "panel:freeformFailedScreenshot",
+  // #0841 — Agents scheduled tab with the New schedule drawer open.
+  "schedule:newPanel",
 ] as const;
 
 export type ShotPreviewFixtureId = (typeof SHOT_PREVIEW_FIXTURE_IDS)[number];

@@ -79,11 +79,13 @@ failed `pushing_tag` deletes the local tag it just created so a retry starts
 clean.
 
 A failure after the version bump was committed never leaves that commit behind
-silently. While the bump is still local-only (anything before `pushing_main`
-succeeds) and still exactly HEAD, the cut rolls it back and says so — the
-branch is back to its pre-release state. Otherwise the failure output names
-the bump commit and how to undo it (`git reset --soft HEAD~1 && git checkout
-HEAD -- <versionFile>` while it is still HEAD); once the branch has been
+silently. When the cut itself committed the bump, still local-only (anything
+before `pushing_main` succeeds) and still exactly HEAD, it rolls the commit back
+and says so — the branch is back to its pre-release state. Otherwise the failure
+output names the bump commit and how to undo it (`git reset --soft HEAD~1 &&
+git checkout HEAD -- <versionFile>` while it is still HEAD), including the retry
+case where a previous attempt left the bump on the branch and this run creates no
+commit of its own (the retry path skips the commit). Once the branch has been
 pushed the bump is public and is never rewritten away — the output says that
 instead.
 

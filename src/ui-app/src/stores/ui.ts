@@ -520,6 +520,9 @@ export const useUiStore = defineStore("ui", () => {
     tunnelOpen.value = false;
   }
 
+  /** Shot capture (#0841): open the schedule editor when `schedule:newPanel` loads. */
+  const scheduleEditorShotOpen = ref(false);
+
   /** Remote validation runner setup drawer — independent of every other drawer. */
   const remoteValidationOpen = ref(false);
   function openRemoteValidation(): void {
@@ -558,6 +561,7 @@ export const useUiStore = defineStore("ui", () => {
     taskEditorDraft,
     saving,
     drawerWidth,
+    scheduleEditorShotOpen,
     tunnelOpen,
     activeTab,
     debugView,
