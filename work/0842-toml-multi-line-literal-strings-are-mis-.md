@@ -12,11 +12,11 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/toml-multi-line-literal-strings-are-mis-
 cli_override: pi
-model_override: default
+model_override: openrouter/openrouter/free
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-10-19T12:19:42Z"
+updated_at: "2026-10-19T12:19:45Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -45,3 +45,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T11:38:36Z · review_cli_override, review_model_override
 - 2026-10-19T11:38:39Z · agent exited with an error (cursor) · ActionRequiredError: Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue.
 - 2026-10-19T12:19:42Z · cli_override, model_override
+- 2026-10-19T12:19:45Z · model_override
