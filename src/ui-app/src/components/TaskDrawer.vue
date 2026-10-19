@@ -97,6 +97,13 @@ import SpecEditModal from "./SpecEditModal.vue";
 import UpdateRequirementsDialog from "./UpdateRequirementsDialog.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
+import PendingAttachmentList from "./PendingAttachmentList.vue";
+import {
+  attachmentUploadPhase,
+  clearAttachmentUploadState,
+  markAttachmentUploadFailed,
+  markAttachmentUploading,
+} from "../lib/attachment-upload-ui";
 import { isImageMime, pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
 import { shotProblems, shotRows, uncapturedDeclared } from "../lib/shot-rows";
 import {
@@ -605,7 +612,7 @@ watch(freeformText, adjustFreeformHeight, { flush: "post" });
 
 function clearFreeformDraft(): void {
   freeformText.value = "";
-  ui.clearScreenshots();
+  ui.clearResolvedScreenshots();
 }
 
 function onDraftMsgTranscribed(text: string): void {
@@ -717,11 +724,11 @@ async function createFreeform(): Promise<void> {
 /** Reset the form + acknowledgment state to queue up another freeform task. */
 function createAnotherTask(): void {
   freeformSubmitted.value = false;
-  submittedTask.value = null;
+  if (!ui.hasFailedPendingScreenshots()) submittedTask.value = null;
   freeformError.value = "";
   if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
   freeformRunId.value = null;
-  ui.clearScreenshots();
+  ui.clearResolvedScreenshots();
   requestAnimationFrame(() => {
     document.getElementById("nt-freeform")?.focus();
   });
@@ -853,6 +860,12 @@ async function createTask(): Promise<void> {
   try {
     const created = await repo.createTask({ ...ui.nt });
     await uploadPendingScreenshots(created.id);
+    const uploadFailed = ui.pendingScreenshots.some((s) => s.uploadPhase === "failed");
+    if (uploadFailed) {
+      ui.open(created);
+      repo.pushToast("Some screenshots failed to upload — retry below.", "error");
+      return;
+    }
     ui.close();
     ui.nt.title = "";
     ui.nt.body = "";
@@ -870,12 +883,23 @@ async function createTask(): Promise<void> {
   }
 }
 
-/** Upload the in-panel screenshots to a just-created task. Clears them on success. */
+/** Upload the in-panel screenshots to a just-created task. Clears each on success (#0664). */
 async function uploadPendingScreenshots(taskId: string): Promise<void> {
   for (const s of [...ui.pendingScreenshots]) {
-    await repo.uploadScreenshot(taskId, s);
+    s.uploadTaskId = taskId;
+    const ok = await repo.uploadTaskScreenshot(taskId, s);
+    if (!ok) continue;
+    const idx = ui.pendingScreenshots.indexOf(s);
+    if (idx >= 0) ui.pendingScreenshots.splice(idx, 1);
   }
-  ui.clearScreenshots();
+}
+
+async function retryPendingScreenshot(index: number): Promise<void> {
+  const s = ui.pendingScreenshots[index];
+  const taskId = s?.uploadTaskId ?? submittedTask.value?.id ?? ui.active?.id ?? "";
+  if (!taskId || !s) return;
+  const ok = await repo.uploadTaskScreenshot(taskId, s);
+  if (ok) ui.removeScreenshot(index);
 }
 
 // ---- screenshot picking (file select + drag & drop, 0123) ----
@@ -2895,6 +2919,7 @@ async function pmSend(): Promise<void> {
   // Same wire shape as the per-task attachment upload: base64 without the
   // data-URL prefix. Kept locally until the send succeeds so a failure
   // doesn't lose the user's picks.
+  for (const s of ui.pmScreenshots) markAttachmentUploading(s);
   const shots = ui.pmScreenshots.map((s) => ({
     name: s.name,
     mime: s.mime,
@@ -2919,6 +2944,9 @@ async function pmSend(): Promise<void> {
     if (res.queued) markPmQueued();
     ui.clearPmScreenshots();
   } catch (error) {
+    for (const s of ui.pmScreenshots) {
+      if (s.uploadPhase === "uploading") markAttachmentUploadFailed(s, error);
+    }
     repo.outputs[sessionId] = (repo.outputs[sessionId] ?? []).filter(
       (_entry, index) => index !== optimisticIndex,
     );
@@ -2936,6 +2964,17 @@ async function pmSend(): Promise<void> {
   } finally {
     pmSubmitting.value = false;
   }
+}
+
+function pmRetryShot(index: number): void {
+  const s = ui.pmScreenshots[index];
+  if (!s || attachmentUploadPhase(s) !== "failed") return;
+  clearAttachmentUploadState(s);
+  if (!pmDraft.value.trim()) {
+    repo.pushToast("Add a message, then send or tap Retry again.", "info");
+    return;
+  }
+  void pmSend();
 }
 
 /**
@@ -3968,40 +4007,13 @@ watch(
                 @click.stop
               />
             </div>
-            <div
+            <PendingAttachmentList
               v-if="ui.pendingScreenshots.length"
-              class="ff-pending-files"
-              aria-label="Selected attachments"
-            >
-              <div
-                v-for="(s, i) in ui.pendingScreenshots"
-                :key="s.name + s.size + i"
-                class="ff-pending-file"
-              >
-                <img
-                  v-if="isImageMime(s.mime)"
-                  :src="s.dataUrl"
-                  :alt="s.name"
-                  @click="openPendingViewer(i)"
-                />
-                <div v-else class="ff-pending-file-icon"><Paperclip class="size-4" /></div>
-                <span class="ff-pending-file-name" :title="s.name">{{ s.name }}</span>
-                <ScreenshotExpandButton
-                  v-if="isImageMime(s.mime)"
-                  :name="s.name"
-                  @click="openPendingViewer(i)"
-                />
-                <button
-                  type="button"
-                  class="ff-pending-file-remove"
-                  :aria-label="`Remove ${s.name}`"
-                  title="Remove attachment"
-                  @click.stop="ui.removeScreenshot(i)"
-                >
-                  <X class="size-3.5" />
-                </button>
-              </div>
-            </div>
+              :items="ui.pendingScreenshots"
+              @open-shot="openPendingViewer"
+              @remove="(i) => ui.removeScreenshot(i)"
+              @retry="(i) => void retryPendingScreenshot(i)"
+            />
           </div>
           <!-- Format/attachment help (#0571) used to be a permanent line under
                the dropzone. It now lives in a themed pane, teleported to <body>
@@ -4053,12 +4065,38 @@ watch(
                 is being created in the background and will be updated automatically when it's
                 ready. You can keep working, or start another task while you wait — nothing is lost.
               </p>
+              <PendingAttachmentList
+                v-if="ui.pendingScreenshots.length"
+                :items="ui.pendingScreenshots"
+                :allow-remove="false"
+                aria-label="Uploading task screenshots"
+                @open-shot="openPendingViewer"
+                @retry="(i) => void retryPendingScreenshot(i)"
+              />
               <div class="btn-row" style="margin-top: 18px">
                 <Button variant="default" @click="createAnotherTask">Create another task</Button>
                 <Button variant="outline" @click="doneFreeform">Done</Button>
               </div>
             </div>
             <template v-else>
+              <div
+                v-if="ui.hasFailedPendingScreenshots()"
+                class="field ff-upload-followup"
+                role="region"
+                aria-label="Failed task screenshot uploads"
+              >
+                <label>Screenshot uploads</label>
+                <p class="ff-notice">
+                  These screenshots did not upload. Retry them for the task above.
+                </p>
+                <PendingAttachmentList
+                  :items="ui.pendingScreenshots"
+                  :allow-remove="false"
+                  aria-label="Failed task screenshot uploads"
+                  @open-shot="openPendingViewer"
+                  @retry="(i) => void retryPendingScreenshot(i)"
+                />
+              </div>
               <div class="field">
                 <div class="field-header">
                   <label for="nt-freeform">Describe the task</label>
@@ -6270,6 +6308,7 @@ watch(
             @attach="onPmShotFiles"
             @remove-shot="ui.removePmScreenshot"
             @open-shot="openPmViewer"
+            @retry-shot="pmRetryShot"
           >
             <template #header>
               <div v-if="ui.active" class="agent-override-bar">

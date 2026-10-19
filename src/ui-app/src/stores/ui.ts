@@ -33,6 +33,9 @@ export interface NewSkillForm {
   content: string;
 }
 
+/** Client-side upload lifecycle for a pending attachment (#0664). */
+export type PendingScreenshotUploadPhase = "selected" | "uploading" | "failed";
+
 /** A screenshot picked in the New task panel, held in memory until the task exists. */
 export interface PendingScreenshot {
   name: string;
@@ -40,6 +43,12 @@ export interface PendingScreenshot {
   /** base64 data URL of the image, used for the in-panel thumbnail. */
   dataUrl: string;
   size: number;
+  /** Absent or `selected`: queued locally, not yet on the server. */
+  uploadPhase?: PendingScreenshotUploadPhase;
+  /** Last error when `uploadPhase` is `failed`. */
+  uploadError?: string;
+  /** Task id when an upload was attempted (retry after freeform ack, #0664). */
+  uploadTaskId?: string;
 }
 
 /** The panel only ever holds the latest N, so a huge drop can't pin memory. */
@@ -341,6 +350,17 @@ export const useUiStore = defineStore("ui", () => {
     pendingScreenshots.splice(0);
   }
 
+  /** Drop succeeded/queued picks; keep failed uploads for retry (#0664). */
+  function clearResolvedScreenshots(): void {
+    for (let i = pendingScreenshots.length - 1; i >= 0; i--) {
+      if (pendingScreenshots[i]?.uploadPhase !== "failed") pendingScreenshots.splice(i, 1);
+    }
+  }
+
+  function hasFailedPendingScreenshots(): boolean {
+    return pendingScreenshots.some((s) => s.uploadPhase === "failed");
+  }
+
   /** Read each image file into memory as a data URL and queue it for New input. */
   function addInputScreenshots(files: File[]): void {
     for (const file of files) {
@@ -555,6 +575,8 @@ export const useUiStore = defineStore("ui", () => {
     addScreenshots,
     removeScreenshot,
     clearScreenshots,
+    clearResolvedScreenshots,
+    hasFailedPendingScreenshots,
     inputScreenshots,
     addInputScreenshots,
     removeInputScreenshot,
