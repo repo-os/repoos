@@ -14,7 +14,7 @@ branch: feat/allowlist-pause-an-agent-or-model-withou
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T13:44:50Z"
+updated_at: "2026-10-19T13:49:25Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -44,35 +44,35 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 ```json
 [
 {
-  "label": "Budget Controls: paused agent chip with reason and resume date",
-  "target": "default",
-  "route": "/agents?tab=budget-controls",
-  "highlight": "[data-testid=\"budget-paused-chip\"]",
-  "state": "budget:paused"
+"label": "Budget Controls: paused agent chip with reason and resume date",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": "[data-testid=\"budget-paused-chip\"]",
+"state": "budget:paused"
 },
 {
-  "label": "Budget Controls: per-model paused chip (opencode)",
-  "target": "default",
-  "route": "/agents?tab=budget-controls",
-  "highlight": "[data-testid=\"budget-model-paused-chip\"]",
-  "steps": [
-    {
-      "click": "[data-testid=\"budget-row-opencode\"]"
-    }
-  ],
-  "state": "budget:paused"
+"label": "Budget Controls: per-model paused chip (opencode)",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": "[data-testid=\"budget-model-paused-chip\"]",
+"steps": [
+  {
+    "click": "[data-testid=\"budget-row-opencode\"]"
+  }
+],
+"state": "budget:paused"
 },
 {
-  "label": "Budget Controls: pause dialog with optional resume date and reason",
-  "target": "default",
-  "route": "/agents?tab=budget-controls",
-  "highlight": "[data-testid=\"budget-pause-until\"]",
-  "steps": [
-    {
-      "click": "[data-testid=\"budget-row-li-opencode\"] [data-testid=\"budget-pause-agent\"]"
-    }
-  ],
-  "state": "budget:paused"
+"label": "Budget Controls: pause dialog with optional resume date and reason",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": "[data-testid=\"budget-pause-until\"]",
+"steps": [
+  {
+    "click": "[data-testid=\"budget-row-li-opencode\"] [data-testid=\"budget-pause-agent\"]"
+  }
+],
+"state": "budget:paused"
 }
 ]
 ```
@@ -91,3 +91,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T13:38:14Z · body
 - 2026-10-19T13:42:28Z · body
 - 2026-10-19T13:44:50Z · body
+- 2026-10-19T13:49:25Z · body
