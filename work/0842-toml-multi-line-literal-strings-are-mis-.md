@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 298196
-last_close_out_gate_at: "2026-10-19T19:16:58.434Z"
 id: "0842"
 title: TOML multi-line literal strings (''' ''') are mis-parsed in repoos.toml
 type: bug
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: c64ab6ab69e92fd9d9f5bf9fa699e7f4f2aff416
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/toml-multi-line-literal-strings-are-mis-
@@ -15,7 +14,9 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-10-19T19:16:58Z"
+updated_at: "2026-10-19T19:17:12Z"
+last_close_out_gate_ms: 298196
+last_close_out_gate_at: "2026-10-19T19:16:58.434Z"
 review_passes: 5
 review_rounds: 2
 dev_error_count: 3
@@ -127,4 +128,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T19:09:46Z · note: review pass 5: needs some work
 - 2026-10-19T19:09:46Z · needs_input
 - 2026-10-19T19:16:58Z · close-out gate completed in 298s
-
+- 2026-10-19T19:17:12Z · status review→done, release:success
