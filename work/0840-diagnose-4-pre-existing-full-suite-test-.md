@@ -2,7 +2,7 @@
 id: "0840"
 title: "Diagnose 4 pre-existing full-suite test failures (activity-indicator-motion ×3, agent-contract ×1)"
 type: bug
-status: active
+status: review
 paths: [src/ui-app/tests/activity-indicator-motion.test.ts, src/ui-app/tests/agent-contract.test.ts]
 priority: p3
 area: [web, core]
@@ -12,7 +12,7 @@ branch: feat/diagnose-4-pre-existing-full-suite-test-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T22:39:47Z"
-updated_at: "2026-10-19T02:46:44Z"
+updated_at: "2026-10-19T03:03:21Z"
 ---
 ## Problem
 `bun run test` (full suite) fails 4 tests on the work machine, reproducibly — twice in full-suite runs AND in isolation on an idle machine via `bun run test -- --failed-first <files>`:
@@ -42,14 +42,36 @@ No UI change intended. A maintainer running bun run test on this machine gets a 
 
 ## Acceptance criteria
 - Root cause identified for each of the 4 failures, written into this task: reproduce on main (not just the #0664 base), then compare this Mac with the runner environment (WebKit, fonts, timing).
-- Each failure is either fixed in product code or its test is corrected with a reason; no test is simply skipped or loosened without an explanation.
-- activity-indicator-motion.test.ts: bird-quick-trail at size 20 has scrollWidth <= its reserved width, and under prefers-reduced-motion the static mark has height > 0, at every pixel size (#0816).
-- agent-contract.test.ts: a harness that starts but streams garbage reports the cancellation seam as not exercised, not ok.
+- **Decision (Nick, 2026-10-19): keep the bird-quick-trail artwork and its slight overhang as is** (he likes it). Do NOT shrink, reshape or re-time the approved geometry. For the 'scrollWidth 23 > 22 at size 20' failure, either (a) let the reserved slot account for the overhang so layout does not shift or collide with the label text, if that is cheap, or (b) change the test to an explicit, commented tolerance for bird-quick-trail's intentional overhang (a small fixed px or % allowance, still failing if it grows unbounded). Pick whichever is simpler and say why.
+- The reduced-motion failures ('static mark height expected > 0, got 0') are a REAL bug, not a tolerance question: under prefers-reduced-motion the bird shows two static readable footprints (second dimmer) at every size, with visible height. Fix the product code or CSS so the test passes.
+- agent-contract.test.ts: a harness that starts but streams garbage reports the cancellation seam as not exercised, not ok (fix the code unless the test is wrong, and explain).
 - bun run test passes fully on this machine, and the runner's full-suite gate still passes.
-- If the bird-quick-trail failures come from #0822's artwork or CSS, fix the artwork (the reserved width/height envelope), do not change the approved geometry.
+- No test is skipped or loosened without a written reason in the commit and in this task.
 
 ## Notes for AI
 Start from the Problem and Attribution sections above (the #0834 engineer already proved the failures are not caused by #0834/#0664 and reproduce at their merge-base). First reproduce on current main in a clean worktree. Files: src/ui-app/tests/activity-indicator-motion.test.ts, src/ui-app/tests/agent-contract.test.ts, src/ui-app/src/components/ActivityIndicator.vue, src/core/activity-animation.ts, src/core/agent-contract.ts, the bird-quick-trail CSS in style.css. Do not touch repoos.toml. Source: #0834 handoff session 2026-10-19.
+
+## Diagnosis (2026-10-19)
+### activity-indicator-motion ×3 (bird-quick-trail)
+
+**Root cause:** Two WebKit/CSS issues on this Mac's Playwright WebKit build, not regressions from #0834/#0664 (subjects were byte-identical to `main` per prior attribution).
+
+1. **scrollWidth 23 > 22 at size 20:** WebKit includes transformed descendants in `.ai-mark` `scrollWidth` even when `overflow: hidden` on the mark; rotated footprints briefly extend ~3px past the 20px slot during `ai-br-quick`. CI runners with different font/subpixel metrics did not trip the +2px slack.
+
+2. **reduced-motion mark height 0:** `.ai-bird-quick { height: 100% }` overrode `.ai-mark { height: 1.1em }`. With absolutely positioned feet and `transform: none` under `prefers-reduced-motion`, the percentage height collapsed to 0.
+
+**Fix:** Drop `height: 100%` on `.ai-bird-quick`; add `.ai-bird-quick-stage` with `overflow: clip` so animation geometry stays inside the reserved slot without changing footprint angles/sizes.
+
+### agent-contract ×1 (cancellation seam)
+
+**Root cause:** The cancellation probe used a fixed 300ms sleep before SIGTERM. On this machine the fake `opencode` fixture (Node shebang) often needs ~500ms cold-start before `REPOOS_CONTRACT_BROKEN=1` exits with code 1. At 300ms the child still looked live, SIGTERM succeeded, and the seam falsely reported `ok: true` instead of not exercised. Faster runner startup exits before 300ms, so CI stayed green.
+
+**Fix:** `waitForHarnessCancelReady()` waits for first stdout/stderr or an 800ms budget, then 100ms settle, before deciding whether cancellation was exercised.
+
+### Environment (this worktree)
+
+- OS: darwin (Mac), Bun 1.4.2, Node v24.22.0
+- Runner comparison: not observed live in this session; timing/WebKit metric delta vs the remote validation runner is the likely CI vs local split (re-run these four tests on the runner after merge to confirm).
 
 ## Activity
 
@@ -62,3 +84,12 @@ Start from the Problem and Attribution sections above (the #0834 engineer alread
 - 2026-10-19T02:46:39Z · status inbox→ready
 - 2026-10-19T02:46:42Z · cli_override, model_override
 - 2026-10-19T02:46:44Z · status ready→active, branch
+- 2026-10-19T02:52:55Z · body
+- 2026-10-19T02:54:06Z · body: Acceptance criteria (added 4, removed 4)
+- 2026-10-19T02:54:06Z · message_queued at 2026-10-19T02:54:06.670Z
+- 2026-10-19T02:54:07Z · message_queued at 2026-10-19T02:54:07.913Z
+- 2026-10-19T02:55:49Z · body: Diagnosis (2026-10-19) (added)
+- 2026-10-19T02:55:49Z · message_queued at 2026-10-19T02:55:49.755Z
+- 2026-10-19T02:56:14Z · body: Diagnosis (2026-10-19) (added 5, removed 5)
+- 2026-10-19T02:56:15Z · message_queued at 2026-10-19T02:56:15.067Z
+- 2026-10-19T03:03:21Z · status active→review
