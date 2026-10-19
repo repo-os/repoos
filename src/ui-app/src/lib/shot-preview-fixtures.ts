@@ -11,6 +11,7 @@ import type { ActivityAnimationStyle } from "../../../core/activity-animation.js
 import type { useConfigStore } from "../stores/config";
 import type { useRepoStore } from "../stores/repo";
 import { useNoticesStore } from "../stores/notices";
+import { useRemindersStore } from "../stores/reminders";
 import { useUiStore } from "../stores/ui";
 import type {
   CloseOutOutcomeEvent,
@@ -387,6 +388,43 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
   // pin freezing the live snapshot (#0782).
   pinnedIntegration = null;
   switch (fixture) {
+    case "reminders:due": {
+      const reminders = useRemindersStore();
+      reminders.fixturePinned = true;
+      const now = Date.now();
+      reminders.now = now;
+      reminders.links = [
+        { value: "agent:cursor", label: "Agent · cursor" },
+        { value: "provider:openrouter", label: "Provider · OpenRouter" },
+      ];
+      reminders.reminders = [
+        {
+          id: "00000000-0000-4000-8000-000000000001",
+          text: "Check Cursor credit — the reset should be ready",
+          fireAt: new Date(now - 3_600_000).toISOString(),
+          link: "agent:cursor",
+          doneAt: "",
+          snoozedAt: "",
+          notifiedFireAt: "",
+          createdAt: new Date(now).toISOString(),
+          updatedAt: new Date(now).toISOString(),
+          state: "due",
+        },
+        {
+          id: "00000000-0000-4000-8000-000000000002",
+          text: "Check OpenRouter after the maintenance window",
+          fireAt: new Date(now + 52 * 3_600_000).toISOString(),
+          link: "provider:openrouter",
+          doneAt: "",
+          snoozedAt: "",
+          notifiedFireAt: "",
+          createdAt: new Date(now).toISOString(),
+          updatedAt: new Date(now).toISOString(),
+          state: "upcoming",
+        },
+      ];
+      break;
+    }
     case "closeOut:active":
       repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID);
       pinnedIntegration = repo.integration;

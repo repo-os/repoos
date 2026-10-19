@@ -8,6 +8,34 @@ output into the task, and recording its token spend.
 Driving a whole board with agents? See
 [Running a project with AI agents](/running-with-agents) for the practical loop.
 
+## Availability reminders
+
+Open **Agents → Reminders** to leave a note for a credit reset, rate-limit reset,
+or provider returning online. **New reminder** takes text, date, time and an
+optional agent/model/provider link. Times use your browser’s timezone. The list
+shows soonest first, with a countdown and upcoming, due, overdue (after 24 hours),
+snoozed or done state.
+
+Due notes stay in the bell and the Reminders tab badge until **Done**, **Snooze**
+or **Delete**. Clicking a bell note opens this tab. Snooze for an hour, tomorrow
+at 09:00 local time, one day (24 hours), or a custom date/time. Editing the fire
+time reopens a completed reminder. Nothing starts agents or changes settings.
+
+Notes survive restarts in human-readable `reminders/<id>.md` files. They are
+repo-wide, not private per-user notes, and are not automatically committed.
+
+```bash
+repoos reminder add --text "Check Cursor credit" --at 2026-10-22T09:00:00+08:00 --link agent:cursor
+repoos reminder list
+repoos reminder done <id>
+repoos reminder snooze <id> --at 2026-10-23T09:00:00+08:00
+repoos reminder delete <id> --yes
+```
+
+These commands require the running server. The pause-allowlist quick path and
+resume-on-Done option will follow once pause support (#0850) is available.
+See `docs/reminders.md` for the storage format and API.
+
 ## Supported coding agents
 
 RepoOS has a driver for eight CLIs:
