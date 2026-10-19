@@ -43,6 +43,7 @@ function makeSchedule(over: Partial<TaskSchedule> = {}): TaskSchedule {
     autoStartAgent: false,
     body: "## Problem\nDrift\n",
     nextRunPreview: "Mon, Oct 20, 9:00 AM",
+    nextRunAt: "2026-10-20T09:00:00.000Z",
     lastRunAt: "",
     lastResult: "",
     lastTaskId: "",
@@ -181,8 +182,8 @@ describe("schedule CRUD from the panel", () => {
     repo.schedules = [created];
     await flushPromises();
 
-    const editBtn = Array.from(wrapper.element.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Edit"),
+    const editBtn = Array.from(wrapper.element.querySelectorAll<HTMLButtonElement>("button")).find(
+      (b) => b.textContent?.includes("Edit"),
     );
     expect(editBtn).toBeTruthy();
     editBtn!.click();
@@ -198,15 +199,15 @@ describe("schedule CRUD from the panel", () => {
     await flushPromises();
     expect(repo.patchSchedule).toHaveBeenCalledWith("0099", { enabled: false });
 
-    const runBtn = Array.from(card.element.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Run now"),
+    const runBtn = Array.from(card.element.querySelectorAll<HTMLButtonElement>("button")).find(
+      (b) => b.textContent?.includes("Run now"),
     );
     runBtn!.click();
     await flushPromises();
     expect(repo.runSchedule).toHaveBeenCalledWith("0099");
 
-    const deleteBtn = Array.from(card.element.querySelectorAll("button")).find((b) =>
-      b.textContent === "Delete",
+    const deleteBtn = Array.from(card.element.querySelectorAll<HTMLButtonElement>("button")).find(
+      (b) => b.textContent === "Delete",
     );
     deleteBtn!.click();
     await flushPromises();
