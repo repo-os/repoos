@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-19T07:50:02Z"
-updated_at: "2026-10-19T08:05:47Z"
+updated_at: "2026-10-19T08:05:52Z"
 ---
 ## Items
 
@@ -50,9 +50,7 @@ The empty Draft column shows exactly what the other empty columns show: the same
 - Test: The empty Draft column renders the same dash as the other empty columns and no 'No drafts yet' text; a non-empty Draft column is unchanged; existing tests referencing the old copy are updated.
 
 ### Notes for AI
-
-
-
+Remove DRAFT_EMPTY and use the same placeholder as the other columns at both call sites (the main board and the filtered single-column view). Grep tests and docs for the old copy and update them. Never touch repoos.toml.
 ## Problem
 See E1: the card shows a "0 changes" chip when there is nothing to show.
 
@@ -74,3 +72,5 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T08:05:42Z · note: bundle edit E2
 - 2026-10-19T08:05:47Z · body: E2 · Empty Draft column shows a dash, not help text (added 1)
 - 2026-10-19T08:05:47Z · note: bundle edit E2
+- 2026-10-19T08:05:52Z · body: E2 · Empty Draft column shows a dash, not help text (added 1)
+- 2026-10-19T08:05:52Z · note: bundle edit E2
