@@ -14,7 +14,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
 updated_at: "2026-10-19T00:15:42Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-19T00:14:49.221Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 0b513be8 to a4e43a0b) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 close_out_repair_count: 1
 review_passes: 5
@@ -107,3 +106,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-19T00:04:31Z · message_delivered: 1 message(s)
 - 2026-10-19T00:07:13Z · body
 - 2026-10-19T00:15:42Z · body
+
