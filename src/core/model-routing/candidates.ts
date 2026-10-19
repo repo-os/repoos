@@ -19,7 +19,7 @@
  *
  * Pure and node-free so it is trivially unit-testable.
  */
-import { isPairOnAllowlist } from "../budget-allowlist.js";
+import { isPairSelectable, isPairPaused } from "../budget-allowlist.js";
 import type { AgentModelAllowRow } from "../types.js";
 import type { RoutingRole } from "./types.js";
 
@@ -78,8 +78,13 @@ export function filterCandidates(input: CandidateFilterInput): CandidateFilterRe
     if (seen.has(key)) continue;
     seen.add(key);
 
-    if (!isPairOnAllowlist(input.allowlist, candidate.cli, candidate.model)) {
-      rejected.push({ candidate, reason: "not on the budget allowlist" });
+    if (!isPairSelectable(input.allowlist, candidate.cli, candidate.model)) {
+      rejected.push({
+        candidate,
+        reason: isPairPaused(input.allowlist, candidate.cli, candidate.model)
+          ? "paused on the budget allowlist"
+          : "not on the budget allowlist",
+      });
       continue;
     }
     const harness = input.harnesses[candidate.cli];

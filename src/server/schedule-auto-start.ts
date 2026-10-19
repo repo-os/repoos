@@ -7,7 +7,7 @@ import { parseTask } from "../core/task.js";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
 import type { Logger } from "../core/logger.js";
 import { getSchedule } from "../core/schedule.js";
-import { resolveAgentForTask } from "./agents.js";
+import { resolveAgentForTask, noAgentAvailableMessage, pausedAgentFallbackNote } from "./agents.js";
 import type { AgentRunner } from "./agents.js";
 import type { LiveIndex } from "./live-index.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
@@ -39,10 +39,17 @@ export async function maybeAutoStartScheduledTask(
 
   const agent = resolveAgentForTask(deps.config, task);
   if (!agent) {
-    deps.logger.task(taskId, "warn", "Schedule auto-start skipped — no engineer agent", {
+    deps.logger.task(taskId, "warn", noAgentAvailableMessage(deps.config, "engineer"), {
       scheduleId,
     });
     return;
+  }
+  const pauseNote = pausedAgentFallbackNote(deps.config, task);
+  if (pauseNote) {
+    deps.logger.task(taskId, "info", "Agent selection adjusted for a paused allowlist entry", {
+      note: pauseNote,
+      scheduleId,
+    });
   }
 
   const branch = task.branch || deriveBranch(task.title);

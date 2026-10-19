@@ -10,7 +10,7 @@ import { ensureWorktree } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import type { LiveIndex } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";
-import { resolveAgentForTask } from "./agents.js";
+import { resolveAgentForTask, noAgentAvailableMessage, pausedAgentFallbackNote } from "./agents.js";
 import type { Logger } from "../core/logger.js";
 export type EngineerLaunchResult =
   | { ok: true; pid?: number; queued?: boolean }
@@ -64,7 +64,13 @@ export async function relaunchEngineerOnActiveTask(
 
   const agent = resolveAgentForTask(config, fresh);
   if (!agent) {
-    return { ok: false, reason: "No enabled engineer agent is configured" };
+    return { ok: false, reason: noAgentAvailableMessage(config, "engineer") };
+  }
+  const pauseNote = pausedAgentFallbackNote(config, fresh);
+  if (pauseNote) {
+    logger.task(id, "info", "Agent selection adjusted for a paused allowlist entry", {
+      note: pauseNote,
+    });
   }
 
   const branch = fresh.branch;
