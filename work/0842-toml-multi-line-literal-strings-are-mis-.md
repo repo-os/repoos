@@ -2,14 +2,14 @@
 id: "0842"
 title: TOML multi-line literal strings (''' ''') are mis-parsed in repoos.toml
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-10-19T05:12:40Z"
+updated_at: "2026-10-19T10:22:02Z"
 ---
 ## Problem
 `repoos.toml` values written as TOML multi-line literal strings (`'''...'''`) are mis-parsed: the stored value keeps literal leading and trailing `''`. Seen on the Dev page for a `[[dev.targets]]` command: `''bun install --frozen-lockfile && ... ''`. It only runs because a shell happens to ignore empty `''`; a command starting with an env assignment (`PORT=3001 bun ...`) failed with `/bin/sh: PORT=3001: command not found`. `'''` and `"""` are valid TOML, so the reader is non-conformant. Found while setting up dev targets for the lightingai project (2026-10-19).
@@ -30,3 +30,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 ## Activity
 
 - 2026-10-19T05:12:40Z · created · njachowski@gmail.com
+- 2026-10-19T10:22:02Z · status inbox→ready
