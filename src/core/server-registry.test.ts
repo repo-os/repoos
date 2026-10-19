@@ -1,15 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { execFileSync } from "node:child_process";
+import * as serverRegistry from "./server-registry.js";
 import {
   checkServerRegistryPortConflict,
   readServerRegistryEntry,
   removeServerRegistryEntry,
   shouldRegisterServerRegistry,
   writeServerRegistryEntry,
-  pruneStaleServerRegistryEntries,
   SERVER_REGISTRY_SCHEMA,
   type ServerRegistryEntry,
 } from "./server-registry.js";
-import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -33,24 +34,55 @@ function sampleEntry(port: number, root: string, pid: number): ServerRegistryEnt
   };
 }
 
+function git(root: string, args: string[]): void {
+  execFileSync("git", args, { cwd: root, encoding: "utf8" });
+}
+
 describe("shouldRegisterServerRegistry", () => {
-  it("returns false for preview child, port 0, worktree, preview overrides, and REPOOS_NO_REGISTRY", () => {
+  it("returns false for preview child, requested port 0, preview overrides, and REPOOS_NO_REGISTRY", () => {
     const base = { root: "/tmp/main", previewOverrides: undefined };
-    expect(shouldRegisterServerRegistry(base, { port: 7171 }, {})).toBe(true);
-    expect(shouldRegisterServerRegistry(base, { port: 7171 }, { REPOOS_PREVIEW_CHILD: "1" })).toBe(
-      false,
-    );
-    expect(shouldRegisterServerRegistry(base, { port: 0 }, {})).toBe(false);
-    expect(shouldRegisterServerRegistry(base, { port: 7171 }, { REPOOS_NO_REGISTRY: "1" })).toBe(
-      false,
-    );
+    expect(shouldRegisterServerRegistry(base, { requestedPort: 7171 }, {})).toBe(true);
+    expect(
+      shouldRegisterServerRegistry(base, { requestedPort: 7171 }, { REPOOS_PREVIEW_CHILD: "1" }),
+    ).toBe(false);
+    expect(shouldRegisterServerRegistry(base, { requestedPort: 0 }, {})).toBe(false);
+    expect(
+      shouldRegisterServerRegistry(base, { requestedPort: 7171 }, { REPOOS_NO_REGISTRY: "1" }),
+    ).toBe(false);
     expect(
       shouldRegisterServerRegistry(
         { root: "/tmp/main", previewOverrides: ["auth.enabled"] },
-        { port: 7171 },
+        { requestedPort: 7171 },
         {},
       ),
     ).toBe(false);
+  });
+
+  it("returns false for a linked task worktree root", () => {
+    const main = mkdtempSync(join(tmpdir(), "repoos-srv-reg-main-"));
+    git(main, ["init", "-q", "-b", "main"]);
+    git(main, ["config", "user.email", "t@example.com"]);
+    git(main, ["config", "user.name", "Test"]);
+    writeFileSync(join(main, "repoos.toml"), "\n");
+    git(main, ["add", "repoos.toml"]);
+    git(main, ["commit", "-q", "-m", "init"]);
+    const wt = join(main, "task-wt");
+    git(main, ["worktree", "add", "-q", wt, "-b", "feat/task"]);
+    expect(
+      shouldRegisterServerRegistry(
+        { root: main, previewOverrides: undefined },
+        { requestedPort: 7171 },
+        {},
+      ),
+    ).toBe(true);
+    expect(
+      shouldRegisterServerRegistry(
+        { root: wt, previewOverrides: undefined },
+        { requestedPort: 7171 },
+        {},
+      ),
+    ).toBe(false);
+    rmSync(main, { recursive: true, force: true });
   });
 });
 
@@ -105,11 +137,12 @@ describe("server registry files", () => {
     expect(msg).toMatch(String(process.pid));
   });
 
-  it("prune removes dead pid files", () => {
+  it("prune removes dead pid files", async () => {
     writeServerRegistryEntry(sampleEntry(7500, "/tmp/x", 999_998));
     writeServerRegistryEntry(sampleEntry(7501, "/tmp/y", process.pid));
-    expect(pruneStaleServerRegistryEntries()).toBe(1);
+    expect(await serverRegistry.pruneStaleServerRegistryEntries()).toBe(1);
     expect(existsSync(join(dir, "7500.json"))).toBe(false);
     expect(existsSync(join(dir, "7501.json"))).toBe(true);
   });
+
 });

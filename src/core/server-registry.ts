@@ -67,14 +67,15 @@ export function canonicalRegistryRoot(root: string): string {
  */
 export function shouldRegisterServerRegistry(
   config: Pick<RepoOSConfig, "root" | "previewOverrides">,
-  opts: { port: number },
+  opts: { requestedPort: number },
   env: NodeJS.ProcessEnv = process.env,
 ): boolean {
   if (env.REPOOS_NO_REGISTRY === "1") return false;
   if (env.REPOOS_PREVIEW_CHILD === "1") return false;
   if ((config.previewOverrides?.length ?? 0) > 0) return false;
   if (isLinkedWorktreeRoot(config.root)) return false;
-  if (opts.port === 0) return false;
+  /** Harness `startServer({ port: 0 })` — OS assigns a real port but must not register. */
+  if (opts.requestedPort === 0) return false;
   return true;
 }
 
@@ -288,7 +289,11 @@ export async function listValidatedServerRegistry(
   return out;
 }
 
-export function pruneStaleServerRegistryEntries(registryDir?: string): number {
+/**
+ * Remove registry files that are stale: dead PID, or live PID that fails health
+ * validation (unreachable or root mismatch).
+ */
+export async function pruneStaleServerRegistryEntries(registryDir?: string): Promise<number> {
   const dir = registryDir ?? serversRegistryDir();
   let removed = 0;
   for (const path of listServerRegistryEntryPaths(dir)) {
@@ -303,6 +308,19 @@ export function pruneStaleServerRegistryEntries(registryDir?: string): number {
       continue;
     }
     if (!isPidAlive(entry.pid)) {
+      try {
+        unlinkSync(path);
+        removed += 1;
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  for (const path of listServerRegistryEntryPaths(dir)) {
+    const entry = readEntryFile(path);
+    if (!entry) continue;
+    const validated = await validateServerRegistryEntry(entry);
+    if (!validated.valid) {
       try {
         unlinkSync(path);
         removed += 1;

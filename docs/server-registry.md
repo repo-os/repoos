@@ -69,7 +69,7 @@ treated as stale and overwritten on register.
 ```bash
 repoos servers           # human table: port, project, root, pid, uptime, validity
 repoos servers --json    # machine-readable list + validity
-repoos servers --prune   # delete entries whose PID is dead, then list
+repoos servers --prune   # delete stale entries (dead PID or failed health), then list
 ```
 
 Validation for each entry:
@@ -77,7 +77,9 @@ Validation for each entry:
 1. PID is alive (`kill -0`)
 2. `GET /api/health` returns `ok` with the same canonical `root`
 
-Stale reasons: `dead-pid`, `unreachable`, `health-mismatch`.
+Stale reasons: `dead-pid`, `unreachable`, `health-mismatch`. `--prune` deletes
+any entry that fails validation (including health mismatch while the PID is still
+alive).
 
 ## Hub contract
 
