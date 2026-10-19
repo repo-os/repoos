@@ -3,6 +3,9 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the cursor agent exited without output: ActionRequiredError: Increase limits for faster responses You're out of usage. Switch to Auto, or ask your admin to increase your limit to continue. ⚠ After this turn ended, 6 process(es) escaped its process group (PIDs: 84148, 84172, 84205, 84210, 84211, 84212). They may need manual cleanup."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -72,3 +75,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T11:39:41Z · body
 - 2026-10-19T11:47:16Z · status active→review
 - 2026-10-19T11:47:28Z · note: review pass 1: failed — no usable report
+- 2026-10-19T11:47:28Z · needs_input
