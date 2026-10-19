@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-19T17:49:57Z"
+review_passes: 2
 id: "0842"
 title: TOML multi-line literal strings (''' ''') are mis-parsed in repoos.toml
 type: bug
@@ -16,9 +18,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-10-19T17:49:57Z"
 review_rounds: 1
-review_passes: 1
 dev_error_count: 3
 ---
 ## Problem
@@ -78,3 +78,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-10-19T17:47:22Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (aacc30d9d) during finalization (#0734)
 - 2026-10-19T17:47:22Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (aacc30d9d) during finalization (#0734)
 - 2026-10-19T17:49:57Z · note: review pass 2: needs some work
+
