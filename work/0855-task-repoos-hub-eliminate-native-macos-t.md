@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 306105
-last_close_out_gate_at: "2026-10-19T17:05:50.810Z"
 id: "0855"
 title: RepoOS Hub — remove native macOS titlebar and consolidate controls into the sidebar
 type: refactor
-status: review
+status: done
 priority: p2
 area: macos
+merged_commit: 0ad69294ee094c9fd40d987c4269ff5828f0de91
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/repoos-hub-remove-native-macos-titlebar-
@@ -17,7 +16,9 @@ pm_model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T15:35:14Z"
-updated_at: "2026-10-19T17:05:50Z"
+updated_at: "2026-10-19T17:05:55Z"
+last_close_out_gate_ms: 306105
+last_close_out_gate_at: "2026-10-19T17:05:50.810Z"
 review_passes: 8
 ---
 ## Problem
@@ -343,4 +344,4 @@ I would also avoid making navigation controls too prominent. They should feel li
 - 2026-10-19T16:49:48Z · note: review pass 7: needs some work
 - 2026-10-19T16:51:14Z · note: review pass 8: needs some work
 - 2026-10-19T17:05:50Z · close-out gate completed in 306s
-
+- 2026-10-19T17:05:55Z · status review→done, release:success
