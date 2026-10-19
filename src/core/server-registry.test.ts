@@ -37,13 +37,13 @@ describe("shouldRegisterServerRegistry", () => {
   it("returns false for preview child, port 0, worktree, preview overrides, and REPOOS_NO_REGISTRY", () => {
     const base = { root: "/tmp/main", previewOverrides: undefined };
     expect(shouldRegisterServerRegistry(base, { port: 7171 }, {})).toBe(true);
-    expect(
-      shouldRegisterServerRegistry(base, { port: 7171 }, { REPOOS_PREVIEW_CHILD: "1" }),
-    ).toBe(false);
+    expect(shouldRegisterServerRegistry(base, { port: 7171 }, { REPOOS_PREVIEW_CHILD: "1" })).toBe(
+      false,
+    );
     expect(shouldRegisterServerRegistry(base, { port: 0 }, {})).toBe(false);
-    expect(
-      shouldRegisterServerRegistry(base, { port: 7171 }, { REPOOS_NO_REGISTRY: "1" }),
-    ).toBe(false);
+    expect(shouldRegisterServerRegistry(base, { port: 7171 }, { REPOOS_NO_REGISTRY: "1" })).toBe(
+      false,
+    );
     expect(
       shouldRegisterServerRegistry(
         { root: "/tmp/main", previewOverrides: ["auth.enabled"] },
