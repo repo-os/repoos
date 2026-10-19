@@ -2,7 +2,7 @@
 id: "0840"
 title: "Diagnose 4 pre-existing full-suite test failures (activity-indicator-motion ×3, agent-contract ×1)"
 type: bug
-status: review
+status: active
 paths: [src/ui-app/tests/activity-indicator-motion.test.ts, src/ui-app/tests/agent-contract.test.ts]
 priority: p3
 area: [web, core]
