@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-19T14:15:11.697Z: repoos check failed: rendered-contrast — gruvbox-light (1):"
 id: "0850"
 title: "Allowlist: pause an agent or model without removing it (with optional resume date and reason)"
 type: feature
@@ -47,3 +49,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T13:19:06Z · status inbox→ready
 - 2026-10-19T13:19:09Z · status ready→active, branch
 - 2026-10-19T13:55:33Z · CTO action: restart-stalled-agent (resume) · agent never started — no session exists for this task
+
