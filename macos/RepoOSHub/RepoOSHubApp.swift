@@ -207,7 +207,6 @@ func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
     window.titlebarAppearsTransparent = true
     window.styleMask.insert(.fullSizeContentView)
     window.toolbar?.isVisible = false
-    window.isMovableByWindowBackground = true
 }
 
 private func applyNativeSurfaceBackgrounds(

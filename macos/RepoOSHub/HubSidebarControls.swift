@@ -101,6 +101,7 @@ private struct HubSidebarIconButton: View {
     let help: String
     let action: () -> Void
 
+    @Environment(\.isEnabled) private var isEnabled
     @State private var isHovering = false
 
     var body: some View {
@@ -110,12 +111,13 @@ private struct HubSidebarIconButton: View {
                 .frame(width: 24, height: 24)
                 .background {
                     RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(isHovering ? Color.primary.opacity(0.09) : Color.clear)
+                        .fill(isHovering && isEnabled ? Color.primary.opacity(0.09) : Color.clear)
                 }
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
+        .opacity(isEnabled ? 1 : 0.35)
         .onHover { isHovering = $0 }
         .help(help)
         .accessibilityLabel(accessibilityLabel)
