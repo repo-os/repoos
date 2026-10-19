@@ -24,6 +24,7 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { realpathSync } from "node:fs";
 import { isLinkedWorktreeRoot, projectDisplayName } from "./config.js";
+import type { Logger } from "./logger.js";
 import type { RepoOSConfig } from "./types.js";
 
 export const SERVER_REGISTRY_SCHEMA = 1;
@@ -357,11 +358,7 @@ export function refreshRunningServerProjectName(
 let registryErrorLogged = false;
 
 /** Log a registry failure at most once per process. */
-export function logServerRegistryError(
-  logger: { system: (level: string, msg: string) => void },
-  action: string,
-  err: unknown,
-): void {
+export function logServerRegistryError(logger: Logger, action: string, err: unknown): void {
   if (registryErrorLogged) return;
   registryErrorLogged = true;
   const msg = err instanceof Error ? err.message : String(err);

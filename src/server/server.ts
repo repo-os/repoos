@@ -4021,7 +4021,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             port: actualPort,
             host: connectHost,
             root: config.root,
-            version: readBuildMeta().version,
+            version: readBuildMeta().version ?? "unknown",
             startedAt: serverStartedAt,
           });
           runningServerRegistry = {
