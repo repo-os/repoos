@@ -344,6 +344,14 @@ export function parseDevServices(parsed: Record<string, unknown>): {
       continue;
     }
     if (port.port !== undefined) service.port = port.port;
+    // #0843 review round 1: a pinned service needs a port to pin — reject it
+    // at config time rather than only when Start is clicked.
+    if (service.autoPort === false && service.port === undefined) {
+      errors.push(
+        `[dev.services] ${name}: auto-pick is off but no port is set — set a port or turn auto-pick back on`,
+      );
+      continue;
+    }
 
     // healthCheck arrives in the same three shapes a target's does (an object,
     // the raw inline-table string, or dotted keys) — one shared reader keeps

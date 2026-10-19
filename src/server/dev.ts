@@ -665,17 +665,17 @@ export class DevTargetManager {
         env: { ...process.env, ...(Object.keys(tokens).length ? tokenEnv(tokens) : {}) },
       });
     } catch (err) {
-      const message = `could not launch "${t.name}": ${(err as Error).message}`;
-      this.setState(t.name, { status: "failed", error: message });
-      this.appendLog(t.name, `[repoos] ${message}`);
-      return { ok: false, error: message, target: this.view(t) };
+      // A failed start tears the companion services down with it (#0843
+      // review round 1) — they are owned by the target, and a half-booted
+      // stack must not outlive the start that failed.
+      await fail(`could not launch "${t.name}": ${(err as Error).message}`);
+      return { ok: false, error: this.states.get(t.name)?.error, target: this.view(t) };
     }
 
     const pid = child.pid;
     if (!pid) {
-      const message = `could not launch "${t.name}" (no pid)`;
-      this.setState(t.name, { status: "failed", error: message });
-      return { ok: false, error: message, target: this.view(t) };
+      await fail(`could not launch "${t.name}" (no pid)`);
+      return { ok: false, error: this.states.get(t.name)?.error, target: this.view(t) };
     }
 
     this.running.set(t.name, { child, processGroup, longLived: t.kind !== "artifact" });
@@ -733,7 +733,10 @@ export class DevTargetManager {
       });
       const state = this.states.get(t.name);
       if (state?.status === "failed") {
-        return { ok: false, error: state.error, target: this.view(t) };
+        // A failed build tears its companion services down with it (#0843
+        // review round 1) — the start they were booted for failed.
+        await fail(state.error ?? "build failed");
+        return { ok: false, error: this.states.get(t.name)?.error, target: this.view(t) };
       }
       return { ok: true, target: this.view(t) };
     }
@@ -749,6 +752,9 @@ export class DevTargetManager {
         this.setState(t.name, { status: "failed", error: ready.error });
       }
       this.appendLog(t.name, `[repoos] ${ready.error}`);
+      // The start failed: the companion services booting for it are torn down
+      // too (#0843 review round 1) — the target owns their lifecycle.
+      await this.killServiceRuns(t.name);
       return { ok: false, error: ready.error, target: this.view(t) };
     }
     if (this.states.get(t.name)?.status !== "failed") {
@@ -1011,6 +1017,39 @@ export class DevTargetManager {
     ) {
       state = { ...state, status: "stopped", stoppedAt: now() };
       this.states.set(t.name, state);
+    }
+    // The re-adopted target's companion services have no handles either
+    // (#0843 review round 1): the same lazy PID-liveness check is the truth,
+    // and a service found dead is marked failed and degrades the target
+    // visibly, just like the live-path exit handler would.
+    if (this.adopted.has(t.name) && !this.running.has(t.name)) {
+      const dead = (state.services ?? []).filter(
+        (s) =>
+          (s.status === "running" || s.status === "starting") &&
+          typeof s.pid === "number" &&
+          s.pid > 0 &&
+          !isAlivePid(s.pid),
+      );
+      if (dead.length) {
+        const services = (state.services ?? []).map((s) =>
+          dead.some((d) => d.name === s.name)
+            ? { ...s, status: "failed" as const, error: `service "${s.name}" exited unexpectedly` }
+            : s,
+        );
+        const first = dead[0]!;
+        const reason =
+          dead.length === 1
+            ? `service "${first.name}" exited unexpectedly`
+            : `${dead.length} companion services exited unexpectedly (${dead.map((d) => `"${d.name}"`).join(", ")})`;
+        const degraded = state.status === "running" || state.status === "starting";
+        state = {
+          ...state,
+          services,
+          ...(degraded ? { status: "failed" as const, error: reason } : {}),
+        };
+        this.states.set(t.name, state);
+        if (degraded) this.appendLog(t.name, `[repoos] ${reason}`);
+      }
     }
     // #0751: show the real command and url of a running target — the `{port}`
     // substituted at the last start — rather than the templated declaration. A

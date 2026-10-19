@@ -1834,14 +1834,18 @@ service may reference a sibling declared before it.
 | `dev.services[].command` | string | yes | Command that boots the service. Its own `{port}`/`PORT` is the port RepoOS assigns it. |
 | `dev.services[].cwd` | string | repo root | Repo-relative subdirectory to run the command in. |
 | `dev.services[].port` | number | no | The service's preferred/fixed port, handled exactly like a target's `port` (#0802). |
-| `dev.services[].autoPort` | boolean | no | Auto-pick a free port; default `true`. With `false` the `port` is fixed and an occupied one fails with a message naming the service. |
+| `dev.services[].autoPort` | boolean | no | Auto-pick a free port; default `true`. With `false` the `port` is required and fixed — an occupied one fails with a message naming the service (and `autoPort = false` with no `port` is rejected as a config error, not only at Start). |
 | `dev.services[].healthCheck.url` | string | no | URL polled (with ports substituted) until it answers before the service counts as ready. |
 | `dev.services[].healthCheck.file` | string | no | Repo-relative file (resolved against the service's `cwd`) that must exist. |
 | `dev.services[].env` | table | no | Extra environment variables for the service's process, e.g. `env = { LOG_LEVEL = "debug" }`. |
 
-Stopping or restarting the target stops its services with it. A service that
-crashes while the target runs marks the target failed with the service's name
-in the reason, so the degradation is visible on the Dev page (each service has
+Stopping or restarting the target stops its services with it, and a start
+that fails at the target — its command cannot launch, or its readiness check
+never passes — tears the already-booted services down too. A service that
+crashes while the target runs (including after a reload handover, where the
+same PID-liveness check that re-adopts services catches the death) marks the
+target failed with the service's name in the reason, so the degradation is
+visible on the Dev page (each service has
 its own sub-row there — status, real port, PID, and its own output). Every
 declared service also answers on `repoos dev <name> status|logs --service <name>`.
 
