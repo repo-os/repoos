@@ -3328,9 +3328,21 @@
 .ai-bird-quick {
   position: relative;
   width: 100%;
-  height: 100%;
+  /* Inherit `.ai-mark`'s em height — `height: 100%` collapses to 0 when the
+     feet are absolutely positioned and reduced motion clears their transforms
+     (#0840). Clip subpixel toe bearing so scrollWidth stays inside the slot. */
   display: block;
+  overflow: hidden;
   --beat: var(--cycle);
+}
+.ai-bird-quick-stage {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* WebKit counts transformed descendants in scrollWidth; clip the stage so
+     the reserved slot stays honest while toes still animate (#0840). */
+  overflow: clip;
 }
 .ai-bird-quick .foot {
   position: absolute;
