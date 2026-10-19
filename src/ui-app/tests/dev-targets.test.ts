@@ -1765,6 +1765,111 @@ describe("DevTargetManager with services (#0843)", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  // Review round 2 — a service can exit AFTER its readiness gate passed but
+  // BEFORE the target finished starting: the exit handler degrades the target,
+  // and the start must not plow on (or come back as success with a dead API).
+  it("reports a service exit that lands between its gate and the target's readiness", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcrace-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              // Healthy at its 500ms alive-settle; gone shortly after, while
+              // the target's own gate is still polling a URL nothing serves.
+              command: 'bun -e "setTimeout(()=>process.exit(3),1000)"',
+              healthCheck: undefined,
+            }),
+          ],
+          // A server target with a `{own-port}` url: its readiness poll runs
+          // long after the service has exited, so the degraded mark set by the
+          // service's exit handler would otherwise be wiped by the target's
+          // own `starting` write or answered with a late generic timeout.
+          targets: [
+            webTarget({
+              url: "http://localhost:{port}",
+              command: 'bun -e "setTimeout(()=>{},60000)"',
+            }),
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      // The reason is the service's crash, surfaced promptly (well inside the
+      // target's 30s readiness window), not a generic "did not answer".
+      expect(result.error).toContain('service "api"');
+      expect(mgr.get("app")?.error).toContain('service "api"');
+      expect(mgr.get("app")?.services?.[0].status).toBe("failed");
+      // The start did not churn on for the whole readiness timeout.
+      expect(mgr.get("app")?.services?.[0].pid).toBeDefined();
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // Review round 2 — on reload, a service whose target died still gets reaped,
+  // so a companion process cannot outlive the stack it belongs to; and a
+  // service already dead at adoption degrades the target NOW, not later.
+  it("reaps a dead target's live service on reload, and reports a dead service at adoption", async () => {
+    // Case A — dead target, live service: on reload the service is reaped.
+    const dirA = mkdtempSync(join(tmpdir(), "repoos-dev-svcreap-"));
+    const mgrA = new DevTargetManager(
+      baseConfig({ services: [apiService()], targets: [webTarget()] }, dirA),
+    );
+    try {
+      const started = await mgrA.start("app");
+      expect(started.ok).toBe(true);
+      const targetPid = mgrA.get("app")?.pid!;
+      const svcPid = mgrA.get("app")?.services?.[0].pid!;
+      expect(typeof targetPid).toBe("number");
+      expect(typeof svcPid).toBe("number");
+
+      process.kill(targetPid, "SIGKILL");
+      expect(await waitForDead(targetPid)).toBe(true);
+      const reaper = new DevTargetManager(
+        baseConfig({ services: [apiService()], targets: [webTarget()] }, dirA),
+      );
+      reaper.cleanupOrphans(/* isReload */ true);
+      // The companion process did not outlive its dead target.
+      expect(await waitForDead(svcPid)).toBe(true);
+      await reaper.stopAll();
+    } finally {
+      await mgrA.stopAll();
+      rmSync(dirA, { recursive: true, force: true });
+    }
+
+    // Case B — live target, dead service: adoption ITSELF marks the service
+    // failed and degrades the target naming it; no later poll is needed.
+    const dirB = mkdtempSync(join(tmpdir(), "repoos-dev-svcreadb-"));
+    const mgrB = new DevTargetManager(
+      baseConfig({ services: [apiService()], targets: [webTarget()] }, dirB),
+    );
+    try {
+      const started = await mgrB.start("app");
+      expect(started.ok).toBe(true);
+      const svcPid = mgrB.get("app")?.services?.[0].pid!;
+      process.kill(svcPid, "SIGKILL");
+      expect(await waitForDead(svcPid)).toBe(true);
+
+      const adopted = new DevTargetManager(
+        baseConfig({ services: [apiService()], targets: [webTarget()] }, dirB),
+      );
+      adopted.cleanupOrphans(/* isReload */ true);
+      const view = adopted.get("app");
+      expect(view?.status).toBe("failed");
+      expect(view?.error).toContain('service "api"');
+      expect(view?.services?.[0].status).toBe("failed");
+      await adopted.stopAll();
+    } finally {
+      await mgrB.stopAll();
+      rmSync(dirB, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("dev target services API shape (#0843)", () => {

@@ -624,12 +624,31 @@ export class DevTargetManager {
         }
       });
 
-      const ready = await this.waitForServiceReady(def, child, servicePort, tokens, serviceCwd);
+      const ready = await this.waitForServiceReady(
+        def,
+        child,
+        servicePort,
+        tokens,
+        serviceCwd,
+        t.name,
+      );
       if (!ready.ok) {
         this.appendServiceLog(t.name, def.name, `[repoos] ${ready.error}`);
         return fail(`service "${def.name}" ${ready.error}`);
       }
       this.patchServiceState(t.name, def.name, { status: "running", error: undefined });
+    }
+
+    // #0843 review round 2: a service that exited after passing its readiness
+    // gate — while its sibling gated, or while the target's own gate was about
+    // to run — has already degraded the target below. Returning "success" with
+    // a failed service would be the worst of both worlds, so stop here: the
+    // services go down with the failed start and the reason (naming the
+    // service) stands.
+    const degraded = this.states.get(t.name);
+    if (degraded?.status === "failed") {
+      await fail(degraded.error ?? "a companion service failed during startup");
+      return { ok: false, error: this.states.get(t.name)?.error, target: this.view(t) };
     }
 
     // #0751/#0802: a target whose command/url/healthCheck uses `{port}` gets a
@@ -760,6 +779,13 @@ export class DevTargetManager {
     if (this.states.get(t.name)?.status !== "failed") {
       this.setState(t.name, { status: "running", error: undefined });
     }
+    // #0843 review round 2: never report success while a failure stands — an
+    // exit racing the last readiness poll has already marked the target
+    // failed (the process is gone), and the start answer must agree.
+    const finalState = this.states.get(t.name);
+    if (finalState?.status === "failed") {
+      return { ok: false, error: finalState.error ?? "the target failed", target: this.view(t) };
+    }
     return { ok: true, target: this.view(t) };
   }
 
@@ -776,6 +802,12 @@ export class DevTargetManager {
     resolvedPort?: number,
     tokens: Record<string, number> = {},
   ): Promise<{ ok: boolean; error: string }> {
+    /** Abort the poll the moment something else has failed the target. */
+    const degraded = (): { ok: boolean; error: string } | null => {
+      const s = this.states.get(t.name);
+      if (s?.status !== "failed") return null;
+      return { ok: false, error: s.error ?? "the target failed during startup" };
+    };
     const hc = t.healthCheck;
     if (hc?.file) {
       const path = this.resolveHealthPath(hc.file);
@@ -783,6 +815,9 @@ export class DevTargetManager {
       const deadline = Date.now() + HEALTH_TIMEOUT_MS;
       while (Date.now() < deadline) {
         if (existsSync(path)) return { ok: true, error: "" };
+        // #0843 review round 2: a companion service's crash degrades the
+        // target — its reason ends this wait instead of burning the timeout.
+        if (degraded()) return degraded()!;
         if (!this.isAlive(child))
           return { ok: false, error: "process exited before the health file appeared" };
         await sleep(HEALTH_POLL_MS);
@@ -801,6 +836,7 @@ export class DevTargetManager {
       const deadline = Date.now() + HEALTH_TIMEOUT_MS;
       while (Date.now() < deadline) {
         if (await probeUrl(url)) return { ok: true, error: "" };
+        if (degraded()) return degraded()!;
         if (!this.isAlive(child)) {
           return { ok: false, error: "process exited before it answered its health check" };
         }
@@ -811,6 +847,7 @@ export class DevTargetManager {
     // No health check: give the process a moment to fail fast if it is going
     // to, then treat a live process as running.
     await sleep(HEALTH_POLL_MS);
+    if (degraded()) return degraded()!;
     if (!this.isAlive(child)) return { ok: false, error: "process exited immediately" };
     return { ok: true, error: "" };
   }
@@ -830,7 +867,10 @@ export class DevTargetManager {
     port: number,
     tokens: Record<string, number>,
     cwd: string,
+    target: string,
   ): Promise<{ ok: boolean; error: string }> {
+    /** Abort when a sibling's crash has (or the target state has) failed. */
+    const degraded = (): boolean => this.states.get(target)?.status === "failed";
     const hc = def.healthCheck;
     if (hc?.file) {
       const path = this.resolveHealthPath(hc.file, cwd);
@@ -839,6 +879,8 @@ export class DevTargetManager {
       const deadline = Date.now() + HEALTH_TIMEOUT_MS;
       while (Date.now() < deadline) {
         if (existsSync(path)) return { ok: true, error: "" };
+        if (degraded())
+          return { ok: false, error: "startup aborted: a sibling companion service failed" };
         if (!this.isAlive(child)) {
           return { ok: false, error: "exited before the health file appeared" };
         }
@@ -851,6 +893,8 @@ export class DevTargetManager {
       const deadline = Date.now() + HEALTH_TIMEOUT_MS;
       while (Date.now() < deadline) {
         if (await probeUrl(url)) return { ok: true, error: "" };
+        if (degraded())
+          return { ok: false, error: "startup aborted: a sibling companion service failed" };
         if (!this.isAlive(child)) {
           return { ok: false, error: "exited before it answered its health check" };
         }
@@ -859,6 +903,8 @@ export class DevTargetManager {
       return { ok: false, error: `${url} did not answer within ${HEALTH_TIMEOUT_MS / 1000}s` };
     }
     await sleep(HEALTH_POLL_MS);
+    if (degraded())
+      return { ok: false, error: "startup aborted: a sibling companion service failed" };
     if (!this.isAlive(child)) return { ok: false, error: "exited immediately" };
     return { ok: true, error: "" };
   }
@@ -956,13 +1002,24 @@ export class DevTargetManager {
     }
     if (payload?.targets) {
       for (const state of Object.values(payload.targets)) {
-        // Companion services (#0843): on a cold boot a leftover service is
-        // reaped with its target; on a reload it is adopted below only while
-        // its PID is alive — its state is settled by that liveness check.
+        // Whether the target itself survived, decided once per target: on a
+        // reload a live target re-adopts (and keeps owning) its services; a
+        // dead one has no continuation, so its live companions must not
+        // outlive it.
+        const targetAlive =
+          (state.status === "running" || state.status === "starting") &&
+          typeof state.pid === "number" &&
+          state.pid > 0 &&
+          isAlivePid(state.pid);
+        // Companion services (#0843): on a cold boot any leftover service is
+        // reaped with its target; on a reload a live service is adopted only
+        // when its target survived — one whose target died is reaped so a
+        // companion can never outlive the stack it belongs to (#0843 review
+        // round 2).
         for (const service of state.services ?? []) {
           if (typeof service.pid !== "number" || service.pid <= 0) continue;
-          if (isReload) continue;
-          if (isAlivePid(service.pid)) {
+          if (!isAlivePid(service.pid)) continue;
+          if (!isReload || !targetAlive) {
             void this.killPid(service.pid, process.platform !== "win32");
           }
         }
@@ -971,20 +1028,44 @@ export class DevTargetManager {
         if (isReload && isAlivePid(state.pid)) {
           // Subscribe to the target's live state; there is no ChildProcess
           // handle to observe, so the PID liveness check in `view()` is the
-          // truth from here on.
-          const services = state.services?.map((s) =>
-            typeof s.pid === "number" &&
-            s.pid > 0 &&
-            (s.status === "running" || s.status === "starting") &&
-            !isAlivePid(s.pid)
-              ? { ...s, status: "stopped" as const }
-              : s,
+          // truth from here on. A service that is ALREADY dead at adoption is
+          // marked failed and the target degraded NOW, not hidden as
+          // "stopped" — the lazy check only watches live services (#0843
+          // review round 2).
+          const dead = (state.services ?? []).filter(
+            (s) =>
+              (s.status === "running" || s.status === "starting") &&
+              typeof s.pid === "number" &&
+              s.pid > 0 &&
+              !isAlivePid(s.pid),
           );
-          this.states.set(state.name, {
-            ...state,
-            status: "running",
-            ...(services ? { services } : {}),
-          });
+          if (dead.length) {
+            const first = dead[0]!;
+            const reason =
+              dead.length === 1
+                ? `service "${first.name}" exited unexpectedly`
+                : `${dead.length} companion services exited unexpectedly (${dead
+                    .map((d) => `"${d.name}"`)
+                    .join(", ")})`;
+            const services = (state.services ?? []).map((s) =>
+              dead.some((d) => d.name === s.name)
+                ? {
+                    ...s,
+                    status: "failed" as const,
+                    error: `service "${s.name}" exited unexpectedly`,
+                  }
+                : s,
+            );
+            this.states.set(state.name, {
+              ...state,
+              status: "failed",
+              error: reason,
+              ...(services ? { services } : {}),
+            });
+            this.appendLog(state.name, `[repoos] ${reason}`);
+          } else {
+            this.states.set(state.name, { ...state, status: "running" });
+          }
           this.adopted.add(state.name);
           continue;
         }
