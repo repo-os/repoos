@@ -528,6 +528,9 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       ensureFixtureTask(repo, "ready");
       repo.seedStartWorkPending(SHOT_PREVIEW_FIXTURE_TASK_ID);
       break;
+    case "schedule:newPanel":
+      useUiStore().scheduleEditorShotOpen = true;
+      break;
     case "drawer:queuedMessage": {
       // #0821 — the drawer task (the shot's `?task=`) with a running agent and
       // one message queued for when the turn ends, so the Dev composer shows its
