@@ -126,6 +126,23 @@ function decodeBasicMultiLine(inner: string): string {
         case "r":
           out.push("\r");
           break;
+        case " ":
+        case "\t": {
+          // A line-ending backslash may be followed by spaces/tabs before the
+          // newline; only trim when the run actually reaches one.
+          let j = i + 1;
+          let sawNewline = false;
+          while (
+            j < inner.length &&
+            (inner[j] === " " || inner[j] === "\t" || inner[j] === "\n" || inner[j] === "\r")
+          ) {
+            if (inner[j] === "\n") sawNewline = true;
+            j++;
+          }
+          if (sawNewline) i = j - 2;
+          else out.push("\\" + next);
+          break;
+        }
         case "\n":
         case "\r": {
           // Line-ending backslash: trim the newline and every following
@@ -163,7 +180,9 @@ function decodeBasicMultiLine(inner: string): string {
           break;
         }
         default:
-          out.push(next);
+          // Preserve an unknown escape rather than silently dropping the
+          // backslash; TOML validation rejects it before a save anyway.
+          out.push("\\" + next);
           break;
       }
       i++;

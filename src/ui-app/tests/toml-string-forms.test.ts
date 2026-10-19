@@ -54,6 +54,22 @@ describe("multi-line TOML strings", () => {
     expect(parsed.x).toBe('it\'s "great"');
   });
 
+  it("handles closing-quote runs at the TOML limit", () => {
+    expect(parseFlatToml("x = ''''''").x).toBe("");
+    expect(parseFlatToml("x = '''''''").x).toBe("'");
+    expect(parseFlatToml("x = ''''''''").x).toBe("''");
+    expect(parseFlatToml('x = """"""').x).toBe("");
+    expect(parseFlatToml('x = """""""').x).toBe('"');
+    expect(parseFlatToml('x = """"""""').x).toBe('""');
+    expect(parseFlatToml("x = ''''''' # comment").x).toBe("'");
+  });
+
+  it("preserves an unknown escape instead of silently dropping the backslash", () => {
+    // Validation rejects this before a save; the reader must not turn `\q`
+    // into `q` if it is ever handed an unvalidated file.
+    expect(parseFlatToml('x = """bad\\q"""').x).toBe("bad\\q");
+  });
+
   it('decodes escapes and embedded quotes in """ strings', () => {
     const parsed = parseFlatToml(`x = """line1\\nline2\\"quote\\"` + '"""');
     expect(parsed.x).toBe('line1\nline2"quote"');
