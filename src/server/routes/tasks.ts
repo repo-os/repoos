@@ -2885,9 +2885,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   // status, branch and worktree are all preserved, so an archived-from-review
   // task restores to the Review column unchanged. Archiving is refused while
   // any background machinery is holding the task (a live agent, an in-flight
-  // review, a running preview, or a queued/running close-out), because hiding
-  // a half-stopped run from the watchdog and dispatch would orphan it with no
-  // one left to surface it. The user must stop work first.
+  // review, or a queued/running close-out), because hiding a half-stopped run
+  // from the watchdog and dispatch would orphan it with no one left to surface
+  // it. A running preview is different (#0853): archiving stops it instead of
+  // refusing, since there is no half-written work to lose.
   if (action === "archive") {
     if (existing.isArchived) {
       return json(res, 400, { error: `Task #${id} is already archived` });
