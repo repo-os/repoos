@@ -2,7 +2,7 @@
 id: "0844"
 title: "Hub: Add server never lists locally running RepoOS servers (discovery probe times out)"
 type: bug
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -43,4 +43,4 @@ Start from macos/RepoOSHub/LocalServerDiscovery.swift, ServerEditorSheet.swift (
 - 2026-10-19T05:15:56Z · cli_override, model_override
 - 2026-10-19T05:15:58Z · status ready→active, branch
 - 2026-10-19T05:19:20Z · body
-- 2026-10-19T05:26:59Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-19T05:26:59Z · status active→review
