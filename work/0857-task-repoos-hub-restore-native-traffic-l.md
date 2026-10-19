@@ -2,7 +2,7 @@
 id: "0857"
 title: Restore native macOS window controls
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [macos, desktop]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T17:58:19Z"
-updated_at: "2026-10-19T18:00:29Z"
+updated_at: "2026-10-19T18:00:31Z"
 ---
 ## Problem
 
@@ -88,3 +88,4 @@ My overall assessment: The new expanded sidebar already looks substantially clea
 - 2026-10-19T17:58:44Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-10-19T17:59:07Z · cli_override, model_override
 - 2026-10-19T18:00:29Z · model_override
+- 2026-10-19T18:00:31Z · status inbox→ready
