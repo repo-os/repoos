@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-19T07:50:02Z"
-updated_at: "2026-10-19T08:05:29Z"
+updated_at: "2026-10-19T08:05:42Z"
 ---
 ## Items
 
@@ -42,8 +42,7 @@ Smallest possible change: delete the `v-else-if` "0 changes" span and its CSS. D
 ## E2 · Empty Draft column shows a dash, not help text
 
 ### Problem
-
-
+The empty Draft column on the Work Queue page shows the help text "No drafts yet. Agent proposals land here." while every other empty column shows a plain dash (—). The text is the DRAFT_EMPTY constant in src/ui-app/src/views/WorkView.vue (line 41), used as the empty-text at lines ~350 and ~360.
 ### Desired UX
 
 
@@ -72,3 +71,5 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T07:50:02Z · created · njachowski@gmail.com
 - 2026-10-19T08:05:29Z · body: Items (added 1); E2 · Empty Draft column shows a dash, not help text (added)
 - 2026-10-19T08:05:29Z · note: bundle add E2
+- 2026-10-19T08:05:42Z · body: E2 · Empty Draft column shows a dash, not help text (added 1)
+- 2026-10-19T08:05:42Z · note: bundle edit E2
