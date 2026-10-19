@@ -1,9 +1,8 @@
 ---
-close_out_repair_count: 1
 id: "0664"
 title: Upload state + retry UX
 type: feature
-status: active
+status: ready
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -14,7 +13,8 @@ branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-19T00:04:31Z"
+updated_at: "2026-10-19T00:13:05Z"
+close_out_repair_count: 1
 review_passes: 5
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-18T17:32:06.903Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
@@ -104,4 +104,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-19T00:04:30Z · note: close-out repair: merge-conflict
 - 2026-10-19T00:04:31Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-19T00:04:31Z · message_delivered: 1 message(s)
-
+- 2026-10-19T00:13:05Z · watchdog: auto-surfaced stuck task · status active→ready · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
