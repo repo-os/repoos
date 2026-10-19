@@ -10,7 +10,15 @@ import {
   SERVER_REGISTRY_SCHEMA,
   type ServerRegistryEntry,
 } from "./server-registry.js";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -114,6 +122,42 @@ describe("server registry files", () => {
     expect(parsed.root).toBe("/tmp/repo-a");
     expect(parsed.kind).toBe("server");
     expect(parsed.startedAt).toBeDefined();
+    expect(statSync(dir).mode & 0o777).toBe(0o700);
+    expect(statSync(path).mode & 0o777).toBe(0o600);
+  });
+
+  it("does not remove a replacement's entry when the parent exits", () => {
+    const childPid = 424_242;
+    writeServerRegistryEntry(sampleEntry(7650, "/tmp/repo", childPid));
+    removeServerRegistryEntry(7650);
+    expect(existsSync(join(dir, "7650.json"))).toBe(true);
+    removeServerRegistryEntry(7650, undefined, { pid: childPid });
+    expect(existsSync(join(dir, "7650.json"))).toBe(false);
+  });
+
+  it("survives reload handover when the replacement overwrites the pid", () => {
+    const parentPid = 313_131;
+    const port = 7651;
+    serverRegistry.registerRunningServer({
+      port,
+      host: "127.0.0.1",
+      root: "/tmp/repo",
+      version: "1",
+      startedAt: "2026-10-19T00:00:00.000Z",
+      pid: parentPid,
+    });
+    serverRegistry.registerRunningServer({
+      port,
+      host: "127.0.0.1",
+      root: "/tmp/repo",
+      version: "1",
+      startedAt: "2026-10-19T00:00:01.000Z",
+    });
+    expect(readServerRegistryEntry(port)?.pid).toBe(process.pid);
+    removeServerRegistryEntry(port, undefined, { pid: parentPid });
+    expect(readServerRegistryEntry(port)?.pid).toBe(process.pid);
+    removeServerRegistryEntry(port);
+    expect(existsSync(join(dir, `${port}.json`))).toBe(false);
   });
 
   it("removes entry on unregister", () => {

@@ -158,10 +158,22 @@ export function writeServerRegistryEntry(entry: ServerRegistryEntry, registryDir
   renameSync(tmp, path);
 }
 
-export function removeServerRegistryEntry(port: number, registryDir?: string): void {
+/**
+ * Remove a registry file only when it still names this process (or `opts.pid`).
+ * After a reload handover the replacement overwrites the file with its PID; the
+ * exiting parent must not delete that entry.
+ */
+export function removeServerRegistryEntry(
+  port: number,
+  registryDir?: string,
+  opts?: { pid?: number },
+): void {
   const path = serverRegistryEntryPath(port, registryDir ?? serversRegistryDir());
+  const ownerPid = opts?.pid ?? process.pid;
   try {
-    if (existsSync(path)) unlinkSync(path);
+    const existing = readEntryFile(path);
+    if (!existing || existing.pid !== ownerPid) return;
+    unlinkSync(path);
   } catch {
     /* best effort */
   }
