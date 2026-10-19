@@ -2,7 +2,7 @@
 id: "0850"
 title: "Allowlist: pause an agent or model without removing it (with optional resume date and reason)"
 type: feature
-status: review
+status: active
 priority: p1
 area: [core, server, web]
 assigned_to: ai
