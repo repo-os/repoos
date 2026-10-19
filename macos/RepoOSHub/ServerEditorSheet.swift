@@ -56,7 +56,8 @@ struct ServerEditorSheet: View {
                 LocalDiscoverySection(
                     servers: discoveredServers,
                     isDiscovering: isDiscovering,
-                    onSelect: { draft.originText = $0.originString }
+                    onSelect: { draft.originText = $0.originString },
+                    onScanAgain: { Task { await runDiscovery(includePortScan: true) } }
                 )
             }
 
@@ -109,7 +110,7 @@ struct ServerEditorSheet: View {
         }
     }
 
-    private func runDiscovery() async {
+    private func runDiscovery(includePortScan: Bool = false) async {
         isDiscovering = true
         let knownPorts = Set(appState.entries.compactMap { entry -> Int? in
             guard let url = entry.originURL,
@@ -119,6 +120,7 @@ struct ServerEditorSheet: View {
         })
         discoveredServers = await LocalServerDiscovery.discover(
             knownLocalPorts: knownPorts,
+            includePortScan: includePortScan,
             onUpdate: { partial in
                 Task { @MainActor in
                     discoveredServers = partial
@@ -133,10 +135,10 @@ private struct LocalDiscoverySection: View {
     let servers: [DiscoveredLocalServer]
     let isDiscovering: Bool
     let onSelect: (DiscoveredLocalServer) -> Void
+    let onScanAgain: () -> Void
 
     var body: some View {
-        if isDiscovering || !servers.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
                     Text("Running locally")
                         .font(.subheadline.weight(.semibold))
@@ -145,6 +147,14 @@ private struct LocalDiscoverySection: View {
                             .controlSize(.mini)
                             .scaleEffect(0.7)
                     }
+                    Spacer(minLength: 8)
+                    Button("Scan again") {
+                        onScanAgain()
+                    }
+                    .buttonStyle(.link)
+                    .font(.caption)
+                    .disabled(isDiscovering)
+                    .help("Search the local port range for RepoOS servers not listed from the registry")
                 }
 
                 if !servers.isEmpty {
@@ -175,7 +185,6 @@ private struct LocalDiscoverySection: View {
                         }
                     }
                 }
-            }
         }
     }
 }
