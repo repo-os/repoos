@@ -11,7 +11,7 @@ branch: feat/hub-add-server-never-lists-locally-runni
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:15:39Z"
-updated_at: "2026-10-19T05:45:39Z"
+updated_at: "2026-10-19T05:45:40Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -72,3 +72,4 @@ With a local `repoos serve` on a non-default port (e.g. **7559**), open Hub → 
 - 2026-10-19T05:38:13Z · message_queued at 2026-10-19T05:38:13.516Z
 - 2026-10-19T05:39:03Z · body
 - 2026-10-19T05:45:39Z · status active→review
+- 2026-10-19T05:45:40Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
