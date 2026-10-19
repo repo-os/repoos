@@ -909,6 +909,41 @@ function waitForExit(proc: ReturnType<typeof spawn>, timeoutMs: number): Promise
   });
 }
 
+type ChildProcess = ReturnType<typeof spawn>;
+
+/** True when the child has already finished (sync or async exit). */
+function childHasExited(proc: ChildProcess): boolean {
+  return proc.exitCode !== null || proc.signalCode !== null;
+}
+
+/**
+ * Wait until a cancellation probe child prints output, exits, or hits a
+ * startup budget. A fixed sleep alone races Node/Bun cold-start on slower
+ * hosts: the harness can still be booting at 300ms yet exit on its own before
+ * SIGTERM on a faster one (#0840).
+ */
+async function waitForHarnessCancelReady(proc: ChildProcess, budgetMs: number): Promise<void> {
+  if (childHasExited(proc)) return;
+  await new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = (): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      proc.stdout?.off("data", onData);
+      proc.stderr?.off("data", onData);
+      proc.off("exit", onExit);
+      resolve();
+    };
+    const onData = (): void => finish();
+    const onExit = (): void => finish();
+    const timer = setTimeout(finish, budgetMs);
+    proc.stdout?.on("data", onData);
+    proc.stderr?.on("data", onData);
+    proc.once("exit", onExit);
+  });
+}
+
 // ── opencode event-stream helpers ───────────────────────────────────────────
 
 interface ParsedEvent {
@@ -1231,9 +1266,11 @@ export async function runAdapterContract(
         stdio: ["ignore", "pipe", "pipe"],
         shell: needsShell,
       });
-      // Give the harness a moment to actually start, then ask it to stop.
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      if (cancelProc.exitCode !== null || cancelProc.signalCode !== null) {
+      // Wait for first output or a startup budget, then a short settle beat so
+      // a harness that fails immediately is not mistaken for a live run (#0840).
+      await waitForHarnessCancelReady(cancelProc, 800);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      if (childHasExited(cancelProc)) {
         // The run ended before we could signal it: cancellation was never
         // exercised, so do not credit the seam. (Common for a harness that
         // fails immediately — e.g. the broken-stream fixture.)
