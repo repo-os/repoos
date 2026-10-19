@@ -92,22 +92,20 @@ enum LocalServerDiscovery {
     /// (`lsof` missing or failed), every port in the range is scanned with bounded concurrency.
     /// An empty `lsof` result intentionally does not trigger a full scan — a false-empty `lsof`
     /// would be rare; use the manual URL field if discovery misses a server.
+    /// When `includePortScan` is false, discovery reads `~/.repoos/servers` when the directory
+    /// contains registry files; otherwise it runs the bounded port scan. When true (Scan again),
+    /// registry-validated servers are listed first, then scan results for ports not already found.
     static func discover(
         knownLocalPorts: Set<Int>,
         configuration: LocalServerDiscoveryConfiguration = LocalServerDiscoveryConfiguration(),
         healthChecker: HealthChecking? = nil,
+        pidChecker: ProcessAliveChecking = LiveProcessChecker(),
+        registrySource: RunningServerRegistrySource = .live,
+        includePortScan: Bool = false,
         listeningPortEnumerator: (ClosedRange<Int>) -> [Int]? = LocalListeningPortEnumerator.listeningPorts,
         portsToProbe: [Int]? = nil,
         onUpdate: (@Sendable ([DiscoveredLocalServer]) -> Void)? = nil
     ) async -> [DiscoveredLocalServer] {
-        let candidatePorts = portsToProbe ?? Self.portsToProbe(
-            knownLocalPorts: knownLocalPorts,
-            configuration: configuration,
-            listeningPortEnumerator: listeningPortEnumerator
-        )
-
-        guard !candidatePorts.isEmpty else { return [] }
-
         let sharedSession = RepoOSHealthChecker.makeSharedDiscoverySession(
             timeout: configuration.probeTimeout
         )
@@ -116,11 +114,54 @@ enum LocalServerDiscovery {
             urlSession: sharedSession
         )
 
+        let registryOutcome = registrySource.listOutcome()
+        let shouldReadRegistry = registryOutcome == .hasFiles
+        let shouldRunPortScan = includePortScan
+            || registryOutcome == .unavailable
+            || registryOutcome == .empty
+
+        var registryResults: [DiscoveredLocalServer] = []
+        if shouldReadRegistry {
+            registryResults = await RunningServerRegistryValidator.discoverValidated(
+                knownLocalPorts: knownLocalPorts,
+                source: registrySource,
+                pidChecker: pidChecker,
+                checker: checker,
+                onUpdate: onUpdate
+            )
+        }
+
+        if !shouldRunPortScan {
+            return registryResults
+        }
+
+        let registryPorts = Set(registryResults.map(\.port))
+        let excludedPorts = knownLocalPorts.union(registryPorts)
+        let candidatePorts = portsToProbe ?? Self.portsToProbe(
+            knownLocalPorts: excludedPorts,
+            configuration: configuration,
+            listeningPortEnumerator: listeningPortEnumerator
+        )
+
+        guard !candidatePorts.isEmpty else { return registryResults }
+
         let deadline = Date().addingTimeInterval(configuration.overallDeadline)
         let collector = DiscoveryResultCollector()
         let portQueue = SharedPortIterator(ports: candidatePorts)
         let ownsNetworkSession = healthChecker == nil
         let workerCount = min(configuration.maxConcurrency, candidatePorts.count)
+        let frozenRegistry = registryResults
+        let scanOnUpdate: (@Sendable ([DiscoveredLocalServer]) -> Void)? = if let onUpdate {
+            { partial in
+                if frozenRegistry.isEmpty {
+                    onUpdate(partial)
+                } else {
+                    onUpdate(Self.mergeDiscoveryResults(registry: frozenRegistry, scan: partial))
+                }
+            }
+        } else {
+            nil
+        }
 
         await withTaskGroup(of: Void.self) { group in
             group.addTask {
@@ -129,7 +170,7 @@ enum LocalServerDiscovery {
                     portQueue: portQueue,
                     checker: checker,
                     collector: collector,
-                    onUpdate: onUpdate
+                    onUpdate: scanOnUpdate
                 )
             }
             group.addTask {
@@ -150,7 +191,20 @@ enum LocalServerDiscovery {
             sharedSession.finishTasksAndInvalidate()
         }
 
-        return await collector.sortedResults()
+        let scanResults = await collector.sortedResults()
+        if registryResults.isEmpty {
+            return scanResults
+        }
+        return mergeDiscoveryResults(registry: registryResults, scan: scanResults)
+    }
+
+    private static func mergeDiscoveryResults(
+        registry: [DiscoveredLocalServer],
+        scan: [DiscoveredLocalServer]
+    ) -> [DiscoveredLocalServer] {
+        let registryPorts = Set(registry.map(\.port))
+        let extra = scan.filter { !registryPorts.contains($0.port) }
+        return registry + extra
     }
 
     private static func runProbeWorkers(
@@ -219,7 +273,7 @@ private actor SharedPortIterator {
     }
 }
 
-private actor DiscoveryResultCollector {
+actor DiscoveryResultCollector {
     private var results: [DiscoveredLocalServer] = []
 
     func append(_ server: DiscoveredLocalServer, onUpdate: (@Sendable ([DiscoveredLocalServer]) -> Void)?) {
