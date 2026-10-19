@@ -12,8 +12,10 @@ area: landing
 assigned_to: human
 created_by: njachowski@gmail.com
 branch: codex/0849-for-clients
+review_cli_override: opencode
+review_model_override: default
 created_at: "2026-10-19T10:22:29Z"
-updated_at: "2026-10-19T11:51:23Z"
+updated_at: "2026-10-19T12:18:32Z"
 ---
 ## Problem
 The human approved the For Clients prototype and wants it implemented in the existing landing app. This interactive Codex session owns implementation; do not dispatch a built-in engineer.
@@ -103,3 +105,4 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 - 2026-10-19T11:51:12Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-19T11:51:23Z · note: review pass 1: failed — no usable report
 - 2026-10-19T11:51:23Z · needs_input
+- 2026-10-19T12:18:32Z · review_cli_override, review_model_override
