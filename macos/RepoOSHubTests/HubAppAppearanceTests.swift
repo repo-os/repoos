@@ -58,6 +58,72 @@ final class HubAppAppearanceTests: XCTestCase {
         }
     }
 
+    func testSidebarVisibilityMapsCollapsedFlag() {
+        XCTAssertEqual(HubSidebarVisibility.visibility(isCollapsed: true), .detailOnly)
+        XCTAssertEqual(HubSidebarVisibility.visibility(isCollapsed: false), .all)
+        XCTAssertTrue(HubSidebarVisibility.isCollapsed(.detailOnly))
+        XCTAssertFalse(HubSidebarVisibility.isCollapsed(.all))
+    }
+
+    /// Only an explicit `.detailOnly` counts as collapsed; the system passes
+    /// `.automatic` through the binding during split-view setup and a resize
+    /// must not persist a bogus collapsed state (#0855).
+    func testOnlyDetailOnlyCountsAsCollapsed() {
+        XCTAssertFalse(HubSidebarVisibility.isCollapsed(.automatic))
+        XCTAssertFalse(HubSidebarVisibility.isCollapsed(.doubleColumn))
+    }
+
+    func testSidebarCollapsedFlagRoundTripsThroughDefaultsKey() {
+        let defaults = UserDefaults.standard
+        let key = HubSidebarVisibility.collapsedDefaultsKey
+        let original = defaults.object(forKey: key)
+        defer {
+            if let original {
+                defaults.set(original, forKey: key)
+            } else {
+                defaults.removeObject(forKey: key)
+            }
+        }
+
+        defaults.set(true, forKey: key)
+        XCTAssertEqual(
+            HubSidebarVisibility.visibility(isCollapsed: defaults.bool(forKey: key)),
+            .detailOnly
+        )
+        defaults.set(false, forKey: key)
+        XCTAssertEqual(
+            HubSidebarVisibility.visibility(isCollapsed: defaults.bool(forKey: key)),
+            .all
+        )
+    }
+
+    /// The workspace window keeps a native titled window (traffic lights,
+    /// drag, resize, fullscreen) while hiding the title text and the toolbar
+    /// row so the sidebar can run to the top edge (#0855).
+    func testWorkspaceWindowChromeHidesTitleAndToolbarButKeepsNativeControls() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 900, height: 600),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.toolbar = NSToolbar(identifier: "HubChromeTestToolbar")
+
+        configureHubWorkspaceWindowChrome(window)
+
+        XCTAssertEqual(window.titleVisibility, .hidden)
+        XCTAssertTrue(window.titlebarAppearsTransparent)
+        XCTAssertTrue(window.styleMask.contains(.fullSizeContentView))
+        XCTAssertTrue(window.styleMask.contains(.titled))
+        XCTAssertTrue(window.styleMask.contains(.closable))
+        XCTAssertTrue(window.styleMask.contains(.miniaturizable))
+        XCTAssertTrue(window.styleMask.contains(.resizable))
+        XCTAssertNotNil(window.standardWindowButton(.closeButton))
+        XCTAssertNotNil(window.standardWindowButton(.miniaturizeButton))
+        XCTAssertNotNil(window.standardWindowButton(.zoomButton))
+        XCTAssertEqual(window.toolbar?.isVisible, false)
+    }
+
     func testDockIconFollowsChosenAppearanceRegardlessOfSystem() throws {
         let light = NSAppearance(named: .aqua)!
         let dark = NSAppearance(named: .darkAqua)!
