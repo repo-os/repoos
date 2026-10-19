@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 198900f260fff3bc517084e2a76db31cad891aec
 id: "0847"
 title: "Easter eggs bundle: hide the \"0 changes\" chip on task cards"
 type: chore
@@ -112,3 +114,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-19T13:42:06Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-19T13:42:06Z · note: handoff requested (cli)
 - 2026-10-19T13:48:30Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/board-column-labels.test.ts > DashboardView column labels > uses original labels by default (no config) on bee — fix it in the feature branch and re-run the gate
+
