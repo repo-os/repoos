@@ -11,7 +11,7 @@ branch: feat/restore-native-macos-window-controls
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T17:58:19Z"
-updated_at: "2026-10-19T18:52:48Z"
+updated_at: "2026-10-19T18:53:45Z"
 ---
 ## Problem
 
@@ -102,3 +102,4 @@ My overall assessment: The new expanded sidebar already looks substantially clea
 - 2026-10-19T18:51:51Z · screenshots
 - 2026-10-19T18:52:21Z · screenshots
 - 2026-10-19T18:52:48Z · screenshots
+- 2026-10-19T18:53:45Z · body
