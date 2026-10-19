@@ -3,9 +3,6 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — a service crash followed by reload leaves the target process orphaned and unmanaged.
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T20:04:32Z"
+updated_at: "2026-10-19T20:04:33Z"
 review_passes: 7
 review_rounds: 2
 dev_error_count: 1
@@ -164,3 +161,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T19:53:02Z · body
 - 2026-10-19T20:00:41Z · status active→review
 - 2026-10-19T20:04:32Z · note: review pass 9: needs some work
+- 2026-10-19T20:04:33Z · needs_input
