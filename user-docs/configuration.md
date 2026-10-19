@@ -28,11 +28,18 @@ and the safe `.env.example` — is in
    field (for example `NTFY_BASE_URL` overrides `ntfyBaseUrl`, and
    `REPOOS_RESEND_API_KEY` fills `[auth.emailProvider]`).
 
-`repoos.toml` is deliberately small and flat. Values stay on one line: RepoOS
-does not accept multi-line arrays, multi-line strings, or inline tables. Nested
-sections use `[section]` headers and arrays of tables use `[[section]]` rows.
-The only place the parser accepts both `[check]` and `[checks]` spellings is the
-`[check]` section, kept for backwards compatibility.
+`repoos.toml` is deliberately small and flat. Nested sections use `[section]`
+headers and arrays of tables use `[[section]]` rows. The parser supports any
+valid TOML scalar string form: basic (`"..."`), literal (`'...'`), multi-line
+basic (`"""..."""`), and multi-line literal (`'''...'''`). Multi-line arrays
+and inline tables are not accepted; the only place the parser accepts both
+`[check]` and `[checks]` spellings is the `[check]` section, kept for backwards
+compatibility.
+
+A write from Settings or `repoos config set` rewrites the rows it touches as
+single-line basic strings (`"..."`), so a hand-written `'''...'''` value keeps
+the same decoded text — only its quoting style may change. Rows it does not
+touch are preserved byte-for-byte, including their multi-line strings.
 
 The Settings UI edits the most common fields directly, and its raw
 `repoos.toml` editor can edit the whole file — including `[preview]`, `[check]`,

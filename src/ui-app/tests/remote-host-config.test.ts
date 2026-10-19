@@ -470,4 +470,34 @@ describe("GET /api/remote-validation/status reflects a same-process save immedia
     }
     await cleanup();
   });
+
+  it("does not drop a [[…]]-shaped line that lives inside a multi-line string", async () => {
+    // `dropTomlTableArray` removes the real `[[remoteValidation.tailscaleHosts]]`
+    // blocks; a line that merely looks like one, but sits inside a `"""`/`'''`
+    // value, is string content and must survive.
+    const root = repo(
+      "[[agents]]\n" +
+        'name = "x"\n' +
+        'instructions = """\n' +
+        "[[remoteValidation.tailscaleHosts]]\n" +
+        'host = "ghost"\n' +
+        '"""\n\n' +
+        "[[remoteValidation.tailscaleHosts]]\n" +
+        'host = "mac1"\nos = "macos"\n',
+    );
+    const res = await patch(root, {
+      "remoteValidation.containerImage": "repoos-ci",
+      // mac1 is replaced by a bare host, so the pool collapses back to flat
+      // form — which triggers the stale [[…]] block drop.
+      "remoteValidation.tailscaleHosts": ["bee"],
+    });
+    expect(res.status).toBe(200);
+    const text = readFileSync(join(root, "repoos.toml"), "utf8");
+    // The real row is gone...
+    expect(text).not.toContain('os = "macos"');
+    // ...but the string content that looks like a header is preserved.
+    expect(text).toContain('instructions = """');
+    expect(text).toContain('[[remoteValidation.tailscaleHosts]]\nhost = "ghost"');
+    await cleanup();
+  });
 });
