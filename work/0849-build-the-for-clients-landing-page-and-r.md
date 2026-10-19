@@ -2,7 +2,7 @@
 id: "0849"
 title: Build the For Clients landing page and Resend project enquiry form
 type: feature
-status: ready
+status: active
 hold: true
 priority: p2
 area: landing
@@ -10,7 +10,7 @@ assigned_to: human
 created_by: njachowski@gmail.com
 branch: codex/0849-for-clients
 created_at: "2026-10-19T10:22:29Z"
-updated_at: "2026-10-19T10:45:26Z"
+updated_at: "2026-10-19T11:30:36Z"
 ---
 ## Problem
 The human approved the For Clients prototype and wants it implemented in the existing landing app. This interactive Codex session owns implementation; do not dispatch a built-in engineer.
@@ -48,3 +48,5 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 - 2026-10-19T10:22:42Z · status inbox→active
 - 2026-10-19T10:23:20Z · branch
 - 2026-10-19T10:45:26Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-19T11:30:36Z · status ready→active
+- 2026-10-19T11:30:36Z · note: Interactive Codex implementation is in progress in codex/0849-for-clients; keep hold and human assignment to prevent built-in engineer dispatch.
