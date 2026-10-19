@@ -2,7 +2,7 @@
 id: "0855"
 title: RepoOS Hub — remove native macOS titlebar and consolidate controls into the sidebar
 type: refactor
-status: inbox
+status: ready
 priority: p2
 area: macos
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 pm_cli_override: pi
 pm_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T15:35:14Z"
-updated_at: "2026-10-19T15:43:08Z"
+updated_at: "2026-10-19T15:43:10Z"
 ---
 ## Problem
 
@@ -299,3 +299,4 @@ I would also avoid making navigation controls too prominent. They should feel li
 - 2026-10-19T15:35:37Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added); Related (added)
 - 2026-10-19T15:42:23Z · body
 - 2026-10-19T15:43:08Z · body: Desired UX (added 17, removed 10)
+- 2026-10-19T15:43:10Z · status inbox→ready
