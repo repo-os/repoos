@@ -83,6 +83,33 @@ describe("parseTunnelSection", () => {
     expect(out.tunnelId).toBe("");
     expect(out.apps).toEqual({});
   });
+
+  it("reads a multi-line ''' value in [tunnel]", () => {
+    const doc = [
+      "[tunnel]",
+      'provider = "cloudflare"',
+      "enabled = true",
+      "name = '''first",
+      "second'''",
+      'domain = "repoos.org"',
+      "",
+      "[tunnel.apps.dashboard]",
+      "hostname = '''dashboard.repoos.org'''",
+      'service = "http://localhost:3000"',
+      'access = ["a@example.com"]',
+      "",
+    ].join("\n");
+    const out = parseTunnelSection(doc);
+    expect(out.name).toBe("first\nsecond");
+    expect(out.domain).toBe("repoos.org");
+    expect(out.apps.dashboard.hostname).toBe("dashboard.repoos.org");
+    expect(out.apps.dashboard.service).toBe("http://localhost:3000");
+  });
+
+  it('reads a multi-line """ value with a leading newline (first newline trimmed)', () => {
+    const doc = ["[tunnel]", 'name = """', "multi", 'line"""', ""].join("\n");
+    expect(parseTunnelSection(doc).name).toBe("multi\nline");
+  });
 });
 
 describe("serializeTunnelSection", () => {
@@ -127,6 +154,44 @@ describe("upsertTunnelSection", () => {
     const updated = upsertTunnelSection(base, cfg);
     expect(updated).toContain('workDir = "work"');
     expect(updated).toContain("[[agents]]");
+    expect(parseTunnelSection(updated).name).toBe("repoos-local");
+  });
+
+  it("does not treat a [tunnel]-shaped line inside a multi-line string as the section", () => {
+    const base = [
+      'workDir = "work"',
+      "instructions = '''",
+      "[tunnel]",
+      "'''",
+      "",
+      "[tunnel]",
+      'name = "real"',
+      "",
+    ].join("\n");
+    const updated = upsertTunnelSection(base, cfg);
+    // The string content survives and the real section is replaced.
+    expect(updated).toContain("instructions = '''");
+    expect(updated).toContain('name = "repoos-local"');
+    expect(parseTunnelSection(updated).name).toBe("repoos-local");
+  });
+
+  it("preserves blank lines inside a multi-line string across an upsert", () => {
+    // The old global blank-line collapse turned `a\n\n\nb` into `a\n\nb`,
+    // rewriting string content.
+    const base = [
+      "instructions = '''",
+      "a",
+      "",
+      "",
+      "b",
+      "'''",
+      "",
+      "[tunnel]",
+      'name = "old"',
+      "",
+    ].join("\n");
+    const updated = upsertTunnelSection(base, cfg);
+    expect(updated).toContain("a\n\n\nb");
     expect(parseTunnelSection(updated).name).toBe("repoos-local");
   });
 });
