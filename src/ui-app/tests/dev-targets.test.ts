@@ -1769,7 +1769,9 @@ describe("DevTargetManager with services (#0843)", () => {
       const started = await mgr1.start("app");
       expect(started.ok).toBe(true);
       const svcPid = mgr1.get("app")?.services?.[0].pid;
+      const targetPid = mgr1.get("app")?.pid;
       expect(typeof svcPid).toBe("number");
+      expect(typeof targetPid).toBe("number");
       // The registration file persists every state change; a reload handover
       // is a NEW manager over the same root re-adopting the recorded PIDs.
       const mgr2 = new DevTargetManager(
@@ -1800,6 +1802,15 @@ describe("DevTargetManager with services (#0843)", () => {
       expect(status).toBe("failed");
       expect(error).toContain('service "api"');
       expect(mgr2.get("app")?.services?.[0].status).toBe("failed");
+
+      // The failed state survives a server reload. Reconciliation must reap
+      // the still-live target instead of skipping it because it is no longer
+      // marked running; otherwise restart can launch a duplicate stack.
+      const mgr3 = new DevTargetManager(
+        baseConfig({ services: [apiService()], targets: [webTarget()] }, dir),
+      );
+      mgr3.cleanupOrphans(/* isReload */ true);
+      expect(await waitForDead(targetPid!)).toBe(true);
       await mgr2.stopAll();
     } finally {
       await mgr1.stopAll();
