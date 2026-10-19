@@ -8,8 +8,10 @@ area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+review_cli_override: pi
+review_model_override: default
 created_at: "2026-10-19T12:22:44Z"
-updated_at: "2026-10-19T12:22:55Z"
+updated_at: "2026-10-19T13:19:02Z"
 ---
 ## Problem
 Cursor ran out of credit on 2026-10-19 and will not be usable again for about three days. Today the only ways to stop RepoOS using it are to delete its row from `[[budget.allowlist]]` (losing the entry and the config) or to hand-edit overrides on every task. Starts, auto-dispatch, the CTO's restart/failover and the agent drivers keep trying `cursor`/`composer-2.5`, fail, and loop (tasks bounce between engineer restarts and connection errors). Providers and agents will come and go like this regularly (credits, rate limits, outages).
@@ -40,3 +42,4 @@ Start from src/core/budget-allowlist.ts (`agentModelAllowRows`), src/core/config
 - 2026-10-19T12:22:45Z · needs_input
 - 2026-10-19T12:22:52Z · body: Acceptance criteria (added 2, removed 2)
 - 2026-10-19T12:22:55Z · needs_input
+- 2026-10-19T13:19:02Z · review_cli_override, review_model_override
