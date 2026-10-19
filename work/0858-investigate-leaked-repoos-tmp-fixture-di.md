@@ -14,7 +14,7 @@ branch: feat/investigate-leaked-repoos-tmp-fixture-di
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T19:04:41Z"
-updated_at: "2026-10-19T20:02:25Z"
+updated_at: "2026-10-19T20:04:56Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -35,6 +35,21 @@ The full suite leaves ~zero stale repoos-* fixture dirs behind; the [global-reap
 ## Notes for AI
 Repro: run `bun run test` on a loaded machine; the warning prints after the bulk pass. Suspects: suites using mkdtempSync under src/ui-app/tests (remote-host-pool, remote-validation) — both are subprocess-heavy and run long.
 
+## Findings
+Measured with an isolated TMPDIR on a full `bun run test` (539 files, 6,628 tests): roughly 200 `repoos-*` dirs were left per pass.
+
+Dominant sources:
+- `built-in-agents.test.ts` — 46 `repoos-techdebt-*` (one per test, never cleaned)
+- `auto-fix-gate.test.ts` — 23 `repoos-gate-*`
+- `built-in-agent-runner.test.ts` — 17 `repoos-runner-*`
+- ~20 more files that never cleaned a fixture root, plus `-worktrees` siblings orphaned by a bare `rmSync(root)`.
+
+Separate source outside the test suite: `repoos check`'s UI smoke and contrast steps recreated their fixture dir after cleanup because `server.close()` was not awaited — async dev-target state persistence wrote `.repoos/` after `rmSync`.
+
+Fix: each test file now gets its own tmpdir under a per-run root (`tests/setup/tmp-isolation.ts`); the file's `afterAll` removes it, and `global-reap`'s teardown removes the run root after all workers exit (covering late writes and crashed workers). Smoke/contrast now `await server.close()` before deleting the fixture, and `reapStaleFixtures` scans one nested level for `spawns.log` so nested fixtures' child processes are still killed.
+
+Verification: a full pass now leaves 0 dirs in an isolated TMPDIR; a follow-up run prints no `[global-reap]` warning; smoke and contrast each leave 0 new dirs in the real tmpdir. Residual: a SIGKILLed vitest process can leave one `repoos-vitest-*` run root, reaped by the next run's global sweep once it is 10 minutes old.
+
 ## Activity
 
 - 2026-10-19T19:04:41Z · created · njachowski@gmail.com
@@ -45,3 +60,4 @@ Repro: run `bun run test` on a loaded machine; the warning prints after the bulk
 - 2026-10-19T19:46:36Z · model_override
 - 2026-10-19T19:47:39Z · body
 - 2026-10-19T20:02:25Z · body
+- 2026-10-19T20:04:56Z · body: Findings (added)
