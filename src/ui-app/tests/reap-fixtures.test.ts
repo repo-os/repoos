@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { reapStaleFixtures, STALE_FIXTURE_AGE_MS } from "./helpers";
+import { teardown } from "./setup/global-reap";
 
 /**
  * `reapStaleFixtures` is the only thing that survives every worker-kill path,
@@ -76,6 +77,31 @@ describe("reapStaleFixtures", () => {
           exited,
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error("spawned fixture process survived the reap")), 2_000),
+          ),
+        ]),
+      ).resolves.toBeUndefined();
+    } finally {
+      if (child.exitCode === null) child.kill("SIGKILL");
+    }
+  });
+
+  it("kills recorded fixture processes before teardown removes the run root", async () => {
+    const runRoot = join(tmpdir(), `${PREFIX}TeardownRoot`);
+    const fixture = join(runRoot, "file-ABC123", `${PREFIX}Fixture`);
+    mkdirSync(fixture, { recursive: true });
+    const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], {
+      stdio: "ignore",
+    });
+    const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
+    try {
+      writeFileSync(join(fixture, "spawns.log"), `${JSON.stringify({ pid: child.pid })}\n`);
+      await teardown(runRoot);
+      expect(existsSync(runRoot)).toBe(false);
+      await expect(
+        Promise.race([
+          exited,
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("spawned fixture process survived teardown")), 2_000),
           ),
         ]),
       ).resolves.toBeUndefined();

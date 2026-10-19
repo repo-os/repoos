@@ -1247,6 +1247,8 @@ async function runAudit(): Promise<{
   } catch (err) {
     try {
       await server.close();
+    } catch (closeErr) {
+      console.warn("Contrast audit server cleanup also failed:", closeErr);
     } finally {
       rmSync(fixture, { recursive: true, force: true });
     }
