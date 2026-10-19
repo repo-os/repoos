@@ -12,9 +12,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/investigate-leaked-repoos-tmp-fixture-di
 cli_override: codex
-model_override: default
+model_override: gpt-6-luna
 created_at: "2026-10-19T19:04:41Z"
-updated_at: "2026-10-19T19:46:35Z"
+updated_at: "2026-10-19T19:46:36Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -42,3 +42,4 @@ Repro: run `bun run test` on a loaded machine; the warning prints after the bulk
 - 2026-10-19T19:18:50Z · status ready→active, branch
 - 2026-10-19T19:25:29Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-19T19:46:35Z · cli_override, model_override
+- 2026-10-19T19:46:36Z · model_override
