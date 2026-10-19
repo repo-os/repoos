@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-19T07:39:24Z"
-review_passes: 3
 id: "0845"
 title: "Running-server registry: repoos serve registers itself in ~/.repoos/servers (plus repoos servers)"
 type: feature
@@ -13,6 +11,8 @@ branch: feat/running-server-registry-repoos-serve-reg
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:59:37Z"
+updated_at: "2026-10-19T07:46:07Z"
+review_passes: 3
 last_check_failure: "repoos check at 2026-10-19T07:27:53.466Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
 ---
