@@ -44,7 +44,7 @@ export async function cmdServers(argv: string[]): Promise<void> {
 
   let pruned: number | undefined;
   if (prune) {
-    pruned = pruneStaleServerRegistryEntries();
+    pruned = await pruneStaleServerRegistryEntries();
     if (!json && pruned > 0) {
       console.log(c.dim(`  Pruned ${pruned} stale registry entr${pruned === 1 ? "y" : "ies"}.`));
     }

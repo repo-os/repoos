@@ -1127,6 +1127,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // harnesses — keep it. Only fall through to the resolver when no port was
   // passed at all (the `repoos serve` path passes `--port` or nothing).
   const requestedPort = opts.port ?? resolveServePort(config.root, config);
+  const registerInServerRegistry = shouldRegisterServerRegistry(config, { requestedPort });
   const isPreviewChild = process.env.REPOOS_PREVIEW_CHILD === "1";
   const isControlPlane = requestedPort !== 0 && !isPreviewChild;
   const mode = isPreviewChild
@@ -1417,10 +1418,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           ) {
             index.refreshAll();
           }
-          if (
-            runningServerRegistry &&
-            shouldRegisterServerRegistry(fresh, { port: runningServerRegistry.port })
-          ) {
+          if (runningServerRegistry && registerInServerRegistry) {
             try {
               refreshRunningServerProjectName(runningServerRegistry.port, fresh.root);
             } catch (e) {
@@ -3939,7 +3937,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // lockfile can't mask a process that already owns this port (#0284).
           const conflict = await reaper.detectConflict(port, host);
           if (conflict) throw new Error(conflict);
-          if (shouldRegisterServerRegistry(config, { port })) {
+          if (registerInServerRegistry) {
             const registryConflict = checkServerRegistryPortConflict(port, config.root);
             if (registryConflict) throw new Error(registryConflict);
           }
@@ -4012,7 +4010,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // detected on the next startup (0168).
       reaper.register(actualPort, host);
       const serverStartedAt = new Date().toISOString();
-      if (shouldRegisterServerRegistry(config, { port: actualPort })) {
+      if (registerInServerRegistry) {
         try {
           registerRunningServer({
             port: actualPort,

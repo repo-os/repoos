@@ -436,9 +436,10 @@ Lists every control-plane `repoos serve` that registered itself under
 name, repo root, PID, uptime, and whether the entry still looks healthy (PID
 alive and `/api/health` reports the same root).
 
-`--prune` removes registry files whose PID is no longer running, then lists the
-rest. `--json` prints the same data for scripts. Preview servers and task
-worktree serves never register. See [Running-server registry](/docs/server-registry.md)
+`--prune` removes stale registry files (dead PID, or a live PID whose
+`/api/health` is unreachable or reports a different root), then lists the rest.
+`--json` prints the same data for scripts. Preview servers and task worktree
+serves never register. See [Running-server registry](/docs/server-registry.md)
 for the Hub JSON contract.
 
 ### `repoos status [--json]`

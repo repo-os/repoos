@@ -4,13 +4,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { createServer as createTcpServer } from "node:net";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server.js";
 import {
-  readServerRegistryEntry,
-  shouldRegisterServerRegistry,
+  listValidatedServerRegistry,
+  pruneStaleServerRegistryEntries,
   type ServerRegistryEntry,
 } from "../../core/server-registry.js";
 import { cmdServers } from "../../commands/servers.js";
@@ -45,6 +45,19 @@ function minimalRepo(): string {
   git(root, ["add", "repoos.toml"]);
   git(root, ["commit", "-q", "-m", "init"]);
   return root;
+}
+
+function captureStdout(fn: () => Promise<void>): Promise<string> {
+  const lines: string[] = [];
+  const orig = console.log;
+  console.log = (...args: unknown[]) => {
+    lines.push(args.map(String).join(" "));
+  };
+  return fn()
+    .finally(() => {
+      console.log = orig;
+    })
+    .then(() => lines.join("\n"));
 }
 
 beforeEach(() => {
@@ -86,7 +99,7 @@ describe("startServer running-server registry", () => {
     expect(existsSync(path)).toBe(false);
   });
 
-  it("does not register preview child or port 0", async () => {
+  it("does not register preview child or harness port 0", async () => {
     const root = minimalRepo();
     process.env.REPOOS_PREVIEW_CHILD = "1";
     const port = await reservePort();
@@ -98,12 +111,10 @@ describe("startServer running-server registry", () => {
     });
     expect(existsSync(join(registryDir, `${port}.json`))).toBe(false);
     await preview.close();
+    delete process.env.REPOOS_PREVIEW_CHILD;
 
     const ephemeral = await startServer({ root, host: "127.0.0.1", port: 0, disableAuth: true });
-    expect(
-      shouldRegisterServerRegistry({ root, previewOverrides: undefined }, { port: ephemeral.port }),
-    ).toBe(false);
-    expect(existsSync(join(registryDir, `${ephemeral.port}.json`))).toBe(false);
+    expect(readdirSync(registryDir).filter((n) => n.endsWith(".json"))).toHaveLength(0);
     await ephemeral.close();
   });
 
@@ -118,18 +129,58 @@ describe("startServer running-server registry", () => {
         port,
         disableAuth: true,
       });
-      const lines: string[] = [];
-      const orig = console.log;
-      console.log = (...args: unknown[]) => {
-        lines.push(args.map(String).join(" "));
-      };
-      await cmdServers([]);
-      console.log = orig;
-      const text = lines.join("\n");
+      const text = await captureStdout(() => cmdServers([]));
       expect(text).toMatch(/ok/);
       expect(text).toMatch(String(port));
-      const entry = readServerRegistryEntry(port);
-      expect(entry?.root).toBeTruthy();
+    } finally {
+      await handle?.close();
+    }
+  });
+
+  it("flags and prunes health-mismatch when registry root drifts from live server", async () => {
+    const root = minimalRepo();
+    const port = await reservePort();
+    let handle: ServerHandle | undefined;
+    try {
+      handle = await startServer({
+        root,
+        host: "127.0.0.1",
+        port,
+        disableAuth: true,
+      });
+      const path = join(registryDir, `${port}.json`);
+      const entry = JSON.parse(readFileSync(path, "utf8")) as ServerRegistryEntry;
+      writeFileSync(path, JSON.stringify({ ...entry, root: "/stale/wrong-root" }) + "\n");
+      const rows = await listValidatedServerRegistry();
+      expect(rows).toHaveLength(1);
+      expect(rows[0].valid).toBe(false);
+      expect(rows[0].staleReason).toBe("health-mismatch");
+      expect(await pruneStaleServerRegistryEntries()).toBe(1);
+      expect(existsSync(path)).toBe(false);
+    } finally {
+      await handle?.close();
+    }
+  });
+
+  it("repoos servers --json includes validity fields", async () => {
+    const root = minimalRepo();
+    const port = await reservePort();
+    let handle: ServerHandle | undefined;
+    try {
+      handle = await startServer({
+        root,
+        host: "127.0.0.1",
+        port,
+        disableAuth: true,
+      });
+      const text = await captureStdout(() => cmdServers(["--json"]));
+      const payload = JSON.parse(text) as {
+        servers: { port: number; valid: boolean; staleReason: string | null }[];
+      };
+      expect(payload.servers).toHaveLength(1);
+      expect(payload.servers[0].port).toBe(port);
+      expect(payload.servers[0].valid).toBe(true);
+      expect(payload.servers[0].staleReason).toBeNull();
     } finally {
       await handle?.close();
     }
