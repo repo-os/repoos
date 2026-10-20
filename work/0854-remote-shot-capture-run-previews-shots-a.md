@@ -165,3 +165,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T10:52:30Z · status active→review
 - 2026-10-20T10:52:31Z · note: handoff requested (cli)
 - 2026-10-20T10:53:40Z · status active→review
+- 2026-10-20T10:53:40Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a2c7d06dc) during finalization (#0734)
