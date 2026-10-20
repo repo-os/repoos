@@ -13,11 +13,24 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T12:27:49Z"
-updated_at: "2026-10-20T12:27:52Z"
+updated_at: "2026-10-20T12:28:31Z"
 ---
-Parent #0854 offloads the AUTOMATIC handoff shots and UI verification to a remote runner. Manual `repoos shot` / `repoos verify` deliberately STAY LOCAL: the spec was narrowed in #0854 review pass 17 so the interactive CLI keeps running on the control-plane laptop (no runner-backed repoos shot in #0854). This follow-up designs and implements runner-backed CLI capture: reuse the canonical capture context the control plane already sends (#0854, src/core/remote-capture.ts), the browser-capture policy/fallback rules, and the same structured error contract, so `repoos shot`/`repoos verify` can offload when a runner is available while still falling back locally. Not required for #0854's acceptance criteria; #0864 (real runner image rebuild + end-to-end proof) is separate.
+## Problem
+Parent #0854 offloads the AUTOMATIC handoff shots and UI verification to a remote runner. Manual `repoos shot` / `repoos verify` deliberately STAY LOCAL: the spec was narrowed in #0854 review pass 17, so #0854 does not ship a runner-backed CLI. The interactive CLI keeps using the local PreviewManager / WebKit on the control-plane laptop.
+
+## Desired UX
+`repoos shot` / `repoos verify` run their capture on an available runner in the same way the automatic handoff capture does, while still falling back locally when a runner is unavailable.
+
+## Acceptance criteria
+- `repoos shot` / `repoos verify` can offload capture to a runner, reusing the canonical capture context (#0854, `src/core/remote-capture.ts`) and the browser-capture policy/fallback rules.
+- `runner-available` falls back locally with a visible note; `runner-only` returns a structured error (never throws).
+- Tests: runner-backed CLI capture succeeds, falls back locally, and returns the structured error in runner-only.
+
+## Notes for AI
+Not required for #0854's acceptance criteria. #0864 (rebuild the runner image and record a real end-to-end proof) is separate and out of scope here. Source: #0854 review pass 17.
 
 ## Activity
 
 - 2026-10-20T12:27:49Z · created · njachowski@gmail.com
 - 2026-10-20T12:27:52Z · needs_input
+- 2026-10-20T12:28:31Z · body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
