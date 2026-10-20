@@ -2,7 +2,7 @@
 id: "0886"
 title: "Close-out: task shows as inbox between the merge and 'set status done'; stamp done atomically and ignore engineer writes while closing"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
-updated_at: "2026-10-20T19:39:45Z"
+updated_at: "2026-10-20T19:44:45Z"
 ---
 ## Problem
 During Move to done, a task can show as `inbox` on the board for about 3 minutes. Observed on #0863 (2026-10-21 ~01:08-01:11 local): the pre-merge main copy and the branch copy both said `status: review`, but the close-out merge commit `7ecfcb7f1` itself contains `status: inbox` (updated_at 17:08:41Z). A stray `handoff requested (cli)` from the still-running engineer landed in the same second and failed with "task must be active or review, but is inbox". The status only becomes `done` at the later `docs(0863): set status done` commit (17:11:26Z, `markTaskReleased` in src/server/write.ts), so users see the task in the inbox column and may think it was reset.
@@ -52,3 +52,5 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T19:31:29Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-20T19:31:29Z · message_delivered: 1 message(s)
 - 2026-10-20T19:39:45Z · handoff failed · remote validation failed: test failure: tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > returns 409 + needsCommit against a dirty main and never enqueues, tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > surfaces an uncommitted repoos.toml instead of silently committing it (#0819), tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > does not block close-out when the only dirty files on main are shot captures (#0713) on bee — fix it in the feature branch and re-run the gate
+- 2026-10-20T19:44:45Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > returns 409 + needsCommit against a dirty main and never enqueues, tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > surfaces an uncommitted repoos.toml instead of silently committing it (#0819), tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > does not block close-out when the only dirty files on main are shot captures (#0713) on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-20T19:44:45Z · note: handoff requested (cli)
