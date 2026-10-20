@@ -15,7 +15,7 @@ branch: feat/agent-file-build-checks-and-drift-checks
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:55Z"
-updated_at: "2026-10-20T23:16:40Z"
+updated_at: "2026-10-20T23:17:14Z"
 last_close_out_gate_ms: 242534
 last_close_out_gate_at: "2026-10-20T23:16:40.525Z"
 review_passes: 1
@@ -70,4 +70,4 @@ Scope split (2026-10-21, driver): the written trial with an unfamiliar coding ag
 - 2026-10-20T23:02:16Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (d534e70ab) during finalization (#0734)
 - 2026-10-20T23:03:29Z · note: review pass 1: good to go
 - 2026-10-20T23:16:40Z · close-out gate completed in 243s
-
+- 2026-10-20T23:17:14Z · status done→done, release:success
