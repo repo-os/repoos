@@ -135,3 +135,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:14:04Z · needs_input
 - 2026-10-20T11:14:06Z · message_queued at 2026-10-20T11:14:06.532Z
 - 2026-10-20T11:14:49Z · status active→review
+- 2026-10-20T11:14:49Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (d1a81c5e2) during finalization (#0734)
