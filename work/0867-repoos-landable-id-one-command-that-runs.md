@@ -79,3 +79,4 @@ The close-out approval policy already computes most of these checks: `evaluateAp
 - 2026-10-20T19:31:53Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-20T19:31:53Z · message_delivered: 1 message(s)
 - 2026-10-20T19:41:38Z · status active→review
+- 2026-10-20T19:41:38Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
