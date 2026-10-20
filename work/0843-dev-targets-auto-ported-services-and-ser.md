@@ -3,6 +3,9 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — Valid inline TOML environment values with escaped quotes are silently truncated.
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -169,3 +172,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T04:38:20Z · status active→review
 - 2026-10-20T04:41:02Z · note: review pass 10: needs some work
 - 2026-10-20T04:44:45Z · note: review pass 11: needs some work
+- 2026-10-20T04:44:45Z · needs_input
