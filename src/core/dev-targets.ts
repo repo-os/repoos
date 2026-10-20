@@ -282,6 +282,102 @@ export function servicePortToken(name: string): string {
     .replace(/^_+|_+$/g, "");
 }
 
+/**
+ * The canonical placeholder token for a service name *or* a reference token
+ * (#0843 review round 23). Both sides of the config must use this one function:
+ * validation normalizes the token a user wrote (`{API.port}`, `{api-v1.port}`)
+ * and expansion looks it up in the same canonical space, so a spelling the
+ * validator accepts can never survive into the spawned command as a literal.
+ * An all-punctuation name still needs a usable token, hence the `service`
+ * fallback (the same fallback the supervisors use for their token maps).
+ */
+export function canonicalServiceToken(raw: string): string {
+  return servicePortToken(raw) || "service";
+}
+
+/**
+ * The single grammar for a service port/URL placeholder (#0843 review round
+ * 23): `{<token>.port}` / `{<token>.url}`, case-insensitive, with the same
+ * name characters the config accepts and optional whitespace. A token may
+ * contain dots (`api.v1`); the final `.port` / `.url` selects the kind.
+ *
+ * Doubled and backslash-escaped braces are deliberately NOT matched — the
+ * feature defines no escape syntax, so validation reports them as malformed
+ * rather than letting expansion half-resolve them.
+ */
+const SERVICE_REF_SOURCE = String.raw`(?<!\\)\{\s*([A-Za-z0-9_.-]+?)\s*\.\s*(port|url)\s*\}(?!\})`;
+
+function serviceRefRegex(): RegExp {
+  return new RegExp(SERVICE_REF_SOURCE, "gi");
+}
+
+/** One `{<service>.port}` / `{<service>.url}` reference in a templated field. */
+export interface ServicePlaceholderRef {
+  /** The exact matched text, including braces. */
+  raw: string;
+  /** The token as written by the user, trimmed (e.g. `API`, `api-v1`). */
+  token: string;
+  /** The canonical token used by validation and expansion (`api`, `api_v1`). */
+  canonical: string;
+  kind: "port" | "url";
+}
+
+/** Every service placeholder in a templated field, in source order. */
+export function servicePlaceholderRefs(text: string | undefined): ServicePlaceholderRef[] {
+  if (!text) return [];
+  return [...text.matchAll(serviceRefRegex())].map((match) => ({
+    raw: match[0],
+    token: match[1]!,
+    canonical: canonicalServiceToken(match[1]!),
+    kind: match[2]!.toLowerCase() as "port" | "url",
+  }));
+}
+
+/**
+ * Placeholder-shaped text that the grammar above cannot resolve. These are
+ * reported as config errors instead of being left literally in a command:
+ * doubled/escaped braces, a misspelled kind (`portx`, `urls`) and an unclosed
+ * reference all fail validation with a clear message.
+ */
+function malformedServicePlaceholders(text: string | undefined): string[] {
+  if (!text) return [];
+  const problems: string[] = [];
+  // Strip the valid references first, so the checks below only see leftovers.
+  const rest = text.replace(serviceRefRegex(), "");
+
+  for (const match of rest.matchAll(/\{\{[\s\S]*?\}\}/g)) {
+    if (/[A-Za-z0-9_.-]+\s*\.\s*(?:port|url)\b/i.test(match[0])) {
+      problems.push(
+        `doubled braces are not supported in service placeholders: ${match[0]} — use {<service>.port} or {<service>.url}`,
+      );
+    }
+  }
+  for (const match of rest.matchAll(/\\\{\s*[A-Za-z0-9_.-]+\s*\.\s*(?:port|url)\s*\\\}/gi)) {
+    problems.push(
+      `escaped service placeholders are not supported: ${match[0]} — use {<service>.port} or {<service>.url}`,
+    );
+  }
+  for (const match of rest.matchAll(/\{([^{}]+)\}/g)) {
+    const body = match[1]!.trim();
+    const dot = body.lastIndexOf(".");
+    if (dot <= 0) continue;
+    const head = body.slice(0, dot).trim();
+    const tail = body.slice(dot + 1).trim();
+    if (!/^[A-Za-z0-9_.-]+$/.test(head)) continue;
+    if (/^(?:port|url)[A-Za-z0-9_-]*$/i.test(tail) && !/^(?:port|url)$/i.test(tail)) {
+      problems.push(
+        `malformed service placeholder ${match[0]} — use {<service>.port} or {<service>.url}`,
+      );
+    }
+  }
+  for (const match of rest.matchAll(/\{\s*[A-Za-z0-9_.-]+\s*\.\s*(?:port|url)\b(?![^{}]*\})/gi)) {
+    problems.push(
+      `unclosed service placeholder ${match[0]} — use {<service>.port} or {<service>.url}`,
+    );
+  }
+  return problems;
+}
+
 /** Validate one service's port field; shared with the target parser's shape. */
 function parsePortField(
   raw: unknown,
@@ -475,7 +571,7 @@ export function devTargetServiceErrors(
   const serviceByName = new Map((services ?? []).map((service) => [service.name, service]));
   const serviceNamesByToken = new Map<string, string[]>();
   for (const service of services ?? []) {
-    const token = servicePortToken(service.name);
+    const token = canonicalServiceToken(service.name);
     serviceNamesByToken.set(token, [...(serviceNamesByToken.get(token) ?? []), service.name]);
     for (const dependency of service.dependsOn ?? []) {
       if (!known.has(dependency)) {
@@ -512,12 +608,35 @@ export function devTargetServiceErrors(
   };
   for (const service of services ?? []) visit(service.name);
 
-  const refsIn = (text: string | undefined): string[] => {
-    if (!text) return [];
-    return [...text.matchAll(/\{([a-zA-Z0-9_-]+)\.(?:port|url)\}/g)].map((match) => match[1]!);
+  const validateText = (
+    owner: string,
+    text: string | undefined,
+    available: Set<string>,
+    allowSelf?: string,
+  ): void => {
+    for (const problem of malformedServicePlaceholders(text)) {
+      errors.push(`[${owner}]: ${problem}`);
+    }
+    for (const ref of servicePlaceholderRefs(text)) {
+      const matches = serviceNamesByToken.get(ref.canonical) ?? [];
+      const valid = matches.find((name) => name === allowSelf || available.has(name));
+      if (valid) continue;
+      const knownService = matches[0];
+      errors.push(
+        knownService
+          ? `[${owner}]: references service "${knownService}" outside the target's services/dependencies`
+          : `[${owner}]: references unknown service placeholder "${ref.token}"`,
+      );
+    }
   };
-  const envRefs = (env: Record<string, string> | undefined): string[] =>
-    Object.values(env ?? {}).flatMap((value) => refsIn(value));
+  const validateFields = (
+    owner: string,
+    texts: (string | undefined)[],
+    available: Set<string>,
+    allowSelf?: string,
+  ): void => {
+    for (const text of texts) validateText(owner, text, available, allowSelf);
+  };
   for (const t of targets) {
     const listed = new Set<string>();
     const tokenNames = new Map<string, string>();
@@ -537,7 +656,7 @@ export function devTargetServiceErrors(
       // (`api-v1` / `api_v1`); the documented `{<name>.port}` reference would
       // then be ambiguous, so reject it as a config error rather than silently
       // disambiguating it with an undocumented suffix (#0843 review).
-      const token = servicePortToken(name) || "service";
+      const token = canonicalServiceToken(name);
       const clash = tokenNames.get(token);
       if (clash) {
         errors.push(
@@ -560,32 +679,22 @@ export function devTargetServiceErrors(
       for (const dependency of service.dependsOn ?? []) include(dependency);
     };
     for (const name of listed) include(name);
-    const validateRefs = (owner: string, refs: string[], allowSelf?: string): void => {
-      for (const token of refs) {
-        const matches = serviceNamesByToken.get(servicePortToken(token)) ?? [];
-        const valid = matches.find((name) => name === allowSelf || available.has(name));
-        if (valid) continue;
-        const knownService = matches[0];
-        errors.push(
-          knownService
-            ? `[${owner}]: references service "${knownService}" outside the target's services/dependencies`
-            : `[${owner}]: references unknown service placeholder "${token}"`,
-        );
-      }
-    };
-    const targetRefs = [
-      ...[t.command, t.cwd, t.url, t.healthCheck?.url].flatMap(refsIn),
-      ...envRefs(t.env),
-    ];
-    validateRefs(`dev.targets ${t.name}`, targetRefs);
+    validateFields(
+      `dev.targets ${t.name}`,
+      [t.command, t.cwd, t.url, t.healthCheck?.url, ...Object.values(t.env ?? {})],
+      available,
+    );
     for (const name of available) {
       const service = serviceByName.get(name)!;
-      validateRefs(
+      validateFields(
         `dev.services ${name}`,
         [
-          ...[service.command, service.cwd, service.healthCheck?.url].flatMap(refsIn),
-          ...envRefs(service.env),
+          service.command,
+          service.cwd,
+          service.healthCheck?.url,
+          ...Object.values(service.env ?? {}),
         ],
+        available,
         name,
       );
     }
@@ -599,20 +708,34 @@ const SERVICE_URL_HOST = "127.0.0.1";
 /**
  * Expand a dev-target template (#0843): `{port}` for the target's OWN port,
  * plus `{<token>.port}` / `{<token>.url}` for every companion service — the
- * same expansion rule the preview supervisor applies (#0681). Left untouched:
- * the own-port token when no port was resolved (a target that never started
- * keeps the value it declared), and any service token without a reserved port.
+ * same expansion rule the preview supervisor applies (#0681).
+ *
+ * Service references go through {@link servicePortToken}/`canonicalServiceToken`
+ * exactly like validation does (#0843 review round 23), so every accepted
+ * spelling (`{API.port}`, `{api-v1.port}`, `{ api . url }`) resolves to the
+ * reserved port instead of surviving literally. Left untouched: the own-port
+ * token when no port was resolved (a target that never started keeps the value
+ * it declared), and any service token without a reserved port.
  */
 export function expandServiceRefs(
   template: string,
   port: number | undefined,
   tokens: Record<string, number>,
 ): string {
-  let out = port !== undefined ? template.replaceAll("{port}", String(port)) : template;
+  const servicePorts = new Map<string, number>();
   for (const [token, servicePort] of Object.entries(tokens)) {
-    out = out
-      .replaceAll(`{${token}.port}`, String(servicePort))
-      .replaceAll(`{${token}.url}`, `http://${SERVICE_URL_HOST}:${servicePort}`);
+    servicePorts.set(canonicalServiceToken(token), servicePort);
   }
+  let out = template.replace(
+    serviceRefRegex(),
+    (whole: string, rawToken: string, rawKind: string): string => {
+      const servicePort = servicePorts.get(canonicalServiceToken(rawToken));
+      if (servicePort === undefined) return whole;
+      return rawKind.toLowerCase() === "url"
+        ? `http://${SERVICE_URL_HOST}:${servicePort}`
+        : String(servicePort);
+    },
+  );
+  if (port !== undefined) out = out.replaceAll("{port}", String(port));
   return out;
 }

@@ -1857,7 +1857,12 @@ service's name in the reason, and everything started so far is torn down — the
 target otherwise starts fine and then proxies to a dead API. Each service's
 port is substituted into the target's `command`, `env` values, `cwd`, `url` and `healthCheck.url` as
 `{<name>.port}` / `{<name>.url}` (name lowercased, non-alphanumerics collapsed
-to `_`), passed as `PORT` and `REPOOS_DEV_<NAME>_PORT` / `REPOOS_DEV_<NAME>_URL`
+to `_`). A reference is normalized the same way as the name, so `{API.port}`,
+`{api-v1.port}` and `{api_v1.port}` all reach the same service; validation and
+runtime expansion share that one rule, and a spelling the validator accepts is
+always fully resolved. Doubled or backslash-escaped braces, a misspelled kind
+(`{api.portx}`) and an unclosed reference are config errors, not literals left
+in the command. Each substituted port is passed as `PORT` and `REPOOS_DEV_<NAME>_PORT` / `REPOOS_DEV_<NAME>_URL`
 to the service, and passed as the same `REPOOS_DEV_*` variables to the main
 command. Tokens in service `command`, `env` values, `cwd` and `healthCheck.url`
 are substituted too. Inside a service's own `command` and `healthCheck.url`,
