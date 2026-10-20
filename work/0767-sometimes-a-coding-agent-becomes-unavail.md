@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-20T04:50:00Z"
-review_passes: 2
 id: "0767"
 title: Define centralized coding agent recovery
 type: spec
@@ -13,7 +11,7 @@ branch: feat/define-centralized-coding-agent-recovery
 cli_override: github copilot
 model_override: default
 created_at: "2026-10-13T12:38:26Z"
-review_rounds: 1
+updated_at: "2026-10-20T04:38:55Z"
 ---
 ## Problem
 
@@ -49,13 +47,4 @@ Sometimes a coding agent becomes unavailable (e.g. you ran out of usage credits 
 - 2026-10-20T04:27:02Z · status inbox→ready
 - 2026-10-20T04:27:05Z · cli_override, model_override
 - 2026-10-20T04:27:09Z · status ready→active, branch
-- 2026-10-20T04:30:06Z · body
-- 2026-10-20T04:38:56Z · status active→review
-- 2026-10-20T04:38:56Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-10-20T04:39:44Z · note: review pass 1: needs some work
-- 2026-10-20T04:39:45Z · status review→active
-- 2026-10-20T04:42:01Z · body
-- 2026-10-20T04:49:20Z · status active→review
-- 2026-10-20T04:49:22Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-10-20T04:49:59Z · note: review pass 2: good to go
-
+- 2026-10-20T04:38:55Z · status active→review
