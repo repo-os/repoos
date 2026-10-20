@@ -1,14 +1,13 @@
 ---
-status: accepted
+status: proposed
 date: 2026-10-20
-deciders: nick
 ---
 
 # 0008 — Recover coding-agent failures with centralized pair remaps
 
 ## Status
 
-Accepted.
+Proposed; pending human approval.
 
 ## Context
 
@@ -45,6 +44,9 @@ Existing controls solve narrower problems:
   to a provider-wide outage or an unavailable pinned model.
 - The stalled-agent supervisor addresses task health and restart behavior; it
   does not inventory or replace every configured CLI/model pair.
+- Budget Controls reminders can alert when a paused agent, model, or provider is
+  expected to return, but reminders do not change assignments or resume a
+  paused pair. They complement recovery rather than replace it.
 
 A global fallback applied whenever a run "fails" is ambiguous: a non-zero exit
 can mean an unavailable provider, bad credentials, a broken CLI, a task-specific
@@ -73,17 +75,21 @@ selections as saved uses.
 From a source pair, a user can select a working destination CLI/model and
 choose **Replace every use**. Before saving, show the exact source and target
 pairs, affected roles and built-in agents, and a count/list of affected task
-overrides. Applying the action creates one central remap rule; it does not
-rewrite `repoos.toml`, built-in-agent state, or task frontmatter. The inventory
-then shows each saved choice alongside the effective remapped pair. The user
-can remove the rule to restore the saved choices, or change its destination.
+overrides. Applying the action adds a separate rule to an `[agent_recovery]`
+section in `repoos.toml`; it does not rewrite the existing agent/role
+assignments, built-in-agent state, or task frontmatter. The inventory then
+shows each saved choice alongside the effective remapped pair. The user can
+remove the rule to restore the saved choices, or change its destination.
 
 The rule matches the exact source CLI/model pair, including the literal
 `default` selection. A separate CLI-wide action may match every model on one
-CLI when the CLI itself is unavailable. Destinations must be a different,
-currently selectable pair; reject self-maps and mapping chains/cycles. A
-remap is scoped to the current RepoOS root, not to every unrelated project on
-the same account.
+CLI when the CLI itself is unavailable. If both a CLI-wide and exact-pair rule
+match, the exact-pair rule wins. Destinations must be a different, currently
+selectable pair; reject self-maps and mapping chains/cycles. `default` is a
+valid destination when it is the target CLI's selectable CLI-default model;
+show it as "Default" rather than implying a specific model is guaranteed.
+A remap is scoped to the current RepoOS root, not to every unrelated project
+on the same account.
 
 Apply remaps in the shared effective-agent resolution path before launch so
 role defaults, explicit task pins, and built-in-agent runs cannot bypass a
@@ -91,8 +97,13 @@ recovery rule. A matching remap takes precedence over that saved choice and
 over automatic model routing for that run; the router must not select the
 quarantined source pair. The destination is treated as the deliberate human
 selection, not as a reason to make another automatic retry. Keep existing
-budget/availability checks visible and fail with an actionable error if the
-destination is no longer usable; do not silently fall back or chain remaps.
+budget/availability checks visible. If the destination is paused or otherwise
+unavailable, retain the remap but block the affected launch with an actionable
+error that lets the user resume the destination, choose another, or remove the
+rule; do not silently fall back or chain remaps. If a source assignment is
+deleted, keep its remap as a dormant rule visible in Recovery with no current
+uses. If that exact source pair is later configured again, the rule applies
+again; the user can remove it while dormant to prevent that.
 
 Remaps affect future launches and follow-up turns only. They do not interrupt
 or mutate a currently running process. A future turn using a different CLI
@@ -102,10 +113,10 @@ source, destination, affected run/task, and rule change in activity/audit
 history so a user can understand which pair actually ran and why.
 
 The Agents page must provide the inventory, preview, apply, edit, and remove
-controls; this is not a raw-TOML-only feature. Persist remaps in repository
-configuration and expose them through the existing config/API path. A recovery
-action is an explicit operational policy change, with a clear confirmation
-before it changes all matching uses.
+controls; this is not a raw-TOML-only feature. Persist remaps in
+`[agent_recovery]` in `repoos.toml` and expose them through the existing
+config/API path. A recovery action is an explicit operational policy change,
+with a clear confirmation before it changes all matching uses.
 
 ## Alternatives considered
 
@@ -151,9 +162,11 @@ human-pinned task settings.
 
 ## Related
 
-- [Agents](/agents) — current assignment, testing, budget controls, and model
-  routing surfaces.
-- [Configuration](/configuration) — `budget.allowlist` and
+- [Agents](../../user-docs/agents.md) — current assignment, testing, budget
+  controls, and model routing surfaces.
+- [Configuration](../../user-docs/configuration.md) — `budget.allowlist` and
   `[model_routing]`.
 - ADR-0005 — RepoOS owns validated mutations across agent/workspace boundaries.
+- Task #0850 — pause and resume coding-agent/model pairs.
+- Task #0851 — Agents-page availability reminders.
 - Task #0767 — Define centralized coding agent recovery.
