@@ -9,7 +9,7 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -645,6 +645,68 @@ describe("AgentRunner crash handling (#0869)", () => {
       ).toBe(true);
       // ...but its first real output means the task belongs to the new turn.
       await waitFor(() => !runner.suppressesHandoffAfterCrash("0869"), "guard lifted on output");
+    } finally {
+      fx.restorePath();
+    }
+  });
+
+  it("gives the failed-over turn the task context and the undelivered messages", async () => {
+    const fx = runnerFixture(CLEAN_SCRIPT);
+    try {
+      const marker = join(fx.root, "first-run");
+      const dump = join(fx.root, "argv.json");
+      writeFileSync(
+        join(fx.root, "bin", "opencode"),
+        `#!/usr/bin/env node
+const fs = require("node:fs");
+if (!fs.existsSync(${JSON.stringify(marker)})) {
+  fs.writeFileSync(${JSON.stringify(marker)}, "1");
+  process.stdout.write("working\\n");
+  setTimeout(() => process.exit(1), 500);
+} else {
+  fs.writeFileSync(${JSON.stringify(dump)}, JSON.stringify(process.argv));
+  process.stdout.write("resumed\\n");
+  process.exit(0);
+}
+`,
+        { mode: 0o755 },
+      );
+      const crashes: unknown[] = [];
+      const runner = new AgentRunner(fx.config, () => {}, {
+        stallTimeoutMs: 10_000,
+        onEngineerCrash: (_taskId, info) => crashes.push(info),
+      });
+      runner.start(fx.task, "feat/0869-crash", fx.agent, { cwd: fx.root });
+      await waitFor(() => runner.stats("0869").lastOutputAt != null, "engineer output");
+      runner.send("0869", "queued follow-up", fx.agent);
+      await waitFor(() => crashes.length === 1, "crash callback");
+      expect(runner.queuedMessageSummary().find((q) => q.id === "0869")?.count).toBe(1);
+
+      const task = parseTask({
+        content: readFileSync(fx.taskPath, "utf8"),
+        absPath: fx.taskPath,
+        root: fx.root,
+        defaultStatus: fx.config.defaultStatus,
+        defaultAssignee: fx.config.defaultAssignee,
+      });
+      expect(
+        runner.start(task, "feat/0869-crash", fx.agent, {
+          cwd: fx.root,
+          fromCrashRecovery: true,
+          contextPack: "TASK CONTEXT #0869",
+          resumePreamble: "RECOVERY INSTRUCTION #0869",
+        }).ok,
+      ).toBe(true);
+      await waitFor(() => existsSync(dump), "resumed turn argv");
+      const argv = JSON.parse(readFileSync(dump, "utf8")) as string[];
+      const mission = argv.join("\n");
+      expect(mission).toContain("queued follow-up");
+      expect(mission).toContain("TASK CONTEXT #0869");
+      expect(mission).toContain("RECOVERY INSTRUCTION #0869");
+      await waitFor(
+        () => (runner.queuedMessageSummary().find((q) => q.id === "0869")?.count ?? 0) === 0,
+        "queue drained",
+      );
     } finally {
       fx.restorePath();
     }
