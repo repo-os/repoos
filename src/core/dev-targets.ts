@@ -40,6 +40,15 @@ function parseInlineHealthCheck(raw: string): { url?: string; file?: string } | 
  */
 const DEV_PORT_TOKEN = "{port}";
 
+/**
+ * `[[dev.targets]]` fields the Settings form does not edit. Every path that
+ * rebuilds a target row from the form (draft, wire row, parser input,
+ * serialization, no-op comparison) must carry these through, or a save silently
+ * strips them from repoos.toml (#0843 review round 24). Add a new TOML-only
+ * target field here, not at each call site.
+ */
+export const DEV_TARGET_PASSTHROUGH_FIELDS = ["cwd", "env"] as const;
+
 /** Read a flat string list (the flat TOML parser's shape for a string array). */
 function stringList(v: unknown): string[] {
   if (v === undefined || v === null) return [];
