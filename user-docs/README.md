@@ -118,6 +118,11 @@ cannot be added yet silently omitted from the agent outputs.
 `../agent/starter-prompt.md`, and fails if the guide loses one of its required
 agent links or its permission guidance.
 
+The docs homepage's agent call to action is `.vitepress/theme/AgentPromptCta.vue`,
+registered in `.vitepress/theme/index.ts` and mounted from `index.md`. It imports
+the canonical prompt and `../agent/cta.json` through `../agent/cta.ts`, the same
+module `landing/` uses — change the shared files, not one site's component.
+
 `agents.txt` is deliberately not emitted: no client reads it and the same
 generator does not produce it. Revisit only with a concrete consumer.
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
+import AgentPromptCta from "./components/AgentPromptCta.vue";
 import ForClients from "./components/ForClients.vue";
 import InstallBox from "./components/InstallBox.vue";
 import SiteLogo from "./components/SiteLogo.vue";
@@ -491,6 +492,7 @@ const year = new Date().getFullYear();
           </p>
 
           <InstallBox class="mt-8" show-note />
+          <AgentPromptCta />
         </div>
 
         <figure class="min-w-0">
