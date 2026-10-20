@@ -13,7 +13,6 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:17Z"
 updated_at: "2026-10-20T19:40:39Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-20T18:37:06.042Z: repoos check failed: ◆ Check plan"
 ---
 ## Problem
@@ -72,3 +71,4 @@ Look at the watchdog, the CTO restart-stalled-agent action, the handoff request 
 - 2026-10-20T19:17:08Z · body
 - 2026-10-20T19:40:02Z · body
 - 2026-10-20T19:40:39Z · body
+
