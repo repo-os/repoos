@@ -59,6 +59,15 @@ landing/
   index.html      entry point + meta tags (title, description, Open Graph/Twitter)
 ```
 
+## Agent files
+
+`https://repoos.org/llms.txt` is generated, not committed. `vite-plugin-llms-txt.ts`
+reads the one canonical starter prompt at `../agent/starter-prompt.md` and adds a
+short llmstxt.org overview with the published install commands and links to the
+docs site. `vite dev` serves the same text at `/llms.txt`; `vite build` emits
+`dist/llms.txt` at the dist root so the Worker serves it. Edit the prompt file,
+not a copy in a Vue component.
+
 ## Local development
 
 ```bash
