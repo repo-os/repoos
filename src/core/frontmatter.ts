@@ -23,6 +23,33 @@ export interface ParsedDocument {
 export const FM_DELIM = "---";
 
 /**
+ * Git's unresolved merge-conflict markers. A line of exactly seven `=`
+ * (`=======`) is also a markdown-rendered horizontal rule by shape, but during
+ * a merge it is the conflict divider — treating it as a frontmatter delimiter
+ * truncates the block at the first conflict region, so `status:`/`updated_at:`
+ * disappear and the parser silently reports its default (`inbox`). That is the
+ * #0886 corruption: a note-only write mid-merge re-serialized the task file
+ * with `status: inbox`. Never treat a conflict marker as a delimiter.
+ */
+const CONFLICT_MARKER_RE = /^(?:<{7}|={7}|>{7}|\|{7})(?: .*)?$/m;
+
+/**
+ * True when the document's FRONTMATTER still carries unresolved git conflict
+ * markers. Only the frontmatter matters: markers there are what make a parsed
+ * `status:` disappear and a rewrite commit the default; a fenced code block in
+ * the body is legitimate prose and must never block an edit.
+ */
+export function hasUnresolvedConflictMarkers(content: string): boolean {
+  const lines = content.replace(/\r\n/g, "\n").split("\n");
+  if (lines[0]?.trim() !== FM_DELIM) return false;
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].trim() === FM_DELIM) return false;
+    if (CONFLICT_MARKER_RE.test(lines[i].trim())) return true;
+  }
+  return false;
+}
+
+/**
  * Check if a line is a frontmatter delimiter: either the literal `---` or a
  * rendered horizontal rule (box-drawing characters, optionally prefixed with
  * `> ` from markdown rendering).
@@ -30,6 +57,8 @@ export const FM_DELIM = "---";
 function isDelimiter(line: string): boolean {
   const trimmed = line.trim();
   if (trimmed === FM_DELIM) return true;
+  // A conflict marker is never a frontmatter boundary (see #0886 above).
+  if (CONFLICT_MARKER_RE.test(trimmed)) return false;
   // A line of box-drawing characters (e.g., from kiro-cli's markdown rendering).
   // Strip optional blockquote prefix (`> `) then check if the rest is a horizontal rule.
   const withoutPrefix = trimmed.replace(/^>\s*/, "");
