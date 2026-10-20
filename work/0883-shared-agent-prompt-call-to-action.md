@@ -15,7 +15,7 @@ branch: feat/shared-agent-prompt-call-to-action
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:35Z"
-updated_at: "2026-10-20T22:11:30Z"
+updated_at: "2026-10-20T22:12:05Z"
 last_close_out_gate_ms: 508954
 last_close_out_gate_at: "2026-10-20T22:11:30.088Z"
 review_passes: 1
@@ -83,4 +83,4 @@ Out of scope: provider logos, a public MCP server, and changes to install comman
 - 2026-10-20T21:59:58Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (d130fbe17) during finalization (#0734)
 - 2026-10-20T22:00:38Z · note: review pass 1: good to go
 - 2026-10-20T22:11:30Z · close-out gate completed in 509s
-
+- 2026-10-20T22:12:05Z · status done→done, release:success
