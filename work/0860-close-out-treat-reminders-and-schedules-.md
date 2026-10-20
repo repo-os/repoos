@@ -2,7 +2,7 @@
 id: "0860"
 title: "Close-out and layout: reminders/ and schedules/ are server-written bookkeeping, and follow the repoos/ layout"
 type: bug
-status: review
+status: active
 priority: p2
 area: server
 assigned_to: ai
@@ -12,8 +12,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T04:20:16Z"
 updated_at: "2026-10-20T11:17:28Z"
+review_rounds: 2
 review_passes: 6
-review_rounds: 1
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-10-20T06:20:53.646Z: repoos check failed: ◆ Check plan"
 dev_error_count: 2
@@ -139,3 +139,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:14:50Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (d1a81c5e2) during finalization (#0734)
 - 2026-10-20T11:17:28Z · note: review pass 6: needs some work
 - 2026-10-20T11:17:28Z · message_delivered: 1 message(s)
+- 2026-10-20T11:17:28Z · status review→active
