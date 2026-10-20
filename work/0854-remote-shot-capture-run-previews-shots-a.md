@@ -2,7 +2,7 @@
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -163,3 +163,5 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T10:53:40Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a2c7d06dc) during finalization (#0734)
 - 2026-10-20T10:56:35Z · note: review pass 11: needs some work
 - 2026-10-20T10:57:10Z · needs_input
+- 2026-10-20T10:57:10Z · status review→active
+- 2026-10-20T10:57:10Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
