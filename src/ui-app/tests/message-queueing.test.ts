@@ -362,6 +362,21 @@ describe("message queueing", () => {
     }
   });
 
+  it("exposes hasQueuedMessages for handoff deferral (#0865)", () => {
+    const fx = makeFixture();
+    const runner = new AgentRunner(config(fx.root), () => {});
+    try {
+      expect(runner.hasQueuedMessages("none")).toBe(false);
+      runner["queuedMessages"].set("0865", [
+        { text: "wait", agent, opts: {}, queuedAt: new Date().toISOString() },
+      ]);
+      expect(runner.hasQueuedMessages("0865")).toBe(true);
+    } finally {
+      runner.dispose();
+      fx.clean();
+    }
+  });
+
   it("tracks queue age from the earliest message, not the latest (#0821)", () => {
     const fx = makeFixture();
     const runner = new AgentRunner(config(fx.root), () => {});

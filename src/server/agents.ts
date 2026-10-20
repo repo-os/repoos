@@ -6612,6 +6612,12 @@ export class AgentRunner {
     return this.queuedIds.has(taskId);
   }
 
+  /** True when one or more human messages are waiting to be delivered (#0865). */
+  hasQueuedMessages(taskId: string): boolean {
+    const msgs = this.queuedMessages.get(taskId);
+    return !!msgs && msgs.length > 0;
+  }
+
   /**
    * Flag messages that have sat queued past the timeout (#0821). They are never
    * dropped — a queued message is a human's follow-up and silently losing it is
@@ -8467,6 +8473,20 @@ export class AgentRunner {
     // those messages stay persisted and flagged and are delivered when the
     // task's own session next runs. Deferred so the new turn starts after this
     // cleanup fully unwinds (and after handoff adoption below).
+    const queuedCount = this.queuedMessages.get(taskId)?.length ?? 0;
+    if (entry.handoffRequested && queuedCount > 0) {
+      entry.handoffRequested = false;
+      this.clearPendingHandoff(taskId);
+      this.recordTaskActivity(
+        taskId,
+        `handoff_deferred: ${queuedCount} queued message(s) must be read before review`,
+      );
+      this.appendLine(
+        taskId,
+        "sys",
+        "✗ handoff deferred — read the queued message(s) first, then request review again",
+      );
+    }
     if (!wasReview && !entry.handoffRequested && !entry.intentionalStop && !this.isPaused(taskId)) {
       queueMicrotask(() => this.deliverQueuedMessages(taskId));
     }
