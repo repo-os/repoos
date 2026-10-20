@@ -68,6 +68,43 @@ export async function waitFor(
  */
 export const STALE_FIXTURE_AGE_MS = 10 * 60 * 1000;
 
+/**
+ * SIGKILL every pid recorded in a fixture's `spawns.log`, if the file exists.
+ * A missing/malformed log means there is nothing to kill.
+ */
+function killSpawnedFromLog(path: string): void {
+  let log: string;
+  try {
+    log = readFileSync(path, "utf8");
+  } catch {
+    return;
+  }
+  for (const line of log.trim().split("\n")) {
+    if (!line) continue;
+    try {
+      const rec = JSON.parse(line) as { pid?: number };
+      if (typeof rec.pid === "number") process.kill(rec.pid, "SIGKILL");
+    } catch {
+      /* already gone */
+    }
+  }
+}
+
+/** Find spawn logs a few levels below a stale root without following symlinks. */
+export function killSpawnedLogs(root: string, remainingDepth = 4): void {
+  killSpawnedFromLog(join(root, "spawns.log"));
+  if (remainingDepth === 0) return;
+  try {
+    for (const entry of readdirSync(root, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        killSpawnedLogs(join(root, entry.name), remainingDepth - 1);
+      }
+    }
+  } catch {
+    /* unreadable — the rm below still removes it */
+  }
+}
+
 export function reapStaleFixtures(prefix: string): number {
   let entries: string[];
   try {
@@ -96,20 +133,9 @@ export function reapStaleFixtures(prefix: string): number {
     }
     if (mtimeMs >= cutoff) continue;
     if (!isWorktreesSibling) {
-      try {
-        const log = readFileSync(join(root, "spawns.log"), "utf8");
-        for (const line of log.trim().split("\n")) {
-          if (!line) continue;
-          try {
-            const rec = JSON.parse(line) as { pid?: number };
-            if (typeof rec.pid === "number") process.kill(rec.pid, "SIGKILL");
-          } catch {
-            /* already gone */
-          }
-        }
-      } catch {
-        /* no log — nothing to kill */
-      }
+      // Scan a few levels because test fixtures can be nested under a
+      // per-file temp dir (runRoot/file-*/repoos-*/spawns.log).
+      killSpawnedLogs(root);
     }
     rmSync(root, { recursive: true, force: true });
     removed++;
