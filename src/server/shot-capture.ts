@@ -273,6 +273,16 @@ export function planAutoCapture(
       };
     }
     targets = resolution.names;
+    // A declaration that explicitly names `default` means the main RepoOS app,
+    // even when docs changes also resolve the Docs site target. Keep the
+    // default command in the candidate list so the declaration cannot alias to
+    // the sole path match.
+    if (
+      declared.shots.some((shot) => shot.target === "default") &&
+      config.preview?.command?.trim()
+    ) {
+      targets = [...new Set([...targets, "default"])];
+    }
   } else {
     targets = context.detected;
     if (targets.length === 0) {

@@ -111,6 +111,7 @@ import {
   runUiHandoffGate,
   type TaskLog,
 } from "../ui-handoff-gate.js";
+import { isEvidenceCurrent } from "../evidence-current.js";
 import { localShotStore } from "../shots.js";
 import {
   endEvidenceRefresh,
@@ -1486,6 +1487,19 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
     if (dirty.stdout.trim()) {
       return json(res, 409, {
         error: `Task #${id}'s worktree is dirty; commit or discard changes before refreshing evidence`,
+      });
+    }
+    const headResult = await runGit(worktree, ["rev-parse", "--short", "HEAD"], 10_000);
+    const currentHead = headResult.status === 0 ? headResult.stdout.trim() : "";
+    const existingEvidence = readUiHandoffGateEvidence(config, id);
+    if (await isEvidenceCurrent(worktree, existingEvidence?.sourceIdentity, currentHead, config)) {
+      return json(res, 200, {
+        ok: true,
+        refreshed: false,
+        headIdentity: currentHead,
+        detail: "Handoff evidence is already current; no refresh was needed.",
+        issues: existingEvidence?.issues ?? [],
+        shots: localShotStore(config, id).list(),
       });
     }
     const captured = await guardedForceRefreshCapture(
