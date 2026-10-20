@@ -50,6 +50,7 @@ export async function relaunchEngineerOnActiveTask(
   if (task.status !== "active") {
     return { ok: false, reason: `Task #${id} is not active` };
   }
+  runner.releasePhantomForStart(id);
   if (runner.isRunning(id)) {
     return { ok: false, reason: `Task #${id} already has a running agent` };
   }

@@ -2,14 +2,16 @@
 id: "0872"
 title: "Default agent prompts for every project: reviewer, engineer, PM and CTO learnings"
 type: chore
-status: inbox
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/default-agent-prompts-for-every-project-
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:43Z"
-updated_at: "2026-10-20T12:19:20Z"
+updated_at: "2026-10-20T16:30:18Z"
 ---
 ## Problem
 The review prompt built in src/server/review.ts (the shared part every project gets) does not tell the reviewer to find every instance of a bug class, to read earlier review reports, or to check that the branch merges with its base. The result on 2026-10-20: #0843 needed 22+ review passes, #0854 15+, #0861 13, each pass finding one more instance of the same class (service-lifecycle teardown, runner fallback and import safety, config-key registration), plus avoidable rounds on evidence-only gaps and a "good to go" on a commit that still conflicted with main (#0860). For RepoOS itself the reviewer role text in repoos.toml was updated by hand on 2026-10-20; every other project still gets the old behavior.
@@ -39,7 +41,6 @@ Project-specific rules (Bun not Node, never edit repoos.toml, never commit dist/
 ## Notes for AI
 Wording sources, all in this repo's repoos.toml as edited on 2026-10-20: the reviewer instructions (grep `Report the WHOLE CLASS`), the engineer instructions (grep `declare what a reviewer should see`), the pm instructions (grep `Owns the roadmap`) and the CTO instructions (grep `Be quiet and precise`). Strip the RepoOS-specific parts (Bun, dist/, repoos.toml, Copilot path rule) when copying them into defaults. The CTO text names conditions the CTO cannot fix itself (agent switch, deleting files): its configured safe actions are only restart-stalled-agent, refresh-main-install and requeue-closeout-after-env-fix, so those escalate to a human. Find where `repoos init` writes the default roles (src/commands/init.ts) and where built-in default role instructions live (src/core/config.ts). Keep the reviewer prompt short enough not to slow reviews noticeably. Related: #0865 (stop reviews chaining), #0866 (shot target validation), #0867 (landable command: the reviewer's merge check can call it once it exists), #0869 (crash handling and agent failover that the CTO text refers to), #0863 (phantom runners).
 
-
 ## Activity
 
 - 2026-10-20T12:06:43Z · created · njachowski@gmail.com
@@ -51,3 +52,8 @@ Wording sources, all in this repo's repoos.toml as edited on 2026-10-20: the rev
 - 2026-10-20T12:19:13Z · body: Desired UX (added 1)
 - 2026-10-20T12:19:16Z · body: Acceptance criteria (added 2, removed 2)
 - 2026-10-20T12:19:20Z · body: Notes for AI (added 1, removed 1)
+- 2026-10-20T16:10:13Z · status inbox→ready
+- 2026-10-20T16:10:18Z · cli_override, model_override
+- 2026-10-20T16:10:20Z · status ready→active, branch
+- 2026-10-20T16:28:30Z · body
+- 2026-10-20T16:30:18Z · body

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -14,6 +14,7 @@ import {
   handoffTreeStatus,
   readUiHandoffGateEvidence,
   runUiHandoffGate,
+  importRemoteVerification,
   taskUiVerificationMode,
   type UiHandoffGateDeps,
 } from "../../server/ui-handoff-gate.js";
@@ -30,6 +31,9 @@ import {
 } from "../../server/preview-verification-slot.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import type { Task } from "../../core/types.js";
+
+const PNG_1PX =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 
 describe("UI handoff verification gate (#0680)", () => {
   const temps: string[] = [];
@@ -77,6 +81,172 @@ describe("UI handoff verification gate (#0680)", () => {
     expect(plan).toMatchObject({
       entries: [{ target: "web", route: "/settings?tab=general", label: "Settings view" }],
     });
+  });
+
+  it("validates remote verification evidence before replacing existing shots", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-invalid-artifacts-"));
+    temps.push(root);
+    const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+    const task = {
+      id: "invalid-record",
+      title: "t",
+      path: "work/invalid-record.md",
+      absPath: join(root, "work/invalid-record.md"),
+      status: "review",
+      branch: "feat/invalid-record",
+      area: "web",
+      body: "",
+    } as Task;
+    const store = shotStore.localShotStore(config, task.id);
+    const prior = store.save({ target: "web", origin: "auto", data: PNG_1PX });
+    if ("error" in prior) throw new Error(prior.error);
+    const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64");
+    const shots = encode({
+      shots: [{ name: "replacement.png", target: "web", origin: "auto" }],
+    });
+    await expect(
+      importRemoteVerification(
+        config,
+        task,
+        {
+          version: 1,
+          taskId: task.id,
+          ok: true,
+          detail: "captured",
+          results: { verification: { ok: true, detail: "ok" } },
+          files: [
+            { name: "shots/shots.json", data: shots },
+            { name: "shots/replacement.png", data: PNG_1PX },
+            {
+              name: "verification.json",
+              data: encode({ at: new Date().toISOString(), issues: [], blankShots: [] }),
+            },
+          ],
+        },
+        vi.fn(),
+      ),
+    ).rejects.toThrow("invalid UI verification record");
+    expect(store.list().map((shot) => shot.name)).toEqual([prior.name]);
+  });
+
+  it("keeps the shots a partially failed verification did produce (#0854)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-partial-"));
+    temps.push(root);
+    const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+    const task = {
+      id: "partial-verify",
+      title: "t",
+      path: "work/partial-verify.md",
+      absPath: join(root, "work/partial-verify.md"),
+      status: "review",
+      branch: "feat/partial-verify",
+      area: "web",
+      body: "",
+    } as Task;
+    const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64");
+    await expect(
+      importRemoteVerification(
+        config,
+        task,
+        {
+          version: 1,
+          taskId: task.id,
+          ok: false,
+          detail: "runner browser capture reported failures",
+          results: { verification: { ok: false, detail: "capture of / broke" } },
+          files: [
+            {
+              name: "shots/shots.json",
+              data: encode({ shots: [{ name: "kept.png", target: "web", origin: "auto" }] }),
+            },
+            { name: "shots/kept.png", data: PNG_1PX },
+          ],
+        },
+        vi.fn(),
+      ),
+    ).rejects.toThrow(/kept 1 earlier shot/);
+    expect(shotStore.localShotStore(config, task.id).list()).toHaveLength(1);
+  });
+
+  it("reserves the task capture lock during remote UI verification", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-remote-lock-"));
+    temps.push(root);
+    execFileSync("git", ["init", "-b", "main"], { cwd: root, stdio: "ignore" });
+    execFileSync("git", ["config", "user.email", "runner-test@example.com"], {
+      cwd: root,
+      stdio: "ignore",
+    });
+    execFileSync("git", ["config", "user.name", "Runner test"], {
+      cwd: root,
+      stdio: "ignore",
+    });
+    writeFileSync(join(root, "README.md"), "fixture\n");
+    execFileSync("git", ["add", "README.md"], { cwd: root, stdio: "ignore" });
+    execFileSync("git", ["commit", "-m", "fixture"], { cwd: root, stdio: "ignore" });
+    const config = {
+      root,
+      workDir: "work",
+      cacheDir: ".repoos",
+      uiVerification: { enabled: true },
+      preview: { command: "echo preview" },
+      remoteValidation: { enabled: true, browserCaptureMode: "runner-available" },
+    } as RepoOSConfig;
+    const task = {
+      id: "remote-lock",
+      title: "t",
+      path: "work/remote-lock.md",
+      absPath: join(root, "work/remote-lock.md"),
+      status: "review",
+      branch: "main",
+      area: "web",
+      body: '## Shots\n```json\n[{ "target": "default", "route": "/" }]\n```\n',
+    } as Task;
+    let release!: (value: {
+      version: 1;
+      taskId: string;
+      ok: boolean;
+      detail: string;
+      results: Record<string, unknown>;
+      files: [];
+    }) => void;
+    let started!: () => void;
+    const captureStarted = new Promise<void>((resolve) => (started = resolve));
+    const captureResult = new Promise<{
+      version: 1;
+      taskId: string;
+      ok: boolean;
+      detail: string;
+      results: Record<string, unknown>;
+      files: [];
+    }>((resolve) => (release = resolve));
+    const transport = {
+      capture: () => {
+        started();
+        return captureResult;
+      },
+    };
+    const verification = runUiHandoffGate(config, task, undefined, vi.fn(), {
+      forceRefresh: true,
+      remoteTransport: transport,
+    });
+    await captureStarted;
+    const shots = await shotCapture.runAutoShotCapture(
+      config,
+      task,
+      {} as never,
+      vi.fn(),
+      transport,
+    );
+    expect(shots.status).toBe("skipped");
+    release({
+      version: 1,
+      taskId: task.id,
+      ok: true,
+      detail: "no capture required",
+      results: { verification: { ok: true, skipped: true, detail: "no capture required" } },
+      files: [],
+    });
+    await expect(verification).resolves.toMatchObject({ ok: true, skipped: true });
   });
 
   it("explicit refresh bypasses the normal engineer-capture pre-emption check", async () => {

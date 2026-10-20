@@ -49,8 +49,16 @@ import { isShotCaptureUnavailable } from "../commands/shot.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/ui-harness.js";
 import type { PreviewManager } from "./preview.js";
 import { computeTaskShotContext } from "./shot-context.js";
-import { localShotStore, shotsDir, type ShotStore } from "./shots.js";
+import { importShotArtifacts, localShotStore, shotsDir, type ShotStore } from "./shots.js";
 import { patchTaskFile } from "./write.js";
+import {
+  BrowserEvidenceUnavailableError,
+  recordBrowserCaptureActivity,
+  runBrowserCaptureWithPolicy,
+  type BrowserEvidenceArtifacts,
+  type BrowserEvidenceTransport,
+} from "./browser-capture-policy.js";
+import { canonicalCaptureContext, type CanonicalCapturePlan } from "../core/remote-capture.js";
 
 export interface ShotCaptureResult {
   status: "captured" | "skipped" | "failed";
@@ -124,6 +132,17 @@ export async function captureEntryPage(
 
 /** In-flight captures, so duplicate review transitions never double-run. */
 const inFlight = new Set<string>();
+
+/** Shared task-level reservation for local and runner browser evidence jobs. */
+export function reserveBrowserCapture(taskId: string): boolean {
+  if (inFlight.has(taskId)) return false;
+  inFlight.add(taskId);
+  return true;
+}
+
+export function releaseBrowserCapture(taskId: string): void {
+  inFlight.delete(taskId);
+}
 
 /**
  * The tested tree identity for a task (#0734): the short HEAD sha of its
@@ -548,6 +567,9 @@ export async function runAutoShotCapture(
   task: Task,
   previews: PreviewManager,
   log: TaskLog,
+  remoteTransport?: BrowserEvidenceTransport,
+  /** The control plane's resolved plan; the runner executes it instead of re-planning (#0854). */
+  canonicalPlan?: CanonicalCapturePlan,
 ): Promise<ShotCaptureResult> {
   const finish = (
     status: ShotCaptureResult["status"],
@@ -564,19 +586,77 @@ export async function runAutoShotCapture(
         /* the log line already recorded it */
       }
     }
-    inFlight.delete(task.id);
+    releaseBrowserCapture(task.id);
     return { status, detail: message, ...(count !== undefined ? { count } : {}) };
   };
 
-  if (inFlight.has(task.id)) {
+  if (!reserveBrowserCapture(task.id)) {
     return { status: "skipped", detail: "shots: skipped — a capture is already in flight" };
   }
-  inFlight.add(task.id);
-
-  const plan = planAutoCapture(config, task);
-  if ("reason" in plan) {
-    return finish("skipped", plan.reason);
+  if (
+    config.remoteValidation?.browserCaptureMode &&
+    config.remoteValidation.browserCaptureMode !== "local"
+  ) {
+    try {
+      // Resolve the plan HERE, against the canonical board body and the live
+      // config, and send it to the runner. The runner's bundled branch can lag
+      // the board (a `## Shots` edit after branch creation) and its detached
+      // checkout cannot re-diff changed paths, so a runner-planned capture could
+      // differ from — or skip — what local capture would produce (#0854).
+      const remotePlan = planAutoCapture(config, task);
+      if ("reason" in remotePlan) return finish("skipped", remotePlan.reason);
+      const canonical = canonicalCaptureContext(config, task, remotePlan);
+      const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+      const head = worktree ? await runGit(worktree, ["rev-parse", "HEAD"], 10_000) : null;
+      const request =
+        worktree && head?.status === 0 && task.branch
+          ? {
+              taskId: task.id,
+              worktreePath: worktree,
+              branch: task.branch,
+              candidateSha: head.stdout.trim(),
+              operation: "shots" as const,
+              canonical,
+            }
+          : null;
+      return await runBrowserCaptureWithPolicy({
+        config,
+        request: request ?? {
+          taskId: task.id,
+          worktreePath: config.root,
+          branch: task.branch ?? "",
+          candidateSha: "",
+          operation: "shots",
+          canonical,
+        },
+        transport: request ? remoteTransport : undefined,
+        local: async () => {
+          releaseBrowserCapture(task.id);
+          const localConfig = {
+            ...config,
+            remoteValidation: { ...config.remoteValidation, browserCaptureMode: "local" as const },
+          };
+          return runAutoShotCapture(localConfig, task, previews, log);
+        },
+        note: (message) => log(task.id, "warn", `shots: ${message}`),
+        useArtifacts: async (artifacts) => importRemoteShots(config, task, artifacts, log),
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      return finish("failed", detail);
+    } finally {
+      releaseBrowserCapture(task.id);
+    }
   }
+
+  // The runner (mode forced local) passes the control plane's plan so it
+  // executes exactly what the board would; every other caller plans locally.
+  const planned: ReturnType<typeof planAutoCapture> =
+    canonicalPlan ?? planAutoCapture(config, task);
+  if ("reason" in planned) {
+    return finish("skipped", planned.reason);
+  }
+  const plan = planned;
   // Branch fixtures (#0786): URL building admits a `state` the task branch's
   // source declares, even before main's compiled list knows it.
   const branchValidator = taskFixtureValidator(
@@ -803,7 +883,7 @@ export async function runAutoShotCapture(
       captured,
     );
   } finally {
-    inFlight.delete(task.id);
+    releaseBrowserCapture(task.id);
     await context?.close().catch(() => {});
     await browser?.close().catch(() => {});
     // The capture owns the preview it started: previews are on-demand only
@@ -811,6 +891,93 @@ export async function runAutoShotCapture(
     // the single preview slot until the task leaves review.
     if (currentTarget !== undefined) await previews.stop(task.id).catch(() => {});
   }
+}
+
+export async function importRemoteShots(
+  config: RepoOSConfig,
+  task: Task,
+  artifacts: BrowserEvidenceArtifacts,
+  log: TaskLog,
+): Promise<ShotCaptureResult> {
+  const remoteResult = artifacts.results.shots as ShotCaptureResult | undefined;
+  if (!remoteResult || !["captured", "skipped", "failed"].includes(remoteResult.status)) {
+    throw new Error("runner result omitted the shot capture outcome");
+  }
+  // Import whatever the runner actually produced, even from a PARTIAL run: the
+  // runner saves each shot as it goes, so when a later entry fails the earlier
+  // PNGs are still in the bundle and are real evidence (#0854 pass 17). Local
+  // capture behaves the same way — it keeps the shots saved before the failure.
+  // A successful run's artifacts MUST import (a failure there is a runner
+  // failure the policy turns into a local fallback); a partial run keeps what it
+  // can and reports the problem as a note instead of discarding good output.
+  let imported = 0;
+  let importProblem: string | undefined;
+  const hasManifest = artifacts.files.some((file) => file.name === "shots/shots.json");
+  if (remoteResult.status !== "skipped" && hasManifest) {
+    if (remoteResult.status === "captured") {
+      imported = importShotArtifacts(config, task.id, artifacts.files);
+    } else {
+      try {
+        imported = importShotArtifacts(config, task.id, artifacts.files);
+      } catch (err) {
+        importProblem = err instanceof Error ? err.message : String(err);
+      }
+    }
+  }
+  const base = formatRemoteShotActivity(remoteResult);
+  const message = importProblem
+    ? `${base} (could not import runner shots: ${importProblem})`
+    : imported > 0 && remoteResult.status !== "captured"
+      ? `${base} (kept ${imported} earlier shot${imported === 1 ? "" : "s"} despite the failure)`
+      : base;
+  recordBrowserCaptureActivity(
+    task.id,
+    remoteResult.status === "captured",
+    message,
+    log,
+    (note) => {
+      // Local successful captures only add activity; retain a durable task
+      // note for remote failures/fallbacks where the runner changed behavior.
+      if (remoteResult.status !== "captured") patchTaskFile(config, task.absPath, { note });
+    },
+  );
+  return { ...remoteResult, detail: message };
+}
+
+export function formatRemoteShotActivity(remoteResult: ShotCaptureResult): string {
+  const detail = remoteResult.detail.replace(/^shots:\s*/i, "");
+  return remoteResult.status === "captured"
+    ? `shots: ${detail}`
+    : `shots: ${remoteResult.status} — ${detail}`;
+}
+
+function importRemoteDeclaredShot(
+  config: RepoOSConfig,
+  taskId: string,
+  artifacts: BrowserEvidenceArtifacts,
+): DeclaredShotCapture {
+  const result = artifacts.results.singleShot as DeclaredShotCapture | undefined;
+  if (!result || typeof result !== "object")
+    throw new Error("runner result omitted the single-shot outcome");
+  if ("error" in result) return result;
+  if (!artifacts.ok)
+    throw new Error("runner reported a failed single-shot capture without an error");
+  const source = result.shot as ShotMeta;
+  const data = artifacts.files.find((file) => file.name === `shots/${source.name}`)?.data;
+  if (!data) throw new Error(`runner omitted shot image ${source.name}`);
+  const stored = localShotStore(config, taskId).save({
+    target: source.target,
+    route: source.route,
+    ...(source.label ? { label: source.label } : {}),
+    ...(source.provenance ? { provenance: source.provenance } : {}),
+    ...(source.declared ? { declared: source.declared } : {}),
+    name: source.name,
+    mime: "image/png",
+    data,
+  });
+  if ("error" in stored)
+    throw new Error(`could not import runner shot ${source.name}: ${stored.error}`);
+  return { shot: stored, warnings: result.warnings };
 }
 
 /** One-shot capture result for the task drawer's Add-shot action (#0627). */
@@ -859,7 +1026,96 @@ export async function captureDeclaredShot(
     /** The parsed declaration to store on the shot, for exact delete sync (#0627). */
     declared?: DeclaredShot;
   },
+  remoteTransport?: BrowserEvidenceTransport,
+  onFallback?: (message: string) => void,
 ): Promise<DeclaredShotCapture> {
+  if (!reserveBrowserCapture(task.id)) {
+    return { error: "a capture is already in flight for this task", busy: true };
+  }
+  try {
+    return await captureDeclaredShotImpl(
+      config,
+      task,
+      previews,
+      entry,
+      remoteTransport,
+      onFallback,
+    );
+  } finally {
+    releaseBrowserCapture(task.id);
+  }
+}
+
+async function captureDeclaredShotImpl(
+  config: RepoOSConfig,
+  task: Task,
+  previews: PreviewManager,
+  entry: CaptureEntry & {
+    route: string;
+    declared?: DeclaredShot;
+  },
+  remoteTransport?: BrowserEvidenceTransport,
+  onFallback?: (message: string) => void,
+): Promise<DeclaredShotCapture> {
+  if (
+    config.remoteValidation?.browserCaptureMode &&
+    config.remoteValidation.browserCaptureMode !== "local"
+  ) {
+    const canonical = canonicalCaptureContext(config, task);
+    const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+    const head = worktree ? await runGit(worktree, ["rev-parse", "HEAD"], 10_000) : null;
+    const request =
+      worktree && task.branch && head?.status === 0
+        ? {
+            taskId: task.id,
+            worktreePath: worktree,
+            branch: task.branch,
+            candidateSha: head.stdout.trim(),
+            operation: "single-shot" as const,
+            entry,
+            canonical,
+          }
+        : null;
+    try {
+      return await runBrowserCaptureWithPolicy({
+        config,
+        request: request ?? {
+          taskId: task.id,
+          worktreePath: config.root,
+          branch: task.branch ?? "",
+          candidateSha: "",
+          operation: "single-shot",
+          entry,
+          canonical,
+        },
+        transport: request ? remoteTransport : undefined,
+        local: () =>
+          captureDeclaredShotImpl(
+            {
+              ...config,
+              remoteValidation: { ...config.remoteValidation, browserCaptureMode: "local" },
+            },
+            task,
+            previews,
+            entry,
+          ),
+        note: (message) => onFallback?.(message),
+        useArtifacts: async (artifacts) => importRemoteDeclaredShot(config, task.id, artifacts),
+      });
+    } catch (err) {
+      // `captureDeclaredShot` documents a structured error and never a throw.
+      // runner-only mode makes the policy throw on a transport/runner failure,
+      // so catch it here and preserve the contract for the Add-shot route
+      // (#0854 pass 17).
+      const detail = err instanceof Error ? err.message : String(err);
+      return {
+        error: `remote capture failed: ${detail}`,
+        ...(err instanceof BrowserEvidenceUnavailableError && err.browserUnavailable
+          ? { unavailable: true }
+          : {}),
+      };
+    }
+  }
   // Branch fixtures (#0786): URL building admits a `state` the task branch's
   // source declares, even though main's compiled list does not know it yet.
   const branchValidator = taskFixtureValidator(

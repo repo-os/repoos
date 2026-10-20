@@ -3,9 +3,6 @@ id: "0874"
 title: Offload repoos shot to a runner
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Problem, Acceptance criteria, Notes for AI"
 priority: p3
 area: [server, core]
 depends_on: ["0854"]
@@ -13,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T12:27:49Z"
-updated_at: "2026-10-20T12:28:31Z"
+updated_at: "2026-10-20T13:22:47Z"
 ---
 ## Problem
 Parent #0854 offloads the AUTOMATIC handoff shots and UI verification to a remote runner. Manual `repoos shot` / `repoos verify` deliberately STAY LOCAL: the spec was narrowed in #0854 review pass 17, so #0854 does not ship a runner-backed CLI. The interactive CLI keeps using the local PreviewManager / WebKit on the control-plane laptop.
@@ -34,3 +31,4 @@ Not required for #0854's acceptance criteria. #0864 (rebuild the runner image an
 - 2026-10-20T12:27:49Z · created · njachowski@gmail.com
 - 2026-10-20T12:27:52Z · needs_input
 - 2026-10-20T12:28:31Z · body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
+- 2026-10-20T13:22:47Z · needs_input

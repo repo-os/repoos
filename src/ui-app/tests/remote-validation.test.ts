@@ -1332,4 +1332,24 @@ describe("validateScriptArgs positional layout", () => {
       `/opt/repoos/validate.sh ~/.b ${sha} ~/.art`,
     );
   });
+
+  it("carries the canonical capture context as a shell env prelude (#0854)", () => {
+    const canonical = {
+      task: { body: "MARKER_BODY", area: "core" },
+      config: {},
+      plan: { entries: [], errors: [], skips: [], collapsed: [] },
+    };
+    const cmd = validateScriptArgs("~/.b", sha, "~/.art", undefined, undefined, {
+      operation: "shots",
+      branch: "feat/x",
+      taskId: "0854",
+      canonical,
+    });
+    expect(cmd).toContain("REPOOS_BROWSER_CAPTURE_MODE='shots'");
+    const token = cmd.match(/REPOOS_BROWSER_CAPTURE_CANONICAL=(\S+)/)?.[1];
+    expect(token).toBeTruthy();
+    // shellQuote wraps the JSON in single quotes and escapes embedded ones.
+    const json = token!.replace(/^'(.*)'$/, "$1").replace(/'\\''/g, "'");
+    expect(JSON.parse(json)).toEqual(canonical);
+  });
 });
