@@ -12,7 +12,7 @@ branch: feat/engineer-crashes-must-not-auto-request-a
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:17Z"
-updated_at: "2026-10-20T20:07:49Z"
+updated_at: "2026-10-20T20:07:50Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-20T18:37:06.042Z: repoos check failed: ◆ Check plan"
@@ -88,3 +88,4 @@ Look at the watchdog, the CTO restart-stalled-agent action, the handoff request 
 - 2026-10-20T20:01:36Z · body
 - 2026-10-20T20:07:49Z · status active→review
 - 2026-10-20T20:07:49Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (0dcd71137) during finalization (#0734)
+- 2026-10-20T20:07:50Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (0dcd71137) during finalization (#0734)
