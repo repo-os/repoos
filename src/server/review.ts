@@ -202,16 +202,7 @@ function reviewUsage(
 }
 
 /** Frontmatter key order for the stored report file. */
-const REPORT_KEYS = [
-  "task",
-  "at",
-  "agent",
-  "cli",
-  "model",
-  "branch",
-  "state",
-  "tree_identity",
-];
+const REPORT_KEYS = ["task", "at", "agent", "cli", "model", "branch", "state", "tree_identity"];
 
 /** How the handoff `repoos check` gate finished (#0697). */
 export type ReviewHandoffCheckOutcome = "passed" | "skipped: no check plan";
@@ -1849,10 +1840,7 @@ export class ReviewManager {
    * Send open findings to the engineer without starting another review (#0865).
    * Idempotent while the engineer is already running on an `active` task.
    */
-  private async handBackToEngineerForOpenFindings(
-    task: Task,
-    report: ReviewReport,
-  ): Promise<void> {
+  private async handBackToEngineerForOpenFindings(task: Task, report: ReviewReport): Promise<void> {
     if (!this.runner) return;
     const fresh = this.index?.getTask(task.id) ?? task;
     if (fresh.status !== "review" && fresh.status !== "active") return;
