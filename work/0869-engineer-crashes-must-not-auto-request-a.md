@@ -12,7 +12,7 @@ branch: feat/engineer-crashes-must-not-auto-request-a
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:17Z"
-updated_at: "2026-10-20T17:58:32Z"
+updated_at: "2026-10-20T18:06:49Z"
 ---
 ## Problem
 On 2026-10-20 codex runs crashed intermittently ("agent exited with an error (codex) - Reading additional input from stdin", tool errors such as "write_stdin failed: Unknown process id") and the server then requested a handoff on the unfinished branch (#0843, #0860: HEAD unchanged, merge with main never done), leaving needs_input dev-error flags that stayed stale after the engineer resumed. The CTO's restart-stalled-agent action only restarts the SAME agent and model, so a crash-prone model keeps being chosen; a human or driver has to run `repoos override` and resend context. Reviews then ran on the unchanged commit and failed for reasons the engineer never saw.
@@ -35,10 +35,10 @@ Look at the watchdog, the CTO restart-stalled-agent action, the handoff request 
 ```json
 [
 {
-  "label": "Automation settings: engineer crash failover threshold and window",
-  "target": "default",
-  "route": "/settings?tab=general&section=automation",
-  "highlight": "[data-config-key=\"watchdog.engineerCrashFailoverThreshold\"]"
+"label": "Automation settings: engineer crash failover threshold and window",
+"target": "default",
+"route": "/settings?tab=general&section=automation",
+"highlight": "[data-config-key=\"watchdog.engineerCrashFailoverThreshold\"]"
 }
 ]
 ```
@@ -53,3 +53,4 @@ Look at the watchdog, the CTO restart-stalled-agent action, the handoff request 
 - 2026-10-20T17:51:02Z · body
 - 2026-10-20T17:56:59Z · body
 - 2026-10-20T17:58:32Z · body
+- 2026-10-20T18:06:49Z · handoff failed · remote validation failed: test failure: tests/task-underspecified-flag.test.ts > underspecified flag on task start (#0613) > preserves an unrelated needs_input reason during start on thinkpad — fix it in the feature branch and re-run the gate
