@@ -46,16 +46,7 @@ cto.actions = ["restart-stalled-agent", "refresh-main-install", "requeue-closeou
 approval.enabled = true
 approval.autoApprove.areas = ["docs", "chore"]
 approval.autoApprove.types = ["chore"]
-approval.autoApprove.machineryPaths = [
-  "src/server/",
-  "src/core/",
-  "src/cli/",
-  "src/commands/",
-  ".githooks/",
-  "repoos.toml",
-  "AGENTS.md",
-  "docs/adr/",
-]
+approval.autoApprove.machineryPaths = ["src/server/", "src/core/", "src/cli/", "src/commands/", ".githooks/", "repoos.toml", "AGENTS.md", "docs/adr/"]
 approval.autoApprove.allowP0 = false
 automation.paused = false
 
