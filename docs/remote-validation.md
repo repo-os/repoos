@@ -92,9 +92,13 @@ must include Bun, this repository's development dependencies, Playwright,
 Playwright WebKit, and the UI's system fonts. It builds the bundled commit and
 runs the preview without login in its isolated checkout; fixture state and the
 existing shot-plan entries are inputs to the same capture and verification
-code used locally. The request is limited to the task bundle, task id, expected
-commit, mode, and shot-plan data. Environment variables, dotenv files, API
-keys, account credentials, and the control-plane config are never bundled.
+code used locally. The request carries the task bundle, task id, expected
+commit, mode, the canonical task body and capture-relevant `[preview]` /
+`[[shot.targets]]` config, and the plan the control plane resolved — so the
+worker captures exactly what local capture would rather than re-planning from a
+branch that may lag the board. Environment variables, dotenv files, API keys,
+account credentials, and the rest of the control-plane config (ports, auth,
+paths) are never sent.
 
 The runner capture worker writes a bounded artifact set (`shots/*.png`,
 `shots/shots.json`, and optionally `verification.json`). The control plane
@@ -102,11 +106,15 @@ validates names, types, task id, PNG signatures, and total size before
 installing artifacts in the existing attachment/cache locations. In `local`
 mode capture stays on the control plane. `runner-available` prefers a runner
 and records a visible local fallback note when one is unavailable or fails.
-`runner-only` reports that failure without starting local browser work.
-Declared target misses preserve the local handoff failure; automatic misses
-remain warnings. The setting defaults to `local` until a runner image and
-artifact round trip have passed a real end-to-end proof. Interactive Preview
-remains local.
+`runner-only` reports that failure without starting local browser work, and its
+structured error is returned to the caller rather than thrown. Declared target
+misses preserve the local handoff failure; automatic misses remain warnings. A
+partial runner run imports every shot it did produce and reports the failure, so
+earlier evidence is never discarded. The setting defaults to `local` until a
+runner image and artifact round trip have passed a real end-to-end proof. The
+remote path covers the automatic handoff capture and UI verification; manual
+`repoos shot` / `repoos verify` and the interactive Preview remain local (CLI
+offload is a separate follow-up).
 
 The `scripts/remote-runner/capture-browser.ts` worker is the runner-side entry
 point. It reuses `runAutoShotCapture` and `runUiHandoffGate` rather than

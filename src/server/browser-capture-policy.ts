@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
+import type { CanonicalCaptureContext } from "../core/remote-capture.js";
 import type { RemoteValidator } from "./remote-validation.js";
 
 export type BrowserCaptureMode = "local" | "runner-available" | "runner-only";
@@ -30,6 +31,11 @@ export interface BrowserEvidenceRequest {
   candidateSha: string;
   operation: BrowserEvidenceOperation;
   entry?: import("../core/shot-plan.js").CaptureEntry & { route: string };
+  /**
+   * Canonical task/config/plan the worker must use instead of re-deriving them
+   * from the bundled branch (#0854). Absent only for legacy callers.
+   */
+  canonical?: CanonicalCaptureContext;
 }
 
 export interface BrowserEvidenceFile {
@@ -82,6 +88,7 @@ export function remoteBrowserEvidenceTransport(
           branch: request.branch,
           operation: request.operation,
           ...(request.entry ? { entry: request.entry } : {}),
+          ...(request.canonical ? { canonical: request.canonical } : {}),
         },
       });
       const resultPath = join(artifactRoot, "result.json");

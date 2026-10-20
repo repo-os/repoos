@@ -11,7 +11,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "../../core/config.js";
-import type { RepoOSConfig, Task } from "../../core/types.js";
+import type { PreviewConfig, RepoOSConfig, Task } from "../../core/types.js";
 import type { PreviewInfo, PreviewManager } from "../../server/preview.js";
 import { formatRemoteShotActivity } from "../../server/shot-capture.js";
 
@@ -119,7 +119,11 @@ vi.mock("../../commands/ui-harness.js", () => ({
   })),
 }));
 
-import { captureDeclaredShot, runAutoShotCapture } from "../../server/shot-capture.js";
+import {
+  captureDeclaredShot,
+  importRemoteShots,
+  runAutoShotCapture,
+} from "../../server/shot-capture.js";
 import { localShotStore } from "../../server/shots.js";
 import type { BrowserEvidenceArtifacts } from "../../server/browser-capture-policy.js";
 
@@ -340,8 +344,14 @@ describe("captureDeclaredShot busy semantics (#0627)", () => {
 
 describe("runAutoShotCapture remote reservation", () => {
   it("skips a duplicate while the runner is capturing the same task", async () => {
-    const config = remoteConfig();
-    const task = makeTask("0854-remote", { branch: "feat/x" });
+    const config = {
+      ...remoteConfig(),
+      preview: { command: "echo preview" } as PreviewConfig,
+    };
+    const task = makeTask("0854-remote", {
+      branch: "feat/x",
+      body: '## Shots\n```json\n[{ "target": "default", "route": "/" }]\n```\n',
+    });
     const shotsJson = Buffer.from(
       JSON.stringify({ shots: [{ name: "runner.png", target: "default", origin: "auto" }] }),
     ).toString("base64");
@@ -368,5 +378,112 @@ describe("runAutoShotCapture remote reservation", () => {
     expect(duplicate).toMatchObject({ status: "skipped" });
     remote.release();
     expect(await first).toMatchObject({ status: "captured" });
+  });
+
+  it("sends the canonical task body, config and plan with the request (#0854)", async () => {
+    const config = {
+      ...remoteConfig(),
+      preview: { command: "echo preview" } as PreviewConfig,
+    };
+    const body = '## Shots\n```json\n[{ "target": "default", "route": "/new" }]\n```\n';
+    const task = makeTask("0854-plan", { branch: "feat/x", body, area: "core" });
+    let request:
+      | { canonical?: { task?: { body?: string }; plan?: { entries: unknown[] } } }
+      | undefined;
+    const transport = {
+      capture: async (req: never) => {
+        request = req;
+        return {
+          version: 1,
+          taskId: task.id,
+          ok: true,
+          detail: "captured",
+          results: { shots: { status: "captured", detail: "1 screenshot captured", count: 1 } },
+          files: [],
+        } satisfies BrowserEvidenceArtifacts;
+      },
+    };
+    const result = await runAutoShotCapture(
+      config,
+      task,
+      fakePreviews(),
+      vi.fn(),
+      transport as never,
+    );
+    expect(result.status).toBe("captured");
+    expect(request?.canonical?.task?.body).toBe(body);
+    expect(
+      (request?.canonical?.plan?.entries ?? []).map((e) => (e as { route?: string }).route),
+    ).toEqual(["/new"]);
+  });
+});
+
+describe("captureDeclaredShot runner-only structured error (#0854)", () => {
+  it("returns an error result instead of throwing when runner-only capture fails", async () => {
+    const base = setup();
+    const config = {
+      ...base,
+      remoteValidation: {
+        ...base.remoteValidation,
+        enabled: true,
+        browserCaptureMode: "runner-only" as const,
+      },
+    };
+    const result = await captureDeclaredShot(
+      config,
+      makeTask("0854-struct"),
+      fakePreviews(),
+      ENTRY,
+    );
+    expect("error" in result).toBe(true);
+    if ("error" in result) expect(result.error).toContain("remote capture failed");
+  });
+});
+
+describe("importRemoteShots partial success (#0854)", () => {
+  function failedArtifacts(taskId: string, files: { name: string; data: string }[]) {
+    return {
+      version: 1,
+      taskId,
+      ok: false,
+      detail: "runner browser capture reported failures",
+      results: { shots: { status: "failed", detail: "shots: capture of b.png failed" } },
+      files,
+    } satisfies BrowserEvidenceArtifacts;
+  }
+
+  const manifest = (names: string[]): string =>
+    Buffer.from(
+      JSON.stringify({
+        shots: names.map((name) => ({ name, target: "default", origin: "auto" })),
+      }),
+    ).toString("base64");
+
+  it("keeps the shots a partially failed run did produce", async () => {
+    const config = setup();
+    const result = await importRemoteShots(
+      config,
+      makeTask("0854-partial"),
+      failedArtifacts("0854-partial", [
+        { name: "shots/shots.json", data: manifest(["a.png"]) },
+        { name: "shots/a.png", data: PNG_1PX },
+      ]),
+      vi.fn(),
+    );
+    expect(result.status).toBe("failed");
+    expect(result.detail).toContain("kept 1 earlier shot");
+    expect(localShotStore(config, "0854-partial").list()).toHaveLength(1);
+  });
+
+  it("imports nothing when a failed run produced no manifest", async () => {
+    const config = setup();
+    const result = await importRemoteShots(
+      config,
+      makeTask("0854-noshots"),
+      failedArtifacts("0854-noshots", []),
+      vi.fn(),
+    );
+    expect(result.status).toBe("failed");
+    expect(localShotStore(config, "0854-noshots").list()).toEqual([]);
   });
 });

@@ -15,26 +15,36 @@ creates a linked worktree for the task branch at `worktreesDir("/repo")` =
 volume chowned to the same uid.
 
 The request contains only the committed git bundle, task id, expected commit,
-capture mode, and the ordinary task/shot-plan data needed to reproduce the
-capture. It carries no environment, dotenv, API-key, or account credentials.
-The runner validates the commit before running. It returns a bounded artifact
-archive containing PNGs, `shots.json`, and (for verification) the verification
-record. The control plane validates artifact paths and types before unpacking
-into the existing `work/.attachments/<id>/shots` and verification locations;
-the existing activity and Changes-tab paths remain the interface reviewers see.
+capture mode, the canonical task body and capture-relevant `[preview]` /
+`[[shot.targets]]` config, and the plan the control plane resolved from them. It
+carries no environment, dotenv, API-key, or account credentials. The worker uses
+that canonical state VERBATIM rather than re-deriving it from the bundle: the
+branch's `work/<id>.md` can lag a `## Shots` edit and its detached checkout
+cannot re-diff changed paths, so re-planning remotely would capture a different —
+or empty — set of entries than local capture. The runner validates the commit
+before running. It returns a bounded artifact archive containing PNGs,
+`shots.json`, and (for verification) the verification record. The control plane
+validates artifact paths and types before unpacking into the existing
+`work/.attachments/<id>/shots` and verification locations; the existing activity
+and Changes-tab paths remain the interface reviewers see.
 
 Fixtures and step vocabulary are sent as data and interpreted by the same
 `shot-plan`, fixture resolver, and page choreography code used locally.
-Preview-only servers disable login and seed fixtures in memory; the normal
-interactive Preview button remains on the control plane. Missing browser
-capability or runner infrastructure failure falls back to local capture in
-`runner when available` mode with a visible note. `runner only` fails with an
-actionable reason. Capture-plan failures retain local semantics: declared
-missing targets fail UI verification/handoff, while automatic misses warn.
-Partial or malformed artifact responses are treated as runner failures and
-never replace existing evidence. Browser concurrency remains bounded by the
-existing Playwright cap for local work and the runner's host slot limit for
-remote work.
+Preview-only servers disable login and seed fixtures in memory. The remote path
+covers the automatic handoff capture and UI verification only: manual
+`repoos shot` / `repoos verify` stay local (offloading the CLI is a separate
+follow-up), and the interactive Preview button remains on the control plane.
+Missing browser capability or runner infrastructure failure falls back to local
+capture in `runner when available` mode with a visible note. `runner only` fails
+with an actionable reason instead of running local work, and a runner failure in
+`runner only` is returned as a structured error (never thrown into the Add-shot
+route). Capture-plan failures retain local semantics: declared missing targets
+fail UI verification/handoff, while automatic misses warn. A partial run imports
+every shot the runner did produce and reports the failure, so earlier evidence is
+never discarded; a malformed artifact response on a run the runner called
+successful is treated as a runner failure and never replaces existing evidence.
+Browser concurrency remains bounded by the existing Playwright cap for local work
+and the runner's host slot limit for remote work.
 
 The initial Settings policy is `local`, `runner when available`, or `runner
 only`; it defaults to `local` until runner images advertise WebKit and the

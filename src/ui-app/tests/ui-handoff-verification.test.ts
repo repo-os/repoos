@@ -149,6 +149,7 @@ describe("UI handoff verification gate (#0680)", () => {
       workDir: "work",
       cacheDir: ".repoos",
       uiVerification: { enabled: true },
+      preview: { command: "echo preview" },
       remoteValidation: { enabled: true, browserCaptureMode: "runner-available" },
     } as RepoOSConfig;
     const task = {
@@ -159,7 +160,7 @@ describe("UI handoff verification gate (#0680)", () => {
       status: "review",
       branch: "main",
       area: "web",
-      body: "",
+      body: '## Shots\n```json\n[{ "target": "default", "route": "/" }]\n```\n',
     } as Task;
     let release!: (value: {
       version: 1;
