@@ -102,7 +102,13 @@ export const AGENT_CLIS = [
 /** Models an Agent can pin (or "default" for the coding agent's default). */
 export const AGENT_MODELS = ["default", "big pickle", "deepseek v4"] as const;
 
-/** Built-in agents, seeded at runtime when the config has none. */
+/**
+ * Built-in agents, seeded at runtime when the config has none. These ARE the
+ * role templates `repoos init` ends up with: a project with no `[[agents]]`
+ * rows gets them on first start. Keep each role's text general — project rules
+ * (runtime choice, files never to commit, dependency policy, path rules) belong
+ * in that project's own `AGENTS.md` and `[[agents]]` rows, never here (#0872).
+ */
 export const DEFAULT_AGENTS: Agent[] = [
   {
     name: "Ross",
