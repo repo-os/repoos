@@ -12,7 +12,7 @@ branch: feat/repoos-landable-id-one-command-that-runs
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:05:58Z"
-updated_at: "2026-10-20T17:40:34Z"
+updated_at: "2026-10-20T17:55:28Z"
 ---
 ## Problem
 Whether a task in review can actually land is decided by a handful of manual checks that live in driver prose and AGENTS.md: the lock sha equals the worktree HEAD, the worktree is clean, the branch merges with main (conflicts only in the task's own work/<id>-*.md), the diff has no repoos.toml and no other tasks' work/ files, and main has no blocking dirty files. Each driver re-does these by hand and gets them wrong sometimes. On 2026-10-20 #0860 had a "good to go" review on a HEAD that still conflicted with main in src/core/types.ts, and the conflict was only discovered when Move to done refused; reviews kept re-running on the same unchanged commit.
@@ -39,3 +39,4 @@ The close-out approval policy already computes most of these checks: `evaluateAp
 - 2026-10-20T17:22:05Z · cli_override, model_override
 - 2026-10-20T17:22:07Z · status ready→active, branch
 - 2026-10-20T17:40:34Z · body
+- 2026-10-20T17:55:28Z · body
