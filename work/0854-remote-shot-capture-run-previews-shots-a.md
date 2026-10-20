@@ -3,6 +3,9 @@ id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — the runner cannot create its linked worktree in the non-root container.
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -207,3 +210,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T11:41:27Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d1ff73e6a) during finalization (#0734)
 - 2026-10-20T11:41:29Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d1ff73e6a) during finalization (#0734)
 - 2026-10-20T11:43:48Z · note: review pass 15: needs some work
+- 2026-10-20T11:43:48Z · needs_input
