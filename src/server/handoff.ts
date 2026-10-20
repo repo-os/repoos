@@ -49,6 +49,7 @@ import { guardReviewTransition } from "./review-guard.js";
 import { guardStrayRepoosTomlOnTaskBranch } from "../core/repoos-toml-branch-guard.js";
 import { runFormatFixes } from "../core/check-format.js";
 import { recordWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
+import { closingOutRefusal, isTaskClosingOut } from "./close-out-lock.js";
 import { clearHandoffFailureLoopMetadata } from "./handoff-failure-loop.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
 import {
@@ -357,6 +358,14 @@ async function resolveWorktree(
   task: Task,
   expectWorkdir?: string,
 ): Promise<{ ok: true; resolved: ResolvedWorktree } | { ok: false; result: HandoffResult }> {
+  // #0886: Move to done owns the task from the moment it enqueues to the
+  // moment it merges or fails. A handoff request that arrives in that window
+  // (a still-running engineer, or a phantom the runner no longer tracks) must
+  // be turned away before it writes anything — and never as a status error
+  // caused by its own mid-merge parse.
+  if (isTaskClosingOut(config.root, config.cacheDir, task.id)) {
+    return { ok: false, result: fail("validate", closingOutRefusal(task.id)) };
+  }
   if (task.status !== "active" && task.status !== "review") {
     return {
       ok: false,

@@ -2,19 +2,23 @@
 id: "0883"
 title: Shared agent prompt call to action
 type: feature
-status: active
+status: done
 paths: [agent/starter-prompt.md, landing/src, user-docs/index.md, user-docs/.vitepress/theme]
 priority: p2
 area: [landing, docs]
 story: Agent-discoverable RepoOS
 depends_on: ["0879", "0882"]
+merged_commit: d130fbe17f591868305362042f40d14aeebec573
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/shared-agent-prompt-call-to-action
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:35Z"
-updated_at: "2026-10-20T21:34:41Z"
+updated_at: "2026-10-20T22:12:05Z"
+last_close_out_gate_ms: 508954
+last_close_out_gate_at: "2026-10-20T22:11:30.088Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -49,9 +53,34 @@ Landing theme tokens live in `landing/src` (CSS variables such as `--txt` and `-
 
 Out of scope: provider logos, a public MCP server, and changes to install command tabs.
 
+## Shots
+```json
+[
+{
+"label": "Landing hero: agent prompt call to action beside the install box",
+"target": "Landing page",
+"route": "/",
+"highlight": ".agent-cta"
+},
+{
+"label": "Docs homepage: agent prompt call to action under Try it now",
+"target": "Docs site",
+"route": "/",
+"highlight": ".agent-cta"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-20T16:02:35Z · created · njachowski@gmail.com
 - 2026-10-20T21:34:35Z · status inbox→ready
 - 2026-10-20T21:34:40Z · cli_override, model_override
 - 2026-10-20T21:34:41Z · status ready→active, branch
+- 2026-10-20T21:42:07Z · body
+- 2026-10-20T21:44:05Z · body
+- 2026-10-20T21:59:56Z · status active→review
+- 2026-10-20T21:59:58Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (d130fbe17) during finalization (#0734)
+- 2026-10-20T22:00:38Z · note: review pass 1: good to go
+- 2026-10-20T22:11:30Z · close-out gate completed in 509s
+- 2026-10-20T22:12:05Z · status done→done, release:success

@@ -95,6 +95,7 @@ import {
   pruneWorktrees,
   shortHeadOf,
   currentBranch,
+  branchCommit,
 } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { gatherLandable } from "../landable.js";
@@ -175,9 +176,11 @@ import {
   discardWorktreeHandoffChanges,
   readHandoffSnapshot,
   refreshHandoffSnapshotFromWorktree,
+  restoreWorktreeReviewLockAfterFailedCloseOut,
   verifyWorktreeHandoffIntegrity,
   writeWorktreeReviewLock,
 } from "../worktree-handoff-guard.js";
+import { closingOutRefusal, isTaskClosingOut } from "../close-out-lock.js";
 import {
   isPostHandoffCheckpointRecoveryActive,
   startPostHandoffCheckpointRecovery,
@@ -927,6 +930,13 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     delete body.depends_on;
   }
   const prevStatus = existing.status;
+  // #0886: Move to done owns the task file from enqueue to merge/release. Any
+  // PATCH in that window would re-serialize a file the merge is still using —
+  // exactly the write that used to commit `status: inbox`. Refuse and write
+  // nothing; the task settles on its own.
+  if (isTaskClosingOut(config.root, config.cacheDir, existing.id)) {
+    return json(res, 409, { error: closingOutRefusal(existing.id) });
+  }
   if (body.status === "done" && prevStatus !== "done") {
     if (reviews.isRunning(existing.id)) {
       return json(res, 409, {
@@ -2450,6 +2460,18 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     await previews.stop(id, "task done");
     reviews.cancel(id);
     void runner.stop(id);
+    // #0886: stop() only signals. Fence the engineer before the merge can
+    // begin, and refuse rather than race a process that will not leave. The
+    // closing-out lock written below also fences a phantom (#0863) the
+    // registry never tracked. A partial runner (route tests, older embedding)
+    // without `waitForStop` is treated as already stopped.
+    const engineerStopped =
+      typeof runner.waitForStop === "function" ? await runner.waitForStop(id, 5000) : true;
+    if (!engineerStopped) {
+      return json(res, 409, {
+        error: `the engineer process for #${id} did not stop; close-out was not started`,
+      });
+    }
 
     // Guard against task deletion mid-close-out (0118): re-validate the task
     // exists and still has a branch before enqueueing.
@@ -2686,13 +2708,14 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       });
     }
 
-    if (handoffSha) {
-      writeWorktreeReviewLock(config.root, config.cacheDir, id, {
-        status: "closing-out",
-        sha: handoffSha,
-        at: new Date().toISOString(),
-      });
-    }
+    // Always fence the task, even without a handoff snapshot: this lock is what
+    // makes cmdMv / the runner handoff request / the file-watch handoff refuse
+    // while the pipeline owns the task file (#0886).
+    writeWorktreeReviewLock(config.root, config.cacheDir, id, {
+      status: "closing-out",
+      sha: handoffSha ?? branchCommit(config.root, branch) ?? "",
+      at: new Date().toISOString(),
+    });
 
     // Reflect the new queue entry in the pinned status bar immediately (0207),
     // even before job processing's own snapshot emission picks it up.
@@ -3938,14 +3961,12 @@ export const cancelDone: RouteHandler = (ctx, _req, res, params) => {
     jobCoordinator.removeJob(id);
   }
 
-  const snap =
-    config.root && config.cacheDir ? readHandoffSnapshot(config.root, config.cacheDir, id) : null;
-  if (snap) {
-    writeWorktreeReviewLock(config.root, config.cacheDir, id, {
-      status: "review",
-      sha: snap.sha,
-      at: snap.at,
-    });
+  // A cancelled attempt must never leave the `closing-out` write fence behind,
+  // even when the task had no handoff snapshot (a branch-mode/hotfix close-out
+  // gets a lock too, #0886). Downgrading it back to `review` is what makes the
+  // next Move to done (and the engineer's handoff) possible again.
+  if (config.root && config.cacheDir) {
+    restoreWorktreeReviewLockAfterFailedCloseOut(config.root, config.cacheDir, id);
   }
 
   // The snapshot hides cancelled jobs, so this event drops the task out of the
