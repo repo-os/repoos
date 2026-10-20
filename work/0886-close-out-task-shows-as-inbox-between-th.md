@@ -11,7 +11,7 @@ branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
-updated_at: "2026-10-20T21:44:59Z"
+updated_at: "2026-10-20T21:45:00Z"
 last_close_out_gate_ms: 572895
 last_close_out_gate_at: "2026-10-20T21:44:57.187Z"
 review_passes: 2
@@ -90,3 +90,4 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T21:33:18Z · note: review pass 2: good to go
 - 2026-10-20T21:44:57Z · close-out gate completed in 573s
 - 2026-10-20T21:44:59Z · note: handoff requested (cli)
+- 2026-10-20T21:45:00Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
