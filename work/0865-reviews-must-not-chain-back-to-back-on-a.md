@@ -12,7 +12,7 @@ branch: feat/reviews-must-not-chain-back-to-back-on-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T11:55:25Z"
-updated_at: "2026-10-20T17:33:16Z"
+updated_at: "2026-10-20T17:39:04Z"
 review_rounds: 1
 review_passes: 1
 ---
