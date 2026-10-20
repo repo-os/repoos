@@ -660,14 +660,30 @@ export function devTargetServiceErrors(
   };
   for (const service of services ?? []) visit(service.name);
 
+  /**
+   * Validate placeholders in one templated field. `secretKey` marks the text as
+   * an env VALUE: env values may be credentials and these messages reach the
+   * browser (`devTargetErrors`), so diagnostics name the env KEY and the kind
+   * of problem only, never the value or any fragment of it (#0843 review
+   * round 27). Every env value, target or service, goes through this path.
+   */
   const validateText = (
     owner: string,
     text: string | undefined,
     available: Set<string>,
     allowSelf?: string,
+    secretKey?: string,
   ): void => {
-    for (const problem of malformedServicePlaceholders(text)) {
-      errors.push(`[${owner}]: ${problem}`);
+    const where = secretKey === undefined ? owner : `${owner} env ${secretKey}`;
+    const problems = malformedServicePlaceholders(text);
+    if (secretKey !== undefined) {
+      if (problems.length) {
+        errors.push(
+          `[${where}]: contains a malformed service placeholder (value not shown) — use {<service>.port} or {<service>.url}`,
+        );
+      }
+    } else {
+      for (const problem of problems) errors.push(`[${where}]: ${problem}`);
     }
     for (const ref of servicePlaceholderRefs(text)) {
       const matches = serviceNamesByToken.get(ref.canonical) ?? [];
@@ -676,8 +692,10 @@ export function devTargetServiceErrors(
       const knownService = matches[0];
       errors.push(
         knownService
-          ? `[${owner}]: references service "${knownService}" outside the target's services/dependencies`
-          : `[${owner}]: references unknown service placeholder "${ref.token}"`,
+          ? `[${where}]: references service "${knownService}" outside the target's services/dependencies`
+          : secretKey !== undefined
+            ? `[${where}]: references an unknown service placeholder (value not shown)`
+            : `[${where}]: references unknown service placeholder "${ref.token}"`,
       );
     }
   };
@@ -688,6 +706,16 @@ export function devTargetServiceErrors(
     allowSelf?: string,
   ): void => {
     for (const text of texts) validateText(owner, text, available, allowSelf);
+  };
+  const validateEnv = (
+    owner: string,
+    env: Record<string, string> | undefined,
+    available: Set<string>,
+    allowSelf?: string,
+  ): void => {
+    for (const [key, value] of Object.entries(env ?? {})) {
+      validateText(owner, value, available, allowSelf, key);
+    }
   };
   for (const t of targets) {
     const listed = new Set<string>();
@@ -729,22 +757,19 @@ export function devTargetServiceErrors(
     }
     validateFields(
       `dev.targets ${t.name}`,
-      [t.command, t.cwd, t.url, t.healthCheck?.url, ...Object.values(t.env ?? {})],
+      [t.command, t.cwd, t.url, t.healthCheck?.url],
       available,
     );
+    validateEnv(`dev.targets ${t.name}`, t.env, available);
     for (const name of available) {
       const service = serviceByName.get(name)!;
       validateFields(
         `dev.services ${name}`,
-        [
-          service.command,
-          service.cwd,
-          service.healthCheck?.url,
-          ...Object.values(service.env ?? {}),
-        ],
+        [service.command, service.cwd, service.healthCheck?.url],
         available,
         name,
       );
+      validateEnv(`dev.services ${name}`, service.env, available, name);
     }
   }
   return errors;
