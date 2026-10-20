@@ -2,7 +2,7 @@
 id: "0883"
 title: Shared agent prompt call to action
 type: feature
-status: inbox
+status: ready
 paths: [agent/starter-prompt.md, landing/src, user-docs/index.md, user-docs/.vitepress/theme]
 priority: p2
 area: [landing, docs]
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T16:02:35Z"
-updated_at: "2026-10-20T16:02:35Z"
+updated_at: "2026-10-20T21:34:35Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Out of scope: provider logos, a public MCP server, and changes to install comman
 ## Activity
 
 - 2026-10-20T16:02:35Z · created · njachowski@gmail.com
+- 2026-10-20T21:34:35Z · status inbox→ready
