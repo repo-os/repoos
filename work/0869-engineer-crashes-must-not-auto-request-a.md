@@ -12,7 +12,7 @@ branch: feat/engineer-crashes-must-not-auto-request-a
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:17Z"
-updated_at: "2026-10-20T17:56:59Z"
+updated_at: "2026-10-20T17:58:32Z"
 ---
 ## Problem
 On 2026-10-20 codex runs crashed intermittently ("agent exited with an error (codex) - Reading additional input from stdin", tool errors such as "write_stdin failed: Unknown process id") and the server then requested a handoff on the unfinished branch (#0843, #0860: HEAD unchanged, merge with main never done), leaving needs_input dev-error flags that stayed stale after the engineer resumed. The CTO's restart-stalled-agent action only restarts the SAME agent and model, so a crash-prone model keeps being chosen; a human or driver has to run `repoos override` and resend context. Reviews then ran on the unchanged commit and failed for reasons the engineer never saw.
@@ -31,6 +31,18 @@ A crash or an unreadable final turn does not start a handoff by itself: the task
 ## Notes for AI
 Look at the watchdog, the CTO restart-stalled-agent action, the handoff request path, and needs_input handling (src/core/needs-input.ts). Relates to #0863 (phantom runners) and ADR 0008 (docs/adr/0008-centralized-agent-recovery.md, #0767): fit this into that recovery design instead of adding a third mechanism. Do not use claude or cursor in tests with live agents.
 
+## Shots
+```json
+[
+{
+  "label": "Automation settings: engineer crash failover threshold and window",
+  "target": "default",
+  "route": "/settings?tab=general&section=automation",
+  "highlight": "[data-config-key=\"watchdog.engineerCrashFailoverThreshold\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-20T12:06:17Z · created · njachowski@gmail.com
@@ -40,3 +52,4 @@ Look at the watchdog, the CTO restart-stalled-agent action, the handoff request 
 - 2026-10-20T17:21:41Z · status ready→active, branch
 - 2026-10-20T17:51:02Z · body
 - 2026-10-20T17:56:59Z · body
+- 2026-10-20T17:58:32Z · body
