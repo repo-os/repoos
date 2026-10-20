@@ -503,8 +503,16 @@ function branchFixtureValidatorForTask(
 }
 
 /** Validate declarations before a CLI write can turn them into a blind `/` shot. */
-function shotsError(body: string, fixtureValidator?: (id: string) => boolean): string | null {
-  const { errors } = parseShotPlan(body, fixtureValidator ? { fixtureValidator } : undefined);
+function shotsError(
+  body: string,
+  fixtureValidator?: (id: string) => boolean,
+  preview?: Parameters<typeof validateDeclaredShotTargets>[1],
+  shot?: Parameters<typeof validateDeclaredShotTargets>[2],
+): string | null {
+  const parsed = parseShotPlan(body, fixtureValidator ? { fixtureValidator } : undefined);
+  // #0866: a `state` fixture / app route on a target that cannot render it is
+  // rejected when it is declared, not after a wrong-screen capture.
+  const errors = [...parsed.errors, ...validateDeclaredShotTargets(parsed.shots, preview, shot)];
   return errors.length
     ? `Invalid ## Shots: ${errors.join("; ")}. Use --shots '<JSON list>' to format it automatically.`
     : null;
@@ -794,7 +802,12 @@ export function cmdUpdate(args: string[]): void {
     patch.section &&
     normalizeSectionHeading(patch.section.heading).toLowerCase() === "## shots"
   ) {
-    const error = shotsError(`## Shots\n\n${patch.section.content}`, fixtureValidator);
+    const error = shotsError(
+      `## Shots\n\n${patch.section.content}`,
+      fixtureValidator,
+      repoos.config.preview,
+      repoos.config.shot,
+    );
     if (error) {
       console.error(c.red(`  ${error}`));
       process.exitCode = 1;
@@ -802,7 +815,12 @@ export function cmdUpdate(args: string[]): void {
     }
   }
   if (patch.body !== undefined) {
-    const error = shotsError(patch.body, fixtureValidator);
+    const error = shotsError(
+      patch.body,
+      fixtureValidator,
+      repoos.config.preview,
+      repoos.config.shot,
+    );
     if (error) {
       console.error(c.red(`  ${error}`));
       process.exitCode = 1;
@@ -989,7 +1007,7 @@ export function cmdNew(args: string[]): void {
   }
   const repoos = boardRepoOS();
   try {
-    const error = shotsError(body);
+    const error = shotsError(body, undefined, repoos.config.preview, repoos.config.shot);
     if (error) throw new Error(error);
     if (typeof flags.shots === "string") {
       if (/(?:^|\n)##\s*Shots\b/i.test(body)) {

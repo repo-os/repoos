@@ -10,6 +10,7 @@
  * screenshot the page or one selector.
  */
 import type { CaptureEntry } from "./shot-plan.js";
+import { shotFixtureContainer, SHOT_PREVIEW_APPLIED_ATTR } from "./shot-fixtures.js";
 
 export const SHOT_NAV_TIMEOUT_MS = 30_000;
 /** How long Playwright waits for a selector before giving up (avoids a 30s hang). */
@@ -255,6 +256,18 @@ export interface ShotCaptureMissHandlers {
   /** Step selector timeouts become warnings instead of aborting capture (#0743). */
   onStepMiss?: (message: string, route: string) => void;
   /**
+   * #0866: a declared `state` fixture that did not render — the page never
+   * applied it, or the fixture's container (drawer/card) is absent, so the PNG
+   * is the wrong screen. Reported as a failed shot, not a silent pass.
+   */
+  onStateMiss?: (message: string, route: string) => void;
+  /**
+   * #0866: the target returned its HTML/404 shell for an app module, so the
+   * route is not served by that target (the vitepress MIME failure). Reported
+   * as "route not served by this target", never a passing screenshot.
+   */
+  onRouteNotServed?: (message: string, route: string) => void;
+  /**
    * #0782: a declared `theme` could not be applied (the driver has no
    * `evaluate`, or the script threw), so the capture would show the WRONG
    * theme — recorded like a highlight miss instead of silently standing in
@@ -330,6 +343,97 @@ async function runStep(
   if (typeof step.waitMs === "number") await page.waitForTimeout(step.waitMs);
 }
 
+/** What a captured page reports about the fixture/container it rendered (#0866). */
+export interface ShotPageProbe {
+  /** Fixture id the app recorded applying, or null when none was applied. */
+  appliedState: string | null;
+  /** A drawer/modal is open. */
+  hasDialog: boolean;
+  /** A task card is on screen. */
+  hasTaskCard: boolean;
+}
+
+const SHOT_PAGE_PROBE_SCRIPT = `(() => ({
+  appliedState: document.documentElement.getAttribute(${JSON.stringify(SHOT_PREVIEW_APPLIED_ATTR)}),
+  hasDialog: !!document.querySelector('[role="dialog"]'),
+  hasTaskCard: !!document.querySelector('[data-task-id]'),
+}))()`;
+
+/** Read the fixture/container markers a preview page exposes, if it can be evaluated. */
+export async function probeShotPage(page: ShotDriverPage): Promise<ShotPageProbe | null> {
+  const evaluatable = page as unknown as { evaluate?: PageEvaluate };
+  if (typeof evaluatable.evaluate !== "function") return null;
+  try {
+    const raw = (await evaluatable.evaluate.call(page, SHOT_PAGE_PROBE_SCRIPT, "")) as
+      | Partial<ShotPageProbe>
+      | undefined;
+    if (!raw || typeof raw !== "object") return null;
+    return {
+      appliedState: typeof raw.appliedState === "string" ? raw.appliedState : null,
+      hasDialog: raw.hasDialog === true,
+      hasTaskCard: raw.hasTaskCard === true,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Why a declared `state` fixture produced the wrong screen (#0866), or
+ * undefined when it rendered. The app records the fixture it applied; a target
+ * that never ran the app (docs/landing) has no marker, and a fixture whose
+ * container never opened (a board where a drawer was declared) has the marker
+ * but not the drawer. Both are failed evidence, with the target named so the
+ * engineer can see which preview was shot.
+ */
+export function shotStateProblem(
+  entry: { state?: string; route: string; target?: string },
+  probe: ShotPageProbe,
+): string | undefined {
+  if (!entry.state) return undefined;
+  const target = entry.target ? `target "${entry.target}"` : "the captured target";
+  if (probe.appliedState !== entry.state) {
+    return (
+      `state "${entry.state}" did not render on ${target} — the page at ${entry.route} ` +
+      `did not apply the fixture (is this the app target?)`
+    );
+  }
+  const container = shotFixtureContainer(entry.state);
+  if (container === "dialog" && !probe.hasDialog) {
+    return (
+      `state "${entry.state}" did not render on ${target} — ${entry.route} has no open ` +
+      `drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes)`
+    );
+  }
+  if (container === "task-card" && !probe.hasTaskCard) {
+    return `state "${entry.state}" did not render on ${target} — ${entry.route} shows no task card`;
+  }
+  return undefined;
+}
+
+/**
+ * Console errors that mean the target served its HTML/404 shell for a module
+ * instead of the app the route belongs to (#0866): VitePress answers an app
+ * asset with HTML, and the browser reports a MIME-type failure. The message
+ * names the route and target so it reads as "route not served by this target"
+ * rather than a mystery console error.
+ */
+const MODULE_MIME_ERROR_RE =
+  /(is not a valid (?:JavaScript|module) MIME type|MIME type of ["']?text\/html|Expected a JavaScript module script|Failed to load module script)/i;
+
+export function shotRouteNotServedProblem(
+  entry: { route: string; target?: string },
+  consoleErrors: string[],
+): string | undefined {
+  const hit = consoleErrors.find((message) => MODULE_MIME_ERROR_RE.test(message));
+  if (!hit) return undefined;
+  const target = entry.target ? `target "${entry.target}"` : "the captured target";
+  return (
+    `route ${entry.route} is not served by ${target} — the target returned its HTML shell ` +
+    `for an app module (${hit.split("\n")[0]})`
+  );
+}
+
 /**
  * Capture one page. `waitUntil: "load"` fires before a dev server's client
  * bundle hydrates/mounts, so screenshotting immediately catches a spinner; we
@@ -341,14 +445,50 @@ export async function captureShotPage(
   url: string,
   entry: {
     route: string;
-  } & Pick<
-    CaptureEntry,
-    "selector" | "steps" | "highlight" | "highlights" | "theme" | "reducedMotion"
+  } & Partial<
+    Pick<
+      CaptureEntry,
+      | "selector"
+      | "steps"
+      | "highlight"
+      | "highlights"
+      | "theme"
+      | "reducedMotion"
+      | "state"
+      | "target"
+    >
   >,
   options: ShotCaptureOptions,
   misses: ShotCaptureMissHandlers = {},
 ): Promise<Buffer> {
-  const { onHighlightMiss, onSelectorMiss, onStepMiss, onLoadingState, onThemeMiss } = misses;
+  const {
+    onHighlightMiss,
+    onSelectorMiss,
+    onStepMiss,
+    onLoadingState,
+    onThemeMiss,
+    onStateMiss,
+    onRouteNotServed,
+  } = misses;
+  // #0866: collect console errors from BEFORE navigation so a module MIME
+  // failure (the target serving HTML for app JS) is seen at all.
+  const consoleErrors: string[] = [];
+  if (onRouteNotServed) {
+    const listen = (
+      page as unknown as {
+        on?: (event: "console", handler: (msg: { type(): string; text(): string }) => void) => void;
+      }
+    ).on;
+    if (typeof listen === "function") {
+      listen.call(page, "console", (msg) => {
+        try {
+          if (msg.type() === "error") consoleErrors.push(msg.text());
+        } catch {
+          /* best-effort */
+        }
+      });
+    }
+  }
   await page.goto(url, { waitUntil: "load", timeout: SHOT_NAV_TIMEOUT_MS });
   try {
     await page.waitForLoadState("networkidle", { timeout: 10_000 });
@@ -357,6 +497,20 @@ export async function captureShotPage(
   }
   if (options.waitMs > 0) await page.waitForTimeout(options.waitMs);
   for (const step of entry.steps ?? []) await runStep(page, step, entry.route, onStepMiss);
+  // #0866: did the declared fixture actually render, and did the target serve
+  // the app module at all? Both are checked on the settled page, BEFORE the
+  // screenshot, so a wrong target is reported as a failed shot, not a pass.
+  if (onStateMiss || onRouteNotServed) {
+    const probe = await probeShotPage(page);
+    if (probe && onStateMiss) {
+      const problem = shotStateProblem(entry, probe);
+      if (problem) onStateMiss(problem, entry.route);
+    }
+    if (onRouteNotServed) {
+      const problem = shotRouteNotServedProblem(entry, consoleErrors);
+      if (problem) onRouteNotServed(problem, entry.route);
+    }
+  }
   // #0755: after the steps and settle the route may still be showing its loading
   // state (a placeholder-selector step timed out and the content never
   // rendered). Probe BEFORE the highlight/selector miss checks so a loading page

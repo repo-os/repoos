@@ -4,6 +4,7 @@
 import {
   SHOT_PREVIEW_FIXTURE_QUERY,
   SHOT_PREVIEW_FIXTURE_TASK_ID,
+  SHOT_PREVIEW_APPLIED_ATTR,
   type ShotPreviewFixtureId,
   isShotPreviewFixtureId,
 } from "../../../core/shot-fixtures.js";
@@ -401,6 +402,13 @@ const SHOT_EVIDENCE_VERIFICATION: UiHandoffVerificationEvidence = {
 
 /** Apply a named fixture to the live board (preview builds only). */
 export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFixtureId): void {
+  // #0866: record that the app actually applied the fixture, so a capture can
+  // tell "the drawer/board rendered" from a screenshot of the wrong target.
+  try {
+    document.documentElement.setAttribute(SHOT_PREVIEW_APPLIED_ATTR, fixture);
+  } catch {
+    /* non-DOM test environments */
+  }
   // Reset first: a fixture that seeds no pipeline must not leave a previous
   // pin freezing the live snapshot (#0782).
   pinnedIntegration = null;
