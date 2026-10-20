@@ -331,3 +331,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T13:26:27Z · status review→active
 - 2026-10-20T13:32:40Z · note: handoff requested (ui-review)
 - 2026-10-20T13:40:52Z · status active→review
+- 2026-10-20T13:40:52Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (1bae36f68) during finalization (#0734)
