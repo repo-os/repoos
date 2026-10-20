@@ -3,6 +3,9 @@ id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — `repoos shot` still captures locally, and the branch has a source-file merge conflict."
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -10,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T12:45:56Z"
+updated_at: "2026-10-20T12:45:57Z"
 review_passes: 17
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -236,3 +239,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T12:43:10Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (7cfb09304) during finalization (#0734)
 - 2026-10-20T12:43:12Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (7cfb09304) during finalization (#0734)
 - 2026-10-20T12:45:56Z · note: review pass 18: needs some work
+- 2026-10-20T12:45:57Z · needs_input
