@@ -2,9 +2,15 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { captureBrowserEvidence } from "../../../scripts/remote-runner/capture-browser.js";
 import { worktreesDir } from "../../core/config.js";
+
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const validatePath = join(repoRoot, "scripts/remote-runner/validate.sh");
+const validateScript = readFileSync(validatePath, "utf8");
+const dockerfileCi = readFileSync(join(repoRoot, "scripts/remote-runner/Dockerfile.ci"), "utf8");
 
 const roots: string[] = [];
 afterEach(() => {
@@ -61,5 +67,28 @@ describe("remote browser capture result artifact", () => {
     expect(result.ok).toBe(true);
     expect(artifact.ok).toBe(true);
     expect(artifact.results.verification).toMatchObject({ ok: true, skipped: true });
+  });
+});
+
+describe("runner worktree layout for browser capture (#0854)", () => {
+  it("still parses as bash", () => {
+    expect(() => execFileSync("bash", ["-n", validatePath], { stdio: "ignore" })).not.toThrow();
+  });
+
+  it("creates and bind-mounts a writable /repo-worktrees for the capture worktree", () => {
+    // capture-browser.ts resolves the task worktree through
+    // worktreePathForBranch, which points at worktreesDir("/repo") =
+    // /repo-worktrees — OUTSIDE the /repo mount. The container runs as the host
+    // uid, so a bare `mkdir /repo-worktrees` at the container root fails; the
+    // host must create the dir (same uid) and bind it in writable.
+    expect(worktreesDir("/repo")).toBe("/repo-worktrees");
+    expect(validateScript).toMatch(/WORKTREES="\$WORK\/worktrees"/);
+    expect(validateScript).toMatch(/mkdir -p "\$WORKTREES"/);
+    expect(validateScript).toMatch(/-v "\$WORKTREES":\/repo-worktrees/);
+    expect(validateScript).toMatch(/\/repo-worktrees\/\\?\$\{REPOOS_BROWSER_CAPTURE_BRANCH\}/);
+  });
+
+  it("bakes a writable /repo-worktrees into the runner image as a fallback", () => {
+    expect(dockerfileCi).toMatch(/RUN mkdir(?: -m \d+)? \/repo-worktrees/);
   });
 });

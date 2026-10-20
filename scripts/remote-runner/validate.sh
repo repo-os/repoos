@@ -8,6 +8,10 @@
 # SHA RepoOS asked for, then runs `bun install && bun run build && bun run test`
 # inside the prebuilt `repoos-ci` container with a persistent bun cache.
 #
+# Browser capture also needs a linked git worktree for the task branch; the host
+# creates it under $WORK/worktrees and bind-mounts it at /repo-worktrees (see
+# WORKTREES below), so the non-root capture user can write it.
+#
 # When `mirror-path` is given, the bundle is fetched into a persistent bare
 # mirror on the host (`~/.repoos-cache/<repo>.git`) and the candidate is checked
 # out from there. That lets RepoOS upload only the commits the host does not
@@ -67,6 +71,14 @@ docker ps -aq --filter "name=repoos-validate-" \
 
 WORK="$(mktemp -d "$HOME/.repoos-validate.XXXXXX")"
 rm -rf "$ART" && mkdir -p "$ART"
+# Browser capture (#0854) creates a linked git worktree for the task branch at
+# `worktreesDir("/repo")` — the sibling path `/repo-worktrees`, which lives
+# OUTSIDE the /repo bind mount. The container runs as the host uid and cannot
+# `mkdir` at the container root, so create the mount source here (same uid) and
+# bind it in below. The worktree, its node_modules, and any preview output are
+# then all writable by the capture user.
+WORKTREES="$WORK/worktrees"
+mkdir -p "$WORKTREES"
 # Per-run dirs live under the shared parent; prune ones nobody collected.
 find "$HOME/.repoos-artifacts" -mindepth 1 -maxdepth 1 -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
 _rvcleanup() {
@@ -158,10 +170,12 @@ set +e
 docker run --rm \
   --name "$CONTAINER" \
   -v "$WORK/repo":/repo \
+  -v "$WORKTREES":/repo-worktrees \
   -v "$CACHE_VOLUME":/bun-cache \
   -v "$ART":/artifacts \
   -e BUN_INSTALL_CACHE_DIR=/bun-cache \
   -e BUN_TMPDIR=/tmp \
+  -e TMPDIR=/tmp \
   -e HOME=/repo \
   -e REPOOS_ROOT=/repo \
   -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
