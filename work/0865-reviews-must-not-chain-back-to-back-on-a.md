@@ -64,3 +64,4 @@ Not gated: `ReviewManager.runCheckpointDelta` (post-handoff checkpoint delta rev
 - 2026-10-20T17:06:29Z · body
 - 2026-10-20T17:11:52Z · body
 - 2026-10-20T17:16:21Z · body: Notes for AI (added 12)
+- 2026-10-20T17:16:21Z · message_queued at 2026-10-20T17:16:21.767Z
