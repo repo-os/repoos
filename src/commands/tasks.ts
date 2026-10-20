@@ -15,6 +15,7 @@ import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
 import { flagTaskSpecFlagsIfNeeded } from "../server/task-underspecified-flag.js";
 import { writeHandoffRequest, type HandoffRequest } from "../server/handoff-request.js";
+import { closingOutRefusal, isTaskClosingOut } from "../server/close-out-lock.js";
 import { isAncestor, worktreePathForBranch } from "../core/git.js";
 import {
   declaredShotsSectionContent,
@@ -368,6 +369,16 @@ export function cmdMv(
           "  Unarchive it first (from the app's Archived list, or POST /api/tasks/:id/unarchive).",
         ),
       );
+      process.exitCode = 1;
+      return;
+    }
+    // #0886: Move to done owns the task file until it settles. Refuse every
+    // status move (and therefore the runner handoff request below) while the
+    // close-out lock is present — a late engineer write is exactly what used to
+    // re-serialize a mid-merge task file as `inbox`.
+    const { root: boardRootPath } = boardRoot();
+    if (isTaskClosingOut(boardRootPath, loadConfig(boardRootPath).cacheDir, id)) {
+      console.error(c.red(`  Refusing to move #${id} — `) + c.dim(closingOutRefusal(id)));
       process.exitCode = 1;
       return;
     }

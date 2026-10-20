@@ -113,6 +113,16 @@ template. `scripts/check-llms.ts` runs as part of `bun run build` and fails when
 a page is missing from the index, the full dump, or its raw copy — so a page
 cannot be added yet silently omitted from the agent outputs.
 
+`scripts/check-ai-agents.ts` runs in the same build. It compares the prompt in
+`/ai-agents` (and its raw Markdown copy) with the canonical
+`../agent/starter-prompt.md`, and fails if the guide loses one of its required
+agent links or its permission guidance.
+
+The docs homepage's agent call to action is `.vitepress/theme/AgentPromptCta.vue`,
+registered in `.vitepress/theme/index.ts` and mounted from `index.md`. It imports
+the canonical prompt and `../agent/cta.json` through `../agent/cta.ts`, the same
+module `landing/` uses — change the shared files, not one site's component.
+
 `agents.txt` is deliberately not emitted: no client reads it and the same
 generator does not produce it. Revisit only with a concrete consumer.
 
