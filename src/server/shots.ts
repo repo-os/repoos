@@ -351,3 +351,54 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
     },
   };
 }
+
+/** Import a validated runner shot manifest and its PNGs through the local store. */
+export function importShotArtifacts(
+  config: RepoOSConfig,
+  taskId: string,
+  files: ReadonlyArray<{ name: string; data: string }>,
+): number {
+  const byName = new Map(files.map((file) => [file.name, file.data]));
+  const manifestData = byName.get("shots/shots.json");
+  if (!manifestData) throw new Error("runner result omitted shots.json");
+  let manifest: { shots?: Record<string, unknown>[] };
+  try {
+    manifest = JSON.parse(Buffer.from(manifestData, "base64").toString("utf8")) as typeof manifest;
+  } catch {
+    throw new Error("runner returned malformed shots.json");
+  }
+  if (!Array.isArray(manifest.shots)) throw new Error("runner returned an invalid shot manifest");
+  const prepared = manifest.shots.map((meta) => {
+    const name = meta.name;
+    if (typeof name !== "string" || !/^[A-Za-z0-9._-]+\.png$/.test(name)) {
+      throw new Error("runner returned an unsafe shot name");
+    }
+    const data = byName.get(`shots/${name}`);
+    if (!data) throw new Error(`runner omitted shot image ${name}`);
+    return { meta, name, data };
+  });
+
+  const store = localShotStore(config, taskId);
+  store.removeAuto();
+  for (const { meta, name, data } of prepared) {
+    const saved = store.save({
+      target: String(meta.target ?? "unknown"),
+      ...(typeof meta.route === "string" ? { route: meta.route } : {}),
+      ...(typeof meta.label === "string" ? { label: meta.label } : {}),
+      ...(typeof meta.provenance === "string" ? { provenance: meta.provenance } : {}),
+      origin: "auto",
+      ...(typeof meta.planFingerprint === "string"
+        ? { planFingerprint: meta.planFingerprint }
+        : {}),
+      ...(typeof meta.sourceIdentity === "string" ? { sourceIdentity: meta.sourceIdentity } : {}),
+      ...(meta.declared && typeof meta.declared === "object"
+        ? { declared: meta.declared as never }
+        : {}),
+      name,
+      mime: "image/png",
+      data,
+    });
+    if ("error" in saved) throw new Error(`could not import runner shot ${name}: ${saved.error}`);
+  }
+  return prepared.length;
+}

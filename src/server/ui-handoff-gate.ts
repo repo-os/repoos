@@ -59,9 +59,14 @@ import {
   type ShotCaptureResult,
 } from "./shot-capture.js";
 import type { PreviewManager } from "./preview.js";
-import { localShotStore, shotsDir, shotUrl, type ShotMeta } from "./shots.js";
+import { importShotArtifacts, localShotStore, shotsDir, shotUrl, type ShotMeta } from "./shots.js";
 import { withPreviewVerificationSlot } from "./preview-verification-slot.js";
 import { patchTaskFile } from "./write.js";
+import {
+  runBrowserCaptureWithPolicy,
+  type BrowserEvidenceArtifacts,
+  type BrowserEvidenceTransport,
+} from "./browser-capture-policy.js";
 
 const INSTALL_ADVICE = "Install: bun add -d @playwright/test && bunx playwright install webkit";
 const AUTO_SETTLE_MS = 900;
@@ -563,6 +568,8 @@ export interface UiHandoffGateDeps {
   /** Explicit evidence refresh: replace engineer captures and keep task Markdown untouched. */
   forceRefresh?: boolean;
   recordTaskNotes?: boolean;
+  /** Runner transport for the configured remote browser capture policy. */
+  remoteTransport?: BrowserEvidenceTransport;
 }
 
 /** A blocking issue from a required assertion that failed (#0734). */
@@ -605,6 +612,54 @@ export async function runUiHandoffGate(
     (!deps.forceRefresh && !taskNeedsUiHandoffVerification(config, task))
   ) {
     return { ok: true, skipped: true, detail: "ui verification not required for this task" };
+  }
+
+  if (
+    config.remoteValidation?.browserCaptureMode &&
+    config.remoteValidation.browserCaptureMode !== "local"
+  ) {
+    const sourceWorktree =
+      (task.branch ? worktreePathForBranch(config.root, task.branch) : null) ?? config.root;
+    const head = await runGit(sourceWorktree, ["rev-parse", "HEAD"], 10_000);
+    const request =
+      task.branch && head.status === 0
+        ? {
+            taskId: task.id,
+            worktreePath: sourceWorktree,
+            branch: task.branch,
+            candidateSha: head.stdout.trim(),
+            operation: "verify" as const,
+          }
+        : null;
+    try {
+      return await runBrowserCaptureWithPolicy({
+        config,
+        request: request ?? {
+          taskId: task.id,
+          worktreePath: config.root,
+          branch: task.branch ?? "",
+          candidateSha: "",
+          operation: "verify",
+        },
+        transport: request ? deps.remoteTransport : undefined,
+        local: () =>
+          runUiHandoffGate(
+            {
+              ...config,
+              remoteValidation: { ...config.remoteValidation, browserCaptureMode: "local" },
+            },
+            task,
+            previews,
+            log,
+            { ...deps, remoteTransport: undefined },
+          ),
+        note: (message) => log(task.id, "warn", `ui verification: ${message}`),
+        useArtifacts: async (artifacts) => importRemoteVerification(config, task.id, artifacts),
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      return { ok: false, detail: `ui verification failed: ${detail}` };
+    }
   }
 
   const plan = planAutoCapture(config, task, { forceRefresh: deps.forceRefresh });
@@ -1046,4 +1101,36 @@ export async function runUiHandoffGate(
     evidencePath: path,
     shotResult: { status: "captured", detail: shotDetail, count: captured },
   };
+}
+
+async function importRemoteVerification(
+  config: RepoOSConfig,
+  taskId: string,
+  artifacts: BrowserEvidenceArtifacts,
+): Promise<UiHandoffGateResult> {
+  const result = artifacts.results.verification as UiHandoffGateResult | undefined;
+  if (!result || typeof result.ok !== "boolean" || typeof result.detail !== "string") {
+    throw new Error("runner result omitted the UI verification outcome");
+  }
+  if (artifacts.files.some((file) => file.name === "shots/shots.json")) {
+    importShotArtifacts(config, taskId, artifacts.files);
+  }
+  const evidence = artifacts.files.find((file) => file.name === "verification.json");
+  if (!evidence) {
+    if (result.skipped) return result;
+    throw new Error("runner result omitted the UI verification record");
+  }
+  let evidenceJson: unknown;
+  try {
+    evidenceJson = JSON.parse(Buffer.from(evidence.data, "base64").toString("utf8"));
+  } catch {
+    throw new Error("runner returned a malformed UI verification record");
+  }
+  if (!evidenceJson || typeof evidenceJson !== "object") {
+    throw new Error("runner returned an invalid UI verification record");
+  }
+  const path = evidenceFile(config, taskId);
+  mkdirSync(join(path, ".."), { recursive: true });
+  writeFileSync(path, JSON.stringify(evidenceJson, null, 2));
+  return { ...result, evidencePath: path };
 }

@@ -48,8 +48,13 @@ import { isShotCaptureUnavailable } from "../commands/shot.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/ui-harness.js";
 import type { PreviewManager } from "./preview.js";
 import { computeTaskShotContext } from "./shot-context.js";
-import { localShotStore, shotsDir, type ShotStore } from "./shots.js";
+import { importShotArtifacts, localShotStore, shotsDir, type ShotStore } from "./shots.js";
 import { patchTaskFile } from "./write.js";
+import {
+  runBrowserCaptureWithPolicy,
+  type BrowserEvidenceArtifacts,
+  type BrowserEvidenceTransport,
+} from "./browser-capture-policy.js";
 
 export interface ShotCaptureResult {
   status: "captured" | "skipped" | "failed";
@@ -534,6 +539,7 @@ export async function runAutoShotCapture(
   task: Task,
   previews: PreviewManager,
   log: TaskLog,
+  remoteTransport?: BrowserEvidenceTransport,
 ): Promise<ShotCaptureResult> {
   const finish = (
     status: ShotCaptureResult["status"],
@@ -557,6 +563,51 @@ export async function runAutoShotCapture(
   if (inFlight.has(task.id)) {
     return { status: "skipped", detail: "shots: skipped — a capture is already in flight" };
   }
+  if (
+    config.remoteValidation?.browserCaptureMode &&
+    config.remoteValidation.browserCaptureMode !== "local"
+  ) {
+    const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+    const head = worktree ? await runGit(worktree, ["rev-parse", "HEAD"], 10_000) : null;
+    const request =
+      worktree && head?.status === 0 && task.branch
+        ? {
+            taskId: task.id,
+            worktreePath: worktree,
+            branch: task.branch,
+            candidateSha: head.stdout.trim(),
+            operation: "shots" as const,
+          }
+        : null;
+    try {
+      return await runBrowserCaptureWithPolicy({
+        config,
+        request: request ?? {
+          taskId: task.id,
+          worktreePath: config.root,
+          branch: task.branch ?? "",
+          candidateSha: "",
+          operation: "shots",
+        },
+        transport: request ? remoteTransport : undefined,
+        local: async () => {
+          const localConfig = {
+            ...config,
+            remoteValidation: { ...config.remoteValidation, browserCaptureMode: "local" as const },
+          };
+          return runAutoShotCapture(localConfig, task, previews, log);
+        },
+        note: (message) => log(task.id, "warn", `shots: ${message}`),
+        useArtifacts: async (artifacts) => importRemoteShots(config, task, artifacts),
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      return finish("failed", detail);
+    } finally {
+      inFlight.delete(task.id);
+    }
+  }
+
   inFlight.add(task.id);
 
   const plan = planAutoCapture(config, task);
@@ -779,6 +830,49 @@ export async function runAutoShotCapture(
   }
 }
 
+async function importRemoteShots(
+  config: RepoOSConfig,
+  task: Task,
+  artifacts: BrowserEvidenceArtifacts,
+): Promise<ShotCaptureResult> {
+  const remoteResult = artifacts.results.shots as ShotCaptureResult | undefined;
+  if (!remoteResult || !["captured", "skipped", "failed"].includes(remoteResult.status)) {
+    throw new Error("runner result omitted the shot capture outcome");
+  }
+  if (!artifacts.ok || remoteResult.status !== "captured") return remoteResult;
+  importShotArtifacts(config, task.id, artifacts.files);
+  return remoteResult;
+}
+
+function importRemoteDeclaredShot(
+  config: RepoOSConfig,
+  taskId: string,
+  artifacts: BrowserEvidenceArtifacts,
+): DeclaredShotCapture {
+  const result = artifacts.results.singleShot as DeclaredShotCapture | undefined;
+  if (!result || typeof result !== "object")
+    throw new Error("runner result omitted the single-shot outcome");
+  if ("error" in result) return result;
+  if (!artifacts.ok)
+    throw new Error("runner reported a failed single-shot capture without an error");
+  const source = result.shot as ShotMeta;
+  const data = artifacts.files.find((file) => file.name === `shots/${source.name}`)?.data;
+  if (!data) throw new Error(`runner omitted shot image ${source.name}`);
+  const stored = localShotStore(config, taskId).save({
+    target: source.target,
+    route: source.route,
+    ...(source.label ? { label: source.label } : {}),
+    ...(source.provenance ? { provenance: source.provenance } : {}),
+    ...(source.declared ? { declared: source.declared } : {}),
+    name: source.name,
+    mime: "image/png",
+    data,
+  });
+  if ("error" in stored)
+    throw new Error(`could not import runner shot ${source.name}: ${stored.error}`);
+  return { shot: stored, warnings: result.warnings };
+}
+
 /** One-shot capture result for the task drawer's Add-shot action (#0627). */
 export type DeclaredShotCapture =
   | { shot: ShotMeta; warnings: string[] }
@@ -825,7 +919,51 @@ export async function captureDeclaredShot(
     /** The parsed declaration to store on the shot, for exact delete sync (#0627). */
     declared?: DeclaredShot;
   },
+  remoteTransport?: BrowserEvidenceTransport,
+  onFallback?: (message: string) => void,
 ): Promise<DeclaredShotCapture> {
+  if (
+    config.remoteValidation?.browserCaptureMode &&
+    config.remoteValidation.browserCaptureMode !== "local"
+  ) {
+    const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+    const head = worktree ? await runGit(worktree, ["rev-parse", "HEAD"], 10_000) : null;
+    const request =
+      worktree && task.branch && head?.status === 0
+        ? {
+            taskId: task.id,
+            worktreePath: worktree,
+            branch: task.branch,
+            candidateSha: head.stdout.trim(),
+            operation: "single-shot" as const,
+            entry,
+          }
+        : null;
+    return runBrowserCaptureWithPolicy({
+      config,
+      request: request ?? {
+        taskId: task.id,
+        worktreePath: config.root,
+        branch: task.branch ?? "",
+        candidateSha: "",
+        operation: "single-shot",
+        entry,
+      },
+      transport: request ? remoteTransport : undefined,
+      local: () =>
+        captureDeclaredShot(
+          {
+            ...config,
+            remoteValidation: { ...config.remoteValidation, browserCaptureMode: "local" },
+          },
+          task,
+          previews,
+          entry,
+        ),
+      note: (message) => onFallback?.(message),
+      useArtifacts: async (artifacts) => importRemoteDeclaredShot(config, task.id, artifacts),
+    });
+  }
   // Branch fixtures (#0786): URL building admits a `state` the task branch's
   // source declares, even though main's compiled list does not know it yet.
   const branchValidator = taskFixtureValidator(
