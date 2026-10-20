@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-20T11:22:22Z"
+review_passes: 14
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
@@ -16,8 +18,6 @@ created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T11:22:22Z"
-review_passes: 13
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -203,3 +203,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T11:21:55Z · cli_override, model_override
 - 2026-10-20T11:21:57Z · model_override
 - 2026-10-20T11:22:22Z · note: review pass 14: needs some work
+
