@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T13:27:51Z"
+updated_at: "2026-10-20T13:35:30Z"
 review_passes: 18
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -251,3 +251,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T13:23:38Z · note: handoff requested (ui-review)
 - 2026-10-20T13:25:15Z · note: handoff requested (ui-review)
 - 2026-10-20T13:27:51Z · note: handoff requested (ui-review)
+- 2026-10-20T13:35:30Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/toml-validate.test.ts > validateToml accepts > the repository's own repoos.toml on bee — fix it in the feature branch and re-run the gate
