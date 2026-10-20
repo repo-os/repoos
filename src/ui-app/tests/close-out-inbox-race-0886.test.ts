@@ -31,6 +31,7 @@ import { finalizeReviewHandoff } from "../../server/handoff.js";
 import { cmdMv } from "../../commands/tasks.js";
 import { isTaskClosingOut, closingOutRefusal } from "../../server/close-out-lock.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
+import { enqueueCloseOutForTask } from "../../server/request-close-out.js";
 import { CloseOutOrchestrator } from "../../server/integration-orchestrator.js";
 import { createRepositoryLock, createRootLock } from "../../server/repo-lock.js";
 import {
@@ -586,6 +587,61 @@ describe("engineer writes are refused while a task is closing out (#0886)", () =
           source: "repoos-mv",
         }),
       ).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("refuses to start the close-out until the engineer process has actually stopped", async () => {
+    const { root, clean } = makeRepo("repoos-0886-stop-");
+    try {
+      const absPath = writeTask(root, "review");
+      const branch = "feat/inbox-race";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      // Ensure there is a feature commit beyond main so the branch is real.
+      writeFileSync(join(wt.path!, "feature.txt"), "x\n");
+      git(wt.path!, ["add", "feature.txt"]);
+      git(wt.path!, ["commit", "-m", "feature work"]);
+
+      const lockFile = join(root, ".repoos", "locks", `${TASK_ID}.json`);
+      let running = true;
+      let stopped = false;
+      const deps = {
+        config: configFor(root),
+        index: {} as never,
+        jobCoordinator: createJobCoordinator(root),
+        reload: null,
+        emitEvent: () => {},
+        triggerJobProcessing: () => {},
+        runner: {
+          isRunning: () => false,
+          stop: () => {
+            stopped = true;
+          },
+          waitForStop: async () => !running,
+        },
+        previews: { stop: async () => {} },
+        reviews: { isRunning: () => false, cancel: () => {} },
+      } as unknown as Parameters<typeof enqueueCloseOutForTask>[0];
+
+      const task = parseAt(root, absPath);
+      task.branch = branch;
+      task.status = "review";
+
+      const refused = await enqueueCloseOutForTask(deps, task);
+      expect(stopped).toBe(true);
+      expect(refused.ok).toBe(false);
+      if (!refused.ok) expect(refused.reason).toMatch(/did not stop/i);
+      // Nothing was fenced or queued: a live engineer keeps writing.
+      expect(existsSync(lockFile)).toBe(false);
+
+      // Once the process leaves, the closing-out fence is written before the
+      // job can reach the merge.
+      running = false;
+      const started = await enqueueCloseOutForTask(deps, task);
+      expect(started.ok).toBe(true);
+      expect(readWorktreeReviewLock(root, ".repoos", TASK_ID)?.status).toBe("closing-out");
     } finally {
       clean();
     }

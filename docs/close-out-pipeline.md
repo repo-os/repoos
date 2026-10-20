@@ -192,8 +192,9 @@ that the worktree was clean under `.repoos/handoff-snapshots/<id>.json`, and wri
 advisory lock at `.repoos/locks/<id>.json` (`status: review` or `closing-out` while
 Move to done runs). Agent runners refuse to start an engineer in a locked worktree;
 interactive sessions should treat the lock the same way. A `closing-out` lock is
-also a hard write fence: `repoos mv`, a runner handoff request, and the server's
-handoff finalization all refuse before touching the task file (#0886).
+also a hard write fence: `repoos mv`, a runner handoff request, the server's
+handoff finalization, and `PATCH /api/tasks/:id` all refuse before touching the
+task file (#0886).
 
 `POST /api/tasks/:id/done` compares the live worktree to that snapshot **before**
 enqueueing the close-out job. If `HEAD` moved or the tree is dirty after handoff, the
@@ -679,9 +680,10 @@ The fix has three independent layers:
 - **Fence** (`src/server/close-out-lock.ts`): both enqueue paths write the
   `closing-out` lock even when there is no handoff snapshot, and wait for the
   engineer process to leave. `repoos mv`, `writeHandoffRequest`,
-  `finalizeReviewHandoff`/`handoffTask`, and `startUnifiedHandoff` all reject
-  with a clear message and write nothing while that lock is present. A failed
-  close-out drops the lock back to `review`, so a retry is not stuck.
+  `finalizeReviewHandoff`/`handoffTask`, `startUnifiedHandoff` and
+  `PATCH /api/tasks/:id` all reject with a clear message and write nothing while
+  that lock is present. A failed or cancelled close-out drops the lock back to
+  `review`, so a retry is not stuck.
 
 ## Known failure classes and their guards
 

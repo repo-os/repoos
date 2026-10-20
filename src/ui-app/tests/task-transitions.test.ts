@@ -18,6 +18,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { checkGenericStatusPatch } from "../../server/task-transitions.js";
 import { patchTask, taskAction } from "../../server/routes/tasks.js";
+import { writeWorktreeReviewLock } from "../../server/worktree-handoff-guard.js";
 import { parseTask } from "../../core/task.js";
 import type { RouteContext } from "../../server/routes/types.js";
 import type { RepoOSConfig, Status } from "../../core/types.js";
@@ -278,6 +279,29 @@ describe("PATCH /api/tasks/:id — generic status writes now gated", () => {
       await patchTask(makeCtx(fx), makeReq({ status: "active" }), res, { param1: "0296" });
       expect(fake.status).toBe(200);
       expect(readTaskFile(fx).status).toBe("active");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("refuses any write while Move to done owns the task (#0886)", async () => {
+    const fx = makeFixture("review");
+    try {
+      writeWorktreeReviewLock(fx.root, ".repoos", "0296", {
+        status: "closing-out",
+        sha: git(fx.root, ["rev-parse", "HEAD"]),
+        at: new Date().toISOString(),
+      });
+      const before = readFileSync(fx.taskPath, "utf8");
+
+      for (const body of [{ status: "active" }, { title: "renamed" }, { note: "late note" }]) {
+        const { res, fake } = makeRes();
+        await patchTask(makeCtx(fx), makeReq(body), res, { param1: "0296" });
+        expect(fake.status).toBe(409);
+        expect((fake.payload as { error: string }).error).toMatch(/being closed out/i);
+      }
+      expect(readFileSync(fx.taskPath, "utf8")).toBe(before);
+      expect(readTaskFile(fx).status).toBe("review");
     } finally {
       fx.clean();
     }
