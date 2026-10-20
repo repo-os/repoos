@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T09:26:23Z"
+updated_at: "2026-10-20T09:28:49Z"
 review_passes: 15
 last_check_failure: "repoos check at 2026-10-20T06:48:16.394Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
@@ -226,3 +226,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T09:16:42Z · body
 - 2026-10-20T09:25:09Z · body
 - 2026-10-20T09:26:23Z · status active→review
+- 2026-10-20T09:28:49Z · note: review pass 17: needs some work
