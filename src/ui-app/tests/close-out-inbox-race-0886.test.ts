@@ -109,6 +109,12 @@ function configFor(root: string): RepoOSConfig {
 // 1. The parser must never read a conflict divider as a frontmatter boundary.
 // ---------------------------------------------------------------------------
 
+// Built at runtime: literal column-0 conflict markers in a tracked file trip the
+// close-out "unresolved conflict markers" scan even when they are a fixture.
+const MARK_OURS = "<".repeat(7);
+const MARK_DIVIDER = "=".repeat(7);
+const MARK_THEIRS = ">".repeat(7);
+
 describe("conflicted task frontmatter parses its real status (#0886)", () => {
   const conflicted = `---
 id: "${TASK_ID}"
@@ -116,13 +122,13 @@ title: Close-out inbox race
 type: bug
 status: review
 priority: p1
-<<<<<<< HEAD
+${MARK_OURS} HEAD
 updated_at: "2026-10-21T17:08:29Z"
 review_passes: 1
-=======
+${MARK_DIVIDER}
 updated_at: "2026-10-21T17:02:59Z"
 review_passes: 3
->>>>>>> feat/inbox-race
+${MARK_THEIRS} feat/inbox-race
 assigned_to: ai
 ---
 
