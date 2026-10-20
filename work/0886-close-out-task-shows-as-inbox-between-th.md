@@ -2,18 +2,20 @@
 id: "0886"
 title: "Close-out: task shows as inbox between the merge and 'set status done'; stamp done atomically and ignore engineer writes while closing"
 type: bug
-status: active
+status: done
 priority: p1
 area: server
-assigned_to: ai
+merged_commit: f4373da89e825f19e27168d3020665ae45bcab3f
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
-updated_at: "2026-10-20T21:07:41Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 4888f355 to e1bf06da) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 4888f35575fbdbdcd27ee3ba9d0b8cdb33dd2646
+updated_at: "2026-10-20T21:46:12Z"
+last_close_out_gate_ms: 572895
+last_close_out_gate_at: "2026-10-20T21:44:57.187Z"
+review_passes: 2
 dev_error_count: 1
 ---
 ## Problem
@@ -78,3 +80,16 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T20:57:41Z · body
 - 2026-10-20T21:07:40Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > returns 409 + needsCommit against a dirty main and never enqueues, tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > surfaces an uncommitted repoos.toml instead of silently committing it (#0819), tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > does not block close-out when the only dirty files on main are shot captures (#0713) on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-20T21:07:41Z · note: handoff requested (cli)
+- 2026-10-20T21:11:08Z · assigned_to
+- 2026-10-20T21:16:19Z · status active→review
+- 2026-10-20T21:16:20Z · note: shots: skipped — the diff (17 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-20T21:17:18Z · note: review pass 1: good to go
+- 2026-10-20T21:23:33Z · status review→active
+- 2026-10-20T21:23:38Z · note: handoff requested (ui-review)
+- 2026-10-20T21:32:15Z · status active→review
+- 2026-10-20T21:32:16Z · note: shots: skipped — the diff (17 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-20T21:33:18Z · note: review pass 2: good to go
+- 2026-10-20T21:44:57Z · close-out gate completed in 573s
+- 2026-10-20T21:44:59Z · note: handoff requested (cli)
+- 2026-10-20T21:45:00Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-20T21:46:12Z · status inbox→done, release:success
