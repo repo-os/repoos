@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p1
 area: [core, server]
-assigned_to: ""
+story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T12:05:58Z"
-updated_at: "2026-10-20T12:05:58Z"
+updated_at: "2026-10-20T12:18:11Z"
 ---
 ## Problem
 Whether a task in review can actually land is decided by a handful of manual checks that live in driver prose and AGENTS.md: the lock sha equals the worktree HEAD, the worktree is clean, the branch merges with main (conflicts only in the task's own work/<id>-*.md), the diff has no repoos.toml and no other tasks' work/ files, and main has no blocking dirty files. Each driver re-does these by hand and gets them wrong sometimes. On 2026-10-20 #0860 had a "good to go" review on a HEAD that still conflicted with main in src/core/types.ts, and the conflict was only discovered when Move to done refused; reviews kept re-running on the same unchanged commit.
@@ -30,3 +31,4 @@ Reuse the close-out pipeline's own classification (src/server/integration-orches
 ## Activity
 
 - 2026-10-20T12:05:58Z · created · njachowski@gmail.com
+- 2026-10-20T12:18:11Z · story
