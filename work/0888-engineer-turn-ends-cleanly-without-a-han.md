@@ -11,7 +11,7 @@ branch: feat/engineer-turn-ends-cleanly-without-a-han
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T21:57:26Z"
-updated_at: "2026-10-20T23:46:24Z"
+updated_at: "2026-10-20T23:52:12Z"
 ---
 ## Problem
 Overnight 2026-10-21 (CTO off) at least six engineers (#0867, #0866, #0883, #0869 and others) stopped after a turn: no crash, no handoff request, worktree clean, no live process, task still `active`. Several of those followed a `handoff_deferred` note (a handoff was requested while a message was queued, #0865), others just ended. Nothing resumed them; each needed a manual `repoos start` (or `mv ready` then `start` when the runner registry still said "already running"). #0869 resumes engineers after a non-clean exit, and the CTO's `restart-stalled-agent` / completion nudge covers the rest, but with the CTO off a clean exit without handoff is a dead end. Each stall costs 10-30 minutes of wall-clock per task.
@@ -38,3 +38,4 @@ Relevant code: src/server/agents.ts (`cleanup()`, `deliverQueuedMessages`, crash
 - 2026-10-20T23:17:39Z · status ready→active, branch
 - 2026-10-20T23:43:00Z · body
 - 2026-10-20T23:46:24Z · body
+- 2026-10-20T23:52:12Z · message_queued at 2026-10-20T23:52:12.104Z
