@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T16:02:55Z"
-updated_at: "2026-10-20T18:59:13Z"
+updated_at: "2026-10-20T18:59:17Z"
 ---
 ## Problem
 The agent files in this story are generated or shared across two sites. Nothing in the existing `landing-build` and `user-docs-build` steps fails the build when `llms.txt` is missing, when an install command drifts from the published commands, or when the landing page and the docs homepage embed different prompt text.
@@ -21,14 +21,8 @@ The agent files in this story are generated or shared across two sites. Nothing 
 
 ## Acceptance criteria
 
-
 ## Notes for AI
 
-Story: Agent-discoverable RepoOS, slice 6. Areas `landing,docs`. Depends on the docs index, the portable skill, and the shared call to action. Those tasks already depend on the prompt file and the guide, so this trial runs only after the public path exists.
-
-`repoos.toml` steps `landing-build` and `user-docs-build` (`whenChanged` `landing/**` and `user-docs/**`) are the gates to extend. Do not add a third checker script. Do not commit `landing/dist` or `user-docs/.vitepress/dist`.
-
-The trial is a written record on this task, not a new public page and not a change to task or worktree architecture. Out of scope: a public MCP server, a hosted agent, autonomous browser automation, new CLI features, and provider-specific plugins.
 
 ## Activity
 
@@ -36,3 +30,4 @@ The trial is a written record on this task, not a new public page and not a chan
 - 2026-10-20T18:59:05Z · body: Problem (added 1, removed 1)
 - 2026-10-20T18:59:09Z · body: Desired UX (removed 1)
 - 2026-10-20T18:59:13Z · body: Acceptance criteria (removed 6)
+- 2026-10-20T18:59:17Z · body: Notes for AI (removed 3)
