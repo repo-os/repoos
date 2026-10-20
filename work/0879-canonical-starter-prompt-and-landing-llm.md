@@ -10,8 +10,10 @@ story: Agent-discoverable RepoOS
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:00:59Z"
-updated_at: "2026-10-20T19:46:58Z"
+updated_at: "2026-10-20T19:47:01Z"
 ---
 ## Problem
 
@@ -52,3 +54,4 @@ Out of scope: the docs-site `llms.txt` / `llms-full.txt`, the Agent Skill, `user
 
 - 2026-10-20T16:00:59Z · created · njachowski@gmail.com
 - 2026-10-20T19:46:58Z · status inbox→ready
+- 2026-10-20T19:47:01Z · cli_override, model_override
