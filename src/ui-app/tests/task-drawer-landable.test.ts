@@ -12,6 +12,7 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { createRouter, createMemoryHistory } from "vue-router";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
+import { applyShotPreviewFixture } from "../src/lib/shot-preview-fixtures";
 import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
 import type { LandableResult, Task } from "../src/types";
@@ -157,5 +158,41 @@ describe("task drawer landing pre-checks (#0867)", () => {
     const button = moveToDone(wrapper);
     expect(button).toBeTruthy();
     expect(button!.attributes("title") ?? "").not.toContain("Merge with main");
+  });
+
+  it("renders the declared drawer:landable shot fixture", async () => {
+    const pinia = setup();
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "drawer:landable");
+    const fixtureTask = repo.tasks.find((t) => t.id === "9999");
+    expect(fixtureTask, "fixture seeds task 9999").toBeTruthy();
+
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
+    await router.push("/");
+    await router.isReady();
+    vi.stubGlobal("EventSource", FakeEventSource);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+        if (url.includes("/api/index"))
+          return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        return json({ ok: true });
+      }),
+    );
+    useUiStore().open(fixtureTask!);
+    const wrapper = mount(TaskDrawer, {
+      global: {
+        plugins: [pinia, router],
+        stubs: { teleport: true, Transition: true },
+      },
+    });
+    await flush();
+
+    const checks = wrapper.find(".landable-checks");
+    expect(checks.exists(), "the shot's waitFor selector renders").toBe(true);
+    expect(checks.text()).toContain("src/core/types.ts conflicts with main");
   });
 });
