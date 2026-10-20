@@ -54,6 +54,7 @@ import type { RepoOSConfig, Task } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";
 import type { ReviewReport, ReviewRunResult } from "./review.js";
+import { REVIEW_RUN_TRIGGERS } from "./review-automation.js";
 import { effectiveStalenessNow } from "../core/agent-run-health.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { commitTaskFile, worktreeStatus, worktreePathForBranch } from "../core/git.js";
@@ -411,7 +412,7 @@ export interface WatchdogReviewManager {
   /** The stored review report for the task, or null when none ever completed. */
   read(taskId: string): ReviewReport | null;
   /** Kick off a fresh review run (the same action the human's "Review again" does). */
-  run(task: Task): Promise<ReviewRunResult>;
+  run(task: Task, opts?: import("./review.js").ReviewRunOptions): Promise<ReviewRunResult>;
 }
 
 export class TaskWatchdog {
@@ -675,7 +676,7 @@ export class TaskWatchdog {
     // already bounds it, and `ReviewManager.isRunning` short-circuits re-entry for
     // this same task, so there is nothing to await. Mirrors how the route layer
     // starts a review (`void reviews.run(...)`).
-    void this.reviews.run(current);
+    void this.reviews.run(current, { trigger: REVIEW_RUN_TRIGGERS.WATCHDOG_STUCK_REVIEW });
   }
 
   /**
