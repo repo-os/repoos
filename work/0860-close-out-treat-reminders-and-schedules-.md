@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "you want shared Git history. They are currently repo-wide, visible to"
+debug_tldr: The agent hit its usage limit during conflict resolution — retry with an available agent or after credits reset.
+debug_tldr_at: "2026-10-20T11:13:55Z"
+debug_tldr_key: "dev-error|you want shared Git history. They are currently repo-wide, visible to"
 priority: p2
 area: server
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T11:13:54Z"
+updated_at: "2026-10-20T11:13:55Z"
 review_passes: 5
 review_rounds: 1
 handoff_signal_retry_count: 1
