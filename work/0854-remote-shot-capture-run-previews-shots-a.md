@@ -92,3 +92,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T08:36:43Z · note: handoff requested (cli)
 - 2026-10-20T08:57:18Z · status active→review
 - 2026-10-20T08:57:19Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (2ce0b8123) during finalization (#0734)
+- 2026-10-20T08:57:19Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (2ce0b8123) during finalization (#0734)
