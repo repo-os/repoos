@@ -429,13 +429,35 @@ export function shotStateProblem(
 const MODULE_MIME_ERROR_RE =
   /(is not a valid (?:JavaScript|module) MIME type|MIME type of ["']?text\/html|non-JavaScript MIME type|Expected a JavaScript module script|Failed to load module script|Unexpected token ["']?<|blocked due to (?:a )?MIME type|Refused to execute script)/i;
 
+/** HTTP status of the navigation response, when the driver exposes one (#0866). */
+function navigationStatus(response: unknown): number | undefined {
+  if (!response || typeof response !== "object") return undefined;
+  const status = (response as { status?: () => number }).status;
+  if (typeof status !== "function") return undefined;
+  try {
+    const code = status.call(response);
+    return typeof code === "number" ? code : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function shotRouteNotServedProblem(
   entry: { route: string; target?: string },
   consoleErrors: string[],
+  responseStatus?: number,
 ): string | undefined {
+  const target = entry.target ? `target "${entry.target}"` : "the captured target";
+  // #0866 review round 2: a declared route the target answers with 404/410 is
+  // not served by it, even when the returned shell produces no MIME error.
+  if (typeof responseStatus === "number" && responseStatus >= 400) {
+    return (
+      `route ${entry.route} is not served by ${target} — the target responded ` +
+      `${responseStatus} for it (is this the app target?)`
+    );
+  }
   const hit = consoleErrors.find((message) => MODULE_MIME_ERROR_RE.test(message));
   if (!hit) return undefined;
-  const target = entry.target ? `target "${entry.target}"` : "the captured target";
   return (
     `route ${entry.route} is not served by ${target} — the target returned its HTML shell ` +
     `for an app module (${hit.split("\n")[0]})`
@@ -497,7 +519,8 @@ export async function captureShotPage(
       });
     }
   }
-  await page.goto(url, { waitUntil: "load", timeout: SHOT_NAV_TIMEOUT_MS });
+  const navigation = await page.goto(url, { waitUntil: "load", timeout: SHOT_NAV_TIMEOUT_MS });
+  const status = navigationStatus(navigation);
   try {
     await page.waitForLoadState("networkidle", { timeout: 10_000 });
   } catch {
@@ -515,7 +538,7 @@ export async function captureShotPage(
       if (problem) onStateMiss(problem, entry.route);
     }
     if (onRouteNotServed) {
-      const problem = shotRouteNotServedProblem(entry, consoleErrors);
+      const problem = shotRouteNotServedProblem(entry, consoleErrors, status);
       if (problem) onRouteNotServed(problem, entry.route);
     }
   }

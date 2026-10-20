@@ -124,6 +124,7 @@ import {
   importRemoteShots,
   runAutoShotCapture,
 } from "../../server/shot-capture.js";
+import { captureShotPage } from "../../core/shot-page.js";
 import { localShotStore } from "../../server/shots.js";
 import type { BrowserEvidenceArtifacts } from "../../server/browser-capture-policy.js";
 
@@ -321,6 +322,30 @@ describe("captureDeclaredShot busy semantics (#0627)", () => {
     const stored = localShotStore(config, "0627").list();
     expect(stored).toHaveLength(1);
     expect(stored[0]!.target).toBe("default");
+  });
+
+  it("refuses to store a declared shot whose state never rendered (#0866)", async () => {
+    const config = setup();
+    const previews = fakePreviews();
+    vi.mocked(captureShotPage).mockImplementationOnce(
+      async (_page, _url, entry, _options, misses) => {
+        misses?.onStateMiss?.(
+          `state "${entry.state}" did not render on target "${entry.target}"`,
+          entry.route,
+        );
+        return Buffer.from("png-bytes");
+      },
+    );
+    const result = await captureDeclaredShot(config, makeTask("0866-state"), previews, {
+      ...ENTRY,
+      route: "/work?task=9999&tab=changes",
+      state: "drawer:shotEvidence",
+    });
+    expect("error" in result).toBe(true);
+    if (!("error" in result)) return;
+    expect(result.error).toContain('state "drawer:shotEvidence" did not render');
+    // The wrong-screen frame is never saved as evidence.
+    expect(localShotStore(config, "0866-state").list()).toEqual([]);
   });
 
   it("stores the full declaration on the shot for exact delete sync", async () => {

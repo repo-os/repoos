@@ -255,6 +255,12 @@ describe("route not served by the target (#0866)", () => {
     ]);
     expect(problem).toContain('route /settings is not served by target "Docs site"');
   });
+
+  it("reports a route the target answers with 404, even without a console error", () => {
+    const problem = shotRouteNotServedProblem({ route: "/work", target: "Docs site" }, [], 404);
+    expect(problem).toContain('route /work is not served by target "Docs site"');
+    expect(problem).toContain("responded 404");
+  });
 });
 
 describe("auto capture refuses wrong-screen evidence (#0866 review round 2)", () => {
