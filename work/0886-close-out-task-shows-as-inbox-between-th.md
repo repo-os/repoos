@@ -3,9 +3,6 @@ id: "0886"
 title: "Close-out: task shows as inbox between the merge and 'set status done'; stamp done atomically and ignore engineer writes while closing"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p1
 area: server
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
-updated_at: "2026-10-20T20:12:56Z"
+updated_at: "2026-10-20T20:18:48Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -67,3 +64,4 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T20:10:03Z · body
 - 2026-10-20T20:10:22Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-20T20:12:56Z · body
+- 2026-10-20T20:18:48Z · needs_input
