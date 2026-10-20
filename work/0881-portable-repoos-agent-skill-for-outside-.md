@@ -11,8 +11,10 @@ depends_on: ["0879"]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:01:54Z"
-updated_at: "2026-10-20T20:10:59Z"
+updated_at: "2026-10-20T20:11:06Z"
 ---
 ## Problem
 
@@ -43,3 +45,4 @@ Do not add CLI features, a public MCP server, or provider-specific plugins. Inst
 
 - 2026-10-20T16:01:54Z · created · njachowski@gmail.com
 - 2026-10-20T20:10:59Z · status inbox→ready
+- 2026-10-20T20:11:06Z · cli_override, model_override
