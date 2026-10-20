@@ -2,7 +2,7 @@
 id: "0865"
 title: Reviews must not chain back to back on a task with open findings; queued messages must be delivered between passes
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -77,4 +77,4 @@ Not gated: `ReviewManager.runCheckpointDelta` (post-handoff checkpoint delta rev
 - 2026-10-20T17:32:37Z · status review→active
 - 2026-10-20T17:53:52Z · assigned_to
 - 2026-10-20T17:53:55Z · note: handoff requested (ui-review)
-- 2026-10-20T18:02:59Z · note: shots: skipped — the diff (14 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-20T18:02:59Z · status active→review
