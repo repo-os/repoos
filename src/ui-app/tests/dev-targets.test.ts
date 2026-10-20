@@ -1526,7 +1526,7 @@ describe("devTargetServiceErrors", () => {
       service: {},
       target: { healthCheck: { url: "http://localhost:{ghost.port}/health" } },
     },
-  ])("rejects unknown placeholders in $owner", ({ service, target: targetFields }) => {
+  ])("rejects unknown placeholders in $owner", ({ owner, service, target: targetFields }) => {
     const targetConfig = {
       name: "web",
       kind: "server" as const,
@@ -1536,9 +1536,17 @@ describe("devTargetServiceErrors", () => {
     };
     const serviceConfig = { name: "api", command: "x", ...service } as DevServiceConfig;
     const errors = devTargetServiceErrors([targetConfig], [serviceConfig]);
+    // Env values may be credentials: their diagnostics name the key and never the
+    // value (#0843 review round 27); every other field names the placeholder.
+    const isEnv = owner.endsWith("env");
     expect(
-      errors.some((message) => message.includes('references unknown service placeholder "ghost"')),
+      errors.some((message) =>
+        isEnv
+          ? message.includes("references an unknown service placeholder (value not shown)")
+          : message.includes('references unknown service placeholder "ghost"'),
+      ),
     ).toBe(true);
+    if (isEnv) expect(errors.join("\n")).not.toContain("ghost");
   });
 
   it("allows forward, backward and self port references after reserving every listed port", () => {
@@ -1613,6 +1621,40 @@ describe("devTargetServiceErrors", () => {
         { name: "api_v1", command: "y" },
       ]),
     ).toEqual([]);
+  });
+
+  // #0843 review round 27 — env values may be credentials and diagnostics reach
+  // the browser, so no env-value text (or fragment) may appear in any message,
+  // for target AND service env, across every kind of placeholder problem.
+  it.each([
+    ["doubled braces", "SECRETVALUE-{{api.port}}-tail"],
+    ["escaped braces", "SECRETVALUE-\\{api.port\\}-tail"],
+    ["misspelled kind", "SECRETVALUE-{api.portx}-tail"],
+    ["unclosed reference", "SECRETVALUE-{api.port-tail"],
+    ["unknown service", "SECRETVALUE-{nope.port}-tail"],
+    ["service outside the set", "SECRETVALUE-{other.port}-tail"],
+  ])("never echoes env value text in a diagnostic: %s", (_n, value) => {
+    const services = [
+      { name: "api", command: "x", env: { SVC_KEY: value } },
+      { name: "other", command: "x" },
+    ];
+    const targets = [
+      {
+        name: "web",
+        kind: "server" as const,
+        command: "x",
+        url: "http://x",
+        services: ["api"],
+        env: { TARGET_KEY: value },
+      },
+    ];
+    const errors = devTargetServiceErrors(targets, services);
+    expect(errors.length).toBeGreaterThan(0);
+    const all = errors.join("\n");
+    expect(all).not.toContain("SECRETVALUE");
+    expect(all).not.toContain("-tail");
+    expect(all).toContain("TARGET_KEY");
+    expect(all).toContain("SVC_KEY");
   });
 
   // #0843 review round 25 — the collision check covers the FULL resolved set
@@ -1788,6 +1830,13 @@ describe("devTargetServiceErrors", () => {
           ...surface.service?.(row.ref),
         };
         const errors = devTargetServiceErrors([target], [service]);
+        if (surface.name.endsWith("env")) {
+          // Env values never appear in a diagnostic (#0843 review round 27).
+          expect(errors.length, surface.name).toBeGreaterThan(0);
+          expect(errors.join("\n"), surface.name).toContain("(value not shown)");
+          expect(errors.join("\n"), surface.name).not.toContain(row.ref);
+          continue;
+        }
         expect(
           errors.some((message) => message.includes(row.message)),
           surface.name,
