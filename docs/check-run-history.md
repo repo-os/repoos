@@ -24,8 +24,11 @@ never taken from the process cwd, and an inherited
 Caller attribution follows the same rule. `REPOOS_CHECK_TASK_ID` /
 `REPOOS_TASK_ID` is trusted only when it belongs here: a numeric id must have a
 `<workDir>/<id>-*.md` task file in this project, and a `REPOOS_ROOT` naming
-another repo invalidates the inherited attribution. Otherwise the run records
-task-less (or with the id resolved from its own checked-out branch).
+another repo invalidates the inherited attribution. A work dir that does not
+exist yet proves nothing (a server-managed run in a repo with no task files
+keeps its id — #0695), so only a work dir that *is* inspectable can reject an
+id. When an id is rejected the run records task-less, or with the id resolved
+from its own checked-out branch.
 
 ## Incident (2026-10-20)
 

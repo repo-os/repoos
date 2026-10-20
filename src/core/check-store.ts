@@ -507,19 +507,23 @@ export function envToRunContext(env: NodeJS.ProcessEnv): {
 }
 
 /**
- * True when this repo's work dir has a task file for `taskId`. Numeric ids are
- * the only ones with a task file; pseudo ids such as "release" have none and
- * are accepted as caller-supplied attribution.
+ * Whether this repo's work dir has a task file for `taskId` (#0870).
+ *
+ * `null` means the work dir cannot be inspected (it does not exist yet), so the
+ * id cannot be proven foreign — a server-managed run in a repo that has no
+ * task files must keep its attribution (#0695). Numeric ids are the only ones
+ * with a task file; pseudo ids such as "release" have none and are accepted as
+ * caller-supplied attribution.
  */
-function taskIdBelongsToProject(root: string, taskId: string, workDir: string): boolean {
+function taskIdBelongsToProject(root: string, taskId: string, workDir: string): boolean | null {
   if (!/^\d+$/.test(taskId)) return true;
+  let names: string[];
   try {
-    return readdirSync(join(root, workDir)).some(
-      (name) => name.startsWith(`${taskId}-`) && name.endsWith(".md"),
-    );
+    names = readdirSync(join(root, workDir));
   } catch {
-    return false;
+    return null;
   }
+  return names.some((name) => name.startsWith(`${taskId}-`) && name.endsWith(".md"));
 }
 
 /**
@@ -528,10 +532,11 @@ function taskIdBelongsToProject(root: string, taskId: string, workDir: string): 
  *
  * Inherited attribution is trusted only when it belongs to THIS project
  * (#0870): a `REPOOS_ROOT` naming another repo, or a task id with no task file
- * in this project's work dir, is ignored with one clear warning. Cross-project
- * servers share a machine and a `repoos` binary, so an exported
- * `REPOOS_TASK_ID` used to attribute one project's run to another project's
- * task.
+ * in a work dir that IS inspectable, is ignored with one clear warning. A work
+ * dir that cannot be read proves nothing and keeps the run's attribution — the
+ * #0695 server-managed case has no task files of its own. Cross-project servers
+ * share a machine and a `repoos` binary, so an exported `REPOOS_TASK_ID` used
+ * to attribute one project's run to another project's task.
  */
 export function resolveCheckRunAttribution(
   env: NodeJS.ProcessEnv,
@@ -546,7 +551,8 @@ export function resolveCheckRunAttribution(
   }
   const envRoot = env.REPOOS_ROOT?.trim();
   const foreignRoot = !!envRoot && !sameCheckProject(envRoot, repoRoot);
-  if (foreignRoot || !taskIdBelongsToProject(repoRoot, callerTaskId, workDir)) {
+  const belongsHere = taskIdBelongsToProject(repoRoot, callerTaskId, workDir);
+  if (foreignRoot || belongsHere === false) {
     if (!warnedForeignAttribution) {
       warnedForeignAttribution = true;
       const where = envRoot ? ` (REPOOS_ROOT=${envRoot})` : "";
