@@ -1,20 +1,21 @@
 ---
-last_close_out_gate_ms: 82630
-last_close_out_gate_at: "2026-10-20T19:46:20.768Z"
 id: "0867"
 title: "repoos landable <id>: one command that runs the landing pre-checks"
 type: feature
-status: review
+status: done
 priority: p1
 area: [core, server]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+merged_commit: ac2f1380d96925dffe4934069d220dc46bddfdea
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-landable-id-one-command-that-runs
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:05:58Z"
-updated_at: "2026-10-20T19:46:20Z"
+updated_at: "2026-10-20T19:46:46Z"
+last_close_out_gate_ms: 82630
+last_close_out_gate_at: "2026-10-20T19:46:20.768Z"
 review_passes: 1
 ---
 ## Problem
@@ -83,4 +84,4 @@ The close-out approval policy already computes most of these checks: `evaluateAp
 - 2026-10-20T19:41:38Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-20T19:42:54Z · note: review pass 1: good to go
 - 2026-10-20T19:46:20Z · close-out gate completed in 83s
-
+- 2026-10-20T19:46:46Z · status review→done, release:success
