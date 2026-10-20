@@ -2,7 +2,7 @@
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "2026-10-20T10:43:35.849544Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 90846"
