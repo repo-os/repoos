@@ -157,6 +157,51 @@ describe("sortStoryGroupsForPage (#0536)", () => {
       ),
     ).toEqual(["Low", "High", "Tag only"]);
   });
+
+  it("compares story numbers numerically, never as strings (#0885)", () => {
+    // 1, 9, 10, 11: a string sort would put "10"/"11" between "1" and "9".
+    const numbers: Record<string, string> = { One: "1", Nine: "9", Ten: "10", Eleven: "11" };
+    const groups = ["One", "Nine", "Ten", "Eleven"].map((name) => group(name));
+    const numberFor = (g: { name: string }) => numbers[g.name];
+
+    expect(
+      sortStoryGroupsForPage(groups, "taskNumberNewest", numberFor).map((g) => g.name),
+    ).toEqual(["Eleven", "Ten", "Nine", "One"]);
+    expect(
+      sortStoryGroupsForPage(groups, "taskNumberOldest", numberFor).map((g) => g.name),
+    ).toEqual(["One", "Nine", "Ten", "Eleven"]);
+  });
+
+  it("uses the definition's own last change for recency (#0885)", () => {
+    // The newer story has a *smaller* number and no member-task activity; the
+    // older one has a larger number. "Most recently updated" must still put the
+    // newly created story first, while number sorts keep their own order.
+    const olderWithTasks = {
+      ...group("Older larger number", { updated_at: "2026-09-01T00:00:00Z" }),
+      definitionUpdatedAt: "2026-09-01T00:00:00Z",
+    };
+    const newlyCreated = {
+      ...group("Newly created smaller number"),
+      definitionUpdatedAt: "2026-10-20T00:00:00Z",
+    };
+    expect(
+      sortStoryGroupsForPage([olderWithTasks, newlyCreated], "recent").map((g) => g.name),
+    ).toEqual(["Newly created smaller number", "Older larger number"]);
+  });
+
+  it("prefers the newer of the definition change and member activity (#0885)", () => {
+    const editedLater = {
+      ...group("Edited later", { updated_at: "2026-09-01T00:00:00Z" }),
+      definitionUpdatedAt: "2026-09-20T00:00:00Z",
+    };
+    const activeLater = {
+      ...group("Active later", { updated_at: "2026-10-01T00:00:00Z" }),
+      definitionUpdatedAt: "2026-08-01T00:00:00Z",
+    };
+    expect(sortStoryGroupsForPage([editedLater, activeLater], "recent").map((g) => g.name)).toEqual(
+      ["Active later", "Edited later"],
+    );
+  });
 });
 
 describe("sortStories ordering", () => {

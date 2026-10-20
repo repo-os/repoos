@@ -50,6 +50,7 @@ const definitions = computed((): StoryDefinition[] =>
     path: d.path,
     body: d.body,
     createdAt: d.createdAt,
+    updatedAt: d.updatedAt,
     createdBy: d.createdBy,
   })),
 );

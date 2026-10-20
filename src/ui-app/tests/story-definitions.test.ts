@@ -1,14 +1,15 @@
 /**
  * Story definition files + merge with task-derived roll-ups (#0486).
  */
-import { describe, expect, it } from "vitest";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { describe, expect, it, vi } from "vitest";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
 import {
   collisionFreeStoryPath,
   findStoryDefinitionByKey,
+  listStoryDefinitions,
   parseGeneratedStoryDefinition,
   rewriteStoryDefinition,
   storyFreeformPrompt,
@@ -234,5 +235,78 @@ describe("rewriteStoryDefinition", () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+});
+
+describe("story definition last-modified time (#0885)", () => {
+  it("records updated_at on create, and bumps it on rewrite", () => {
+    vi.useFakeTimers();
+    const root = mkdtempSync(join(tmpdir(), "repoos-story-updated-"));
+    try {
+      const c = config(root);
+      vi.setSystemTime(new Date("2026-10-01T09:00:00Z"));
+      const first = writeStoryDefinition(c, {
+        name: "Agent-discoverable RepoOS",
+        body: "Scope.",
+        createdBy: "hello@repoos.org",
+      });
+      expect(first.updatedAt).toBe("2026-10-01T09:00:00.000Z");
+      expect(readFileSync(join(root, first.path), "utf8")).toContain(
+        'updated_at: "2026-10-01T09:00:00.000Z"',
+      );
+
+      // A later edit must move the story's own timestamp, without touching
+      // created_at — this is what "most recently updated" sorts on.
+      vi.setSystemTime(new Date("2026-10-20T16:00:00Z"));
+      const { definition } = rewriteStoryDefinition(c, first.path, {
+        name: first.name,
+        body: "Edited scope.",
+      });
+      expect(definition.createdAt).toBe("2026-10-01T09:00:00.000Z");
+      expect(definition.updatedAt).toBe("2026-10-20T16:00:00.000Z");
+      expect(listStoryDefinitions(c)[0]!.updatedAt).toBe("2026-10-20T16:00:00.000Z");
+    } finally {
+      vi.useRealTimers();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("falls back to the file mtime when an older story has no updated_at", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-story-mtime-"));
+    try {
+      const c = config(root);
+      mkdirSync(join(root, "stories"), { recursive: true });
+      writeFileSync(
+        join(root, "stories", "legacy.md"),
+        '---\nname: Legacy\nnumber: "0007"\ncreated_at: "2026-01-01T00:00:00Z"\ncreated_by: "a"\n---\n\nOld.\n',
+      );
+      const [def] = listStoryDefinitions(c);
+      expect(def!.createdAt).toBe("2026-01-01T00:00:00Z");
+      expect(def!.updatedAt).toBeTruthy();
+      // The fallback is newer than the 2026-01-01 creation stamp, so an old
+      // file touched today still orders above one never touched.
+      expect(def!.updatedAt! > def!.createdAt).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("carries the definition change into the merged roll-up for recency sorting", () => {
+    const merged = mergeStoriesForDisplay(
+      [],
+      [
+        {
+          key: storyKey("Fresh"),
+          name: "Fresh",
+          number: "0011",
+          path: "stories/fresh.md",
+          body: "",
+          createdAt: "2026-10-20T15:00:00Z",
+          updatedAt: "2026-10-20T16:00:00Z",
+          createdBy: "a",
+        },
+      ],
+    );
+    expect(merged[0]!.definitionUpdatedAt).toBe("2026-10-20T16:00:00Z");
   });
 });
