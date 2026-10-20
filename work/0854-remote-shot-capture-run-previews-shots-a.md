@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T07:15:43Z"
+updated_at: "2026-10-20T07:16:16Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 238826f5072be220a6a7a5fe1ac19aa5ffb346a4
 review_rounds: 2
@@ -67,3 +67,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T07:10:03Z · status active→ready
 - 2026-10-20T07:10:20Z · status ready→active
 - 2026-10-20T07:15:43Z · body
+- 2026-10-20T07:16:16Z · body
