@@ -2,14 +2,14 @@
 id: "0888"
 title: "Engineer turn ends cleanly without a handoff: resume it automatically instead of waiting for a CTO nudge"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T21:57:26Z"
-updated_at: "2026-10-20T21:57:26Z"
+updated_at: "2026-10-20T23:17:32Z"
 ---
 ## Problem
 Overnight 2026-10-21 (CTO off) at least six engineers (#0867, #0866, #0883, #0869 and others) stopped after a turn: no crash, no handoff request, worktree clean, no live process, task still `active`. Several of those followed a `handoff_deferred` note (a handoff was requested while a message was queued, #0865), others just ended. Nothing resumed them; each needed a manual `repoos start` (or `mv ready` then `start` when the runner registry still said "already running"). #0869 resumes engineers after a non-clean exit, and the CTO's `restart-stalled-agent` / completion nudge covers the rest, but with the CTO off a clean exit without handoff is a dead end. Each stall costs 10-30 minutes of wall-clock per task.
@@ -31,3 +31,4 @@ Relevant code: src/server/agents.ts (`cleanup()`, `deliverQueuedMessages`, crash
 ## Activity
 
 - 2026-10-20T21:57:26Z · created · njachowski@gmail.com
+- 2026-10-20T23:17:32Z · status inbox→ready
