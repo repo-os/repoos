@@ -49,6 +49,7 @@ import {
   runGit,
   worktreePathForBranch,
 } from "../core/git.js";
+import { isEvidenceCurrent } from "./evidence-current.js";
 import { isShotCaptureUnavailable } from "../commands/shot.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/ui-harness.js";
 import {
@@ -183,22 +184,6 @@ export function handoffTreeNote(
  * task's file — keeps the capture stale (fail-closed: docs are content a
  * docs-site capture can legitimately show, so only task bookkeeping is exempt).
  */
-const TASK_BOOKKEEPING_PATH_RE = /^work\/.*\.md$/;
-
-async function diffIsTaskBookkeepingOnly(
-  diffRoot: string,
-  fromSha: string,
-  toHead: string,
-): Promise<boolean> {
-  const diff = await runGit(diffRoot, ["diff", "--name-only", fromSha, toHead], 10_000);
-  if (diff.status !== 0) return false;
-  const paths = diff.stdout
-    .split("\n")
-    .map((p) => p.trim())
-    .filter(Boolean);
-  return paths.length > 0 && paths.every((p) => TASK_BOOKKEEPING_PATH_RE.test(p));
-}
-
 /**
  * The staleness verdict as the review should act on it (#0766): the mechanical
  * {@link handoffTreeStatus} comparison, softened only for HEAD movement that is
@@ -211,13 +196,14 @@ export async function effectiveHandoffTreeStatus(
   diffRoot: string | null | undefined,
   evidence: Pick<UiHandoffGateEvidence, "sourceIdentity"> | null | undefined,
   currentHead: string | null | undefined,
+  config: RepoOSConfig,
 ): Promise<HandoffTreeStatus> {
   const status = handoffTreeStatus(evidence, currentHead);
   if (status !== "stale") return status;
   const captured = evidence?.sourceIdentity?.trim();
   const head = currentHead?.trim();
   if (!diffRoot || !captured || !head || captured === head) return status;
-  return (await diffIsTaskBookkeepingOnly(diffRoot, captured, head)) ? "current" : "stale";
+  return (await isEvidenceCurrent(diffRoot, captured, head, config)) ? "current" : "stale";
 }
 
 export interface UiHandoffGateResult {
