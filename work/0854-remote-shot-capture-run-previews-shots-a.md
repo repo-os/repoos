@@ -1,13 +1,8 @@
 ---
-updated_at: "2026-10-20T10:30:25Z"
-review_passes: 8
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — remote capture can never find its worktree, so runner modes fail instead of capturing (and don't fall back cleanly)."
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -16,6 +11,8 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
+updated_at: "2026-10-20T10:33:21Z"
+review_passes: 8
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -145,4 +142,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T10:28:45Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (8337270ca) during finalization (#0734)
 - 2026-10-20T10:30:25Z · note: review pass 8: needs some work
 - 2026-10-20T10:30:25Z · needs_input
-
+- 2026-10-20T10:33:21Z · needs_input
