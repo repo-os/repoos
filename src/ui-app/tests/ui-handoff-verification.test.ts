@@ -1012,6 +1012,31 @@ describe("effective handoff tree status — bookkeeping-only drift (#0766)", () 
     // A status flip / review-passes bump landing after the capture does not
     // invalidate it.
     expect(status).toBe("current");
+    expect(handoffTreeNote(status, { sourceIdentity: repo.shaOf(0) }, repo.shaOf(1))).toContain(
+      "only RepoOS bookkeeping changed",
+    );
+  });
+
+  it("honors custom bookkeeping directories and attachments", async () => {
+    const repo = gitRepo();
+    repo.commit([
+      "repoos/tasks/0861.md",
+      "repoos/inbox/.attachments/image.png",
+      "repoos/stories/s.md",
+      "repoos/schedules/daily.md",
+    ]);
+    const status = await effectiveHandoffTreeStatus(
+      repo.root,
+      { sourceIdentity: repo.shaOf(0) },
+      repo.shaOf(1),
+      {
+        workDir: "repoos/tasks",
+        inputsDir: "repoos/inbox",
+        storiesDir: "repoos/stories",
+        schedulesDir: "repoos/schedules",
+      } as RepoOSConfig,
+    );
+    expect(status).toBe("current");
   });
 
   it("keeps the capture stale when any other path moved the HEAD", async () => {
