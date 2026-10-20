@@ -407,12 +407,12 @@ export function repoOSAgentsSectionAddition(existing: string, workDir = "work"):
 function repoosToml(namespace: string, areas: string[] = [], previewStub = false): string {
   // The `repoos/` layout keeps every RepoOS-owned directory under the
   // namespace. workDir/docsDir/cacheDir were set here from the start; skills,
-  // stories and inputs default to top-level (`skills`, `stories`, `inputs`) and
+  // stories, inputs, schedules and reminders default to top-level dirs and
   // would otherwise land outside the namespace — the field report's #0703 (a
-  // `repoos/` project got a root `stories/`). Set them too so a fresh project's
-  // layout is uniform.
+  // `repoos/` project got a root `stories/`). Set them too so a fresh
+  // project's layout is uniform.
   const ns = namespace
-    ? `workDir = "${namespace}/work"\ndocsDir = "${namespace}/docs"\nskillsDir = "${namespace}/skills"\nstoriesDir = "${namespace}/stories"\ninputsDir = "${namespace}/inputs"\ncacheDir = "${namespace}/.repoos"\n`
+    ? `workDir = "${namespace}/work"\ndocsDir = "${namespace}/docs"\nskillsDir = "${namespace}/skills"\nstoriesDir = "${namespace}/stories"\ninputsDir = "${namespace}/inputs"\nschedulesDir = "${namespace}/schedules"\nremindersDir = "${namespace}/reminders"\ncacheDir = "${namespace}/.repoos"\n`
     : "";
   return `# RepoOS configuration. All fields optional — these are the defaults.
 

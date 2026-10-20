@@ -236,6 +236,16 @@ through the same commit path a handoff uses, so the close-out's own build and
 check then validate the result. **Cancel** changes nothing: the task stays in
 `review` with every file exactly where it was.
 
+Once a close-out is running, routine server-written churn that appears on the
+primary checkout mid-job does not pause it. At publish time a dirty file under
+the task directory, `inputsDir`, `storiesDir`, `schedulesDir` or `remindersDir`
+(or a dirty `repoos.toml`) is checkpoint-committed automatically, and main
+advancing only by commits in those directories counts as non-code drift, so the
+candidate is not rebuilt. A dirty **source** file still pauses the close-out
+exactly as above — the exemption is per-directory and fails closed for anything
+else. Reminder and schedule files are server-written bookkeeping like task files
+(#0860).
+
 **Engineer checkpoint after handoff (#0834):** if the only new commits on the
 branch since handoff are automatic `WIP: engineer self-check checkpoint` commits
 (from a scoped `repoos check` while the task sat in `review`), Move to done

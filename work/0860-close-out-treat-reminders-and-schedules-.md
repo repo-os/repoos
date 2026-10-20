@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-20T11:54:46Z"
-review_passes: 9
 id: "0860"
 title: "Close-out and layout: reminders/ and schedules/ are server-written bookkeeping, and follow the repoos/ layout"
 type: bug
@@ -13,7 +11,9 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T04:20:16Z"
+updated_at: "2026-10-20T11:33:42Z"
 review_rounds: 2
+review_passes: 6
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-10-20T06:20:53.646Z: repoos check failed: ◆ Check plan"
 dev_error_count: 2
@@ -140,26 +140,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:17:28Z · note: review pass 6: needs some work
 - 2026-10-20T11:17:28Z · message_delivered: 1 message(s)
 - 2026-10-20T11:17:28Z · status review→active
-- 2026-10-20T11:21:49Z · body
-- 2026-10-20T11:23:05Z · body
-- 2026-10-20T11:24:43Z · body
 - 2026-10-20T11:33:42Z · status active→review
-- 2026-10-20T11:33:43Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (36c63078d) during finalization (#0734)
-- 2026-10-20T11:40:47Z · note: review pass 7: needs some work
-- 2026-10-20T11:40:47Z · needs_input
-- 2026-10-20T11:42:26Z · needs_input
-- 2026-10-20T11:42:26Z · status review→active
-- 2026-10-20T11:42:26Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
-- 2026-10-20T11:44:23Z · body
-- 2026-10-20T11:45:34Z · status active→review
-- 2026-10-20T11:47:24Z · note: review pass 8: needs some work
-- 2026-10-20T11:47:25Z · needs_input
-- 2026-10-20T11:51:57Z · needs_input
-- 2026-10-20T11:51:57Z · status review→active
-- 2026-10-20T11:51:57Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
-- 2026-10-20T11:51:59Z · message_queued at 2026-10-20T11:51:59.534Z
-- 2026-10-20T11:53:07Z · status active→review
-- 2026-10-20T11:53:07Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (e06744b42) during finalization (#0734)
-- 2026-10-20T11:53:09Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (e06744b42) during finalization (#0734)
-- 2026-10-20T11:54:46Z · note: review pass 9: good to go
-

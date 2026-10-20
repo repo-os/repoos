@@ -264,7 +264,8 @@ conflicting on every job again, determinism has regressed: check that
 `scripts/copy-assets.mjs` has not put a timestamp back into the marker.
 
 **If you see `merge conflict in <path>` for anything OTHER than `dist/`, or a
-bookkeeping file under `work/`, `inputs/` or `stories/` (the closing task's own
+bookkeeping file under `work/`, `inputs/`, `stories/`, `reminders/` or
+`schedules/` (the closing task's own
 `work/<id>-*.md` plus every other server-written file in those dirs auto-resolves
 to main's copy): that is a REAL source conflict.** Do not force-resolve
 it blindly — it means the task's branch and main both changed the same file. Resolve it
@@ -354,8 +355,9 @@ and picks one of three modes, driven by `closeOut.gate`
 
 - **reuse** — the candidate tree is byte-identical to the tested tree
   (`git diff --quiet <tested> HEAD`), or main advanced with bookkeeping only
-  (`work/`, `inputs/`, `stories/`, `dist/`, the same non-code predicate the
-  publish-time drift guard uses). Only the cheap steps run; the tests step
+  (`work/`, `inputs/`, `stories/`, `reminders/`, `schedules/`, `dist/`, the
+  same non-code predicate the publish-time drift guard uses). Only the cheap
+  steps run; the tests step
   records `skipped — test suite ran on the remote validation runner`
   (`REPOOS_SKIP_TESTS=1`) and the run detail says
   `candidate tree is identical to the handoff-tested tree — full suite reused`.
@@ -402,7 +404,8 @@ Acquires a repo lock and re-checks whether main has drifted since the candidate 
 synced. If it has, the default is to go back to `syncing` and rebuild against the new
 main — correct self-healing for a competing change. Two refinements bound and focus
 that loop (#0386, #0637): a drift touching only bookkeeping — task files under the
-work dir, `inputs/` captures, `stories/` definitions, or generated `dist/` output,
+work dir, `inputs/` captures, `stories/` definitions, `reminders/` notes,
+`schedules/` definitions, or generated `dist/` output,
 all server-produced commits that can never compete with the task closing out —
 cannot invalidate the candidate's validation, so it
 publishes straight through without a resync; a drift that does touch real code
@@ -670,7 +673,8 @@ validate-time check reset the job for ANY advance. That re-ran a fully passing
 remote validation whenever the server itself committed inputs/stories/work
 bookkeeping during the (4+ minute) gate — the second half of #0633's
 close-out timeout. `validateCandidate` now runs the same
-`mainDriftIsBookkeepingOnly` check: work-dir, `inputs/`, `stories/` and
+`mainDriftIsBookkeepingOnly` check: work-dir, `inputs/`, `stories/`,
+`reminders/`, `schedules/` and
 `dist/`-only advances log "main advanced with bookkeeping-only commits —
 validating against the new tip", advance `baseMainSha` in place, and keep the
 existing candidate (the publish merge folds main's bookkeeping in and keeps
@@ -682,8 +686,9 @@ main's work-dir copies, as always). Real code drift — including `docs/` and
 
 Distinct from #1: this is *extra* stale content rather than dropped content. A
 feature branch accumulates edits to **other** tasks' `work/<id>-*.md` files, to
-`inputs/*.md` captures, or to `stories/*.md` definitions (concurrent board
-writes, a `repoos` CLI call inside the worktree, a partial merge).
+`inputs/*.md` captures, to `stories/*.md` definitions, to `reminders/*.md`
+notes, or to `schedules/*.md` definitions (concurrent board writes, a `repoos`
+CLI call inside the worktree, a partial merge).
 `autoResolveOurs` — the managed bookkeeping dirs, from
 `bookkeepingKeepOursPrefixes` — only forces main's copy **on a conflict**; a
 clean merge (main untouched since the merge-base) folds the stale copy straight
@@ -694,20 +699,21 @@ Observed live: #0319's close-out (`0967dd37`) landed frontmatter drift on
 keys. Nothing was lost and it self-healed on the next board write, but it is
 real pollution of another task's record.
 
-**Guards** (both added `be3acd3f`, 2026-08-29; extended to all three bookkeeping
-dirs in #0726):
+**Guards** (both added `be3acd3f`, 2026-08-29; extended to all five bookkeeping
+dirs in #0726 and #0860):
 - `guardReviewTransition` (`review-guard.ts`) unstages every `work/*.md` that
   isn't the task's own after `git add -A`, so drift never reaches the branch.
 - `resetForeignWorkFiles` (`integration-orchestrator.ts`) restores main's copy of
   every foreign bookkeeping file the candidate changed — under the work dir,
-  `inputs/` or `stories/`, per `bookkeepingDirs(config)` — `git rm`s ones the
+  `inputs/`, `stories/`, `reminders/` or `schedules/`, per
+  `bookkeepingDirs(config)` — `git rm`s ones the
   branch newly added, and commits, catching drift already committed in an earlier
   round. Only the closing task's OWN `work/<id>-*.md` may differ.
 
-The same three dirs are the close-out's `autoResolveOurs` set (merged into the
+The same five dirs are the close-out's `autoResolveOurs` set (merged into the
 candidate in the validate phase and into live `main` at publish), so a *conflict*
 in any of them resolves to main's copy instead of failing the close-out. And the
-publish-time dirty-main guard treats a dirty file under any of the three (plus
+publish-time dirty-main guard treats a dirty file under any of the five (plus
 `repoos.toml`) as routine, server-written churn it may auto-checkpoint — a dirty
 file anywhere else still fails closed.
 

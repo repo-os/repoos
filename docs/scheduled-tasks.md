@@ -2,9 +2,16 @@
 
 RepoOS can create ordinary `work/*.md` tasks on a cadence. Schedule definitions
 live as markdown files under `schedules/` (configurable via `schedulesDir` in
-`repoos.toml`). Each file combines a **task template** (title, body, type, area,
-priority, assignee, initial status) with **timing** (one-time, daily, or weekly,
-plus an IANA timezone and local time of day).
+`repoos.toml`; a `repoos/` project uses `<namespace>/schedules`). Each file
+combines a **task template** (title, body, type, area, priority, assignee,
+initial status) with **timing** (one-time, daily, or weekly, plus an IANA
+timezone and local time of day).
+
+The files are server-written bookkeeping: a run stamps `last_run_at`,
+`last_result`, `last_task_id`, `last_error` and `last_occurrence_key`, often
+while an unrelated close-out is in flight. A dirty schedule file on main is
+auto-checkpointed at publish time, and a schedule-only advance on main is
+treated as non-code drift, so it never blocks or restarts a Move to done (#0860).
 
 The scheduler runs only on the **main control-plane** `repoos serve` instance
 when **Scheduled task automation** is enabled in Settings (off by default).
