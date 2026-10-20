@@ -7,7 +7,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { rmSync } from "node:fs";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import type { RepoOSConfig } from "../../core/types.js";
@@ -475,5 +475,43 @@ describe("remote run history rows (#0564)", () => {
     } finally {
       delete process.env.REPOOS_CHECK_STORE_ROOT;
     }
+  });
+
+  it("validates a remote row's task id against the project's own task files (#0870)", async () => {
+    // A polluted opts.taskId (another project's task) must not label this
+    // project's remote history; the run still records, just task-less.
+    const root = tmpRoot();
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(join(root, "work", "0745-own-task.md"), '---\nid: "0745"\n---\n');
+    const config = {
+      root,
+      cacheDir: ".repoos",
+      workDir: "work",
+      remoteValidation: {
+        enabled: true,
+        provider: "tailscale",
+        tailscaleHosts: [{ host: "bee" }],
+      },
+    } as unknown as RepoOSConfig;
+    const exec: RemoteExecDeps = {
+      bundleRepo: vi.fn(async () => ({ ok: true })),
+      uploadFile: vi.fn(async () => ({ ok: true })),
+      downloadDir: vi.fn(async () => {}),
+      probeTcp: vi.fn(async () => true),
+      runRemote: vi.fn(async (_h, cmd): Promise<RemoteExecResult> =>
+        cmd.includes(PREREQ_OK_TOKEN)
+          ? { code: 0, output: PREREQ_OK_TOKEN, timedOut: false }
+          : { code: 0, output: "ok", timedOut: false },
+      ),
+    };
+    const runner = new TailscaleRunner(config, undefined, { exec });
+    expect(await runner.validate(opts("0745"))).toMatchObject({ ok: true });
+    expect(await runner.validate(opts("9999"))).toMatchObject({ ok: true });
+
+    const rows = getCheckStore(root).list();
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.taskId)).toContain("0745");
+    expect(rows.map((r) => r.taskId)).toContain(null);
+    expect(rows.map((r) => r.taskId)).not.toContain("9999");
   });
 });

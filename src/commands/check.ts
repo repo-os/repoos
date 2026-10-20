@@ -2008,8 +2008,10 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   // failed-first preflight, and the remote dispatch all use this instead of
   // reading REPOOS_TASK_ID directly, so an inherited id from another project
   // can neither label this project's row nor commit a WIP checkpoint for that
-  // other project's task.
-  const runContext = resolveCheckRunAttribution(process.env, checkStoreRoot, cfg.workDir);
+  // other project's task. Resolve it against the EXECUTION worktree (`repoRoot`),
+  // not `checkStoreRoot`: the branch that names the task is checked out here,
+  // while the main checkout is usually still on `main`.
+  const runContext = resolveCheckRunAttribution(process.env, repoRoot, cfg.workDir);
   const markers = detectRepoMarkers(repoRoot);
   const plan = resolveCheckPlan({
     check: cfg.check,
@@ -2128,7 +2130,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     recordRunHistoryRow({
       root: checkStoreRoot,
       cacheDir: cfg.cacheDir,
-      workDir: cfg.workDir,
+      attribution: runContext,
       scope: changedRef ? `changed:${changedRef}` : "full",
       startedAt: startedAt.toISOString(),
       durationMs: 0,
@@ -2288,7 +2290,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
             recordRunHistoryRow({
               root: checkStoreRoot,
               cacheDir: cfg.cacheDir,
-              workDir: cfg.workDir,
+              attribution: runContext,
               scope: "full",
               startedAt: new Date().toISOString(),
               durationMs: 0,
@@ -2400,7 +2402,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     recordRunHistoryRow({
       root: checkStoreRoot,
       cacheDir: cfg.cacheDir,
-      workDir: cfg.workDir,
+      attribution: runContext,
       scope: changedRef ? `changed:${changedRef}` : "full",
       startedAt: runStartedAt.toISOString(),
       durationMs: finishedAt.getTime() - runStartedAt.getTime(),
@@ -2508,7 +2510,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   recordRunHistoryRow({
     root: checkStoreRoot,
     cacheDir: cfg.cacheDir,
-    workDir: cfg.workDir,
+    attribution: runContext,
     scope: changedRef ? `changed:${changedRef}` : "full",
     worktree: repoRoot,
     startedAt: runStartedAt.toISOString(),
@@ -2579,7 +2581,7 @@ export function previousFailedTestsForRun(opts: {
 function recordRunHistoryRow(row: {
   root: string;
   cacheDir: string;
-  workDir: string;
+  attribution: { taskId: string | null; phase: CheckRunPhase };
   scope: string;
   worktree?: string;
   startedAt: string;
@@ -2592,7 +2594,7 @@ function recordRunHistoryRow(row: {
   isolationNote?: string | null;
 }): void {
   try {
-    const { taskId, phase } = resolveCheckRunAttribution(process.env, row.root, row.workDir);
+    const { taskId, phase } = row.attribution;
     getCheckStore(row.root, row.cacheDir).record({
       taskId,
       phase,

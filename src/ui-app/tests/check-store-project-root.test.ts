@@ -267,7 +267,7 @@ describe("cmdCheck writes only into the owning project (#0870)", () => {
     }
   }
 
-  it("a nested-layout worktree run ignores the foreign checkout's env entirely", async () => {
+  it("a nested-layout worktree run ignores the foreign env and keeps its own branch task", async () => {
     const foreign = foreignProject();
     const own = ownProject();
     const code = await runCheck(own.worktree, foreignEnv(foreign));
@@ -279,16 +279,19 @@ describe("cmdCheck writes only into the owning project (#0870)", () => {
     expect(existsSync(join(foreign.main, ".repoos", "checks.db"))).toBe(false);
     expect(existsSync(join(foreign.main, "repoos", ".repoos"))).toBe(false);
 
-    // The owning project's nested cache gained exactly one task-less row:
-    // the inherited RepoOS task id must not leak into the LightingAI project.
+    // The owning project's nested cache gained exactly one row. The inherited
+    // RepoOS id must not leak in; attribution resolves from the EXECUTION
+    // worktree's branch (main is still on `main`, so resolving from the store
+    // root would yield null).
     const db = join(own.main, "repoos", ".repoos", "checks.db");
     expect(existsSync(db)).toBe(true);
     const rows = getCheckStore(own.main, "repoos/.repoos").list();
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      taskId: null,
+      taskId: "0870",
       phase: "pre-review",
       outcome: "skipped",
     });
+    expect(rows[0]!.taskId).not.toBe("0861");
   }, 60_000);
 });

@@ -507,28 +507,72 @@ export function envToRunContext(env: NodeJS.ProcessEnv): {
 }
 
 /**
- * Whether this repo's work dir has a task file for `taskId` (#0870).
+ * Whether this repo has a task file for `taskId` (#0870).
  *
- * `null` means the work dir cannot be inspected (it does not exist yet), so the
- * id cannot be proven foreign — a server-managed run in a repo that has no
- * task files must keep its attribution (#0695). Numeric ids are the only ones
- * with a task file; pseudo ids such as "release" have none and are accepted as
+ * `null` means no work dir could be inspected (none exists yet), so the id
+ * cannot be proven foreign — a server-managed run in a repo with no task files
+ * must keep its attribution (#0695). Numeric ids are the only ones with a task
+ * file; pseudo ids such as "release" have none and are accepted as
  * caller-supplied attribution.
+ *
+ * A linked task worktree is checked first, then its main checkout: attribution
+ * is resolved for the EXECUTION worktree, but the canonical task file lives in
+ * the project's work dir on main, and a stale worktree (#0151) must not drop a
+ * legitimate id.
  */
 function taskIdBelongsToProject(root: string, taskId: string, workDir: string): boolean | null {
   if (!/^\d+$/.test(taskId)) return true;
-  let names: string[];
-  try {
-    names = readdirSync(join(root, workDir));
-  } catch {
-    return null;
+  const main = projectRoot(root);
+  const candidates = main === root ? [root] : [root, main];
+  let inspected = false;
+  for (const candidate of candidates) {
+    let names: string[];
+    try {
+      names = readdirSync(join(candidate, workDir));
+    } catch {
+      continue;
+    }
+    inspected = true;
+    if (names.some((name) => name.startsWith(`${taskId}-`) && name.endsWith(".md"))) return true;
   }
-  return names.some((name) => name.startsWith(`${taskId}-`) && name.endsWith(".md"));
+  return inspected ? false : null;
+}
+
+/**
+ * Accept a caller-supplied task id only when it belongs to this project
+ * (#0870), warning once per process when it does not. `env` contributes only
+ * `REPOOS_ROOT` — pass `{}` for server-side calls whose id came from task
+ * metadata rather than a process environment.
+ */
+export function validateCheckTaskId(
+  env: NodeJS.ProcessEnv,
+  root: string,
+  workDir: string,
+  taskId: string | null,
+): string | null {
+  if (!taskId) return null;
+  const envRoot = env.REPOOS_ROOT?.trim();
+  const foreignRoot = !!envRoot && !sameCheckProject(envRoot, root);
+  const belongsHere = taskIdBelongsToProject(root, taskId, workDir);
+  if (!foreignRoot && belongsHere !== false) return taskId;
+  if (!warnedForeignAttribution) {
+    warnedForeignAttribution = true;
+    const where = envRoot ? ` (REPOOS_ROOT=${envRoot})` : "";
+    console.error(
+      `[repoos] ignoring inherited check attribution ${taskId}${where}: ` +
+        `it does not belong to this project (${root}).`,
+    );
+  }
+  return null;
 }
 
 /**
  * Task + phase for a check-run row, including branch attribution in a task
  * worktree (#0695).
+ *
+ * `repoRoot` must be the worktree the check actually ran in, not the main
+ * checkout whose store receives the row: the branch that identifies a task is
+ * checked out in the execution worktree, while main is usually still on `main`.
  *
  * Inherited attribution is trusted only when it belongs to THIS project
  * (#0870): a `REPOOS_ROOT` naming another repo, or a task id with no task file
@@ -545,24 +589,8 @@ export function resolveCheckRunAttribution(
 ): { taskId: string | null; phase: CheckRunPhase } {
   const { taskId: callerTaskId, phase } = envToRunContext(env);
   const branchTaskId = taskIdFromWorktreeBranch(repoRoot, workDir);
-  if (!callerTaskId) {
-    if (!branchTaskId) return { taskId: null, phase };
-    return { taskId: branchTaskId, phase };
-  }
-  const envRoot = env.REPOOS_ROOT?.trim();
-  const foreignRoot = !!envRoot && !sameCheckProject(envRoot, repoRoot);
-  const belongsHere = taskIdBelongsToProject(repoRoot, callerTaskId, workDir);
-  if (foreignRoot || belongsHere === false) {
-    if (!warnedForeignAttribution) {
-      warnedForeignAttribution = true;
-      const where = envRoot ? ` (REPOOS_ROOT=${envRoot})` : "";
-      console.error(
-        `[repoos] ignoring inherited check attribution ${callerTaskId}${where}: ` +
-          `it does not belong to this project (${repoRoot}).`,
-      );
-    }
-    if (!branchTaskId) return { taskId: null, phase };
-    return { taskId: branchTaskId, phase };
-  }
-  return { taskId: callerTaskId, phase };
+  const accepted = validateCheckTaskId(env, repoRoot, workDir, callerTaskId);
+  if (accepted) return { taskId: accepted, phase };
+  if (!branchTaskId) return { taskId: null, phase };
+  return { taskId: branchTaskId, phase };
 }
