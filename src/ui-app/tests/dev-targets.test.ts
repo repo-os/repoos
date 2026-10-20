@@ -1458,6 +1458,69 @@ describe("devTargetServiceErrors", () => {
 });
 
 describe("loadConfig dev services wiring", () => {
+  it.each([
+    {
+      label: "an unrelated malformed target does not hide an unknown service",
+      targets: [
+        "[[dev.targets]]",
+        'name = "app"',
+        'kind = "server"',
+        'command = "bun run dev"',
+        'url = "http://localhost:5173"',
+        'services = ["missing"]',
+        "",
+        "[[dev.targets]]",
+        'name = "broken"',
+        'kind = "invalid"',
+        'command = "ignored"',
+      ],
+      services: [],
+      expected: [
+        '[dev.targets] broken: kind must be "server", "artifact" or "process" (got "invalid")',
+        '[dev.targets] app: references unknown service "missing" — declare it as a [[dev.services]] block in repoos.toml',
+      ],
+    },
+    {
+      label: "a malformed service row does not hide an unknown service",
+      targets: [
+        "[[dev.targets]]",
+        'name = "app"',
+        'kind = "server"',
+        'command = "bun run dev"',
+        'url = "http://localhost:5173"',
+        'services = ["missing"]',
+      ],
+      services: ["[[dev.services]]", 'name = "broken"'],
+      expected: [
+        "[dev.services] broken: a command is required",
+        '[dev.targets] app: references unknown service "missing" — declare it as a [[dev.services]] block in repoos.toml',
+      ],
+    },
+    {
+      label: "valid target and service rows have no errors",
+      targets: [
+        "[[dev.targets]]",
+        'name = "app"',
+        'kind = "server"',
+        'command = "bun run dev"',
+        'url = "http://localhost:5173"',
+        'services = ["api"]',
+      ],
+      services: ["[[dev.services]]", 'name = "api"', 'command = "bun run api"'],
+      expected: [],
+    },
+  ])("validates parsed rows independently: $label", ({ targets, services, expected }) => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svc-independent-errors-"));
+    try {
+      writeFileSync(join(dir, "repoos.toml"), [...services, "", ...targets, ""].join("\n"));
+      const cfg = loadConfig(dir);
+      for (const message of expected) expect(cfg.devTargetErrors).toContain(message);
+      if (expected.length === 0) expect(cfg.devTargetErrors).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("parses [[dev.services]] and a referencing target", () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svc-"));
     try {

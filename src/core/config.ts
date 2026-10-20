@@ -1401,19 +1401,17 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (devTargets.errors.length) cfg.devTargetErrors = devTargets.errors;
     // [[dev.services]] (#0843) — companion processes a target boots on their
     // own ports, the [[dev.targets]] counterpart of [[preview.services]].
-    // Cross-validation runs only when BOTH sides parsed clean, so an error
-    // names the real problem (the missing row) rather than piling a second
-    // "unknown service" message onto every target that references it.
+    // Keep parsing errors and cross-validation independent: malformed rows are
+    // reported above, while every target/service row that did parse still gets
+    // its own reference validation.
     const devServices = parseDevServices(parsed);
     if (devServices.errors.length) {
       cfg.devTargetErrors = [...(cfg.devTargetErrors ?? []), ...devServices.errors];
     }
     if (devServices.services.length) cfg.dev = { ...cfg.dev, services: devServices.services };
-    if (!devServices.errors.length && !devTargets.errors.length) {
-      const serviceErrors = devTargetServiceErrors(devTargets.targets, devServices.services);
-      if (serviceErrors.length)
-        cfg.devTargetErrors = [...(cfg.devTargetErrors ?? []), ...serviceErrors];
-    }
+    const serviceErrors = devTargetServiceErrors(devTargets.targets, devServices.services);
+    if (serviceErrors.length)
+      cfg.devTargetErrors = [...(cfg.devTargetErrors ?? []), ...serviceErrors];
     if (typeof get("ntfyEnabled") === "boolean") cfg.ntfyEnabled = get("ntfyEnabled") as boolean;
     if (typeof get("ntfyTopic") === "string") cfg.ntfyTopic = get("ntfyTopic") as string;
     if (typeof get("ntfyBaseUrl") === "string") cfg.ntfyBaseUrl = get("ntfyBaseUrl") as string;
