@@ -2,7 +2,7 @@
 id: "0860"
 title: "Close-out and layout: reminders/ and schedules/ are server-written bookkeeping, and follow the repoos/ layout"
 type: bug
-status: review
+status: active
 priority: p2
 area: server
 assigned_to: ai
@@ -155,3 +155,5 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:47:24Z · note: review pass 8: needs some work
 - 2026-10-20T11:47:25Z · needs_input
 - 2026-10-20T11:51:57Z · needs_input
+- 2026-10-20T11:51:57Z · status review→active
+- 2026-10-20T11:51:57Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
