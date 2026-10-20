@@ -1,13 +1,8 @@
 ---
-updated_at: "2026-10-20T09:02:56Z"
-review_passes: 15
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — a service crash leaves the target and sibling services running, contrary to the documented teardown behavior."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -18,6 +13,8 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
+updated_at: "2026-10-20T09:07:44Z"
+review_passes: 15
 last_check_failure: "repoos check at 2026-10-20T06:48:16.394Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
 dev_error_count: 1
@@ -222,4 +219,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T09:01:01Z · note: review pass 15: needs some work
 - 2026-10-20T09:02:55Z · note: review pass 16: needs some work
 - 2026-10-20T09:02:55Z · needs_input
-
+- 2026-10-20T09:07:44Z · needs_input
