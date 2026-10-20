@@ -35,10 +35,10 @@ Look at the runner registry (`runner.isRunning`), the watchdog, and the CTO `res
 ```json
 [
 {
-  "label": "Phantom runner detect window setting",
-  "target": "default",
-  "route": "/settings?setting=watchdog.phantomDetectMs",
-  "highlight": "[id=\"setting-watchdog.phantomDetectMs\"]"
+"label": "Phantom runner detect window setting",
+"target": "default",
+"route": "/settings?setting=watchdog.phantomDetectMs",
+"highlight": "[id=\"setting-watchdog.phantomDetectMs\"]"
 }
 ]
 ```
