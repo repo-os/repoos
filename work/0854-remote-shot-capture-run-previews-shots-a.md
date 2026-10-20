@@ -1,16 +1,8 @@
 ---
-updated_at: "2026-10-20T10:56:35Z"
-review_passes: 11
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "2026-10-20T10:43:35.849544Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 90846"
-debug_tldr: "The agent’s terminal session lost its tracked process — check the task status, then retry the interrupted step if needed."
-debug_tldr_at: "2026-10-20T10:52:47Z"
-debug_tldr_key: "dev-error|2026-10-20T10:43:35.849544Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 90846"
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -19,6 +11,8 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
+updated_at: "2026-10-20T10:57:10Z"
+review_passes: 11
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -168,4 +162,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T10:53:40Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a2c7d06dc) during finalization (#0734)
 - 2026-10-20T10:53:40Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a2c7d06dc) during finalization (#0734)
 - 2026-10-20T10:56:35Z · note: review pass 11: needs some work
-
+- 2026-10-20T10:57:10Z · needs_input
