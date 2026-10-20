@@ -1827,6 +1827,17 @@ export interface WatchdogConfig {
    * Default 3 minutes. Minimum 15 seconds.
    */
   phantomDetectMs?: number;
+  /**
+   * Crashes (or usage/auth failures) for one agent+model before RepoOS
+   * switches the task to the next unpaused budget-allowlist pair (#0869).
+   * Default 3. Minimum 1.
+   */
+  engineerCrashFailoverThreshold?: number;
+  /**
+   * Window the crash count is measured in (#0869), in milliseconds.
+   * Default 30 minutes. Minimum 1 minute.
+   */
+  engineerCrashFailoverWindowMs?: number;
 }
 
 /** Browser console / overflow gate at engineer handoff for UI work (#0680). */
