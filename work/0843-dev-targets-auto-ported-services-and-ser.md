@@ -3,6 +3,9 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — register the new TOML keys so `repoos doctor` does not report them as unknown.
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -291,3 +294,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T11:43:12Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (ed14b59a2) during finalization (#0734)
 - 2026-10-20T11:43:13Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (ed14b59a2) during finalization (#0734)
 - 2026-10-20T11:52:42Z · note: review pass 22: needs some work
+- 2026-10-20T11:52:42Z · needs_input
