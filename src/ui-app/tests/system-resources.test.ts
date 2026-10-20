@@ -5,6 +5,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   parsePsOutput,
+  parseProcessListing,
+  classifyTopProcesses,
   parseServeScan,
   parseServeRoot,
   parseServePort,
@@ -68,6 +70,41 @@ describe("parsePsOutput", () => {
     const records = parsePsOutput(out);
     expect(records).toHaveLength(1);
     expect(records[0].elapsed).toBe("2-04:30:15");
+  });
+});
+
+describe("parseProcessListing and top-process ownership (#0871)", () => {
+  const FIXTURE = [
+    "  600     1  50.0  5.0 2048000 node",
+    "  601   600  20.0  2.0 1048576 node",
+    "  700     1  30.0  8.0 4096000 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Helper",
+    "  800     1   1.0  1.0  204800 /usr/sbin/WindowServer",
+  ].join("\n");
+
+  it("parses a machine-wide ps listing and keeps the command path intact", () => {
+    const records = parseProcessListing(FIXTURE);
+    expect(records).toHaveLength(4);
+    expect(records[2]).toMatchObject({ pid: 700, ppid: 1, cpuPercent: 30, memPercent: 8 });
+    expect(records[2].command).toMatch(/Google Chrome Helper$/);
+  });
+
+  it("labels the server tree RepoOS-owned and the rest of the machine other", () => {
+    const top = classifyTopProcesses(parseProcessListing(FIXTURE), new Set([600]), 10);
+    const chrome = top.byCpu.find((p) => p.pid === 700);
+    const agent = top.byCpu.find((p) => p.pid === 600);
+    const child = top.byCpu.find((p) => p.pid === 601);
+    expect(chrome?.owner).toBe("other");
+    expect(chrome?.command).toBe("Google Chrome Helper");
+    // A child of a tracked agent (a build, check or headless browser) is ours too.
+    expect(agent?.owner).toBe("repoos");
+    expect(child?.owner).toBe("repoos");
+  });
+
+  it("sorts CPU and memory lists independently", () => {
+    const top = classifyTopProcesses(parseProcessListing(FIXTURE), new Set([600]), 2);
+    expect(top.byCpu.map((p) => p.pid)).toEqual([600, 700]);
+    expect(top.byMemory.map((p) => p.pid)).toEqual([700, 600]);
+    expect(top.byCpu).toHaveLength(2);
   });
 });
 
