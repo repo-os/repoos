@@ -406,3 +406,49 @@ describe("message queueing", () => {
     }
   });
 });
+
+describe("handoff deferral while messages are queued (#0865)", () => {
+  // One row per turn-end state. A handoff requested in the same turn as a still
+  // queued message must be deferred (and noted) so the human's message is read
+  // BEFORE any review starts; with nothing queued the handoff stands.
+  it.each([
+    { label: "a queued message", queued: ["Please also fix the docs"], deferred: true },
+    { label: "two queued messages", queued: ["first", "second"], deferred: true },
+    { label: "no queued message", queued: [] as string[], deferred: false },
+  ])("with $label the handoff is deferred: $deferred", async ({ queued, deferred }) => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const id = "defer-test";
+    const absPath = setupTaskFile(fx.root, id, "active");
+    const runner = new AgentRunner(config(fx.root), () => {}, {
+      getTask: () => parseFile(fx.root, absPath),
+    });
+    try {
+      const t = task(id);
+      expect(runner.start(t, `feat/${id}`, agent, { cwd: fx.bin }).ok).toBe(true);
+      for (const text of queued) expect(runner.send(id, text, agent).queued).toBe(true);
+      // The engineer asks for handoff in the same turn the messages were queued.
+      const entry = runner["entries"].get(id) as { handoffRequested?: boolean } | undefined;
+      expect(entry).toBeDefined();
+      entry!.handoffRequested = true;
+
+      await waitFor(() => !runner.isRunning(id), "engineer turn to finish", 8000);
+      const activity = readFileSync(absPath, "utf8");
+      if (deferred) {
+        expect(activity).toContain(
+          `handoff_deferred: ${queued.length} queued message(s) must be read before review`,
+        );
+        // The deferral clears the persisted handoff so no review is triggered.
+        expect(runner.hasPendingHandoff(id)).toBe(false);
+      } else {
+        expect(activity).not.toContain("handoff_deferred");
+      }
+    } finally {
+      runner.dispose();
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+});
