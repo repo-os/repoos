@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-20T05:00:30Z"
-review_passes: 1
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -13,6 +11,9 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
+updated_at: "2026-10-20T05:00:30Z"
+review_rounds: 1
+review_passes: 1
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -45,4 +46,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T04:52:44Z · status active→review
 - 2026-10-20T04:52:47Z · note: shots: skipped — the diff (2 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-20T05:00:29Z · note: review pass 1: back to the drawing board
-
+- 2026-10-20T05:00:30Z · status review→active
