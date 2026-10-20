@@ -6806,6 +6806,33 @@ export class AgentRunner {
    * Spawn one turn and attach streaming. Everything after the spawn is async;
    * failures surface as agent.exited via cleanup.
    */
+  /**
+   * A clean engineer turn clears a crash-set `dev-error` (#0869). The flag is
+   * deliberately NOT cleared when a start merely begins: an unrelated
+   * needs_input reason must survive a start (#0613), and a crash only clears
+   * once the engineer actually makes progress.
+   */
+  private clearCrashNeedsInputOnProgress(task: Task): void {
+    try {
+      const current = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+      if (!current.needsInput || current.needsInputReason !== "dev-error") return;
+      const cleared = patchTaskFile(this.config, current.absPath, {
+        needsInput: false,
+        needsInputReason: null,
+        needsInputDetail: null,
+      });
+      this.onTaskFilePatched?.(cleared.absPath);
+    } catch {
+      // A stale banner must never take down the turn's completion path.
+    }
+  }
+
   /** Clear recoverable run-health needs_input when a new engineer turn starts (#0716). */
   private clearRecoverableNeedsInput(task: Task): Task {
     let current = task;
@@ -8668,6 +8695,7 @@ export class AgentRunner {
     // A clean engineer turn made progress: forget the crash window and any
     // automatic failover marker, so a later crash series can recover again.
     if (exitedCleanly && !wasReview && taskForHandoff?.status === "active") {
+      this.clearCrashNeedsInputOnProgress(taskForHandoff);
       this.crashedNoHandoff.delete(taskId);
       if (this.onEngineerProgress) queueMicrotask(() => this.onEngineerProgress?.(taskId));
     }

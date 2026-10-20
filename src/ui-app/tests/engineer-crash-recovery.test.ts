@@ -302,6 +302,33 @@ process.stdout.write("working\\n");
 process.exit(0);
 `;
 
+const CRASH_DELAYED_SCRIPT = `#!/usr/bin/env node
+process.stdout.write("working\\n");
+setTimeout(() => {
+  process.stderr.write("boom: reading additional input from stdin\\n");
+  process.exit(1);
+}, 600);
+`;
+
+function seedNeedsInput(fx: ReturnType<typeof runnerFixture>, reason: string): void {
+  writeFileSync(
+    fx.taskPath,
+    readFileSync(fx.taskPath, "utf8").replace(
+      "---\n## Problem",
+      `needs_input: true\nneeds_input_reason: ${reason}\nneeds_input_detail: seeded\n---\n## Problem`,
+    ),
+  );
+}
+
+function applyWorkState(fx: ReturnType<typeof runnerFixture>, state: string): void {
+  if (state === "no changes") return;
+  writeFileSync(join(fx.root, "source.txt"), `work: ${state}\n`);
+  if (state === "committed") {
+    execFileSync("git", ["add", "source.txt"], { cwd: fx.root });
+    execFileSync("git", ["commit", "-qm", "work"], { cwd: fx.root });
+  }
+}
+
 describe("applying crash recovery to a task (#0869)", () => {
   function recoveryDeps(fx: ReturnType<typeof runnerFixture>) {
     const launches: Array<{
@@ -452,6 +479,67 @@ describe("applying crash recovery to a task (#0869)", () => {
       fx.restorePath();
     }
   });
+});
+
+describe("AgentRunner crash matrix (#0869)", () => {
+  const workStates = ["committed", "uncommitted", "no changes"] as const;
+  const queuedStates = [false, true] as const;
+  const needsInputStates = [false, true] as const;
+  const cases = workStates.flatMap((work) =>
+    queuedStates.flatMap((queued) =>
+      needsInputStates.map((needsInputSet) => ({ work, queued, needsInputSet })),
+    ),
+  );
+
+  it.each(cases)(
+    "crash with work=$work, queued=$queued, needs_input=$needsInputSet never handoffs and keeps the task active",
+    async ({ work, queued, needsInputSet }) => {
+      const fx = runnerFixture(CRASH_DELAYED_SCRIPT);
+      try {
+        applyWorkState(fx, work);
+        if (needsInputSet) seedNeedsInput(fx, "dev-error");
+        const crashes: unknown[] = [];
+        let handoffs = 0;
+        const runner = new AgentRunner(fx.config, () => {}, {
+          stallTimeoutMs: 10_000,
+          onEngineerCrash: (_taskId, info) => crashes.push(info),
+          onHandoff: () => {
+            handoffs++;
+          },
+        });
+        const task = parseTask({
+          content: readFileSync(fx.taskPath, "utf8"),
+          absPath: fx.taskPath,
+          root: fx.root,
+          defaultStatus: fx.config.defaultStatus,
+          defaultAssignee: fx.config.defaultAssignee,
+        });
+        expect(runner.start(task, "feat/0869-crash", fx.agent, { cwd: fx.root }).ok).toBe(true);
+        if (queued) {
+          await waitFor(() => runner.stats("0869").lastOutputAt != null, "engineer output");
+          const sent = runner.send("0869", "queued follow-up", fx.agent);
+          expect(sent).toMatchObject({ ok: true, queued: true });
+        }
+        await waitFor(() => crashes.length === 1, "crash callback");
+        expect(handoffs).toBe(0);
+        expect(runner.suppressesHandoffAfterCrash("0869")).toBe(true);
+        const onDisk = parseTask({
+          content: readFileSync(fx.taskPath, "utf8"),
+          absPath: fx.taskPath,
+          root: fx.root,
+          defaultStatus: fx.config.defaultStatus,
+          defaultAssignee: fx.config.defaultAssignee,
+        });
+        expect(onDisk.status).toBe("active");
+        expect(onDisk.needsInput).toBe(true);
+        expect(onDisk.needsInputReason).toBe("dev-error");
+        const queuedNow = runner.queuedMessageSummary().find((q) => q.id === "0869");
+        expect(queuedNow?.count ?? 0).toBe(queued ? 1 : 0);
+      } finally {
+        fx.restorePath();
+      }
+    },
+  );
 });
 
 describe("AgentRunner crash handling (#0869)", () => {
