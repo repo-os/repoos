@@ -746,9 +746,6 @@ models = ["default"]
 [[budget.allowlist]]
 cli = "cursor"
 models = ["composer-2.5"]
-paused = true
-pausedUntil = "2026-10-22T01:00:00.000Z"
-pausedReason = "cursor usage reset"
 [[budget.allowlist]]
 cli = "codex"
 models = ["gpt-6-luna"]
