@@ -39,9 +39,18 @@ const llmsFull = readDist("llms-full.txt");
 const pages = discoverDocsPages(docsRoot);
 if (pages.length === 0) fail("no Markdown pages found under user-docs/");
 
+// The home page is a recorded skip from the agent index, but its HTML route
+// must still build.
+if (!existsSync(path.join(distRoot, "index.html"))) {
+  fail("home HTML route missing: expected index.html");
+}
+
 for (const page of pages) {
-  if (!existsSync(path.join(distRoot, page.markdownPath))) {
+  const raw = path.join(distRoot, page.markdownPath);
+  if (!existsSync(raw)) {
     fail(`raw Markdown missing for ${page.source}: expected ${page.markdownPath}`);
+  } else if (!readFileSync(raw, "utf8").includes(`url: ${SITE_ORIGIN}/${page.markdownPath}`)) {
+    fail(`raw Markdown for ${page.source} is missing its canonical URL frontmatter`);
   }
   if (!existsSync(path.join(distRoot, page.htmlPath))) {
     fail(`HTML route missing for ${page.source}: expected ${page.htmlPath}`);
