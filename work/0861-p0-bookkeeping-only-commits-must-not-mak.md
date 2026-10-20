@@ -2,7 +2,7 @@
 id: "0861"
 title: "P0: bookkeeping-only commits must not make handoff evidence stale or block a good review"
 type: bug
-status: review
+status: active
 priority: p0
 area: [server, core, web]
 assigned_to: ai
@@ -92,3 +92,5 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 - 2026-10-20T09:02:51Z · note: review pass 11: needs some work
 - 2026-10-20T09:03:19Z · needs_input
 - 2026-10-20T09:07:34Z · needs_input
+- 2026-10-20T09:07:34Z · status review→active
+- 2026-10-20T09:07:34Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
