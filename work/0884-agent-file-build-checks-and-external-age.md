@@ -12,11 +12,10 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T16:02:55Z"
-updated_at: "2026-10-20T16:02:55Z"
+updated_at: "2026-10-20T18:59:05Z"
 ---
 ## Problem
-
-The agent files in this story are generated or shared across two sites. Nothing in the existing `landing-build` and `user-docs-build` steps fails the build when `llms.txt` is missing, when an install command drifts from the published commands, or when the landing page and the docs homepage embed different prompt text. There is also no record of whether an unfamiliar coding agent can actually follow the public path.
+The agent files in this story are generated or shared across two sites. Nothing in the existing `landing-build` and `user-docs-build` steps fails the build when `llms.txt` is missing, when an install command drifts from the published commands, or when the landing page and the docs homepage embed different prompt text.
 
 ## Desired UX
 
@@ -42,3 +41,4 @@ The trial is a written record on this task, not a new public page and not a chan
 ## Activity
 
 - 2026-10-20T16:02:55Z · created · njachowski@gmail.com
+- 2026-10-20T18:59:05Z · body: Problem (added 1, removed 1)
