@@ -63,6 +63,7 @@ import { importShotArtifacts, localShotStore, shotsDir, shotUrl, type ShotMeta }
 import { withPreviewVerificationSlot } from "./preview-verification-slot.js";
 import { patchTaskFile } from "./write.js";
 import {
+  recordBrowserCaptureActivity,
   runBrowserCaptureWithPolicy,
   type BrowserEvidenceArtifacts,
   type BrowserEvidenceTransport,
@@ -654,7 +655,7 @@ export async function runUiHandoffGate(
             { ...deps, remoteTransport: undefined },
           ),
         note: (message) => log(task.id, "warn", `ui verification: ${message}`),
-        useArtifacts: async (artifacts) => importRemoteVerification(config, task.id, artifacts),
+        useArtifacts: async (artifacts) => importRemoteVerification(config, task, artifacts, log),
       });
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
@@ -1105,9 +1106,11 @@ export async function runUiHandoffGate(
 
 async function importRemoteVerification(
   config: RepoOSConfig,
-  taskId: string,
+  task: Task,
   artifacts: BrowserEvidenceArtifacts,
+  log: TaskLog,
 ): Promise<UiHandoffGateResult> {
+  const taskId = task.id;
   const result = artifacts.results.verification as UiHandoffGateResult | undefined;
   if (!result || typeof result.ok !== "boolean" || typeof result.detail !== "string") {
     throw new Error("runner result omitted the UI verification outcome");
@@ -1132,5 +1135,9 @@ async function importRemoteVerification(
   const path = evidenceFile(config, taskId);
   mkdirSync(join(path, ".."), { recursive: true });
   writeFileSync(path, JSON.stringify(evidenceJson, null, 2));
+  const note = `ui verification ${result.ok ? "passed" : "failed"}: ${result.detail}`;
+  recordBrowserCaptureActivity(task.id, result.ok, note, log, (taskNote) => {
+    patchTaskFile(config, task.absPath, { note: taskNote });
+  });
   return { ...result, evidencePath: path };
 }
