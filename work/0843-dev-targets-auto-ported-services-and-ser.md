@@ -284,3 +284,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T11:08:21Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate
 - 2026-10-20T11:08:26Z · agent exited with an error (codex) · Reading additional input from stdin...
 - 2026-10-20T11:08:27Z · status active→review
+- 2026-10-20T11:08:27Z · note: handoff requested (cli)
