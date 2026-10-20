@@ -3,9 +3,6 @@ id: "0861"
 title: "P0: bookkeeping-only commits must not make handoff evidence stale or block a good review"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: evidence-gap-exhausted
-needs_input_detail: "- `Changes tab with bookkeeping-current handoff evidence` (target `default`, route `/`): PNG at `work/.attachments/0861/shots/default-1.png` shows the board/nav, no task drawer. The `drawer:shotEvidence` fixture is only reachable at `/work?task=9999&tab=changes` with a `waitFor` step (cf. #0819's declarations); route `/` never opens the drawer. The fixture also seeds #0819's generic docs-skip evidence, not a bookkeeping-current record, so even the right route would not visibly demonstrate the new behavior."
 priority: p0
 area: [server, core, web]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/p0-bookkeeping-only-commits-must-not-mak
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:47:38Z"
-updated_at: "2026-10-20T09:03:19Z"
+updated_at: "2026-10-20T09:07:34Z"
 review_passes: 11
 last_check_failure: "repoos check at 2026-10-20T07:15:20.788Z: repoos check failed: rendered-contrast — $ bun scripts/ui-contrast-audit.mjs"
 dev_error_count: 1
@@ -94,3 +91,4 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 - 2026-10-20T09:02:45Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-20T09:02:51Z · note: review pass 11: needs some work
 - 2026-10-20T09:03:19Z · needs_input
+- 2026-10-20T09:07:34Z · needs_input
