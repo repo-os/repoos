@@ -310,3 +310,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T12:16:11Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T12:29:13Z · body
 - 2026-10-20T12:37:23Z · message_queued at 2026-10-20T12:37:23.519Z
+- 2026-10-20T12:37:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
