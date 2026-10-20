@@ -626,9 +626,14 @@ describe("DevTargetManager lifecycle", () => {
     const mgr = new DevTargetManager(baseConfig({ targets: [target({ command: cmd })] }, dir));
     try {
       await mgr.start("web");
-      // Give the child a moment to flush its output.
-      await new Promise((r) => setTimeout(r, 1200));
-      const log = mgr.get("web")?.log ?? [];
+      // Wait for the child to start producing output; a fixed delay is flaky
+      // when the process is queued under host load.
+      const outputDeadline = Date.now() + 5000;
+      let log = mgr.get("web")?.log ?? [];
+      while (log.length === 0 && Date.now() < outputDeadline) {
+        await new Promise((r) => setTimeout(r, 50));
+        log = mgr.get("web")?.log ?? [];
+      }
       expect(log.length).toBeLessThanOrEqual(DEV_LOG_MAX_LINES);
       expect(log.length).toBeGreaterThan(0);
       // The cap is a full last-run log, not a 6-line tail (#0775).
