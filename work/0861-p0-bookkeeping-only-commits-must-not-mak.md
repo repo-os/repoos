@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-20T09:03:18Z"
+review_passes: 1
 id: "0861"
 title: "P0: bookkeeping-only commits must not make handoff evidence stale or block a good review"
 type: bug
@@ -11,7 +13,6 @@ branch: feat/p0-bookkeeping-only-commits-must-not-mak
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:47:38Z"
-updated_at: "2026-10-20T09:03:18Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-20T06:56:38.269Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
@@ -55,3 +56,4 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 - 2026-10-20T06:56:38Z · message_delivered: 2 message(s)
 - 2026-10-20T07:23:47Z · status active→review
 - 2026-10-20T09:03:18Z · note: review pass 1: good to go
+
