@@ -61,7 +61,13 @@ import {
 } from "../core/remote-hosts.js";
 import type { Logger } from "../core/logger.js";
 import { extractFailedTests, remoteRunHistoryMeta } from "../core/check-failure-summary.js";
-import { getCheckStore, type CheckRunOutcome, type CheckRunPhase } from "../core/check-store.js";
+import {
+  getCheckStore,
+  resolveCheckStoreRoot,
+  validateCheckTaskId,
+  type CheckRunOutcome,
+  type CheckRunPhase,
+} from "../core/check-store.js";
 import type { CheckSummary } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
 import { runGit } from "../core/git.js";
@@ -4157,11 +4163,11 @@ function classifyRunOutcome(summary: CheckSummary): CheckRunOutcome {
  * scope is 'full' unless the run used changed-path tests (#0695). Fail-soft:
  * history is observability, never a gate input.
  *
- * The store root honours `REPOOS_CHECK_STORE_ROOT` (0564 review): a standalone
- * `repoos check` that dispatches the remote half itself resolves it to the
- * MAIN checkout before dispatching, so the row lands in the history the
- * server reads instead of the worktree's own file. Server-side callers leave
- * the env unset and fall through to `config.root` — the main checkout.
+ * The store root is derived from this project (config.root), never from an
+ * inherited `REPOOS_CHECK_STORE_ROOT` that names another checkout (#0870) — a
+ * standalone `repoos check` dispatching its remote half resolves to the MAIN
+ * checkout before dispatching, so the row lands in the history the server
+ * reads instead of the worktree's own file.
  */
 function recordRemoteRunHistory(
   config: RepoOSConfig,
@@ -4173,7 +4179,17 @@ function recordRemoteRunHistory(
   summary?: CheckSummary,
 ): void {
   try {
-    const storeRoot = process.env.REPOOS_CHECK_STORE_ROOT?.trim() || config.root;
+    const storeRoot = resolveCheckStoreRoot(config.root, process.env);
+    // #0870: a remote row's task id comes from task metadata, not a process
+    // env, so validate it against the project's own task files. A polluted id
+    // (or one from another project) is recorded task-less, never as this
+    // project's task.
+    const taskId = validateCheckTaskId(
+      {},
+      storeRoot,
+      config.workDir,
+      /^\d+$/.test(opts.taskId) ? opts.taskId : null,
+    );
     const meta = summary
       ? remoteRunHistoryMeta(outcome, {
           output: summary.output,
@@ -4185,7 +4201,7 @@ function recordRemoteRunHistory(
         })
       : remoteRunHistoryMeta(outcome, { detail: detail ?? null });
     getCheckStore(storeRoot, config.cacheDir).record({
-      taskId: /^\d+$/.test(opts.taskId) ? opts.taskId : null,
+      taskId,
       phase: opts.phase ?? "pre-review",
       candidateSha: opts.candidateSha,
       machine,

@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 97697
-last_close_out_gate_at: "2026-10-20T23:11:36.647Z"
 id: "0870"
 title: Check store writes to the wrong project root (LightingAI wrote repoos/.repoos/checks.db into the RepoOS checkout)
 type: bug
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: d7c43a429a9e7b49e74a905f40a237ca918370ea
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/check-store-writes-to-the-wrong-project-
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:26Z"
 updated_at: "2026-10-20T23:11:36Z"
+last_close_out_gate_ms: 97697
+last_close_out_gate_at: "2026-10-20T23:11:36.647Z"
 review_passes: 2
 review_rounds: 1
 dev_error_count: 2
