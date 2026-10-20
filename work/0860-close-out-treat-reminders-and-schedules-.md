@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-20T08:56:28Z"
-review_passes: 3
 id: "0860"
 title: "Close-out and layout: reminders/ and schedules/ are server-written bookkeeping, and follow the repoos/ layout"
 type: bug
-status: review
+status: active
 priority: p2
 area: server
 assigned_to: ai
@@ -13,6 +11,8 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:20:16Z"
+updated_at: "2026-10-20T11:08:16Z"
+review_passes: 3
 review_rounds: 1
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-10-20T06:20:53.646Z: repoos check failed: ◆ Check plan"
@@ -116,4 +116,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T08:37:37Z · note: shots: skipped — 14 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-20T08:52:26Z · note: review pass 2: good to go
 - 2026-10-20T08:56:28Z · note: review pass 3: good to go
-
+- 2026-10-20T11:08:16Z · status review→active
