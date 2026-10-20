@@ -6,8 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress dev",
-    "build": "vitepress build && bun scripts/check-llms.ts",
+    "build": "vitepress build && bun scripts/check-llms.ts && bun scripts/check-ai-agents.ts",
     "check:llms": "bun scripts/check-llms.ts",
+    "check:ai-agents": "bun scripts/check-ai-agents.ts",
     "preview": "vitepress preview"
   },
   "devDependencies": {
