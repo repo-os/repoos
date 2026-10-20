@@ -12,7 +12,7 @@ branch: feat/hub-add-server-never-lists-locally-runni
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:15:39Z"
-updated_at: "2026-10-20T17:21:45Z"
+updated_at: "2026-10-20T18:33:40Z"
 last_close_out_gate_ms: 94623
 last_close_out_gate_at: "2026-10-19T06:11:03.958Z"
 review_passes: 3
@@ -91,3 +91,4 @@ With a local `repoos serve` on a non-default port (e.g. **7559**), open Hub → 
 - 2026-10-20T15:31:56Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-20T16:09:58Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-20T17:21:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-20T18:33:40Z · message_overdue: still queued after 60m without being delivered

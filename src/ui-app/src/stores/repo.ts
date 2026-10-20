@@ -3187,6 +3187,9 @@ export const useRepoStore = defineStore("repo", () => {
     if (isSeededShotFixtureTask(id)) return;
     try {
       const r = await api<LandableResult>(`/api/tasks/${id}/landable`);
+      // Older servers and generic test doubles answer 200 without the
+      // checklist shape; storing that would crash the drawer's template.
+      if (!r || !Array.isArray(r.checks) || !r.summary) return;
       landable.value = { ...landable.value, [id]: r };
     } catch {
       /* endpoint unavailable — the checklist is advisory */
