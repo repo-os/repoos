@@ -2,16 +2,16 @@
 id: "0861"
 title: "P0: bookkeeping-only commits must not make handoff evidence stale or block a good review"
 type: bug
-status: ready
+status: active
 priority: p0
 area: [server, core, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/p0-bookkeeping-only-commits-must-not-mak
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:47:38Z"
-updated_at: "2026-10-20T04:47:56Z"
+updated_at: "2026-10-20T04:47:58Z"
 ---
 ## Problem
 A task whose code is correct is repeatedly held in review because its screenshot/verification evidence is flagged **stale** when the only commits since the capture are RepoOS bookkeeping. Example (#0843, 2026-10-20): review pass 10 found no bugs and no edge cases, but the verdict was "needs some work" with `Evidence: ... captured at d87648624, while reviewed HEAD is b1eda86f8. The only intervening change is task-file bookkeeping, but the capture is still stale by the handoff evidence rule.` It then needed a manual `repoos verify` + `repoos review again` to get another pass (which found a new unrelated issue, but the stale-evidence round was pure waste). The same thing happened to #0832 and others.
@@ -39,3 +39,4 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 - 2026-10-20T04:47:38Z · created · njachowski@gmail.com
 - 2026-10-20T04:47:52Z · status inbox→ready
 - 2026-10-20T04:47:56Z · cli_override, model_override
+- 2026-10-20T04:47:58Z · status ready→active, branch
