@@ -1,0 +1,32 @@
+---
+id: "0867"
+title: "repoos landable <id>: one command that runs the landing pre-checks"
+type: feature
+status: inbox
+priority: p1
+area: [core, server]
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-20T12:05:58Z"
+updated_at: "2026-10-20T12:05:58Z"
+---
+## Problem
+Whether a task in review can actually land is decided by a handful of manual checks that live in driver prose and AGENTS.md: the lock sha equals the worktree HEAD, the worktree is clean, the branch merges with main (conflicts only in the task's own work/<id>-*.md), the diff has no repoos.toml and no other tasks' work/ files, and main has no blocking dirty files. Each driver re-does these by hand and gets them wrong sometimes. On 2026-10-20 #0860 had a "good to go" review on a HEAD that still conflicted with main in src/core/types.ts, and the conflict was only discovered when Move to done refused; reviews kept re-running on the same unchanged commit.
+
+## Desired UX
+`repoos landable <id>` prints a short pass/fail checklist for every pre-check with the reason and the exact next step (e.g. "src/core/types.ts conflicts with main: merge main into the branch, keep both sides"), exits non-zero when not landable, and supports `--json`. The same result is shown in the task drawer next to Move to done. The reviewer and the review prompt can use it so a branch that cannot merge cannot get "good to go" without saying so.
+
+## Acceptance criteria
+- Checks: current review verdict is good to go on the current pass; lock sha equals worktree HEAD (missing lock is a warning); worktree clean; merge-tree conflicts classified as own-task-file-only vs source; no repoos.toml or other tasks' work/inputs/stories files in the diff; main has no blocking dirty files (listing them and who owns them: repoos.toml, reminders/, schedules/, unknown).
+- Read-only: never edits, commits, or moves status.
+- `--json` output has a stable shape; exit code 0 only when landable.
+- Drawer shows the same result; the Move to done button explains a failing check.
+- Table-driven tests for every check and each failure message; docs in user-docs/cli.md and docs/close-out-pipeline.md; AGENTS.md landing paragraph points at the command.
+
+## Notes for AI
+Reuse the close-out pipeline's own classification (src/server/integration-orchestrator.ts, src/server/conflict-resolution.ts, the lock file in .repoos/locks) instead of re-implementing it, so the command and Move to done can never disagree. The CLI wraps the HTTP API like the other control-plane commands (see user-docs/cli.md, Control plane).
+
+## Activity
+
+- 2026-10-20T12:05:58Z · created · njachowski@gmail.com
