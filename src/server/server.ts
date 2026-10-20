@@ -374,6 +374,7 @@ import {
   getDiffStatsForTask,
   getDiffForTask,
   getMergeConflictForTask,
+  getTaskLandable,
   getWorktreeDirtyForTask,
   getTaskFile,
   taskAction,
@@ -3329,6 +3330,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff$/, getDiffForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/merge-conflict$/, getMergeConflictForTask);
+  // Read-only landing pre-checks (#0867), shared with the approval policy.
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/landable$/, getTaskLandable);
   // Uncommitted files in a task's worktree — fetched by the restart dialog so
   // "Start clean" can name what it would discard (#0512).
   router.register("GET", /^\/api\/tasks\/([^/]+)\/worktree-dirty$/, getWorktreeDirtyForTask);

@@ -1,20 +1,22 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/send-to-engineer-note.test.ts > Send to engineer note dialog (#0295) > still sends when opening the dialog dismissed the drawer's modal, tests/task-drawer-ui-changes-rows.test.ts > Changes → UI changes rows (#0611) > orders UI changes toolbar actions with Add shot on the right (#0778), tests/task-drawer-ui-changes-rows.test.ts > Changes → UI changes rows (#0611) > shows a UI-changes empty state for an unmanaged, shot-less task on mini — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: d33b16451366a286d4e279e35eba6afee7719b45
 id: "0867"
 title: "repoos landable <id>: one command that runs the landing pre-checks"
 type: feature
-status: active
+status: done
 priority: p1
 area: [core, server]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+merged_commit: ac2f1380d96925dffe4934069d220dc46bddfdea
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-landable-id-one-command-that-runs
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:05:58Z"
-updated_at: "2026-10-20T18:31:05Z"
+updated_at: "2026-10-20T19:46:46Z"
+last_close_out_gate_ms: 82630
+last_close_out_gate_at: "2026-10-20T19:46:20.768Z"
+review_passes: 1
 ---
 ## Problem
 Whether a task in review can actually land is decided by a handful of manual checks that live in driver prose and AGENTS.md: the lock sha equals the worktree HEAD, the worktree is clean, the branch merges with main (conflicts only in the task's own work/<id>-*.md), the diff has no repoos.toml and no other tasks' work/ files, and main has no blocking dirty files. Each driver re-does these by hand and gets them wrong sometimes. On 2026-10-20 #0860 had a "good to go" review on a HEAD that still conflicted with main in src/core/types.ts, and the conflict was only discovered when Move to done refused; reviews kept re-running on the same unchanged commit.
@@ -68,4 +70,18 @@ The close-out approval policy already computes most of these checks: `evaluateAp
 - 2026-10-20T18:24:15Z · note: handoff requested (cli)
 - 2026-10-20T18:27:22Z · message_queued at 2026-10-20T18:27:22.380Z
 - 2026-10-20T18:31:05Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/send-to-engineer-note.test.ts > Send to engineer note dialog (#0295) > still sends when opening the dialog dismissed the drawer's modal, tests/task-drawer-ui-changes-rows.test.ts > Changes → UI changes rows (#0611) > orders UI changes toolbar actions with Add shot on the right (#0778), tests/task-drawer-ui-changes-rows.test.ts > Changes → UI changes rows (#0611) > shows a UI-changes empty state for an unmanaged, shot-less task on mini — fix it in the feature branch and re-run the gate
-
+- 2026-10-20T18:37:38Z · message_delivered: 1 message(s)
+- 2026-10-20T18:37:39Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/send-to-engineer-note.test.ts > Send to engineer note dialog (#0295) > still sends when opening the dialog dismissed the drawer's modal, tests/task-drawer-ui-changes-rows.test.ts > Changes → UI changes rows (#0611) > orders UI changes toolbar actions with Add shot on the right (#0778), tests/task-drawer-ui-changes-rows.test.ts > Changes → UI changes rows (#0611) > shows a UI-changes empty state for an unmanaged, shot-less task on bee — fix it in the feature branch and re-run the gate
+- 2026-10-20T18:47:36Z · message_queued at 2026-10-20T18:47:36.186Z
+- 2026-10-20T18:47:36Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-20T18:51:16Z · body
+- 2026-10-20T19:10:06Z · body
+- 2026-10-20T19:18:02Z · body
+- 2026-10-20T19:30:34Z · body
+- 2026-10-20T19:31:53Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-20T19:31:53Z · message_delivered: 1 message(s)
+- 2026-10-20T19:41:38Z · status active→review
+- 2026-10-20T19:41:38Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-20T19:42:54Z · note: review pass 1: good to go
+- 2026-10-20T19:46:20Z · close-out gate completed in 83s
+- 2026-10-20T19:46:46Z · status review→done, release:success

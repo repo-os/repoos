@@ -38,6 +38,7 @@ import {
   cmdAgentsRunning,
   cmdConfig,
   cmdDone,
+  cmdLandable,
   cmdMessage,
   cmdOverride,
   cmdPause,
@@ -289,6 +290,11 @@ function main(): void {
       break;
     case "done":
       void cmdDone(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "landable":
+      void cmdLandable(rest).then((code) => {
         if (code !== 0) process.exitCode = code;
       });
       break;

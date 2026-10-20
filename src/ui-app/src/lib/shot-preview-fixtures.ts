@@ -645,6 +645,65 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         deletions: 8,
       });
       break;
+    case "drawer:landable":
+      // #0867 — a review task whose landing checklist has one real failing
+      // merge, so a capture shows the same result the command prints.
+      ensureFixtureTask(repo, "review", { branch: "feat/shot-fixture" });
+      repo.seedDiffStats(SHOT_PREVIEW_FIXTURE_TASK_ID, {
+        filesChanged: 2,
+        additions: 18,
+        deletions: 4,
+      });
+      repo.seedLandable(SHOT_PREVIEW_FIXTURE_TASK_ID, {
+        taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+        branch: "feat/shot-fixture",
+        headSha: "a".repeat(40),
+        lockSha: "a".repeat(40),
+        landable: false,
+        checks: [
+          {
+            id: "review-verdict",
+            label: "Review verdict",
+            status: "pass",
+            detail: 'latest review pass is "good to go"',
+          },
+          {
+            id: "review-lock",
+            label: "Review lock",
+            status: "pass",
+            detail: "lock sha aaaaaaa matches worktree HEAD aaaaaaa",
+          },
+          {
+            id: "worktree-clean",
+            label: "Worktree clean",
+            status: "pass",
+            detail: "worktree is clean",
+          },
+          {
+            id: "merge-conflicts",
+            label: "Merge with main",
+            status: "fail",
+            detail:
+              "src/core/types.ts conflicts with main: merge main into the branch, keep both sides",
+            nextStep:
+              "Merge main into the branch (repoos sync <id>), keep both sides, then re-request review",
+          },
+          {
+            id: "task-scope",
+            label: "Task scope",
+            status: "pass",
+            detail: "diff changes 2 files, all within this task",
+          },
+          {
+            id: "main-clean",
+            label: "Main clean",
+            status: "pass",
+            detail: "main has no uncommitted files",
+          },
+        ],
+        summary: { pass: 5, warn: 0, fail: 1 },
+      });
+      break;
     case "drawer:activeRequirements": {
       // #0817 — show Update requirements on an active task without mutating
       // board status on main. Prefer the real task from `?task=` so capture

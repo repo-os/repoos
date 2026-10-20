@@ -98,6 +98,7 @@ import {
   branchCommit,
 } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
+import { gatherLandable } from "../landable.js";
 import { REVIEW_RUN_TRIGGERS } from "../review-automation.js";
 import { checkGenericStatusPatch } from "../task-transitions.js";
 import { readFileSync, existsSync, statSync, unlinkSync, mkdirSync, writeFileSync } from "node:fs";
@@ -4159,6 +4160,20 @@ export const getMergeConflictForTask: RouteHandler = async (ctx, _req, res, para
     ],
   });
   return json(res, 200, { ok: true, conflict });
+};
+
+/**
+ * Read-only landing pre-checks for `repoos landable <id>` and the drawer next
+ * to Move to done (#0867). Shares the approval policy's preflight so a branch
+ * that cannot land can never be reported as ready by either path.
+ */
+export const getTaskLandable: RouteHandler = async (ctx, _req, res, params) => {
+  const { index, config, reviews } = ctx;
+  const id = params.param1;
+  const task = index.getTask(id);
+  if (!task) return json(res, 404, { error: `Task #${id} not found` });
+  const result = await gatherLandable(config, task, reviews.read(id));
+  return json(res, 200, result);
 };
 
 /** Return one file's committed contents from the task's before/after revisions. */

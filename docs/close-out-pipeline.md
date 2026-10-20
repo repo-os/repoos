@@ -57,6 +57,36 @@ release soak), a few patterns recur. Full CLI table and incident notes:
   `git checkout main -- repoos.toml`. Implement commits and engineer WIP checkpoints
   never stage `repoos.toml` unless the task explicitly scoped config work.
 
+## Landing pre-checks: `repoos landable <id>` (#0867)
+
+Before approving a task in `review` and before pressing **Move to done**, run
+`repoos landable <id>` (or read the same checklist in the task drawer next to
+the button). It is the single read-only answer to "can this branch land?", and
+exits `0` only when every check passes. `--json` prints one stable object:
+`{ taskId, branch, headSha, lockSha, landable, checks: [{ id, label, status,
+detail, nextStep? }], summary: { pass, warn, fail } }`.
+
+| Check (`id`) | Fails when | Next step it names |
+| --- | --- | --- |
+| `review-verdict` | latest review pass is missing, incomplete, failed, predates the latest handoff, lists blocking bugs, or is not `good to go` | fix findings, then `repoos review again <id>` |
+| `review-lock` | a review lock exists and its sha differs from the worktree HEAD (a **missing** lock is a warning, not a failure) | request a fresh review of the current commit |
+| `worktree-clean` | the task worktree has uncommitted files | commit them on the branch or discard them |
+| `merge-conflicts` | `git merge-tree` reports a conflict outside the task's own `work/<id>-*.md` (own-file-only is a warning: close-out takes main's copy) | merge main into the branch (`repoos sync <id>`), keep both sides, re-review |
+| `task-scope` | the diff changes `repoos.toml`, or another task's `work/`, `inputs/` or `stories/` file | restore that path from main, re-review |
+| `main-clean` | the primary checkout has uncommitted files, listed with their owner (`repoos.toml`, `reminders/`, `schedules/`, `unknown`) | commit or stash them on main |
+
+The server gathers these facts with the same `gatherApprovalPreflight` the
+opt-in approval policy uses (`src/server/request-close-out.ts`), so the command,
+auto-approval and Move to done cannot disagree; only the finer classification
+(own-file-only conflicts, foreign bookkeeping paths, main-dirty ownership) is
+added on top. The evaluation itself is pure and table-tested in
+`src/core/landable.ts`. Nothing in the path writes: no commits, no status
+changes, no worktree edits.
+
+A reviewer must not report `good to go` while this command exits non-zero — say
+which check failed and what the next step is. The drawer shows the same
+checklist, and the Move to done button's tooltip names the first failing check.
+
 ## Running the control-plane server: choose one owner
 
 There are two supported ways to run the server on port 7171. **Use exactly one at a
