@@ -8,8 +8,11 @@ import {
   extractInstallCommands,
 } from "../../../agent/install-commands.js";
 import { promptPreview } from "../../../agent/prompt-preview.js";
-import { renderLlmsTxt } from "../../../landing/vite-plugin-llms-txt.js";
-import { collectLandingAgentFileFailures } from "../../../landing/scripts/check-agent-files.js";
+import {
+  collectLandingAgentFileFailures,
+  llmsTxtPlugin,
+  renderLlmsTxt,
+} from "../../../landing/vite-plugin-llms-txt.js";
 import {
   collectAiAgentsFailures,
   collectHomepagePromptFailures,
@@ -311,12 +314,16 @@ describe("docs agent-file build checks", () => {
     ]);
   });
 
-  it("runs the checks from the two existing build commands", () => {
-    const landing = JSON.parse(read(repoRoot, "landing/package.json")) as {
-      scripts: Record<string, string>;
-    };
-    expect(landing.scripts.build).toContain("scripts/check-agent-files.ts");
+  it("fails the landing vite build through the plugin's closeBundle hook", () => {
+    const root = landingFixture();
+    rmSync(join(root, "landing/dist/llms.txt"));
 
+    const plugin = llmsTxtPlugin({ repoRoot: root });
+    expect(typeof plugin.closeBundle).toBe("function");
+    expect(() => (plugin.closeBundle as () => void).call({})).toThrow(/landing\/dist\/llms\.txt/);
+  });
+
+  it("runs the docs checks from the existing build command", () => {
     const docs = JSON.parse(read(repoRoot, "user-docs/package.json")) as {
       scripts: Record<string, string>;
     };
