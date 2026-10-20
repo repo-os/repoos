@@ -46,3 +46,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T04:26:39Z · status ready→active, branch
 - 2026-10-20T04:38:49Z · body
 - 2026-10-20T04:46:00Z · message_queued at 2026-10-20T04:46:00.799Z
+- 2026-10-20T04:46:00Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
