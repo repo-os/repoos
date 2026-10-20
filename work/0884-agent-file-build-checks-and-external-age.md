@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T16:02:55Z"
-updated_at: "2026-10-20T18:59:53Z"
+updated_at: "2026-10-20T18:59:57Z"
 ---
 ## Problem
 The agent files in this story are generated or shared across two sites. Nothing in the existing `landing-build` and `user-docs-build` steps fails the build when `llms.txt` is missing, when an install command drifts from the published commands, or when the landing page and the docs homepage embed different prompt text.
@@ -28,7 +28,13 @@ The agent files in this story are generated or shared across two sites. Nothing 
 - `agents.txt` stays out unless the docs-index task already recorded a reason to generate it.
 
 ## Notes for AI
+Story: Agent-discoverable RepoOS, slice 6. Areas `landing,docs`. Depends on the docs index, the portable skill, and the shared call to action. Those tasks already depend on the prompt file and the guide, so this trial runs only after the public path exists.
 
+`repoos.toml` steps `landing-build` and `user-docs-build` (`whenChanged` `landing/**` and `user-docs/**`) are the gates to extend. Do not add a third checker script. Do not commit `landing/dist` or `user-docs/.vitepress/dist`.
+
+The trial is a written record on this task, not a new public page and not a change to task or worktree architecture. Out of scope: a public MCP server, a hosted agent, autonomous browser automation, new CLI features, and provider-specific plugins.
+
+Scope split (2026-10-21, driver): the written trial with an unfamiliar coding agent needs a person and a real agent on their machine, so it is held human task #0887 (depends on this task). Do NOT write a Trial section here and do not close any trial criterion on this task. Cover only the build checks, drift checks and link checks above.
 
 ## Activity
 
@@ -40,3 +46,4 @@ The agent files in this story are generated or shared across two sites. Nothing 
 - 2026-10-20T18:59:45Z · body
 - 2026-10-20T18:59:49Z · body: Desired UX (added 1)
 - 2026-10-20T18:59:53Z · body: Acceptance criteria (added 5)
+- 2026-10-20T18:59:57Z · body: Notes for AI (added 4)
