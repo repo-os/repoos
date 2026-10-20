@@ -14,7 +14,7 @@ branch: feat/shared-agent-prompt-call-to-action
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:35Z"
-updated_at: "2026-10-20T21:42:07Z"
+updated_at: "2026-10-20T21:44:05Z"
 ---
 ## Problem
 
@@ -49,6 +49,24 @@ Landing theme tokens live in `landing/src` (CSS variables such as `--txt` and `-
 
 Out of scope: provider logos, a public MCP server, and changes to install command tabs.
 
+## Shots
+```json
+[
+{
+  "label": "Landing hero: agent prompt call to action beside the install box",
+  "target": "Landing page",
+  "route": "/",
+  "highlight": ".agent-cta"
+},
+{
+  "label": "Docs homepage: agent prompt call to action under Try it now",
+  "target": "Docs site",
+  "route": "/",
+  "highlight": ".agent-cta"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-20T16:02:35Z · created · njachowski@gmail.com
@@ -56,3 +74,4 @@ Out of scope: provider logos, a public MCP server, and changes to install comman
 - 2026-10-20T21:34:40Z · cli_override, model_override
 - 2026-10-20T21:34:41Z · status ready→active, branch
 - 2026-10-20T21:42:07Z · body
+- 2026-10-20T21:44:05Z · body
