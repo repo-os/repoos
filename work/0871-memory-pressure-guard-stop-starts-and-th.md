@@ -11,7 +11,7 @@ branch: feat/memory-pressure-guard-stop-starts-and-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:35Z"
-updated_at: "2026-10-20T22:56:52Z"
+updated_at: "2026-10-20T22:59:53Z"
 ---
 ## Problem
 The pressure guard from #0836 keys off load average, which is inflated by threads waiting on a thrashing machine (load 200-500 with CPU idle near 0 and swap full on 2026-10-20), so it reacts late and tells a driver nothing about the cause. Most of the load that day was not RepoOS (Chrome helpers at 80-120% CPU, the Claude app renderer, WindowServer, a second RepoOS project on the same laptop), but RepoOS had no way to say so, and engineers simply stalled. Gates, reviews and handoffs all slowed, adding timeouts and retries.
@@ -33,21 +33,21 @@ Builds on #0836 (caps and pressure guard) and #0853 (preview teardown). Use `vm.
 ```json
 [
 {
-  "label": "System Resources panel with pressure banner and RepoOS-vs-other top processes",
-  "target": "default",
-  "route": "/",
-  "highlight": ".resource-panel",
-  "steps": [
-    {
-      "waitMs": 6500
-    }
-  ]
+"label": "System Resources panel with pressure banner and RepoOS-vs-other top processes",
+"target": "default",
+"route": "/",
+"highlight": ".resource-panel",
+"steps": [
+  {
+    "waitMs": 6500
+  }
+]
 },
 {
-  "label": "Memory-pressure thresholds in Settings",
-  "target": "default",
-  "route": "/settings?tab=general&section=performance",
-  "highlight": "[data-settings-section=\"performance\"]"
+"label": "Memory-pressure thresholds in Settings",
+"target": "default",
+"route": "/settings?tab=general&section=performance",
+"highlight": "[data-settings-section=\"performance\"]"
 }
 ]
 ```
@@ -63,3 +63,4 @@ Builds on #0836 (caps and pressure guard) and #0853 (preview teardown). Use `vm.
 - 2026-10-20T22:47:15Z · message_queued at 2026-10-20T22:47:15.804Z
 - 2026-10-20T22:47:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-20T22:56:52Z · body
+- 2026-10-20T22:59:53Z · body
