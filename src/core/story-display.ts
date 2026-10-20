@@ -2,7 +2,13 @@
  * Browser-safe story display helpers (#0486): merge registered definitions with
  * task-derived roll-ups. No Node imports — safe for the UI bundle.
  */
-import { deriveStories, sortStories, type StoryGroup, type StoryTaskLike } from "./stories.js";
+import {
+  deriveStories,
+  newestTimestamp,
+  sortStories,
+  type StoryGroup,
+  type StoryTaskLike,
+} from "./stories.js";
 import { STATUSES, type Status } from "./types.js";
 
 export interface StoryDefinition {
@@ -17,6 +23,13 @@ export interface StoryDefinition {
   path: string;
   body: string;
   createdAt: string;
+  /**
+   * ISO timestamp of the definition's last modification (#0885): the
+   * frontmatter `updated_at` when present, otherwise the file's last git commit
+   * (or mtime for an uncommitted file). Optional so callers that only know the
+   * creation time still typecheck; the recency sort falls back to `createdAt`.
+   */
+  updatedAt?: string;
   createdBy: string;
 }
 
@@ -41,6 +54,12 @@ export interface MergedStoryGroup<T extends StoryTaskLike = StoryTaskLike> exten
   number: string | null;
   createdAt: string | null;
   createdBy: string | null;
+  /**
+   * ISO timestamp of the definition's last change (#0885) — the newest of the
+   * frontmatter `updated_at`, the file's last commit/mtime, and `created_at`.
+   * Null for a tag-only story, which has no definition to modify.
+   */
+  definitionUpdatedAt: string | null;
 }
 
 export function storyExcerpt(body: string, max = 200): string {
@@ -74,6 +93,7 @@ export function mergeStoriesForDisplay<T extends StoryTaskLike>(
       number: def?.number || null,
       createdAt: def?.createdAt ?? null,
       createdBy: def?.createdBy ?? null,
+      definitionUpdatedAt: def ? newestTimestamp(def.createdAt, def.updatedAt) : null,
     });
   }
   const emptyCounts = (): Record<Status, number> =>
@@ -99,6 +119,7 @@ export function mergeStoriesForDisplay<T extends StoryTaskLike>(
       number: def.number || null,
       createdAt: def.createdAt,
       createdBy: def.createdBy,
+      definitionUpdatedAt: newestTimestamp(def.createdAt, def.updatedAt),
     });
   }
   return sortStories(merged) as MergedStoryGroup<T>[];
