@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  AGENT_SKILL_URL,
   INSTALL_COMMANDS,
   readStarterPrompt,
   renderLlmsTxt,
@@ -29,6 +30,7 @@ describe("landing llms.txt", () => {
       "https://docs.repoos.org/getting-started",
       "https://docs.repoos.org/cli",
       "https://docs.repoos.org/ai-agents",
+      AGENT_SKILL_URL,
       "https://github.com/repo-os/repoos",
     ]) {
       expect(llms).toContain(`](${url})`);
