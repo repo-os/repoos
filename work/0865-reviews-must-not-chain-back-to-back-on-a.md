@@ -12,7 +12,7 @@ branch: feat/reviews-must-not-chain-back-to-back-on-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T11:55:25Z"
-updated_at: "2026-10-20T17:11:52Z"
+updated_at: "2026-10-20T17:16:21Z"
 ---
 ## Problem
 When a review ends "needs some work" and no engineer is running, another review starts again within minutes. Observed 2026-10-20 on #0861: passes 2-9 ran 2-3 minutes apart, then roughly 14 minutes each, with no engineer working in between, for about 45 minutes, all failing on the same finding. While a review runs, `repoos message` is refused ("review in progress - wait for it to finish"), so the fix instruction could not reach the engineer. When a message IS accepted mid-turn it only queues and is delivered at the end of the engineer's turn, so engineers hand off right before reading it. Seen on #0854 (pass 8 reviewed work from before the fix message was read) and #0860 (codex crashed after the message, then a handoff was auto-requested on the unmerged branch). Result: dozens of wasted review passes, stale-work reviews, and fixes that arrive a full cycle late.
@@ -32,6 +32,21 @@ After a review verdict of needs some work (or back to the drawing board) the tas
 ## Notes for AI
 Look at the review auto-trigger and re-review logic (src/server/review.ts and the watcher/handoff finalization), the message queue delivery (`message_queued` / `message_delivered`), and the "review in progress" refusal in the message and start routes. Related: #0861 (bookkeeping-aware evidence identity) just landed; reuse its tree-identity helper rather than adding another. See the 2026-10-20 timeline of #0861 review passes 2-13 and #0854 passes 8-15 as the worked examples. Do not remove the rounds-exhausted backstop.
 
+### Review start entry points (audit — shared `decideReviewAutomation` in `src/server/review-automation.ts`)
+
+| Trigger | Path | Explicit? |
+| --- | --- | --- |
+| `status-enter-review` | `server.ts` `startReview` on index `status → review` (watcher + handoff finalization) | no |
+| `engineer-exited-pending` | `server.ts` `pendingReview` on `agent.exited` while task still in `review` | no |
+| `recovery-interrupted` | `review.ts` `recoverInterruptedReviews` on server boot | no |
+| `stale-evidence-rereview` | `review.ts` stale evidence refresh re-review | no |
+| `evidence-gap-rereview` | `review.ts` evidence-gap repair re-review | no |
+| `incomplete-retry` | `review.ts` `scheduleIncompleteRetry` | no |
+| `watchdog-stuck-review` | `task-watchdog.ts` dead reviewer retry | no |
+| `explicit-again` | `routes/tasks.ts` `POST …/review/again` and CLI `repoos review again` | **yes** — always runs even on unchanged tree with open findings |
+
+Not gated: `ReviewManager.runCheckpointDelta` (post-handoff checkpoint delta review).
+
 ## Activity
 
 - 2026-10-20T11:55:25Z · created · njachowski@gmail.com
@@ -48,3 +63,4 @@ Look at the review auto-trigger and re-review logic (src/server/review.ts and th
 - 2026-10-20T16:37:06Z · message_delivered: 1 message(s)
 - 2026-10-20T17:06:29Z · body
 - 2026-10-20T17:11:52Z · body
+- 2026-10-20T17:16:21Z · body: Notes for AI (added 12)
