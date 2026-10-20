@@ -138,6 +138,19 @@ export function collectLandingAgentFileFailures(repoRoot = DEFAULT_REPO_ROOT): s
   // 3. The call to action copies the one shared prompt, not a rewritten copy.
   // Landing is a client-rendered Vue app, so the prompt lives in the built JS
   // bundle rather than index.html; every non-empty prompt line must be there.
+  const ctaSource = readText(
+    path.join(landingRoot, "src", "components", "AgentPromptCta.vue"),
+    "landing/src/components/AgentPromptCta.vue",
+    failures,
+  );
+  if (
+    ctaSource &&
+    (!ctaSource.includes("STARTER_PROMPT_PREVIEW") || !ctaSource.includes("agent/cta"))
+  ) {
+    failures.push(
+      "landing call to action does not render the shared prompt preview from agent/cta.ts",
+    );
+  }
   if (prompt) {
     const assetsDir = path.join(distRoot, "assets");
     if (!existsSync(assetsDir)) {
