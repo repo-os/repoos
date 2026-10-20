@@ -28,6 +28,7 @@ import { normalizeStoryName } from "./stories.js";
 import { formatTaskAreas, parseTaskAreas } from "./areas.js";
 import { normalizeTaskDependencies, validateTaskDependencies } from "./task-dependencies.js";
 import { validateTaskFields } from "./task-fields.js";
+import { hasUnresolvedConflictMarkers } from "./frontmatter.js";
 import { HUMAN_TASK_SCAFFOLD, withHumanTaskNote } from "./task-underspecified.js";
 
 export interface CreateTaskInput {
@@ -165,6 +166,16 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
   }
 
   function rewrite(task: Task, entries?: string[]): Task {
+    // Never re-serialize a half-merged task file: the index may have parsed a
+    // stale status while the close-out merge has conflict markers on disk, and
+    // writing the in-memory shape would strip the markers and commit a bogus
+    // status (#0886). The merge owns the file until it commits.
+    const onDisk = readFileSync(task.absPath, "utf8");
+    if (hasUnresolvedConflictMarkers(onDisk)) {
+      throw new Error(
+        `Task #${task.id} has unresolved merge-conflict markers — refusing to write while the merge is in progress`,
+      );
+    }
     if (entries && entries.length) {
       for (const entry of entries) recordChange(task, entry);
     } else {

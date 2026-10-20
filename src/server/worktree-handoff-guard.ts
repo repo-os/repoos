@@ -645,11 +645,15 @@ export function restoreWorktreeReviewLockAfterFailedCloseOut(
   taskId: string,
 ): void {
   const snap = readHandoffSnapshot(root, cacheDir, taskId);
-  if (!snap) return;
+  const lock = readWorktreeReviewLock(root, cacheDir, taskId);
+  // A task with no handoff snapshot (a branch-mode/hotfix close-out) still gets
+  // a `closing-out` lock (#0886), so it must be downgraded too — otherwise the
+  // write fence would outlive the failed job and block every retry.
+  if (!snap && !lock) return;
   writeWorktreeReviewLock(root, cacheDir, taskId, {
     status: "review",
-    sha: snap.sha,
-    at: snap.at,
+    sha: snap?.sha ?? lock?.sha ?? "",
+    at: snap?.at ?? lock?.at ?? new Date().toISOString(),
   });
 }
 
