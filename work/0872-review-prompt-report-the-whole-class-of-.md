@@ -73,3 +73,4 @@ Wording sources, all in this repo's repoos.toml as edited on 2026-10-20: the rev
 - 2026-10-20T16:50:32Z · body
 - 2026-10-20T16:53:21Z · body
 - 2026-10-20T17:03:56Z · status active→review
+- 2026-10-20T17:03:56Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (94987252a) during finalization (#0734)
