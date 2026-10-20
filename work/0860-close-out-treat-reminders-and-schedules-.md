@@ -11,7 +11,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T11:14:49Z"
+updated_at: "2026-10-20T11:14:50Z"
 review_passes: 5
 review_rounds: 1
 handoff_signal_retry_count: 1
@@ -136,3 +136,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:14:06Z · message_queued at 2026-10-20T11:14:06.532Z
 - 2026-10-20T11:14:49Z · status active→review
 - 2026-10-20T11:14:49Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (d1a81c5e2) during finalization (#0734)
+- 2026-10-20T11:14:50Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (d1a81c5e2) during finalization (#0734)
