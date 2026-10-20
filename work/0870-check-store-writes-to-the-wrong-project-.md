@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-20T22:59:32Z"
-review_passes: 2
+last_close_out_gate_ms: 97697
+last_close_out_gate_at: "2026-10-20T23:11:36.647Z"
 id: "0870"
 title: Check store writes to the wrong project root (LightingAI wrote repoos/.repoos/checks.db into the RepoOS checkout)
 type: bug
@@ -13,6 +13,8 @@ branch: feat/check-store-writes-to-the-wrong-project-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:26Z"
+updated_at: "2026-10-20T23:11:36Z"
+review_passes: 2
 review_rounds: 1
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-20T21:46:23.850Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-20T21:47:02.554Z\",\"kind\":\"dev-error\"}]"
@@ -66,4 +68,5 @@ Evidence: the SQLite file's rows (check_runs) and worktree column named a lighti
 - 2026-10-20T22:57:53Z · status active→review
 - 2026-10-20T22:57:54Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-20T22:59:31Z · note: review pass 2: good to go
+- 2026-10-20T23:11:36Z · close-out gate completed in 98s
 
