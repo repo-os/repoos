@@ -1541,20 +1541,20 @@ describe("DevTargetManager with services (#0843)", () => {
           kind,
           url: undefined,
           services: services ? ["api"] : undefined,
-      command: `bun -e "const fs=require('node:fs');const c=require('node:child_process').spawn(process.execPath,['-e','setTimeout(()=>{},60000)']);fs.writeFileSync('${childPidFile}',String(c.pid));setTimeout(()=>{},60000)"`,
+          command: `bun -e "const fs=require('node:fs');const c=require('node:child_process').spawn(process.execPath,['-e','setTimeout(()=>{},60000)']);fs.writeFileSync('${childPidFile}',String(c.pid));setTimeout(()=>{},60000)"`,
         });
         const cfg = baseConfig({ services: defs, targets: [t] }, dir);
         const original = new DevTargetManager(cfg);
         let reloaded: DevTargetManager | undefined;
         try {
-      expect((await original.start("app")).ok).toBe(true);
-      const oldTargetPid = original.get("app")?.pid;
-      const oldServicePid = original.get("app")?.services?.[0]?.pid;
-      const childDeadline = Date.now() + 5000;
-      while (Date.now() < childDeadline && !existsSync(childPidFile)) {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
-      const childPid = Number(readFileSync(childPidFile, "utf8"));
+          expect((await original.start("app")).ok).toBe(true);
+          const oldTargetPid = original.get("app")?.pid;
+          const oldServicePid = original.get("app")?.services?.[0]?.pid;
+          const childDeadline = Date.now() + 5000;
+          while (Date.now() < childDeadline && !existsSync(childPidFile)) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+          const childPid = Number(readFileSync(childPidFile, "utf8"));
           expect(typeof oldTargetPid).toBe("number");
           if (services) expect(typeof oldServicePid).toBe("number");
 
