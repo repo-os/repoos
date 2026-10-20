@@ -322,9 +322,9 @@ describe("applying crash recovery to a task (#0869)", () => {
         _deps: unknown,
         _task: unknown,
         instruction: string,
-        opts: { freshSession?: boolean; fromCrashRecovery?: boolean },
+        opts?: { freshSession?: boolean; fromCrashRecovery?: boolean },
       ) => {
-        launches.push({ instruction, opts });
+        launches.push({ instruction, opts: opts ?? {} });
         return { ok: true as const };
       },
     };
