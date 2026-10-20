@@ -1693,7 +1693,7 @@ have passed a real end-to-end proof.
 
 | Key | Type | Default | Restart | Description |
 | --- | --- | --- | --- | --- |
-| `remoteValidation.browserCaptureMode` | select | `local` | yes | Choose where task screenshots and UI verification run: `local`, `runner-available` (runner when available, then local with a note), or `runner-only`. Remote modes require `remoteValidation.enabled` and a runner that provides Playwright and WebKit. |
+| `remoteValidation.browserCaptureMode` | select | `local` | yes | Choose where task screenshots, UI verification, and `repoos shot`'s web captures run: `local`, `runner-available` (runner when available, then local with a note), or `runner-only`. Remote modes require `remoteValidation.enabled` and a runner that provides Playwright and WebKit. An absolute URL or explicit `--viewport`/`--wait`/`--full-page` stays local. |
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |

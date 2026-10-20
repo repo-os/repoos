@@ -31,10 +31,15 @@ and Changes-tab paths remain the interface reviewers see.
 Fixtures and step vocabulary are sent as data and interpreted by the same
 `shot-plan`, fixture resolver, and page choreography code used locally.
 Preview-only servers disable login and seed fixtures in memory. The remote path
-covers the automatic handoff capture and UI verification only: manual
-`repoos shot` / `repoos verify` stay local (offloading the CLI is tracked
-separately as #0874), and the interactive Preview button remains on the control
-plane.
+covers the automatic handoff capture, UI verification, and `repoos shot`'s web
+captures. `repoos shot` posts each entry to the server's single-shot capture
+route, so it uses the same policy: `runner-available` captures on the runner and
+falls back to a server-side local capture with a visible note, while
+`runner-only` returns the runner's failure. A request the single-shot path
+cannot reproduce stays local with a note — an arbitrary absolute URL, or an
+explicit `--viewport`, `--wait`, or `--full-page`. `repoos verify` refreshes
+through the server endpoint and therefore uses the same policy. The interactive
+Preview button remains on the control plane.
 Missing browser capability or runner infrastructure failure falls back to local
 capture in `runner when available` mode with a visible note. `runner only` fails
 with an actionable reason instead of running local work, and a runner failure in

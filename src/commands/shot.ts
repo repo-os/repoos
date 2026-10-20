@@ -60,7 +60,11 @@ interface CmdShotOptions {
   taskId?: string;
   base: string;
   waitMs: number;
+  /** True when `--wait` was passed (not the default settle). */
+  waitMsExplicit?: boolean;
   viewport: { width: number; height: number };
+  /** True when `--viewport` was passed (not the default size). */
+  viewportExplicit?: boolean;
   fullPage: boolean;
   /** Extra env for a command capture target (#0769), from repeated `--env KEY=VAL`. */
   env?: Record<string, string>;
@@ -150,6 +154,7 @@ export function parseShotArgs(args: string[]): CmdShotOptions {
         return opts;
       }
       opts.waitMs = ms;
+      opts.waitMsExplicit = true;
     } else if (a === "--full-page") {
       opts.fullPage = true;
     } else if (a === "--help" || a === "-h") {
@@ -164,6 +169,7 @@ export function parseShotArgs(args: string[]): CmdShotOptions {
         return opts;
       }
       opts.viewport = { width: Number(m[1]), height: Number(m[2]) };
+      opts.viewportExplicit = true;
     } else if (a.startsWith("-")) {
       opts.error = `unknown flag "${a}"`;
       return opts;
@@ -330,6 +336,79 @@ async function startPreview(
   const body = (await res.json()) as { url?: string };
   if (!body?.url) return { ok: false, error: "server returned no preview URL" };
   return { ok: true, url: body.url };
+}
+
+/**
+ * Why this invocation must keep capturing locally even in a runner mode
+ * (#0854). The remote single-shot path reproduces the declared plan exactly, so
+ * a request it cannot represent — an arbitrary absolute URL, an explicit
+ * viewport, settle time, or full-page frame — stays local rather than silently
+ * capturing something different. Command targets are always local and never
+ * reach this check.
+ */
+export function remoteWebCaptureBlocker(
+  mode: "local" | "runner-available" | "runner-only" | undefined,
+  absolute: boolean,
+  opts: Pick<CmdShotOptions, "fullPage" | "viewportExplicit" | "waitMsExplicit">,
+): string | undefined {
+  if (!mode || mode === "local") return undefined;
+  if (absolute) return "an absolute URL targets no preview, so remote capture does not apply";
+  if (opts.fullPage) return "--full-page stays local";
+  if (opts.viewportExplicit) return "--viewport stays local";
+  if (opts.waitMsExplicit) return "--wait stays local";
+  return undefined;
+}
+
+interface RemoteShotResponse {
+  entry: CaptureEntry & { route: string };
+  ok: true;
+  shot: { name: string; path: string; url: string };
+  warnings: string[];
+  note?: string;
+}
+
+/**
+ * Capture one web entry through the server's browser-capture policy (#0854):
+ * the server starts the preview on the runner when configured, or falls back
+ * to a server-side local capture with a visible note. `unsupported` marks an
+ * older server without the route, so the caller can keep its local path.
+ */
+async function captureRemoteShot(
+  port: number,
+  taskId: string,
+  token: string | null,
+  entry: CaptureEntry & { route: string },
+): Promise<
+  | (RemoteShotResponse & { unsupported?: false })
+  | { ok: false; error: string; unsupported?: boolean }
+> {
+  let res: Response;
+  try {
+    res = await fetch(`http://127.0.0.1:${port}/api/tasks/${taskId}/shots/capture`, {
+      method: "POST",
+      headers: cliHeaders(token, true),
+      body: JSON.stringify({ entry, provenance: entry.provenance }),
+    });
+  } catch (err) {
+    return { ok: false, error: `could not reach the RepoOS server: ${(err as Error).message}` };
+  }
+  if (res.status === 404 || res.status === 405) {
+    return {
+      ok: false,
+      error: `remote shot capture is not available on this server`,
+      unsupported: true,
+    };
+  }
+  if (!res.ok) return { ok: false, error: await readApiError(res) };
+  const body = (await res.json()) as Omit<RemoteShotResponse, "entry" | "ok">;
+  if (!body?.shot) return { ok: false, error: "server returned no stored shot" };
+  return {
+    entry,
+    ok: true,
+    shot: body.shot,
+    warnings: Array.isArray(body.warnings) ? body.warnings : [],
+    ...(typeof body.note === "string" && body.note ? { note: body.note } : {}),
+  };
 }
 
 async function uploadShot(
@@ -624,135 +703,185 @@ export async function cmdShot(args: string[]): Promise<number> {
   let browser: SmokeBrowser | undefined;
   let context: SmokeContext | undefined;
   const saved: ShotResult[] = [];
-  try {
-    if (webPlan.length > 0) {
-      try {
-        browser = await launchWebkit({
-          repoRoot: cwdRoot,
-          onQueueLine: (line) => console.log(c.dim(`  ${line}`)),
-        });
-        context = await browser.newContext({ serviceWorkers: "block" });
-      } catch (err) {
-        const msg = (err as Error).message;
-        if (isShotCaptureUnavailable(err)) {
-          console.error(
-            c.yellow("  · ") + "Screenshot capture skipped — Playwright/WebKit unavailable",
-          );
-          console.error(c.dim(`    ${msg.split("\n")[0]}`));
-          console.error(c.dim(`    ${INSTALL_ADVICE}`));
-        } else {
-          console.error(c.red("  ✗ ") + `could not launch the browser: ${msg.split("\n")[0]}`);
-        }
-        return 1;
+  const remoteMode = mainConfig.remoteValidation?.browserCaptureMode ?? "local";
+  const remoteBlocker = remoteWebCaptureBlocker(remoteMode, absolute, opts);
+  let remoteWeb = webPlan.length > 0 && remoteMode !== "local" && !remoteBlocker;
+  if (webPlan.length > 0 && remoteMode !== "local" && remoteBlocker) {
+    console.log(c.dim(`  note: ${remoteBlocker} — capturing locally`));
+  }
+  const ensureBrowser = async (): Promise<boolean> => {
+    if (context) return true;
+    try {
+      browser = await launchWebkit({
+        repoRoot: cwdRoot,
+        onQueueLine: (line) => console.log(c.dim(`  ${line}`)),
+      });
+      context = await browser.newContext({ serviceWorkers: "block" });
+      return true;
+    } catch (err) {
+      const msg = (err as Error).message;
+      if (isShotCaptureUnavailable(err)) {
+        console.error(
+          c.yellow("  · ") + "Screenshot capture skipped — Playwright/WebKit unavailable",
+        );
+        console.error(c.dim(`    ${msg.split("\n")[0]}`));
+        console.error(c.dim(`    ${INSTALL_ADVICE}`));
+      } else {
+        console.error(c.red("  ✗ ") + `could not launch the browser: ${msg.split("\n")[0]}`);
       }
+      return false;
     }
-
-    let currentTarget: string | undefined;
-    // Branch fixtures (#0786): URL building admits a `state` the task branch's
-    // source declares even before main's compiled list knows it.
-    const captureValidator = taskFixtureValidator(
-      (path: string) => {
-        try {
-          return existsSync(path) ? readFileSync(path, "utf8") : null;
-        } catch {
-          return null;
+  };
+  try {
+    if (remoteWeb) {
+      for (const entry of webPlan) {
+        const captured = await captureRemoteShot(port, task.id, token, entry);
+        if (!captured.ok && captured.unsupported) {
+          // An older running server has no capture route: keep the pre-#0854
+          // local path rather than failing the capture outright.
+          console.log(
+            c.dim("  note: the running server has no remote shot capture — capturing locally"),
+          );
+          remoteWeb = false;
+          break;
         }
-      },
-      mainConfig,
-      task,
-    );
-    let currentPreviewUrl = "";
-    for (const entry of webPlan) {
-      // Only one preview runs per task, so a different target must replace
-      // the running one before it can start (#0379/#0271). Same-target
-      // entries reuse the running preview — no restart, no churn.
-      if (entry.target !== currentTarget) {
-        await stopPreview(port, task.id, token);
-        const started = await startPreview(port, task.id, entry.target, token);
-        if (!started.ok) {
+        if (!captured.ok) {
           console.error(
-            c.red("  ✗ ") + `preview for target "${entry.target}" failed: ${started.error}`,
+            c.red("  ✗ ") + `remote capture of ${entry.route} failed: ${captured.error}`,
           );
           return 1;
         }
-        currentPreviewUrl = started.url.replace(/\/$/, "");
-        currentTarget = entry.target;
-      }
-      const route = entry.route ?? "/";
-      const pageUrl = absolute
-        ? route
-        : shotCapturePageUrl(currentPreviewUrl, { ...entry, route }, captureValidator ?? undefined);
-      const page = (await context!.newPage()) as unknown as ShotDriverPage;
-      let png: Buffer;
-      const warnings: string[] = [];
-      try {
-        await page.setViewportSize(opts.viewport);
-        png = await captureShotPage(
-          page,
-          pageUrl,
-          entry,
-          { waitMs: opts.waitMs, fullPage: opts.fullPage },
-          {
-            onHighlightMiss: (selector, r) => {
-              warnings.push(`highlight ${selector} matched nothing on ${r}`);
-              console.error(
-                c.yellow("  · ") +
-                  `highlight "${selector}" matched nothing on ${r} — capture went ahead unhighlighted`,
-              );
-            },
-            onSelectorMiss: (selector, r) => {
-              warnings.push(`selector ${selector} matched nothing on ${r}`);
-              console.error(
-                c.yellow("  · ") +
-                  `selector "${selector}" matched nothing on ${r} — capture used the whole window`,
-              );
-            },
-            onStepMiss: (message, r) => {
-              warnings.push(`${message} on ${r}`);
-              console.error(c.yellow("  · ") + `${message} on ${r} — capture went ahead`);
-            },
-            // #0782: a declared theme the driver could not set — the frame
-            // would show the wrong theme, so warn instead of passing silently.
-            onThemeMiss: (theme, r) => {
-              warnings.push(`theme ${theme} could not be applied on ${r}`);
-              console.error(
-                c.yellow("  · ") +
-                  `theme "${theme}" could not be applied on ${r} — capture went ahead`,
-              );
-            },
-          },
+        if (captured.note) console.error(c.yellow("  · ") + captured.note);
+        for (const warning of captured.warnings) {
+          console.error(c.yellow("  · ") + warning);
+        }
+        saved.push({
+          target: entry.target,
+          ...(entry.label ? { label: entry.label } : {}),
+          file: captured.shot.name,
+          path: captured.shot.path,
+          url: captured.shot.url,
+        });
+        console.log(
+          c.green("  ✔ ") +
+            `${entry.target}${entry.label ? ` – ${entry.label}` : ""} → ${c.cyan(captured.shot.path)} ${c.dim("(runner)")}`,
         );
-      } catch (err) {
-        const what = entry.selector ? `selector "${entry.selector}" on ${pageUrl}` : pageUrl;
-        console.error(c.red("  ✗ ") + `capture of ${what} failed: ${(err as Error).message}`);
-        await page.close();
-        return 1;
       }
-      await page.close();
+    }
 
-      const uploaded = await uploadShot(port, task.id, token, {
-        target: entry.target,
-        route: route.startsWith("/") ? normalizedRoute(route) : route,
-        ...(entry.label ? { label: entry.label } : {}),
-        provenance: provenanceCaption(entry.provenance),
-        data: png.toString("base64"),
-        ...(warnings.length ? { warnings } : {}),
-      });
-      if (!uploaded.ok) {
-        console.error(c.red("  ✗ ") + `storing the shot failed: ${uploaded.error}`);
-        return 1;
-      }
-      saved.push({
-        target: entry.target,
-        ...(entry.label ? { label: entry.label } : {}),
-        file: uploaded.shot.name,
-        path: uploaded.shot.path,
-        url: uploaded.shot.url,
-      });
-      console.log(
-        c.green("  ✔ ") +
-          `${entry.target}${entry.highlight ? " · highlighted" : ""}${entry.label ? ` – ${entry.label}` : ""} → ${c.cyan(uploaded.shot.path)} ${c.dim(`(${Math.round(png.length / 1024)} KB)`)}`,
+    if (!remoteWeb && !(await ensureBrowser())) return 1;
+    if (!remoteWeb) {
+      let currentTarget: string | undefined;
+      // Branch fixtures (#0786): URL building admits a `state` the task branch's
+      // source declares even before main's compiled list knows it.
+      const captureValidator = taskFixtureValidator(
+        (path: string) => {
+          try {
+            return existsSync(path) ? readFileSync(path, "utf8") : null;
+          } catch {
+            return null;
+          }
+        },
+        mainConfig,
+        task,
       );
+      let currentPreviewUrl = "";
+      for (const entry of webPlan) {
+        // Only one preview runs per task, so a different target must replace
+        // the running one before it can start (#0379/#0271). Same-target
+        // entries reuse the running preview — no restart, no churn.
+        if (entry.target !== currentTarget) {
+          await stopPreview(port, task.id, token);
+          const started = await startPreview(port, task.id, entry.target, token);
+          if (!started.ok) {
+            console.error(
+              c.red("  ✗ ") + `preview for target "${entry.target}" failed: ${started.error}`,
+            );
+            return 1;
+          }
+          currentPreviewUrl = started.url.replace(/\/$/, "");
+          currentTarget = entry.target;
+        }
+        const route = entry.route ?? "/";
+        const pageUrl = absolute
+          ? route
+          : shotCapturePageUrl(
+              currentPreviewUrl,
+              { ...entry, route },
+              captureValidator ?? undefined,
+            );
+        const page = (await context!.newPage()) as unknown as ShotDriverPage;
+        let png: Buffer;
+        const warnings: string[] = [];
+        try {
+          await page.setViewportSize(opts.viewport);
+          png = await captureShotPage(
+            page,
+            pageUrl,
+            entry,
+            { waitMs: opts.waitMs, fullPage: opts.fullPage },
+            {
+              onHighlightMiss: (selector, r) => {
+                warnings.push(`highlight ${selector} matched nothing on ${r}`);
+                console.error(
+                  c.yellow("  · ") +
+                    `highlight "${selector}" matched nothing on ${r} — capture went ahead unhighlighted`,
+                );
+              },
+              onSelectorMiss: (selector, r) => {
+                warnings.push(`selector ${selector} matched nothing on ${r}`);
+                console.error(
+                  c.yellow("  · ") +
+                    `selector "${selector}" matched nothing on ${r} — capture used the whole window`,
+                );
+              },
+              onStepMiss: (message, r) => {
+                warnings.push(`${message} on ${r}`);
+                console.error(c.yellow("  · ") + `${message} on ${r} — capture went ahead`);
+              },
+              // #0782: a declared theme the driver could not set — the frame
+              // would show the wrong theme, so warn instead of passing silently.
+              onThemeMiss: (theme, r) => {
+                warnings.push(`theme ${theme} could not be applied on ${r}`);
+                console.error(
+                  c.yellow("  · ") +
+                    `theme "${theme}" could not be applied on ${r} — capture went ahead`,
+                );
+              },
+            },
+          );
+        } catch (err) {
+          const what = entry.selector ? `selector "${entry.selector}" on ${pageUrl}` : pageUrl;
+          console.error(c.red("  ✗ ") + `capture of ${what} failed: ${(err as Error).message}`);
+          await page.close();
+          return 1;
+        }
+        await page.close();
+
+        const uploaded = await uploadShot(port, task.id, token, {
+          target: entry.target,
+          route: route.startsWith("/") ? normalizedRoute(route) : route,
+          ...(entry.label ? { label: entry.label } : {}),
+          provenance: provenanceCaption(entry.provenance),
+          data: png.toString("base64"),
+          ...(warnings.length ? { warnings } : {}),
+        });
+        if (!uploaded.ok) {
+          console.error(c.red("  ✗ ") + `storing the shot failed: ${uploaded.error}`);
+          return 1;
+        }
+        saved.push({
+          target: entry.target,
+          ...(entry.label ? { label: entry.label } : {}),
+          file: uploaded.shot.name,
+          path: uploaded.shot.path,
+          url: uploaded.shot.url,
+        });
+        console.log(
+          c.green("  ✔ ") +
+            `${entry.target}${entry.highlight ? " · highlighted" : ""}${entry.label ? ` – ${entry.label}` : ""} → ${c.cyan(uploaded.shot.path)} ${c.dim(`(${Math.round(png.length / 1024)} KB)`)}`,
+        );
+      }
     }
 
     for (const entry of commandPlan) {
