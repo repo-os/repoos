@@ -2,17 +2,17 @@
 id: "0865"
 title: Reviews must not chain back to back on a task with open findings; queued messages must be delivered between passes
 type: bug
-status: ready
+status: active
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/reviews-must-not-chain-back-to-back-on-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T11:55:25Z"
-updated_at: "2026-10-20T13:14:21Z"
+updated_at: "2026-10-20T16:10:03Z"
 ---
 ## Problem
 When a review ends "needs some work" and no engineer is running, another review starts again within minutes. Observed 2026-10-20 on #0861: passes 2-9 ran 2-3 minutes apart, then roughly 14 minutes each, with no engineer working in between, for about 45 minutes, all failing on the same finding. While a review runs, `repoos message` is refused ("review in progress - wait for it to finish"), so the fix instruction could not reach the engineer. When a message IS accepted mid-turn it only queues and is delivered at the end of the engineer's turn, so engineers hand off right before reading it. Seen on #0854 (pass 8 reviewed work from before the fix message was read) and #0860 (codex crashed after the message, then a handoff was auto-requested on the unmerged branch). Result: dozens of wasted review passes, stale-work reviews, and fixes that arrive a full cycle late.
@@ -39,3 +39,4 @@ Look at the review auto-trigger and re-review logic (src/server/review.ts and th
 - 2026-10-20T12:42:54Z · status inbox→ready
 - 2026-10-20T13:14:18Z · cli_override, model_override
 - 2026-10-20T13:14:21Z · model_override
+- 2026-10-20T16:10:03Z · status ready→active, branch
