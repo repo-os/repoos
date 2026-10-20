@@ -318,8 +318,8 @@ describe("story definition last-modified time (#0885)", () => {
       [],
       [
         {
-          key: storyKey("Older larger number"),
-          name: "Older larger number",
+          key: storyKey("Alpha older larger number"),
+          name: "Alpha older larger number",
           number: "0011",
           path: "stories/older.md",
           body: "",
@@ -328,8 +328,8 @@ describe("story definition last-modified time (#0885)", () => {
           createdBy: "a",
         },
         {
-          key: storyKey("Newer smaller number"),
-          name: "Newer smaller number",
+          key: storyKey("Zeta newer smaller number"),
+          name: "Zeta newer smaller number",
           number: "0001",
           path: "stories/newer.md",
           body: "",
@@ -341,14 +341,14 @@ describe("story definition last-modified time (#0885)", () => {
     );
 
     expect(sortStoryGroupsForPage(merged, "recent").map((g) => g.name)).toEqual([
-      "Newer smaller number",
-      "Older larger number",
+      "Zeta newer smaller number",
+      "Alpha older larger number",
     ]);
     expect(
       sortStoryGroupsForPage(merged, "taskNumberNewest", (g) => g.number).map((g) => g.name),
-    ).toEqual(["Older larger number", "Newer smaller number"]);
+    ).toEqual(["Alpha older larger number", "Zeta newer smaller number"]);
     expect(
       sortStoryGroupsForPage(merged, "taskNumberOldest", (g) => g.number).map((g) => g.name),
-    ).toEqual(["Newer smaller number", "Older larger number"]);
+    ).toEqual(["Zeta newer smaller number", "Alpha older larger number"]);
   });
 });
