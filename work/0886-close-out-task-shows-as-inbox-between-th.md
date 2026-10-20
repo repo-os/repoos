@@ -50,3 +50,4 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T19:18:04Z · body
 - 2026-10-20T19:27:42Z · body
 - 2026-10-20T19:31:29Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-20T19:31:29Z · message_delivered: 1 message(s)
