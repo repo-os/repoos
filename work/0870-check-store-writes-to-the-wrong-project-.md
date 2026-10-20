@@ -5,13 +5,13 @@ type: bug
 status: active
 priority: p2
 area: core
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/check-store-writes-to-the-wrong-project-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:26Z"
-updated_at: "2026-10-20T22:45:03Z"
+updated_at: "2026-10-20T22:45:12Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 2
@@ -59,3 +59,4 @@ Evidence: the SQLite file's rows (check_runs) and worktree column named a lighti
 - 2026-10-20T22:41:00Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-20T22:42:14Z · note: review pass 1: needs some work
 - 2026-10-20T22:42:15Z · status review→active
+- 2026-10-20T22:45:12Z · assigned_to
