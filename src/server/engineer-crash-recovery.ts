@@ -27,20 +27,11 @@ import {
   type EngineerPair,
 } from "../core/engineer-crash-recovery.js";
 import type { Logger } from "../core/logger.js";
-import { resolveAgentForTask, type AgentRunner } from "./agents.js";
+import { resolveAgentForTask, type AgentRunner, type EngineerCrashInfo } from "./agents.js";
 import { relaunchEngineerOnActiveTask, type EngineerLaunchResult } from "./engineer-launch.js";
 import type { LiveIndex } from "./live-index.js";
 
-export interface EngineerCrashInfo {
-  /** CLI of the crashed turn, when the runner knows it. */
-  cli?: string;
-  /** Model of the crashed turn, when the runner knows it. */
-  model?: string;
-  /** `dev-error`, `provider-failure`, or `degenerate-output`. */
-  kind: string;
-  /** The turn's real failure line, already extracted by the runner. */
-  reason: string;
-}
+export type { EngineerCrashInfo } from "./agents.js";
 
 export interface EngineerCrashRecoveryDeps {
   config: RepoOSConfig;
