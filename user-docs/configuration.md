@@ -150,6 +150,7 @@ inheritEnv = false  # off by default; opt in to link .env into worktrees
 enabled = true
 stalenessMs = 300000
 autoTransition = true
+phantomDetectMs = 180000
 
 [whisper]
 provider = "none"  # none | groq | openai
@@ -883,6 +884,7 @@ maxConcurrentAgents = 5
 enabled = true
 stalenessMs = 300000
 autoTransition = true
+phantomDetectMs = 180000
 
 [whisper]
 provider = "none"
@@ -915,6 +917,7 @@ agent is running, the task is paused, or its worktree has recent activity.
 | `watchdog.enabled` | boolean | `true` | yes | Whether active-task staleness monitoring runs. |
 | `watchdog.stalenessMs` | number | `300000` (5 min) | yes | Milliseconds of silence before an `active` task is a candidate-stuck. Minimum `60000`; smaller values are ignored. |
 | `watchdog.autoTransition` | boolean | `true` | yes | Whether a stuck task auto-transitions out of `active` — to `review` when its worktree holds work, else back to `ready`. When false, it is only flagged `needsInput`. |
+| `watchdog.phantomDetectMs` | number | `180000` (3 min) | yes | How long a runner entry may have no live engineer process and no live child before it is cleared and the same agent restarted. A live child (check, test, remote-validation wait) is never touched. Minimum `15000`; smaller values are ignored. Automatic restarts are limited to 3 per task per hour and written to the activity log and the Debug tab. `repoos start` on a phantom entry clears it immediately and starts. |
 | `whisper.provider` | select | `none` | yes | Voice-to-text provider for text areas: `none`, `groq`, or `openai`. |
 | `whisper.apiKey` | string | `""` | **exception** | API key for the selected whisper provider. Accepted here, but a secret — prefer `REPOOS_WHISPER_KEY` in `.env`. |
 
