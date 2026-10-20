@@ -3,6 +3,9 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — fix the service port override and teardown race, then re-capture UI evidence on HEAD."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -227,3 +230,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T09:25:09Z · body
 - 2026-10-20T09:26:23Z · status active→review
 - 2026-10-20T09:28:49Z · note: review pass 17: needs some work
+- 2026-10-20T09:28:49Z · needs_input
