@@ -223,18 +223,33 @@ export function shotFixtureDevTargets(
 ): DevTargetView[] | null {
   if (fixture === "dev:running") {
     // #0801 — one started target (which should glow) beside one stopped target
-    // (which should not), so a capture shows the highlight contrast.
+    // (which should not), so a capture shows the highlight contrast. #0843 —
+    // the started target carries an auto-ported companion service, so a
+    // capture shows the service sub-row (status, real port, PID) beside it.
     return [
       {
         name: "landing",
         kind: "server",
-        command: "cd landing && bun run dev -- --port 5173 --host 127.0.0.1 --strictPort",
+        command:
+          "cd landing && bun run dev -- --port {port} --host 127.0.0.1 --api-port {api.port}",
         label: "Landing page (HMR)",
         status: "running",
         pid: 51234,
         url: "http://127.0.0.1:5173",
         port: 5173,
         startedAt: new Date(Date.now() - 12 * 60_000).toISOString(),
+        services: [
+          {
+            name: "api",
+            token: "api",
+            status: "running",
+            pid: 51233,
+            port: 41257,
+            url: "http://127.0.0.1:41257/api/health",
+            command: "bun --watch src/server/index.ts",
+            log: ["listening on 127.0.0.1:41257", "GET /api/health 200"],
+          },
+        ],
         log: ["VITE v5.4.10  ready in 210 ms", "", "  ➜  Local:   http://127.0.0.1:5173/"],
       },
       {

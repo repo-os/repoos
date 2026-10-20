@@ -8,14 +8,17 @@ area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
-model_override: openrouter/deepseek/deepseek-v4.1-flash
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T13:16:02Z"
+updated_at: "2026-10-20T15:32:16Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/toml-validate.test.ts > validateToml accepts > the repository's own repoos.toml on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: a69f5cbf1a167a4285061a9fd2e01132d83d6dd9
 review_passes: 18
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 5
+dev_error_count: 6
 ---
 ## Problem
 Tests already run on Tailscale runners (docs/remote-validation.md), but everything browser-related still runs on the control-plane laptop: the per-task preview (`bun run build` with vue-tsc + vite, then `repoos serve`), Playwright/WebKit captures of declared and automatic shots, the handoff UI verification, `repoos shot` and `repoos verify`. With several engineers handing off at once this is the dominant local load (dozens of WebKit processes, repeated full UI builds, 20+ GB of memory pressure on 2026-10-18/19). `remoteValidation.offloadBrowserSteps` (#0836, default off) only moves the smoke and rendered-contrast gate steps, not shots or UI verification.
@@ -242,3 +245,14 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T13:16:01Z · status review→active
 - 2026-10-20T13:16:01Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T13:16:02Z · message_delivered: 1 message(s)
+- 2026-10-20T13:21:26Z · body
+- 2026-10-20T13:22:39Z · note: handoff requested (ui-review)
+- 2026-10-20T13:22:46Z · agent exited with an error (opencode) · handoff finalization was interrupted (server reload) — restart work to hand off again
+- 2026-10-20T13:23:38Z · note: handoff requested (ui-review)
+- 2026-10-20T13:25:15Z · note: handoff requested (ui-review)
+- 2026-10-20T13:27:51Z · note: handoff requested (ui-review)
+- 2026-10-20T13:35:30Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/toml-validate.test.ts > validateToml accepts > the repository's own repoos.toml on bee — fix it in the feature branch and re-run the gate
+- 2026-10-20T15:31:43Z · cli_override, model_override
+- 2026-10-20T15:31:54Z · needs_input
+- 2026-10-20T15:32:10Z · status active→ready
+- 2026-10-20T15:32:16Z · status ready→active

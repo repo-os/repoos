@@ -150,6 +150,9 @@ inheritEnv = false  # off by default; opt in to link .env into worktrees
 enabled = true
 stalenessMs = 300000
 autoTransition = true
+phantomDetectMs = 120000
+phantomHealMax = 3
+phantomHealWindowMs = 3600000
 
 [whisper]
 provider = "none"  # none | groq | openai
@@ -884,6 +887,9 @@ maxConcurrentAgents = 5
 enabled = true
 stalenessMs = 300000
 autoTransition = true
+phantomDetectMs = 120000
+phantomHealMax = 3
+phantomHealWindowMs = 3600000
 
 [whisper]
 provider = "none"
@@ -916,6 +922,9 @@ agent is running, the task is paused, or its worktree has recent activity.
 | `watchdog.enabled` | boolean | `true` | yes | Whether active-task staleness monitoring runs. |
 | `watchdog.stalenessMs` | number | `300000` (5 min) | yes | Milliseconds of silence before an `active` task is a candidate-stuck. Minimum `60000`; smaller values are ignored. |
 | `watchdog.autoTransition` | boolean | `true` | yes | Whether a stuck task auto-transitions out of `active` — to `review` when its worktree holds work, else back to `ready`. When false, it is only flagged `needsInput`. |
+| `watchdog.phantomDetectMs` | number | `120000` (2 min) | yes | How long a runner row may have no live engineer process and no live child before it is cleared and the same agent is restarted. Minimum `15000`. A live process tree (including check, vitest, or a remote-validation wait) is never treated as a phantom. |
+| `watchdog.phantomHealMax` | number | `3` | yes | Automatic phantom restarts allowed per task inside `phantomHealWindowMs` (1–20). Past the limit the dead row is still cleared and Start succeeds, but the server does not launch another turn on its own. |
+| `watchdog.phantomHealWindowMs` | number | `3600000` (1 hour) | yes | Window for `phantomHealMax`. Minimum `60000`. |
 | `whisper.provider` | select | `none` | yes | Voice-to-text provider for text areas: `none`, `groq`, or `openai`. |
 | `whisper.apiKey` | string | `""` | **exception** | API key for the selected whisper provider. Accepted here, but a secret — prefer `REPOOS_WHISPER_KEY` in `.env`. |
 
@@ -1042,6 +1051,12 @@ within one path segment, `**` across segments (including none), and `?` for
 one non-slash character — `landing/**` matches every changed file under
 `landing/`. When no target's globs match, `repoos shot` falls back to the
 area match (then the default command); `--target` overrides either way.
+
+The dev-target counterpart of these services is `[[dev.services]]` (#0843):
+the same companion-service model — boot before the target, its own port,
+`{<name>.port}`/`{<name>.url}` substitution — for the things you start
+yourself from the Dev page rather than for task previews. See
+[Dev target services](#dev-target-services) below.
 
 > **`[[preview.targets]]` and `[[preview.services]]` are deliberately TOML-only.**
 > The Settings UI is built on a flat `key = value` schema, which cannot express a
@@ -1813,13 +1828,16 @@ label = "Divot bar"
 | --- | --- | --- | --- |
 | `dev.targets[].name` | string | yes | Stable identity, unique within the project. The API and CLI address a target by this name. |
 | `dev.targets[].kind` | `server` \| `artifact` \| `process` | yes | `server` is a long-lived process with a URL; `artifact` is a build that produces a file and exits; `process` is a long-lived foreground process with no URL and no build artifact (a native app, a daemon). |
-| `dev.targets[].command` | string | yes | Shell command run in the project's **root checkout** (never a task worktree). May contain `{port}` (see below). |
+| `dev.targets[].command` | string | yes | Shell command run in the project's checkout (never a task worktree). May contain `{port}` and service port tokens. |
+| `dev.targets[].cwd` | string | no | Repo-relative working directory. Service port tokens are substituted before resolving it; a missing directory fails Start clearly. |
+| `dev.targets[].env` | table | no | Extra target environment variables. Service port tokens are substituted in values before launch. |
 | `dev.targets[].url` | string | for `server` | The server's URL, e.g. `http://localhost:5173`. May contain `{port}`. A `process` never has one. |
 | `dev.targets[].port` | number | no | The port used for `{port}` (#0802). With auto-pick on it is the preferred port — used when free — otherwise a free one is chosen; with auto-pick off it is the fixed port. |
 | `dev.targets[].autoPort` | boolean | no | Auto-pick a free port for `{port}` (#0802). Default `true`; set `false` to pin the target to `port` and let a clash fail with the summary. |
 | `dev.targets[].artifactPath` | string | for `artifact` | Repo-relative path of the build output. |
 | `dev.targets[].label` | string | no | Human label shown in the UI; defaults to `name`. |
-| `dev.targets[].healthCheck.url` | string | no | URL polled until it answers before a `server` target is reported running. Defaults to `url`; may contain `{port}`. |
+| `dev.targets[].services` | array of strings | no | Names of `[[dev.services]]` rows (#0843) booted before this target, in order, each on its own port. The target's `command`, `env`, `cwd`, `url` and `healthCheck.url` reference one as `{name.port}` / `{name.url}`. Unknown or repeated names are validation errors. |
+| `dev.targets[].healthCheck.url` | string | no | URL polled until it answers before a `server` target is reported running. Defaults to `url`; may contain `{port}` and `{name.port}`. |
 | `dev.targets[].healthCheck.file` | string | no | Repo-relative file that must exist before the target is reported running. |
 
 `{port}` in a target's `command`, `url` or `healthCheck.url` is replaced with a
@@ -1846,11 +1864,105 @@ crashes. Status is one of `running`, `stopped`, `starting` or `failed`, and the
 last 2000 lines of a target's combined output are kept and shown in a scrollable
 panel on the Dev page.
 
+### Dev target services
+
+A full-stack target — a web dev server whose backend proxies to it — does not
+need either port pinned in config. Declare companion services as a repeatable
+`[[dev.services]]` table next to `[[dev.targets]]` (the dev counterpart of
+`[[preview.services]]`), and reference them from a target's `services` list
+(#0843):
+
+```toml
+[[dev.services]]
+name = "api"
+command = "bun --watch src/server/index.ts"   # reads PORT
+healthCheck = { url = "http://localhost:{port}/api/health" }
+
+[[dev.targets]]
+name = "app"
+kind = "server"
+services = ["api"]
+command = "bun run dev -- --port {port} --api-port {api.port}"
+url = "http://localhost:{port}"
+```
+
+On **Start**, RepoOS allocates ports for every selected service before
+starting any process, so **forward references are allowed**: a target (or a
+service) may reference a service declared later in `repoos.toml`, as well as
+one declared earlier or itself. Each
+service then boots before the target and is health-gated: a service whose health check (or, with none
+declared, a short alive-settle) does not pass fails the start with the
+service's name in the reason, and everything started so far is torn down — the
+target otherwise starts fine and then proxies to a dead API. Each service's
+port is substituted into the target's `command`, `env` values, `cwd`, `url` and `healthCheck.url` as
+`{<name>.port}` / `{<name>.url}` (name lowercased, non-alphanumerics collapsed
+to `_`). A reference is normalized the same way as the name, so `{API.port}`,
+`{api-v1.port}` and `{api_v1.port}` all reach the same service; validation and
+runtime expansion share that one rule, and a spelling the validator accepts is
+always fully resolved. Doubled or backslash-escaped braces, a misspelled kind
+(`{api.portx}`) and an unclosed reference are config errors, not literals left
+in the command. Each substituted port is passed as `PORT` and `REPOOS_DEV_<NAME>_PORT` / `REPOOS_DEV_<NAME>_URL`
+to the service, and passed as the same `REPOOS_DEV_*` variables to the main
+command. Tokens in service `command`, `env` values, `cwd` and `healthCheck.url`
+are substituted too. Inside a service's own `command` and `healthCheck.url`,
+`{port}` (and `PORT`) is the service's own port. `dependsOn` starts dependencies
+before dependents and includes them in the target's service stack; unknown
+dependencies and actual dependency cycles are configuration errors. A service
+may reference a sibling declared later in TOML — and a target may reference a
+service declared later — because all selected ports are assigned first. Service names referenced by
+one target must map to distinct placeholder tokens: two names that normalize to
+the same `{<token>.port}` (for example `api-v1` and `api_v1`) are a config
+error, not silently disambiguated, so a documented token can never resolve to
+the wrong service.
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `dev.services[].name` | string | yes | Label used to reference the service from a target's `services` list and in diagnostics. |
+| `dev.services[].command` | string | yes | Command that boots the service. Its own `{port}`/`PORT` is the port RepoOS assigns it; any selected service's `{name.port}` / `{name.url}` is substituted. |
+| `dev.services[].cwd` | string | repo root | Repo-relative subdirectory to run the command in. |
+| `dev.services[].dependsOn` | array of strings | no | Services that start first; their ports are available to this service and they are included in the target's stack. Unknown names and dependency cycles are errors. |
+| `dev.services[].port` | number | no | The service's preferred/fixed port, handled exactly like a target's `port` (#0802). |
+| `dev.services[].autoPort` | boolean | no | Auto-pick a free port; default `true`. With `false` the `port` is required and fixed — an occupied one fails with a message naming the service (and `autoPort = false` with no `port` is rejected as a config error, not only at Start). |
+| `dev.services[].healthCheck.url` | string | no | URL polled (with own and companion service ports substituted) until it answers before the service counts as ready. |
+| `dev.services[].healthCheck.file` | string | no | Repo-relative file (resolved against the service's `cwd`) that must exist AND be newer than when the service started — a stale marker left by a previous run does not count as ready (#0843 review). |
+| `dev.services[].env` | table | no | Extra environment variables for the service's process; values support `{name.port}` / `{name.url}`, e.g. `env = { LOG_LEVEL = "debug", API_URL = "{api.url}" }`. |
+
+Stopping or restarting the target stops its services with it, and a start
+that fails at the target — its command cannot launch, or its readiness check
+never passes — tears the already-booted services down too. A service that
+crashes while the target runs (including after a reload handover, where the
+PID-liveness check catches the death) tears down the whole stack: the target
+and every sibling service are stopped, their recorded PIDs are cleared, and
+the target is marked failed with the service's name in the reason. A target
+crash does the same cleanup and marks the target failed. These states remain
+visible on the Dev page (each service has its own sub-row there — status, real
+port, PID, and its own output). Startup or health-check failure also tears down
+every process that already started. Stop, restart, server shutdown, and a
+reload that cannot adopt a complete live stack use the same cleanup. A healthy
+stack adopted during reload keeps running and remains manageable. Every
+declared service also answers on `repoos dev <name> status|logs --service <name>`.
+
+For an `artifact` target, companion services stay available while the build
+runs and are stopped automatically when it exits successfully. A failed build
+or failed service also tears down the stack.
+
+> **`[[dev.services]]` are deliberately TOML-only**, like
+> `[[preview.services]]`: a service is a command + port + health check + env
+> table no Settings row can express. Edit them in `repoos.toml`; a target's
+> `services` name list can also be edited in the Dev targets card
+> (Settings → Advanced) and round-trips through it.
+>
+> The optional `cwd` and `env` fields on `[[dev.targets]]` are advanced
+> TOML-only fields; the Settings card continues to edit the target's common
+> name, command, URL and service list.
+
 When a target fails, the Dev page shows a plain-language summary above its
 output — what failed, the most likely cause, and how to fix it. A port already
 in use is detected from the output and names the port plus the process holding
 it (its PID and command), with a **Stop** action when that process is one RepoOS
-started; any other process is shown for you to stop yourself. An optional
+started — including a companion service, in which case the owning target and
+all its services stop together; any other process is shown for you to stop
+yourself. An optional
 AI-written summary can be layered on top:
 
 | Key | Type | Default | Restart | Description |

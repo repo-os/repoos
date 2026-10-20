@@ -60,7 +60,7 @@ import { agentModelAllowRows } from "./budget-allowlist.js";
 import { parseModelRouting } from "./model-routing/config.js";
 import { parseCheckPlanConfig } from "./check-plan.js";
 import { ctoActionsSchemaDescription } from "./cto-actions.js";
-import { parseDevTargets } from "./dev-targets.js";
+import { parseDevServices, parseDevTargets, devTargetServiceErrors } from "./dev-targets.js";
 import { parseTailscaleHosts } from "./remote-hosts.js";
 import { DEFAULT_STORAGE_PROVIDER_ID } from "./storage/registry.js";
 import {
@@ -230,6 +230,9 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     enabled: true,
     stalenessMs: 5 * 60 * 1000,
     autoTransition: true,
+    phantomDetectMs: 2 * 60 * 1000,
+    phantomHealMax: 3,
+    phantomHealWindowMs: 60 * 60 * 1000,
   },
   autoEngineeringMode: false,
   autoEngineering: {
@@ -1040,7 +1043,7 @@ function normalizeReadyTimeoutMs(value: unknown): number | undefined {
  * array or a single string, trim, drop empties. No glob escaping — patterns are
  * matched by `core/shot-targets.ts`.
  */
-function normalizeStringList(value: unknown): string[] {
+export function normalizeStringList(value: unknown): string[] {
   if (value === undefined || value === null) return [];
   const items = Array.isArray(value) ? value : [value];
   return items.map((v) => (typeof v === "string" ? v.trim() : "")).filter(Boolean);
@@ -1412,6 +1415,19 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     const devTargets = parseDevTargets(parsed);
     if (devTargets.targets.length) cfg.dev = { ...cfg.dev, targets: devTargets.targets };
     if (devTargets.errors.length) cfg.devTargetErrors = devTargets.errors;
+    // [[dev.services]] (#0843) — companion processes a target boots on their
+    // own ports, the [[dev.targets]] counterpart of [[preview.services]].
+    // Keep parsing errors and cross-validation independent: malformed rows are
+    // reported above, while every target/service row that did parse still gets
+    // its own reference validation.
+    const devServices = parseDevServices(parsed);
+    if (devServices.errors.length) {
+      cfg.devTargetErrors = [...(cfg.devTargetErrors ?? []), ...devServices.errors];
+    }
+    if (devServices.services.length) cfg.dev = { ...cfg.dev, services: devServices.services };
+    const serviceErrors = devTargetServiceErrors(devTargets.targets, devServices.services);
+    if (serviceErrors.length)
+      cfg.devTargetErrors = [...(cfg.devTargetErrors ?? []), ...serviceErrors];
     if (typeof get("ntfyEnabled") === "boolean") cfg.ntfyEnabled = get("ntfyEnabled") as boolean;
     if (typeof get("ntfyTopic") === "string") cfg.ntfyTopic = get("ntfyTopic") as string;
     if (typeof get("ntfyBaseUrl") === "string") cfg.ntfyBaseUrl = get("ntfyBaseUrl") as string;
@@ -1701,6 +1717,18 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     const watchdogAutoTransition = parsed["watchdog.autoTransition"];
     if (typeof watchdogAutoTransition === "boolean") {
       cfg.watchdog = { ...cfg.watchdog, autoTransition: watchdogAutoTransition };
+    }
+    const phantomDetectMs = parsed["watchdog.phantomDetectMs"];
+    if (typeof phantomDetectMs === "number" && phantomDetectMs >= 15_000) {
+      cfg.watchdog = { ...cfg.watchdog, phantomDetectMs };
+    }
+    const phantomHealMax = parsed["watchdog.phantomHealMax"];
+    if (typeof phantomHealMax === "number" && phantomHealMax >= 1 && phantomHealMax <= 20) {
+      cfg.watchdog = { ...cfg.watchdog, phantomHealMax: Math.floor(phantomHealMax) };
+    }
+    const phantomHealWindowMs = parsed["watchdog.phantomHealWindowMs"];
+    if (typeof phantomHealWindowMs === "number" && phantomHealWindowMs >= 60_000) {
+      cfg.watchdog = { ...cfg.watchdog, phantomHealWindowMs };
     }
 
     // [auth] section — authentication configuration.
@@ -2498,6 +2526,41 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "and the process check is normal. Disable to run a full CTO pass on every tick.",
     },
     {
+      key: "watchdog.phantomDetectMs",
+      label: "Phantom runner detect window",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.watchdog?.phantomDetectMs ?? 120_000,
+      description:
+        "Milliseconds a runner row may show no live engineer process and no live child " +
+        "(check, test, remote validation) before it is cleared and the same agent is " +
+        "restarted. Default 120000 (2 minutes). Minimum 15000. A live process tree is never touched.",
+    },
+    {
+      key: "watchdog.phantomHealMax",
+      label: "Phantom runner restart limit",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.watchdog?.phantomHealMax ?? 3,
+      description:
+        "How many automatic phantom restarts one task may get inside the heal window " +
+        "(1–20, default 3). Past the limit the dead row is still cleared and logged, " +
+        "and Start works, but the server does not launch another turn by itself.",
+    },
+    {
+      key: "watchdog.phantomHealWindowMs",
+      label: "Phantom runner restart window",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.watchdog?.phantomHealWindowMs ?? 3_600_000,
+      description:
+        "Window for the phantom restart limit, in milliseconds. Default 3600000 (1 hour). " +
+        "Minimum 60000.",
+    },
+    {
       key: "cto.actions",
       label: "CTO safe actions",
       type: "array",
@@ -3228,9 +3291,34 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       default: [],
       description:
         "The things you run yourself while developing — a local HMR web server, a debug build, a native app process — " +
-        "as opposed to task previews, which RepoOS manages for a task's worktree. Only commands " +
+        "as opposed to task previews, which RepoOS manages for a task's worktree. Each row carries a command, " +
+        "optional cwd and env, a url and a healthCheck. Only commands " +
         "declared here can be started; edit them under Advanced → Dev targets. Each target auto-picks " +
-        "a free port by default; turn that off per target to pin a fixed port.",
+        "a free port by default; turn that off per target to pin a fixed port. A target's `services` " +
+        "list names [[dev.services]] rows booted before it, on their own ports. Service tokens can " +
+        "appear in commands, environment values, cwd, URLs and health checks; all listed ports are " +
+        "allocated first so forward references work.",
+    },
+    {
+      // Companion processes for a full-stack dev target (#0843). Deliberately
+      // raw-TOML-only, like `[[preview.services]]`: a service is a command +
+      // port + healthCheck + env table, and a plain Settings row cannot express
+      // it. The schema entry exists so the search overlay and the "does this
+      // key have a UI row?" resolver can find it and point the user at the
+      // toml tab; the target side (`services` name list) edits in the Dev
+      // targets card.
+      key: "dev.services",
+      label: "Dev target services",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        "Companion processes a [[dev.targets]] row boots BEFORE its own command (#0843), each on its " +
+        "own auto-picked port — a full-stack target's API behind its web dev server. Declared in " +
+        "repoos.toml as [[dev.services]] tables (name, command, cwd, dependsOn, port, autoPort, healthCheck, env); " +
+        'edit them there. A target references one with `services = ["api"]` and substitutes its port ' +
+        "with `{api.port}` / `{api.url}` in command, url and healthCheck.url.",
     },
     {
       // Rendered as a hand-rendered toggle on Advanced, next to the Dev targets
@@ -3468,6 +3556,9 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "watchdog.enabled",
   "watchdog.stalenessMs",
   "watchdog.autoTransition",
+  "watchdog.phantomDetectMs",
+  "watchdog.phantomHealMax",
+  "watchdog.phantomHealWindowMs",
   "whisper.provider",
   "whisper.apiKey",
   // Task previews
@@ -3516,14 +3607,28 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "dev.targets.name",
   "dev.targets.kind",
   "dev.targets.command",
+  "dev.targets.cwd",
+  "dev.targets.env",
   "dev.targets.url",
   "dev.targets.artifactPath",
   "dev.targets.label",
   // #0802: per-target port handling — auto-pick on by default, else a fixed port.
   "dev.targets.autoPort",
   "dev.targets.port",
+  "dev.targets.services",
   "dev.targets.healthCheck.url",
   "dev.targets.healthCheck.file",
+  // Companion processes for a full-stack dev target (#0843) — a sibling
+  // array-of-tables to `[[dev.targets]]`.
+  "dev.services.name",
+  "dev.services.command",
+  "dev.services.cwd",
+  "dev.services.dependsOn",
+  "dev.services.port",
+  "dev.services.autoPort",
+  "dev.services.healthCheck.url",
+  "dev.services.healthCheck.file",
+  "dev.services.env",
   // Optional AI failure summary for dev targets (#0775).
   "dev.failureSummary.ai",
   // Preview-only overrides (#0464): a `[preview.<base path>]` table applied

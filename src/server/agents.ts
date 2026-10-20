@@ -89,6 +89,14 @@ import {
   type RecordedEngineerPid,
 } from "./orphan-engineers.js";
 import {
+  decidePhantom,
+  DEFAULT_PHANTOM_DETECT_MS,
+  DEFAULT_PHANTOM_HEAL_MAX,
+  DEFAULT_PHANTOM_HEAL_WINDOW_MS,
+  PHANTOM_RATE_LIMITED_NOTE,
+  PHANTOM_RESTARTED_NOTE,
+} from "./phantom-runner.js";
+import {
   recoverTruncatedJson,
   TRUNCATION_NOTICE_PREFIX,
   type TruncatedPayload,
@@ -5198,6 +5206,19 @@ export class AgentRunner {
   private readonly onTaskFilePatched?: (absPath: string) => void;
   /** Activity log hook for orphan engineer adopt/stop (#0837). */
   private readonly onOrphanEngineerNote?: (taskId: string, note: string) => void;
+  /**
+   * Phantom runner row cleared (#0863). `restart` asks the server to launch
+   * the same engineer; `rate-limited` only records the note; `cleared-for-start`
+   * means an explicit Start is about to launch, so the server must not launch twice.
+   */
+  private readonly onPhantomRunner?: (
+    taskId: string,
+    outcome: "restart" | "rate-limited" | "cleared-for-start",
+  ) => void;
+  /** When a runner row was first seen with no live process tree. */
+  private readonly phantomDeadSince = new Map<string, number>();
+  /** Timestamps of automatic phantom heals, for the per-task rate limit. */
+  private readonly phantomHealTimes = new Map<string, number[]>();
 
   /**
    * `opts.stallTimeoutMs` overrides the 90s default (tests use a small value
@@ -5225,6 +5246,11 @@ export class AgentRunner {
       onDiagnosableFailure?: (taskId: string, reason: string) => void;
       /** Records `adopted` / `stopped orphaned engineer pid N` on the task (#0837). */
       onOrphanEngineerNote?: (taskId: string, note: string) => void;
+      /** Phantom row cleared — restart, or record a rate-limit note (#0863). */
+      onPhantomRunner?: (
+        taskId: string,
+        outcome: "restart" | "rate-limited" | "cleared-for-start",
+      ) => void;
       logger?: Logger;
     } & AgentRunnerOptions = {},
   ) {
@@ -5239,6 +5265,7 @@ export class AgentRunner {
     this.getTask = opts.getTask;
     this.onTaskFilePatched = opts.onTaskFilePatched;
     this.onOrphanEngineerNote = opts.onOrphanEngineerNote;
+    this.onPhantomRunner = opts.onPhantomRunner;
     this.db = getRepoOSDb(config.root);
     this.cacheDir = join(config.root, config.cacheDir);
     this.sessionsDir = join(this.cacheDir, "sessions");
@@ -5811,6 +5838,16 @@ export class AgentRunner {
   }
 
   /**
+   * Drop a phantom engineer row so `repoos start` and the UI Start action can
+   * launch instead of answering "already running" (#0863). A live process or
+   * any live child is left untouched. Does not itself spawn a replacement —
+   * the caller is the start.
+   */
+  releasePhantomForStart(taskId: string): boolean {
+    return this.applyPhantom(taskId, true);
+  }
+
+  /**
    * The review turn kind ("run" | "chat") of a durable review session, if the
    * entry is one (0288). Used by ReviewManager to finalize an ADOPTED turn in
    * the right mode — the session's own `Run` record is not carried across a
@@ -5943,6 +5980,7 @@ export class AgentRunner {
     this.checkExpiredMessages();
     const cwd = opts.cwd ?? this.config.root;
     this.tryAdoptRecordedOrphanForTask(task.id, cwd);
+    this.releasePhantomForStart(task.id);
     if (
       this.entries.has(task.id) ||
       this.handoffsInFlight.has(task.id) ||
@@ -7896,6 +7934,104 @@ export class AgentRunner {
    * Also polls adopted entries (0214) for PID liveness: if the adopted PID
    * died, clean up the entry so the task doesn't read as running forever.
    */
+  private phantomLimits(): { detectMs: number; maxHeals: number; windowMs: number } {
+    const watchdog = this.config.watchdog;
+    return {
+      detectMs: watchdog?.phantomDetectMs ?? DEFAULT_PHANTOM_DETECT_MS,
+      maxHeals: watchdog?.phantomHealMax ?? DEFAULT_PHANTOM_HEAL_MAX,
+      windowMs: watchdog?.phantomHealWindowMs ?? DEFAULT_PHANTOM_HEAL_WINDOW_MS,
+    };
+  }
+
+  private recentPhantomHeals(taskId: string, nowMs: number): number {
+    const { windowMs } = this.phantomLimits();
+    const times = (this.phantomHealTimes.get(taskId) ?? []).filter((t) => nowMs - t < windowMs);
+    this.phantomHealTimes.set(taskId, times);
+    return times.length;
+  }
+
+  /** Liveness of the recorded engineer PID and any other PID in its group. */
+  private probeEntryTree(entry: Entry): { selfAlive: boolean; liveChildren: number } {
+    const self = entry.adoptedPid ?? entry.proc?.pid ?? 0;
+    const leader = entry.processGroupLeader ?? self;
+    const group = leader > 0 ? livePidsInRecordedGroup(leader) : [];
+    const selfAlive = self > 0 && (group.includes(self) || pidAlive(self));
+    const liveChildren = group.filter((pid) => pid !== self).length;
+    return { selfAlive, liveChildren };
+  }
+
+  /**
+   * Clear a runner row whose process tree is gone. Returns true when the row
+   * was removed. `explicitStart` skips the quiet window because the human (or
+   * CLI) is asking to run the task now.
+   */
+  private applyPhantom(taskId: string, explicitStart: boolean): boolean {
+    const entry = this.entries.get(taskId);
+    if (!entry) return false;
+    const nowMs = Date.now();
+    const { detectMs, maxHeals } = this.phantomLimits();
+    const probe = this.probeEntryTree(entry);
+    const decision = decidePhantom({
+      hasEntry: true,
+      review: entry.review,
+      paused: this.pausedTasks.has(taskId),
+      handoff: entry.handoffRequested || this.handoffsInFlight.has(taskId),
+      selfAlive: probe.selfAlive,
+      liveChildren: probe.liveChildren,
+      deadSinceMs: this.phantomDeadSince.get(taskId) ?? null,
+      nowMs,
+      detectMs,
+      recentHeals: this.recentPhantomHeals(taskId, nowMs),
+      maxHeals,
+      explicitStart,
+    });
+    if (decision.deadSinceMs == null) this.phantomDeadSince.delete(taskId);
+    else this.phantomDeadSince.set(taskId, decision.deadSinceMs);
+    if (!probe.selfAlive && probe.liveChildren > 0) {
+      const leader = entry.processGroupLeader ?? entry.adoptedPid ?? entry.proc?.pid ?? 0;
+      const next = livePidsInRecordedGroup(leader).find(
+        (pid) => pid !== (entry.adoptedPid ?? entry.proc?.pid),
+      );
+      if (next && entry.adoptedPid && entry.adoptedPid !== next) entry.adoptedPid = next;
+    }
+    if (decision.action === "keep" || decision.action === "wait") return false;
+    this.dropPhantomEntry(taskId, entry);
+    if (decision.action === "rate-limited") {
+      this.appendLine(taskId, "sys", PHANTOM_RATE_LIMITED_NOTE);
+      this.logger?.task(taskId, "warn", PHANTOM_RATE_LIMITED_NOTE);
+      this.onPhantomRunner?.(taskId, "rate-limited");
+      return true;
+    }
+    const times = this.phantomHealTimes.get(taskId) ?? [];
+    times.push(nowMs);
+    this.phantomHealTimes.set(taskId, times);
+    const outcome = explicitStart ? "cleared-for-start" : "restart";
+    this.appendLine(taskId, "sys", PHANTOM_RESTARTED_NOTE);
+    this.logger?.task(taskId, "warn", PHANTOM_RESTARTED_NOTE);
+    this.onPhantomRunner?.(taskId, outcome);
+    return true;
+  }
+
+  /** Remove a dead runner row without treating it as an agent crash. */
+  private dropPhantomEntry(taskId: string, entry: Entry): void {
+    for (const tailer of entry.tailers ?? []) {
+      clearInterval(tailer.timer);
+    }
+    entry.tailers = undefined;
+    if (entry.killTimer) clearTimeout(entry.killTimer);
+    entry.killTimer = undefined;
+    this.entries.delete(taskId);
+    this.phantomDeadSince.delete(taskId);
+    this.removeRegistryEntry(taskId);
+    this.emit({
+      type: "agent.exited",
+      id: taskId,
+      at: now(),
+      exitCode: null,
+      cause: "phantom runner: no live process",
+    });
+  }
+
   private checkStalls(): void {
     for (const [taskId, entry] of this.entries) {
       // #0507: `repoos mv <own id> review` inside this turn records a request
@@ -7905,14 +8041,9 @@ export class AgentRunner {
       // `::repoos-handoff-ready::` signal. `cleanup()` re-checks, which is what
       // closes the race with a turn that ends in the same tick.
       this.adoptHandoffRequestFile(taskId, entry);
-      if (entry.adoptedPid) {
-        try {
-          process.kill(entry.adoptedPid, 0);
-        } catch {
-          // PID died during adoption — clean up
-          this.cleanup(taskId, false, null);
-          continue;
-        }
+      if (!entry.review) {
+        this.applyPhantom(taskId, false);
+        if (!this.entries.has(taskId)) continue;
       }
       const session = this.sessions.get(taskId);
       if (!session) continue;
