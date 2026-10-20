@@ -1583,6 +1583,103 @@ describe("loadConfig dev services wiring", () => {
 });
 
 describe("DevTargetManager with services (#0843)", () => {
+  const stackLifecycleCases = [
+    ...(["target", "service-a", "service-b"] as const).flatMap((member) =>
+      (["starting", "after-ready"] as const).flatMap((phase) =>
+        (["crash", "stop", "restart"] as const).map((action) => ({
+          member,
+          phase,
+          action,
+        })),
+      ),
+    ),
+  ];
+  for (const { member, phase, action } of stackLifecycleCases) {
+    itSlow(`tears down the whole stack when ${member} ${action}s during ${phase}`, async () => {
+      const dir = mkdtempSync(join(tmpdir(), "repoos-dev-stack-matrix-"));
+      const readyFile = join(dir, "target-ready");
+      if (phase === "after-ready") writeFileSync(readyFile, "ready");
+      const service = (name: string): DevServiceConfig => ({
+        name,
+        command: `bun -e "setTimeout(()=>{},60000)"`,
+      });
+      const mgr = new DevTargetManager(
+        baseConfig(
+          {
+            services: [service("service-a"), service("service-b")],
+            targets: [
+              webTarget({
+                services: ["service-a", "service-b"],
+                command: `bun -e "setTimeout(()=>{},60000)"`,
+                url: undefined,
+                healthCheck: { file: "target-ready" },
+              }),
+            ],
+          },
+          dir,
+        ),
+      );
+      let start: Promise<unknown> | undefined;
+      try {
+        start = mgr.start("app");
+        const deadline = Date.now() + 6000;
+        while (Date.now() < deadline) {
+          const view = mgr.get("app");
+          const allPidsPresent =
+            typeof view?.pid === "number" &&
+            view.services?.length === 2 &&
+            view.services.every((row) => typeof row.pid === "number");
+          if (allPidsPresent && (phase === "after-ready" ? view?.status === "running" : true))
+            break;
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        const before = mgr.get("app");
+        const pids = [before?.pid, ...(before?.services ?? []).map((row) => row.pid)].filter(
+          (pid): pid is number => typeof pid === "number",
+        );
+        expect(pids).toHaveLength(3);
+
+        if (action === "crash") {
+          const pid =
+            member === "target"
+              ? before?.pid
+              : before?.services?.[member === "service-a" ? 0 : 1]?.pid;
+          expect(typeof pid).toBe("number");
+          try {
+            process.kill(process.platform === "win32" ? pid! : -pid!, "SIGKILL");
+          } catch {
+            // The startup readiness loop may have observed an early exit.
+          }
+        } else if (action === "stop") {
+          await mgr.stop("app");
+        } else {
+          writeFileSync(readyFile, "ready");
+          const restarted = await mgr.restart("app");
+          expect(restarted.ok).toBe(true);
+          const restartedPids = [
+            restarted.target?.pid,
+            ...(restarted.target?.services ?? []).map((row) => row.pid),
+          ].filter((pid): pid is number => typeof pid === "number");
+          expect(restartedPids).toHaveLength(3);
+          for (const pid of restartedPids) expect(await waitForDead(pid)).toBe(true);
+        }
+        await start.catch(() => {});
+        const deadlineAfter = Date.now() + 6000;
+        while (Date.now() < deadlineAfter && pids.some(isAlive)) {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        for (const pid of pids) expect(await waitForDead(pid)).toBe(true);
+        const final = mgr.get("app");
+        expect(final?.pid).toBeUndefined();
+        expect(final?.services?.every((row) => row.pid === undefined)).toBe(true);
+        expect(final?.status).toBe(action === "crash" ? "failed" : "stopped");
+      } finally {
+        await mgr.stopAll();
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  }
+
   const reloadStopCases = [
     { kind: "server" as const, services: false, action: "stop" as const },
     { kind: "server" as const, services: false, action: "restart" as const },
