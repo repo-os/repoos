@@ -12,7 +12,6 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T11:55:38Z"
 updated_at: "2026-10-20T22:06:57Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-20T21:59:05.771Z: repoos check failed: ◆ Check plan"
 ---
 ## Problem
@@ -46,3 +45,4 @@ See the shot declaration and capture code in src/server/shot-capture.ts, `planAu
 - 2026-10-20T21:45:03Z · message_delivered: 1 message(s)
 - 2026-10-20T21:59:02Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-20T22:06:57Z · body
+
