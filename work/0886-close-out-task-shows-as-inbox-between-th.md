@@ -5,13 +5,13 @@ type: bug
 status: active
 priority: p1
 area: server
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
-updated_at: "2026-10-20T20:18:48Z"
+updated_at: "2026-10-20T20:19:01Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -65,3 +65,4 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T20:10:22Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-20T20:12:56Z · body
 - 2026-10-20T20:18:48Z · needs_input
+- 2026-10-20T20:19:01Z · assigned_to
