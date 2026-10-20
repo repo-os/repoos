@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-20T18:37:06.042Z: repoos check failed: ◆ Check plan"
 id: "0869"
 title: Engineer crashes must not auto-request a handoff; fail over to the next allowed agent
 type: bug
@@ -56,3 +58,4 @@ Look at the watchdog, the CTO restart-stalled-agent action, the handoff request 
 - 2026-10-20T18:06:49Z · handoff failed · remote validation failed: test failure: tests/task-underspecified-flag.test.ts > underspecified flag on task start (#0613) > preserves an unrelated needs_input reason during start on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-20T18:22:48Z · body
 - 2026-10-20T18:37:03Z · handoff failed · handoff recovery attempted · finalization failed
+
