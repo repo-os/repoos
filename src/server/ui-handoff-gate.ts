@@ -70,6 +70,7 @@ import {
   type BrowserEvidenceArtifacts,
   type BrowserEvidenceTransport,
 } from "./browser-capture-policy.js";
+import { canonicalCaptureContext, type CanonicalCapturePlan } from "../core/remote-capture.js";
 
 const INSTALL_ADVICE = "Install: bun add -d @playwright/test && bunx playwright install webkit";
 const AUTO_SETTLE_MS = 900;
@@ -573,6 +574,11 @@ export interface UiHandoffGateDeps {
   recordTaskNotes?: boolean;
   /** Runner transport for the configured remote browser capture policy. */
   remoteTransport?: BrowserEvidenceTransport;
+  /**
+   * The control plane's resolved plan. The runner passes it so it verifies the
+   * same entries the board would, instead of re-planning from the bundle (#0854).
+   */
+  canonicalPlan?: CanonicalCapturePlan;
 }
 
 /** A blocking issue from a required assertion that failed (#0734). */
@@ -617,6 +623,16 @@ export async function runUiHandoffGate(
     return { ok: true, skipped: true, detail: "ui verification not required for this task" };
   }
 
+  // Resolve the plan against the canonical board body and live config ONCE, then
+  // hand it to the runner: the bundled branch can lag a `## Shots` edit and its
+  // detached checkout cannot re-diff changed paths, so a runner-planned
+  // verification could differ from — or skip — what local capture does (#0854).
+  const plan: CanonicalCapturePlan | { reason: string } =
+    deps.canonicalPlan ?? planAutoCapture(config, task, { forceRefresh: deps.forceRefresh });
+  if ("reason" in plan) {
+    return { ok: true, skipped: true, detail: plan.reason };
+  }
+
   if (
     config.remoteValidation?.browserCaptureMode &&
     config.remoteValidation.browserCaptureMode !== "local"
@@ -628,6 +644,7 @@ export async function runUiHandoffGate(
       };
     }
     try {
+      const canonical = canonicalCaptureContext(config, task, plan);
       const sourceWorktree =
         (task.branch ? worktreePathForBranch(config.root, task.branch) : null) ?? config.root;
       const head = await runGit(sourceWorktree, ["rev-parse", "HEAD"], 10_000);
@@ -639,6 +656,7 @@ export async function runUiHandoffGate(
               branch: task.branch,
               candidateSha: head.stdout.trim(),
               operation: "verify" as const,
+              canonical,
             }
           : null;
       try {
@@ -650,6 +668,7 @@ export async function runUiHandoffGate(
             branch: task.branch ?? "",
             candidateSha: "",
             operation: "verify",
+            canonical,
           },
           transport: request ? deps.remoteTransport : undefined,
           local: () =>
@@ -673,11 +692,6 @@ export async function runUiHandoffGate(
     } finally {
       releaseBrowserCapture(task.id);
     }
-  }
-
-  const plan = planAutoCapture(config, task, { forceRefresh: deps.forceRefresh });
-  if ("reason" in plan) {
-    return { ok: true, skipped: true, detail: plan.reason };
   }
 
   const fixtureValidator = taskFixtureValidator(

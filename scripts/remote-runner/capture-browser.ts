@@ -2,6 +2,10 @@ import { cpSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync }
 import { basename, join, resolve } from "node:path";
 import { createRepoOS } from "../../src/core/repoos.js";
 import { worktreePathForBranch } from "../../src/core/git.js";
+import {
+  applyCanonicalCapture,
+  parseCanonicalCaptureContext,
+} from "../../src/core/remote-capture.js";
 import type { LogLevel } from "../../src/core/logger.js";
 import { captureDeclaredShot, runAutoShotCapture } from "../../src/server/shot-capture.js";
 import { PreviewManager } from "../../src/server/preview.js";
@@ -20,13 +24,20 @@ async function captureBrowserEvidenceImpl(
 ): Promise<{ ok: boolean; detail: string }> {
   process.env.PLAYWRIGHT_BROWSERS_PATH = "/ms-playwright";
   const repoos = createRepoOS(root);
-  const config = repoos.config;
+  // The control plane sends the canonical task body/config/plan; use it VERBATIM
+  // rather than the bundled branch's (possibly stale) copy (#0854). Without it,
+  // an older control plane still works from the bundle.
+  const canonical = parseCanonicalCaptureContext(process.env.REPOOS_BROWSER_CAPTURE_CANONICAL);
+  const bundledTask = repoos.getTask(taskId);
+  if (!bundledTask) throw new Error(`Task #${taskId} was not found in the runner bundle`);
+  const { config, task } = applyCanonicalCapture(
+    { config: repoos.config, task: bundledTask },
+    canonical,
+  );
   const captureConfig = {
     ...config,
     remoteValidation: { ...config.remoteValidation, browserCaptureMode: "local" as const },
   };
-  const task = repoos.getTask(taskId);
-  if (!task) throw new Error(`Task #${taskId} was not found in the runner bundle`);
   if (!task.branch) throw new Error(`Task #${taskId} has no branch`);
   if (task.branch.includes("..") || task.branch.includes("\\") || task.branch.startsWith("/")) {
     throw new Error("task branch contains an unsafe path");
@@ -50,7 +61,15 @@ async function captureBrowserEvidenceImpl(
       if ("error" in captured) ok = false;
     }
     if (mode === "shots" || mode === "both") {
-      const shots = await runAutoShotCapture(captureConfig, task, previews, log);
+      // Execute the control plane's canonical plan, never a re-derived one.
+      const shots = await runAutoShotCapture(
+        captureConfig,
+        task,
+        previews,
+        log,
+        undefined,
+        canonical?.plan,
+      );
       results.shots = shots;
       if (shots.status === "failed") ok = false;
     }
@@ -58,6 +77,7 @@ async function captureBrowserEvidenceImpl(
       const verification = await runUiHandoffGate(captureConfig, task, previews, log, {
         forceRefresh: true,
         recordTaskNotes: false,
+        ...(canonical?.plan ? { canonicalPlan: canonical.plan } : {}),
       });
       results.verification = verification;
       if (!verification.ok) ok = false;

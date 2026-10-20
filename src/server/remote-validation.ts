@@ -296,6 +296,8 @@ export interface ValidateOptions {
     branch: string;
     taskId: string;
     entry?: import("../core/shot-plan.js").CaptureEntry & { route: string };
+    /** Canonical task/config/plan the worker uses instead of the bundled copy (#0854). */
+    canonical?: import("../core/remote-capture.js").CanonicalCaptureContext;
   };
 }
 
@@ -1880,6 +1882,11 @@ export function validateScriptArgs(
       `REPOOS_BROWSER_CAPTURE_BRANCH=${shellQuote(browserCapture.branch)} ` +
       (browserCapture.entry
         ? `REPOOS_BROWSER_CAPTURE_ENTRY=${shellQuote(JSON.stringify(browserCapture.entry))} `
+        : "") +
+      // The canonical task/config/plan travels as one JSON blob; the worker uses
+      // it instead of planning from the (possibly stale) bundled branch (#0854).
+      (browserCapture.canonical
+        ? `REPOOS_BROWSER_CAPTURE_CANONICAL=${shellQuote(JSON.stringify(browserCapture.canonical))} `
         : "")
     : "";
   return `${captureEnv}${parts.join(" ")}`;
