@@ -129,6 +129,7 @@ import {
 } from "../../core/shot-plan.js";
 import { resolveShotTargets } from "../../core/shot-targets.js";
 import { captureDeclaredShot } from "../shot-capture.js";
+import { remoteBrowserEvidenceTransport } from "../browser-capture-policy.js";
 import type { PreviewManager } from "../preview.js";
 import type { RootLock } from "../repo-lock.js";
 import { STATUSES } from "../../core/types.js";
@@ -1250,11 +1251,13 @@ export async function guardedForceRefreshCapture(
   worktree: string,
   previews: PreviewManager | undefined,
   log: TaskLog,
+  remoteTransport?: import("../browser-capture-policy.js").BrowserEvidenceTransport,
 ): Promise<GuardedForceRefreshCaptureResult> {
   const headBefore = shortHeadOf(worktree);
   const result = await runUiHandoffGate(config, task, previews, log, {
     forceRefresh: true,
     recordTaskNotes: false,
+    remoteTransport,
   });
   if (result.skipped) {
     return {
@@ -1306,6 +1309,7 @@ export async function guardedForceRefreshCapture(
 export interface AutomaticStaleEvidenceRefreshDeps {
   config: RepoOSConfig;
   previews?: PreviewManager;
+  remoteTransport?: import("../browser-capture-policy.js").BrowserEvidenceTransport;
   /** The durable root lock, shared with close-out and hotfix. */
   rootLock: RootLock;
   /** True while a close-out owns the repo; the refresh must stand down. */
@@ -1387,7 +1391,14 @@ export async function automaticStaleEvidenceRefresh(
       // Once per reviewed HEAD: a capture that does not clear the stale marker
       // must not loop the reviewer forever.
       if (!tryRecordAutoRefreshAttempt(config, task.id, head)) return false;
-      const captured = await guardedForceRefreshCapture(config, current, worktree, previews, log);
+      const captured = await guardedForceRefreshCapture(
+        config,
+        current,
+        worktree,
+        previews,
+        log,
+        deps.remoteTransport,
+      );
       if (captured.error) {
         log(task.id, "warn", `automatic stale-evidence refresh failed: ${captured.error}`);
       }
@@ -1429,7 +1440,14 @@ export async function automaticEvidenceGapRepair(
       const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
       if (dirty.status !== 0 || dirty.stdout.trim()) return false;
 
-      const captured = await guardedForceRefreshCapture(config, current, worktree, previews, log);
+      const captured = await guardedForceRefreshCapture(
+        config,
+        current,
+        worktree,
+        previews,
+        log,
+        deps.remoteTransport,
+      );
       if (captured.error) {
         log(task.id, "warn", `automatic evidence-gap repair failed: ${captured.error}`);
       }
@@ -1510,6 +1528,7 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
       (taskId, level, message) => {
         ctx.logger.task(taskId, level, message);
       },
+      remoteBrowserEvidenceTransport(config, ctx.remoteValidator),
     );
     if (captured.skipped) {
       return json(res, 409, {
@@ -1761,19 +1780,28 @@ async function declareTaskShot(
       error: `the task's ## Shots section is not a valid list — fix it first: ${preflight.errors.join("; ")}`,
     });
   }
-  const result = await captureDeclaredShot(config, task, previews, {
-    target: resolved.target,
-    route: entry.route ?? "/",
-    ...(entry.label ? { label: entry.label } : {}),
-    ...(entry.highlight ? { highlight: entry.highlight } : {}),
-    ...(entry.selector ? { selector: entry.selector } : {}),
-    ...(entry.steps?.length ? { steps: entry.steps } : {}),
-    provenance: { kind: "declared", ...(entry.label ? { label: entry.label } : {}) },
-    // The parsed declaration rides on the stored shot so delete can sync the
-    // exact `## Shots` entry (selector and steps included) instead of guessing
-    // from the shallow fields (#0627 review round 1).
-    declared: entry,
-  });
+  const result = await captureDeclaredShot(
+    config,
+    task,
+    previews,
+    {
+      target: resolved.target,
+      route: entry.route ?? "/",
+      ...(entry.label ? { label: entry.label } : {}),
+      ...(entry.highlight ? { highlight: entry.highlight } : {}),
+      ...(entry.selector ? { selector: entry.selector } : {}),
+      ...(entry.steps?.length ? { steps: entry.steps } : {}),
+      provenance: { kind: "declared", ...(entry.label ? { label: entry.label } : {}) },
+      // The parsed declaration rides on the stored shot so delete can sync the
+      // exact `## Shots` entry (selector and steps included) instead of guessing
+      // from the shallow fields (#0627 review round 1).
+      declared: entry,
+    },
+    remoteBrowserEvidenceTransport(config, ctx.remoteValidator),
+    (message) => {
+      ctx.logger.task(task.id, "warn", `shot capture: ${message}`);
+    },
+  );
   if ("error" in result) {
     return json(res, result.busy ? 409 : 400, {
       error: result.error,

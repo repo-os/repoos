@@ -596,6 +596,11 @@ body, and shown as the **UI changes** sub-tab of the drawer's Changes tab. This
 is the default local attachment storage; an opt-in cloud provider is configured
 under [`storage.provider`](/configuration#attachment-storage).
 
+`repoos shot` always runs locally on the control-plane machine. The
+[`remoteValidation.browserCaptureMode`](/configuration#remote-validation)
+setting only affects the automatic handoff capture and UI verification; it never
+moves this CLI command to a runner.
+
 ```bash
 repoos shot                          # capture the preview root for this task
 repoos shot /repo/commits/abc123     # capture one route
@@ -624,6 +629,9 @@ repoos review again 0832 --json
 Refresh the current review evidence without starting an engineer turn. This
 re-runs the declared browser and command captures and UI verification against
 the task worktree's current HEAD. The command waits for the capture to finish.
+
+Like `repoos shot`, this refresh runs locally on the control plane; the
+browser-capture setting only offloads the automatic handoff paths to a runner.
 
 ```bash
 repoos verify 0766

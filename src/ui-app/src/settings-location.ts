@@ -98,6 +98,7 @@ export function generalSectionForKey(key: string): string {
   }
   if (key === "tunnelEnabled") return "publishing";
   if (key === "remoteValidation.enabled") return "remote-validation";
+  if (key === "remoteValidation.browserCaptureMode") return "performance";
   if (key === "remoteValidation.offloadBrowserSteps" || key === "remoteValidation.localFallback") {
     return "remote-validation";
   }
@@ -178,6 +179,7 @@ const GENERAL_EXCLUDED_KEYS = new Set([
 export const REMOTE_VALIDATION_GENERAL_FIELD_KEYS = new Set([
   "remoteValidation.offloadBrowserSteps",
   "remoteValidation.localFallback",
+  "remoteValidation.browserCaptureMode",
 ]);
 
 /** Mirrors `isFieldVisible` in SettingsView.vue */
