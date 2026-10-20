@@ -1,0 +1,37 @@
+---
+id: "0861"
+title: "P0: bookkeeping-only commits must not make handoff evidence stale or block a good review"
+type: bug
+status: inbox
+priority: p0
+area: [server, core, web]
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-20T04:47:38Z"
+updated_at: "2026-10-20T04:47:38Z"
+---
+## Problem
+A task whose code is correct is repeatedly held in review because its screenshot/verification evidence is flagged **stale** when the only commits since the capture are RepoOS bookkeeping. Example (#0843, 2026-10-20): review pass 10 found no bugs and no edge cases, but the verdict was "needs some work" with `Evidence: ... captured at d87648624, while reviewed HEAD is b1eda86f8. The only intervening change is task-file bookkeeping, but the capture is still stale by the handoff evidence rule.` It then needed a manual `repoos verify` + `repoos review again` to get another pass (which found a new unrelated issue, but the stale-evidence round was pure waste). The same thing happened to #0832 and others.
+
+Root cause: the tested-tree identity is just the short HEAD sha of the task worktree (`headIdentity` in `src/server/shot-capture.ts`, ~line 133). Every commit changes it, including `docs(<id>): update task` / activity-log commits on the task file, engineer WIP checkpoints that touch only task files, and main-sync merges that only bring in other tasks' `work/*.md`. The review prompt (src/server/review.ts ~2262, `STALE-EVIDENCE-ONLY`), the Changes tab "Stale capture" flag (`src/ui-app/src/lib/handoff-verification.ts`), `reusableAutoCaptures` (shot reuse) and the auto-refresh setting all compare that sha. Meanwhile the close-out guard already treats `work/*.md`-only commits as harmless ("Move to done compares the worktree to the handoff snapshot and refuses when HEAD moved ... except commits that change only work/*.md task files").
+
+## Desired UX
+Evidence is stale only when something that can change what the shots show has changed. Define "evidence is current" as: the diff between the captured commit and the reviewed HEAD touches **no non-bookkeeping path**. Bookkeeping paths are the same set the close-out already treats as server-written: `work/`, `inputs/`, `stories/`, plus (once #0860 lands) `reminders/` and `schedules/`, read from config (`workDir`, `inputsDir`, `storiesDir`, `remindersDir`, `schedulesDir`), and `.repoos/` / attachments.
+- A bookkeeping-only delta never produces `STALE-EVIDENCE-ONLY`, never shows the "Stale capture" flag, never triggers a refresh or a re-capture, and never counts as a reason for "needs some work".
+- A delta that touches any real path (source, tests, docs, config, `repoos.toml`, package files) is stale exactly as today.
+- The reviewer is told, in its prompt, when the capture is from an earlier commit but only bookkeeping changed, so it does not report that as a finding.
+- `repoos verify`, `repoos review again` and the auto-refresh setting use the same definition, so "refresh evidence" is offered only when it would change something.
+
+## Acceptance criteria
+- A single shared helper (for example `isEvidenceCurrent(capturedSha, headSha, config)`) computes the bookkeeping-aware comparison with `git diff --name-only`, fails closed (unknown or unreadable git state means stale), and is unit-tested: bookkeeping-only delta is current; a source change is stale; a mixed delta is stale; a merge commit that only brings in other tasks' task files is current; a missing/unknown captured sha is stale; custom `workDir`/`inputsDir`/`storiesDir` layouts (including the `repoos/` namespace) are honoured.
+- The reviewer prompt, the Changes tab flag, shot reuse and auto-refresh all call that helper; tests cover each caller (a task with only `docs(<id>): update task` commits after capture reviews as current evidence and the verdict is not clamped to "needs some work").
+- No change to what is captured or how shots are named; `sourceIdentity` remains recorded for display.
+- docs/previews.md and user-docs/review-and-close-out.md explain the new definition.
+
+## Notes for AI
+Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (src/server/worktree-handoff-guard.ts and the integration orchestrator's `bookkeepingDirs`) rather than adding a parallel path list. Check src/server/review.ts (~2262-2300), src/server/shot-capture.ts (`headIdentity`, `reusableAutoCaptures`), src/server/ui-handoff-gate.ts and src/ui-app/src/lib/handoff-verification.ts. Keep it fail-closed. Related: #0766 (refresh evidence on demand), #0734, #0600 (work/*.md-only commits tolerated at close-out), #0860 (reminders/schedules as bookkeeping). Do not touch repoos.toml. Source: Nick, 2026-10-20 (#0843 pass 10).
+
+## Activity
+
+- 2026-10-20T04:47:38Z · created · njachowski@gmail.com
