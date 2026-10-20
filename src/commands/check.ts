@@ -64,7 +64,6 @@ import { formatFixCommand } from "../core/check-format.js";
 import { writeCheckRun } from "../core/check-results-store.js";
 import { extractFailedTests } from "../core/check-failure-summary.js";
 import {
-  envToRunContext,
   resolveCheckRunAttribution,
   resolveCheckStoreRoot,
   getCheckStore,
@@ -2005,6 +2004,12 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   // would then record into this repo's live store instead of their own tmp ones.
   const checkStoreRoot = resolveCheckStoreRoot(repoRoot);
   const cfg = loadConfig(repoRoot);
+  // One validated attribution for the WHOLE run (#0870): the history rows, the
+  // failed-first preflight, and the remote dispatch all use this instead of
+  // reading REPOOS_TASK_ID directly, so an inherited id from another project
+  // can neither label this project's row nor commit a WIP checkpoint for that
+  // other project's task.
+  const runContext = resolveCheckRunAttribution(process.env, checkStoreRoot, cfg.workDir);
   const markers = detectRepoMarkers(repoRoot);
   const plan = resolveCheckPlan({
     check: cfg.check,
@@ -2153,8 +2158,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   if (runRemoteGate) {
     const uncommitted = await uncommittedFilesBlockingRemoteGate(repoRoot, cfg);
     if (uncommitted.length > 0) {
-      if (isManagedEngineerCheck(process.env)) {
-        const taskId = process.env.REPOOS_TASK_ID!.trim();
+      if (isManagedEngineerCheck(process.env) && runContext.taskId) {
+        const taskId = runContext.taskId;
         const wipErr = await commitWipCheckpointForRemoteGate(repoRoot, cfg, taskId);
         if (wipErr) {
           runRemoteGate = false;
@@ -2215,8 +2220,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   };
   if (runRemoteGate) {
     heading("Remote validation");
-    const managed = isManagedEngineerCheck(process.env);
-    const taskId = process.env.REPOOS_TASK_ID?.trim() || "pre-review";
+    const managed = isManagedEngineerCheck(process.env) && runContext.taskId !== null;
+    const taskId = runContext.taskId || "pre-review";
     const remoteStartedAt = new Date();
     let remoteOutput = "";
     const prevStoreRoot = process.env.REPOOS_CHECK_STORE_ROOT;
@@ -2298,7 +2303,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         }
         if (remoteValidator) {
           try {
-            const { phase: runPhase } = envToRunContext(process.env);
+            const { phase: runPhase } = runContext;
             const gate = await runRemotePreReviewGate({
               config: cfg,
               remoteValidator,
@@ -2346,7 +2351,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   // slate, and the remote close-out gate never reaches this point. Attribution
   // is validated against THIS project so an inherited foreign task id cannot
   // pick another project's failed-test list (#0870).
-  const preflightContext = resolveCheckRunAttribution(process.env, checkStoreRoot, cfg.workDir);
+  const preflightContext = runContext;
   const previousFailedTests = previousFailedTestsForRun({
     root: checkStoreRoot,
     cacheDir: cfg.cacheDir,
