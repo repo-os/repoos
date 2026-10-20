@@ -2,7 +2,7 @@
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -220,3 +220,5 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T09:02:55Z · note: review pass 16: needs some work
 - 2026-10-20T09:02:55Z · needs_input
 - 2026-10-20T09:07:44Z · needs_input
+- 2026-10-20T09:07:44Z · status review→active
+- 2026-10-20T09:07:44Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
