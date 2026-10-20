@@ -95,6 +95,7 @@ import {
   pruneWorktrees,
   shortHeadOf,
   currentBranch,
+  branchCommit,
 } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { REVIEW_RUN_TRIGGERS } from "../review-automation.js";
@@ -2449,6 +2450,15 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     await previews.stop(id, "task done");
     reviews.cancel(id);
     void runner.stop(id);
+    // #0886: stop() only signals. Fence the engineer before the merge can
+    // begin, and refuse rather than race a process that will not leave. The
+    // closing-out lock written below also fences a phantom (#0863) the
+    // registry never tracked.
+    if (!(await runner.waitForStop(id, 5000))) {
+      return json(res, 409, {
+        error: `the engineer process for #${id} did not stop; close-out was not started`,
+      });
+    }
 
     // Guard against task deletion mid-close-out (0118): re-validate the task
     // exists and still has a branch before enqueueing.
@@ -2685,13 +2695,14 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       });
     }
 
-    if (handoffSha) {
-      writeWorktreeReviewLock(config.root, config.cacheDir, id, {
-        status: "closing-out",
-        sha: handoffSha,
-        at: new Date().toISOString(),
-      });
-    }
+    // Always fence the task, even without a handoff snapshot: this lock is what
+    // makes cmdMv / the runner handoff request / the file-watch handoff refuse
+    // while the pipeline owns the task file (#0886).
+    writeWorktreeReviewLock(config.root, config.cacheDir, id, {
+      status: "closing-out",
+      sha: handoffSha ?? branchCommit(config.root, branch) ?? "",
+      at: new Date().toISOString(),
+    });
 
     // Reflect the new queue entry in the pinned status bar immediately (0207),
     // even before job processing's own snapshot emission picks it up.

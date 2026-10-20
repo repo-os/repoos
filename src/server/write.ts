@@ -27,10 +27,12 @@ import {
   removeSection,
   replaceSection,
   normalizeSectionHeading,
+  releasedAtFromActivity,
   ACTIVITY_HEADING,
   SCREENSHOTS_HEADING,
   ORIGINAL_PROMPT_HEADING,
 } from "../core/task.js";
+import { hasUnresolvedConflictMarkers } from "../core/frontmatter.js";
 import { formatTaskAreas, parseTaskAreas } from "../core/areas.js";
 import { bundleItemSectionIds, bundleItemsListIds } from "../core/easter-eggs-bundle.js";
 import { normalizeStoryName } from "../core/stories.js";
@@ -297,8 +299,19 @@ export function patchTaskFile(
   if (fieldError) throw new WriteError(fieldError);
 
   // Re-read CURRENT on-disk state right before writing.
+  const content = readFileSync(absPath, "utf8");
+  // A file with unresolved conflict markers is mid-merge, not a task shape.
+  // Parsing it yields the parser default status (`inbox`) and serializing it
+  // would strip the markers and corrupt the committed merge result — exactly
+  // the #0886 write. Refuse; the close-out merge owns this file until it
+  // commits, and a no-op here is always safer than a guess.
+  if (hasUnresolvedConflictMarkers(content)) {
+    throw new WriteError(
+      `Task file ${relative(config.root, absPath)} has unresolved merge-conflict markers — refusing to write while the merge is in progress`,
+    );
+  }
   const current = parseTask({
-    content: readFileSync(absPath, "utf8"),
+    content,
     absPath,
     root: config.root,
     defaultStatus: config.defaultStatus,
@@ -600,6 +613,50 @@ export function patchTaskFile(
 }
 
 /**
+ * Stamp `status: done` (and the merged commit) into the task file the close-out
+ * merge is about to publish (#0886). The caller commits this together with the
+ * merge commit, so the board never shows the task as `inbox` (or even `review`)
+ * during the post-merge install/rebuild window that can last minutes.
+ *
+ * Deliberately does NOT commit: the orchestrator has its own staging/amend
+ * step, and this file is the one path in the merge commit that may differ from
+ * both parents. Returns null when the file is missing or still conflicted.
+ */
+export function stampTaskDoneOnPublish(
+  config: RepoOSConfig,
+  absPath: string,
+  mergedCommit?: string | null,
+): Task | null {
+  if (!existsSync(absPath)) return null;
+  const content = readFileSync(absPath, "utf8");
+  if (hasUnresolvedConflictMarkers(content)) return null;
+  const task = parseTask({
+    content,
+    absPath,
+    root: config.root,
+    defaultStatus: config.defaultStatus,
+    defaultAssignee: config.defaultAssignee,
+  });
+  if (task.status === "done") {
+    if (!task.mergedCommit && mergedCommit) {
+      task.mergedCommit = mergedCommit;
+      writeFileSync(absPath, serializeTask(task));
+    }
+    return task;
+  }
+  task.status = "done";
+  task.mergedCommit = mergedCommit ?? task.mergedCommit;
+  // A landed task is never waiting on human input. The `release:success`
+  // marker is deliberately NOT written here: `markTaskReleased` records it
+  // after the post-merge install/rebuild succeeds, and if that step fails the
+  // stamp is reverted to `review` so a retry resumes honestly.
+  task.needsInput = false;
+  task.needsInputReason = undefined;
+  writeFileSync(absPath, serializeTask(task));
+  return task;
+}
+
+/**
  * Mark the successful end of the review-to-done flow in the task's existing
  * append-only activity log. This is deliberately separate from TaskPatch so a
  * normal status edit cannot make an unmerged task appear in release history.
@@ -635,12 +692,23 @@ export function markTaskReleased(
     task.mergedCommit ??
     null;
   if (task.status === "done") {
-    // Close-out can delete the feature branch before a retry finishes
-    // markTaskReleased; backfill proof without a second release marker (#0711).
+    // The publish stamp (#0886) already wrote status + the release marker into
+    // the merge commit, so this is normally a no-op. Still backfill two things
+    // for the other paths that can mark a task done (a legacy write, or a
+    // retry after the feature branch was deleted): the merged-commit proof
+    // (#0711), and the `release:success` marker when only the status landed.
+    let changed = false;
     if (!task.mergedCommit && resolvedMergedCommit) {
       task.mergedCommit = resolvedMergedCommit;
+      changed = true;
+    }
+    if (!releasedAtFromActivity(task.body)) {
+      recordChange(task, `status done→done, release:success`);
+      changed = true;
+    }
+    if (changed) {
       writeFileSync(absPath, serializeTask(task));
-      commitTaskFile(config.root, absPath, `docs(${task.id}): record merged commit`);
+      commitTaskFile(config.root, absPath, `docs(${task.id}): record release`);
     }
     return task;
   }
