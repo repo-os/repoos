@@ -8,8 +8,10 @@ area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T11:55:38Z"
-updated_at: "2026-10-20T21:10:18Z"
+updated_at: "2026-10-20T21:10:23Z"
 ---
 ## Problem
 A declared shot that resolves to the wrong preview target produces a capture of the wrong screen, and the failure shows up far from the cause. Observed 2026-10-20: #0860's Settings shot resolved to the Docs site target (console error "'text/html' is not a valid JavaScript MIME type", highlight matched nothing, handoff failed UI verification), and #0861's `drawer:shotEvidence` shot was captured on the Docs site / the board instead of a task drawer, so the reviewer reported an evidence gap on pass after pass. Each cost several rounds because the engineer only learns about it from a later review, and weaker models do not self-correct from the message.
@@ -32,3 +34,4 @@ See the shot declaration and capture code in src/server/shot-capture.ts, `planAu
 
 - 2026-10-20T11:55:38Z · created · njachowski@gmail.com
 - 2026-10-20T21:10:18Z · status inbox→ready
+- 2026-10-20T21:10:23Z · cli_override, model_override
