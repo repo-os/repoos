@@ -3,6 +3,9 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — a service crash leaves the target and sibling services running, contrary to the documented teardown behavior."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -218,3 +221,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T08:53:51Z · status active→review
 - 2026-10-20T09:01:01Z · note: review pass 15: needs some work
 - 2026-10-20T09:02:55Z · note: review pass 16: needs some work
+- 2026-10-20T09:02:55Z · needs_input
