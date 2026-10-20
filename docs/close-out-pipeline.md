@@ -161,7 +161,9 @@ When a task lands in `review`, RepoOS records the feature branch HEAD and the fa
 that the worktree was clean under `.repoos/handoff-snapshots/<id>.json`, and writes an
 advisory lock at `.repoos/locks/<id>.json` (`status: review` or `closing-out` while
 Move to done runs). Agent runners refuse to start an engineer in a locked worktree;
-interactive sessions should treat the lock the same way.
+interactive sessions should treat the lock the same way. A `closing-out` lock is
+also a hard write fence: `repoos mv`, a runner handoff request, and the server's
+handoff finalization all refuse before touching the task file (#0886).
 
 `POST /api/tasks/:id/done` compares the live worktree to that snapshot **before**
 enqueueing the close-out job. If `HEAD` moved or the tree is dirty after handoff, the
@@ -610,6 +612,46 @@ on the task file (`git checkout HEAD -- <file>`), then patch back to `review`
 when the on-disk status is anything other than `review` or `done`. A failed job
 is re-enqueued normally on the next Move to done; no `repoos mv … active` repair
 step.
+
+### A closing task never shows as `inbox` (#0886)
+
+The board used to show a task in the **inbox** column for the 1–3 minutes between
+the publish merge and the later `docs(<id>): set status done` commit. Every
+landing hit it: both parents of the merge said `status: review`, yet the merge
+commit's task file said `inbox` with a fresh `updated_at`.
+
+Two links formed the race:
+
+1. A late engineer handoff (`repoos mv <id> review`, or a raw `status: review`
+   edit the watcher picked up) could start while the publish merge had the task
+   file conflicted. Its "handoff requested (cli)" note re-parsed the file and
+   `parseDocument` treated git's `=======` conflict divider as a frontmatter
+   delimiter — so `status:` was no longer in the parsed block and the writer
+   committed the parser default, `inbox`.
+2. The publish merge then staged and committed that stray write as part of the
+   merge commit.
+
+The fix has three independent layers:
+
+- **The parser** (`src/core/frontmatter.ts`) never treats `<<<<<<<`, `=======`,
+  `>>>>>>>` or `|||||||` as a frontmatter delimiter, and
+  `hasUnresolvedConflictMarkers()` is used by every task writer
+  (`patchTaskFile`, core `rewrite`) to refuse a mid-merge file instead of
+  re-serializing it.
+- **Atomic stamp** (`stampTaskDoneOnPublish` in `src/server/write.ts`,
+  `stampPublishedTaskDone` in `integration-orchestrator.ts`): immediately after
+  the merge lands and before the slow post-merge install/rebuild, the task file
+  is set to `status: done` + `merged_commit`. A real merge commit is amended, so
+  it carries the final state; a fast-forward gets one stamp commit right after.
+  `markTaskReleased` still records the single `release:success` marker at
+  release. If a post-merge step fails, the stamp is reverted to `review` so the
+  retry path is unchanged.
+- **Fence** (`src/server/close-out-lock.ts`): both enqueue paths write the
+  `closing-out` lock even when there is no handoff snapshot, and wait for the
+  engineer process to leave. `repoos mv`, `writeHandoffRequest`,
+  `finalizeReviewHandoff`/`handoffTask`, and `startUnifiedHandoff` all reject
+  with a clear message and write nothing while that lock is present. A failed
+  close-out drops the lock back to `review`, so a retry is not stuck.
 
 ## Known failure classes and their guards
 
