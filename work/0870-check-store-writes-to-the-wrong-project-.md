@@ -14,7 +14,7 @@ branch: feat/check-store-writes-to-the-wrong-project-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:26Z"
-updated_at: "2026-10-20T21:47:02Z"
+updated_at: "2026-10-20T21:47:33Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-20T21:46:23.850Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-20T21:47:02.554Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -42,3 +42,4 @@ Evidence: the SQLite file's rows (check_runs) and worktree column named a lighti
 - 2026-10-20T21:46:23Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-20T21:46:23Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-20T21:47:02Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-20T21:47:33Z · body
