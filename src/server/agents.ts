@@ -6610,6 +6610,12 @@ export class AgentRunner {
     return this.queuedIds.has(taskId);
   }
 
+  /** True when one or more human messages are waiting to be delivered (#0865). */
+  hasQueuedMessages(taskId: string): boolean {
+    const msgs = this.queuedMessages.get(taskId);
+    return !!msgs && msgs.length > 0;
+  }
+
   /**
    * Flag messages that have sat queued past the timeout (#0821). They are never
    * dropped — a queued message is a human's follow-up and silently losing it is
@@ -8083,6 +8089,8 @@ export class AgentRunner {
    */
   private adoptHandoffRequestFile(taskId: string, entry: Entry): void {
     if (entry.handoffRequested || !entry.runId) return;
+    // A queued human message must be delivered before any handoff finalizes (#0865).
+    if (this.hasQueuedMessages(taskId)) return;
     const root = this.config.root;
     const cacheDir = this.config.cacheDir;
     const request = readHandoffRequest(root, cacheDir, taskId);
@@ -8453,6 +8461,28 @@ export class AgentRunner {
     // those messages stay persisted and flagged and are delivered when the
     // task's own session next runs. Deferred so the new turn starts after this
     // cleanup fully unwinds (and after handoff adoption below).
+    const queuedCount = this.queuedMessages.get(taskId)?.length ?? 0;
+    const handoffBlockedByQueue = queuedCount > 0;
+    if (handoffBlockedByQueue) {
+      const root = this.config.root;
+      const cacheDir = this.config.cacheDir ?? ".repoos";
+      const pendingMv = readHandoffRequest(root, cacheDir, taskId);
+      const mvMatches = !!pendingMv && !!entry.runId && pendingMv.runId === entry.runId;
+      if (entry.handoffRequested || mvMatches) {
+        entry.handoffRequested = false;
+        this.clearPendingHandoff(taskId);
+        clearHandoffRequest(root, cacheDir, taskId);
+        this.recordTaskActivity(
+          taskId,
+          `handoff_deferred: ${queuedCount} queued message(s) must be read before review`,
+        );
+        this.appendLine(
+          taskId,
+          "sys",
+          "✗ handoff deferred — read the queued message(s) first, then request review again",
+        );
+      }
+    }
     if (!wasReview && !entry.handoffRequested && !entry.intentionalStop && !this.isPaused(taskId)) {
       queueMicrotask(() => this.deliverQueuedMessages(taskId));
     }
@@ -8508,7 +8538,9 @@ export class AgentRunner {
     // the same tick the process exited — checkStalls() polls on a timer, so
     // without this a handoff requested moments before the end of the turn
     // would be missed entirely.
-    this.adoptHandoffRequestFile(taskId, entry);
+    if (!handoffBlockedByQueue) {
+      this.adoptHandoffRequestFile(taskId, entry);
+    }
     // Resolve task from index if not in entry (important for resume turns).
     const taskForHandoff = entry.task ?? (this.getTask ? this.getTask(taskId) : null);
     // Any non-clean exit that isn't a deliberate stop means the task is about
@@ -8555,7 +8587,7 @@ export class AgentRunner {
         this.escalateFailedExit(taskId, taskForHandoff, session);
       }
     }
-    if (entry.handoffRequested) {
+    if (entry.handoffRequested && !this.hasQueuedMessages(taskId)) {
       if (taskForHandoff && entry.branch && entry.workdir) {
         // Server is alive — finalize now for both clean and unclean exits (#0505).
         // Persist-at-signal time still covers a server crash mid-turn (#0235).
