@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-20T09:02:52Z"
+review_passes: 11
 id: "0861"
 title: "P0: bookkeeping-only commits must not make handoff evidence stale or block a good review"
 type: bug
@@ -11,8 +13,6 @@ branch: feat/p0-bookkeeping-only-commits-must-not-mak
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:47:38Z"
-updated_at: "2026-10-20T09:02:51Z"
-review_passes: 10
 last_check_failure: "repoos check at 2026-10-20T07:15:20.788Z: repoos check failed: rendered-contrast — $ bun scripts/ui-contrast-audit.mjs"
 dev_error_count: 1
 ---
@@ -90,3 +90,4 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 - 2026-10-20T08:58:55Z · note: review pass 10: needs some work
 - 2026-10-20T09:02:45Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-20T09:02:51Z · note: review pass 11: needs some work
+
