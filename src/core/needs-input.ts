@@ -7,6 +7,7 @@ export const MAX_AUTO_REVIEW_ROUNDS = 2;
 /** Provider/run-health flags clear when engineering work resumes (#0716). */
 export function needsInputClearsOnNewEngineerRun(reason: string | undefined): boolean {
   if (!reason || reason === UNDERSPECIFIED_NEEDS_INPUT_REASON) return true;
+  if (reason === "review-human-attention") return true;
   return reason === "provider-failure" || reason === "degenerate-output";
 }
 
@@ -41,6 +42,7 @@ export function needsInputClearsOnSuccessfulReview(
   // A fresh review run restarts the episode; if it still finds problems the
   // auto-bounce cap re-raises this flag right after.
   if (task.needsInputReason === "review-rounds-exhausted") return true;
+  if (task.needsInputReason === "review-human-attention") return true;
   if (task.needsInputReason === "evidence-gap-exhausted") return true;
   return task.needsInputReason === "watchdog-stuck" && task.status === "review";
 }

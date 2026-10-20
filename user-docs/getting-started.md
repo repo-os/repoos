@@ -355,6 +355,16 @@ stays `active` with a *running checks* badge until that finishes. The agent does
 **not** merge its own work. Review the diff, then move the
 task to `done`, which is what actually merges the branch to your trunk.
 
+A new project gets built-in reviewer, engineer, pm and CTO prompts seeded on
+first start, so the roles work without any setup. They carry the review lessons
+RepoOS learned driving itself: report the whole class of a bug in one pass, read
+earlier review reports, separate code defects from evidence gaps, check the
+branch still merges with its base, and flag a task for a human after repeated
+review passes. Project-specific rules belong in `AGENTS.md` and your own
+`[[agents]]` text; RepoOS never overwrites them. See
+[Configuration → Agents](/configuration#agents) to customize a role or adopt a
+newer default.
+
 ## The bar for "done"
 
 ```bash

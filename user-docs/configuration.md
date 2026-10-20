@@ -816,6 +816,18 @@ Edit both keys in **Settings → General**. The check appends a `## Automated ve
 
 A **command capture target** (`[[shot.targets]]`, below) has no browser page or console, so its evidence in the same file is a `commandCaptures` record instead: the target, command, cwd, exit status, stdout/stderr tail and the images it produced (with sizes), plus the same tested-tree identity and plan fingerprint. The handoff gate writes it for command-only tasks exactly as it writes the browser record for web ones, stale-capture detection applies the same way, and the reviewer prompt says browser verification does not apply (the console-error check is `skipped`, never blocking). See [Command capture targets](#command-capture-targets-non-web-apps).
 
+## Repeated review classes
+
+```toml
+review.humanFlagAfterPasses = 5
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `review.humanFlagAfterPasses` | number | `5` | yes | Completed review passes on one task before the next report opens with a summary of the bug classes earlier passes kept finding, and the task gets a human-attention flag (`review-human-attention`). Default 5. The flag is separate from the auto-bounce `review-rounds-exhausted` backstop: it counts every completed pass, including manual **Review again**, and clears when a clean review or a new engineer run confirms progress. |
+
+Edit the key in **Settings → General** (Automation & approval). A task can bounce between `active` and `review` many times when each pass finds one more instance of the same class; this is the signal to stop and look at the pattern rather than pay for another round. See [Review and close-out → Repeated review classes](/review-and-close-out#repeated-review-classes-and-the-human-attention-flag).
+
 ## Approval policy (opt-in auto Move to done)
 
 ```toml
@@ -932,6 +944,18 @@ The lifecycle roles and custom agents are stored as `[[agents]]` rows
 (`name`, `cli`, `model`, `enabled`, `instructions`, `skills`) and are managed
 from the **Agents** page. Prefer the UI over hand-editing them. See
 [Agents](/agents) for the supported CLIs and roles.
+
+**Default role prompts and adopting updates.** A project with no `[[agents]]`
+rows gets the built-in reviewer, engineer, pm and CTO prompts from
+`DEFAULT_AGENTS` the first time RepoOS starts. An existing project keeps its own
+`instructions` text untouched — RepoOS never rewrites a customized role. To
+adopt a newer built-in default, open **Settings → repoos.toml** (or the Agents
+page's instructions field) and copy the role text from
+`GET /api/config`'s `agentsMeta.defaults` array into your own `[[agents]]` row,
+keeping any project-specific rules you already added. Project rules such as a
+runtime choice, files that must not be committed, or a required dependency
+policy belong in `AGENTS.md` and that project's own role text, never in the
+built-in defaults.
 
 The built-in supervisor is not exposed as a `repoos.toml` key.
 

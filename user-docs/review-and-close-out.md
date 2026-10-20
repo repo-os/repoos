@@ -92,6 +92,42 @@ RepoOS stops and leaves the task for a human rather than looping forever. It
 also stops early and escalates if the reviewer flags the task's own relevance —
 an obsolete task needs a scoping decision, not more engineering.
 
+### Repeated review classes and the human-attention flag
+
+A review loop is not always one stubborn bug. A task can go through many
+`active` → `review` passes when each pass finds one more instance of the same
+class — lifecycle/teardown ordering, an unhandled spawn error, a config key
+registered in one place but not the others. The built-in reviewer prompt (the
+shared part every RepoOS project gets, plus the default reviewer role) is built
+to break that loop:
+
+- It names the **class** of each bug, greps the diff and the touched files for
+  every other instance, and lists them all in one report instead of holding
+  findings for later passes.
+- It reads the task's newest earlier reports first, verifies each finding was
+  actually fixed, and does not re-report a fixed item as new.
+- It separates code defects from **evidence-only** gaps (`EVIDENCE-GAP-ONLY` /
+  `STALE-EVIDENCE-ONLY`) and checks that each declared shot's target and route
+  can really render its declared state.
+- Before `` `good to go` `` it checks the branch still merges cleanly with its
+  base and names any conflicting files.
+
+After **5 completed review passes** on one task (Settings → General →
+**Flag repeated review classes after**, `review.humanFlagAfterPasses`), the next
+report opens with a `Repeated review classes:` summary, and the task is flagged
+for a human as **Repeated review classes — human check**
+(`review-human-attention`). This is deliberately **separate from** the
+auto-bounce `review-rounds-exhausted` backstop: it counts every completed pass
+(manual **Review again** included) rather than auto-bounces, and it fires
+earlier. Read the newest report, then send it to the engineer, fix it yourself,
+or rescope the task if the loop is not converging. The flag clears when a clean
+review or a new engineer run confirms progress.
+
+The same instructions ship in the built-in reviewer, engineer, pm and CTO role
+prompts. An existing project keeps its own `[[agents]]` text; see
+[Configuration → Agents](/configuration#agents) for how to adopt a newer
+default without overwriting custom rules.
+
 ### Automated verification: when RepoOS clamps a clean verdict
 
 After the reviewer writes its report, RepoOS runs two **mechanical checks** and

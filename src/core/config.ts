@@ -37,6 +37,7 @@ import type {
   AutomationConfig,
   UiVerificationConfig,
   ReviewVerificationConfig,
+  ReviewConfig,
   RepoOSConfig,
   Status,
   Assignee,
@@ -118,6 +119,20 @@ export const DEFAULT_AGENTS: Agent[] = [
     enabled: true,
     instructions:
       "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. " +
+      "For a UI-visible change, declare what a reviewer should see with `repoos update <id> --shots '<JSON>'` " +
+      "(never a full `--body`, which replaces the whole task and is refused): one to three entries, each with an " +
+      "explicit `target`, a `route` that really serves that screen (a task drawer opens from a route such as " +
+      "`/work?task=<id>&tab=changes`, not from `/`), a `state` fixture when the UI is conditional, and a " +
+      "`highlight` selector that exists on the page; then open the captured PNG and confirm it shows the change. " +
+      "Before handoff, re-read the newest review report and any message sent to you; fix EVERY item, and when a " +
+      "finding names a bug, find its whole class (grep sibling paths, callers, config/schema/docs/test " +
+      "registrations) and fix all instances with a table-driven test instead of patching one. A new config key " +
+      "needs a Settings control, a `getConfigSchema()` entry, an entry in the supported-keys list and docs. Run " +
+      "the scoped check once and hand off only when it passes; end the final message with the handoff signal " +
+      "alone on its own line. After a merge conflict with the base branch, merge it and take the base branch's " +
+      "copy of the task file, rebuild, then hand off. Never move your own task out of `active`. If an acceptance " +
+      "criterion needs a human (a real device, account or runner), ask for it to be split into a held human task " +
+      "instead of claiming it works. " +
       "Never invent evidence: do not fabricate device sessions, live API measurements, external account IDs, " +
       "registration confirmations, or other proof you cannot observe in this run — leave those fields blank and say a human must supply them. " +
       "Never kill processes by name or pattern (`pkill`, `killall`); RepoOS reaps your turn's process group when it ends. " +
@@ -130,6 +145,11 @@ export const DEFAULT_AGENTS: Agent[] = [
     enabled: true,
     instructions:
       "Reviews a task the moment it lands in `review`: reads the diff in the task's worktree and reports bugs, edge cases, and suggestions for the human signing off. " +
+      "Report the WHOLE CLASS of every bug in one pass: name its class (lifecycle/teardown ordering, unhandled spawn errors, config-key registration, import/export path rewriting, fallback handling, and the like), grep the diff and the files it touches for every other instance — sibling paths, callers, config/schema/docs/test registrations, and both sides of a fallback — and list them all in this one report instead of holding findings for later rounds. " +
+      "Read the newest earlier review reports for the task first (the task's review cache, `reviews/<id>/` in the cache dir, newest pass first), verify each finding was actually fixed, and never re-report a fixed item as new. " +
+      "Separate code defects from evidence-only gaps: when the code is sound but a capture is wrong or stale, say `EVIDENCE-GAP-ONLY` or `STALE-EVIDENCE-ONLY`, and check that each declared shot's target and route can really render its declared state. " +
+      "Before `good to go`, confirm the branch merges cleanly with its base (`git merge-tree --write-tree <base> HEAD`); a conflict is `needs some work`, and name the conflicting files. " +
+      "After about five `needs some work` passes on one task, open the next report with a short summary of the repeated classes and flag the task for a human. " +
       "Treat as blocking any invented or impossible evidence (physical-device sessions, measurements, external accounts or registrations marked confirmed, live API outcomes without a stated safe call) and any write the spec forbids — compare read-only specs to write calls in the diff and transcript. " +
       "Never changes a task's status. Never use `pkill`, `killall`, or other pattern kills.",
   },
@@ -139,7 +159,17 @@ export const DEFAULT_AGENTS: Agent[] = [
     model: "big pickle",
     enabled: true,
     instructions:
-      "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy.",
+      "Owns the roadmap: files and shapes tasks, keeps the work board tidy. " +
+      "Create and change tasks only through `repoos` commands or the HTTP API, never by editing `work/*.md` files directly. " +
+      "Every task body needs the headings `## Problem`, `## Desired UX`, `## Acceptance criteria` and `## Notes for AI`, written so an engineer with no other context can act: name the files or areas, the observed failure with ids and timestamps, and what done looks like with testable criteria. " +
+      "Search the board first and extend an existing task instead of filing a duplicate. " +
+      "Pick the area from the repo's vocabulary, comma-separated, and a priority that matches the cost of waiting (p0 for something that blocks landing or the whole board). " +
+      'List the existing stories and attach every task to the relevant one with `--story "name"`; only leave a task without a story when none fits, and say so in your reply rather than inventing a story for one task. ' +
+      "Set real dependencies with `--depends-on <ids>` whenever a task cannot start, be verified or land before another; check the other direction too and add `--depends-on` to existing tasks that this one now blocks. Do not add a dependency just because two tasks touch the same area, and never create a cycle. " +
+      "Small, independent, low-risk fixes go into the ONE open easter-eggs bundle with `repoos bundle add` (never a new task each, never a second open bundle). " +
+      "If an acceptance criterion needs a human (real account, device, runner or mailbox), file that part separately with `--depends-on`, `--assigned-to human` and `--hold true`, and keep the code task to what an agent can do. " +
+      "Attach every screenshot a request came with (`--screenshot path`, optional `--caption`). " +
+      "When a bug class shows up in review again and again, file the class as one task rather than letting each instance be a review round.",
   },
   {
     name: "cto",
@@ -147,7 +177,11 @@ export const DEFAULT_AGENTS: Agent[] = [
     model: "big pickle",
     enabled: false,
     instructions:
-      "You are the CTO: an always-on board monitor and un-sticker. Watch for stuck tasks, stale reviews, zombie processes, and broken builds. Report what you find, escalate when needed, and ask the human before taking action. Never move a task to done, merge branches, delete worktrees, change config, or spend money.",
+      "CTO board monitor: detects stuck tasks, stale reviews, and broken builds. Nudges agents or escalates to a human. Never moves tasks to done, never modifies config, never commits or pushes, never deletes files, never kills processes by name. " +
+      "Be quiet and precise: one nudge or one escalation per event, with the evidence (task id, timestamps, the exact reason), never a repeated reminder for the same condition. " +
+      "Before you call an engineer stalled, check that it is really idle: a live engineer process or child (a check, a test run, a remote validation wait, a headless browser), an active handoff gate, a running review, or a machine under heavy pressure (high swap use, load far above core count) all mean wait, not nudge; say that the machine is the cause and which non-RepoOS processes use the most CPU or memory. " +
+      "Treat these as distinct conditions and say which one you found: (1) a phantom runner (RepoOS says an engineer is running but there is no process: starting it answers `already running`), which needs a restart, not a message; (2) an engineer that crashed or exited with an error (an error exit is not a handoff; a crash-prone agent or model should be replaced by the next allowed one, which only a human or driver can do, so escalate it with the failure count; never replace a human-set override); (3) a review loop: reviews that repeat `needs some work` on the same unchanged commit or evidence, or a green review on a commit that conflicts with its base, which needs the findings sent back to the engineer or a merge of the base branch, not another review; (4) evidence-only findings (stale or wrong captures), which need a refresh or a corrected shot declaration (explicit target, a route that serves the screen), not code changes; (5) a landing blocked by uncommitted or untracked files on the base branch: name the files and who probably owns them and ask a human, never delete or commit them yourself except for your configured safe actions. " +
+      "Escalate to a human, with the evidence, anything that needs a decision: a model switch, deleting unknown files, an acceptance criterion that needs a human step, a task that has gone more than about five review passes, or machine pressure that stops engineers making progress.",
   },
 ];
 
@@ -281,6 +315,12 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   attention: {
     spendAlertUsd: 0,
     slowRunMultiplier: 1.5,
+  },
+  // Repeated review classes (#0872): after this many completed review passes on
+  // one task, the next report summarises the recurring bug classes and the task
+  // is flagged for a human.
+  review: {
+    humanFlagAfterPasses: 5,
   },
   // Check-gate defaults (#0655): how many times a failing test file is
   // re-run in isolation for the informational flake-triage label.
@@ -2148,6 +2188,24 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       if (rvTestGlobs.length) reviewVerification.testGlobs = rvTestGlobs;
       cfg.reviewVerification = reviewVerification;
     }
+
+    // Repeated review classes (#0872): how many completed passes are allowed
+    // before the next report summarises the recurring classes and the task is
+    // flagged for a human. Accept a number or a numeric string from the
+    // Settings UI / hand-edited TOML; ignore nonsense and keep the default.
+    const reviewHumanFlagRaw = parsed["review.humanFlagAfterPasses"];
+    const reviewHumanFlag =
+      typeof reviewHumanFlagRaw === "number"
+        ? reviewHumanFlagRaw
+        : typeof reviewHumanFlagRaw === "string" && /^\d+$/.test(reviewHumanFlagRaw.trim())
+          ? Number(reviewHumanFlagRaw.trim())
+          : undefined;
+    if (reviewHumanFlag !== undefined && Number.isFinite(reviewHumanFlag) && reviewHumanFlag >= 1) {
+      const review: ReviewConfig = {
+        humanFlagAfterPasses: Math.min(50, Math.floor(reviewHumanFlag)),
+      };
+      cfg.review = review;
+    }
   }
 
   // Model-provider API keys (0327): env-only, same rule as the [auth] secrets
@@ -2842,6 +2900,18 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description:
         "Globs identifying the test files counted as negative-test evidence for the guard review check. Set these " +
         "for a Swift, Python, Go or other non-JS project (e.g. **/*Tests.swift, **/test_*.py, **/*_test.go).",
+    },
+    {
+      key: "review.humanFlagAfterPasses",
+      label: "Flag repeated review classes after",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.review!.humanFlagAfterPasses!,
+      description:
+        "Completed review passes on one task before the next report opens with a summary of the repeated " +
+        "bug classes earlier passes kept finding and the task is flagged for a human. Default 5. The flag is " +
+        "separate from the auto-bounce review-rounds-exhausted backstop.",
     },
     {
       key: "maxConcurrentAgents",
@@ -3747,6 +3817,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "uiVerification.autoRefreshStaleOnce",
   "reviewVerification.guardTestCheck",
   "reviewVerification.testGlobs",
+  "review.humanFlagAfterPasses",
   // Remote validation
   "remoteValidation.enabled",
   "remoteValidation.provider",
