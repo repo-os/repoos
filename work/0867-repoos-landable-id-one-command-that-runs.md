@@ -2,7 +2,7 @@
 id: "0867"
 title: "repoos landable <id>: one command that runs the landing pre-checks"
 type: feature
-status: active
+status: review
 priority: p1
 area: [core, server]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -78,4 +78,4 @@ The close-out approval policy already computes most of these checks: `evaluateAp
 - 2026-10-20T19:30:34Z · body
 - 2026-10-20T19:31:53Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-20T19:31:53Z · message_delivered: 1 message(s)
-- 2026-10-20T19:41:38Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-20T19:41:38Z · status active→review
