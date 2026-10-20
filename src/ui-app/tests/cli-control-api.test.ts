@@ -13,6 +13,7 @@ import {
   cmdAgentsRunning,
   cmdConfig,
   cmdDone,
+  cmdLandable,
   cmdMessage,
   cmdOverride,
   cmdPause,
@@ -537,4 +538,71 @@ describe("control API CLI", () => {
     });
     killSpawns(fx);
   }, 30_000);
+
+  it("landable API serves the checklist for a task", async () => {
+    const fx = makeFixture(false);
+    await withServer(fx.root, async (s) => {
+      const id = await createReadyTask(s);
+      const r = await api(s, "GET", `/api/tasks/${id}/landable`);
+      expect(r.status).toBe(200);
+      expect(r.body).toMatchObject({ taskId: id, landable: false });
+      expect(Array.isArray(r.body.checks)).toBe(true);
+    });
+    killSpawns(fx);
+  });
+
+  it("landable --json prints the preflight and exits 0 when landable", async () => {
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const requestOk = vi.spyOn(RepoOsApi.prototype, "requestOk").mockResolvedValue({
+      taskId: "0867",
+      branch: "feat/x",
+      headSha: "a".repeat(40),
+      lockSha: "a".repeat(40),
+      landable: true,
+      checks: [
+        { id: "review-verdict", label: "Review verdict", status: "pass", detail: "good to go" },
+      ],
+      summary: { pass: 6, warn: 0, fail: 0 },
+    });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const code = await cmdLandable(["0867", "--json"]);
+    expect(code).toBe(0);
+    expect(requestOk).toHaveBeenCalledWith("GET", "/api/tasks/0867/landable");
+    expect(JSON.parse(String(log.mock.calls[0]?.[0]))).toMatchObject({ landable: true });
+    log.mockRestore();
+    health.mockRestore();
+    requestOk.mockRestore();
+  });
+
+  it("landable exits 1 and names the failing check and next step", async () => {
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const requestOk = vi.spyOn(RepoOsApi.prototype, "requestOk").mockResolvedValue({
+      taskId: "0867",
+      branch: "feat/x",
+      headSha: "a".repeat(40),
+      lockSha: "a".repeat(40),
+      landable: false,
+      checks: [
+        {
+          id: "merge-conflicts",
+          label: "Merge with main",
+          status: "fail",
+          detail:
+            "src/core/types.ts conflicts with main: merge main into the branch, keep both sides",
+          nextStep:
+            "Merge main into the branch (repoos sync <id>), keep both sides, then re-request review",
+        },
+      ],
+      summary: { pass: 5, warn: 0, fail: 1 },
+    });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const code = await cmdLandable(["0867"]);
+    expect(code).toBe(1);
+    const out = log.mock.calls.map((c) => String(c[0])).join("\n");
+    expect(out).toMatch(/src\/core\/types\.ts conflicts with main/);
+    expect(out).toMatch(/next: Merge main into the branch/);
+    log.mockRestore();
+    health.mockRestore();
+    requestOk.mockRestore();
+  });
 });

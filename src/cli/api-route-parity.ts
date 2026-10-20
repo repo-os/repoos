@@ -27,6 +27,7 @@ const re =
 const CONTROL_API_MATCHERS: Matcher[] = [
   re("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/.source),
+  re("GET", /^\/api\/tasks\/([^/]+)\/landable$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/.source),
   // `repoos dev …` (#0747): list/status/get and start/stop/restart.

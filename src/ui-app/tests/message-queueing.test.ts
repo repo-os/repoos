@@ -2,11 +2,12 @@
  * Message queueing: when an agent is busy, messages are queued instead of
  * refused, and delivered at the start of the next turn in order.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AgentRunner } from "../../server/agents";
+import { writeHandoffRequest } from "../../server/handoff-request.js";
 import { parseTask } from "../../core/task";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
 
@@ -362,6 +363,21 @@ describe("message queueing", () => {
     }
   });
 
+  it("exposes hasQueuedMessages for handoff deferral (#0865)", () => {
+    const fx = makeFixture();
+    const runner = new AgentRunner(config(fx.root), () => {});
+    try {
+      expect(runner.hasQueuedMessages("none")).toBe(false);
+      runner["queuedMessages"].set("0865", [
+        { text: "wait", agent, opts: {}, queuedAt: new Date().toISOString() },
+      ]);
+      expect(runner.hasQueuedMessages("0865")).toBe(true);
+    } finally {
+      runner.dispose();
+      fx.clean();
+    }
+  });
+
   it("tracks queue age from the earliest message, not the latest (#0821)", () => {
     const fx = makeFixture();
     const runner = new AgentRunner(config(fx.root), () => {});
@@ -388,6 +404,107 @@ describe("message queueing", () => {
     } finally {
       runner.dispose();
       fx.clean();
+    }
+  });
+});
+
+describe("handoff deferral while messages are queued (#0865)", () => {
+  // One row per turn-end state. A handoff requested in the same turn as a still
+  // queued message must be deferred (and noted) so the human's message is read
+  // BEFORE any review starts; with nothing queued the handoff stands.
+  it.each([
+    { label: "a queued message", queued: ["Please also fix the docs"], deferred: true },
+    { label: "two queued messages", queued: ["first", "second"], deferred: true },
+    { label: "no queued message", queued: [] as string[], deferred: false },
+  ])("with $label the handoff is deferred: $deferred", async ({ queued, deferred }) => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const id = "defer-test";
+    const absPath = setupTaskFile(fx.root, id, "active");
+    const onHandoff = vi.fn();
+    const runner = new AgentRunner(config(fx.root), () => {}, {
+      getTask: () => parseFile(fx.root, absPath),
+      onHandoff,
+    });
+    try {
+      const t = task(id);
+      expect(runner.start(t, `feat/${id}`, agent, { cwd: fx.bin }).ok).toBe(true);
+      for (const text of queued) expect(runner.send(id, text, agent).queued).toBe(true);
+      // The engineer asks for handoff in the same turn the messages were queued.
+      const entry = runner["entries"].get(id) as { handoffRequested?: boolean } | undefined;
+      expect(entry).toBeDefined();
+      entry!.handoffRequested = true;
+
+      await waitFor(() => !runner.isRunning(id), 8000);
+      const activity = readFileSync(absPath, "utf8");
+      if (deferred) {
+        expect(activity).toContain(
+          `handoff_deferred: ${queued.length} queued message(s) must be read before review`,
+        );
+        // The deferral clears the persisted handoff so no review is triggered.
+        expect(runner.hasPendingHandoff(id)).toBe(false);
+        expect(onHandoff).not.toHaveBeenCalled();
+      } else {
+        expect(activity).not.toContain("handoff_deferred");
+        expect(onHandoff).toHaveBeenCalledOnce();
+      }
+    } finally {
+      runner.dispose();
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("defers handoff when repoos mv request file lands in the same turn as a queued message (#0865)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-msg-handoff-file-"));
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(
+      join(bin, "qwen"),
+      `#!/usr/bin/env node
+setTimeout(() => { process.stdout.write("done\\n"); }, 250);
+`,
+      { mode: 0o755 },
+    );
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${bin}:${oldPath}`;
+    const id = "mv-defer";
+    const absPath = setupTaskFile(root, id, "active");
+    const onHandoff = vi.fn();
+    const runner = new AgentRunner(config(root), () => {}, {
+      getTask: () => parseFile(root, absPath),
+      onHandoff,
+    });
+    try {
+      const t = task(id);
+      expect(runner.start(t, `feat/${id}`, agent, { cwd: bin }).ok).toBe(true);
+      expect(runner.send(id, "read this before review", agent).queued).toBe(true);
+      const entry = runner["entries"].get(id) as { runId?: string } | undefined;
+      expect(entry?.runId).toBeTruthy();
+      expect(
+        writeHandoffRequest(root, ".repoos", {
+          taskId: id,
+          runId: entry!.runId!,
+          at: new Date().toISOString(),
+          source: "repoos-mv",
+        }),
+      ).toBe(true);
+
+      await waitFor(() => !runner.isRunning(id), 8000);
+
+      const activity = readFileSync(absPath, "utf8");
+      expect(activity).toContain(
+        "handoff_deferred: 1 queued message(s) must be read before review",
+      );
+      expect(onHandoff).not.toHaveBeenCalled();
+      expect(runner.hasPendingHandoff(id)).toBe(false);
+      await waitFor(() => readFileSync(absPath, "utf8").includes("message_delivered"));
+    } finally {
+      runner.dispose();
+      process.env.PATH = oldPath;
+      rmSync(root, { recursive: true, force: true });
     }
   });
 });
