@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T09:32:14Z"
+updated_at: "2026-10-20T09:32:34Z"
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -26,10 +26,7 @@ Shot capture and UI verification can run on a runner:
 - The laptop no longer builds or serves a preview for routine handoff evidence; a human-requested interactive preview (the Preview button) stays local.
 
 ## Acceptance criteria
-- A short written design in docs first: what the runner image needs (Playwright, WebKit, fonts), how the bundle/artifacts round-trip works, how fixtures and the dev-login/auth-less preview mode are handled, failure and fallback rules, and the security note (no secrets in the bundle).
-- Tests with a fake runner transport: capture runs remotely and returns artifacts; a missing browser or a runner failure falls back locally with a visible note; declared-shot failures are reported exactly as local ones are (a missing target still fails the handoff).
-- A real end-to-end proof on one runner (recorded in the task): a UI-visible task handoff captured entirely remotely, with the local machine's Playwright/WebKit process count unchanged.
-- Settings control, docs/remote-validation.md and docs/previews.md updated.
+- A short written design in docs first: what the runner image needs (Playwright, WebKit, fonts), how the bundle/artifacts round-trip works, how fixtures and the dev-login/auth-less preview mode are handled, failure and fallback rules, and the security note (no secrets in the bundle).\n- Tests with a fake runner transport: capture runs remotely and returns artifacts; a missing browser or a runner failure falls back locally with a visible note; declared-shot failures are reported exactly as local ones are (a missing target still fails the handoff).\n- Settings control, docs/remote-validation.md and docs/previews.md updated.\n- Real end-to-end runner proof (a UI-visible task handoff captured entirely remotely, with the local Playwright/WebKit process count unchanged) is tracked in held human task #0864, which depends on this task.
 
 ## Notes for AI
 Start with the design doc and a small spike: reuse validate.sh, the bundle upload and the artifacts channel from remote validation, and the existing shot planner (src/core/shot-plan.ts, src/server/shot*.ts). Depends on nothing but benefits from the preview-teardown fix (separate task). Do not touch repoos.toml. Source: Nick, 2026-10-19.\n\nRemote end-to-end proof is still outstanding. On 2026-10-20, the runner probe succeeded. The first direct TailscaleRunner browser capture attempt for task 0854 at candidate SHA 2ce0b812305e74539f33547fcfdf2de2e3013698 returned no capture result or artifacts after more than two minutes. After the scoped check passed and the runner slot became free, I retried once at candidate SHA 7c59a6b3e35d15f8acac44e35720d348490d9077. That attempt waited while bee was running task 0861 and still returned no capture result/artifacts after 2m40s, so I stopped it; neither attempt is proof of remote capture. The configured runner uses a prebuilt repoos-ci image, so the Dockerfile WebKit installation in this branch has not yet been verified in that image. A human must rebuild/deploy the runner image from scripts/remote-runner/Dockerfile.ci, then hand off a UI-visible task with browserCaptureMode set to runner-only and verify the returned PNGs, shots.json, and UI verification record; record the local Playwright/WebKit process count immediately before and during that handoff and confirm it does not increase.
@@ -110,3 +107,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T09:32:04Z · status review→active
 - 2026-10-20T09:32:04Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T09:32:05Z · message_delivered: 2 message(s)
+- 2026-10-20T09:32:34Z · body: Acceptance criteria (added 1, removed 4)
