@@ -6,11 +6,13 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress dev",
-    "build": "vitepress build",
+    "build": "vitepress build && bun scripts/check-llms.ts",
+    "check:llms": "bun scripts/check-llms.ts",
     "preview": "vitepress preview"
   },
   "devDependencies": {
     "esbuild": "^0.25.0",
-    "vitepress": "^1.6.4"
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-llms": "^1.14.0"
   }
 }
