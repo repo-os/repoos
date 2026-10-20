@@ -11,10 +11,10 @@ area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-and-layout-reminders-and-sched
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T11:13:39Z"
+updated_at: "2026-10-20T11:13:54Z"
 review_passes: 5
 review_rounds: 1
 handoff_signal_retry_count: 1
@@ -134,3 +134,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:13:38Z · agent exited with an error (codex) · you want shared Git history. They are currently repo-wide, visible to
 - 2026-10-20T11:13:38Z · status active→review
 - 2026-10-20T11:13:38Z · note: handoff requested (cli)
+- 2026-10-20T11:13:54Z · cli_override, model_override
