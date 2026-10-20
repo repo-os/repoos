@@ -76,6 +76,20 @@ describe("needsInputPrimaryAction (#0511)", () => {
     ).toBe(true);
   });
 
+  it("names the repeated review classes flag distinctly from rounds-exhausted", () => {
+    expect(needsInputStatusLabel("review-human-attention")).toContain("Repeated review classes");
+    expect(needsInputStatusLabel("review-human-attention")).not.toBe(
+      needsInputStatusLabel("review-rounds-exhausted"),
+    );
+    expect(needsInputBannerText("review-human-attention")).toContain("several passes");
+    expect(
+      needsInputPrimaryAction("review-human-attention", false, {
+        status: "review",
+        agentRunning: false,
+      })?.kind,
+    ).toBe("send-engineer");
+  });
+
   it("offers Send to PM for needs-human-step tasks (#0698)", () => {
     expect(needsInputStatusLabel("needs-human-step")).toBe("Needs human step");
     expect(needsInputSuggestionText("needs-human-step")).toContain("Split the human-only");
