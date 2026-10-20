@@ -1,5 +1,7 @@
 import { defineConfig } from "vitepress";
+import llmstxt from "vitepress-plugin-llms";
 import { themeBootPlugin, themeBootScriptContent } from "./vite-plugin-theme-boot";
+import { LLMS_INDEX_EXCLUDED_SOURCES, SITE_ORIGIN, llmsIndexTemplate } from "./llms-index";
 
 const themeBootInline = themeBootScriptContent();
 
@@ -32,7 +34,22 @@ export default defineConfig({
   // design; they resolve on a checkout, not on the published site.
   ignoreDeadLinks: [/^\.{1,2}\//],
   vite: {
-    plugins: [themeBootPlugin()],
+    plugins: [
+      themeBootPlugin(),
+      // Publishes the public manual to agents alongside the HTML pages:
+      // /llms.txt (index), /llms-full.txt (whole manual), and each page as
+      // raw Markdown at the same route with `.md` appended. It reads the same
+      // `user-docs/*.md` sources, so there is no second copy to drift. The
+      // post-build check in `scripts/check-llms.ts` enforces that every page
+      // is represented. See `llms-index.ts` for the exclusions and template.
+      llmstxt({
+        domain: SITE_ORIGIN,
+        // README.md and index.md are recorded in `llms-index.ts`.
+        ignoreFiles: [...LLMS_INDEX_EXCLUDED_SOURCES],
+        excludeIndexPage: true,
+        customLLMsTxtTemplate: llmsIndexTemplate,
+      }),
+    ],
   },
   head: [
     ["script", { id: "repoos-theme-boot" }, themeBootInline],
