@@ -3,6 +3,9 @@ id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — in `runner-available` mode a runner-side UI-gate crash (e.g. preview never starts) fails the handoff instead of falling…
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T11:17:50Z"
+updated_at: "2026-10-20T11:17:51Z"
 review_passes: 12
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -183,3 +186,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T11:10:38Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a2c7d06dc) during finalization (#0734)
 - 2026-10-20T11:10:39Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a2c7d06dc) during finalization (#0734)
 - 2026-10-20T11:17:50Z · note: review pass 13: needs some work
+- 2026-10-20T11:17:51Z · needs_input
