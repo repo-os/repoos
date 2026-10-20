@@ -4,8 +4,7 @@
  * target that cannot serve the route fails the shot, and a fixture that never
  * rendered is failed evidence rather than a passing screenshot.
  */
-import { readFileSync } from "node:fs";
-import { mkdtempSync, mkdirSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
