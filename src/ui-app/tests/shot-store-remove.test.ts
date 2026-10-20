@@ -100,4 +100,45 @@ describe("localShotStore.remove (#0627)", () => {
     ).toThrow("runner omitted shot image runner-shot.png");
     expect(store.list().map((shot) => shot.name)).toEqual([existing.name]);
   });
+
+  it("rejects a malformed imported shots.json without touching existing shots", () => {
+    const { config } = setup();
+    const store = localShotStore(config, "0854");
+    const existing = store.save({ target: "default", origin: "auto", data: PNG_1PX });
+    if ("error" in existing) throw new Error(existing.error);
+
+    expect(() =>
+      importShotArtifacts(config, "0854", [
+        { name: "shots/shots.json", data: Buffer.from("{not json").toString("base64") },
+      ]),
+    ).toThrow("runner returned malformed shots.json");
+    expect(store.list().map((shot) => shot.name)).toEqual([existing.name]);
+  });
+
+  it("keeps existing auto shots when a later imported shot fails to save", () => {
+    // The batch is validated up front, so one unsavable artifact cannot wipe the
+    // auto shots already on disk (#0854 review: removeAuto ran before the loop).
+    const { config } = setup();
+    const store = localShotStore(config, "0854");
+    const existing = store.save({ target: "default", origin: "auto", data: PNG_1PX });
+    if ("error" in existing) throw new Error(existing.error);
+    const manifest = Buffer.from(
+      JSON.stringify({
+        shots: [
+          { name: "good.png", target: "default", origin: "auto" },
+          { name: "bad.png", target: "default", origin: "auto" },
+        ],
+      }),
+    ).toString("base64");
+
+    expect(() =>
+      importShotArtifacts(config, "0854", [
+        { name: "shots/shots.json", data: manifest },
+        { name: "shots/good.png", data: PNG_1PX },
+        // Non-empty base64 that decodes to zero bytes — the store rejects it.
+        { name: "shots/bad.png", data: "====" },
+      ]),
+    ).toThrow("could not import runner shot bad.png: Image data is empty");
+    expect(store.list().map((shot) => shot.name)).toEqual([existing.name]);
+  });
 });
