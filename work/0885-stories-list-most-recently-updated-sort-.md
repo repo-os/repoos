@@ -58,3 +58,4 @@ On the Stories page, ordering by "most recently updated" does not put the newest
 - 2026-10-20T23:43:06Z · body
 - 2026-10-20T23:43:59Z · body
 - 2026-10-20T23:55:35Z · status active→review
+- 2026-10-20T23:55:35Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (1bf040f44) during finalization (#0734)
