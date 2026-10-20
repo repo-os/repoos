@@ -2,7 +2,7 @@
 id: "0865"
 title: Reviews must not chain back to back on a task with open findings; queued messages must be delivered between passes
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
