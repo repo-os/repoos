@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T09:32:35Z"
+updated_at: "2026-10-20T09:38:20Z"
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -109,3 +109,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T09:32:05Z · message_delivered: 2 message(s)
 - 2026-10-20T09:32:34Z · body: Acceptance criteria (added 1, removed 4)
 - 2026-10-20T09:32:35Z · message_queued at 2026-10-20T09:32:35.474Z
+- 2026-10-20T09:38:20Z · body
