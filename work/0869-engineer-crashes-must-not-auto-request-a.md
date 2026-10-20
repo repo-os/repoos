@@ -12,10 +12,11 @@ branch: feat/engineer-crashes-must-not-auto-request-a
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:17Z"
-updated_at: "2026-10-20T19:46:51Z"
+updated_at: "2026-10-20T19:51:00Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-20T18:37:06.042Z: repoos check failed: ◆ Check plan"
+dev_error_count: 1
 ---
 ## Problem
 On 2026-10-20 codex runs crashed intermittently ("agent exited with an error (codex) - Reading additional input from stdin", tool errors such as "write_stdin failed: Unknown process id") and the server then requested a handoff on the unfinished branch (#0843, #0860: HEAD unchanged, merge with main never done), leaving needs_input dev-error flags that stayed stale after the engineer resumed. The CTO's restart-stalled-agent action only restarts the SAME agent and model, so a crash-prone model keeps being chosen; a human or driver has to run `repoos override` and resend context. Reviews then ran on the unchanged commit and failed for reasons the engineer never saw.
@@ -78,3 +79,5 @@ Look at the watchdog, the CTO restart-stalled-agent action, the handoff request 
 - 2026-10-20T19:43:20Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (9e02ec889) during finalization (#0734)
 - 2026-10-20T19:46:51Z · note: review pass 1: needs some work
 - 2026-10-20T19:46:51Z · status review→active
+- 2026-10-20T19:46:52Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-20T19:51:00Z · needs_input
