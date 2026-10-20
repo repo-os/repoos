@@ -16,6 +16,7 @@ import {
   workFileFilter,
   worktreePathForBranch,
   branchChangedPaths,
+  branchCommit,
 } from "../core/git.js";
 import type { JobCoordinator } from "./integration-job.js";
 import type { ReloadManager } from "./reload.js";
@@ -301,6 +302,20 @@ export async function enqueueCloseOutForTask(
   await previews.stop(id, "task done");
   reviews.cancel(id);
   void runner.stop(id);
+  // Fence the engineer before the merge can begin (#0886): stop() only signals,
+  // so wait for the turn to actually leave the registry. A process that does
+  // not stop is refused rather than raced; the closing-out lock below also
+  // fences any write from a phantom the registry never tracked (#0863).
+  // A partial runner without `waitForStop` (older embedding, approval tests)
+  // is treated as already stopped; the real AgentRunner always implements it.
+  const engineerStopped =
+    typeof runner.waitForStop === "function" ? await runner.waitForStop(id, 5000) : true;
+  if (!engineerStopped) {
+    return {
+      ok: false,
+      reason: `the engineer process for #${id} did not stop; close-out was not started`,
+    };
+  }
 
   if (reload) await reload.prepareForCloseOut();
 
@@ -318,13 +333,14 @@ export async function enqueueCloseOutForTask(
     };
   }
 
-  if (handoffSha) {
-    writeWorktreeReviewLock(config.root, config.cacheDir, id, {
-      status: "closing-out",
-      sha: handoffSha,
-      at: new Date().toISOString(),
-    });
-  }
+  // Always fence the task — including a task with no handoff snapshot. The
+  // lock is what makes every task-write entry point (repoos mv, the runner's
+  // handoff request, the file-watch handoff) refuse while the pipeline runs.
+  writeWorktreeReviewLock(config.root, config.cacheDir, id, {
+    status: "closing-out",
+    sha: handoffSha ?? branchCommit(config.root, branch) ?? "",
+    at: new Date().toISOString(),
+  });
 
   emitEvent({
     type: "integration",

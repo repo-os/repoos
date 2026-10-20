@@ -37,6 +37,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { isTaskClosingOut } from "./close-out-lock.js";
 
 /** One agent's request that RepoOS finalize a handoff when its turn ends. */
 export interface HandoffRequest {
@@ -70,6 +71,10 @@ export function writeHandoffRequest(
   cacheDir: string,
   request: HandoffRequest,
 ): boolean {
+  // #0886: a handoff request during Move to done is never honoured; write
+  // nothing rather than leave a marker that a later retry could pick up as if
+  // it described the new state.
+  if (isTaskClosingOut(root, cacheDir, request.taskId)) return false;
   const file = handoffRequestPath(root, cacheDir, request.taskId);
   try {
     mkdirSync(handoffRequestDir(root, cacheDir), { recursive: true });

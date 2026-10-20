@@ -79,7 +79,12 @@ import {
   runRemotePreReviewGate,
   spawnedRepoosCheckArgs,
 } from "./pre-review-remote-gate.js";
-import { markTaskReleased, patchTaskFile } from "./write.js";
+import {
+  markTaskReleased,
+  patchTaskFile,
+  revertPublishDoneStamp,
+  stampTaskDoneOnPublish,
+} from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
 import { resolveCheckPlan } from "../core/check-plan.js";
@@ -698,8 +703,14 @@ const TAIL_MAX_CHARS = 800;
  * normal, common path is the index lookup, which is far cheaper than a
  * directory scan. Task ids are unique by filename convention (`<id>-*.md`).
  */
-function findTaskFileById(root: string, workDir: string, taskId: string): string | null {
-  const dir = join(root, workDir);
+function findTaskFileById(
+  root: string,
+  workDir: string | undefined,
+  taskId: string,
+): string | null {
+  // Every other caller defaults an unset workDir to "work"; do the same here so
+  // a config without the key does not throw inside a failure path (#0886).
+  const dir = join(root, workDir ?? "work");
   let entries: string[];
   try {
     entries = readdirSync(dir);
@@ -913,6 +924,13 @@ export class CloseOutOrchestrator {
    * single-phase test calls), which means "no ownership claim".
    */
   private ownedAttempt: number | undefined = undefined;
+
+  /**
+   * Tasks whose `status: done` this process stamped into the publish commit
+   * (#0886). Only these may be reverted on failure — a task that was already
+   * done from an earlier close-out must stay moot/untouched.
+   */
+  private publishStampedTasks = new Set<string>();
 
   constructor(
     private config: RepoOSConfig,
@@ -1276,6 +1294,10 @@ export class CloseOutOrchestrator {
     }
     this.removeCandidate(job.taskId);
     this.clearResolutionProvenance(job.taskId);
+    // If cancellation arrived after the publish merge landed, the stamp must be
+    // reverted with it: `done` without a `release:success` marker is an
+    // unfinished release (the same state a failed post-merge step leaves).
+    this.revertPublishedTaskDoneStamp(job);
     this.coordinator.removeJob(job.taskId, this.ownedAttempt);
     this.logger?.integration(job.taskId, "info", "close-out cancelled by user (#0459)");
     return { ok: false, reason: CANCEL_REASON };
@@ -1299,6 +1321,10 @@ export class CloseOutOrchestrator {
       );
       return { ok: false, reason };
     }
+    // #0886: a failure AFTER the publish stamp (the merge landed but a later
+    // guard/step failed) must not read `done` without a release marker — that
+    // would make the check below drop the job as "moot" and hide the retry.
+    this.revertPublishedTaskDoneStamp(job);
     this.removeCandidate(job.taskId);
     // #0692: a failed close-out abandons any in-flight resolution provenance.
     // The evidence it held described a resolution that never published; leaving
@@ -3319,6 +3345,101 @@ export class CloseOutOrchestrator {
     return { ok: true, candidateSha: candidateShaRes.stdout.trim(), gateDurationMs };
   }
 
+  /**
+   * #0886: stamp `status: done` (and `merged_commit`) into the task file as
+   * part of the publish commit itself, immediately after the merge lands and
+   * before the post-merge install/rebuild — the window (up to minutes) in which
+   * the board used to show the task as `inbox` and a late engineer write could
+   * rewrite it.
+   *
+   * For a real merge commit the stamp is amended into it (`commit --amend`), so
+   * the merge that publishes the code already says `done`. A fast-forward has
+   * no RepoOS-created commit to amend, so the stamp is its own commit right
+   * after it — still before anything slow runs. Fail-soft: the merge already
+   * landed, and `markTaskReleased` in cleanup remains the backstop.
+   */
+  private async stampPublishedTaskDone(job: IntegrationJob, ff: boolean): Promise<void> {
+    const root = this.config.root;
+    const absPath =
+      this.getTask?.(job.taskId)?.absPath ??
+      findTaskFileById(root, this.config.workDir, job.taskId);
+    try {
+      if (!absPath) return;
+      // The publish merge's tip. The amend below must only ever rewrite THIS
+      // commit: another bookkeeping commit on main between the merge and here
+      // would otherwise be folded into the stamp.
+      const headBefore = (await runGit(root, ["rev-parse", "HEAD"], 4_000)).stdout.trim();
+      const persistedJob = this.coordinator.getJob(job.taskId);
+      const featureBranch = job.branch ?? job.taskId;
+      // Same precedence as cleanup's `markTaskReleased` call, so the proof we
+      // stamp here is the one the release step would have written.
+      const mergedCommit =
+        job.branchSha ??
+        persistedJob?.branchSha ??
+        job.handoffSha ??
+        persistedJob?.handoffSha ??
+        branchCommit(root, featureBranch);
+      const stamped = stampTaskDoneOnPublish(this.config, absPath, mergedCommit);
+      if (!stamped?.changed) return;
+      const rel = relative(root, absPath).split("\\").join("/");
+      const added = await runGit(root, ["add", "--", rel], 10_000);
+      if (added.status !== 0) {
+        throw new Error(added.stderr.trim() || "could not stage the task file");
+      }
+      // A real merge commit is amended so the commit that publishes the code
+      // already says `done`. A fast-forward has no RepoOS-created commit, and a
+      // merge tip that moved (a concurrent bookkeeping commit) must not be
+      // rewritten — both get their own stamp commit instead, still before the
+      // slow post-merge work.
+      const headNow = (await runGit(root, ["rev-parse", "HEAD"], 4_000)).stdout.trim();
+      const amend = !ff && headNow === headBefore;
+      const commit = amend
+        ? await runGit(root, ["commit", "--amend", "--no-edit"], 30_000)
+        : await runGit(root, ["commit", "-m", `docs(${job.taskId}): set status done`], 30_000);
+      if (commit.status !== 0) {
+        throw new Error(commit.stderr.trim() || "could not commit the task stamp");
+      }
+      this.publishStampedTasks.add(job.taskId);
+      notifyGitMutation(root, "commit");
+    } catch (err) {
+      // The file may already carry the stamp even though committing it failed.
+      // Put it back before recording the failure, or the failure handler would
+      // read `done` and drop the job as moot (see publishStampedTasks).
+      if (absPath) revertPublishDoneStamp(this.config, absPath);
+      this.publishStampedTasks.delete(job.taskId);
+      // Never fail a publish that already merged over bookkeeping: the release
+      // step still runs and the task file is never left worse than before.
+      this.logger?.integration(
+        job.taskId,
+        "warn",
+        "could not stamp the task done into the publish commit — the release step will still mark it",
+        { reason: err instanceof Error ? err.message : String(err) },
+      );
+    }
+  }
+
+  /**
+   * Undo {@link stampPublishedTaskDone} when a post-merge step fails (#0886).
+   * The merge itself cannot be undone, but the task must not read `done`
+   * without its release marker: restore `review` so the existing failure path
+   * (and a retry) behaves exactly as before. Never touches a task that already
+   * recorded a real release marker.
+   */
+  private revertPublishedTaskDoneStamp(job: IntegrationJob): void {
+    if (!this.publishStampedTasks.delete(job.taskId)) return;
+    const absPath =
+      this.getTask?.(job.taskId)?.absPath ??
+      findTaskFileById(this.config.root, this.config.workDir, job.taskId);
+    if (!absPath) return;
+    const reverted = revertPublishDoneStamp(this.config, absPath);
+    if (!reverted) return;
+    this.logger?.integration(
+      job.taskId,
+      "warn",
+      "publish merged but a later close-out step failed — restored review status for retry",
+    );
+  }
+
   private async publishCandidate(job: IntegrationJob): Promise<{
     ok: boolean;
     reason?: string;
@@ -3755,6 +3876,11 @@ export class CloseOutOrchestrator {
         };
       }
 
+      // #0886: the merge that publishes the task stamps `status: done` in the
+      // same commit, BEFORE the post-merge install/rebuild below — that slow
+      // window is exactly where the board used to show the task as `inbox`.
+      await this.stampPublishedTaskDone(job, publishMerge.ff === true);
+
       // Guard against the same failure class detectDroppedMerge exists for
       // (#0306/#0307/#0309/#0312, see its docstring above): the autoResolve
       // this merge just used is new here (the old ff-only/no-edit pair had
@@ -3805,6 +3931,10 @@ export class CloseOutOrchestrator {
         }
         if (!("kind" in installOutcome) && !installOutcome.ok) {
           const detail = installOutcome.reason ?? "unknown error";
+          // #0886: the merge landed, so the publish stamp already says done.
+          // This step failed, so that is not the whole story yet — restore
+          // `review` and let the normal retry path re-run the install.
+          this.revertPublishedTaskDoneStamp(job);
           return {
             ok: false,
             reason:
@@ -4029,6 +4159,8 @@ export class CloseOutOrchestrator {
     });
 
     clearWorktreeHandoffProtection(root, this.config.cacheDir ?? ".repoos", job.taskId);
+    // Released: the stamp belongs to this task now and must never be reverted.
+    this.publishStampedTasks.delete(job.taskId);
     return { ok: true };
   }
 }

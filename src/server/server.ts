@@ -201,6 +201,7 @@ import { applyPipelineDetail, buildIntegrationSnapshot } from "./integration-sta
 import { resolvePipelineCheckPlan } from "./check-plan-info.js";
 import { createRepositoryLock, createRootLock } from "./repo-lock.js";
 import { clearWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
+import { closingOutRefusal, isTaskClosingOut } from "./close-out-lock.js";
 import {
   handoffTask,
   finalizeReviewHandoff,
@@ -2774,6 +2775,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     task: Task,
     opts: { origin: HandoffOrigin; skipChecks?: boolean; actor?: string } = { origin: "api" },
   ): { started: boolean; reason?: string } => {
+    // #0886: once Move to done owns the task, no handoff may start — and in
+    // particular nothing here may write the task file. The old path wrote a
+    // "handoff requested" note unconditionally, which re-serialized a task file
+    // in the middle of the close-out merge and committed `status: inbox`.
+    if (isTaskClosingOut(config.root, config.cacheDir, task.id)) {
+      const reason = closingOutRefusal(task.id);
+      logger.task(task.id, "warn", `handoff request ignored — ${reason}`);
+      return { started: false, reason };
+    }
     // Claimed through the runner so every existing consumer of
     // isHandoffInFlight/hasPendingHandoff — the task card's "requested review"
     // hint, the CTO monitor's nudge suppression, the watchdog — sees this
