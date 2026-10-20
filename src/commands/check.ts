@@ -2543,13 +2543,6 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
 }
 
 /**
- * Where a standalone run's check-run history rows belong (#0564 review, #0870):
- * always the project that contains this worktree. An inherited
- * `REPOOS_CHECK_STORE_ROOT` naming another project is ignored with a warning
- * instead of redirecting the row into that checkout — see
- * `resolveCheckStoreRoot` in core/check-store.ts.
- */
-/**
  * Failing test names from this task's most recent run (#0655), or none. Only
  * when that most recent run actually failed — once a run is green, the next
  * `repoos check` starts from a clean slate. Interactive/CLI and pre-review
