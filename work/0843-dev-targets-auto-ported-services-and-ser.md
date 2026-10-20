@@ -211,3 +211,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T08:28:41Z · needs_input
 - 2026-10-20T08:28:42Z · status review→active
 - 2026-10-20T08:28:42Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
+- 2026-10-20T08:28:42Z · message_delivered: 1 message(s)
