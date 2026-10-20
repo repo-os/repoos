@@ -40,3 +40,4 @@ Look at the runner registry (`runner.isRunning`), the watchdog, and the CTO `res
 - 2026-10-20T13:13:04Z · model_override
 - 2026-10-20T13:13:33Z · status ready→active, branch
 - 2026-10-20T13:22:23Z · message_queued at 2026-10-20T13:22:23.718Z
+- 2026-10-20T13:22:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
