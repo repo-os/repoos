@@ -3,6 +3,9 @@ id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the runner-side worker always fails its worktree check, so remote capture cannot run; the handoff shot is also stale fo…"
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -132,3 +135,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T10:21:06Z · body
 - 2026-10-20T10:21:51Z · status active→review
 - 2026-10-20T10:26:18Z · note: review pass 7: needs some work
+- 2026-10-20T10:26:18Z · needs_input
