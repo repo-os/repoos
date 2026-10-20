@@ -8,7 +8,10 @@ export const MAX_AUTO_REVIEW_ROUNDS = 2;
 export function needsInputClearsOnNewEngineerRun(reason: string | undefined): boolean {
   if (!reason || reason === UNDERSPECIFIED_NEEDS_INPUT_REASON) return true;
   if (reason === "review-human-attention") return true;
-  return reason === "provider-failure" || reason === "degenerate-output";
+  // A crash (`dev-error`) is a run-health flag too: the crash-recovery path
+  // resumes the engineer, and a stale "agent exited with an error" banner must
+  // not survive the next turn that makes progress (#0869).
+  return reason === "provider-failure" || reason === "degenerate-output" || reason === "dev-error";
 }
 
 /**

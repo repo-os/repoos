@@ -38,10 +38,10 @@ describe("needs-input core helpers", () => {
     ).toBe(false);
   });
 
-  it("clears provider-failure and degenerate-output when engineering resumes (#0716)", () => {
+  it("clears provider-failure, degenerate-output and crash flags when engineering resumes (#0716, #0869)", () => {
     expect(needsInputClearsOnNewEngineerRun("provider-failure")).toBe(true);
     expect(needsInputClearsOnNewEngineerRun("degenerate-output")).toBe(true);
-    expect(needsInputClearsOnNewEngineerRun("dev-error")).toBe(false);
+    expect(needsInputClearsOnNewEngineerRun("dev-error")).toBe(true);
     expect(needsInputClearsOnNewEngineerRun(undefined)).toBe(true);
   });
 
