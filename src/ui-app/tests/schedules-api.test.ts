@@ -1,8 +1,16 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createRepoOS } from "../../core/repoos.js";
+import { parseDocument } from "../../core/frontmatter.js";
 import { createLogger } from "../../core/logger.js";
 import type { RepoEvent } from "../../server/live-index.js";
 import {
@@ -120,7 +128,24 @@ describe("schedules API", () => {
     );
     expect(created.capture.status).toBe(201);
     const id = (created.capture.body as { id: string }).id;
-    expect(existsSync(join(root, "repoos/schedules", `${id}-namespaced.md`))).toBe(true);
+    const scheduleFile = join(root, "repoos/schedules", `${id}-namespaced.md`);
+    expect(existsSync(scheduleFile)).toBe(true);
+    expect(existsSync(join(root, "schedules"))).toBe(false);
+
+    // Running the schedule reads it from (and records the run back into) the
+    // custom directory, and creates its task.
+    const run = makeRes();
+    await postScheduleRun(ctx, jsonReq({}), run.res, { param1: id } as never);
+    expect(run.capture.status).toBe(200);
+    const taskId = (run.capture.body as { taskId: string }).taskId;
+    expect(taskId).toMatch(/^\d{4}$/);
+
+    const recorded = parseDocument(readFileSync(scheduleFile, "utf8")).data;
+    expect(recorded.last_result).toBe("success");
+    expect(recorded.last_task_id).toBe(taskId);
+    expect(recorded.last_run_at).toBeTruthy();
+    expect(recorded.last_occurrence_key).toBeTruthy();
+    expect(existsSync(join(root, "work", `${taskId}-namespaced-task.md`))).toBe(true);
     expect(existsSync(join(root, "schedules"))).toBe(false);
   });
 
