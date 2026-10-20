@@ -13,7 +13,7 @@ branch: feat/canonical-starter-prompt-and-landing-llm
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:00:59Z"
-updated_at: "2026-10-20T19:47:03Z"
+updated_at: "2026-10-20T19:51:25Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ Out of scope: the docs-site `llms.txt` / `llms-full.txt`, the Agent Skill, `user
 - 2026-10-20T19:46:58Z · status inbox→ready
 - 2026-10-20T19:47:01Z · cli_override, model_override
 - 2026-10-20T19:47:03Z · status ready→active, branch
+- 2026-10-20T19:51:25Z · body
