@@ -12,7 +12,7 @@ branch: feat/detect-and-heal-phantom-runners-repoos-t
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-20T07:42:32Z"
-updated_at: "2026-10-20T13:13:33Z"
+updated_at: "2026-10-20T13:22:23Z"
 ---
 ## Problem
 Sometimes RepoOS's in-memory runner table says a task's engineer is running while no OS process exists (a "phantom runner"). Symptoms seen repeatedly on 2026-10-19/20 (#0861, #0843, #0854, #0860): `repoos start <id>` answers "Task #<id> is already running"; the task sits `active` with no commits or events for 10+ minutes; the watchdog and CTO `restart-stalled-agent` do nothing because they only act when the runner looks dead; `repoos pause` then `start --fresh` often still fails. The only reliable repair so far is `repoos mv <id> ready` then `repoos start <id>`, done by a human or driver. Each occurrence costs 10-30 minutes of idle time.
@@ -39,3 +39,4 @@ Look at the runner registry (`runner.isRunning`), the watchdog, and the CTO `res
 - 2026-10-20T13:12:43Z · cli_override, model_override
 - 2026-10-20T13:13:04Z · model_override
 - 2026-10-20T13:13:33Z · status ready→active, branch
+- 2026-10-20T13:22:23Z · message_queued at 2026-10-20T13:22:23.718Z
