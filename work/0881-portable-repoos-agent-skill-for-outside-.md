@@ -1,22 +1,23 @@
 ---
-last_close_out_gate_ms: 463950
-last_close_out_gate_at: "2026-10-20T21:06:04.742Z"
 id: "0881"
 title: Portable RepoOS Agent Skill for outside agents
 type: feature
-status: review
+status: done
 paths: [agent/skill, landing, user-docs]
 priority: p2
 area: docs
 story: Agent-discoverable RepoOS
 depends_on: ["0879"]
+merged_commit: 9b1ae2bc5516cfe9e5da688b91c579a573761a66
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/portable-repoos-agent-skill-for-outside-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:01:54Z"
-updated_at: "2026-10-20T21:06:04Z"
+updated_at: "2026-10-20T21:06:30Z"
+last_close_out_gate_ms: 463950
+last_close_out_gate_at: "2026-10-20T21:06:04.742Z"
 review_passes: 1
 ---
 ## Problem
@@ -66,4 +67,4 @@ The portable skill lives at `agent/skill/`. Public URL: https://github.com/repo-
 - 2026-10-20T20:42:01Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (9b1ae2bc5) during finalization (#0734)
 - 2026-10-20T20:43:09Z · note: review pass 1: good to go
 - 2026-10-20T21:06:04Z · close-out gate completed in 464s
-
+- 2026-10-20T21:06:30Z · status review→done, release:success
