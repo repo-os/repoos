@@ -100,7 +100,13 @@ describe("resetForeignWorkFiles (close-out drift guard)", () => {
       const reset = await resetForeignWorkFiles({
         candidateWtPath: fx.candidate,
         baseMainSha: fx.baseSha,
-        dirs: { workDir: "work", inputsDir: "inputs", storiesDir: "stories" },
+        dirs: {
+          workDir: "work",
+          inputsDir: "inputs",
+          storiesDir: "stories",
+          remindersDir: "reminders",
+          schedulesDir: "schedules",
+        },
         ownWorkFile: "work/0001-own.md",
       });
 
@@ -135,7 +141,13 @@ describe("resetForeignWorkFiles (close-out drift guard)", () => {
       const reset = await resetForeignWorkFiles({
         candidateWtPath: fx.candidate,
         baseMainSha: fx.baseSha,
-        dirs: { workDir: "work", inputsDir: "inputs", storiesDir: "stories" },
+        dirs: {
+          workDir: "work",
+          inputsDir: "inputs",
+          storiesDir: "stories",
+          remindersDir: "reminders",
+          schedulesDir: "schedules",
+        },
         ownWorkFile: "work/0001-own.md",
       });
 
@@ -157,7 +169,13 @@ describe("resetForeignWorkFiles (close-out drift guard)", () => {
       await resetForeignWorkFiles({
         candidateWtPath: fx.candidate,
         baseMainSha: fx.baseSha,
-        dirs: { workDir: "work", inputsDir: "inputs", storiesDir: "stories" },
+        dirs: {
+          workDir: "work",
+          inputsDir: "inputs",
+          storiesDir: "stories",
+          remindersDir: "reminders",
+          schedulesDir: "schedules",
+        },
         ownWorkFile: "work/0001-own.md",
       });
       const head = git(fx.candidate, ["rev-parse", "HEAD"]);
@@ -166,7 +184,13 @@ describe("resetForeignWorkFiles (close-out drift guard)", () => {
       const reset = await resetForeignWorkFiles({
         candidateWtPath: fx.candidate,
         baseMainSha: fx.baseSha,
-        dirs: { workDir: "work", inputsDir: "inputs", storiesDir: "stories" },
+        dirs: {
+          workDir: "work",
+          inputsDir: "inputs",
+          storiesDir: "stories",
+          remindersDir: "reminders",
+          schedulesDir: "schedules",
+        },
         ownWorkFile: "work/0001-own.md",
       });
       expect(reset).toEqual([]);
@@ -186,39 +210,66 @@ describe("resetForeignWorkFiles (close-out drift guard)", () => {
  * `inputs/*.md` on the branch published to main as-is.
  */
 function makeStoryInputFixture(
-  opts: { storiesDir?: string; inputsDir?: string; workDir?: string } = {},
+  opts: {
+    storiesDir?: string;
+    inputsDir?: string;
+    workDir?: string;
+    remindersDir?: string;
+    schedulesDir?: string;
+  } = {},
 ): {
   root: string;
   candidate: string;
   baseSha: string;
-  dirs: { workDir: string; inputsDir: string; storiesDir: string };
+  dirs: {
+    workDir: string;
+    inputsDir: string;
+    storiesDir: string;
+    remindersDir: string;
+    schedulesDir: string;
+  };
   clean: () => void;
 } {
   const workDir = opts.workDir ?? "work";
   const inputsDir = opts.inputsDir ?? "inputs";
   const storiesDir = opts.storiesDir ?? "stories";
+  const remindersDir = opts.remindersDir ?? "reminders";
+  const schedulesDir = opts.schedulesDir ?? "schedules";
   const root = mkdtempSync(join(tmpdir(), "repoos-foreign-stories-"));
   mkdirSync(join(root, workDir), { recursive: true });
   mkdirSync(join(root, inputsDir), { recursive: true });
   mkdirSync(join(root, storiesDir), { recursive: true });
+  mkdirSync(join(root, remindersDir), { recursive: true });
+  mkdirSync(join(root, schedulesDir), { recursive: true });
   git(root, ["init", "-q", "-b", "main"]);
   git(root, ["config", "user.email", "t@example.com"]);
   git(root, ["config", "user.name", "Test"]);
   writeFileSync(join(root, workDir, "0001-own.md"), '---\nid: "0001"\n---\nown body\n');
   writeFileSync(join(root, storiesDir, "launch.md"), "# Launch — MAIN\n");
   writeFileSync(join(root, inputsDir, "0007-email.md"), "# Email — MAIN\n");
+  writeFileSync(
+    join(root, remindersDir, "00000000-0000-4000-8000-000000000001.md"),
+    "reminder MAIN\n",
+  );
+  writeFileSync(join(root, schedulesDir, "0001-daily.md"), "schedule MAIN\n");
   writeFileSync(join(root, "src.ts"), "export const v = 1;\n");
   git(root, ["add", "-A"]);
   git(root, ["commit", "-q", "-m", "init"]);
   const baseSha = git(root, ["rev-parse", "HEAD"]);
 
-  // Feature branch edits the story and the input (both foreign, server-owned).
+  // Feature branch edits the story, input, reminder and schedule (all foreign,
+  // server-owned).
   git(root, ["checkout", "-q", "-b", "feat/x"]);
   writeFileSync(join(root, "src.ts"), "export const v = 2;\n");
   writeFileSync(join(root, storiesDir, "launch.md"), "# Launch — STALE BRANCH\n");
   writeFileSync(join(root, inputsDir, "0007-email.md"), "# Email — STALE BRANCH\n");
+  writeFileSync(
+    join(root, remindersDir, "00000000-0000-4000-8000-000000000001.md"),
+    "reminder STALE BRANCH\n",
+  );
+  writeFileSync(join(root, schedulesDir, "0001-daily.md"), "schedule STALE BRANCH\n");
   git(root, ["add", "-A"]);
-  git(root, ["commit", "-q", "-m", "feat(0001): work + story/input drift"]);
+  git(root, ["commit", "-q", "-m", "feat(0001): work + story/input/reminder/schedule drift"]);
   git(root, ["checkout", "-q", "main"]);
 
   const candidate = `${root}-candidate`;
@@ -230,7 +281,7 @@ function makeStoryInputFixture(
     root,
     candidate,
     baseSha,
-    dirs: { workDir, inputsDir, storiesDir },
+    dirs: { workDir, inputsDir, storiesDir, remindersDir, schedulesDir },
     clean: () => {
       rmSync(root, { recursive: true, force: true });
       rmSync(candidate, { recursive: true, force: true });
@@ -238,14 +289,23 @@ function makeStoryInputFixture(
   };
 }
 
-describe("resetForeignWorkFiles covers stories/ and inputs/ (#0726)", () => {
-  it("restores main's copy of another story and another input the branch edited", async () => {
+describe("resetForeignWorkFiles covers stories/, inputs/, reminders/ and schedules/ (#0726, #0860)", () => {
+  it("restores main's copy of foreign story, input, reminder and schedule files", async () => {
     const fx = makeStoryInputFixture();
     try {
       expect(readFileSync(join(fx.candidate, "stories", "launch.md"), "utf8")).toContain(
         "STALE BRANCH",
       );
       expect(readFileSync(join(fx.candidate, "inputs", "0007-email.md"), "utf8")).toContain(
+        "STALE BRANCH",
+      );
+      expect(
+        readFileSync(
+          join(fx.candidate, "reminders", "00000000-0000-4000-8000-000000000001.md"),
+          "utf8",
+        ),
+      ).toContain("STALE BRANCH");
+      expect(readFileSync(join(fx.candidate, "schedules", "0001-daily.md"), "utf8")).toContain(
         "STALE BRANCH",
       );
 
@@ -256,12 +316,26 @@ describe("resetForeignWorkFiles covers stories/ and inputs/ (#0726)", () => {
         ownWorkFile: "work/0001-own.md",
       });
 
-      expect(reset.sort()).toEqual(["inputs/0007-email.md", "stories/launch.md"]);
+      expect(reset.sort()).toEqual([
+        "inputs/0007-email.md",
+        "reminders/00000000-0000-4000-8000-000000000001.md",
+        "schedules/0001-daily.md",
+        "stories/launch.md",
+      ]);
       expect(readFileSync(join(fx.candidate, "stories", "launch.md"), "utf8")).toBe(
         "# Launch — MAIN\n",
       );
       expect(readFileSync(join(fx.candidate, "inputs", "0007-email.md"), "utf8")).toBe(
         "# Email — MAIN\n",
+      );
+      expect(
+        readFileSync(
+          join(fx.candidate, "reminders", "00000000-0000-4000-8000-000000000001.md"),
+          "utf8",
+        ),
+      ).toBe("reminder MAIN\n");
+      expect(readFileSync(join(fx.candidate, "schedules", "0001-daily.md"), "utf8")).toBe(
+        "schedule MAIN\n",
       );
       // Committed, not left dirty, and the branch's own source change survives.
       expect(git(fx.candidate, ["status", "--porcelain"])).toBe("");
@@ -276,6 +350,8 @@ describe("resetForeignWorkFiles covers stories/ and inputs/ (#0726)", () => {
       workDir: "repoos/work",
       inputsDir: "repoos/inputs",
       storiesDir: "repoos/stories",
+      remindersDir: "repoos/reminders",
+      schedulesDir: "repoos/schedules",
     });
     try {
       const reset = await resetForeignWorkFiles({
@@ -285,7 +361,12 @@ describe("resetForeignWorkFiles covers stories/ and inputs/ (#0726)", () => {
         ownWorkFile: "repoos/work/0001-own.md",
       });
 
-      expect(reset.sort()).toEqual(["repoos/inputs/0007-email.md", "repoos/stories/launch.md"]);
+      expect(reset.sort()).toEqual([
+        "repoos/inputs/0007-email.md",
+        "repoos/reminders/00000000-0000-4000-8000-000000000001.md",
+        "repoos/schedules/0001-daily.md",
+        "repoos/stories/launch.md",
+      ]);
       expect(readFileSync(join(fx.candidate, "repoos", "stories", "launch.md"), "utf8")).toBe(
         "# Launch — MAIN\n",
       );

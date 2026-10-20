@@ -972,6 +972,56 @@ describe("mergeBranch conflict reporting (#0271)", () => {
     }
   });
 
+  it("auto-resolves reminder and schedule conflicts to main's copy (#0860)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/task120");
+      expect(wt.ok).toBe(true);
+      const wtPath = wt.path!;
+
+      // Branch: real source change plus stale edits of server-written
+      // reminder/schedule files.
+      commitFile(wtPath, "src/genuine.ts", "export const a = 1;\n", "branch: source change");
+      commitFile(
+        wtPath,
+        "reminders/00000000-0000-4000-8000-000000000001.md",
+        "BRANCH\n",
+        "branch: stale reminder",
+      );
+      commitFile(wtPath, "schedules/0001-daily.md", "BRANCH\n", "branch: stale schedule");
+
+      // Main: the same files gained newer, authoritative content.
+      commitFile(
+        root,
+        "reminders/00000000-0000-4000-8000-000000000001.md",
+        "MAIN\n",
+        "main: reminder",
+      );
+      commitFile(root, "schedules/0001-daily.md", "MAIN\n", "main: schedule");
+
+      const candidate = ensureWorktree(root, "repoos/integrate/0120");
+      expect(candidate.ok).toBe(true);
+      const candPath = candidate.path!;
+      git(candPath, ["reset", "--hard", "main"]);
+
+      const result = await mergeBranch(candPath, "feat/task120", {
+        autoResolve: ["dist/", "work/0120-some-task.md"],
+        autoResolveOurs: ["work/", "inputs/", "stories/", "reminders/", "schedules/"],
+      });
+
+      expect(result.merged).toBe(true);
+      expect(result.conflicts).toEqual([]);
+      // Main's copies won; the branch's source change still landed.
+      expect(
+        git(candPath, ["show", "HEAD:reminders/00000000-0000-4000-8000-000000000001.md"]),
+      ).toBe("MAIN");
+      expect(git(candPath, ["show", "HEAD:schedules/0001-daily.md"])).toBe("MAIN");
+      expect(git(candPath, ["show", "HEAD:src/genuine.ts"])).toContain("a = 1");
+    } finally {
+      clean();
+    }
+  });
+
   it("auto-resolves a stories/ conflict to main's copy (#0726)", async () => {
     const { root, clean } = makeRepo();
     try {

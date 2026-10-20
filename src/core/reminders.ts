@@ -88,7 +88,7 @@ export function reminderDate(value: unknown): string {
 }
 
 function directory(config: RepoOSConfig): string {
-  const dir = join(config.root, "reminders");
+  const dir = join(config.root, config.remindersDir || "reminders");
   if (existsSync(dir) && (lstatSync(dir).isSymbolicLink() || !lstatSync(dir).isDirectory()))
     throw new Error("reminders must be a regular directory");
   return dir;

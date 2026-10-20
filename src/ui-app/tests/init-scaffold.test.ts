@@ -426,6 +426,14 @@ describe("scaffoldInto starter tasks", () => {
     expect(toml).toContain('inputsDir = "repoos/inputs"');
   });
 
+  it("keeps schedules and reminders under the namespace too (#0860)", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "repoos", "new");
+    const toml = readFileSync(join(root, "repoos.toml"), "utf8");
+    expect(toml).toContain('schedulesDir = "repoos/schedules"');
+    expect(toml).toContain('remindersDir = "repoos/reminders"');
+  });
+
   it("does not write storiesDir/inputsDir/skillsDir for the root layout", () => {
     const root = scratch();
     scaffoldInto(root, "", "", "new");
@@ -433,6 +441,8 @@ describe("scaffoldInto starter tasks", () => {
     expect(toml).not.toContain("storiesDir");
     expect(toml).not.toContain("inputsDir");
     expect(toml).not.toContain("skillsDir");
+    expect(toml).not.toContain("schedulesDir");
+    expect(toml).not.toContain("remindersDir");
   });
 
   it("gitignores node_modules/ and local env overrides (#0703)", () => {
