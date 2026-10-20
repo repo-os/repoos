@@ -53,6 +53,7 @@ export type TaskMode = "freeform" | "manual";
 export const NEEDS_INPUT_REASONS = [
   "review-failed",
   "review-rounds-exhausted",
+  "review-human-attention",
   "evidence-gap-exhausted",
   "dev-error",
   "check-failed-after-retries",
@@ -642,6 +643,13 @@ export interface RepoOSConfig {
   uiVerification?: UiVerificationConfig;
   /** Mechanical review verification (#0714, narrowed by #0762). */
   reviewVerification?: ReviewVerificationConfig;
+  /**
+   * Review-loop settings (#0872). `humanFlagAfterPasses` sets how many
+   * completed review passes on one task are allowed before the next report
+   * opens with a summary of the repeated bug classes and the task is flagged
+   * for a human. Defaults to 5.
+   */
+  review?: ReviewConfig;
   /**
    * Distribution destinations shown as the Releases page's "Published to"
    * summary (a `[[distribution]]` array of tables). Omitted/empty keeps the
@@ -1856,6 +1864,17 @@ export interface ReviewVerificationConfig {
    * matches it (see `review-verification-config.ts`).
    */
   testGlobs?: string[];
+}
+
+/**
+ * Review-loop settings (#0872). After this many completed review passes on one
+ * task, the next report opens with a summary of the bug classes earlier passes
+ * kept finding, and the task gets a human-attention `needsInput` flag distinct
+ * from the auto-bounce `review-rounds-exhausted` backstop.
+ */
+export interface ReviewConfig {
+  /** Completed passes before the repeated-class summary and human flag. Default 5. */
+  humanFlagAfterPasses?: number;
 }
 
 /** Opt-in policy for Move to done without a human click (#0686). */
