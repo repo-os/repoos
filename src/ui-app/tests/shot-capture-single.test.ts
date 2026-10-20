@@ -6,7 +6,8 @@
  * a preview the capture started is stopped again.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "../../core/config.js";
@@ -117,8 +118,59 @@ vi.mock("../../commands/ui-harness.js", () => ({
   })),
 }));
 
-import { captureDeclaredShot } from "../../server/shot-capture.js";
+import { captureDeclaredShot, runAutoShotCapture } from "../../server/shot-capture.js";
 import { localShotStore } from "../../server/shots.js";
+import type { BrowserEvidenceArtifacts } from "../../server/browser-capture-policy.js";
+
+const PNG_1PX =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+
+function initGitRoot(root: string): void {
+  execFileSync("git", ["init", "-b", "feat/x"], { cwd: root, stdio: "ignore" });
+  execFileSync("git", ["config", "user.name", "RepoOS test"], { cwd: root, stdio: "ignore" });
+  execFileSync("git", ["config", "user.email", "test@example.com"], { cwd: root, stdio: "ignore" });
+  writeFileSync(join(root, "tracked.txt"), "fixture\n");
+  execFileSync("git", ["add", "tracked.txt"], { cwd: root, stdio: "ignore" });
+  execFileSync("git", ["commit", "-m", "fixture"], { cwd: root, stdio: "ignore" });
+}
+
+function remoteConfig(): RepoOSConfig {
+  const config = setup();
+  initGitRoot(config.root);
+  return {
+    ...config,
+    remoteValidation: {
+      ...config.remoteValidation,
+      enabled: true,
+      browserCaptureMode: "runner-available",
+    },
+  };
+}
+
+function deferredCapture(
+  taskId: string,
+  payload: Omit<BrowserEvidenceArtifacts, "taskId">,
+): {
+  transport: { capture: () => Promise<BrowserEvidenceArtifacts> };
+  started: Promise<void>;
+  release: () => void;
+} {
+  let resolveStart!: () => void;
+  let resolveCapture!: (artifacts: BrowserEvidenceArtifacts) => void;
+  const started = new Promise<void>((resolve) => (resolveStart = resolve));
+  const transport = {
+    capture: () =>
+      new Promise<BrowserEvidenceArtifacts>((resolve) => {
+        resolveCapture = resolve;
+        resolveStart();
+      }),
+  };
+  return {
+    transport,
+    started,
+    release: () => resolveCapture({ ...payload, taskId }),
+  };
+}
 
 const ENTRY = {
   target: "default",
@@ -128,6 +180,36 @@ const ENTRY = {
 };
 
 describe("captureDeclaredShot busy semantics (#0627)", () => {
+  it("reserves a remote declared-shot capture so a duplicate cannot overlap", async () => {
+    const config = remoteConfig();
+    const task = makeTask("0627-remote", { branch: "feat/x" });
+    const remote = deferredCapture(task.id, {
+      version: 1,
+      ok: true,
+      detail: "captured",
+      results: {
+        singleShot: {
+          shot: { name: "runner.png", target: "default", route: "/" },
+          warnings: [],
+        },
+      },
+      files: [{ name: "shots/runner.png", data: PNG_1PX }],
+    });
+    const first = captureDeclaredShot(config, task, fakePreviews(), ENTRY, remote.transport);
+    await remote.started;
+
+    const duplicate = await captureDeclaredShot(
+      config,
+      task,
+      fakePreviews(),
+      ENTRY,
+      remote.transport,
+    );
+    expect("error" in duplicate && duplicate.busy).toBe(true);
+    remote.release();
+    expect("shot" in (await first)).toBe(true);
+  });
+
   it("is busy when another task's preview holds the single slot", async () => {
     const config = setup();
     const previews = fakePreviews([{ taskId: "0999", info: info({ label: "docs" }) }]);
@@ -246,5 +328,38 @@ describe("captureDeclaredShot busy semantics (#0627)", () => {
     expect("error" in result).toBe(false);
     if ("error" in result) return;
     expect(result.shot.declared).toEqual(declared);
+  });
+});
+
+describe("runAutoShotCapture remote reservation", () => {
+  it("skips a duplicate while the runner is capturing the same task", async () => {
+    const config = remoteConfig();
+    const task = makeTask("0854-remote", { branch: "feat/x" });
+    const shotsJson = Buffer.from(
+      JSON.stringify({ shots: [{ name: "runner.png", target: "default", origin: "auto" }] }),
+    ).toString("base64");
+    const remote = deferredCapture(task.id, {
+      version: 1,
+      ok: true,
+      detail: "captured",
+      results: { shots: { status: "captured", detail: "1 screenshot captured", count: 1 } },
+      files: [
+        { name: "shots/shots.json", data: shotsJson },
+        { name: "shots/runner.png", data: PNG_1PX },
+      ],
+    });
+    const first = runAutoShotCapture(config, task, fakePreviews(), vi.fn(), remote.transport);
+    await remote.started;
+
+    const duplicate = await runAutoShotCapture(
+      config,
+      task,
+      fakePreviews(),
+      vi.fn(),
+      remote.transport,
+    );
+    expect(duplicate).toMatchObject({ status: "skipped" });
+    remote.release();
+    expect(await first).toMatchObject({ status: "captured" });
   });
 });
