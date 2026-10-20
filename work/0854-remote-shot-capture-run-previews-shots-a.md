@@ -3,6 +3,9 @@ id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — `repoos shot` still runs WebKit locally, and failed remote captures discard partial shots."
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -222,3 +225,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T12:01:15Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d8861379a) during finalization (#0734)
 - 2026-10-20T12:06:27Z · needs_input
 - 2026-10-20T12:14:23Z · note: review pass 17: needs some work
+- 2026-10-20T12:14:23Z · needs_input
