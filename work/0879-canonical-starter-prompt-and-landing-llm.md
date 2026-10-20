@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-20T20:02:15Z"
+review_passes: 1
 id: "0879"
 title: Canonical starter prompt and landing llms.txt
 type: feature
@@ -13,7 +15,6 @@ branch: feat/canonical-starter-prompt-and-landing-llm
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:00:59Z"
-updated_at: "2026-10-20T20:02:15Z"
 ---
 ## Problem
 
@@ -61,3 +62,4 @@ Out of scope: the docs-site `llms.txt` / `llms-full.txt`, the Agent Skill, `user
 - 2026-10-20T20:01:25Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cbb3ac189) during finalization (#0734)
 - 2026-10-20T20:01:27Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cbb3ac189) during finalization (#0734)
 - 2026-10-20T20:02:15Z · note: review pass 1: good to go
+
