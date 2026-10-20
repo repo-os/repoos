@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T04:45:07Z"
+updated_at: "2026-10-20T04:52:43Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -41,3 +41,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T04:39:01Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
 - 2026-10-20T04:45:07Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-20T04:45:07Z · note: handoff requested (cli)
+- 2026-10-20T04:52:43Z · note: shots: skipped — the diff (2 changed paths) touches no capture target's globs — no UI change to capture
