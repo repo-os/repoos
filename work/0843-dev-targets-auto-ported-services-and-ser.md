@@ -2,7 +2,7 @@
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "by one target must map to distinct placeholder tokens: two names that"
@@ -16,7 +16,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T11:01:56Z"
+updated_at: "2026-10-20T11:01:57Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'service env', tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'target env', tests/dev-targets.test.ts > DevTargetManager with services (#0843) > boots the service first, then the target, and exposes both states on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 32da7ef6ac6aceaa9a76587d2e0bcc567e9ce4b3
 review_passes: 20
