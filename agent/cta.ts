@@ -4,26 +4,14 @@
 // have exactly one source: agent/cta.json plus agent/starter-prompt.md.
 import cta from "./cta.json";
 import starterPrompt from "./starter-prompt.md?raw";
+import { promptPreview } from "./prompt-preview";
+
+export { promptPreview } from "./prompt-preview";
 
 export const AGENT_CTA = cta;
 
 /** The canonical prompt, unchanged apart from the file's trailing newline. */
 export const STARTER_PROMPT = starterPrompt.trim();
-
-/**
- * The opening of the prompt for the compact preview: the title and the first
- * lines a reader sees, with Markdown heading markers removed. Derived from the
- * prompt itself so the preview can never drift into a rewritten blurb.
- */
-export function promptPreview(text: string): string {
-  return text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-    .slice(0, 3)
-    .map((line) => line.replace(/^#{1,6}\s+/, ""))
-    .join("\n");
-}
 
 export const STARTER_PROMPT_PREVIEW = promptPreview(STARTER_PROMPT);
 
