@@ -14,7 +14,7 @@ branch: feat/agent-file-build-checks-and-drift-checks
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:55Z"
-updated_at: "2026-10-20T23:02:16Z"
+updated_at: "2026-10-20T23:03:29Z"
 ---
 ## Problem
 The agent files in this story are generated or shared across two sites. Nothing in the existing `landing-build` and `user-docs-build` steps fails the build when `llms.txt` is missing, when an install command drifts from the published commands, or when the landing page and the docs homepage embed different prompt text.
@@ -64,3 +64,4 @@ Scope split (2026-10-21, driver): the written trial with an unfamiliar coding ag
 - 2026-10-20T22:53:03Z · message_delivered: 1 message(s)
 - 2026-10-20T23:02:15Z · status active→review
 - 2026-10-20T23:02:16Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (d534e70ab) during finalization (#0734)
+- 2026-10-20T23:03:29Z · note: review pass 1: good to go
