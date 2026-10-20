@@ -150,6 +150,9 @@ inheritEnv = false  # off by default; opt in to link .env into worktrees
 enabled = true
 stalenessMs = 300000
 autoTransition = true
+phantomDetectMs = 120000
+phantomHealMax = 3
+phantomHealWindowMs = 3600000
 
 [whisper]
 provider = "none"  # none | groq | openai
@@ -883,6 +886,9 @@ maxConcurrentAgents = 5
 enabled = true
 stalenessMs = 300000
 autoTransition = true
+phantomDetectMs = 120000
+phantomHealMax = 3
+phantomHealWindowMs = 3600000
 
 [whisper]
 provider = "none"
@@ -915,6 +921,9 @@ agent is running, the task is paused, or its worktree has recent activity.
 | `watchdog.enabled` | boolean | `true` | yes | Whether active-task staleness monitoring runs. |
 | `watchdog.stalenessMs` | number | `300000` (5 min) | yes | Milliseconds of silence before an `active` task is a candidate-stuck. Minimum `60000`; smaller values are ignored. |
 | `watchdog.autoTransition` | boolean | `true` | yes | Whether a stuck task auto-transitions out of `active` — to `review` when its worktree holds work, else back to `ready`. When false, it is only flagged `needsInput`. |
+| `watchdog.phantomDetectMs` | number | `120000` (2 min) | yes | How long a runner row may have no live engineer process and no live child before it is cleared and the same agent is restarted. Minimum `15000`. A live process tree (including check, vitest, or a remote-validation wait) is never treated as a phantom. |
+| `watchdog.phantomHealMax` | number | `3` | yes | Automatic phantom restarts allowed per task inside `phantomHealWindowMs` (1–20). Past the limit the dead row is still cleared and Start succeeds, but the server does not launch another turn on its own. |
+| `watchdog.phantomHealWindowMs` | number | `3600000` (1 hour) | yes | Window for `phantomHealMax`. Minimum `60000`. |
 | `whisper.provider` | select | `none` | yes | Voice-to-text provider for text areas: `none`, `groq`, or `openai`. |
 | `whisper.apiKey` | string | `""` | **exception** | API key for the selected whisper provider. Accepted here, but a secret — prefer `REPOOS_WHISPER_KEY` in `.env`. |
 
