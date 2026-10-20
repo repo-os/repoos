@@ -472,8 +472,18 @@ export class DevTargetManager {
     // Wait out any stop in progress (and any stop that begins while we wait),
     // so a start can never launch in the middle of a stop and leave the target
     // running after Stop returned (#0843 review).
-    for (let stopping = this.stopping.get(name); stopping; stopping = this.stopping.get(name)) {
-      await stopping;
+    for (;;) {
+      const stopping = this.stopping.get(name);
+      if (stopping) {
+        await stopping;
+        continue;
+      }
+      const teardown = this.stackTeardowns.get(name);
+      if (teardown) {
+        await teardown;
+        continue;
+      }
+      break;
     }
     const existing = this.running.get(name);
     if (existing) {
@@ -624,15 +634,13 @@ export class DevTargetManager {
         ? this.resolveHealthPath(def.healthCheck.file, serviceCwd)
         : null;
       const healthBaseline = healthFileStamp(healthPath);
-      // PORT names the service's own reserved port; every sibling reserved so
-      // far (and itself) is also reachable by environment variable, the way
-      // the preview supervisor passes `REPOOS_PREVIEW_*`. A declared `env`
-      // wins last, so a user override cannot be silently defaulted.
+      // RepoOS-owned values are applied after user env so the process cannot
+      // bind a different port or falsify the advertised service tokens.
       const env: Record<string, string> = {
+        ...(def.env ?? {}),
         PORT: String(servicePort),
         HOST: DEV_HOST,
         ...tokenEnv(tokens),
-        ...(def.env ?? {}),
       };
 
       if (superseded()) return this.abortSupersededStart(t);
@@ -1141,6 +1149,7 @@ export class DevTargetManager {
         ...this.adopted,
         ...this.serviceRuns.keys(),
         ...this.inflight.keys(),
+        ...this.stackTeardowns.keys(),
       ]),
     ];
     for (const name of names) {
@@ -1216,23 +1225,12 @@ export class DevTargetManager {
   private view(t: DevTargetConfig): DevTargetView {
     let state =
       this.states.get(t.name) ?? ({ name: t.name, status: "stopped", log: [] } as DevTargetState);
-    // A target re-adopted across a reload has no ChildProcess handle — its PID
-    // liveness is the only truth. Route disappearance through stack teardown
-    // so its still-live services cannot remain unmanaged.
-    if (
-      this.adopted.has(t.name) &&
-      state.pid !== undefined &&
-      !this.running.has(t.name) &&
-      (state.status === "running" || state.status === "starting") &&
-      !isAlivePid(state.pid)
-    ) {
-      void this.stopStack(t.name, { reason: "target exited unexpectedly" });
-      state = this.states.get(t.name) ?? state;
-    }
     // The re-adopted target's companion services have no handles either
     // (#0843 review round 1): the same lazy PID-liveness check is the truth,
     // and a service found dead is marked failed and degrades the target
-    // visibly, just like the live-path exit handler would.
+    // visibly, just like the live-path exit handler would. Check this before
+    // the target PID: a live manager may already be tearing both down after
+    // observing the service exit, and the service is the causal failure.
     if (this.adopted.has(t.name) && !this.running.has(t.name)) {
       const dead = (state.services ?? []).filter(
         (s) =>
@@ -1247,6 +1245,19 @@ export class DevTargetManager {
         void this.stopStack(t.name, { reason, failedService: first.name });
         state = this.states.get(t.name) ?? state;
       }
+    }
+    // A target re-adopted across a reload has no ChildProcess handle — its PID
+    // liveness is the only truth. Route disappearance through stack teardown
+    // so its still-live services cannot remain unmanaged.
+    if (
+      this.adopted.has(t.name) &&
+      state.pid !== undefined &&
+      !this.running.has(t.name) &&
+      (state.status === "running" || state.status === "starting") &&
+      !isAlivePid(state.pid)
+    ) {
+      void this.stopStack(t.name, { reason: "target exited unexpectedly" });
+      state = this.states.get(t.name) ?? state;
     }
     // #0751: show the real command and url of a running target — the `{port}`
     // substituted at the last start — rather than the templated declaration. A

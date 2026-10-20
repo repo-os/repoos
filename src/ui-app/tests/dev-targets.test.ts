@@ -1916,6 +1916,84 @@ describe("DevTargetManager with services (#0843)", () => {
     }
   });
 
+  it("keeps assigned service ports and RepoOS service tokens reserved over env", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcenv-owned-"));
+    const memo = join(dir, "env.json");
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              command: `bun -e "const f=require('node:fs');f.writeFileSync('${memo}',JSON.stringify({port:process.env.PORT,host:process.env.HOST,tokenPort:process.env.REPOOS_DEV_API_PORT,tokenUrl:process.env.REPOOS_DEV_API_URL}));setTimeout(()=>{},60000)"`,
+              healthCheck: undefined,
+              env: {
+                PORT: "1",
+                HOST: "0.0.0.0",
+                REPOOS_DEV_API_PORT: "2",
+                REPOOS_DEV_API_URL: "http://invalid/",
+              },
+            }),
+          ],
+          targets: [webTarget({ kind: "process", url: undefined })],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(true);
+      const service = mgr.get("app")?.services?.[0];
+      const recorded = JSON.parse(readFileSync(memo, "utf8"));
+      expect(recorded).toEqual({
+        port: String(service?.port),
+        host: "127.0.0.1",
+        tokenPort: String(service?.port),
+        tokenUrl: `http://127.0.0.1:${service?.port}`,
+      });
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  itSlow("waits for automatic crash teardown before starting a replacement stack", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-pending-teardown-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              command: 'bun -e "setTimeout(()=>process.exit(1),1800)"',
+              healthCheck: undefined,
+            }),
+          ],
+          targets: [webTarget({ kind: "process", url: undefined })],
+        },
+        dir,
+      ),
+    );
+    try {
+      const initial = await mgr.start("app");
+      expect(initial.ok).toBe(true);
+      const oldTargetPid = initial.target?.pid;
+      expect(typeof oldTargetPid).toBe("number");
+
+      const deadline = Date.now() + 6000;
+      while (Date.now() < deadline && mgr.get("app")?.status !== "failed") {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      expect(mgr.get("app")?.status).toBe("failed");
+      const replacement = await mgr.start("app");
+      expect(replacement.ok).toBe(true);
+      expect(replacement.target?.status).toBe("running");
+      expect(replacement.target?.pid).not.toBe(oldTargetPid);
+      expect(await waitForDead(oldTargetPid!)).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("marks the target failed, naming the service, when a running service crashes", async () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svccrash-"));
     const mgr = new DevTargetManager(
