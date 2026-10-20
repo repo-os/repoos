@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T16:02:52Z"
+updated_at: "2026-10-20T16:02:54Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 6e5df49a to 5f847ccf) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 6e5df49a4bbf46af4fed518b00009443121d55fe
 review_passes: 18
@@ -267,3 +267,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T15:53:38Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 6e5df49a to 5f847ccf) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-10-20T15:53:50Z · note: handoff requested (ui-review)
 - 2026-10-20T16:02:52Z · status active→review
+- 2026-10-20T16:02:54Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (3c6588a3c) during finalization (#0734)
