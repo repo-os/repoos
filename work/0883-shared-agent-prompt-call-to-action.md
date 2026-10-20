@@ -14,7 +14,7 @@ branch: feat/shared-agent-prompt-call-to-action
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:35Z"
-updated_at: "2026-10-20T21:44:05Z"
+updated_at: "2026-10-20T21:57:07Z"
 ---
 ## Problem
 
