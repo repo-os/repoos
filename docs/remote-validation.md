@@ -83,6 +83,48 @@ for the test suite to be skipped. A failed handoff remote gate is recorded as a
 check run (Debug tab), and a failed CLI run awaits runner teardown before exiting
 so it cannot leak a warm VM. Repos with remote validation off behave as before.
 
+## Remote browser evidence design (#0854)
+
+### Remote browser evidence (#0854)
+
+Browser evidence is a separate workload from the check gate. The runner image
+must include Bun, this repository's development dependencies, Playwright,
+Playwright WebKit, and the UI's system fonts. It builds the bundled commit and
+runs the preview without login in its isolated checkout; fixture state and the
+existing shot-plan entries are inputs to the same capture and verification
+code used locally. The request carries the task bundle, task id, expected
+commit, mode, the canonical task body and capture-relevant `[preview]` /
+`[[shot.targets]]` config, and the plan the control plane resolved — so the
+worker captures exactly what local capture would rather than re-planning from a
+branch that may lag the board. Environment variables, dotenv files, API keys,
+account credentials, and the rest of the control-plane config (ports, auth,
+paths) are never sent.
+
+The runner capture worker writes a bounded artifact set (`shots/*.png`,
+`shots/shots.json`, and optionally `verification.json`). The control plane
+validates names, types, task id, PNG signatures, and total size before
+installing artifacts in the existing attachment/cache locations. In `local`
+mode capture stays on the control plane. `runner-available` prefers a runner
+and records a visible local fallback note when one is unavailable or fails.
+`runner-only` reports that failure without starting local browser work, and its
+structured error is returned to the caller rather than thrown. Declared target
+misses preserve the local handoff failure; automatic misses remain warnings. A
+partial runner run imports every shot it did produce and reports the failure, so
+earlier evidence is never discarded. The setting defaults to `local` until a
+runner image and artifact round trip have passed a real end-to-end proof.
+**Scope:** only the automatic handoff capture and UI verification move to a
+runner. Manual `repoos shot` / `repoos verify` and the interactive Preview
+always run locally on the control plane; offloading the CLI is tracked
+separately as #0874.
+
+The `scripts/remote-runner/capture-browser.ts` worker is the runner-side entry
+point. It reuses `runAutoShotCapture` and `runUiHandoffGate` rather than
+reimplementing fixtures or browser choreography. The control plane starts it
+through the existing validation transport, downloads its bounded artifacts,
+and installs them through the same shot and verification stores used locally.
+The worker runs against the bundled task commit and never receives the
+control-plane process environment or dotenv contents.
+
 ## Hook points
 
 The pre-review, close-out and release gates share `runRemotePreReviewGate` (`src/server/pre-review-remote-gate.ts`); the legacy single-shot path does not:

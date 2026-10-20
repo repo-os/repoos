@@ -283,6 +283,19 @@ describe("POST /api/tasks/:id/shots — declare and capture (#0627)", () => {
     expect(readFileSync(task.absPath, "utf8")).not.toContain("## Shots");
   });
 
+  it("returns a runner-only transport failure as a 400, never a thrown 500 (#0854)", async () => {
+    mockedCapture.mockResolvedValue({
+      error: "remote capture failed: runner-only browser capture failed: no runner available",
+      unavailable: true,
+    } as never);
+    const ctx = makeCtx();
+    const { capture, res } = resCapture();
+    await uploadTaskShot(ctx as never, bodyReq({ target: "default" }), res, { param1: task.id });
+    expect(capture.statusCode).toBe(400);
+    expect((capture.body as { error: string }).error).toContain("remote capture failed");
+    expect(readFileSync(task.absPath, "utf8")).not.toContain("## Shots");
+  });
+
   it("keeps a CLI byte-upload on the legacy path untouched", async () => {
     const ctx = makeCtx();
     const req = {
