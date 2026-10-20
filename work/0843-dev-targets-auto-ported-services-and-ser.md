@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-20T06:48:16.394Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
@@ -13,7 +15,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T04:47:04Z"
+updated_at: "2026-10-20T06:48:13Z"
 review_passes: 10
 review_rounds: 2
 dev_error_count: 1
@@ -172,3 +174,12 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T04:44:45Z · needs_input
 - 2026-10-20T04:46:55Z · status review→active
 - 2026-10-20T04:47:04Z · needs_input
+- 2026-10-20T04:51:32Z · body
+- 2026-10-20T05:17:30Z · message_queued at 2026-10-20T05:17:30.337Z
+- 2026-10-20T05:17:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-20T05:57:38Z · body
+- 2026-10-20T06:20:53Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-20T06:48:08Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-20T06:48:09Z · note: handoff requested (cli)
+- 2026-10-20T06:48:13Z · message_queued at 2026-10-20T06:48:13.293Z
+

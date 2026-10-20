@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-20T06:56:38.269Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0861"
 title: "P0: bookkeeping-only commits must not make handoff evidence stale or block a good review"
 type: bug
@@ -11,7 +13,8 @@ branch: feat/p0-bookkeeping-only-commits-must-not-mak
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:47:38Z"
-updated_at: "2026-10-20T04:47:58Z"
+updated_at: "2026-10-20T06:56:38Z"
+dev_error_count: 1
 ---
 ## Problem
 A task whose code is correct is repeatedly held in review because its screenshot/verification evidence is flagged **stale** when the only commits since the capture are RepoOS bookkeeping. Example (#0843, 2026-10-20): review pass 10 found no bugs and no edge cases, but the verdict was "needs some work" with `Evidence: ... captured at d87648624, while reviewed HEAD is b1eda86f8. The only intervening change is task-file bookkeeping, but the capture is still stale by the handoff evidence rule.` It then needed a manual `repoos verify` + `repoos review again` to get another pass (which found a new unrelated issue, but the stale-evidence round was pure waste). The same thing happened to #0832 and others.
@@ -40,3 +43,14 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 - 2026-10-20T04:47:52Z · status inbox→ready
 - 2026-10-20T04:47:56Z · cli_override, model_override
 - 2026-10-20T04:47:58Z · status ready→active, branch
+- 2026-10-20T04:56:29Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-10-20T04:56:46Z · agent exited with an error (codex) · 2026-10-20T04:56:32.304823Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
+- 2026-10-20T05:49:27Z · needs_input
+- 2026-10-20T05:53:43Z · body
+- 2026-10-20T05:57:42Z · body
+- 2026-10-20T06:17:09Z · message_queued at 2026-10-20T06:17:09.557Z
+- 2026-10-20T06:17:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-20T06:25:12Z · body
+- 2026-10-20T06:26:29Z · message_queued at 2026-10-20T06:26:29.923Z
+- 2026-10-20T06:56:38Z · message_delivered: 2 message(s)
+

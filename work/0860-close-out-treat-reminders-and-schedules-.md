@@ -8,10 +8,13 @@ area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-and-layout-reminders-and-sched
-cli_override: opencode
-model_override: opencode-go/deepseek-v4.1-flash
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T04:46:00Z"
+updated_at: "2026-10-20T06:54:52Z"
+handoff_signal_retry_count: 1
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-20T06:20:53.646Z: repoos check failed: ◆ Check plan"
 ---
 ## Problem
 (1) Close-out blocks on reminder files. Move to done refuses to publish when a reminder file is dirty on main: 'main has 1 uncommitted file at publish time, so the merge would abort: reminders/37fba592-....md'. Reminders (#0851) are server-written, repo-native files like tasks, inputs and stories, but the close-out only knows work/, inputs/ and stories/ as routine server-written churn (bookkeepingDirs / bookkeepingKeepOursPrefixes in src/server/integration-orchestrator.ts ~line 334; isNonCodePublishDrift; the dirty-main guard in docs/close-out-pipeline.md). Every time a reminder is created, snoozed or marked done while a close-out runs, an unrelated landing is blocked and needs a manual 'Commit & continue'. Scheduled-task definitions (schedules/, #0093) are stamped by the server (last_run_at, last_occurrence_key) and have the same problem.
@@ -47,3 +50,12 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T04:38:49Z · body
 - 2026-10-20T04:46:00Z · message_queued at 2026-10-20T04:46:00.799Z
 - 2026-10-20T04:46:00Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-20T05:34:14Z · message_delivered: 1 message(s)
+- 2026-10-20T05:51:46Z · body
+- 2026-10-20T06:20:58Z · message_queued at 2026-10-20T06:20:58.353Z
+- 2026-10-20T06:42:02Z · message_queued at 2026-10-20T06:42:02.729Z
+- 2026-10-20T06:42:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-20T06:54:07Z · message_delivered: 2 message(s)
+- 2026-10-20T06:54:31Z · cli_override, model_override
+- 2026-10-20T06:54:45Z · status active→ready
+- 2026-10-20T06:54:52Z · status ready→active
