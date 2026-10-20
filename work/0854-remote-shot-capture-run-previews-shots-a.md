@@ -3,9 +3,6 @@ id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — no end-to-end runner proof recorded, and the runner image installs WebKit where the non-root run user cannot see it."
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T09:31:16Z"
+updated_at: "2026-10-20T09:32:04Z"
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -109,4 +106,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T09:23:14Z · status active→review
 - 2026-10-20T09:26:52Z · note: review pass 4: needs some work
 - 2026-10-20T09:26:52Z · needs_input
-
+- 2026-10-20T09:32:04Z · needs_input
