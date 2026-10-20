@@ -1325,6 +1325,54 @@ describe("parseDevServices", () => {
       parseDevServices({ "dev.services": [{ name: "api", command: "x", env: "{ }" }] }).errors[0],
     ).toContain("env must be a table");
   });
+
+  it.each([
+    {
+      name: "escaped quote",
+      raw: String.raw`{ MESSAGE = "say \"hi\"" }`,
+      expected: 'say "hi"',
+    },
+    {
+      name: "escaped backslash",
+      raw: String.raw`{ MESSAGE = "C:\\tmp" }`,
+      expected: "C:\\tmp",
+    },
+    {
+      name: "newline and tab escapes",
+      raw: String.raw`{ MESSAGE = "line\n\tend" }`,
+      expected: "line\n\tend",
+    },
+    {
+      name: "unicode escape",
+      raw: String.raw`{ MESSAGE = "\u263A" }`,
+      expected: "☺",
+    },
+    {
+      name: "single-quoted literal",
+      raw: String.raw`{ MESSAGE = 'like this' }`,
+      expected: "like this",
+    },
+    { name: "hash inside value", raw: String.raw`{ MESSAGE = "a#b" }`, expected: "a#b" },
+    { name: "comma inside value", raw: String.raw`{ MESSAGE = "a,b" }`, expected: "a,b" },
+    { name: "closing brace inside value", raw: String.raw`{ MESSAGE = "a}b" }`, expected: "a}b" },
+    { name: "empty value", raw: String.raw`{ MESSAGE = "" }`, expected: "" },
+    {
+      name: "unterminated string",
+      raw: String.raw`{ MESSAGE = "unfinished }`,
+      error: 'unterminated string value for key "MESSAGE"',
+    },
+  ])("parses TOML env string: $name", ({ raw, expected, error }) => {
+    const parsed = parseDevServices({
+      "dev.services": [{ name: "api", command: "x", env: raw }],
+    });
+    if (error) {
+      expect(parsed.errors).toEqual([`[dev.services] api: env ${error}`]);
+      expect(parsed.services).toEqual([]);
+      return;
+    }
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.services[0]?.env).toEqual({ MESSAGE: expected });
+  });
 });
 
 describe("devTargetServiceErrors", () => {

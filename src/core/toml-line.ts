@@ -277,6 +277,89 @@ export function unquoteTomlString(s: string): string {
   return s.replace(/^["']|["']$/g, "");
 }
 
+export type TomlInlineStringTableResult =
+  | { ok: true; value: Record<string, string> }
+  | { ok: false; error: string };
+
+/**
+ * Parse an inline TOML table whose values must all be strings. This is used by
+ * small config readers that need one string-only inline table without pulling
+ * in a second TOML parser. Delimiters are found with TOML quote/escape rules,
+ * and each scalar is decoded by {@link unquoteTomlString}.
+ *
+ * Returns null when `raw` is not an inline table. A malformed table returns a
+ * readable error (not a partial value), including unterminated strings.
+ */
+export function parseTomlInlineStringTable(raw: string): TomlInlineStringTableResult | null {
+  const source = raw.trim();
+  if (!source.startsWith("{")) return null;
+
+  let i = 1;
+  const values: Record<string, string> = {};
+  const skipWhitespace = (): void => {
+    while (/\s/.test(source[i] ?? "")) i++;
+  };
+  const fail = (error: string): TomlInlineStringTableResult => ({ ok: false, error });
+
+  skipWhitespace();
+  if (source[i] === "}") {
+    i++;
+    skipWhitespace();
+    return i === source.length ? { ok: true, value: values } : fail("unexpected text after table");
+  }
+
+  while (i < source.length) {
+    const keyStart = i;
+    while (/[A-Za-z0-9_-]/.test(source[i] ?? "")) i++;
+    const key = source.slice(keyStart, i);
+    if (!key) return fail("expected a bare key");
+    skipWhitespace();
+    if (source[i] !== "=") return fail(`expected '=' after key "${key}"`);
+    i++;
+    skipWhitespace();
+
+    const quote = source[i];
+    if (quote !== '"' && quote !== "'") {
+      return fail(`value for key "${key}" must be a quoted string`);
+    }
+    const valueStart = i;
+    i++;
+    let closed = false;
+    while (i < source.length) {
+      const ch = source[i];
+      if (quote === '"' && ch === "\\") {
+        i += 2;
+        continue;
+      }
+      if (ch === quote) {
+        i++;
+        closed = true;
+        break;
+      }
+      i++;
+    }
+    if (!closed) return fail(`unterminated string value for key "${key}"`);
+    values[key] = unquoteTomlString(source.slice(valueStart, i));
+
+    skipWhitespace();
+    if (source[i] === ",") {
+      i++;
+      skipWhitespace();
+      if (source[i] === "}") return fail("trailing comma is not allowed");
+      continue;
+    }
+    if (source[i] === "}") {
+      i++;
+      skipWhitespace();
+      return i === source.length
+        ? { ok: true, value: values }
+        : fail("unexpected text after table");
+    }
+    return fail(`expected ',' or '}' after value for key "${key}"`);
+  }
+  return fail("unterminated inline table");
+}
+
 /** TOML trims the first newline after a multi-line opening delimiter. */
 function trimFirstNewline(inner: string): string {
   if (inner.startsWith("\n")) return inner.slice(1);
