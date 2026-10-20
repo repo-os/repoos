@@ -5,13 +5,13 @@ type: bug
 status: active
 priority: p2
 area: core
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/check-store-writes-to-the-wrong-project-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:26Z"
-updated_at: "2026-10-20T22:21:35Z"
+updated_at: "2026-10-20T22:21:44Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-20T21:46:23.850Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-20T21:47:02.554Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -50,3 +50,4 @@ Evidence: the SQLite file's rows (check_runs) and worktree column named a lighti
 - 2026-10-20T22:09:10Z · body
 - 2026-10-20T22:17:58Z · body
 - 2026-10-20T22:21:35Z · needs_input
+- 2026-10-20T22:21:44Z · assigned_to
