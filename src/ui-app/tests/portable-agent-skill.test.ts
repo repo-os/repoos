@@ -136,7 +136,7 @@ describe("portable RepoOS Agent Skill", () => {
     // Init, the default namespaced layout, and non-interactive new-project flags.
     expect(text).toContain("repoos init");
     expect(text).toContain("repoos init myproject --new");
-    expect(text).toContain("--layout /");
+    expect(text).toContain("--layout <ns>");
 
     // Command discovery and board writes.
     expect(text).toContain("repoos --help");
