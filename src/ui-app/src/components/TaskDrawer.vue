@@ -1111,7 +1111,11 @@ async function refreshEvidence(): Promise<void> {
   const result = await repo.refreshEvidence(ui.active.id);
   refreshEvidenceBusy.value = false;
   if (!result.ok) refreshEvidenceError.value = result.error;
-  else repo.pushToast("Evidence refreshed", "success");
+  else
+    repo.pushToast(
+      result.refreshed === false ? "Evidence is already current" : "Evidence refreshed",
+      "success",
+    );
 }
 
 async function confirmDeleteShot(): Promise<void> {
