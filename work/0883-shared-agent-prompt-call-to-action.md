@@ -2,7 +2,7 @@
 id: "0883"
 title: Shared agent prompt call to action
 type: feature
-status: active
+status: review
 paths: [agent/starter-prompt.md, landing/src, user-docs/index.md, user-docs/.vitepress/theme]
 priority: p2
 area: [landing, docs]
@@ -14,7 +14,7 @@ branch: feat/shared-agent-prompt-call-to-action
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:35Z"
-updated_at: "2026-10-20T21:57:07Z"
+updated_at: "2026-10-20T21:59:56Z"
 ---
 ## Problem
 
@@ -75,3 +75,4 @@ Out of scope: provider logos, a public MCP server, and changes to install comman
 - 2026-10-20T21:34:41Z · status ready→active, branch
 - 2026-10-20T21:42:07Z · body
 - 2026-10-20T21:44:05Z · body
+- 2026-10-20T21:59:56Z · status active→review
