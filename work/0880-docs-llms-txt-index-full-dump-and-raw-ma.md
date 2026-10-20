@@ -68,3 +68,4 @@ Kept `vitepress-plugin-llms` (devDependency of `user-docs/`) rather than hand-wr
 - 2026-10-20T20:43:38Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-20T20:43:38Z · message_delivered: 1 message(s)
 - 2026-10-20T20:52:45Z · status active→review
+- 2026-10-20T20:52:45Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (fe90dd0eb) during finalization (#0734)
