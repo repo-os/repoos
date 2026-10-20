@@ -640,6 +640,12 @@ export async function runAutoShotCapture(
       // differ from — or skip — what local capture would produce (#0854).
       const remotePlan = planAutoCapture(config, task);
       if ("reason" in remotePlan) return finish("skipped", remotePlan.reason);
+      if (remotePlan.blockingErrors?.length) {
+        return finish(
+          "failed",
+          `declared shot cannot render — ${remotePlan.blockingErrors.join("; ")}`,
+        );
+      }
       const canonical = canonicalCaptureContext(config, task, remotePlan);
       const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
       const head = worktree ? await runGit(worktree, ["rev-parse", "HEAD"], 10_000) : null;
@@ -697,10 +703,7 @@ export async function runAutoShotCapture(
   // here too so a wrong-screen PNG cannot land even when UI verification is
   // disabled. This also covers a remote canonical plan.
   if (planned.blockingErrors?.length) {
-    return finish(
-      "failed",
-      `declared shot cannot render — ${planned.blockingErrors.join("; ")}`,
-    );
+    return finish("failed", `declared shot cannot render — ${planned.blockingErrors.join("; ")}`);
   }
   const plan = planned;
   // Branch fixtures (#0786): URL building admits a `state` the task branch's
