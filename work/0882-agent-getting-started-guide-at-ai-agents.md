@@ -2,7 +2,7 @@
 id: "0882"
 title: Agent getting-started guide at /ai-agents
 type: feature
-status: inbox
+status: ready
 paths: [user-docs/ai-agents.md, user-docs/.vitepress/config.mts, agent/starter-prompt.md]
 priority: p2
 area: docs
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T16:02:17Z"
-updated_at: "2026-10-20T16:02:17Z"
+updated_at: "2026-10-20T21:09:56Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ Declare a docs-site shot if you want review to open the new page: target the doc
 ## Activity
 
 - 2026-10-20T16:02:17Z · created · njachowski@gmail.com
+- 2026-10-20T21:09:56Z · status inbox→ready
