@@ -1,22 +1,23 @@
 ---
-last_close_out_gate_ms: 115852
-last_close_out_gate_at: "2026-10-20T21:34:12.767Z"
 id: "0882"
 title: Agent getting-started guide at /ai-agents
 type: feature
-status: review
+status: done
 paths: [user-docs/ai-agents.md, user-docs/.vitepress/config.mts, agent/starter-prompt.md]
 priority: p2
 area: docs
 story: Agent-discoverable RepoOS
 depends_on: ["0879", "0880", "0881"]
+merged_commit: 5323b53296b6089423cc36ae005352b8f4047a44
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/agent-getting-started-guide-at-ai-agents
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:17Z"
-updated_at: "2026-10-20T21:34:12Z"
+updated_at: "2026-10-20T21:34:20Z"
+last_close_out_gate_ms: 115852
+last_close_out_gate_at: "2026-10-20T21:34:12.767Z"
 review_passes: 1
 ---
 ## Problem
@@ -68,4 +69,4 @@ Declare a docs-site shot if you want review to open the new page: target the doc
 - 2026-10-20T21:30:12Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (5323b5329) during finalization (#0734)
 - 2026-10-20T21:30:58Z · note: review pass 1: good to go
 - 2026-10-20T21:34:12Z · close-out gate completed in 116s
-
+- 2026-10-20T21:34:20Z · status review→done, release:success
