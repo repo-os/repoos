@@ -706,6 +706,17 @@ export class DevTargetManager {
         if (prior?.status === "failed" && prior.error) return fail(prior.error);
         return failService(`service "${def.name}" ${ready.error}`);
       }
+      // The successful probe can race an exit (or hit an unrelated listener
+      // after this child died). Readiness belongs to the process RepoOS
+      // launched, so verify that exact child again before recording it ready.
+      if (!this.isAlive(child)) {
+        return failService(`service "${def.name}" exited during its readiness check`);
+      }
+      if (this.states.get(t.name)?.status === "failed") {
+        const error = this.states.get(t.name)?.error ?? "a companion service failed during startup";
+        await fail(error);
+        return { ok: false, error: this.states.get(t.name)?.error ?? error, target: this.view(t) };
+      }
       this.patchServiceState(t.name, def.name, { status: "running", error: undefined });
     }
 
@@ -864,6 +875,24 @@ export class DevTargetManager {
       return { ok: false, error: ready.error, target: this.view(t) };
     }
     if (superseded()) return this.abortSupersededStart(t);
+    if (!this.isAlive(child)) {
+      const error = "process exited during its health check";
+      await this.stopStack(t.name, { reason: error });
+      return { ok: false, error, target: this.view(t) };
+    }
+    const deadService = (this.serviceRuns.get(t.name) ?? []).find(
+      (run) => !this.isAlive(run.child),
+    );
+    if (deadService) {
+      const name = this.states
+        .get(t.name)
+        ?.services?.find((service) => service.pid === deadService.child.pid)?.name;
+      const error = name
+        ? `service "${name}" exited during target readiness`
+        : "a companion service exited during target readiness";
+      await this.stopStack(t.name, { reason: error, ...(name ? { failedService: name } : {}) });
+      return { ok: false, error: this.states.get(t.name)?.error ?? error, target: this.view(t) };
+    }
     if (this.states.get(t.name)?.status !== "failed") {
       this.setState(t.name, { status: "running", error: undefined });
     }
@@ -914,12 +943,13 @@ export class DevTargetManager {
       if (!path) return { ok: false, error: `healthCheck file "${hc.file}" escapes the repo` };
       const deadline = Date.now() + HEALTH_TIMEOUT_MS;
       while (Date.now() < deadline) {
-        if (existsSync(path)) return { ok: true, error: "" };
+        if (!this.isAlive(child))
+          return { ok: false, error: "process exited before the health file appeared" };
+        if (degraded()) return degraded()!;
+        if (existsSync(path) && this.isAlive(child) && !degraded()) return { ok: true, error: "" };
         // #0843 review round 2: a companion service's crash degrades the
         // target — its reason ends this wait instead of burning the timeout.
         if (degraded()) return degraded()!;
-        if (!this.isAlive(child))
-          return { ok: false, error: "process exited before the health file appeared" };
         await sleep(HEALTH_POLL_MS);
       }
       return { ok: false, error: `health file "${hc.file}" did not appear in time` };
@@ -937,10 +967,10 @@ export class DevTargetManager {
       while (Date.now() < deadline) {
         const answers = await probeUrl(url);
         if (degraded()) return degraded()!;
-        if (answers) return { ok: true, error: "" };
         if (!this.isAlive(child)) {
           return { ok: false, error: "process exited before it answered its health check" };
         }
+        if (answers && this.isAlive(child) && !degraded()) return { ok: true, error: "" };
         await sleep(HEALTH_POLL_MS);
       }
       return { ok: false, error: `${url} did not answer within ${HEALTH_TIMEOUT_MS / 1000}s` };
@@ -983,13 +1013,14 @@ export class DevTargetManager {
       while (Date.now() < deadline) {
         // Liveness first, then freshness: an exited service is never ready, and
         // a file that predates this start is not this run's readiness signal.
-        if (this.isAlive(child) && healthFileIsFresh(path, healthBaseline))
+        if (!this.isAlive(child))
+          return { ok: false, error: "exited before the health file appeared" };
+        if (degraded())
+          return { ok: false, error: "startup aborted: a sibling companion service failed" };
+        if (healthFileIsFresh(path, healthBaseline) && this.isAlive(child) && !degraded())
           return { ok: true, error: "" };
         if (degraded())
           return { ok: false, error: "startup aborted: a sibling companion service failed" };
-        if (!this.isAlive(child)) {
-          return { ok: false, error: "exited before the health file appeared" };
-        }
         await sleep(HEALTH_POLL_MS);
       }
       return { ok: false, error: `health file "${hc.file}" did not appear in time` };
@@ -998,12 +1029,13 @@ export class DevTargetManager {
     if (url) {
       const deadline = Date.now() + HEALTH_TIMEOUT_MS;
       while (Date.now() < deadline) {
-        if (await probeUrl(url)) return { ok: true, error: "" };
+        const answers = await probeUrl(url);
         if (degraded())
           return { ok: false, error: "startup aborted: a sibling companion service failed" };
         if (!this.isAlive(child)) {
           return { ok: false, error: "exited before it answered its health check" };
         }
+        if (answers && this.isAlive(child) && !degraded()) return { ok: true, error: "" };
         await sleep(HEALTH_POLL_MS);
       }
       return { ok: false, error: `${url} did not answer within ${HEALTH_TIMEOUT_MS / 1000}s` };
@@ -1026,7 +1058,13 @@ export class DevTargetManager {
   }
 
   private isAlive(child: ChildProcess): boolean {
-    return child.exitCode === null && child.signalCode === null && child.pid !== undefined;
+    return (
+      typeof child.pid === "number" &&
+      child.pid > 0 &&
+      child.exitCode === null &&
+      child.signalCode === null &&
+      isAlivePid(child.pid)
+    );
   }
 
   /**
@@ -1090,10 +1128,16 @@ export class DevTargetManager {
       if (typeof pid !== "number" || pid <= 0) return;
       pids.set(pid, (pids.get(pid) ?? false) || processGroup);
     };
-    remember(targetEntry?.child.pid, targetEntry?.processGroup ?? process.platform !== "win32");
+    // Teardown follows ownership/dependency order: target first, then services
+    // in reverse boot order so dependents stop before the services they use.
+    remember(
+      targetEntry?.child.pid ?? previous?.pid,
+      targetEntry?.processGroup ?? process.platform !== "win32",
+    );
     remember(previous?.pid, process.platform !== "win32");
-    for (const entry of serviceEntries) remember(entry.child.pid, entry.processGroup);
-    for (const service of previous?.services ?? []) {
+    for (const entry of [...serviceEntries].reverse())
+      remember(entry.child.pid, entry.processGroup);
+    for (const service of [...(previous?.services ?? [])].reverse()) {
       remember(service.pid, process.platform !== "win32");
     }
 
@@ -1119,11 +1163,11 @@ export class DevTargetManager {
       services,
     });
 
-    const teardown = Promise.all(
-      [...pids].map(async ([pid, processGroup]) => {
+    const teardown = (async () => {
+      for (const [pid, processGroup] of pids) {
         if (isAlivePid(pid)) await this.killPid(pid, processGroup);
-      }),
-    ).then(() => undefined);
+      }
+    })();
     this.stackTeardowns.set(name, teardown);
     void teardown.finally(() => {
       if (this.stackTeardowns.get(name) === teardown) this.stackTeardowns.delete(name);
@@ -1435,6 +1479,14 @@ export class DevTargetManager {
 
   /** Graceful SIGTERM, then SIGKILL after a short grace period. */
   private async killPid(pid: number, processGroup: boolean): Promise<void> {
+    const alive = (): boolean => {
+      try {
+        process.kill(processGroup ? -pid : pid, 0);
+        return true;
+      } catch {
+        return false;
+      }
+    };
     const signal = (sig: NodeJS.Signals): boolean => {
       try {
         process.kill(processGroup ? -pid : pid, sig);
@@ -1445,12 +1497,10 @@ export class DevTargetManager {
     };
     if (!signal("SIGTERM")) return; // already gone
     await sleep(KILL_GRACE_MS);
-    try {
-      process.kill(processGroup ? -pid : pid, 0);
-    } catch {
-      return; // exited on SIGTERM
-    }
+    if (!alive()) return; // exited on SIGTERM
     signal("SIGKILL");
+    const killDeadline = Date.now() + KILL_GRACE_MS;
+    while (alive() && Date.now() < killDeadline) await sleep(25);
   }
 
   private loadStates(): void {

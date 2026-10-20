@@ -9,6 +9,7 @@
 import { describe, expect, it } from "vitest";
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
+import { createServer as createHttpServer } from "node:http";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -1805,6 +1806,113 @@ describe("DevTargetManager with services (#0843)", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  itSlow(
+    "does not accept a stranger's successful response after the service exits during its probe",
+    async () => {
+      const dir = mkdtempSync(join(tmpdir(), "repoos-dev-stranger-probe-"));
+      const targetMarker = join(dir, "target-started");
+      const stranger = createHttpServer((_req, res) => {
+        setTimeout(() => {
+          res.writeHead(200, { "content-type": "text/plain" });
+          res.end("stranger");
+        }, 250);
+      });
+      await new Promise<void>((resolve) => stranger.listen(0, "127.0.0.1", resolve));
+      const strangerPort = (stranger.address() as { port: number }).port;
+      const service: DevServiceConfig = {
+        name: "api",
+        command: `bun -e "setTimeout(()=>process.exit(0),75);setInterval(()=>{},60000)"`,
+        healthCheck: { url: `http://127.0.0.1:${strangerPort}/health` },
+      };
+      const mgr = new DevTargetManager(
+        baseConfig(
+          {
+            services: [service],
+            targets: [
+              webTarget({
+                command: `bun -e "require('node:fs').writeFileSync('${targetMarker}','started');setInterval(()=>{},60000)"`,
+              }),
+            ],
+          },
+          dir,
+        ),
+      );
+      try {
+        const starting = mgr.start("app");
+        const serviceDeadline = Date.now() + 2000;
+        let servicePid: number | undefined;
+        while (Date.now() < serviceDeadline && servicePid === undefined) {
+          servicePid = mgr.get("app")?.services?.[0]?.pid;
+          if (servicePid === undefined) await new Promise((r) => setTimeout(r, 10));
+        }
+        expect(typeof servicePid).toBe("number");
+        const result = await starting;
+        expect(result.ok).toBe(false);
+        expect(result.error).toContain('service "api"');
+        expect(existsSync(targetMarker)).toBe(false);
+        expect(mgr.get("app")?.status).toBe("failed");
+        expect(mgr.get("app")?.pid).toBeUndefined();
+        expect(mgr.get("app")?.services?.[0]?.pid).toBeUndefined();
+        expect(await waitForDead(servicePid!)).toBe(true);
+      } finally {
+        await mgr.stopAll();
+        await new Promise<void>((resolve) => stranger.close(() => resolve()));
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.each([
+    { count: 2, expected: ["target", "service-b", "service-a"] },
+    { count: 3, expected: ["target", "service-c", "service-b", "service-a"] },
+  ])(
+    "stops target before services in reverse dependency order ($count services)",
+    async ({ count, expected }) => {
+      const dir = mkdtempSync(join(tmpdir(), "repoos-dev-teardown-order-"));
+      const events = join(dir, "stopped.log");
+      const commandFor = (name: string): string => {
+        const script = `const fs=require('node:fs');process.on('SIGTERM',()=>{fs.appendFileSync(${JSON.stringify(events)},${JSON.stringify(`${name}\n`)});process.exit(0)});setInterval(()=>{},60000)`;
+        return `bun -e '${script.replaceAll("'", "'\\''")}'`;
+      };
+      const defs: DevServiceConfig[] = Array.from({ length: count }, (_, i) => {
+        const name = `service-${String.fromCharCode(97 + i)}`;
+        const previous = i > 0 ? `service_${String.fromCharCode(96 + i)}` : undefined;
+        const dependency = previous
+          ? `;const dependencyPort=${JSON.stringify(`{${previous}.port}`)}`
+          : "";
+        return {
+          name,
+          command: previous
+            ? commandFor(name).replace("setInterval", `${dependency};setInterval`)
+            : commandFor(name),
+        };
+      });
+      const services = defs.map((service) => service.name);
+      const mgr = new DevTargetManager(
+        baseConfig(
+          {
+            services: defs,
+            targets: [webTarget({ services, url: undefined, command: commandFor("target") })],
+          },
+          dir,
+        ),
+      );
+      try {
+        expect((await mgr.start("app")).ok).toBe(true);
+        await mgr.stop("app");
+        const deadline = Date.now() + 2000;
+        while (Date.now() < deadline && !existsSync(events))
+          await new Promise((r) => setTimeout(r, 20));
+        expect(readFileSync(events, "utf8").trim().split("\n")).toEqual(expected);
+        expect(mgr.get("app")?.pid).toBeUndefined();
+        expect(mgr.get("app")?.services?.every((service) => service.pid === undefined)).toBe(true);
+      } finally {
+        await mgr.stopAll();
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  );
 
   it("fails the target when a service never becomes ready, naming the service", async () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcfail-"));
