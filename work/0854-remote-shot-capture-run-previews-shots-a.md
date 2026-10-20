@@ -14,7 +14,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T11:19:00Z"
+updated_at: "2026-10-20T11:19:01Z"
 review_passes: 13
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -192,3 +192,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T11:18:53Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T11:19:00Z · agent exited with an error (codex) · 2026-10-20T10:43:35.849544Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 90846
 - 2026-10-20T11:19:00Z · status active→review
+- 2026-10-20T11:19:01Z · note: handoff requested (cli)
