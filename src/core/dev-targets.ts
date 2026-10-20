@@ -375,6 +375,11 @@ function malformedServicePlaceholders(text: string | undefined): string[] {
       `unclosed service placeholder ${match[0]} — use {<service>.port} or {<service>.url}`,
     );
   }
+  for (const match of rest.matchAll(/(?<!\{)[A-Za-z0-9_.-]+\s*\.\s*(?:port|url)\s*\}/gi)) {
+    problems.push(
+      `malformed service placeholder ${match[0]} — use {<service>.port} or {<service>.url}`,
+    );
+  }
   return problems;
 }
 

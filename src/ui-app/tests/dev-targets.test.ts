@@ -1736,6 +1736,7 @@ describe("devTargetServiceErrors", () => {
     { label: "escaped braces", ref: "\\{api.port\\}", message: "escaped service placeholders" },
     { label: "misspelled kind", ref: "{api.portx}", message: "malformed service placeholder" },
     { label: "unclosed reference", ref: "{api.port", message: "unclosed service placeholder" },
+    { label: "stray closing brace", ref: "api.port}", message: "malformed service placeholder" },
   ];
 
   for (const row of rejectedRefs) {
@@ -2306,9 +2307,19 @@ describe("DevTargetManager with services (#0843)", () => {
       try {
         expect((await mgr.start("app")).ok).toBe(true);
         await mgr.stop("app");
+        // Wait for the whole teardown, not just the file's first line: the
+        // processes are signalled target-first, but a busy machine can delay
+        // the target's SIGTERM handler past the services' writes. The order
+        // assertion is only meaningful once every process has recorded.
         const deadline = Date.now() + 2000;
-        while (Date.now() < deadline && !existsSync(events))
+        while (Date.now() < deadline) {
+          try {
+            if (readFileSync(events, "utf8").trim().split("\n").length >= expected.length) break;
+          } catch {
+            /* file not created yet */
+          }
           await new Promise((r) => setTimeout(r, 20));
+        }
         expect(readFileSync(events, "utf8").trim().split("\n")).toEqual(expected);
         expect(mgr.get("app")?.pid).toBeUndefined();
         expect(mgr.get("app")?.services?.every((service) => service.pid === undefined)).toBe(true);
