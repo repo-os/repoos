@@ -11,7 +11,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T08:10:38Z"
+updated_at: "2026-10-20T08:11:45Z"
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-10-20T06:20:53.646Z: repoos check failed: ◆ Check plan"
 ---
@@ -39,16 +39,24 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 ```json
 [
 {
-"label": "Settings with configurable reminders directory",
-"target": "default",
-"route": "/settings?tab=general",
-"highlight": "[data-config-key=\"remindersDir\"]"
+  "label": "Settings with configurable reminders directory",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": "[data-config-key=\"remindersDir\"]",
+  "steps": [
+    {
+      "click": "#settings-tab-advanced"
+    },
+    {
+      "waitFor": "[data-config-key=\"remindersDir\"]"
+    }
+  ]
 },
 {
-"label": "Configuration docs for reminders and schedules paths",
-"target": "Docs site",
-"route": "/configuration",
-"highlight": "h2#layout-and-repository-paths"
+  "label": "Configuration docs for reminders and schedules paths",
+  "target": "Docs site",
+  "route": "/configuration",
+  "highlight": "h2#layout-and-repository-paths"
 }
 ]
 ```
@@ -93,3 +101,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T08:09:08Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-20T08:09:43Z · note: highlight [data-config-key="remindersDir"] matched nothing on /settings?tab=general
 - 2026-10-20T08:10:38Z · note: highlight [data-config-key="remindersDir"] matched nothing on /settings?tab=general
+- 2026-10-20T08:11:45Z · body
