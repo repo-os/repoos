@@ -504,6 +504,11 @@ export function reviewMission(
     "- Before `good to go`, confirm the branch still merges cleanly with its base:",
     `  \`git merge-tree --write-tree ${baseBranch} HEAD\`. A source conflict is`,
     "  `needs some work` even when the code is fine; name the conflicting files.",
+    `- Run \`repoos landable ${task.id}\` — the same read-only preflight the task`,
+    "  drawer and Move to done use (review verdict, lock sha vs HEAD, clean worktree,",
+    "  merge conflicts, task scope, clean main). If it exits non-zero, say which",
+    "  check failed and give `needs some work`; never approve a branch that cannot",
+    "  land.",
     ...(repeatedClasses
       ? [
           "",
