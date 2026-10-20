@@ -1339,8 +1339,8 @@ describe("parseDevServices", () => {
     },
     {
       name: "newline and tab escapes",
-      raw: String.raw`{ MESSAGE = "line\n\tend" }`,
-      expected: "line\n\tend",
+      raw: String.raw`{ MESSAGE = "line\n\t\rend" }`,
+      expected: "line\n\t\rend",
     },
     {
       name: "unicode escape",
@@ -1922,16 +1922,15 @@ describe("DevTargetManager with services (#0843)", () => {
           {
             services: [
               apiService({
-                // The API answers its startup health check, then exits while the
-                // target's deliberately slow health response is in flight.
-                command:
-                  "bun -e \"const h=require('node:http');h.createServer((q,s)=>s.end('ok')).listen(Number(process.env.PORT),'127.0.0.1');setTimeout(()=>process.exit(3),1200)\"",
+                // The API answers its startup health check, then exits after
+                // the target begins its health request but before its response.
+                command: `bun -e "const h=require('node:http');const f=require('node:fs');h.createServer((q,s)=>s.end('ok')).listen(Number(process.env.PORT),'127.0.0.1');setInterval(()=>{if(f.existsSync('${proof}'))process.exit(3)},10)"`,
               }),
             ],
             targets: [
               webTarget({
-                url: "http://localhost:{port}/health",
-                command: `bun -e "const h=require('node:http');const f=require('node:fs');h.createServer((q,s)=>setTimeout(()=>{f.writeFileSync('${proof}','answered');s.end('ok')},1800)).listen({port},'127.0.0.1');setTimeout(()=>{},60000)"`,
+                url: "http://127.0.0.1:{port}/health",
+                command: `bun -e "const h=require('node:http');const f=require('node:fs');h.createServer((q,s)=>{f.writeFileSync('${proof}','answered');setTimeout(()=>s.end('ok'),500)}).listen({port},'127.0.0.1');setTimeout(()=>{},60000)"`,
               }),
             ],
           },
