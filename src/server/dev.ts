@@ -863,6 +863,9 @@ export class DevTargetManager {
         await fail(reason);
         return { ok: false, error: this.states.get(t.name)?.error, target: this.view(t) };
       }
+      // Artifact services are scoped to the build invocation and must not
+      // survive its successful exit.
+      await this.killServiceRuns(t.name);
       return { ok: true, target: this.view(t) };
     }
 
@@ -1103,17 +1106,28 @@ export class DevTargetManager {
       .map((s) => s.pid)
       .filter((p): p is number => typeof p === "number" && p > 0);
     const entry = this.running.get(name);
+    const recordedPid = this.states.get(name)?.pid;
     if (!entry) {
       // Nothing we started is alive: reflect that plainly. An `artifact`'s
       // completed build stays shown as its last result rather than being wiped,
       // but the process is not running.
       const state = this.states.get(name);
       if (state && state.status === "running") {
-        this.setState(name, { status: "stopped", stoppedAt: now() });
+        this.setState(name, { status: "stopped", stoppedAt: now(), pid: undefined });
+      }
+      // An adopted target has no ChildProcess handle. Its persisted PID still
+      // identifies the detached process group owned by this Stop operation.
+      if (typeof recordedPid === "number" && recordedPid > 0 && isAlivePid(recordedPid)) {
+        await this.killPid(recordedPid, process.platform !== "win32");
       }
     } else {
       // Mark stopped FIRST so the exit handler treats this as deliberate.
-      this.setState(name, { status: "stopped", error: undefined, stoppedAt: now() });
+      this.setState(name, {
+        status: "stopped",
+        error: undefined,
+        stoppedAt: now(),
+        pid: undefined,
+      });
       await this.killProcess(name);
     }
     await this.killServiceRuns(name);
@@ -1140,14 +1154,15 @@ export class DevTargetManager {
   /** Stop every target we started — used on server shutdown. */
   async stopAll(): Promise<void> {
     const names = [
-      ...new Set([...this.running.keys(), ...this.serviceRuns.keys(), ...this.inflight.keys()]),
+      ...new Set([
+        ...this.running.keys(),
+        ...this.adopted,
+        ...this.serviceRuns.keys(),
+        ...this.inflight.keys(),
+      ]),
     ];
     for (const name of names) {
-      // Cancel any in-flight start so it cannot relaunch after this shutdown.
-      this.startSeq.set(name, (this.startSeq.get(name) ?? 0) + 1);
-      this.setState(name, { status: "stopped", stoppedAt: now() });
-      await this.killProcess(name);
-      await this.killServiceRuns(name);
+      await this.teardownStack(name);
     }
     this.persist();
   }
@@ -1413,6 +1428,7 @@ export class DevTargetManager {
     };
     // Never let a patch's undefined clobber a retained field.
     if (patch.error === undefined) delete (next as { error?: unknown }).error;
+    if (patch.pid === undefined && Object.hasOwn(patch, "pid")) delete next.pid;
     this.states.set(name, next);
     this.persist();
   }
@@ -1459,6 +1475,7 @@ export class DevTargetManager {
       // Same convention as the target state: a patch that carries no error
       // never retains a stale one (the key is dropped, not set undefined).
       if (patch.error === undefined) delete merged.error;
+      if (patch.pid === undefined && Object.hasOwn(patch, "pid")) delete merged.pid;
       return merged;
     });
     this.setState(target, { services });
@@ -1505,7 +1522,7 @@ export class DevTargetManager {
         name,
         prev.services.map((s) =>
           s.status === "running" || s.status === "starting"
-            ? { ...s, status: "stopped" as const, error: undefined }
+            ? { ...s, status: "stopped" as const, error: undefined, pid: undefined }
             : s,
         ),
       );

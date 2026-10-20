@@ -1520,6 +1520,79 @@ describe("loadConfig dev services wiring", () => {
 });
 
 describe("DevTargetManager with services (#0843)", () => {
+  const reloadStopCases = [
+    { kind: "server" as const, services: false, action: "stop" as const },
+    { kind: "server" as const, services: false, action: "restart" as const },
+    { kind: "server" as const, services: true, action: "stop" as const },
+    { kind: "server" as const, services: true, action: "restart" as const },
+    { kind: "process" as const, services: false, action: "stop" as const },
+    { kind: "process" as const, services: false, action: "restart" as const },
+    { kind: "process" as const, services: true, action: "stop" as const },
+    { kind: "process" as const, services: true, action: "restart" as const },
+  ];
+  for (const { kind, services, action } of reloadStopCases) {
+    itSlow(
+      `${action} reaps adopted ${kind} target and companion processes (services=${services})`,
+      async () => {
+        const dir = mkdtempSync(join(tmpdir(), "repoos-dev-reload-stop-"));
+        const defs = services ? [apiService({ healthCheck: undefined })] : [];
+        const childPidFile = join(dir, "child.pid");
+        const t = webTarget({
+          kind,
+          url: undefined,
+          services: services ? ["api"] : undefined,
+      command: `bun -e "const fs=require('node:fs');const c=require('node:child_process').spawn(process.execPath,['-e','setTimeout(()=>{},60000)']);fs.writeFileSync('${childPidFile}',String(c.pid));setTimeout(()=>{},60000)"`,
+        });
+        const cfg = baseConfig({ services: defs, targets: [t] }, dir);
+        const original = new DevTargetManager(cfg);
+        let reloaded: DevTargetManager | undefined;
+        try {
+      expect((await original.start("app")).ok).toBe(true);
+      const oldTargetPid = original.get("app")?.pid;
+      const oldServicePid = original.get("app")?.services?.[0]?.pid;
+      const childDeadline = Date.now() + 5000;
+      while (Date.now() < childDeadline && !existsSync(childPidFile)) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      const childPid = Number(readFileSync(childPidFile, "utf8"));
+          expect(typeof oldTargetPid).toBe("number");
+          if (services) expect(typeof oldServicePid).toBe("number");
+
+          // Model the replacement server adopting the persisted target and service
+          // PIDs, with no ChildProcess handles in the new manager.
+          reloaded = new DevTargetManager(cfg);
+          reloaded.cleanupOrphans(true);
+          expect(reloaded.get("app")?.status).toBe("running");
+          const result = await reloaded[action]("app");
+          expect(result.ok).toBe(true);
+
+          expect(await waitForDead(oldTargetPid!)).toBe(true);
+          expect(await waitForDead(childPid)).toBe(true);
+          if (oldServicePid) expect(await waitForDead(oldServicePid)).toBe(true);
+          if (action === "stop") {
+            expect(reloaded.get("app")?.status).toBe("stopped");
+            expect(reloaded.get("app")?.pid).toBeUndefined();
+          } else {
+            const newTargetPid = reloaded.get("app")?.pid;
+            expect(typeof newTargetPid).toBe("number");
+            expect(newTargetPid).not.toBe(oldTargetPid);
+            if (services) {
+              expect(reloaded.get("app")?.services?.every((s) => s.pid !== oldServicePid)).toBe(
+                true,
+              );
+            }
+            await reloaded.stop("app");
+            expect(await waitForDead(newTargetPid!)).toBe(true);
+          }
+        } finally {
+          await reloaded?.stopAll();
+          await original.stopAll();
+          rmSync(dir, { recursive: true, force: true });
+        }
+      },
+    );
+  }
+
   it("boots the service first, then the target, and exposes both states", async () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcorder-"));
     // The target command only records success if the API answers its health
@@ -2335,6 +2408,44 @@ describe("DevTargetManager with services (#0843)", () => {
       const view = mgr.get("app");
       expect(view?.status).toBe("failed");
       expect(view?.services?.[0].status).toBe("failed");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  itSlow("stops companion services when an artifact build succeeds", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-artifact-service-stop-"));
+    const servicePidFile = join(dir, "service.pid");
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              command: `bun -e "const f=require('node:fs');f.writeFileSync('${servicePidFile}',String(process.pid));setTimeout(()=>{},60000)"`,
+              healthCheck: { file: "service.pid" },
+            }),
+          ],
+          targets: [
+            {
+              name: "build",
+              kind: "artifact",
+              services: ["api"],
+              command: "true",
+              artifactPath: "dist/out.txt",
+            },
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("build");
+      const servicePid = Number(readFileSync(servicePidFile, "utf8"));
+      expect(result.ok).toBe(true);
+      expect(typeof servicePid).toBe("number");
+      expect(await waitForDead(servicePid!)).toBe(true);
+      expect(mgr.get("build")?.services?.[0]).toMatchObject({ status: "stopped" });
     } finally {
       await mgr.stopAll();
       rmSync(dir, { recursive: true, force: true });

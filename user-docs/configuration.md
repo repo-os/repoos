@@ -1885,6 +1885,10 @@ target's own crash tears its services down with it, so a companion can never
 outlive the stack it was booted for. Every
 declared service also answers on `repoos dev <name> status|logs --service <name>`.
 
+For an `artifact` target, companion services stay available while the build
+runs and are stopped automatically when it exits successfully. A failed build
+or failed service also tears down the stack.
+
 > **`[[dev.services]]` are deliberately TOML-only**, like
 > `[[preview.services]]`: a service is a command + port + health check + env
 > table no Settings row can express. Edit them in `repoos.toml`; a target's
