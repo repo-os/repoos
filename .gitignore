@@ -1,5 +1,8 @@
 # RepoOS derived index cache (canary.txt is tracked — see canary-repo.ts)
-.repoos/*
+# Match at any depth: a nested layout's cacheDir is `repoos/.repoos`, and a run
+# that used another project's relative cacheDir left `<root>/repoos/.repoos/`
+# untracked and blocked close-out (#0870).
+**/.repoos/*
 !.repoos/canary.txt
 node_modules/
 coverage/
