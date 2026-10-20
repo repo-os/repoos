@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-20T20:43:10Z"
-review_passes: 1
 id: "0881"
 title: Portable RepoOS Agent Skill for outside agents
 type: feature
@@ -16,6 +14,7 @@ branch: feat/portable-repoos-agent-skill-for-outside-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:01:54Z"
+updated_at: "2026-10-20T20:41:58Z"
 ---
 ## Problem
 
@@ -42,25 +41,10 @@ Read `repoos init` behavior before writing the layout section (default namespace
 
 Do not add CLI features, a public MCP server, or provider-specific plugins. Install notes for humans belong in the agent guide task that depends on this one; this task only needs the fetch URL in the skill and in both `llms.txt` files.
 
-## Decision
-The portable skill lives at `agent/skill/`. Public URL: https://github.com/repo-os/repoos/tree/main/agent/skill (raw SKILL.md: https://raw.githubusercontent.com/repo-os/repoos/main/agent/skill/SKILL.md). Its frontmatter name is `repoos`, so an agent installs the directory as `repoos/`; no `.claude/`, `.cursor/`, or Codex copy is committed. The docs `llms.txt` link comes from `user-docs/agent-skill.md`, which the docs index generator lists (the page description carries the skill URL); the landing generator links the same URL.
-
 ## Activity
 
 - 2026-10-20T16:01:54Z · created · njachowski@gmail.com
 - 2026-10-20T20:10:59Z · status inbox→ready
 - 2026-10-20T20:11:06Z · cli_override, model_override
 - 2026-10-20T20:11:07Z · status ready→active, branch
-- 2026-10-20T20:18:03Z · body
-- 2026-10-20T20:23:31Z · body
-- 2026-10-20T20:26:46Z · body
-- 2026-10-20T20:28:34Z · body: Decision (added)
-- 2026-10-20T20:28:34Z · message_queued at 2026-10-20T20:28:34.988Z
-- 2026-10-20T20:31:59Z · body
-- 2026-10-20T20:33:24Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-20T20:33:24Z · message_delivered: 1 message(s)
-- 2026-10-20T20:41:59Z · status active→review
-- 2026-10-20T20:41:59Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (9b1ae2bc5) during finalization (#0734)
-- 2026-10-20T20:42:01Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (9b1ae2bc5) during finalization (#0734)
-- 2026-10-20T20:43:09Z · note: review pass 1: good to go
-
+- 2026-10-20T20:41:58Z · status active→review
