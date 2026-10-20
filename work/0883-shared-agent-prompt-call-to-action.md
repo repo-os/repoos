@@ -1,15 +1,14 @@
 ---
-last_close_out_gate_ms: 508954
-last_close_out_gate_at: "2026-10-20T22:11:30.088Z"
 id: "0883"
 title: Shared agent prompt call to action
 type: feature
-status: review
+status: done
 paths: [agent/starter-prompt.md, landing/src, user-docs/index.md, user-docs/.vitepress/theme]
 priority: p2
 area: [landing, docs]
 story: Agent-discoverable RepoOS
 depends_on: ["0879", "0882"]
+merged_commit: d130fbe17f591868305362042f40d14aeebec573
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/shared-agent-prompt-call-to-action
@@ -17,6 +16,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:35Z"
 updated_at: "2026-10-20T22:11:30Z"
+last_close_out_gate_ms: 508954
+last_close_out_gate_at: "2026-10-20T22:11:30.088Z"
 review_passes: 1
 ---
 ## Problem
