@@ -11,7 +11,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T11:14:04Z"
+updated_at: "2026-10-20T11:14:06Z"
 review_passes: 5
 review_rounds: 1
 handoff_signal_retry_count: 1
@@ -133,3 +133,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:13:38Z · note: handoff requested (cli)
 - 2026-10-20T11:13:54Z · cli_override, model_override
 - 2026-10-20T11:14:04Z · needs_input
+- 2026-10-20T11:14:06Z · message_queued at 2026-10-20T11:14:06.532Z
