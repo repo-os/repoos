@@ -60,6 +60,11 @@ function fmtPct(v: number): string {
   return v.toFixed(0);
 }
 
+function fmtRatio(ratio: number | null | undefined): string {
+  if (typeof ratio !== "number" || !Number.isFinite(ratio)) return "—";
+  return `${Math.round(ratio * 100)}%`;
+}
+
 function fmtElapsed(raw: string): string {
   const parts = raw.split(/[-:]/);
   if (parts.length === 3) {
@@ -91,6 +96,15 @@ function svgPath(data: number[], width: number, height: number, maxVal: number):
 const hasData = computed(() => systemStats.value !== null);
 
 const serve = computed(() => systemStats.value?.serve ?? null);
+
+/** Memory-first pressure verdict (#0871). Absent on older servers. */
+const pressure = computed(() => systemStats.value?.pressure ?? null);
+
+/** Top CPU / memory consumers across the whole machine (#0871). */
+const topProcesses = computed(() => systemStats.value?.topProcesses ?? null);
+
+/** Engineers across every registered RepoOS server on this laptop (#0871). */
+const globalEngineers = computed(() => systemStats.value?.globalEngineers ?? null);
 
 /** git-derived codebase size (worktrees / tracked files / LOC). Absent on older servers. */
 const repoStats = computed(() => systemStats.value?.repo ?? null);
@@ -188,6 +202,14 @@ const serveMessage = computed(() => {
           <div v-if="queuedIds.length" class="metric-extra">
             <span>Waiting for a free slot — starts automatically as agents finish.</span>
           </div>
+          <div v-if="globalEngineers" class="metric-extra">
+            <span>
+              {{ globalEngineers.own }} here · {{ globalEngineers.others }} on other RepoOS
+              servers<template v-if="globalEngineers.servers.length">
+                ({{ globalEngineers.servers.length }} registered)</template
+              >
+            </span>
+          </div>
         </div>
 
         <div v-if="memUsed !== null" class="metric">
@@ -232,6 +254,32 @@ const serveMessage = computed(() => {
         </div>
       </div>
 
+      <div
+        v-if="pressure && pressure.level !== 'normal'"
+        class="pressure-alert"
+        :class="pressure.level"
+      >
+        <div class="pressure-head">
+          <span class="pressure-level">{{
+            pressure.level === "critical"
+              ? "Pressure critical — holding new work"
+              : "Pressure warning"
+          }}</span>
+          <span class="pressure-metric"
+            >swap {{ fmtRatio(pressure.swapUsedRatio) }} · compressor
+            {{ fmtRatio(pressure.compressorRatio) }} · available
+            {{ fmtRatio(pressure.availableMemRatio) }}</span
+          >
+        </div>
+        <div v-if="pressure.reason" class="pressure-detail">{{ pressure.reason }}</div>
+        <div v-else-if="pressure.warnings.length" class="pressure-detail">
+          {{ pressure.warnings.join(" · ") }}
+        </div>
+        <div v-if="pressure.source === 'load'" class="pressure-source">
+          Memory stats unavailable — using load average as the fallback signal.
+        </div>
+      </div>
+
       <div v-if="serve && serve.level !== 'ok'" class="serve-alert" :class="serve.level">
         <div class="serve-alert-head">
           <span class="serve-alert-icon">{{ serve.level === "warn" ? "!" : "i" }}</span>
@@ -258,6 +306,39 @@ const serveMessage = computed(() => {
           <span v-if="serve.strays > strayList.length" class="serve-more">
             +{{ serve.strays - strayList.length }} more
           </span>
+        </div>
+      </div>
+
+      <div
+        v-if="topProcesses && (topProcesses.byCpu.length || topProcesses.byMemory.length)"
+        class="top-processes"
+      >
+        <div class="top-title">Top processes on this machine</div>
+        <div class="top-grid">
+          <div class="top-col">
+            <div class="top-col-head">By CPU</div>
+            <div v-for="p in topProcesses.byCpu.slice(0, 6)" :key="`cpu-${p.pid}`" class="top-row">
+              <span class="top-owner" :class="p.owner">{{
+                p.owner === "repoos" ? "RepoOS" : "other"
+              }}</span>
+              <span class="top-name" :title="`${p.command} (pid ${p.pid})`">{{ p.command }}</span>
+              <span class="top-val">{{ fmtPct(p.cpuPercent) }}%</span>
+            </div>
+          </div>
+          <div class="top-col">
+            <div class="top-col-head">By memory</div>
+            <div
+              v-for="p in topProcesses.byMemory.slice(0, 6)"
+              :key="`mem-${p.pid}`"
+              class="top-row"
+            >
+              <span class="top-owner" :class="p.owner">{{
+                p.owner === "repoos" ? "RepoOS" : "other"
+              }}</span>
+              <span class="top-name" :title="`${p.command} (pid ${p.pid})`">{{ p.command }}</span>
+              <span class="top-val">{{ fmtBytes(p.memBytes) }}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -355,6 +436,129 @@ const serveMessage = computed(() => {
   /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   color: var(--amber, #f5a524);
   font-weight: 600;
+}
+
+.pressure-alert {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.pressure-alert.warning {
+  border-color: color-mix(in srgb, var(--amber) 40%, transparent);
+  background: color-mix(in srgb, var(--amber) 8%, transparent);
+}
+
+.pressure-alert.critical {
+  border-color: color-mix(in srgb, var(--red) 45%, transparent);
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+}
+
+.pressure-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pressure-level {
+  font-weight: 700;
+}
+
+.pressure-alert.warning .pressure-level {
+  color: var(--amber);
+}
+
+.pressure-alert.critical .pressure-level {
+  color: var(--red);
+}
+
+.pressure-metric {
+  color: var(--txt-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.pressure-detail {
+  margin-top: 4px;
+  color: var(--txt);
+}
+
+.pressure-source {
+  margin-top: 4px;
+  color: var(--txt-faint);
+}
+
+.top-processes {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-bottom: 12px;
+}
+
+.top-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--txt-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.top-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.top-col-head {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--txt-faint);
+  margin-bottom: 4px;
+}
+
+.top-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--txt-dim);
+  padding: 2px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.top-owner {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.top-owner.repoos {
+  color: var(--cyan);
+  background: color-mix(in srgb, var(--cyan) 14%, transparent);
+}
+
+.top-owner.other {
+  color: var(--txt-faint);
+  background: var(--chip-bg);
+}
+
+.top-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-val {
+  color: var(--txt);
 }
 
 .serve-alert {

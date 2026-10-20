@@ -32,8 +32,10 @@ function staleLabel(reason: ValidatedServerRegistryEntry["staleReason"]): string
 function printRow(row: ValidatedServerRegistryEntry): void {
   const e = row.entry;
   const status = row.valid ? c.green("ok") : c.yellow(staleLabel(row.staleReason));
+  const engineers =
+    typeof e.activeEngineers === "number" ? `  ${c.dim(`${e.activeEngineers} engineer(s)`)}` : "";
   console.log(
-    `  ${c.cyan(String(e.port).padStart(5))}  ${status}  ${c.bold(e.projectName)}  ${c.dim(`pid ${e.pid}`)}  ${c.dim(formatUptime(row.uptimeSeconds))}`,
+    `  ${c.cyan(String(e.port).padStart(5))}  ${status}  ${c.bold(e.projectName)}  ${c.dim(`pid ${e.pid}`)}  ${c.dim(formatUptime(row.uptimeSeconds))}${engineers}`,
   );
   console.log(`         ${c.dim(e.root)}`);
 }
@@ -64,6 +66,8 @@ export async function cmdServers(argv: string[]): Promise<void> {
             projectName: r.entry.projectName,
             version: r.entry.version,
             startedAt: r.entry.startedAt,
+            activeEngineers: r.entry.activeEngineers ?? 0,
+            engineersUpdatedAt: r.entry.engineersUpdatedAt ?? null,
             uptimeSeconds: r.uptimeSeconds,
             valid: r.valid,
             staleReason: r.staleReason,

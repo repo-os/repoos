@@ -915,9 +915,11 @@ provider = "none"
 | `localChecks.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long a queued local check may wait for a slot before failing with an actionable timeout (minimum 60000). |
 | `playwright.maxConcurrent` | select (1–4) | `1` | yes | Shared cap on headless Playwright work (smoke, contrast audit, shots, UI verification). |
 | `playwright.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long queued Playwright work may wait for the shared browser slot before timing out (minimum 60000). |
-| `pressureGuard.enabled` | boolean | `true` | yes | When on, delay new local checks and engineer starts while load or memory pressure is high. |
-| `pressureGuard.maxLoadPerCpu` | number | `4` | yes | Block starts when the 1-minute load average per CPU exceeds this value. |
+| `pressureGuard.enabled` | boolean | `true` | yes | When on, delay new local checks, browser steps and engineer starts while memory pressure (swap, compressor, reclaimable memory) or load is high. Running engineers are never killed. |
+| `pressureGuard.maxLoadPerCpu` | number | `4` | yes | Load average per CPU used as the pressure signal when swap/compressor readings are unavailable; when memory stats are available it is shown as a warning only. |
 | `pressureGuard.minAvailableMemRatio` | number | `0.08` | yes | Block starts when reclaimable memory falls below this fraction of total RAM. |
+| `pressureGuard.maxSwapUsedRatio` | number | `0.5` | yes | Block starts and browser steps when swap in use exceeds this fraction of total swap. Primary signal on macOS. |
+| `pressureGuard.maxCompressorRatio` | number | `0.35` | yes | Block starts and browser steps when the macOS memory compressor holds more than this fraction of total RAM. |
 | `remoteValidation.offloadBrowserSteps` | boolean | `false` | yes | Opt-in: run browser gate steps on a runner when feasible; otherwise local under the Playwright cap. |
 | `remoteValidation.localFallback` | select | `serialize` | yes | When remote validation falls back locally: `serialize` (one suite at a time), `allow` (use `localChecks.maxConcurrent`), or `off` (refuse fallback). |
 | `ctoSkipHealthy` | boolean | `true` | yes | When true (the default), the CTO monitor skips its model call while the board is healthy — no stuck tasks, a fresh build and a normal process check — and only calls the model when something needs attention. Set `false` to run a full CTO pass whenever the material signal changes. |

@@ -29,8 +29,11 @@ controls:
 - `remoteValidation.offloadBrowserSteps` (default **off**) — opt-in to run
   browser gate steps on a runner when feasible; otherwise they stay local under
   the Playwright cap.
-- `pressureGuard` — delays new local checks and engineer starts while load or
-  memory pressure exceeds configured thresholds.
+- `pressureGuard` — delays new local checks, browser steps and engineer starts
+  while memory pressure (swap use and the macOS compressor pool, plus
+  reclaimable memory) exceeds configured thresholds. Load average is used only
+  as a fallback when memory readings are unavailable. See
+  `docs/memory-pressure-guard.md`.
 
 Queue markers live under `.repoos/queue-markers/`; stuck waiters time out with an
 actionable message (raise limits or free a stuck process).

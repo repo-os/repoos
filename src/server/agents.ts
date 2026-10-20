@@ -51,6 +51,7 @@ import {
   pairPauseInfo,
 } from "../core/budget-allowlist.js";
 import { pressureReason } from "../core/pressure-guard.js";
+import { effectiveAgentCapacity, registeredEngineerCount } from "../core/global-engineers.js";
 import { clearQueueMarker, writeQueueMarker } from "../core/local-queue-marker.js";
 import { isProviderFailureReason } from "../core/attention.js";
 import {
@@ -6551,6 +6552,31 @@ export class AgentRunner {
   }
 
   /**
+   * Local slot capacity after subtracting engineers running in OTHER registered
+   * RepoOS servers on this machine (#0871). `maxConcurrentAgents` is per
+   * process; on a laptop with two projects each server used to assume it owned
+   * every core. The registry's per-server engineer count makes the cap
+   * machine-wide without an HTTP call in a start path.
+   *
+   * Only a registered control plane applies the deduction: an ephemeral test
+   * harness or an unregistered one-shot runner must not inherit another
+   * project's load (or a stale registry file) and refuse to start.
+   */
+  private machineCapacity(): { capacity: number; otherEngineers: number } {
+    let otherEngineers = 0;
+    try {
+      const counts = registeredEngineerCount(this.config.root);
+      if (counts.servers.some((s) => s.own)) otherEngineers = counts.others;
+    } catch {
+      /* registry unreadable — behave as the only server */
+    }
+    return {
+      capacity: effectiveAgentCapacity(this.maxConcurrentAgents, otherEngineers),
+      otherEngineers,
+    };
+  }
+
+  /**
    * Gate for every spawnTurn call site: at capacity, defer the spawn
    * instead of oversubscribing the machine. The caller still gets `ok: true`
    * immediately — `queued: true` distinguishes "will run shortly" from
@@ -6602,10 +6628,15 @@ export class AgentRunner {
       this.schedulePressureRetry();
       return { ok: true, queued: true };
     }
-    if (this.entries.size < this.maxConcurrentAgents) {
+    const { capacity, otherEngineers } = this.machineCapacity();
+    if (this.entries.size < capacity) {
       return this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
     }
-    const slotDetail = `${this.entries.size}/${this.maxConcurrentAgents} agent processes already running`;
+    const machine =
+      otherEngineers > 0
+        ? ` · ${otherEngineers} engineer${otherEngineers === 1 ? "" : "s"} on other RepoOS servers`
+        : "";
+    const slotDetail = `${this.entries.size}/${capacity} agent processes already running${machine}`;
     this.queuedIds.set(id, now());
     this.queuedMeta.set(id, {
       reason: "slot",
@@ -6803,7 +6834,7 @@ export class AgentRunner {
 
   /** Start the next queued spawn once a slot is free (called from cleanup() on every exit). */
   private drainQueue(): void {
-    while (this.startQueue.length > 0 && this.entries.size < this.maxConcurrentAgents) {
+    while (this.startQueue.length > 0 && this.entries.size < this.machineCapacity().capacity) {
       if (pressureReason(this.config)) break;
       const next = this.startQueue.shift();
       next?.();

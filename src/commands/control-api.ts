@@ -1041,16 +1041,104 @@ export async function cmdStats(args: string[]): Promise<number> {
   try {
     await ensureServer(api);
     const data = await api.requestOk("GET", "/api/stats/board");
-    if (opts.json) printJson(data);
-    else {
+    // System pressure and the top CPU/memory consumers live on /api/system.
+    // Best-effort: a board summary must still print on a server that cannot
+    // sample processes (Windows without `ps`).
+    let system: StatsSystemView | null = null;
+    try {
+      system = (await api.requestOk("GET", "/api/system")) as StatsSystemView;
+    } catch {
+      system = null;
+    }
+    if (opts.json) {
+      printJson({ ...(data as Record<string, unknown>), system });
+    } else {
       const spend = (data as { totalSpendUsd?: number }).totalSpendUsd;
       if (spend !== undefined) console.log(`  board spend: $${spend.toFixed(2)}`);
       else console.log(JSON.stringify(data));
+      if (system) printSystemSummary(system);
     }
     return 0;
   } catch (e) {
     printErr((e as RepoOsApiError).message);
     return 1;
+  }
+}
+
+interface StatsTopProcess {
+  pid: number;
+  command: string;
+  cpuPercent: number;
+  memBytes: number;
+  owner: "repoos" | "other";
+}
+
+interface StatsSystemView {
+  pressure?: {
+    level: "normal" | "warning" | "critical";
+    reason: string | null;
+    warnings?: string[];
+    swapUsedRatio?: number | null;
+    compressorRatio?: number | null;
+    availableMemRatio?: number;
+    loadPerCpu?: number;
+    source?: "memory" | "load";
+  };
+  topProcesses?: { byCpu: StatsTopProcess[]; byMemory: StatsTopProcess[] };
+  globalEngineers?: { own: number; others: number; servers: unknown[] } | null;
+}
+
+function fmtStatBytes(bytes: number): string {
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+  if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(0)} MB`;
+  return `${(bytes / 1024).toFixed(0)} KB`;
+}
+
+function fmtRatio(ratio: number | null | undefined): string {
+  if (typeof ratio !== "number" || !Number.isFinite(ratio)) return "—";
+  return `${Math.round(ratio * 100)}%`;
+}
+
+function printTopProcesses(title: string, rows: StatsTopProcess[]): void {
+  if (!rows.length) return;
+  console.log(c.bold(`  ${title}`));
+  for (const p of rows.slice(0, 8)) {
+    const owner = p.owner === "repoos" ? c.cyan("repoos") : c.dim("other ");
+    console.log(
+      `    ${String(p.pid).padStart(7)}  ${owner}  ${String(fmtRatio(p.cpuPercent / 100)).padStart(4)}  ${fmtStatBytes(p.memBytes).padStart(8)}  ${p.command}`,
+    );
+  }
+}
+
+function printSystemSummary(system: StatsSystemView): void {
+  const p = system.pressure;
+  if (p) {
+    const label =
+      p.level === "critical"
+        ? c.red("critical")
+        : p.level === "warning"
+          ? c.yellow("warning")
+          : c.green("normal");
+    console.log(
+      c.dim(
+        `  pressure: ${label}  swap ${fmtRatio(p.swapUsedRatio)} · compressor ${fmtRatio(
+          p.compressorRatio,
+        )} · available ${fmtRatio(p.availableMemRatio)} · load ${p.loadPerCpu?.toFixed(1) ?? "—"}×/cpu (${p.source ?? "memory"})`,
+      ),
+    );
+    if (p.reason) console.log(`    ${c.yellow(p.reason)}`);
+  }
+  const g = system.globalEngineers;
+  if (g) {
+    console.log(
+      c.dim(
+        `  engineers: ${g.own} here · ${g.others} on other RepoOS servers (${g.servers.length} registered)`,
+      ),
+    );
+  }
+  if (system.topProcesses) {
+    printTopProcesses("top CPU", system.topProcesses.byCpu);
+    printTopProcesses("top memory", system.topProcesses.byMemory);
   }
 }
 
