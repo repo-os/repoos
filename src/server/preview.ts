@@ -23,6 +23,7 @@ import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
 import { parseTaskAreas } from "../core/areas.js";
 import { readPreviewOverlayKeys } from "../core/config.js";
+import { servicePortToken, expandServiceRefs } from "../core/dev-targets.js";
 import { linkInheritedEnv, worktreePathForBranch } from "../core/git.js";
 import type { RepoEvent } from "./live-index.js";
 
@@ -211,13 +212,11 @@ export interface ResolvedPreviewService {
   readyTimeoutMs: number;
 }
 
-/** Turn a service name into a placeholder/env token: lowercase, `_`-joined. */
+/** Turn a service name into a placeholder/env token: lowercase, `_`-joined.
+ *  Shared with `[[dev.services]]` (#0843) — one sanitization rule for both
+ *  supervisors; the node-free implementation lives in `core/dev-targets.ts`. */
 export function serviceToken(name: string): string {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+  return servicePortToken(name);
 }
 
 /** The preview target resolved for one task (#0362): a project-declared
@@ -1283,23 +1282,20 @@ export class PreviewManager {
    * Expand a command template: `{port}`/`{host}` for the process's OWN port,
    * plus `{<token>.port}`/`{<token>.url}` for every companion service (#0681),
    * and the equivalent env vars. Split out so services and the main command
-   * share exactly one expansion rule.
+   * share exactly one expansion rule — and so preview and dev targets keep
+   * substituting identically (#0843 reuses the same shared helper).
    */
   private commandParts(
     template: string,
     port: number,
     portVars: Record<string, number>,
   ): { command: string; env: Record<string, string> } {
-    let command = template.replaceAll("{port}", String(port)).replaceAll("{host}", HOST);
+    const command = expandServiceRefs(template, port, portVars).replaceAll("{host}", HOST);
     const env: Record<string, string> = { [CHILD_ENV]: "1", PORT: String(port), HOST };
     for (const [token, servicePort] of Object.entries(portVars)) {
-      const serviceUrl = `http://${HOST}:${servicePort}`;
-      command = command
-        .replaceAll(`{${token}.port}`, String(servicePort))
-        .replaceAll(`{${token}.url}`, serviceUrl);
       const upper = token.toUpperCase();
       env[`REPOOS_PREVIEW_${upper}_PORT`] = String(servicePort);
-      env[`REPOOS_PREVIEW_${upper}_URL`] = serviceUrl;
+      env[`REPOOS_PREVIEW_${upper}_URL`] = `http://${HOST}:${servicePort}`;
     }
     return { command, env };
   }

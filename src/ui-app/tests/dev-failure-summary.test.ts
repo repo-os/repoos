@@ -165,13 +165,35 @@ describe("Windows port-holder fallback (#0775)", () => {
 describe("port-holder ownership (#0775)", () => {
   it("identifies a RepoOS-started PID and flags a leftover as stale", () => {
     const states = new Map([
-      ["web", { name: "web", status: "running" as const, pid: 111, log: [] }],
-      ["old", { name: "old", status: "stopped" as const, pid: 222, log: [] }],
+      [
+        "web",
+        {
+          name: "web",
+          status: "running" as const,
+          pid: 111,
+          log: [],
+          services: [{ name: "api", token: "api", status: "running" as const, pid: 333, log: [] }],
+        },
+      ],
+      [
+        "old",
+        {
+          name: "old",
+          status: "stopped" as const,
+          pid: 222,
+          log: [],
+          services: [{ name: "api", token: "api", status: "stopped" as const, pid: 444, log: [] }],
+        },
+      ],
     ]);
     // A live handle means the process is currently supervised.
     expect(devPidOwner(states, new Set(["web"]), 111)).toEqual({ target: "web", stale: false });
     // No live handle for `old`: a stale process from an earlier run.
     expect(devPidOwner(states, new Set(["web"]), 222)).toEqual({ target: "old", stale: true });
+    // A companion service's PID resolves to its TARGET (not treated as foreign),
+    // so the port-conflict Stop action can stop the whole stack (#0843 review).
+    expect(devPidOwner(states, new Set(["web"]), 333)).toEqual({ target: "web", stale: false });
+    expect(devPidOwner(states, new Set(["web"]), 444)).toEqual({ target: "old", stale: true });
     // An unknown PID is not ours — the Stop action must never be offered.
     expect(devPidOwner(states, new Set(["web"]), 999)).toBeNull();
   });
