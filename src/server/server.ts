@@ -220,6 +220,7 @@ import { PreviewManager, probePreview, type PreviewReconcileOptions } from "./pr
 import { DevTargetManager } from "./dev.js";
 import { ConfigWatcher } from "./config-watch.js";
 import { runAutoShotCapture } from "./shot-capture.js";
+import { remoteBrowserEvidenceTransport } from "./browser-capture-policy.js";
 import { ReviewManager } from "./review.js";
 import { notifyEngineerOfRequirementsChange } from "./requirements-notice.js";
 import { tryAutoApproveAfterCleanReview } from "./approval-policy.js";
@@ -2598,8 +2599,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // regular capture path `repoos shot` uses — nothing parallel to maintain.
   const scheduleAutoShotCapture = (task: Task): void => {
     if (!task.branch) return;
-    void runAutoShotCapture(config, task, previews, (id, level, message) =>
-      logger.task(id, level, message),
+    void runAutoShotCapture(
+      config,
+      task,
+      previews,
+      (id, level, message) => logger.task(id, level, message),
+      remoteBrowserEvidenceTransport(config, remoteValidator),
     ).catch((err: unknown) => {
       logger.system("warn", `automatic shot capture crashed for #${task.id}`, {
         error: err instanceof Error ? err.message : String(err),

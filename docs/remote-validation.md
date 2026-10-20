@@ -96,22 +96,25 @@ code used locally. The request is limited to the task bundle, task id, expected
 commit, mode, and shot-plan data. Environment variables, dotenv files, API
 keys, account credentials, and the control-plane config are never bundled.
 
-The intended capture worker writes a bounded artifact set (`shots/*.png`,
-`shots/shots.json`, and optionally `verification.json`). The control plane must
-validate names, types, task id, and total size before installing artifacts in
-the existing attachment/cache locations. In `local` mode capture stays on the
-control plane. `runner-available` prefers a runner and records a visible local
-fallback note when one is unavailable or fails. `runner-only` reports that
-failure without starting local browser work. Declared target misses preserve
-the local handoff failure; automatic misses remain warnings. The setting
-defaults to `local` until a runner image and artifact round trip have passed a
-real end-to-end proof. Interactive Preview remains local.
+The runner capture worker writes a bounded artifact set (`shots/*.png`,
+`shots/shots.json`, and optionally `verification.json`). The control plane
+validates names, types, task id, PNG signatures, and total size before
+installing artifacts in the existing attachment/cache locations. In `local`
+mode capture stays on the control plane. `runner-available` prefers a runner
+and records a visible local fallback note when one is unavailable or fails.
+`runner-only` reports that failure without starting local browser work.
+Declared target misses preserve the local handoff failure; automatic misses
+remain warnings. The setting defaults to `local` until a runner image and
+artifact round trip have passed a real end-to-end proof. Interactive Preview
+remains local.
 
 The `scripts/remote-runner/capture-browser.ts` worker is the runner-side entry
-point prototype. It reuses `runAutoShotCapture` and `runUiHandoffGate` rather
-than reimplementing fixtures or browser choreography. The control-plane
-transport and call-site integration are still required before these policies
-describe active behavior.
+point. It reuses `runAutoShotCapture` and `runUiHandoffGate` rather than
+reimplementing fixtures or browser choreography. The control plane starts it
+through the existing validation transport, downloads its bounded artifacts,
+and installs them through the same shot and verification stores used locally.
+The worker runs against the bundled task commit and never receives the
+control-plane process environment or dotenv contents.
 
 ## Hook points
 

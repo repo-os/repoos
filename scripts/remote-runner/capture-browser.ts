@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync }
 import { basename, join, resolve } from "node:path";
 import { createRepoOS } from "../../src/core/repoos.js";
 import { worktreesDir } from "../../src/core/config.js";
-import { runAutoShotCapture } from "../../src/server/shot-capture.js";
+import { captureDeclaredShot, runAutoShotCapture } from "../../src/server/shot-capture.js";
 import { PreviewManager } from "../../src/server/preview.js";
 import { runUiHandoffGate } from "../../src/server/ui-handoff-gate.js";
 import { shotsDir } from "../../src/server/shots.js";
@@ -14,14 +14,22 @@ const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
 export async function captureBrowserEvidence(
   root: string,
   taskId: string,
-  mode: "shots" | "verify" | "both",
+  mode: "shots" | "verify" | "both" | "single-shot",
   outputDir: string,
+  entry?: import("../../src/core/shot-plan.js").CaptureEntry & { route: string },
 ): Promise<{ ok: boolean; detail: string }> {
   const repoos = createRepoOS(root);
   const config = repoos.config;
+  const captureConfig = {
+    ...config,
+    remoteValidation: { ...config.remoteValidation, browserCaptureMode: "local" as const },
+  };
   const task = repoos.getTask(taskId);
   if (!task) throw new Error(`Task #${taskId} was not found in the runner bundle`);
   if (!task.branch) throw new Error(`Task #${taskId} has no branch`);
+  if (task.branch.includes("..") || task.branch.includes("\\") || task.branch.startsWith("/")) {
+    throw new Error("task branch contains an unsafe path");
+  }
 
   const linked = join(worktreesDir(root), task.branch);
   const linkedCheck = await runGit(linked, ["rev-parse", "--show-toplevel"], 10_000);
@@ -30,18 +38,24 @@ export async function captureBrowserEvidence(
   }
 
   mkdirSync(outputDir, { recursive: true });
-  const previews = new PreviewManager(config, () => {});
+  const previews = new PreviewManager(captureConfig, () => {});
   const log = (_id: string, _level: "info" | "warn" | "error", _message: string): void => {};
   let ok = true;
   const results: Record<string, unknown> = {};
   try {
+    if (mode === "single-shot") {
+      if (!entry) throw new Error("single-shot request omitted its capture entry");
+      const captured = await captureDeclaredShot(captureConfig, task, previews, entry);
+      results.singleShot = captured;
+      if ("error" in captured) ok = false;
+    }
     if (mode === "shots" || mode === "both") {
-      const shots = await runAutoShotCapture(config, task, previews, log);
+      const shots = await runAutoShotCapture(captureConfig, task, previews, log);
       results.shots = shots;
       if (shots.status === "failed") ok = false;
     }
     if (mode === "verify" || mode === "both") {
-      const verification = await runUiHandoffGate(config, task, previews, log, {
+      const verification = await runUiHandoffGate(captureConfig, task, previews, log, {
         forceRefresh: true,
         recordTaskNotes: false,
       });
@@ -49,7 +63,7 @@ export async function captureBrowserEvidence(
       if (!verification.ok) ok = false;
     }
 
-    const sourceShots = shotsDir(linked, config.workDir, taskId);
+    const sourceShots = shotsDir(config.root, config.workDir, taskId);
     const targetShots = join(outputDir, "shots");
     try {
       cpSync(sourceShots, targetShots, { recursive: true, errorOnExist: false, force: true });
@@ -65,7 +79,6 @@ export async function captureBrowserEvidence(
 
     const files: { name: string; data: string }[] = [];
     let bytes = 0;
-    const shotManifestPath = join(targetShots, "shots.json");
     if (statSync(targetShots, { throwIfNoEntry: false })?.isDirectory()) {
       for (const name of readdirSync(targetShots).sort()) {
         if (!/^[a-zA-Z0-9._-]+\.(png|json)$/.test(name)) continue;
@@ -83,9 +96,28 @@ export async function captureBrowserEvidence(
       if (bytes > MAX_ARTIFACT_BYTES) throw new Error("capture artifacts exceed 50 MiB");
       files.push({ name: "verification.json", data: data.toString("base64") });
     }
+    const browserUnavailable =
+      /playwright|webkit|browser executable|executable doesn.t exist|not installed/i.test(
+        JSON.stringify(results),
+      );
     writeFileSync(
       join(outputDir, "result.json"),
-      JSON.stringify({ version: 1, taskId, ok, results, files, bytes }, null, 2),
+      JSON.stringify(
+        {
+          version: 1,
+          taskId,
+          ok,
+          detail: ok
+            ? "runner browser capture completed"
+            : "runner browser capture reported failures",
+          results,
+          files,
+          bytes,
+          ...(browserUnavailable ? { browserUnavailable: true } : {}),
+        },
+        null,
+        2,
+      ),
     );
     return {
       ok,
@@ -93,22 +125,32 @@ export async function captureBrowserEvidence(
     };
   } finally {
     await previews.stop(taskId, "remote browser evidence capture complete");
-    await previews.dispose();
   }
 }
 
 if (import.meta.main) {
   const [taskId, modeArg, outputDir] = process.argv.slice(2);
-  const mode = modeArg === "verify" || modeArg === "both" ? modeArg : "shots";
+  const mode =
+    modeArg === "verify" || modeArg === "both" || modeArg === "single-shot" ? modeArg : "shots";
   const dir = outputDir || "/artifacts/browser-capture";
-  captureBrowserEvidence(process.cwd(), taskId ?? "", mode, dir)
-    .then((result) => {
-      console.log(`[browser-capture] ${result.detail}`);
-      if (!result.ok) process.exitCode = 2;
-    })
-    .catch((error: unknown) => {
-      const detail = error instanceof Error ? error.message : String(error);
-      console.error(`[browser-capture] failed: ${detail}`);
+  let entry: (import("../../src/core/shot-plan.js").CaptureEntry & { route: string }) | undefined;
+  if (mode === "single-shot") {
+    try {
+      entry = JSON.parse(process.env.REPOOS_BROWSER_CAPTURE_ENTRY ?? "") as typeof entry;
+    } catch {
+      console.error("[browser-capture] single-shot request has invalid entry JSON");
       process.exitCode = 3;
-    });
+    }
+  }
+  if (process.exitCode !== 3)
+    captureBrowserEvidence(process.cwd(), taskId ?? "", mode, dir, entry)
+      .then((result) => {
+        console.log(`[browser-capture] ${result.detail}`);
+        if (!result.ok) process.exitCode = 2;
+      })
+      .catch((error: unknown) => {
+        const detail = error instanceof Error ? error.message : String(error);
+        console.error(`[browser-capture] failed: ${detail}`);
+        process.exitCode = 3;
+      });
 }

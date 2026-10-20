@@ -128,6 +128,7 @@ import {
 } from "../../core/shot-plan.js";
 import { resolveShotTargets } from "../../core/shot-targets.js";
 import { captureDeclaredShot } from "../shot-capture.js";
+import { remoteBrowserEvidenceTransport } from "../browser-capture-policy.js";
 import type { PreviewManager } from "../preview.js";
 import type { RootLock } from "../repo-lock.js";
 import { STATUSES } from "../../core/types.js";
@@ -1249,11 +1250,13 @@ export async function guardedForceRefreshCapture(
   worktree: string,
   previews: PreviewManager | undefined,
   log: TaskLog,
+  remoteTransport?: import("../browser-capture-policy.js").BrowserEvidenceTransport,
 ): Promise<GuardedForceRefreshCaptureResult> {
   const headBefore = shortHeadOf(worktree);
   const result = await runUiHandoffGate(config, task, previews, log, {
     forceRefresh: true,
     recordTaskNotes: false,
+    remoteTransport,
   });
   if (result.skipped) {
     return {
@@ -1496,6 +1499,7 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
       (taskId, level, message) => {
         ctx.logger.task(taskId, level, message);
       },
+      remoteBrowserEvidenceTransport(config, ctx.remoteValidator),
     );
     if (captured.skipped) {
       return json(res, 409, {
@@ -1747,19 +1751,28 @@ async function declareTaskShot(
       error: `the task's ## Shots section is not a valid list — fix it first: ${preflight.errors.join("; ")}`,
     });
   }
-  const result = await captureDeclaredShot(config, task, previews, {
-    target: resolved.target,
-    route: entry.route ?? "/",
-    ...(entry.label ? { label: entry.label } : {}),
-    ...(entry.highlight ? { highlight: entry.highlight } : {}),
-    ...(entry.selector ? { selector: entry.selector } : {}),
-    ...(entry.steps?.length ? { steps: entry.steps } : {}),
-    provenance: { kind: "declared", ...(entry.label ? { label: entry.label } : {}) },
-    // The parsed declaration rides on the stored shot so delete can sync the
-    // exact `## Shots` entry (selector and steps included) instead of guessing
-    // from the shallow fields (#0627 review round 1).
-    declared: entry,
-  });
+  const result = await captureDeclaredShot(
+    config,
+    task,
+    previews,
+    {
+      target: resolved.target,
+      route: entry.route ?? "/",
+      ...(entry.label ? { label: entry.label } : {}),
+      ...(entry.highlight ? { highlight: entry.highlight } : {}),
+      ...(entry.selector ? { selector: entry.selector } : {}),
+      ...(entry.steps?.length ? { steps: entry.steps } : {}),
+      provenance: { kind: "declared", ...(entry.label ? { label: entry.label } : {}) },
+      // The parsed declaration rides on the stored shot so delete can sync the
+      // exact `## Shots` entry (selector and steps included) instead of guessing
+      // from the shallow fields (#0627 review round 1).
+      declared: entry,
+    },
+    remoteBrowserEvidenceTransport(config, ctx.remoteValidator),
+    (message) => {
+      ctx.logger.task(task.id, "warn", `shot capture: ${message}`);
+    },
+  );
   if ("error" in result) {
     return json(res, result.busy ? 409 : 400, {
       error: result.error,

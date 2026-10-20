@@ -124,13 +124,15 @@ referenced from the task body) and render in the drawer's Changes tab.
 
 ## Automatic capture at handoff, and a task's `## Shots` list (#0594)
 
-The intended remote browser capture policy is `remoteValidation.browserCaptureMode`
-in Settings → Performance: `local`, `runner when available`, or `runner only`.
-The setting and runner-side worker prototype exist, but capture is not yet
-connected to the control-plane transport or handoff/CLI call sites. Until that
-integration lands, automatic capture and verification continue through the
-local `PreviewManager`. The design and artifact security boundary are described
-in `docs/remote-shot-capture.md`.
+The `remoteValidation.browserCaptureMode` setting in Settings → Performance
+selects `local`, `runner when available`, or `runner only`. Runner modes use the
+remote validation runner and its artifact channel for automatic shots and UI
+verification, including explicit `repoos shot` / `repoos verify` requests.
+Runner-unavailable or infrastructure failures fall back locally with a task
+activity note in `runner when available`; `runner only` returns the failure.
+Declared shot misses retain their normal handoff failure semantics. The
+interactive Preview button continues to use the local `PreviewManager`. See
+`docs/remote-shot-capture.md` for the bundle and artifact security boundary.
 
 Engineers do not have to remember to run `repoos shot` any more: when a task
 moves to `review` and its diff touches any target's `paths` globs, the SERVER
