@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T12:27:23Z"
+updated_at: "2026-10-20T12:28:43Z"
 review_passes: 17
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -228,3 +228,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T12:16:13Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T12:27:23Z · message_queued at 2026-10-20T12:27:23.598Z
 - 2026-10-20T12:27:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-20T12:28:43Z · note: Scope note: the remote path covers the AUTOMATIC handoff shots and UI verification only. Manual `repoos shot` / `repoos verify` stay local by design (spec narrowed at review pass 17) — there is no runner-backed CLI in this task. Offloading the CLI is filed as p3 follow-up #0874 (depends on 0854). #0864 remains the separate human runner-image rebuild + end-to-end proof. Documented in docs/remote-shot-capture.md, docs/remote-validation.md, docs/previews.md and user-docs/configuration.md.
