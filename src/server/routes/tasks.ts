@@ -1308,6 +1308,7 @@ export async function guardedForceRefreshCapture(
 export interface AutomaticStaleEvidenceRefreshDeps {
   config: RepoOSConfig;
   previews?: PreviewManager;
+  remoteTransport?: import("../browser-capture-policy.js").BrowserEvidenceTransport;
   /** The durable root lock, shared with close-out and hotfix. */
   rootLock: RootLock;
   /** True while a close-out owns the repo; the refresh must stand down. */
@@ -1389,7 +1390,14 @@ export async function automaticStaleEvidenceRefresh(
       // Once per reviewed HEAD: a capture that does not clear the stale marker
       // must not loop the reviewer forever.
       if (!tryRecordAutoRefreshAttempt(config, task.id, head)) return false;
-      const captured = await guardedForceRefreshCapture(config, current, worktree, previews, log);
+      const captured = await guardedForceRefreshCapture(
+        config,
+        current,
+        worktree,
+        previews,
+        log,
+        deps.remoteTransport,
+      );
       if (captured.error) {
         log(task.id, "warn", `automatic stale-evidence refresh failed: ${captured.error}`);
       }
@@ -1431,7 +1439,14 @@ export async function automaticEvidenceGapRepair(
       const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
       if (dirty.status !== 0 || dirty.stdout.trim()) return false;
 
-      const captured = await guardedForceRefreshCapture(config, current, worktree, previews, log);
+      const captured = await guardedForceRefreshCapture(
+        config,
+        current,
+        worktree,
+        previews,
+        log,
+        deps.remoteTransport,
+      );
       if (captured.error) {
         log(task.id, "warn", `automatic evidence-gap repair failed: ${captured.error}`);
       }

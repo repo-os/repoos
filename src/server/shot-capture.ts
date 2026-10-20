@@ -846,20 +846,26 @@ async function importRemoteShots(
   if (artifacts.ok && remoteResult.status === "captured") {
     importShotArtifacts(config, task.id, artifacts.files);
   }
-  const message =
-    remoteResult.status === "captured"
-      ? `shots: ${remoteResult.detail}`
-      : `shots: ${remoteResult.status} — ${remoteResult.detail}`;
+  const message = formatRemoteShotActivity(remoteResult);
   recordBrowserCaptureActivity(
     task.id,
     remoteResult.status === "captured",
     message,
     log,
     (note) => {
-      patchTaskFile(config, task.absPath, { note });
+      // Local successful captures only add activity; retain a durable task
+      // note for remote failures/fallbacks where the runner changed behavior.
+      if (remoteResult.status !== "captured") patchTaskFile(config, task.absPath, { note });
     },
   );
   return remoteResult;
+}
+
+export function formatRemoteShotActivity(remoteResult: ShotCaptureResult): string {
+  const detail = remoteResult.detail.replace(/^shots:\s*/i, "");
+  return remoteResult.status === "captured"
+    ? `shots: ${detail}`
+    : `shots: ${remoteResult.status} — ${detail}`;
 }
 
 function importRemoteDeclaredShot(

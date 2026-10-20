@@ -7,13 +7,17 @@
 FROM oven/bun:1-debian
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git ca-certificates curl procps lsof zip unzip \
+ && apt-get install -y --no-install-recommends git ca-certificates curl procps lsof zip unzip fonts-liberation fonts-noto-color-emoji \
  && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
  && apt-get install -y --no-install-recommends nodejs \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-RUN bunx playwright install --with-deps webkit
+# Keep this aligned with @playwright/test in bun.lock (1.63.0). The browser
+# cache is shared with the non-root capture user through this explicit path.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN bunx --package playwright@1.63.0 playwright install --with-deps webkit
+RUN chmod -R a+rX /ms-playwright
 
 # Write git identity and defaults into /etc/gitconfig so they apply for any uid
 # (the container runs as the non-root 'bun' user from the base image).

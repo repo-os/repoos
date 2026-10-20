@@ -13,6 +13,7 @@ import { join } from "node:path";
 import { loadConfig } from "../../core/config.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 import type { PreviewInfo, PreviewManager } from "../../server/preview.js";
+import { formatRemoteShotActivity } from "../../server/shot-capture.js";
 
 const roots: string[] = [];
 
@@ -180,6 +181,12 @@ const ENTRY = {
 };
 
 describe("captureDeclaredShot busy semantics (#0627)", () => {
+  it("does not duplicate the shots prefix from runner details", () => {
+    expect(
+      formatRemoteShotActivity({ status: "captured", detail: "shots: 2 screenshots captured" }),
+    ).toBe("shots: 2 screenshots captured");
+  });
+
   it("reserves a remote declared-shot capture so a duplicate cannot overlap", async () => {
     const config = remoteConfig();
     const task = makeTask("0627-remote", { branch: "feat/x" });
