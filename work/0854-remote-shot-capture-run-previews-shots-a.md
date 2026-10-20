@@ -2,7 +2,7 @@
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T07:20:31Z"
+updated_at: "2026-10-20T07:20:43Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 238826f5072be220a6a7a5fe1ac19aa5ffb346a4
 review_rounds: 2
@@ -40,10 +40,10 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 ```json
 [
 {
-  "label": "Performance setting for task browser work",
-  "target": "default",
-  "route": "/settings",
-  "highlight": "[data-test-id=\"setting-remoteValidation.browserCaptureMode\"]"
+"label": "Performance setting for task browser work",
+"target": "default",
+"route": "/settings",
+"highlight": "[data-test-id=\"setting-remoteValidation.browserCaptureMode\"]"
 }
 ]
 ```
@@ -81,3 +81,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T07:15:43Z · body
 - 2026-10-20T07:16:16Z · body
 - 2026-10-20T07:20:31Z · body
+- 2026-10-20T07:20:43Z · status active→review
