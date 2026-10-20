@@ -327,6 +327,20 @@ describe("shot preview board fixtures (#0743)", () => {
     });
   });
 
+  it("seeds landing pre-checks for the Move to done checklist shot (#0867)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "drawer:landable");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task, "drawer:landable seeds the fixture task").toBeTruthy();
+    expect(task!.status).toBe("review");
+    expect(task!.branch).toBe("feat/shot-fixture");
+    const landable = repo.landableFor(SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(landable?.landable).toBe(false);
+    expect(landable?.checks.find((c) => c.id === "merge-conflicts")?.status).toBe("fail");
+  });
+
   it("seeds a pending handoff conflict for the modal shot (#0810)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
