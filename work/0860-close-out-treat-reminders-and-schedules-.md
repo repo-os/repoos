@@ -13,7 +13,6 @@ model_override: gpt-6-luna
 created_at: "2026-10-20T04:20:16Z"
 updated_at: "2026-10-20T07:03:51Z"
 handoff_signal_retry_count: 1
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-20T06:20:53.646Z: repoos check failed: ◆ Check plan"
 ---
 ## Problem
@@ -73,3 +72,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T06:54:52Z · status ready→active
 - 2026-10-20T07:00:32Z · body
 - 2026-10-20T07:03:51Z · body
+
