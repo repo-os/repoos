@@ -2,16 +2,17 @@
 id: "0886"
 title: "Close-out: task shows as inbox between the merge and 'set status done'; stamp done atomically and ignore engineer writes while closing"
 type: bug
-status: inbox
+status: done
 priority: p1
 area: server
+merged_commit: f4373da89e825f19e27168d3020665ae45bcab3f
 assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
-updated_at: "2026-10-20T21:45:00Z"
+updated_at: "2026-10-20T21:46:12Z"
 last_close_out_gate_ms: 572895
 last_close_out_gate_at: "2026-10-20T21:44:57.187Z"
 review_passes: 2
@@ -91,3 +92,4 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T21:44:57Z · close-out gate completed in 573s
 - 2026-10-20T21:44:59Z · note: handoff requested (cli)
 - 2026-10-20T21:45:00Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-20T21:46:12Z · status inbox→done, release:success
