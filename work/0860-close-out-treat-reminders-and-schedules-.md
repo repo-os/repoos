@@ -3,12 +3,6 @@ id: "0860"
 title: "Close-out and layout: reminders/ and schedules/ are server-written bookkeeping, and follow the repoos/ layout"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "you want shared Git history. They are currently repo-wide, visible to"
-debug_tldr: "The agent hit its usage limit before resolving the #0861 merge conflict — resume with an available agent and follow the merge instructions."
-debug_tldr_at: "2026-10-20T11:08:53Z"
-debug_tldr_key: "dev-error|you want shared Git history. They are currently repo-wide, visible to"
 priority: p2
 area: server
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T11:08:53Z"
+updated_at: "2026-10-20T11:09:36Z"
 review_passes: 3
 review_rounds: 1
 handoff_signal_retry_count: 1
@@ -127,3 +121,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:08:32Z · agent exited with an error (codex) · you want shared Git history. They are currently repo-wide, visible to
 - 2026-10-20T11:08:32Z · status active→review
 - 2026-10-20T11:08:33Z · note: handoff requested (cli)
+- 2026-10-20T11:09:36Z · needs_input
