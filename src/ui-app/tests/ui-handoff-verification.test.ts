@@ -129,6 +129,45 @@ describe("UI handoff verification gate (#0680)", () => {
     expect(store.list().map((shot) => shot.name)).toEqual([prior.name]);
   });
 
+  it("keeps the shots a partially failed verification did produce (#0854)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-partial-"));
+    temps.push(root);
+    const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+    const task = {
+      id: "partial-verify",
+      title: "t",
+      path: "work/partial-verify.md",
+      absPath: join(root, "work/partial-verify.md"),
+      status: "review",
+      branch: "feat/partial-verify",
+      area: "web",
+      body: "",
+    } as Task;
+    const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64");
+    await expect(
+      importRemoteVerification(
+        config,
+        task,
+        {
+          version: 1,
+          taskId: task.id,
+          ok: false,
+          detail: "runner browser capture reported failures",
+          results: { verification: { ok: false, detail: "capture of / broke" } },
+          files: [
+            {
+              name: "shots/shots.json",
+              data: encode({ shots: [{ name: "kept.png", target: "web", origin: "auto" }] }),
+            },
+            { name: "shots/kept.png", data: PNG_1PX },
+          ],
+        },
+        vi.fn(),
+      ),
+    ).rejects.toThrow(/kept 1 earlier shot/);
+    expect(shotStore.localShotStore(config, task.id).list()).toHaveLength(1);
+  });
+
   it("reserves the task capture lock during remote UI verification", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-uigate-remote-lock-"));
     temps.push(root);

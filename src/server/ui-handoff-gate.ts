@@ -1141,16 +1141,39 @@ export async function importRemoteVerification(
   if (!result || typeof result.ok !== "boolean" || typeof result.detail !== "string") {
     throw new Error("runner result omitted the UI verification outcome");
   }
+  // A PARTIAL/FAILED run keeps whatever shots it did produce, before validating
+  // the verification record: those PNGs are real evidence and must not be
+  // discarded (#0854, "never discard good output"). A run the runner called
+  // SUCCESSFUL validates its record FIRST — a malformed record is a runner
+  // failure and must never replace existing evidence (the policy then falls back
+  // locally); only after validation does it import.
+  let imported = 0;
+  let importProblem: string | undefined;
+  const hasShots = artifacts.files.some((file) => file.name === "shots/shots.json");
+  if (!result.ok && hasShots) {
+    try {
+      imported = importShotArtifacts(config, taskId, artifacts.files);
+    } catch (err) {
+      importProblem = err instanceof Error ? err.message : String(err);
+    }
+  }
+  const importSuffix = importProblem
+    ? ` (could not import runner shots: ${importProblem})`
+    : imported > 0 && !result.ok
+      ? ` (kept ${imported} earlier shot${imported === 1 ? "" : "s"} despite the failure)`
+      : "";
   const evidence = artifacts.files.find((file) => file.name === "verification.json");
   if (!evidence) {
-    if (result.skipped) return result;
-    throw new Error("runner result omitted the UI verification record");
+    if (result.skipped) {
+      return importSuffix ? { ...result, detail: `${result.detail}${importSuffix}` } : result;
+    }
+    throw new Error(`runner result omitted the UI verification record${importSuffix}`);
   }
   let evidenceJson: unknown;
   try {
     evidenceJson = JSON.parse(Buffer.from(evidence.data, "base64").toString("utf8"));
   } catch {
-    throw new Error("runner returned a malformed UI verification record");
+    throw new Error(`runner returned a malformed UI verification record${importSuffix}`);
   }
   if (
     !evidenceJson ||
@@ -1162,9 +1185,9 @@ export async function importRemoteVerification(
     !Number.isInteger((evidenceJson as UiHandoffGateEvidence).captures) ||
     (evidenceJson as UiHandoffGateEvidence).captures < 0
   ) {
-    throw new Error("runner returned an invalid UI verification record");
+    throw new Error(`runner returned an invalid UI verification record${importSuffix}`);
   }
-  if (artifacts.files.some((file) => file.name === "shots/shots.json")) {
+  if (result.ok && hasShots) {
     importShotArtifacts(config, taskId, artifacts.files);
   }
   const path = evidenceFile(config, taskId);
