@@ -2,16 +2,16 @@
 id: "0767"
 title: Define centralized coding agent recovery
 type: spec
-status: ready
+status: active
 priority: p2
 area: [agent, web]
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/define-centralized-coding-agent-recovery
 cli_override: github copilot
 model_override: default
 created_at: "2026-10-13T12:38:26Z"
-updated_at: "2026-10-20T04:27:08Z"
+updated_at: "2026-10-20T04:27:09Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ Sometimes a coding agent becomes unavailable (e.g. you ran out of usage credits 
 - 2026-10-13T12:38:48Z · status draft→inbox, title, area, type, body
 - 2026-10-20T04:27:02Z · status inbox→ready
 - 2026-10-20T04:27:05Z · cli_override, model_override
+- 2026-10-20T04:27:09Z · status ready→active, branch
