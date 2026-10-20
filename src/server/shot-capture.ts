@@ -35,6 +35,7 @@ import type { ShotMeta } from "./shots.js";
 import {
   describeShotTargetPathMatches,
   describeTargetPathMatches,
+  appPreviewTargetName,
   resolveShotTargets,
   shotTargetByName,
 } from "../core/shot-targets.js";
@@ -121,6 +122,15 @@ export async function captureEntryPage(
         // show the wrong theme, so say so instead of passing silently.
         onThemeMiss: (theme, route) => {
           warnings.push(`theme ${theme} could not be applied on ${route}`);
+        },
+        // #0866: a state fixture that never rendered, or a target that served
+        // its HTML shell instead of the app, is the wrong screen — reported as
+        // a failed shot with the target named.
+        onStateMiss: (message) => {
+          warnings.push(message);
+        },
+        onRouteNotServed: (message) => {
+          warnings.push(message);
         },
       },
     );
@@ -210,8 +220,15 @@ export function planAutoCapture(
   task: Task,
   opts: { forceRefresh?: boolean } = {},
 ):
-  | { entries: CaptureEntry[]; errors: string[]; skips: string[]; collapsed: string[] }
-  | { reason: string } {
+  | {
+      entries: CaptureEntry[];
+      errors: string[];
+      /** #0866: declared shots that cannot render on their resolved target. */
+      blockingErrors?: string[];
+      skips: string[];
+      collapsed: string[];
+    }
+  | { reason: string; blockingErrors?: string[] } {
   if (!task.branch) return { reason: "the task has no branch yet" };
   // Only engineer-made shots pre-empt. A shot the server's own capture wrote is
   // replaced on re-handoff: otherwise a first capture taken from a stale or
@@ -223,6 +240,7 @@ export function planAutoCapture(
     | {
         entries: CaptureEntry[];
         errors: string[];
+        blockingErrors: string[];
         skips: string[];
         collapsed: string[];
       }
@@ -245,7 +263,9 @@ export function planAutoCapture(
         ...(shot.label ? { label: shot.label } : {}),
         provenance: { kind: "declared", ...(shot.label ? { label: shot.label } : {}) },
       }));
-    return entries.length > 0 ? { entries, errors: [], skips: [], collapsed: [] } : undefined;
+    return entries.length > 0
+      ? { entries, errors: [], blockingErrors: [], skips: [], collapsed: [] }
+      : undefined;
   };
   if (existing.length > 0 && !opts.forceRefresh) {
     return {
@@ -326,12 +346,17 @@ export function planAutoCapture(
     if (match.contentOnly) docsContentOnly.add(match.target);
   }
   const commandTargets = new Set((config.shot?.targets ?? []).map((t) => t.name));
+  const appTarget = appPreviewTargetName(config.preview);
   const built = buildCapturePlan(targets, declared.shots, {
     matchedGlobs,
     docsContentOnly,
     commandTargets,
+    // #0866: declared state fixtures / app routes belong to the app target,
+    // even when the diff's path resolution listed another target first.
+    ...(appTarget ? { appTarget } : {}),
   });
   const errors = [...declared.errors, ...built.errors];
+  const blockingErrors = [...built.blockingErrors];
   const skips = [...built.autoSkips];
   if (built.entries.length === 0) {
     // Stand down, with a reason the drawer can show. A declaration exists but
@@ -340,6 +365,7 @@ export function planAutoCapture(
     if (declared.shots.length > 0 && errors.length > 0) {
       return {
         reason: `the declared shot list produced no captures: ${[...errors, ...skips].join("; ")}`,
+        ...(blockingErrors.length ? { blockingErrors } : {}),
       };
     }
     return {
@@ -347,7 +373,7 @@ export function planAutoCapture(
         skips.length > 0 ? skips.join("; ") : "no captures were planned for the resolved targets",
     };
   }
-  return { entries: built.entries, errors, skips, collapsed: built.collapsed };
+  return { entries: built.entries, errors, blockingErrors, skips, collapsed: built.collapsed };
 }
 
 /**
@@ -651,8 +677,9 @@ export async function runAutoShotCapture(
 
   // The runner (mode forced local) passes the control plane's plan so it
   // executes exactly what the board would; every other caller plans locally.
-  const planned: ReturnType<typeof planAutoCapture> =
-    canonicalPlan ?? planAutoCapture(config, task);
+  const planned: ReturnType<typeof planAutoCapture> = canonicalPlan
+    ? { ...canonicalPlan, blockingErrors: canonicalPlan.blockingErrors ?? [] }
+    : planAutoCapture(config, task);
   if ("reason" in planned) {
     return finish("skipped", planned.reason);
   }
