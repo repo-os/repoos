@@ -1,22 +1,20 @@
 ---
-last_close_out_gate_ms: 379404
-last_close_out_gate_at: "2026-10-20T04:25:24.045Z"
 id: "0858"
 title: "Investigate leaked repoos-* tmp fixture dirs ([global-reap] warning)"
 type: feature
-status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
+status: done
 priority: p3
 area: core
+merged_commit: 943d6dcd4cbbbfcd1c6686fdfe765a1b3e8c149e
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/investigate-leaked-repoos-tmp-fixture-di
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T19:04:41Z"
-updated_at: "2026-10-20T04:25:24Z"
+updated_at: "2026-10-20T04:25:54Z"
+last_close_out_gate_ms: 379404
+last_close_out_gate_at: "2026-10-20T04:25:24.045Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -91,4 +89,4 @@ Verification: a full pass now leaves 0 dirs in an isolated TMPDIR; a follow-up r
 - 2026-10-19T21:03:46Z · note: review pass 3: good to go
 - 2026-10-20T03:49:34Z · close-out gate completed in 383s
 - 2026-10-20T04:25:24Z · close-out gate completed in 379s
-
+- 2026-10-20T04:25:54Z · status review→done, release:success
