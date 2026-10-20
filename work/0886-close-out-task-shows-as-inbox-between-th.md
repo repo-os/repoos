@@ -2,14 +2,14 @@
 id: "0886"
 title: "Close-out: task shows as inbox between the merge and 'set status done'; stamp done atomically and ignore engineer writes while closing"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T17:18:03Z"
-updated_at: "2026-10-20T18:33:09Z"
+updated_at: "2026-10-20T18:33:24Z"
 ---
 ## Problem
 During Move to done, a task can show as `inbox` on the board for about 3 minutes. Observed on #0863 (2026-10-21 ~01:08-01:11 local): the pre-merge main copy and the branch copy both said `status: review`, but the close-out merge commit `7ecfcb7f1` itself contains `status: inbox` (updated_at 17:08:41Z). A stray `handoff requested (cli)` from the still-running engineer landed in the same second and failed with "task must be active or review, but is inbox". The status only becomes `done` at the later `docs(0863): set status done` commit (17:11:26Z, `markTaskReleased` in src/server/write.ts), so users see the task in the inbox column and may think it was reset.
@@ -38,3 +38,4 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T17:18:03Z · created · njachowski@gmail.com
 - 2026-10-20T18:33:00Z · priority
 - 2026-10-20T18:33:09Z · body: Notes for AI (added 1)
+- 2026-10-20T18:33:24Z · status inbox→ready
