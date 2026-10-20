@@ -2203,10 +2203,25 @@ describe("DevTargetManager with services (#0843)", () => {
       expect(typeof dependency?.port).toBe("number");
       const depPort = dependency!.port!;
       const ownPort = consumer!.port!;
-      expect(readFileSync(serviceOutput, "utf8")).toBe(
-        `${depPort}|http://127.0.0.1:${depPort}|${ownPort}`,
-      );
-      expect(readFileSync(targetOutput, "utf8")).toBe(`${ownPort}|${ownPort}`);
+      const expectedService = `${depPort}|http://127.0.0.1:${depPort}|${ownPort}`;
+      const expectedTarget = `${ownPort}|${ownPort}`;
+      // Readiness only proves each process is alive; the commands write these
+      // files just after start, so poll instead of assuming they already ran.
+      const deadline = Date.now() + 5000;
+      let serviceText = "";
+      let targetText = "";
+      while (Date.now() < deadline) {
+        try {
+          serviceText = readFileSync(serviceOutput, "utf8");
+          targetText = readFileSync(targetOutput, "utf8");
+          if (serviceText === expectedService && targetText === expectedTarget) break;
+        } catch {
+          /* files not written yet */
+        }
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      expect(serviceText).toBe(expectedService);
+      expect(targetText).toBe(expectedTarget);
     } finally {
       await mgr.stopAll();
       rmSync(dir, { recursive: true, force: true });
@@ -2277,8 +2292,12 @@ describe("DevTargetManager with services (#0843)", () => {
     async ({ count, expected }) => {
       const dir = mkdtempSync(join(tmpdir(), "repoos-dev-teardown-order-"));
       const events = join(dir, "stopped.log");
+      const readyPath = (name: string): string => join(dir, `${name}.ready`);
       const commandFor = (name: string): string => {
-        const script = `const fs=require('node:fs');process.on('SIGTERM',()=>{fs.appendFileSync(${JSON.stringify(events)},${JSON.stringify(`${name}\n`)});process.exit(0)});setInterval(()=>{},60000)`;
+        // Record that the SIGTERM handler is installed before the test stops
+        // the stack: readiness only proves the process is alive, and a loaded
+        // machine can otherwise reach stop() before Bun has registered it.
+        const script = `const fs=require('node:fs');process.on('SIGTERM',()=>{fs.appendFileSync(${JSON.stringify(events)},${JSON.stringify(`${name}\n`)});process.exit(0)});fs.writeFileSync(${JSON.stringify(readyPath(name))},'ready');setInterval(()=>{},60000)`;
         return `bun -e '${script.replaceAll("'", "'\\''")}'`;
       };
       const defs: DevServiceConfig[] = Array.from({ length: count }, (_, i) => {
@@ -2306,6 +2325,12 @@ describe("DevTargetManager with services (#0843)", () => {
       );
       try {
         expect((await mgr.start("app")).ok).toBe(true);
+        const ready = ["target", ...services];
+        const readyDeadline = Date.now() + 5000;
+        while (Date.now() < readyDeadline && !ready.every((name) => existsSync(readyPath(name)))) {
+          await new Promise((r) => setTimeout(r, 20));
+        }
+        expect(ready.filter((name) => !existsSync(readyPath(name)))).toEqual([]);
         await mgr.stop("app");
         // Wait for the whole teardown, not just the file's first line: the
         // processes are signalled target-first, but a busy machine can delay
