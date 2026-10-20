@@ -2,7 +2,7 @@
 id: "0886"
 title: "Close-out: task shows as inbox between the merge and 'set status done'; stamp done atomically and ignore engineer writes while closing"
 type: bug
-status: review
+status: inbox
 priority: p1
 area: server
 assigned_to: human
