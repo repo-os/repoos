@@ -21,7 +21,11 @@ import {
 import { effectiveAreaVocabulary } from "../../core/areas.js";
 import { effectiveAreaNames, unresolvedAreaReport } from "../../core/areas.js";
 import { normalizeStringList } from "../../core/config.js";
-import { DEV_TARGET_PASSTHROUGH_FIELDS, devTargetServiceErrors } from "../../core/dev-targets.js";
+import {
+  DEV_TARGET_PASSTHROUGH_FIELDS,
+  devTargetServiceErrors,
+  redactDevEnv,
+} from "../../core/dev-targets.js";
 import { normalizeAllowlistRows } from "../../core/budget-allowlist.js";
 import {
   MAX_ROUTING_TIMEOUT_MS,
@@ -93,8 +97,12 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
       };
     }
   }
+  // Env values (dev targets and services) may be credentials: they never reach
+  // the browser. Settings saves restore them from disk (#0843 review round 25).
+  const safeDev = rest.dev ? redactDevEnv(rest.dev as never) : rest.dev;
   return {
     ...rest,
+    ...(safeDev !== undefined ? { dev: safeDev } : {}),
     auth: safeAuth,
     "whisper.provider": whisper.provider ?? "none",
     whisperEnabled,
@@ -119,7 +127,7 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
      * loud validation errors `loadConfig` recorded for rows it had to drop —
      * the form shows them inline rather than silently losing a target.
      */
-    devTargets: (config.dev as { targets?: unknown } | undefined)?.targets ?? [],
+    devTargets: (safeDev as { targets?: unknown } | undefined)?.targets ?? [],
     devTargetErrors: config.devTargetErrors ?? [],
     board: {
       ...((rest as Record<string, unknown>).board as Record<string, unknown> | undefined),
@@ -360,17 +368,20 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         artifactPath: r.artifactPath,
         label: r.label,
       };
-      // #0843 review round 24: fields the Settings form does not edit (`cwd`,
-      // `env`: TOML-only) must survive a save. A row that carries them keeps
-      // them; a row that omits the key entirely (an older client) inherits the
-      // same-named target's value from disk, so a save never strips them.
-      const sameName = onDiskTargets.find(
-        (t) => typeof r.name === "string" && t.name === r.name.trim(),
-      );
+      // #0843 review rounds 24-25: fields the Settings form does not edit
+      // (`cwd`, `env`: TOML-only; env may hold credentials) are NEVER accepted
+      // from or sent to the browser. A save restores them from the on-disk row
+      // the browser says it started from (`sourceName`, so a rename keeps
+      // them), falling back to the same name for older clients.
+      const sourceName =
+        typeof r.sourceName === "string" && r.sourceName.trim()
+          ? r.sourceName.trim()
+          : typeof r.name === "string"
+            ? r.name.trim()
+            : "";
+      const source = onDiskTargets.find((t) => t.name === sourceName);
       for (const field of DEV_TARGET_PASSTHROUGH_FIELDS) {
-        const submitted = r[field];
-        if (submitted !== undefined) row[field] = submitted;
-        else if (sameName?.[field] !== undefined) row[field] = sameName[field];
+        if (source?.[field] !== undefined) row[field] = source[field];
       }
       if (typeof r.autoPort === "boolean") row.autoPort = r.autoPort;
       if (r.port !== undefined && r.port !== "") row.port = r.port;

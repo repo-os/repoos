@@ -393,6 +393,8 @@ describe("Settings control client-side validation (#0749)", () => {
       autoPort: true,
       port: "",
       services: "api, db",
+      // The on-disk identity the server restores TOML-only fields by (#0843).
+      sourceName: "web",
     });
     expect(targetFromDraft(draft)).toMatchObject({
       name: "web",
@@ -499,7 +501,7 @@ describe("Settings control client-side validation (#0749)", () => {
   });
 });
 
-describe("Settings saves keep TOML-only target fields (#0843 review round 24)", () => {
+describe("Settings saves keep TOML-only target fields without exposing them (#0843 rounds 24-25)", () => {
   const toml = [
     "[[dev.targets]]",
     'name = "web"',
@@ -507,7 +509,7 @@ describe("Settings saves keep TOML-only target fields (#0843 review round 24)", 
     'command = "bun run dev"',
     'url = "http://localhost:5173"',
     'cwd = "app"',
-    'env = { NODE_ENV = "development", API_URL = "http://x" }',
+    'env = { NODE_ENV = "development", API_KEY = "s3cret-value" }',
     "",
     "[[dev.targets]]",
     'name = "docs"',
@@ -515,7 +517,20 @@ describe("Settings saves keep TOML-only target fields (#0843 review round 24)", 
     'command = "bun run docs"',
     'url = "http://localhost:5174"',
     "",
+    "[[dev.services]]",
+    'name = "api"',
+    'command = "bun run api"',
+    'env = { DB_PASSWORD = "hunter2" }',
+    "",
   ].join("\n");
+
+  /** What the browser would hold: the redacted payload, as drafts. */
+  function browserDrafts(root: string) {
+    const safe = safeConfigForBrowser(loadConfig(root) as never) as {
+      devTargets: Parameters<typeof draftFromTarget>[0][];
+    };
+    return safe.devTargets.map((t) => draftFromTarget(t));
+  }
 
   // One edit per way the Settings form can rewrite the list.
   const edits: [string, (rows: Record<string, unknown>[]) => Record<string, unknown>[]][] = [
@@ -525,23 +540,56 @@ describe("Settings saves keep TOML-only target fields (#0843 review round 24)", 
     ["remove a sibling", (rows) => rows.filter((r) => r.name === "web")],
   ];
 
-  it.each(edits)("round-trips cwd and env through the client helpers: %s", async (_n, edit) => {
+  it("never sends env values (targets or services) to the browser", () => {
     const root = repo(toml);
     try {
-      const drafts = loadConfig(root).dev!.targets!.map((t) => draftFromTarget(t));
-      const wire = edit(drafts.map((d) => targetFromDraft(d)));
-      const { status } = await patch(root, { devTargets: wire });
-      expect(status).toBe(200);
-      const after = loadConfig(root).dev!.targets!;
-      const web = after.find((t) => t.name === "web" || t.name === "site")!;
-      expect(web.cwd).toBe("app");
-      expect(web.env).toEqual({ NODE_ENV: "development", API_URL: "http://x" });
+      const safe = JSON.stringify(safeConfigForBrowser(loadConfig(root) as never));
+      expect(safe).not.toContain("s3cret-value");
+      expect(safe).not.toContain("hunter2");
+      expect(safe).not.toContain("DB_PASSWORD");
+      expect(safe).toContain("bun run api");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
 
-  it("an older client that omits cwd/env inherits them from the same-named target on disk", async () => {
+  it.each(edits)(
+    "keeps cwd and env from disk through a browser round-trip: %s",
+    async (_n, edit) => {
+      const root = repo(toml);
+      try {
+        const wire = edit(browserDrafts(root).map((d) => targetFromDraft(d)));
+        const { status } = await patch(root, { devTargets: wire });
+        expect(status).toBe(200);
+        const web = loadConfig(root).dev!.targets!.find(
+          (t) => t.name === "web" || t.name === "site",
+        )!;
+        expect(web.cwd).toBe("app");
+        expect(web.env).toEqual({ NODE_ENV: "development", API_KEY: "s3cret-value" });
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it("ignores env/cwd a browser tries to supply", async () => {
+    const root = repo(toml);
+    try {
+      const wire = browserDrafts(root).map((d) => ({
+        ...targetFromDraft(d),
+        cwd: "evil",
+        env: { INJECTED: "1" },
+      }));
+      await patch(root, { devTargets: wire.map((w) => ({ ...w, label: "x" })) });
+      const web = loadConfig(root).dev!.targets![0]!;
+      expect(web.cwd).toBe("app");
+      expect(web.env).not.toHaveProperty("INJECTED");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("an older client that omits sourceName inherits from the same-named target", async () => {
     const root = repo(toml);
     try {
       const { status } = await patch(root, {
@@ -558,32 +606,21 @@ describe("Settings saves keep TOML-only target fields (#0843 review round 24)", 
       expect(status).toBe(200);
       const web = loadConfig(root).dev!.targets![0]!;
       expect(web.cwd).toBe("app");
-      expect(web.env).toEqual({ NODE_ENV: "development", API_URL: "http://x" });
+      expect(web.env).toEqual({ NODE_ENV: "development", API_KEY: "s3cret-value" });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
 
-  it("an unchanged list (including cwd/env) is still a no-op that does not rewrite the file", async () => {
+  it("an unchanged list is still a no-op that does not rewrite the file", async () => {
     const root = repo(toml);
     try {
       const before = readFileSync(join(root, "repoos.toml"), "utf8");
-      const drafts = loadConfig(root).dev!.targets!.map((t) => draftFromTarget(t));
-      const { status } = await patch(root, { devTargets: drafts.map((d) => targetFromDraft(d)) });
+      const { status } = await patch(root, {
+        devTargets: browserDrafts(root).map((d) => targetFromDraft(d)),
+      });
       expect(status).toBe(200);
       expect(readFileSync(join(root, "repoos.toml"), "utf8")).toBe(before);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("a changed cwd/env is a real change and is written", async () => {
-    const root = repo(toml);
-    try {
-      const drafts = loadConfig(root).dev!.targets!.map((t) => draftFromTarget(t));
-      drafts[0]!.cwd = "other";
-      await patch(root, { devTargets: drafts.map((d) => targetFromDraft(d)) });
-      expect(loadConfig(root).dev!.targets![0]!.cwd).toBe("other");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

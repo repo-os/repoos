@@ -1615,6 +1615,38 @@ describe("devTargetServiceErrors", () => {
     ).toEqual([]);
   });
 
+  // #0843 review round 25 — the collision check covers the FULL resolved set
+  // (listed services plus transitive dependsOn), the same set Start boots.
+  it.each([
+    ["direct dependency", [{ name: "app", command: "x", dependsOn: ["api-v1", "api_v1"] }]],
+    [
+      "transitive dependency",
+      [
+        { name: "app", command: "x", dependsOn: ["mid"] },
+        { name: "mid", command: "x", dependsOn: ["api-v1", "api_v1"] },
+      ],
+    ],
+    [
+      "listed service vs a dependency of another",
+      [
+        { name: "app", command: "x", dependsOn: ["api-v1"] },
+        { name: "api_v1", command: "x" },
+      ],
+    ],
+  ])("rejects a token collision through dependencies: %s", (_n, extra) => {
+    const services = [
+      ...extra,
+      { name: "api-v1", command: "x" },
+      { name: "api_v1", command: "x" },
+    ].filter((s, i, all) => all.findIndex((o) => o.name === s.name) === i);
+    const listed = _n.startsWith("listed") ? ["app", "api_v1"] : ["app"];
+    const errors = devTargetServiceErrors(
+      [{ name: "web", kind: "server" as const, command: "x", url: "http://x", services: listed }],
+      services,
+    );
+    expect(errors.some((e) => e.includes("both map to the placeholder"))).toBe(true);
+  });
+
   // #0843 review round 23 — validation and expansion must share ONE
   // placeholder grammar/canonicalization. Each accepted spelling is exercised
   // through every surface that substitutes service refs, then through
