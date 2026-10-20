@@ -1245,8 +1245,13 @@ async function runAudit(): Promise<{
     });
     context = await browser.newContext({ serviceWorkers: "block" });
   } catch (err) {
-    server.close();
-    rmSync(fixture, { recursive: true, force: true });
+    try {
+      await server.close();
+    } catch (closeErr) {
+      console.warn("Contrast audit server cleanup also failed:", closeErr);
+    } finally {
+      rmSync(fixture, { recursive: true, force: true });
+    }
     throw err;
   }
 
@@ -1297,10 +1302,15 @@ async function runAudit(): Promise<{
       }
     }
   } finally {
-    if (context) await context.close();
-    if (browser) await browser.close();
-    server.close();
-    rmSync(fixture, { recursive: true, force: true });
+    try {
+      if (context) await context.close();
+      if (browser) await browser.close();
+      // Await teardown before deleting the root; dev-target state persistence
+      // can recreate `.repoos/`. See #0858.
+      await server.close();
+    } finally {
+      rmSync(fixture, { recursive: true, force: true });
+    }
   }
 
   return { rows, stats, warnings };
