@@ -214,9 +214,20 @@ export async function runBrowserCaptureWithPolicy<T>(
   }
 
   if (returnedArtifacts) {
-    // A valid capture result with ok=false is a real UI/declared-shot failure.
-    // Preserve it exactly; infra fallback must never mask a missing target.
-    return options.useArtifacts(returnedArtifacts);
+    if (!returnedArtifacts.ok) {
+      // A valid capture result with ok=false is a real UI/declared-shot failure.
+      // Preserve it exactly; infra fallback must never mask a missing target.
+      return options.useArtifacts(returnedArtifacts);
+    }
+    // The runner reported success, but INSTALLING its artifacts can still fail:
+    // a malformed `shots.json`, or a manifest entry whose PNG is missing. That
+    // is a runner-side failure like any other — fall back locally where the mode
+    // allows it, and only surface it in runner-only mode.
+    try {
+      return await options.useArtifacts(returnedArtifacts);
+    } catch (error) {
+      failure = error;
+    }
   }
 
   const detail = failure instanceof Error ? failure.message : String(failure);

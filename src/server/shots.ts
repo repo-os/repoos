@@ -177,6 +177,40 @@ function mimeForExt(ext: string): string {
   return found?.[0] ?? "image/png";
 }
 
+/**
+ * Decode and validate one image payload WITHOUT touching disk, so a batched
+ * import can check every shot before it deletes or writes anything (#0854).
+ * `save()` uses it for its own validation too, keeping the two in lockstep.
+ */
+function prepareShotImage(input: {
+  data: unknown;
+  mime?: unknown;
+}): { buf: Buffer; mime: string; ext: string } | { error: string } {
+  if (typeof input.data !== "string" || input.data.length === 0) {
+    return { error: "base64 image data is required" };
+  }
+  const mime = typeof input.mime === "string" && input.mime ? input.mime : "image/png";
+  const ext = SCREENSHOT_MIME[mime];
+  if (!ext) {
+    return {
+      error: `Unsupported image type "${mime}" — supported: ${Object.keys(SCREENSHOT_MIME).join(", ")}`,
+    };
+  }
+  let buf: Buffer;
+  try {
+    buf = Buffer.from(input.data, "base64");
+  } catch {
+    return { error: "Invalid base64 image data" };
+  }
+  if (buf.length === 0) return { error: "Image data is empty" };
+  if (buf.length > MAX_SCREENSHOT_BYTES) {
+    return {
+      error: `Image is too large (max ${Math.round(MAX_SCREENSHOT_BYTES / 1024 / 1024)} MB)`,
+    };
+  }
+  return { buf, mime, ext };
+}
+
 /** Read the manifest, tolerating a missing/corrupt file as "no metadata yet". */
 function readManifest(dir: string): ShotManifestEntry[] {
   const file = join(dir, "shots.json");
@@ -245,28 +279,9 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
   return {
     list,
     save(input) {
-      if (typeof input?.data !== "string" || input.data.length === 0) {
-        return { error: "base64 image data is required" };
-      }
-      const mime = typeof input.mime === "string" && input.mime ? input.mime : "image/png";
-      const ext = SCREENSHOT_MIME[mime];
-      if (!ext) {
-        return {
-          error: `Unsupported image type "${mime}" — supported: ${Object.keys(SCREENSHOT_MIME).join(", ")}`,
-        };
-      }
-      let buf: Buffer;
-      try {
-        buf = Buffer.from(input.data, "base64");
-      } catch {
-        return { error: "Invalid base64 image data" };
-      }
-      if (buf.length === 0) return { error: "Image data is empty" };
-      if (buf.length > MAX_SCREENSHOT_BYTES) {
-        return {
-          error: `Image is too large (max ${Math.round(MAX_SCREENSHOT_BYTES / 1024 / 1024)} MB)`,
-        };
-      }
+      const prepared = prepareShotImage(input);
+      if ("error" in prepared) return prepared;
+      const { buf, mime, ext } = prepared;
       mkdirSync(dir, { recursive: true });
       const target = (input.target || DEFAULT_PREVIEW_TARGET).trim() || DEFAULT_PREVIEW_TARGET;
       const taken = new Set(existsSync(dir) ? readdirSync(dir) : []);
@@ -379,6 +394,16 @@ export function importShotArtifacts(
   });
 
   const store = localShotStore(config, taskId);
+  // Validate every payload BEFORE deleting anything: a batch whose later shot
+  // fails the store's checks must not wipe the auto shots already on disk. The
+  // previous order ran `removeAuto()` first, so one bad artifact destroyed valid
+  // prior evidence (#0854 review).
+  for (const { name, data } of prepared) {
+    const checked = prepareShotImage({ data, mime: "image/png" });
+    if ("error" in checked) {
+      throw new Error(`could not import runner shot ${name}: ${checked.error}`);
+    }
+  }
   store.removeAuto();
   for (const { meta, name, data } of prepared) {
     const saved = store.save({

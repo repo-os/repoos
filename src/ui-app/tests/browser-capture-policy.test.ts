@@ -160,6 +160,45 @@ describe("browser capture runner policy", () => {
     expect(local).not.toHaveBeenCalled();
   });
 
+  it("falls back locally when installing successful runner artifacts fails", async () => {
+    // The runner said ok=true, but its artifact bundle was malformed/missing a
+    // PNG. That must be a runner failure, not an escape: fall back locally.
+    const local = vi.fn(async () => "local");
+    const note = vi.fn();
+    await expect(
+      runBrowserCaptureWithPolicy({
+        config: config("runner-available"),
+        request,
+        transport: { capture: async () => artifacts({ ok: true }) },
+        local,
+        useArtifacts: vi.fn(async () => {
+          throw new Error("runner returned malformed shots.json");
+        }),
+        note,
+      }),
+    ).resolves.toBe("local");
+    expect(local).toHaveBeenCalledOnce();
+    expect(note).toHaveBeenCalledWith(expect.stringContaining("malformed shots.json"));
+    expect(note).toHaveBeenCalledWith(expect.stringContaining("falling back to local capture"));
+  });
+
+  it("reports an artifact installation failure in runner-only mode", async () => {
+    const local = vi.fn(async () => "local");
+    await expect(
+      runBrowserCaptureWithPolicy({
+        config: config("runner-only"),
+        request,
+        transport: { capture: async () => artifacts({ ok: true }) },
+        local,
+        useArtifacts: vi.fn(async () => {
+          throw new Error("runner omitted shot image runner.png");
+        }),
+        note: vi.fn(),
+      }),
+    ).rejects.toThrow("runner-only browser capture failed: runner omitted shot image runner.png");
+    expect(local).not.toHaveBeenCalled();
+  });
+
   it("runner-only reports an unavailable runner without starting local browser work", async () => {
     const local = vi.fn(async () => "local");
     const note = vi.fn();
