@@ -12,7 +12,7 @@ branch: feat/reviews-must-not-chain-back-to-back-on-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T11:55:25Z"
-updated_at: "2026-10-20T17:53:52Z"
+updated_at: "2026-10-20T17:53:55Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -76,3 +76,4 @@ Not gated: `ReviewManager.runCheckpointDelta` (post-handoff checkpoint delta rev
 - 2026-10-20T17:32:37Z · note: review pass 1: needs some work
 - 2026-10-20T17:32:37Z · status review→active
 - 2026-10-20T17:53:52Z · assigned_to
+- 2026-10-20T17:53:55Z · note: handoff requested (ui-review)
