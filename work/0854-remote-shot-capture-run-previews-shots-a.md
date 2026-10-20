@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T10:21:51Z"
+updated_at: "2026-10-20T10:26:18Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -131,3 +131,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T10:09:28Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T10:21:06Z · body
 - 2026-10-20T10:21:51Z · status active→review
+- 2026-10-20T10:26:18Z · note: review pass 7: needs some work
