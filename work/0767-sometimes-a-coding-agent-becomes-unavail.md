@@ -2,14 +2,14 @@
 id: "0767"
 title: Define centralized coding agent recovery
 type: spec
-status: inbox
+status: ready
 priority: p2
 area: [agent, web]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-13T12:38:26Z"
-updated_at: "2026-10-13T12:38:48Z"
+updated_at: "2026-10-20T04:27:02Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ Sometimes a coding agent becomes unavailable (e.g. you ran out of usage credits 
 
 - 2026-10-13T12:38:26Z · created · hello@repoos.org
 - 2026-10-13T12:38:48Z · status draft→inbox, title, area, type, body
+- 2026-10-20T04:27:02Z · status inbox→ready
