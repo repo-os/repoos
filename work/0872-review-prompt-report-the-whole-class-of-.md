@@ -1,18 +1,21 @@
 ---
-updated_at: "2026-10-20T17:05:14Z"
-review_passes: 1
 id: "0872"
 title: "Default agent prompts for every project: reviewer, engineer, PM and CTO learnings"
 type: chore
-status: review
+status: done
 priority: p1
 area: server
+merged_commit: 94987252a672f407943e2f59ce1108de0aeaf928
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/default-agent-prompts-for-every-project-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:43Z"
+updated_at: "2026-10-20T17:21:03Z"
+last_close_out_gate_ms: 517431
+last_close_out_gate_at: "2026-10-20T17:20:23.395Z"
+review_passes: 1
 ---
 ## Problem
 The review prompt built in src/server/review.ts (the shared part every project gets) does not tell the reviewer to find every instance of a bug class, to read earlier review reports, or to check that the branch merges with its base. The result on 2026-10-20: #0843 needed 22+ review passes, #0854 15+, #0861 13, each pass finding one more instance of the same class (service-lifecycle teardown, runner fallback and import safety, config-key registration), plus avoidable rounds on evidence-only gaps and a "good to go" on a commit that still conflicted with main (#0860). For RepoOS itself the reviewer role text in repoos.toml was updated by hand on 2026-10-20; every other project still gets the old behavior.
@@ -76,4 +79,5 @@ Wording sources, all in this repo's repoos.toml as edited on 2026-10-20: the rev
 - 2026-10-20T17:03:56Z · status active→review
 - 2026-10-20T17:03:56Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (94987252a) during finalization (#0734)
 - 2026-10-20T17:05:13Z · note: review pass 1: good to go
-
+- 2026-10-20T17:20:23Z · close-out gate completed in 517s
+- 2026-10-20T17:21:03Z · status review→done, release:success
