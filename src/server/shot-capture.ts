@@ -79,6 +79,12 @@ export interface CapturedPage {
   png: Buffer;
   /** e.g. `highlight .x matched nothing on /route` — the caller decides where these go. */
   warnings: string[];
+  /**
+   * #0866: warnings that mean the captured PNG is the WRONG SCREEN (a state
+   * fixture that never rendered, a target that served its HTML shell for an
+   * app module). Declared shots must not be saved as evidence on these.
+   */
+  blockingWarnings: string[];
 }
 
 /**
@@ -95,6 +101,7 @@ export async function captureEntryPage(
   settleMs: number = AUTO_SETTLE_MS,
 ): Promise<CapturedPage> {
   const warnings: string[] = [];
+  const blockingWarnings: string[] = [];
   const page = (await context.newPage()) as unknown as ShotDriverPage;
   try {
     const width = entry.viewportWidth ?? AUTO_VIEWPORT.width;
@@ -128,13 +135,15 @@ export async function captureEntryPage(
         // a failed shot with the target named.
         onStateMiss: (message) => {
           warnings.push(message);
+          blockingWarnings.push(message);
         },
         onRouteNotServed: (message) => {
           warnings.push(message);
+          blockingWarnings.push(message);
         },
       },
     );
-    return { png, warnings };
+    return { png, warnings, blockingWarnings };
   } finally {
     await page.close().catch(() => {});
   }
@@ -683,6 +692,16 @@ export async function runAutoShotCapture(
   if ("reason" in planned) {
     return finish("skipped", planned.reason);
   }
+  // #0866: a declaration the resolved target cannot render must never be
+  // captured as evidence — the same failure the handoff gate reports, raised
+  // here too so a wrong-screen PNG cannot land even when UI verification is
+  // disabled. This also covers a remote canonical plan.
+  if (planned.blockingErrors?.length) {
+    return finish(
+      "failed",
+      `declared shot cannot render — ${planned.blockingErrors.join("; ")}`,
+    );
+  }
   const plan = planned;
   // Branch fixtures (#0786): URL building admits a `state` the task branch's
   // source declares, even before main's compiled list knows it.
@@ -815,13 +834,33 @@ export async function runAutoShotCapture(
       const pageUrl = shotCapturePageUrl(currentUrl, entry, branchValidator ?? undefined);
       let png: Buffer;
       let warnings: string[] = [];
+      let blockingWarnings: string[] = [];
       try {
-        ({ png, warnings } = await captureEntryPage(context as SmokeContext, pageUrl, entry));
+        ({ png, warnings, blockingWarnings } = await captureEntryPage(
+          context as SmokeContext,
+          pageUrl,
+          entry,
+        ));
       } catch (err) {
         return finish(
           "failed",
           `capture of ${entry.label ?? entry.route} on "${entry.target}" failed: ${(err as Error).message.split("\n")[0]}`,
         );
+      }
+      // #0866: a declared shot that rendered the wrong screen is FAILED
+      // evidence — never saved, and reported in the same words the handoff
+      // gate uses. Non-declared captures keep the lenient warning behaviour.
+      if (entry.provenance.kind === "declared" && blockingWarnings.length > 0) {
+        const detail = `declared shot ${
+          entry.label ?? entry.route
+        } on target "${entry.target}" cannot render: ${blockingWarnings.join("; ")}`;
+        for (const msg of blockingWarnings) log(task.id, "error", `shots: ${msg}`);
+        try {
+          patchTaskFile(config, task.absPath, { note: detail });
+        } catch {
+          /* the log line already recorded it */
+        }
+        return finish("failed", detail);
       }
       // The miss callbacks only collect here; noting them on the task keeps the
       // pre-extraction behavior (log line + activity note) for the handoff pass.
@@ -1240,6 +1279,11 @@ async function captureDeclaredShotImpl(
       return {
         error: `capture failed: the route may not load — ${(err as Error).message.split("\n")[0]}`,
       };
+    }
+    // #0866: a declared capture that rendered the wrong screen (fixture never
+    // applied, target served its HTML shell) must not be stored as evidence.
+    if (captured.blockingWarnings.length > 0) {
+      return { error: captured.blockingWarnings.join("; ") };
     }
     const provenance = provenanceCaption(entry.provenance);
     const stored = localShotStore(config, task.id).save({
