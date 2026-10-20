@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T04:26:12Z"
+updated_at: "2026-10-20T04:26:13Z"
 ---
 ## Problem
 (1) Close-out blocks on reminder files. Move to done refuses to publish when a reminder file is dirty on main: 'main has 1 uncommitted file at publish time, so the merge would abort: reminders/37fba592-....md'. Reminders (#0851) are server-written, repo-native files like tasks, inputs and stories, but the close-out only knows work/, inputs/ and stories/ as routine server-written churn (bookkeepingDirs / bookkeepingKeepOursPrefixes in src/server/integration-orchestrator.ts ~line 334; isNonCodePublishDrift; the dirty-main guard in docs/close-out-pipeline.md). Every time a reminder is created, snoozed or marked done while a close-out runs, an unrelated landing is blocked and needs a manual 'Commit & continue'. Scheduled-task definitions (schedules/, #0093) are stamped by the server (last_run_at, last_occurrence_key) and have the same problem.
@@ -22,10 +22,11 @@ A. A dirty or advancing reminders/ (and schedules/) tree never blocks or restart
 B. Both directories are configurable and follow the layout: add a remindersDir setting (default 'reminders', with a Settings UI control and getConfigSchema entry per the repo rule) and make src/core/reminders.ts read it instead of the hard-coded path; the close-out bookkeeping dirs come from config (remindersDir, schedulesDir) the way workDir/inputsDir/storiesDir do; the repoos/ template in 'repoos init' also writes schedulesDir = '<ns>/schedules' and remindersDir = '<ns>/reminders' with the other namespaced dirs. Existing projects keep their current paths (no silent move); document how to relocate by setting the keys and moving the files.
 
 ## Acceptance criteria
-- Tests: a dirty `reminders/<id>.md` (modified and untracked) on main at publish does not abort the merge and is checkpointed; the same for `schedules/*.md`; a dirty source file still aborts with the existing message.
-- Tests: main advancing only by `reminders/` or `schedules/` commits is non-code drift (no resync); a conflict in these dirs keeps main's copy.
-- Tests: custom `remindersDir`/`schedulesDir` values are honoured.
-- docs/close-out-pipeline.md (the routine-churn paragraph and the autoResolveOurs paragraph) and user-docs/review-and-close-out.md updated.
+- Tests: a dirty reminders/<id>.md (modified and untracked) on main at publish does not abort the merge and is checkpointed; the same for schedules/*.md; a dirty source file still aborts with the existing message.
+- Tests: main advancing only by reminders/ or schedules/ commits is non-code drift (no resync); a conflict in these dirs keeps main's copy.
+- Tests: custom remindersDir and schedulesDir values are honoured by the close-out, by the reminders store and by the scheduler.
+- Tests: the repoos/ init template writes namespaced schedulesDir and remindersDir; the root layout template is unchanged; an existing config without the new keys behaves exactly as before (default 'reminders').
+- remindersDir has a Settings UI control and getConfigSchema entry with clear copy and a test; docs/close-out-pipeline.md, docs/scheduled-tasks.md, user-docs/configuration.md and user-docs/review-and-close-out.md are updated, including the note for existing projects.
 
 ## Notes for AI
 Extend `bookkeepingDirs` and its callers rather than adding a parallel list, and check every place that enumerates the three bookkeeping dirs (grep workDir/inputsDir/storiesDir in src/server and src/core). Keep the allowlist semantic and fail-closed (AGENTS.md "Integration conflicts"). Do not touch repoos.toml. Source: Nick, 2026-10-20 (a landing was blocked by reminders/37fba592-....md).
@@ -36,3 +37,4 @@ Extend `bookkeepingDirs` and its callers rather than adding a parallel list, and
 - 2026-10-20T04:26:08Z · title
 - 2026-10-20T04:26:10Z · body: Problem (added 2, removed 1)
 - 2026-10-20T04:26:12Z · body: Desired UX (added 2, removed 5)
+- 2026-10-20T04:26:13Z · body: Acceptance criteria (added 5, removed 4)
