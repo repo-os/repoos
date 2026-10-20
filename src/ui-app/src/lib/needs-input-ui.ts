@@ -21,6 +21,7 @@ export const STALE_REVIEW_DEV_ERROR_BANNER =
 export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
   "review-failed": "Reviewer failed — no report",
   "review-rounds-exhausted": "Review still finding issues",
+  "review-human-attention": "Repeated review classes — human check",
   "evidence-gap-exhausted": "Handoff evidence still missing",
   "dev-error": "Agent exited with error",
   "provider-failure": "Provider or credit error",
@@ -36,6 +37,8 @@ export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
 export const NEEDS_INPUT_BANNER_LABELS: Record<string, string> = {
   "review-failed": "The reviewer crashed or timed out without producing a report.",
   "review-rounds-exhausted": `The reviewer has sent this back to the engineer ${MAX_AUTO_REVIEW_ROUNDS} times and still found issues. No review is running now.`,
+  "review-human-attention":
+    "Reviews keep finding the same classes of bug after several passes. A human should look before another round.",
   "evidence-gap-exhausted":
     "Automatic re-capture still could not produce usable handoff shots. Fix the shot plan or refresh evidence, then review again.",
   "dev-error": "The agent exited with an error.",
@@ -56,6 +59,8 @@ export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
     "Try Review again from the Review tab (or Restart work if the task is back in active). If it keeps failing, check the CLI/model picker there — an invalid pairing (e.g. after switching CLI) causes exactly this.",
   "review-rounds-exhausted":
     "Read the latest review report, then send it to the engineer, fix it yourself, or move to done if the remaining findings are acceptable. A review already finished with findings, so re-reviewing the same code would just repeat it — review again after the fixes.",
+  "review-human-attention":
+    "Read the newest report's repeated-class summary, then send it to the engineer, fix it yourself, or rescope the task if the loop is not converging. Another pass on the same code is unlikely to help.",
   "evidence-gap-exhausted":
     "Open the review report's Evidence section, update `## Shots` on the task if needed, use Refresh evidence on the Changes tab (or `repoos verify <id>`), then Review again. Only send to the engineer if the shot plan itself needs editing.",
   "dev-error":
@@ -206,6 +211,8 @@ export function needsInputPrimaryAction(
     case "review-rounds-exhausted":
       // A review already finished with findings: the next step is acting on
       // them, not paying for another review of the same code.
+      return ctx.status === "review" ? SEND_ENGINEER_ACTION : null;
+    case "review-human-attention":
       return ctx.status === "review" ? SEND_ENGINEER_ACTION : null;
     case "evidence-gap-exhausted":
       return ctx.status === "review" ? REVIEW_AGAIN_ACTION : null;
