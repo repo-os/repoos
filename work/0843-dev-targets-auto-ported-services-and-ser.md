@@ -2,7 +2,10 @@
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "by one target must map to distinct placeholder tokens: two names that"
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -13,11 +16,11 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T10:42:54Z"
+updated_at: "2026-10-20T10:52:42Z"
 review_passes: 20
 last_check_failure: "repoos check at 2026-10-20T10:20:49.854Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 886d9960 to 9241cb9c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
-dev_error_count: 1
+dev_error_count: 2
 ---
 ## Problem
 `[[dev.targets]]` supports a single `{port}` for one process, so a full-stack dev target (an API plus a frontend that proxies to it) must pin the API to a fixed port. In the lightingai project the Bun API is pinned to 3001 because the Vite proxy needs to know it, so two copies of the stack, or anything else on 3001, collide. `[[preview.targets]]` already solves this with `[[preview.services]]` and `{api.port}` (#0681), but dev targets have no equivalent. Suggested by the owner (2026-10-19): frontends can already be dynamic, the API should be able to be too.
@@ -267,3 +270,5 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T10:42:42Z · status review→active
 - 2026-10-20T10:42:42Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T10:42:43Z · message_delivered: 1 message(s)
+- 2026-10-20T10:52:41Z · agent exited with an error (codex) · by one target must map to distinct placeholder tokens: two names that
+- 2026-10-20T10:52:42Z · status active→review
