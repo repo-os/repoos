@@ -925,6 +925,13 @@ export class CloseOutOrchestrator {
    */
   private ownedAttempt: number | undefined = undefined;
 
+  /**
+   * Tasks whose `status: done` this process stamped into the publish commit
+   * (#0886). Only these may be reverted on failure — a task that was already
+   * done from an earlier close-out must stay moot/untouched.
+   */
+  private publishStampedTasks = new Set<string>();
+
   constructor(
     private config: RepoOSConfig,
     private coordinator: JobCoordinator,
@@ -1287,6 +1294,9 @@ export class CloseOutOrchestrator {
     }
     this.removeCandidate(job.taskId);
     this.clearResolutionProvenance(job.taskId);
+    // A cancelled attempt never owns a stamp to revert: if the merge already
+    // landed, the task stays done (the code is on main).
+    this.publishStampedTasks.delete(job.taskId);
     this.coordinator.removeJob(job.taskId, this.ownedAttempt);
     this.logger?.integration(job.taskId, "info", "close-out cancelled by user (#0459)");
     return { ok: false, reason: CANCEL_REASON };
@@ -3349,10 +3359,10 @@ export class CloseOutOrchestrator {
    */
   private async stampPublishedTaskDone(job: IntegrationJob, ff: boolean): Promise<void> {
     const root = this.config.root;
+    const absPath =
+      this.getTask?.(job.taskId)?.absPath ??
+      findTaskFileById(root, this.config.workDir, job.taskId);
     try {
-      const absPath =
-        this.getTask?.(job.taskId)?.absPath ??
-        findTaskFileById(root, this.config.workDir, job.taskId);
       if (!absPath) return;
       // The publish merge's tip. The amend below must only ever rewrite THIS
       // commit: another bookkeeping commit on main between the merge and here
@@ -3388,8 +3398,14 @@ export class CloseOutOrchestrator {
       if (commit.status !== 0) {
         throw new Error(commit.stderr.trim() || "could not commit the task stamp");
       }
+      this.publishStampedTasks.add(job.taskId);
       notifyGitMutation(root, "commit");
     } catch (err) {
+      // The file may already carry the stamp even though committing it failed.
+      // Put it back before recording the failure, or the failure handler would
+      // read `done` and drop the job as moot (see publishStampedTasks).
+      if (absPath) revertPublishDoneStamp(this.config, absPath);
+      this.publishStampedTasks.delete(job.taskId);
       // Never fail a publish that already merged over bookkeeping: the release
       // step still runs and the task file is never left worse than before.
       this.logger?.integration(
@@ -3409,6 +3425,7 @@ export class CloseOutOrchestrator {
    * recorded a real release marker.
    */
   private revertPublishedTaskDoneStamp(job: IntegrationJob): void {
+    if (!this.publishStampedTasks.delete(job.taskId)) return;
     const absPath =
       this.getTask?.(job.taskId)?.absPath ??
       findTaskFileById(this.config.root, this.config.workDir, job.taskId);
@@ -4141,6 +4158,8 @@ export class CloseOutOrchestrator {
     });
 
     clearWorktreeHandoffProtection(root, this.config.cacheDir ?? ".repoos", job.taskId);
+    // Released: the stamp belongs to this task now and must never be reverted.
+    this.publishStampedTasks.delete(job.taskId);
     return { ok: true };
   }
 }
