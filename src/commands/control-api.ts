@@ -18,6 +18,7 @@ import {
   pairPauseInfo,
 } from "../core/budget-allowlist.js";
 import type { RepoOSConfig } from "../core/types.js";
+import type { LandableCheck, LandableResult } from "../core/landable.js";
 
 interface CommonOpts {
   json: boolean;
@@ -1053,25 +1054,7 @@ export async function cmdStats(args: string[]): Promise<number> {
   }
 }
 
-export interface LandableCheckLike {
-  id: string;
-  label: string;
-  status: "pass" | "warn" | "fail";
-  detail: string;
-  nextStep?: string;
-}
-
-export interface LandableResultLike {
-  taskId: string;
-  branch: string | null;
-  headSha: string | null;
-  lockSha: string | null;
-  landable: boolean;
-  checks: LandableCheckLike[];
-  summary: { pass: number; warn: number; fail: number };
-}
-
-function landableIcon(status: LandableCheckLike["status"]): string {
+function landableIcon(status: LandableCheck["status"]): string {
   if (status === "pass") return c.green("✓");
   if (status === "warn") return c.yellow("!");
   return c.red("✗");
@@ -1098,7 +1081,7 @@ export async function cmdLandable(args: string[]): Promise<number> {
     const result = (await api.requestOk(
       "GET",
       `/api/tasks/${id}/landable`,
-    )) as unknown as LandableResultLike;
+    )) as unknown as LandableResult;
     if (opts.json) printJson(result);
     else {
       const verdict = result.landable

@@ -68,7 +68,7 @@ detail, nextStep? }], summary: { pass, warn, fail } }`.
 
 | Check (`id`) | Fails when | Next step it names |
 | --- | --- | --- |
-| `review-verdict` | latest review pass is missing, incomplete, failed, lists blocking bugs, or is not `good to go` | fix findings, then `repoos review again <id>` |
+| `review-verdict` | latest review pass is missing, incomplete, failed, predates the latest handoff, lists blocking bugs, or is not `good to go` | fix findings, then `repoos review again <id>` |
 | `review-lock` | a review lock exists and its sha differs from the worktree HEAD (a **missing** lock is a warning, not a failure) | request a fresh review of the current commit |
 | `worktree-clean` | the task worktree has uncommitted files | commit them on the branch or discard them |
 | `merge-conflicts` | `git merge-tree` reports a conflict outside the task's own `work/<id>-*.md` (own-file-only is a warning: close-out takes main's copy) | merge main into the branch (`repoos sync <id>`), keep both sides, re-review |

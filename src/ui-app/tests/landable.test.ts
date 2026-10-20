@@ -8,6 +8,7 @@ import {
   classifyMainDirtyFiles,
   evaluateLandable,
   mainDirtyOwner,
+  reviewPredatesLatestHandoff,
   type LandableFacts,
 } from "../../core/landable";
 
@@ -84,6 +85,22 @@ const cases: Case[] = [
     id: "review-verdict",
     status: "fail",
     detail: "the review still lists blocking bugs",
+  },
+  {
+    name: "review report predates the latest handoff",
+    facts: {
+      review: {
+        present: true,
+        state: "ok",
+        verdict: "good to go",
+        blockingBugs: false,
+        current: false,
+      },
+    },
+    id: "review-verdict",
+    status: "fail",
+    detail: "the review report predates the latest handoff",
+    nextStep: "Run a fresh review of the current commit: repoos review again <id>",
   },
   {
     name: "review verdict is needs some work",
@@ -338,5 +355,30 @@ describe("main dirty ownership", () => {
       { path: "repoos.toml", owner: "repoos.toml" },
       { path: "src/a.ts", owner: "unknown" },
     ]);
+  });
+});
+
+describe("review freshness", () => {
+  const body = [
+    "## Activity",
+    "",
+    "- 2026-10-20T10:00:00Z · status active→review",
+    "- 2026-10-20T11:00:00Z · status review→active",
+  ].join("\n");
+
+  it("flags a report older than the latest handoff", () => {
+    expect(reviewPredatesLatestHandoff(body, "2026-10-20T09:00:00Z")).toBe(true);
+  });
+
+  it("keeps a report written after the latest handoff", () => {
+    expect(reviewPredatesLatestHandoff(body, "2026-10-20T10:30:00Z")).toBe(false);
+  });
+
+  it("treats a body with no handoff transition as current", () => {
+    expect(reviewPredatesLatestHandoff("## Activity\n", "2026-10-20T09:00:00Z")).toBe(false);
+  });
+
+  it("does not guess from an invalid report timestamp", () => {
+    expect(reviewPredatesLatestHandoff(body, "not-a-date")).toBe(false);
   });
 });
