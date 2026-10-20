@@ -1294,9 +1294,10 @@ export class CloseOutOrchestrator {
     }
     this.removeCandidate(job.taskId);
     this.clearResolutionProvenance(job.taskId);
-    // A cancelled attempt never owns a stamp to revert: if the merge already
-    // landed, the task stays done (the code is on main).
-    this.publishStampedTasks.delete(job.taskId);
+    // If cancellation arrived after the publish merge landed, the stamp must be
+    // reverted with it: `done` without a `release:success` marker is an
+    // unfinished release (the same state a failed post-merge step leaves).
+    this.revertPublishedTaskDoneStamp(job);
     this.coordinator.removeJob(job.taskId, this.ownedAttempt);
     this.logger?.integration(job.taskId, "info", "close-out cancelled by user (#0459)");
     return { ok: false, reason: CANCEL_REASON };
