@@ -133,3 +133,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:13:33Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T11:13:38Z · agent exited with an error (codex) · you want shared Git history. They are currently repo-wide, visible to
 - 2026-10-20T11:13:38Z · status active→review
+- 2026-10-20T11:13:38Z · note: handoff requested (cli)
