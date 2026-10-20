@@ -2,7 +2,7 @@
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T05:49:17Z"
+updated_at: "2026-10-20T05:50:06Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -51,3 +51,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T05:17:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-20T05:48:54Z · note: Review round 1 requested implementation fixes; resuming work in the existing task worktree.
 - 2026-10-20T05:49:17Z · message_delivered: 1 message(s)
+- 2026-10-20T05:50:06Z · status active→review
