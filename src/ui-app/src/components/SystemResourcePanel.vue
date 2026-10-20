@@ -325,7 +325,9 @@ const serveMessage = computed(() => {
               <span class="top-owner" :class="p.owner">{{
                 p.owner === "repoos" ? "RepoOS" : "other"
               }}</span>
-              <span class="top-name" :title="`${p.command} (pid ${p.pid})`">{{ p.command }}</span>
+              <span class="top-name"
+                >{{ p.command }} <span class="top-pid">#{{ p.pid }}</span></span
+              >
               <span class="top-val">{{ fmtPct(p.cpuPercent) }}%</span>
             </div>
           </div>
@@ -339,7 +341,9 @@ const serveMessage = computed(() => {
               <span class="top-owner" :class="p.owner">{{
                 p.owner === "repoos" ? "RepoOS" : "other"
               }}</span>
-              <span class="top-name" :title="`${p.command} (pid ${p.pid})`">{{ p.command }}</span>
+              <span class="top-name"
+                >{{ p.command }} <span class="top-pid">#{{ p.pid }}</span></span
+              >
               <span class="top-val">{{ fmtBytes(p.memBytes) }}</span>
             </div>
           </div>
@@ -559,6 +563,11 @@ const serveMessage = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.top-pid {
+  color: var(--txt-faint);
+  font-size: 10px;
 }
 
 .top-val {
