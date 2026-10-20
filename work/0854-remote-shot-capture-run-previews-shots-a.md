@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-20T12:45:57Z"
-review_passes: 18
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
@@ -15,6 +13,8 @@ created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
+updated_at: "2026-10-20T13:15:49Z"
+review_passes: 18
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -25,7 +25,7 @@ Tests already run on Tailscale runners (docs/remote-validation.md), but everythi
 
 ## Desired UX
 Shot capture and UI verification can run on a runner:
-- At handoff (and for `repoos shot` / `repoos verify`), when a runner with Playwright/WebKit is available, the control plane ships the task bundle (already done for tests), the runner builds the UI, starts the app in preview mode inside the runner's container, captures every declared and automatic shot and the UI-verification record using the same fixtures and step vocabulary, and returns the PNGs, `shots.json` and the verification record as artifacts. Results land in the same places (`work/.attachments/<id>/shots`, task activity) so the Changes tab and the reviewer see no difference.
+- At handoff (the automatic shots and UI verification only; manual `repoos shot` and `repoos verify` stay local by design, offloading them is #0874), when a runner with Playwright/WebKit is available, the control plane ships the task bundle (already done for tests), the runner builds the UI, starts the app in preview mode inside the runner's container, captures every declared and automatic shot and the UI-verification record using the same fixtures and step vocabulary, and returns the PNGs, `shots.json` and the verification record as artifacts. Results land in the same places (`work/.attachments/<id>/shots`, task activity) so the Changes tab and the reviewer see no difference.
 - A Settings control (Performance) selects where browser work runs: `local`, `runner when available` (default once proven), `runner only`. Local stays the fallback and stays under the existing Playwright cap.
 - The laptop no longer builds or serves a preview for routine handoff evidence; a human-requested interactive preview (the Preview button) stays local.
 
@@ -240,4 +240,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T12:43:12Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (7cfb09304) during finalization (#0734)
 - 2026-10-20T12:45:56Z · note: review pass 18: needs some work
 - 2026-10-20T12:45:57Z · needs_input
-
+- 2026-10-20T13:15:49Z · body: Desired UX (added 1, removed 1)
