@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: handoff finalization was interrupted (server reload) — restart work to hand off again
+debug_tldr: The RepoOS server reloaded during handoff finalization — restart the task and request handoff again.
+debug_tldr_at: "2026-10-20T11:58:11Z"
+debug_tldr_key: dev-error|handoff finalization was interrupted (server reload) — restart work to hand off again
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -13,7 +16,7 @@ created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T11:57:54Z"
+updated_at: "2026-10-20T11:58:11Z"
 review_passes: 15
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
