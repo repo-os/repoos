@@ -8649,6 +8649,26 @@ export class AgentRunner {
     }
     // Resolve task from index if not in entry (important for resume turns).
     const taskForHandoff = entry.task ?? (this.getTask ? this.getTask(taskId) : null);
+    // #0888: a clean engineer turn that never requested review leaves the task
+    // silently `active` with nothing running. Record that durably in Activity so
+    // TaskWatchdog can tell a clean exit (resume it) from a crash (crash
+    // recovery, #0869) even after a server reload. Deferred handoffs and queued
+    // messages are excluded from finalization above but still land here: the
+    // turn did end without a handoff.
+    if (
+      exitedCleanly &&
+      !wasReview &&
+      !entry.intentionalStop &&
+      !this.isPaused(taskId) &&
+      !entry.handoffRequested &&
+      taskForHandoff?.status === "active" &&
+      !taskForHandoff.isArchived
+    ) {
+      this.recordTaskActivity(
+        taskId,
+        "engineer turn ended without a handoff: the turn exited cleanly and did not request review",
+      );
+    }
     // Any non-clean exit that isn't a deliberate stop means the task is about
     // to sit silently in its current status with nothing left running — flag it
     // the moment the process ends rather than waiting for TaskWatchdog's

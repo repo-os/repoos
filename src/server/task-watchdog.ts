@@ -25,19 +25,25 @@
  * looped.
  *
  * On detection of an ACTIVE task the watchdog:
- * 1. Classifies the failure reason — `never-started` (no session ever began),
+ * 1. Clears a phantom runner-registry row whose process group is gone (#0863),
+ *    so "already running" with no process cannot mask the stall (#0888).
+ * 2. Classifies the failure reason — `never-started` (no session ever began),
  *    `crashed` (the persisted handoff log shows an interrupted turn), or
  *    `exited-without-handoff` (a session ran, its process ended, but no clean
  *    handoff signal followed).
- * 2. Records that reason in the task's Activity log.
- * 3. Surfaces the task by auto-transitioning it out of the silent `active`
- *    state (`watchdog.autoTransition`, default on): to `review` when the
- *    worktree holds work (committed or uncommitted — reviewable, never to be
- *    silently discarded, the #0172 lesson), else back to `ready` where it can
- *    be picked up again. The write goes through the live index, so the board
- *    updates and the existing ntfy status-change notification fires. When
- *    auto-transition is disabled it falls back to `needsInput` (the #0156
- *    escalation), which fires the existing needs-input notification.
+ * 3. For a clean exit without a handoff (#0888 — including a deferred
+ *    handoff) resumes the engineer through the crash-recovery launch path,
+ *    bounded to 3 resumes per 30 minutes per task. At the cap the task is
+ *    surfaced as `needs_input` instead of nudged forever.
+ * 4. Otherwise records the reason in the task's Activity log and surfaces the
+ *    task by auto-transitioning it out of the silent `active` state
+ *    (`watchdog.autoTransition`, default on): to `review` when the worktree
+ *    holds work (committed or uncommitted — reviewable, never to be silently
+ *    discarded, the #0172 lesson), else back to `ready` where it can be picked
+ *    up again. The write goes through the live index, so the board updates and
+ *    the existing ntfy status-change notification fires. When auto-transition
+ *    is disabled it falls back to `needsInput` (the #0156 escalation), which
+ *    fires the existing needs-input notification.
  *
  * Guards:
  * - Never fires while the server is mid-reload (`canRun` is observed every
@@ -53,12 +59,27 @@ import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";
+import type { Logger } from "../core/logger.js";
 import type { ReviewReport, ReviewRunResult } from "./review.js";
 import { REVIEW_RUN_TRIGGERS } from "./review-automation.js";
 import { effectiveStalenessNow } from "../core/agent-run-health.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { commitTaskFile, worktreeStatus, worktreePathForBranch } from "../core/git.js";
 import { scheduleHandoffSignalRetry } from "./handoff.js";
+import { isTaskClosingOut } from "./close-out-lock.js";
+import {
+  DEFAULT_ENGINEER_STALL_RESUME_LIMIT,
+  DEFAULT_ENGINEER_STALL_RESUME_WINDOW_MS,
+  ENGINEER_STALL_RESUME_LOG_KEY,
+  parseEngineerStallResumeLog,
+  planEngineerStallResume,
+  readEngineerCleanExitSignal,
+} from "../core/engineer-crash-recovery.js";
+import {
+  recoverEngineerAfterStalledCleanExit,
+  type EngineerStallRecoveryContext,
+} from "./engineer-crash-recovery.js";
+import { relaunchEngineerOnActiveTask } from "./engineer-launch.js";
 import {
   IDENTICAL_HANDOFF_FAILURES_REASON,
   assessHandoffFailureLoop,
@@ -399,6 +420,16 @@ export interface TaskWatchdogOptions {
    * the escalation itself never waits on it.
    */
   onDiagnosableFailure?: (taskId: string, reason: string) => void;
+  /**
+   * Logger for the clean-exit resume path (#0888). Optional: the watchdog works
+   * without one, and the shared engineer launch only needs `task`.
+   */
+  logger?: Pick<Logger, "task">;
+  /**
+   * Test seam for the clean-exit resume launch (#0888). Production uses the
+   * shared engineer relaunch path, exactly like crash recovery.
+   */
+  launch?: typeof relaunchEngineerOnActiveTask;
 }
 
 /**
@@ -424,6 +455,10 @@ export class TaskWatchdog {
   private readonly reviews?: WatchdogReviewManager;
   /** Failure tl;dr trigger (#0570) — fire-and-forget diagnosis of the escalation. */
   private readonly onDiagnosableFailure?: (taskId: string, reason: string) => void;
+  /** Logger for the clean-exit resume path (#0888). */
+  private readonly logger?: Pick<Logger, "task">;
+  /** Test seam for the clean-exit resume launch (#0888). */
+  private readonly launch?: typeof relaunchEngineerOnActiveTask;
   private timer: ReturnType<typeof setInterval> | null = null;
   private stalenessThresholdMs: number;
   /** Re-entry guard: a scan already in flight is skipped by the next tick. */
@@ -446,6 +481,8 @@ export class TaskWatchdog {
     this.canRun = opts.canRun;
     this.reviews = opts.reviews;
     this.onDiagnosableFailure = opts.onDiagnosableFailure;
+    this.logger = opts.logger;
+    this.launch = opts.launch;
   }
 
   start(): void {
@@ -516,8 +553,12 @@ export class TaskWatchdog {
     // auto-surface or re-escalate it.
     if (task.needsInput) return false;
     if (task.needsInputReason === IDENTICAL_HANDOFF_FAILURES_REASON) return false;
-    // An agent process is running, or a server-side handoff is finalizing.
-    if (this.runner.isRunning(task.id)) return false;
+    // An agent process is running, or a server-side handoff is finalizing. A
+    // runner row whose process group is already gone is a phantom, not work
+    // (#0863): clear it here so it cannot mask a stalled task forever (#0888).
+    if (this.runner.isRunning(task.id) && !this.runner.releasePhantomForStart(task.id)) {
+      return false;
+    }
     if (this.runner.isHandoffInFlight(task.id)) return false;
     // Server-side finalization persists the handoff until a terminal result
     // (#0501). Skip only that shape — not an interrupted turn that also left
@@ -596,19 +637,24 @@ export class TaskWatchdog {
 
     if (this.handleIdenticalHandoffFailureLoop(current)) return;
 
-    // #0271 follow-up: `exited-without-handoff` is the one dead-session shape
-    // with a plausible quick fix — the agent may have simply mis-emitted the
-    // signal line (#0154/#0155) or just needs a nudge to finish. Give the
-    // SAME session a bounded number of automatic nudges before falling back
-    // to surfacing (which is still the correct outcome for `never-started` —
-    // nothing to resume — and `crashed`, which already has its own recovery
-    // path via the persisted-handoff-failure machinery).
-    if (
-      kind === "exited-without-handoff" &&
-      scheduleHandoffSignalRetry(this.config, current, this.runner, (absPath) =>
-        this.index.applyFileChange(absPath, { guarded: true }),
-      )
-    ) {
+    // #0888: a clean turn that never asked for review leaves the task silently
+    // `active`. A deferred handoff must always resume the engineer so it reads
+    // the queued message; otherwise the pre-existing quick signal retry gets
+    // first refusal, and once its (lifetime) budget is spent this bounded
+    // watchdog resume takes over instead of surfacing the task for a human.
+    if (kind === "exited-without-handoff") {
+      if (readEngineerCleanExitSignal(current.body).deferred > 0) {
+        if (this.handleStalledCleanExit(current)) return;
+      }
+      if (
+        scheduleHandoffSignalRetry(this.config, current, this.runner, (absPath) =>
+          this.index.applyFileChange(absPath, { guarded: true }),
+        )
+      ) {
+        return;
+      }
+      if (this.handleStalledCleanExit(current)) return;
+    } else if (this.handleStalledCleanExit(current)) {
       return;
     }
     if (this.autoTransition) {
@@ -617,6 +663,78 @@ export class TaskWatchdog {
     }
     // Fallback (#0156): keep the task active but flag it for the human.
     this.escalateToNeedsInput(current, reason);
+  }
+
+  /**
+   * Apply the stalled-clean-exit policy (#0888): a task whose last turn ended
+   * cleanly without a handoff is resumed through the same launch path as crash
+   * recovery, bounded by `DEFAULT_ENGINEER_STALL_RESUME_LIMIT` per window; at
+   * the cap it is surfaced as `needs_input` instead of nudged forever.
+   *
+   * Returns true when the policy owns this task (a resume was launched, or the
+   * cap surfaced it); false means "not a clean-exit stall — use the existing
+   * dead-session handling".
+   */
+  private handleStalledCleanExit(task: Task): boolean {
+    const signal = readEngineerCleanExitSignal(task.body);
+    const classification = classifyDeadAgentReason(task, this.runner);
+    const exitKind =
+      signal.clean || classification.kind === "exited-without-handoff" ? "clean" : "unknown";
+    const closingOut = isTaskClosingOut(this.config.root, this.config.cacheDir, task.id);
+    const handedOff = handoffSinceLastCommit(this.config, task);
+    const plan = planEngineerStallResume({
+      status: task.status,
+      isArchived: task.isArchived,
+      needsInput: task.needsInput,
+      assignedToHuman: task.assignedTo.trim().toLowerCase() === "human",
+      paused: this.runner.isPaused(task.id),
+      running: this.runner.isRunning(task.id),
+      handoffInFlight: this.runner.isHandoffInFlight(task.id),
+      pendingHandoff: this.runner.hasPendingHandoff(task.id),
+      closingOut,
+      handoffRequested: false,
+      exitKind,
+      handoffDeferred: signal.deferred > 0,
+      queuedMessages: signal.deferred,
+      handoffSinceLastCommit: handedOff,
+      resumes: parseEngineerStallResumeLog(task.extra?.[ENGINEER_STALL_RESUME_LOG_KEY]),
+      now: Date.now(),
+      limit: DEFAULT_ENGINEER_STALL_RESUME_LIMIT,
+      windowMs: DEFAULT_ENGINEER_STALL_RESUME_WINDOW_MS,
+    });
+    if (plan.action === "skip") return false;
+
+    const context: EngineerStallRecoveryContext = {
+      exitKind,
+      handoffDeferred: signal.deferred > 0,
+      queuedMessages: signal.deferred,
+      handoffSinceLastCommit: handedOff,
+    };
+    // Fire-and-forget, like the reviewer retry: a resume runs bootstrap and a
+    // real turn, and one slow launch must not stall detection of other stuck
+    // tasks on this sweep. The persisted resume log bounds re-entry.
+    void recoverEngineerAfterStalledCleanExit(
+      {
+        config: this.config,
+        index: this.index,
+        runner: this.runner,
+        logger: this.logger,
+        launch: this.launch,
+      },
+      task.id,
+      context,
+    )
+      .then((outcome) => {
+        if (outcome.action === "surfaced") {
+          this.onDiagnosableFailure?.(task.id, "watchdog-stuck");
+        }
+      })
+      .catch((err: unknown) => {
+        console.error(
+          `[repoos] watchdog: clean-exit resume failed for #${task.id}: ${(err as Error).message}`,
+        );
+      });
+    return true;
   }
 
   /**
@@ -813,6 +931,31 @@ function lastStatusTransitionTime(body: string, status: string): number | null {
     }
   }
   return null;
+}
+
+/**
+ * True when the task was handed off to review after the branch's most recent
+ * commit — a completed handoff means there is no unfinished turn to resume.
+ * A missing branch, worktree or commit means "no evidence of a later handoff",
+ * so the clean-exit signal stands on its own.
+ */
+export function handoffSinceLastCommit(config: RepoOSConfig, task: Task): boolean {
+  const handoffAt = lastStatusTransitionTime(task.body, "review");
+  if (handoffAt === null || !task.branch) return false;
+  const workdir = worktreePathForBranch(config.root, task.branch);
+  if (!workdir) return false;
+  try {
+    const raw = execFileSync("git", ["log", "-1", "--format=%ct"], {
+      cwd: workdir,
+      encoding: "utf8",
+      timeout: 4000,
+    }).trim();
+    const seconds = Number(raw);
+    if (!Number.isFinite(seconds) || seconds <= 0) return false;
+    return handoffAt >= seconds * 1000;
+  } catch {
+    return false;
+  }
 }
 
 /**
