@@ -2422,6 +2422,16 @@ const awaitingFreshReview = computed(
     !inPipeline.value,
 );
 
+/** Read-only landing pre-checks (#0867), shown next to Move to done. */
+const landable = computed(() => (ui.active ? repo.landableFor(ui.active.id) : undefined));
+
+/** The first failing check, used as the Move to done button's explanation. */
+const landableFailureTitle = computed(() => {
+  const fail = landable.value?.checks.find((c) => c.status === "fail");
+  if (!fail) return undefined;
+  return `${fail.label}: ${fail.detail}${fail.nextStep ? ` — ${fail.nextStep}` : ""}`;
+});
+
 /**
  * The skill-suggestion task auto-created from this task's session (#0405), if
  * one was. The server records the created task's id in the origin task's
@@ -3614,6 +3624,15 @@ watch(
   { immediate: true },
 );
 
+/** Load the landing pre-checks whenever a review task opens or its review changes (#0867). */
+watch(
+  () => [ui.active?.id, ui.active?.status, review.value?.at],
+  () => {
+    if (ui.active?.status === "review") void repo.loadLandable(ui.active.id);
+  },
+  { immediate: true },
+);
+
 /**
  * Open the full-screen diff view (`DiffView`) for the active task and close the
  * drawer behind it. The per-file expand buttons pass that file so the view
@@ -4553,7 +4572,7 @@ watch(
                       ? 'Waiting for a fresh review of the latest engineering handoff.'
                       : repo.isRunning(ui.active.id)
                         ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
-                        : undefined
+                        : landableFailureTitle
               "
               @click="moveToDone"
             >
@@ -4578,6 +4597,35 @@ watch(
               <Square v-else class="size-3.5" />
               {{ stoppingDone ? "Stopping…" : "Stop MTD" }}
             </Button>
+          </div>
+          <div
+            v-if="ui.active.status === 'review' && landable"
+            class="ff-notice landable-checks"
+            :class="landable.landable ? 'is-landable' : 'is-blocked'"
+            aria-live="polite"
+          >
+            <div class="landable-title">
+              <strong>{{ landable.landable ? "Landable" : "Not landable yet" }}</strong>
+              <span class="landable-summary">
+                {{ landable.summary.pass }} passed · {{ landable.summary.warn }} warning{{
+                  landable.summary.warn === 1 ? "" : "s"
+                }}
+                · {{ landable.summary.fail }} failing
+              </span>
+            </div>
+            <ul class="landable-list">
+              <li v-for="check in landable.checks" :key="check.id" :class="`is-${check.status}`">
+                <span class="landable-mark" aria-hidden="true">
+                  {{ check.status === "pass" ? "✓" : check.status === "warn" ? "!" : "✗" }}
+                </span>
+                <span class="landable-body">
+                  <strong>{{ check.label }}</strong> — {{ check.detail }}
+                  <span v-if="check.nextStep" class="landable-next"
+                    >next: {{ check.nextStep }}</span
+                  >
+                </span>
+              </li>
+            </ul>
           </div>
           <span v-if="review?.running" class="drawer-run reviewing" role="status">
             <ActivityIndicator variant="reviewing" label="Reviewing…" />
@@ -6683,5 +6731,72 @@ watch(
 .nt-body-textarea:focus {
   outline: none;
   border-color: var(--border-bright);
+}
+
+.landable-checks {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.landable-checks.is-landable {
+  border-color: var(--green-border-tint);
+}
+
+.landable-checks.is-blocked {
+  border-color: var(--red-border-tint);
+}
+
+.landable-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.landable-summary {
+  color: var(--txt-faint);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.landable-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landable-list li {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.landable-mark {
+  flex: 0 0 12px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.landable-list .is-pass .landable-mark {
+  color: var(--green);
+}
+
+.landable-list .is-warn .landable-mark {
+  color: var(--amber);
+}
+
+.landable-list .is-fail .landable-mark {
+  color: var(--red);
+}
+
+.landable-next {
+  display: block;
+  color: var(--txt-faint);
+  font-size: 11px;
 }
 </style>

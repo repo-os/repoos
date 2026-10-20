@@ -36,6 +36,7 @@ import type {
   CtoState,
   Health,
   IntegrationPipelineSnapshot,
+  LandableResult,
   RemoteValidationEvent,
   RepoEvent,
   RepoIndex,
@@ -803,6 +804,8 @@ export const useRepoStore = defineStore("repo", () => {
   const diffs = ref<Record<string, { patch: string; truncated: boolean } | null>>({});
   /** Live merge conflict (task branch vs main) per task; undefined until first load. */
   const mergeConflicts = ref<Record<string, MergeConflictReport | undefined>>({});
+  /** Landing pre-checks (#0867) per task; undefined until first load. */
+  const landable = ref<Record<string, LandableResult | undefined>>({});
   /** Captured preview shots per task (#0582), hydrated on demand. */
   const shots = ref<Record<string, ShotMeta[]>>({});
   /** Area/target mismatch warning per task (#0582), from the shots response. */
@@ -3167,6 +3170,24 @@ export const useRepoStore = defineStore("repo", () => {
   const diffFor = (id: string) => diffs.value[id] ?? undefined;
 
   /**
+   * Load the read-only landing pre-checks for a task (#0867). Best-effort:
+   * the drawer shows its checklist when this succeeds and simply omits it when
+   * the endpoint is unavailable (older server, transient failure).
+   */
+  async function loadLandable(id: string): Promise<void> {
+    if (isSeededShotFixtureTask(id)) return;
+    try {
+      const r = await api<LandableResult>(`/api/tasks/${id}/landable`);
+      landable.value = { ...landable.value, [id]: r };
+    } catch {
+      /* endpoint unavailable — the checklist is advisory */
+    }
+  }
+
+  /** Latest landing pre-checks for a task, or undefined until loaded. */
+  const landableFor = (id: string) => landable.value[id] ?? undefined;
+
+  /**
    * Load the task's captured preview shots and mismatch warning (#0582).
    * Best-effort: the endpoint is a nice-to-have for the drawer's UI-changes
    * section and its warning, never a blocker.
@@ -4181,6 +4202,9 @@ export const useRepoStore = defineStore("repo", () => {
     diffFor,
     loadMergeConflict,
     mergeConflicts,
+    loadLandable,
+    landable,
+    landableFor,
     loadShots,
     loadUiVerification,
     refreshEvidence,
