@@ -2,7 +2,7 @@
 id: "0869"
 title: Engineer crashes must not auto-request a handoff; fail over to the next allowed agent
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T12:06:17Z"
-updated_at: "2026-10-20T12:18:15Z"
+updated_at: "2026-10-20T17:21:36Z"
 ---
 ## Problem
 On 2026-10-20 codex runs crashed intermittently ("agent exited with an error (codex) - Reading additional input from stdin", tool errors such as "write_stdin failed: Unknown process id") and the server then requested a handoff on the unfinished branch (#0843, #0860: HEAD unchanged, merge with main never done), leaving needs_input dev-error flags that stayed stale after the engineer resumed. The CTO's restart-stalled-agent action only restarts the SAME agent and model, so a crash-prone model keeps being chosen; a human or driver has to run `repoos override` and resend context. Reviews then ran on the unchanged commit and failed for reasons the engineer never saw.
@@ -33,3 +33,4 @@ Look at the watchdog, the CTO restart-stalled-agent action, the handoff request 
 
 - 2026-10-20T12:06:17Z · created · njachowski@gmail.com
 - 2026-10-20T12:18:15Z · story
+- 2026-10-20T17:21:36Z · status inbox→ready
