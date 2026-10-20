@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T12:06:43Z"
-updated_at: "2026-10-20T12:19:13Z"
+updated_at: "2026-10-20T12:19:16Z"
 ---
 ## Problem
 The review prompt built in src/server/review.ts (the shared part every project gets) does not tell the reviewer to find every instance of a bug class, to read earlier review reports, or to check that the branch merges with its base. The result on 2026-10-20: #0843 needed 22+ review passes, #0854 15+, #0861 13, each pass finding one more instance of the same class (service-lifecycle teardown, runner fallback and import safety, config-key registration), plus avoidable rounds on evidence-only gaps and a "good to go" on a commit that still conflicted with main (#0860). For RepoOS itself the reviewer role text in repoos.toml was updated by hand on 2026-10-20; every other project still gets the old behavior.
@@ -27,15 +27,15 @@ CTO default: be quiet and precise (one nudge or escalation per event, with evide
 
 Project-specific rules (Bun not Node, never edit repoos.toml, never commit dist/, no runtime dependencies, Copilot path rules) stay in each project's own repoos.toml and AGENTS.md and are NOT in the built-in defaults.
 
-
 ## Acceptance criteria
 - src/server/review.ts shared review prompt contains the class-enumeration, earlier-report, evidence-gap and merge-ability instructions; the verdict and section format rules are unchanged and the parser tests pass.
-- The `repoos init` role templates (reviewer, engineer, pm) and any built-in default role instructions carry the general text above; project-specific rules are left out of the defaults, and a test asserts that.
+- The `repoos init` role templates (reviewer, engineer, pm, cto) and any built-in default role instructions carry the general text above; project-specific rules are left out of the defaults, and a test asserts that.
 - Prompt-content tests assert each general instruction is present in the right role and that the old format guarantees still hold; a test fails if a Bun/Node-specific or RepoOS-only rule leaks into the defaults.
 - After N passes (default 5, configurable with a Settings control and documentation) the review report includes the repeated-class summary and the task shows a human-attention flag, distinct from the existing review-rounds-exhausted backstop.
 - Existing projects keep their own `repoos.toml` role text untouched; document how to adopt the new defaults (for example a command or a docs snippet) without overwriting customizations.
-- Do NOT edit this repo's own repoos.toml: the human already updated its reviewer, engineer and pm instructions on 2026-10-20.
+- Do NOT edit this repo's own repoos.toml: the human already updated its reviewer, engineer, pm and CTO instructions on 2026-10-20.
 - Docs updated (review and close-out docs, init docs).
+
 
 ## Notes for AI
 Wording sources, all in this repo's repoos.toml as edited on 2026-10-20: the reviewer instructions (grep `Report the WHOLE CLASS`), the engineer instructions (grep `declare what a reviewer should see`) and the pm instructions (grep `Owns the roadmap`). Strip the RepoOS-specific parts (Bun, dist/, repoos.toml, Copilot path rule) when copying them into defaults. Find where `repoos init` writes the default roles (src/commands/init.ts) and where built-in default role instructions live (src/core/config.ts). Keep the reviewer prompt short enough not to slow reviews noticeably. Related: #0865 (stop reviews chaining), #0866 (shot target validation), #0867 (landable command: the reviewer's merge check can call it once it exists).
@@ -50,3 +50,4 @@ Wording sources, all in this repo's repoos.toml as edited on 2026-10-20: the rev
 - 2026-10-20T12:18:31Z · body: Notes for AI (added 1, removed 1)
 - 2026-10-20T12:19:08Z · title
 - 2026-10-20T12:19:13Z · body: Desired UX (added 1)
+- 2026-10-20T12:19:16Z · body: Acceptance criteria (added 2, removed 2)
