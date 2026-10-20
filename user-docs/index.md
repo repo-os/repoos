@@ -76,5 +76,7 @@ repoos serve   # starts the board — prints the local URL to open
 auto-run), so the board is never empty on first run — read it and follow along,
 no agent required. Runs on Bun or Node 20+. No account, no telemetry.
 
+<AgentPromptCta />
+
 Next: the full [Getting started](/getting-started) walkthrough, or jump
 straight to the [CLI reference](/cli).

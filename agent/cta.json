@@ -1,0 +1,12 @@
+{
+  "heading": "Building with an AI coding agent?",
+  "sentence": "Hand your agent the starter prompt: it reads the RepoOS overview, checks this repository, and asks before changing anything.",
+  "previewLabel": "The start of the prompt",
+  "buttonLabel": "Copy prompt for your agent",
+  "copiedLabel": "Copied — paste it into your agent",
+  "guideLabel": "Read the agent guide",
+  "guide": {
+    "landing": "https://docs.repoos.org/ai-agents",
+    "docs": "/ai-agents"
+  }
+}
