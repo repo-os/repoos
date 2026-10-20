@@ -3,6 +3,9 @@ id: "0860"
 title: "Close-out and layout: reminders/ and schedules/ are server-written bookkeeping, and follow the repoos/ layout"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — user-facing reminder docs still contradict the new path and checkpoint behavior.
 priority: p2
 area: server
 assigned_to: ai
@@ -146,3 +149,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:33:42Z · status active→review
 - 2026-10-20T11:33:43Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (36c63078d) during finalization (#0734)
 - 2026-10-20T11:40:47Z · note: review pass 7: needs some work
+- 2026-10-20T11:40:47Z · needs_input
