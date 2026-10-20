@@ -2,7 +2,7 @@
 id: "0861"
 title: "P0: bookkeeping-only commits must not make handoff evidence stale or block a good review"
 type: bug
-status: active
+status: review
 priority: p0
 area: [server, core, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/p0-bookkeeping-only-commits-must-not-mak
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:47:38Z"
-updated_at: "2026-10-20T07:35:50Z"
+updated_at: "2026-10-20T09:59:54Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-20T07:15:20.788Z: repoos check failed: rendered-contrast — $ bun scripts/ui-contrast-audit.mjs"
 dev_error_count: 1
@@ -41,10 +41,10 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 ```json
 [
 {
-  "label": "Changes tab with bookkeeping-current handoff evidence",
-  "target": "default",
-  "route": "/",
-  "state": "drawer:shotEvidence"
+"label": "Changes tab with bookkeeping-current handoff evidence",
+"target": "default",
+"route": "/",
+"state": "drawer:shotEvidence"
 }
 ]
 ```
@@ -73,3 +73,5 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 - 2026-10-20T07:32:16Z · status review→active
 - 2026-10-20T07:32:16Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T07:35:50Z · body
+- 2026-10-20T09:59:53Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-20T09:59:54Z · note: handoff requested (cli)
