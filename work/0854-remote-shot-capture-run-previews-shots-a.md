@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-20T09:26:53Z"
-review_passes: 4
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
@@ -16,6 +14,8 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
+updated_at: "2026-10-20T09:31:16Z"
+review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
 ---
