@@ -34,6 +34,7 @@ import { CloseOutOrchestrator } from "../../server/integration-orchestrator.js";
 import { createRepositoryLock, createRootLock } from "../../server/repo-lock.js";
 import {
   readWorktreeReviewLock,
+  restoreWorktreeReviewLockAfterFailedCloseOut,
   writeWorktreeReviewLock,
 } from "../../server/worktree-handoff-guard.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
@@ -445,6 +446,23 @@ describe("engineer writes are refused while a task is closing out (#0886)", () =
     } finally {
       process.chdir(prevCwd);
       process.exitCode = prevExitCode;
+      clean();
+    }
+  });
+
+  it("a failed close-out with no handoff snapshot still downgrades the lock", () => {
+    const { root, clean } = makeRepo("repoos-0886-no-snap-");
+    try {
+      writeTask(root, "review");
+      writeWorktreeReviewLock(root, ".repoos", TASK_ID, {
+        status: "closing-out",
+        sha: git(root, ["rev-parse", "HEAD"]),
+        at: new Date().toISOString(),
+      });
+      restoreWorktreeReviewLockAfterFailedCloseOut(root, ".repoos", TASK_ID);
+      expect(readWorktreeReviewLock(root, ".repoos", TASK_ID)?.status).toBe("review");
+      expect(isTaskClosingOut(root, ".repoos", TASK_ID)).toBe(false);
+    } finally {
       clean();
     }
   });
