@@ -3,6 +3,11 @@ id: "0860"
 title: "Close-out and layout: reminders/ and schedules/ are server-written bookkeeping, and follow the repoos/ layout"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: check-failed-after-retries
+debug_tldr: "UI verification failed on the Settings shot due to a missing remindersDir target and a VitePress MIME error; fix the route or target, then retry verification."
+debug_tldr_at: "2026-10-20T07:23:39Z"
+debug_tldr_key: check-failed-after-retries|
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +16,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T07:13:49Z"
+updated_at: "2026-10-20T07:23:39Z"
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-10-20T06:20:53.646Z: repoos check failed: ◆ Check plan"
 ---
@@ -84,3 +89,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T07:10:41Z · body
 - 2026-10-20T07:11:21Z · note: highlight [data-config-key="remindersDir"] matched nothing on /settings?tab=general
 - 2026-10-20T07:13:49Z · body
+- 2026-10-20T07:23:02Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · ui verification failed (2 issue(s)): [console] TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:59478/settings/index.md?import&t=1792479970731'. (http://127.0.0.1:59478/node_modules/vitepress/dist/client/app/router.js?v=a33402cb); [missing-target] Settings with configurable reminders directory: highlight [data-config-key="remindersDir"] matched nothing on /settings?tab=general (http://127.0.0.1:59478/settings?tab=general) · next step: resume the session manually from the task's worktree and check for uncommitted work
