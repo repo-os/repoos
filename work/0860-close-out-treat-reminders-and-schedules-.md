@@ -11,7 +11,7 @@ branch: ""
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T04:26:36Z"
+updated_at: "2026-10-20T04:26:37Z"
 ---
 ## Problem
 (1) Close-out blocks on reminder files. Move to done refuses to publish when a reminder file is dirty on main: 'main has 1 uncommitted file at publish time, so the merge would abort: reminders/37fba592-....md'. Reminders (#0851) are server-written, repo-native files like tasks, inputs and stories, but the close-out only knows work/, inputs/ and stories/ as routine server-written churn (bookkeepingDirs / bookkeepingKeepOursPrefixes in src/server/integration-orchestrator.ts ~line 334; isNonCodePublishDrift; the dirty-main guard in docs/close-out-pipeline.md). Every time a reminder is created, snoozed or marked done while a close-out runs, an unrelated landing is blocked and needs a manual 'Commit & continue'. Scheduled-task definitions (schedules/, #0093) are stamped by the server (last_run_at, last_occurrence_key) and have the same problem.
