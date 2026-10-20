@@ -2,18 +2,18 @@
 id: "0880"
 title: "Docs llms.txt index, full dump, and raw Markdown"
 type: feature
-status: ready
+status: active
 paths: [user-docs]
 priority: p2
 area: docs
 story: Agent-discoverable RepoOS
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/docs-llms-txt-index-full-dump-and-raw-ma
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:01:19Z"
-updated_at: "2026-10-20T20:10:36Z"
+updated_at: "2026-10-20T20:10:38Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ Out of scope: the portable skill, `user-docs/ai-agents.md`, the copy-prompt butt
 - 2026-10-20T16:01:19Z · created · njachowski@gmail.com
 - 2026-10-20T20:10:29Z · status inbox→ready
 - 2026-10-20T20:10:36Z · cli_override, model_override
+- 2026-10-20T20:10:38Z · status ready→active, branch
