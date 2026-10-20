@@ -16,18 +16,27 @@ import type { RepoOSConfig, Task } from "../core/types.js";
 import {
   DEFAULT_ENGINEER_CRASH_FAILOVER_THRESHOLD,
   DEFAULT_ENGINEER_CRASH_FAILOVER_WINDOW_MS,
+  DEFAULT_ENGINEER_STALL_RESUME_LIMIT,
+  DEFAULT_ENGINEER_STALL_RESUME_WINDOW_MS,
   ENGINEER_CRASH_LOG_KEY,
   ENGINEER_FAILOVER_KEY,
+  ENGINEER_STALL_RESUME_LOG_KEY,
   failoverMarker,
   parseEngineerCrashLog,
+  parseEngineerStallResumeLog,
   planEngineerCrashRecovery,
+  planEngineerStallResume,
   recordEngineerCrash,
+  recordEngineerStallResume,
   serializeEngineerCrashLog,
+  serializeEngineerStallResumeLog,
   type EngineerCrashPlan,
   type EngineerPair,
+  type EngineerTurnExitKind,
 } from "../core/engineer-crash-recovery.js";
 import type { Logger } from "../core/logger.js";
 import { resolveAgentForTask, type AgentRunner, type EngineerCrashInfo } from "./agents.js";
+import { isTaskClosingOut } from "./close-out-lock.js";
 import { relaunchEngineerOnActiveTask, type EngineerLaunchResult } from "./engineer-launch.js";
 import type { LiveIndex } from "./live-index.js";
 
@@ -57,10 +66,15 @@ function parseFresh(config: RepoOSConfig, task: Task): Task {
   });
 }
 
-function writeTask(config: RepoOSConfig, task: Task, entry: string): void {
+function writeTask(
+  config: RepoOSConfig,
+  task: Task,
+  entry: string,
+  commitMessage = `docs(${task.id}): engineer crash recovery`,
+): void {
   recordChange(task, entry);
   writeFileSync(task.absPath, serializeTask(task));
-  commitTaskFile(config.root, task.absPath, `docs(${task.id}): engineer crash recovery`);
+  commitTaskFile(config.root, task.absPath, commitMessage);
 }
 
 function thresholdFor(config: RepoOSConfig): number {
@@ -273,6 +287,196 @@ export async function recoverEngineerAfterCrash(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     logger.task(taskId, "warn", "engineer crash recovery failed", { error: message });
+    return { action: "skipped", detail: `recovery error: ${message}` };
+  }
+}
+
+/**
+ * Server-side application of the stalled-clean-exit policy (#0888).
+ *
+ * The runner records `engineer turn ended without a handoff` when a clean turn
+ * finishes without asking for review; TaskWatchdog reads that durable signal,
+ * applies {@link planEngineerStallResume}, and calls this module to resume the
+ * same engineer with the normal resume preamble. This deliberately reuses the
+ * #0869 launch path so a clean exit and a crash cannot become two parallel
+ * recovery mechanisms (ADR 0008).
+ */
+export interface EngineerStallRecoveryDeps {
+  config: RepoOSConfig;
+  index: LiveIndex;
+  runner: AgentRunner;
+  logger?: Pick<Logger, "task">;
+  /** Test seam; production uses the shared engineer relaunch path. */
+  launch?: typeof relaunchEngineerOnActiveTask;
+}
+
+export interface EngineerStallRecoveryContext {
+  /** How the last engineer turn ended. */
+  exitKind: EngineerTurnExitKind;
+  /** The handoff was deferred because queued message(s) had to be read first. */
+  handoffDeferred?: boolean;
+  /** Queued messages the deferred handoff was waiting for. */
+  queuedMessages?: number;
+  /** A handoff completed after the branch's last commit — nothing to resume. */
+  handoffSinceLastCommit?: boolean;
+}
+
+export interface EngineerStallRecoveryOutcome {
+  action: "skipped" | "resumed" | "surfaced" | "launch-failed";
+  detail: string;
+}
+
+function stallResumeInstruction(context: EngineerStallRecoveryContext): string {
+  if (context.handoffDeferred) {
+    return [
+      "Automatic recovery: your previous turn requested a handoff while message(s) were still queued, so RepoOS deferred the review.",
+      "Read the queued message(s) now (they are included in this turn) and continue from the current worktree state.",
+      "When the work is complete and `repoos check` passes, request review again.",
+    ].join("\n");
+  }
+  return [
+    "Automatic recovery: your previous turn on this task ended cleanly without requesting a handoff.",
+    "The task is still active and nothing has been handed off. Read any queued message(s), then resume from the current worktree state and finish the task.",
+    "Run `repoos check` and emit the handoff signal only when the work is complete and the check passes.",
+  ].join("\n");
+}
+
+/**
+ * Resume (or surface) an `active` task whose engineer turn ended cleanly without
+ * a handoff. Never throws: a recovery failure leaves the task active with the
+ * reason visible rather than taking the server down.
+ */
+export async function recoverEngineerAfterStalledCleanExit(
+  deps: EngineerStallRecoveryDeps,
+  taskId: string,
+  context: EngineerStallRecoveryContext,
+  opts: { now?: number } = {},
+): Promise<EngineerStallRecoveryOutcome> {
+  const { config, index, runner, logger } = deps;
+  try {
+    const indexed = index.getTask(taskId);
+    if (!indexed || indexed.isArchived || indexed.status !== "active") {
+      return { action: "skipped", detail: "task is not active" };
+    }
+    if (
+      runner.isRunning(taskId) ||
+      runner.isHandoffInFlight(taskId) ||
+      runner.hasPendingHandoff(taskId) ||
+      runner.isPaused(taskId)
+    ) {
+      return { action: "skipped", detail: "a turn or handoff already owns the task" };
+    }
+    if (isTaskClosingOut(config.root, config.cacheDir, taskId)) {
+      return { action: "skipped", detail: "the task is being closed out" };
+    }
+    const task = parseFresh(config, indexed);
+    if (task.status !== "active" || task.isArchived) {
+      return { action: "skipped", detail: "task left active" };
+    }
+
+    const now = opts.now ?? Date.now();
+    const resumes = parseEngineerStallResumeLog(task.extra?.[ENGINEER_STALL_RESUME_LOG_KEY]);
+    const plan = planEngineerStallResume({
+      status: task.status,
+      isArchived: task.isArchived,
+      needsInput: task.needsInput,
+      assignedToHuman: task.assignedTo.trim().toLowerCase() === "human",
+      paused: false,
+      running: false,
+      handoffInFlight: false,
+      pendingHandoff: false,
+      closingOut: false,
+      handoffRequested: false,
+      exitKind: context.exitKind,
+      handoffDeferred: context.handoffDeferred,
+      queuedMessages: context.queuedMessages,
+      handoffSinceLastCommit: context.handoffSinceLastCommit,
+      resumes,
+      now,
+      limit: DEFAULT_ENGINEER_STALL_RESUME_LIMIT,
+      windowMs: DEFAULT_ENGINEER_STALL_RESUME_WINDOW_MS,
+    });
+    if (plan.action === "skip") return { action: "skipped", detail: plan.reason };
+
+    if (plan.action === "surface") {
+      const detail =
+        `${plan.resumes} automatic resume(s) in the last ${minutes(plan.windowMs)} did not ` +
+        `produce a handoff — the engineer keeps ending its turn without one. ` +
+        `Review the transcript and resume it manually, or fix why it stops before handing off.`;
+      task.needsInput = true;
+      task.needsInputReason = "watchdog-stuck";
+      task.needsInputDetail = detail;
+      writeTask(
+        config,
+        task,
+        `watchdog: escalated to needs_input · ${plan.resumes} automatic resume(s) in ${minutes(plan.windowMs)}m produced no handoff`,
+        `docs(${task.id}): surface stalled engineer`,
+      );
+      index.applyFileChange(task.absPath, { guarded: true });
+      logger?.task(
+        taskId,
+        "warn",
+        "stalled engineer surfaced for a human after automatic resumes",
+        {
+          resumes: plan.resumes,
+          windowMs: plan.windowMs,
+        },
+      );
+      return { action: "surfaced", detail };
+    }
+
+    const nowIso = new Date(now).toISOString();
+    const attempt = plan.resumes + 1;
+    task.extra = {
+      ...task.extra,
+      [ENGINEER_STALL_RESUME_LOG_KEY]: serializeEngineerStallResumeLog(
+        recordEngineerStallResume(resumes, nowIso, plan.reason, plan.windowMs),
+      ),
+    };
+    const note = context.handoffDeferred
+      ? `watchdog: auto-resumed engineer to read a deferred handoff message · resume ${attempt}/${plan.limit} in ${minutes(plan.windowMs)}m`
+      : `watchdog: auto-resumed engineer after a clean exit without a handoff · resume ${attempt}/${plan.limit} in ${minutes(plan.windowMs)}m`;
+    writeTask(config, task, note, `docs(${task.id}): resume stalled engineer`);
+    index.applyFileChange(task.absPath, { guarded: true });
+
+    const launch = deps.launch ?? relaunchEngineerOnActiveTask;
+    const result: EngineerLaunchResult = await launch(
+      {
+        config,
+        index,
+        runner,
+        logger: (logger ?? { task: () => {} }) as unknown as Logger,
+      },
+      task,
+      stallResumeInstruction(context),
+    );
+    if (!result.ok) {
+      const detail = `automatic resume could not start the engineer: ${result.reason}`;
+      const current = parseFresh(config, task);
+      current.needsInput = true;
+      current.needsInputReason = current.needsInputReason ?? "dev-error";
+      current.needsInputDetail = `${detail}. The task stayed active with its worktree intact.`;
+      writeTask(
+        config,
+        current,
+        `watchdog: automatic resume failed — ${result.reason}`,
+        `docs(${current.id}): resume stalled engineer`,
+      );
+      index.applyFileChange(current.absPath, { guarded: true });
+      logger?.task(taskId, "warn", "automatic resume could not start the engineer", {
+        reason: result.reason,
+      });
+      return { action: "launch-failed", detail };
+    }
+    logger?.task(taskId, "info", "engineer resumed after a clean exit without a handoff", {
+      reason: plan.reason,
+      attempt,
+      limit: plan.limit,
+    });
+    return { action: "resumed", detail: `${plan.reason} (${attempt}/${plan.limit})` };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logger?.task(taskId, "warn", "stalled engineer recovery failed", { error: message });
     return { action: "skipped", detail: `recovery error: ${message}` };
   }
 }
