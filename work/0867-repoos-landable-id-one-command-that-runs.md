@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T12:05:58Z"
-updated_at: "2026-10-20T12:18:11Z"
+updated_at: "2026-10-20T12:20:42Z"
 ---
 ## Problem
 Whether a task in review can actually land is decided by a handful of manual checks that live in driver prose and AGENTS.md: the lock sha equals the worktree HEAD, the worktree is clean, the branch merges with main (conflicts only in the task's own work/<id>-*.md), the diff has no repoos.toml and no other tasks' work/ files, and main has no blocking dirty files. Each driver re-does these by hand and gets them wrong sometimes. On 2026-10-20 #0860 had a "good to go" review on a HEAD that still conflicted with main in src/core/types.ts, and the conflict was only discovered when Move to done refused; reviews kept re-running on the same unchanged commit.
@@ -26,9 +26,11 @@ Whether a task in review can actually land is decided by a handful of manual che
 - Table-driven tests for every check and each failure message; docs in user-docs/cli.md and docs/close-out-pipeline.md; AGENTS.md landing paragraph points at the command.
 
 ## Notes for AI
-Reuse the close-out pipeline's own classification (src/server/integration-orchestrator.ts, src/server/conflict-resolution.ts, the lock file in .repoos/locks) instead of re-implementing it, so the command and Move to done can never disagree. The CLI wraps the HTTP API like the other control-plane commands (see user-docs/cli.md, Control plane).
+The close-out approval policy already computes most of these checks: `evaluateApprovalPolicy` / `evaluateAutoApprove` (src/core/approval-policy.ts, src/server/approval-policy.ts, #0686/#0727) cover verdict, blocking bugs, gate state, branch conflict via `git merge-tree`, handoff drift (worktree HEAD equals the lock sha), blocked machinery paths, and main-dirty. Build `repoos landable` on that same preflight (expose its result for a task regardless of whether approval is enabled) so the command, auto-approval and Move to done can never disagree, and add only the missing checks (conflict classification: own task file only vs source; other tasks' work files in the diff; naming which dirty files on main block and who owns them). The CLI wraps the HTTP API like the other control-plane commands (user-docs/cli.md, Control plane). Also see docs/cto-autopilot.md.
+
 
 ## Activity
 
 - 2026-10-20T12:05:58Z · created · njachowski@gmail.com
 - 2026-10-20T12:18:11Z · story
+- 2026-10-20T12:20:42Z · body: Notes for AI (added 1, removed 1)
