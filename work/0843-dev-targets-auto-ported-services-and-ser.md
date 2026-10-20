@@ -1,10 +1,11 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'service env', tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'target env', tests/dev-targets.test.ts > DevTargetManager with services (#0843) > boots the service first, then the target, and exposes both states on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 32da7ef6ac6aceaa9a76587d2e0bcc567e9ce4b3
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "by one target must map to distinct placeholder tokens: two names that"
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -15,11 +16,13 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T10:59:59Z"
+updated_at: "2026-10-20T11:01:55Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'service env', tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'target env', tests/dev-targets.test.ts > DevTargetManager with services (#0843) > boots the service first, then the target, and exposes both states on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 32da7ef6ac6aceaa9a76587d2e0bcc567e9ce4b3
 review_passes: 20
 last_check_failure: "repoos check at 2026-10-20T10:20:49.854Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 886d9960 to 9241cb9c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
-dev_error_count: 2
+dev_error_count: 3
 ---
 ## Problem
 `[[dev.targets]]` supports a single `{port}` for one process, so a full-stack dev target (an API plus a frontend that proxies to it) must pin the API to a fixed port. In the lightingai project the Bun API is pinned to 3001 because the Vite proxy needs to know it, so two copies of the stack, or anything else on 3001, collide. `[[preview.targets]]` already solves this with `[[preview.services]]` and `{api.port}` (#0681), but dev targets have no equivalent. Suggested by the owner (2026-10-19): frontends can already be dynamic, the API should be able to be too.
@@ -274,4 +277,5 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T10:52:42Z · note: handoff requested (cli)
 - 2026-10-20T10:57:00Z · needs_input
 - 2026-10-20T10:59:59Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'service env', tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'target env', tests/dev-targets.test.ts > DevTargetManager with services (#0843) > boots the service first, then the target, and exposes both states on bee — fix it in the feature branch and re-run the gate
-
+- 2026-10-20T11:01:55Z · agent exited with an error (codex) · by one target must map to distinct placeholder tokens: two names that
+- 2026-10-20T11:01:55Z · status active→review
