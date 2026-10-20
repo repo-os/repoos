@@ -88,6 +88,34 @@ generate it from the file tree. A new page must be added to
 `themeConfig.sidebar` or it won't appear in navigation, even though it still
 builds and is reachable by direct URL.
 
+The agent index does not depend on the sidebar: `vitepress-plugin-llms` reads
+every published `user-docs/*.md` page, so a new page lands in `llms.txt` (under
+**Other** until it has a sidebar section) without a second allowlist edit.
+
+## Agent files (`llms.txt`, `llms-full.txt`, raw Markdown)
+
+`bun run build` publishes the manual for agents alongside the HTML site:
+
+| Output | What it is |
+| --- | --- |
+| `/llms.txt` | Index of every public page, with a link to its raw Markdown |
+| `/llms-full.txt` | The whole manual concatenated for one fetch |
+| `/<route>.md` | Each page as raw Markdown (`/getting-started.md`, …) |
+
+The HTML routes are unchanged — `/getting-started` is still the rendered page;
+the raw copy only adds an extension. The generator reads the same `user-docs/`
+sources as VitePress, so there is no second manual to keep in sync. This repo's
+`../docs/` is never read: it is build context for RepoOS itself, not user docs.
+
+`README.md` (this runbook) and `index.md` (the marketing home layout) are the
+only recorded skips; both live in `.vitepress/llms-index.ts` next to the index
+template. `scripts/check-llms.ts` runs as part of `bun run build` and fails when
+a page is missing from the index, the full dump, or its raw copy — so a page
+cannot be added yet silently omitted from the agent outputs.
+
+`agents.txt` is deliberately not emitted: no client reads it and the same
+generator does not produce it. Revisit only with a concrete consumer.
+
 ## The changelog page fetches from GitHub at build time
 
 `/changelog` (`changelog.md` + `changelog.data.ts`) embeds the most recent
