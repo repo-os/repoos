@@ -14,7 +14,7 @@ branch: feat/portable-repoos-agent-skill-for-outside-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:01:54Z"
-updated_at: "2026-10-20T20:31:59Z"
+updated_at: "2026-10-20T20:33:24Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ The portable skill lives at `agent/skill/`. Public URL: https://github.com/repo-
 - 2026-10-20T20:28:34Z · body: Decision (added)
 - 2026-10-20T20:28:34Z · message_queued at 2026-10-20T20:28:34.988Z
 - 2026-10-20T20:31:59Z · body
+- 2026-10-20T20:33:24Z · handoff_deferred: 1 queued message(s) must be read before review
