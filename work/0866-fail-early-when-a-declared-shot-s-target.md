@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 66bcc54b to e2117d96) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 66bcc54beaa4fe11f66a42ab867f710506e97898
 id: "0866"
 title: Fail early when a declared shot's target cannot render its state or route
 type: bug
@@ -82,3 +84,4 @@ See the shot declaration and capture code in src/server/shot-capture.ts, `planAu
 - 2026-10-20T23:35:33Z · body
 - 2026-10-20T23:36:08Z · body
 - 2026-10-20T23:37:55Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 66bcc54b to e2117d96) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+
