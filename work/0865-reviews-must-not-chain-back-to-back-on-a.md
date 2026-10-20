@@ -12,7 +12,7 @@ branch: feat/reviews-must-not-chain-back-to-back-on-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T11:55:25Z"
-updated_at: "2026-10-20T18:24:53Z"
+updated_at: "2026-10-20T18:26:00Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -87,3 +87,4 @@ Not gated: `ReviewManager.runCheckpointDelta` (post-handoff checkpoint delta rev
 - 2026-10-20T18:17:15Z · note: handoff requested (cli)
 - 2026-10-20T18:17:51Z · assigned_to
 - 2026-10-20T18:24:53Z · assigned_to
+- 2026-10-20T18:26:00Z · note: shots: skipped — the diff (14 changed paths) touches no capture target's globs — no UI change to capture
