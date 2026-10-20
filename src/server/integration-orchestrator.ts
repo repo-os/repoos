@@ -300,8 +300,9 @@ export function parseConflictPathsFromReason(reason: string): string[] {
  * The bookkeeping directory prefixes (#0637): paths whose change on main can
  * never invalidate a build/test run that already passed on the candidate —
  * task bookkeeping under the work dir, human-submitted inputs, story
- * definitions, and generated `dist/` output. The publish merge auto-resolves
- * (or ignores) all of these, so they are non-code drift by construction.
+ * definitions, reminder notes, scheduled-task definitions, and generated
+ * `dist/` output. The publish merge auto-resolves (or ignores) all of these,
+ * so they are non-code drift by construction.
  * The commits are produced by the server itself (`inputs(<id>): capture`,
  * `docs(stories): add …`, `docs(<id>): update task`), never competing work.
  *
@@ -314,9 +315,18 @@ function bookkeepingDirPrefixes(dirs: {
   workDir?: string;
   inputsDir?: string;
   storiesDir?: string;
+  remindersDir?: string;
+  schedulesDir?: string;
 }): string[] {
   const resolved = bookkeepingDirs(dirs);
-  return [`${resolved.workDir}/`, `${resolved.inputsDir}/`, `${resolved.storiesDir}/`, "dist/"];
+  return [
+    `${resolved.workDir}/`,
+    `${resolved.inputsDir}/`,
+    `${resolved.storiesDir}/`,
+    `${resolved.remindersDir}/`,
+    `${resolved.schedulesDir}/`,
+    "dist/",
+  ];
 }
 
 function isNonCodePublishDrift(path: string, prefixes: string[]): boolean {
@@ -326,8 +336,9 @@ function isNonCodePublishDrift(path: string, prefixes: string[]): boolean {
 /**
  * The `autoResolveOurs` prefixes for a close-out merge: on a conflict in one of
  * these directories, MAIN's copy wins (`--ours`), because the closing task's
- * branch is not authoritative for other tasks' files, human inputs, or story
- * definitions — all server-written, main-owned bookkeeping (#0726). The task's
+ * branch is not authoritative for other tasks' files, human inputs, story
+ * definitions, reminders or schedule stamps — all server-written, main-owned
+ * bookkeeping (#0726). The task's
  * own `work/<id>-*.md` is listed separately in `autoResolve` (branch wins), so
  * it is deliberately the one bookkeeping file that may differ.
  */
@@ -335,9 +346,17 @@ function bookkeepingKeepOursPrefixes(config: {
   workDir?: string;
   inputsDir?: string;
   storiesDir?: string;
+  remindersDir?: string;
+  schedulesDir?: string;
 }): string[] {
   const resolved = bookkeepingDirs(config);
-  return [`${resolved.workDir}/`, `${resolved.inputsDir}/`, `${resolved.storiesDir}/`];
+  return [
+    `${resolved.workDir}/`,
+    `${resolved.inputsDir}/`,
+    `${resolved.storiesDir}/`,
+    `${resolved.remindersDir}/`,
+    `${resolved.schedulesDir}/`,
+  ];
 }
 
 /**
@@ -369,7 +388,13 @@ export async function mainDriftIsBookkeepingOnly(opts: {
   baseMainSha: string;
   currentMainSha: string;
   /** Bookkeeping directories, derived from config (#0637). */
-  dirs: { workDir?: string; inputsDir?: string; storiesDir?: string };
+  dirs: {
+    workDir?: string;
+    inputsDir?: string;
+    storiesDir?: string;
+    remindersDir?: string;
+    schedulesDir?: string;
+  };
 }): Promise<boolean> {
   const { root, baseMainSha, currentMainSha, dirs } = opts;
   const res = await runGit(
@@ -512,7 +537,7 @@ export async function detectDroppedMerge(
 export async function resetForeignWorkFiles(opts: {
   candidateWtPath: string;
   baseMainSha: string;
-  /** Managed bookkeeping dirs (work/inputs/stories), resolved from config. */
+  /** Managed bookkeeping dirs (work/inputs/stories/reminders/schedules), resolved from config. */
   dirs: BookkeepingDirs;
   /**
    * The closing task's own task file (repo-relative), the one file under the
@@ -521,7 +546,13 @@ export async function resetForeignWorkFiles(opts: {
   ownWorkFile: string | null;
 }): Promise<string[]> {
   const { candidateWtPath, baseMainSha, dirs, ownWorkFile } = opts;
-  const prefixes = [dirs.workDir, dirs.inputsDir, dirs.storiesDir].map(withDirSlash);
+  const prefixes = [
+    dirs.workDir,
+    dirs.inputsDir,
+    dirs.storiesDir,
+    dirs.remindersDir,
+    dirs.schedulesDir,
+  ].map(withDirSlash);
   const changed = await runGit(
     candidateWtPath,
     ["diff", "--name-only", `${baseMainSha}..HEAD`, "--", ...prefixes],
@@ -3538,7 +3569,8 @@ export class CloseOutOrchestrator {
         //
         // Scoped narrowly — and scoped to `untouchedDirty`: only when EVERY
         // path in this set is under one of the managed bookkeeping dirs
-        // (work/, inputs/, stories/) or is exactly `repoos.toml` — anything
+        // (work/, inputs/, stories/, reminders/, schedules/) or is exactly
+        // `repoos.toml` — anything
         // else (source, other config, a stray build artifact) still fails
         // closed exactly as before, since that's genuinely ambiguous and worth
         // a human's attention rather than a blind auto-commit. The overwritten
@@ -3550,6 +3582,8 @@ export class CloseOutOrchestrator {
           churnDirs.workDir,
           churnDirs.inputsDir,
           churnDirs.storiesDir,
+          churnDirs.remindersDir,
+          churnDirs.schedulesDir,
         ].map(withDirSlash);
         const isSafeChurn = (p: string): boolean =>
           bookkeepingDirsForChurn.some((prefix) => p.startsWith(prefix)) || p === "repoos.toml";

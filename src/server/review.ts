@@ -2271,6 +2271,7 @@ export class ReviewManager {
       worktree ?? this.config.root,
       evidence,
       reviewedHead,
+      this.config,
     );
     const staleNote = handoffTreeNote(treeStatus, evidence, reviewedHead);
     // #0734: surface the exact capture URL, assertion outcomes, and the tested

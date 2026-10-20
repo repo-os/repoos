@@ -43,6 +43,7 @@ import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
 import type { RepoOSConfig, ShotTargetConfig, Task } from "../core/types.js";
 import { DEFAULT_MAX_AUTO_SHOTS } from "../core/types.js";
 import { runGit, worktreePathForBranch } from "../core/git.js";
+import { isEvidenceCurrent } from "./evidence-current.js";
 import { runShotCommand, slugName } from "../core/shot-command.js";
 import { isShotCaptureUnavailable } from "../commands/shot.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/ui-harness.js";
@@ -291,6 +292,16 @@ export function planAutoCapture(
       };
     }
     targets = resolution.names;
+    // A declaration that explicitly names `default` means the main RepoOS app,
+    // even when docs changes also resolve the Docs site target. Keep the
+    // default command in the candidate list so the declaration cannot alias to
+    // the sole path match.
+    if (
+      declared.shots.some((shot) => shot.target === "default") &&
+      config.preview?.command?.trim()
+    ) {
+      targets = [...new Set([...targets, "default"])];
+    }
   } else {
     targets = context.detected;
     if (targets.length === 0) {
@@ -350,12 +361,15 @@ export function reusableAutoCaptures(
   shots: ShotMeta[],
   planFingerprint: string,
   sourceIdentity: string | undefined,
+  currentSourceIdentities: ReadonlySet<string> = new Set(),
 ): ShotMeta[] {
   return shots.filter(
     (shot) =>
       shot.planFingerprint !== undefined &&
       shot.planFingerprint === planFingerprint &&
-      (sourceIdentity === undefined || shot.sourceIdentity === sourceIdentity),
+      sourceIdentity !== undefined &&
+      (shot.sourceIdentity === sourceIdentity ||
+        (shot.sourceIdentity !== undefined && currentSourceIdentities.has(shot.sourceIdentity))),
   );
 }
 
@@ -668,7 +682,27 @@ export async function runAutoShotCapture(
   const autoExisting = localShotStore(config, task.id)
     .list()
     .filter((shot) => shot.origin === "auto");
-  const reusable = reusableAutoCaptures(autoExisting, planFingerprint, sourceIdentity);
+  const currentCaptureIdentities = new Set<string>();
+  if (sourceIdentity) {
+    const worktree = task.branch
+      ? (worktreePathForBranch(config.root, task.branch) ?? config.root)
+      : config.root;
+    for (const shot of autoExisting) {
+      if (
+        shot.sourceIdentity &&
+        shot.sourceIdentity !== sourceIdentity &&
+        (await isEvidenceCurrent(worktree, shot.sourceIdentity, sourceIdentity, config))
+      ) {
+        currentCaptureIdentities.add(shot.sourceIdentity);
+      }
+    }
+  }
+  const reusable = reusableAutoCaptures(
+    autoExisting,
+    planFingerprint,
+    sourceIdentity,
+    currentCaptureIdentities,
+  );
   if (autoExisting.length > 0 && reusable.length === autoExisting.length) {
     return finish(
       "skipped",

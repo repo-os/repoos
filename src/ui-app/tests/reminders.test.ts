@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, readFileSync, symlinkSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -95,6 +95,18 @@ describe("reminders persistence and API", () => {
     await call(removeReminder, {}, added.body.id);
     store.reminders = listReminders(createRepoOS(root).config);
     expect(store.due).toEqual([]);
+  });
+  it("defaults to reminders and honours a custom remindersDir (#0860)", () => {
+    expect(createRepoOS(root).config.remindersDir).toBe("reminders");
+    writeFileSync(join(root, "repoos.toml"), 'remindersDir = "repoos/reminders"\n');
+    const config = createRepoOS(root).config;
+    expect(config.remindersDir).toBe("repoos/reminders");
+    const added = createReminder(config, input);
+    expect(readFileSync(join(root, "repoos/reminders", `${added.id}.md`), "utf8")).toContain(
+      input.text,
+    );
+    expect(listReminders(config)).toHaveLength(1);
+    expect(() => listReminders(createRepoOS(root).config)).not.toThrow();
   });
   it("rejects invalid dates, unknown links and directory symlinks specifically", async () => {
     for (const fireAt of [

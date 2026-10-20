@@ -3,7 +3,8 @@
  * reuse, and the reviewer's missing-evidence rule. Pure/unit level: no browser.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { execSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -23,6 +24,7 @@ import { reviewMission } from "../../server/review";
 import { preflightUiEvidence } from "../../server/ui-handoff-gate";
 import { reusableAutoCaptures } from "../../server/shot-capture";
 import * as shotCapture from "../../server/shot-capture";
+import * as shotStore from "../../server/shots";
 import type { ShotMeta } from "../../server/shots";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
 
@@ -193,6 +195,11 @@ describe("stale capture reuse (#0734)", () => {
     expect(reusableAutoCaptures(shots, "fp-1", "new")).toEqual([]);
   });
 
+  it("reuses a different commit when the caller proved only bookkeeping changed", () => {
+    const shots = [shot({ planFingerprint: "fp-1", sourceIdentity: "old" })];
+    expect(reusableAutoCaptures(shots, "fp-1", "new", new Set(["old"]))).toHaveLength(1);
+  });
+
   it("does NOT reuse a pre-#0734 capture with no fingerprint", () => {
     const shots = [shot({})];
     expect(reusableAutoCaptures(shots, "fp-1", "abc")).toEqual([]);
@@ -261,6 +268,117 @@ describe("ui evidence preflight (#0734)", () => {
     const result = await preflightUiEvidence(config, t);
     expect(result.ok).toBe(true);
     expect(result.skipped).toBe(true);
+  });
+
+  it("keeps a prior capture reusable after bookkeeping-only HEAD movement", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-preflight-bookkeeping-"));
+    temps.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const git = (command: string) =>
+      execSync(command, {
+        cwd: root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim();
+    git("git init -b main");
+    git("git config user.email test@example.com");
+    git("git config user.name Test");
+    writeFileSync(join(root, "README.md"), "base\n");
+    git("git add README.md && git commit -q -m base");
+    const capturedSha = git("git rev-parse --short HEAD");
+    writeFileSync(join(root, "work/0861.md"), "activity\n");
+    git("git add work/0861.md && git commit -q -m 'docs(0861): update task'");
+    const config = {
+      root,
+      cacheDir: ".repoos",
+      workDir: "work",
+      uiVerification: { enabled: true },
+      preview: { command: "echo", targets: [{ name: "Docs site", paths: ["user-docs/**"] }] },
+    } as unknown as RepoOSConfig;
+    const task = {
+      id: "0861",
+      title: "t",
+      path: "work/0861.md",
+      absPath: join(root, "work/0861.md"),
+      status: "active",
+      branch: "main",
+      area: "docs",
+      body: bodyWithShots('[{"target":"default","route":"/","state":"drawer:shotEvidence"}]'),
+    } as Task;
+    const entries = [
+      {
+        target: "default",
+        route: "/",
+        label: "Changes tab",
+        provenance: { kind: "declared" as const, label: "Changes tab" },
+      },
+    ];
+    const fingerprint = shotPlanFingerprint(entries);
+    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+      entries,
+      errors: [],
+      skips: [],
+      collapsed: [],
+    });
+    vi.spyOn(shotStore, "localShotStore").mockReturnValue({
+      list: () => [
+        {
+          name: "prior.png",
+          target: "default",
+          path: "work/.attachments/0861/shots/prior.png",
+          url: "/prior.png",
+          size: 1,
+          mime: "image/png",
+          capturedAt: "2026-10-20T00:00:00Z",
+          origin: "auto",
+          sourceIdentity: capturedSha,
+          planFingerprint: fingerprint,
+        },
+      ],
+    } as never);
+
+    const result = await preflightUiEvidence(config, task);
+    expect(result.ok).toBe(true);
+    expect(result.detail).not.toContain("prior handoff capture(s)");
+  });
+
+  it("keeps an explicitly declared default RepoOS target when Docs paths also match", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-explicit-default-shot-"));
+    temps.push(root);
+    execSync("git init -b main", { cwd: root, stdio: "ignore" });
+    execSync("git config user.email test@example.com", { cwd: root, stdio: "ignore" });
+    execSync("git config user.name Test", { cwd: root, stdio: "ignore" });
+    mkdirSync(join(root, "user-docs"), { recursive: true });
+    writeFileSync(join(root, "user-docs/page.md"), "base\n");
+    execSync("git add user-docs/page.md && git commit -q -m base", { cwd: root, stdio: "ignore" });
+    const worktree = join(root, "feature-worktree");
+    execSync(`git -C ${root} worktree add -qb feat/shot ${worktree}`, { stdio: "ignore" });
+    writeFileSync(join(worktree, "user-docs/page.md"), "updated docs\n");
+    execSync(`git -C ${worktree} commit -qam docs`, { stdio: "ignore" });
+    const config = {
+      root,
+      workDir: "work",
+      preview: {
+        command: "echo main app",
+        targets: [
+          { name: "Docs site", areas: ["docs"], paths: ["user-docs/**"], command: "echo docs" },
+        ],
+      },
+    } as unknown as RepoOSConfig;
+    const task = {
+      id: "shot-default",
+      title: "t",
+      path: "work/shot-default.md",
+      absPath: join(worktree, "work/shot-default.md"),
+      status: "active",
+      branch: "feat/shot",
+      area: "docs",
+      body: bodyWithShots('[{"target":"default","route":"/","state":"drawer:shotEvidence"}]'),
+    } as Task;
+    const plan = await shotCapture.planAutoCapture(config, task);
+    expect("reason" in plan).toBe(false);
+    if (!("reason" in plan))
+      expect(plan.entries[0]).toMatchObject({ target: "default", route: "/" });
   });
 });
 

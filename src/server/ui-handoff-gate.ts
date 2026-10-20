@@ -49,6 +49,7 @@ import {
   runGit,
   worktreePathForBranch,
 } from "../core/git.js";
+import { isEvidenceCurrent } from "./evidence-current.js";
 import { isShotCaptureUnavailable } from "../commands/shot.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/ui-harness.js";
 import {
@@ -173,7 +174,13 @@ export function handoffTreeNote(
   evidence: Pick<UiHandoffGateEvidence, "sourceIdentity"> | null | undefined,
   currentHead: string | null | undefined,
 ): string {
-  if (status === "current") return "";
+  if (status === "current") {
+    const captured = evidence?.sourceIdentity?.trim();
+    const head = currentHead?.trim();
+    return captured && head && captured !== head
+      ? `The capture is from earlier tree ${captured}; only RepoOS bookkeeping changed before reviewed HEAD ${head}, so the evidence remains current.`
+      : "";
+  }
   if (status === "stale") {
     return (
       `STALE — handoff capture is for tree ${evidence?.sourceIdentity ?? "(unknown)"} ` +
@@ -192,41 +199,27 @@ export function handoffTreeNote(
  * task's file — keeps the capture stale (fail-closed: docs are content a
  * docs-site capture can legitimately show, so only task bookkeeping is exempt).
  */
-const TASK_BOOKKEEPING_PATH_RE = /^work\/.*\.md$/;
-
-async function diffIsTaskBookkeepingOnly(
-  diffRoot: string,
-  fromSha: string,
-  toHead: string,
-): Promise<boolean> {
-  const diff = await runGit(diffRoot, ["diff", "--name-only", fromSha, toHead], 10_000);
-  if (diff.status !== 0) return false;
-  const paths = diff.stdout
-    .split("\n")
-    .map((p) => p.trim())
-    .filter(Boolean);
-  return paths.length > 0 && paths.every((p) => TASK_BOOKKEEPING_PATH_RE.test(p));
-}
-
 /**
  * The staleness verdict as the review should act on it (#0766): the mechanical
- * {@link handoffTreeStatus} comparison, softened only for HEAD movement that is
- * provably pure task bookkeeping — a diff of nothing but `work/*.md` files
- * between the captured tree and the reviewed one. Returns "stale" for every
- * git problem (an unreachable sha, a missing worktree), so an unclassifiable
- * drift is never presented as current evidence.
+ * {@link handoffTreeStatus} comparison, softened only for HEAD movement that
+ * changes bookkeeping paths: configured work, inputs, stories, reminders, and
+ * schedules directories, plus `.repoos/` and attachment paths. A diff that
+ * touches any other path is stale. Returns "stale" for every git problem (an
+ * unreachable sha, a missing worktree), so unclassifiable drift is never
+ * presented as current evidence.
  */
 export async function effectiveHandoffTreeStatus(
   diffRoot: string | null | undefined,
   evidence: Pick<UiHandoffGateEvidence, "sourceIdentity"> | null | undefined,
   currentHead: string | null | undefined,
+  config: RepoOSConfig = {} as RepoOSConfig,
 ): Promise<HandoffTreeStatus> {
   const status = handoffTreeStatus(evidence, currentHead);
-  if (status !== "stale") return status;
+  if (status === "unknown") return status;
   const captured = evidence?.sourceIdentity?.trim();
   const head = currentHead?.trim();
   if (!diffRoot || !captured || !head || captured === head) return status;
-  return (await diffIsTaskBookkeepingOnly(diffRoot, captured, head)) ? "current" : "stale";
+  return (await isEvidenceCurrent(diffRoot, captured, head, config)) ? "current" : "stale";
 }
 
 export interface UiHandoffGateResult {
@@ -401,11 +394,17 @@ export async function preflightUiEvidence(
   const prior = localShotStore(config, task.id)
     .list()
     .filter((s) => s.origin === "auto");
-  const stale = prior.filter(
-    (s) =>
-      s.planFingerprint !== planFingerprint ||
-      (sourceIdentity && s.sourceIdentity !== sourceIdentity),
-  );
+  const stale: ShotMeta[] = [];
+  for (const shot of prior) {
+    const samePlan = shot.planFingerprint === planFingerprint;
+    const currentTree =
+      !!worktree &&
+      !!sourceIdentity &&
+      !!shot.sourceIdentity &&
+      (shot.sourceIdentity === sourceIdentity ||
+        (await isEvidenceCurrent(worktree, shot.sourceIdentity, sourceIdentity, config)));
+    if (!samePlan || !currentTree) stale.push(shot);
+  }
   if (prior.length > 0 && stale.length > 0) {
     return {
       ok: true,
