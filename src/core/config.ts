@@ -58,6 +58,11 @@ import {
 } from "./activity-animation.js";
 import { DEFAULT_MAX_AUTO_SHOTS, STATUSES } from "./types.js";
 import { agentModelAllowRows } from "./budget-allowlist.js";
+import {
+  DEFAULT_ENGINEER_CRASH_FAILOVER_THRESHOLD,
+  DEFAULT_ENGINEER_CRASH_FAILOVER_WINDOW_MS,
+  MIN_ENGINEER_CRASH_FAILOVER_WINDOW_MS,
+} from "./engineer-crash-recovery.js";
 import { parseModelRouting } from "./model-routing/config.js";
 import { parseCheckPlanConfig } from "./check-plan.js";
 import { ctoActionsSchemaDescription } from "./cto-actions.js";
@@ -271,6 +276,8 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     stalenessMs: 5 * 60 * 1000,
     autoTransition: true,
     phantomDetectMs: 3 * 60 * 1000,
+    engineerCrashFailoverThreshold: DEFAULT_ENGINEER_CRASH_FAILOVER_THRESHOLD,
+    engineerCrashFailoverWindowMs: DEFAULT_ENGINEER_CRASH_FAILOVER_WINDOW_MS,
   },
   autoEngineeringMode: false,
   autoEngineering: {
@@ -1766,6 +1773,20 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof phantomDetectMs === "number" && phantomDetectMs >= 15_000) {
       cfg.watchdog = { ...cfg.watchdog, phantomDetectMs };
     }
+    const crashFailoverThreshold = parsed["watchdog.engineerCrashFailoverThreshold"];
+    if (typeof crashFailoverThreshold === "number" && crashFailoverThreshold >= 1) {
+      cfg.watchdog = {
+        ...cfg.watchdog,
+        engineerCrashFailoverThreshold: Math.floor(crashFailoverThreshold),
+      };
+    }
+    const crashFailoverWindowMs = parsed["watchdog.engineerCrashFailoverWindowMs"];
+    if (
+      typeof crashFailoverWindowMs === "number" &&
+      crashFailoverWindowMs >= MIN_ENGINEER_CRASH_FAILOVER_WINDOW_MS
+    ) {
+      cfg.watchdog = { ...cfg.watchdog, engineerCrashFailoverWindowMs: crashFailoverWindowMs };
+    }
 
     // [auth] section — authentication configuration.
     const authEnabled = parsed["auth.enabled"];
@@ -2583,6 +2604,38 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "(milliseconds) before RepoOS clears it and restarts the same agent. " +
         "A running check, test, or remote-validation wait is never treated as gone. " +
         "Minimum 15000. Automatic restarts are limited to 3 per task per hour.",
+    },
+    {
+      key: "watchdog.engineerCrashFailoverThreshold",
+      label: "Engineer crashes before failover",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      group: "general",
+      min: 1,
+      step: 1,
+      default: DEFAULT_ENGINEER_CRASH_FAILOVER_THRESHOLD,
+      description:
+        "How many crashes or usage/auth failures for the same agent+model inside the " +
+        "failover window before RepoOS switches the task to the next unpaused budget " +
+        "allowlist pair. A crash alone never requests a handoff: below this threshold " +
+        "the engineer is resumed. A human-set task override is never replaced; that " +
+        "case is surfaced for a human instead.",
+    },
+    {
+      key: "watchdog.engineerCrashFailoverWindowMs",
+      label: "Engineer crash failover window",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      group: "general",
+      min: MIN_ENGINEER_CRASH_FAILOVER_WINDOW_MS,
+      step: 60000,
+      default: DEFAULT_ENGINEER_CRASH_FAILOVER_WINDOW_MS,
+      description:
+        "How far back (milliseconds) RepoOS counts engineer crashes for the failover " +
+        "threshold. Default 1800000 (30 minutes); minimum 60000 (1 minute). A clean " +
+        "turn clears the count, so an occasional crash over days does not trigger a switch.",
     },
     {
       key: "ctoSkipHealthy",
@@ -3604,6 +3657,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "watchdog.stalenessMs",
   "watchdog.autoTransition",
   "watchdog.phantomDetectMs",
+  "watchdog.engineerCrashFailoverThreshold",
+  "watchdog.engineerCrashFailoverWindowMs",
   "whisper.provider",
   "whisper.apiKey",
   // Task previews
