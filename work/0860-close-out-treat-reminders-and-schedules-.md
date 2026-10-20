@@ -2,7 +2,7 @@
 id: "0860"
 title: "Close-out and layout: reminders/ and schedules/ are server-written bookkeeping, and follow the repoos/ layout"
 type: bug
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T11:24:43Z"
+updated_at: "2026-10-20T11:33:42Z"
 review_rounds: 2
 review_passes: 6
 handoff_signal_retry_count: 1
@@ -143,3 +143,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:21:49Z · body
 - 2026-10-20T11:23:05Z · body
 - 2026-10-20T11:24:43Z · body
+- 2026-10-20T11:33:42Z · status active→review
