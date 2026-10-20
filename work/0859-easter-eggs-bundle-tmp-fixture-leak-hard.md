@@ -2,15 +2,15 @@
 id: "0859"
 title: "Easter eggs bundle: tmp-fixture leak hardening (follow-ups from #0858)"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: [core, web]
 depends_on: ["0858"]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-20T03:43:18Z"
+updated_at: "2026-10-20T04:46:48Z"
 ---
 ## Items
 
@@ -80,3 +80,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 ## Activity
 
 - 2026-10-20T03:43:18Z · created · njachowski@gmail.com
+- 2026-10-20T04:46:48Z · status inbox→ready

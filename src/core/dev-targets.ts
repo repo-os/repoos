@@ -14,6 +14,7 @@
  * name/command/kind or a conflicting field is reported with a clear message.
  */
 import type { DevServiceConfig, DevTargetConfig } from "./types.js";
+import { parseTomlInlineStringTable } from "./toml-line.js";
 
 /**
  * Parse the flat TOML parser's leftover inline-table string for `healthCheck`
@@ -23,15 +24,13 @@ import type { DevServiceConfig, DevTargetConfig } from "./types.js";
  * error. Quoted string values only, which is all a URL or a file path needs.
  */
 function parseInlineHealthCheck(raw: string): { url?: string; file?: string } | null {
-  const s = raw.trim();
-  if (!s.startsWith("{") || !s.endsWith("}")) return null;
+  const parsed = parseTomlInlineStringTable(raw);
+  if (!parsed?.ok) return null;
   const out: { url?: string; file?: string } = {};
-  for (const m of s.slice(1, -1).matchAll(/([A-Za-z0-9_]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) {
-    const value = (m[2] ?? m[3] ?? "").trim();
-    if (!value) continue;
-    if (m[1] === "url") out.url = value;
-    else if (m[1] === "file") out.file = value;
-  }
+  const url = parsed.value.url?.trim();
+  const file = parsed.value.file?.trim();
+  if (url) out.url = url;
+  if (file) out.file = file;
   return out;
 }
 
@@ -251,26 +250,6 @@ export function servicePortToken(name: string): string {
     .replace(/^_+|_+$/g, "");
 }
 
-/**
- * Parse the flat TOML parser's leftover inline-table string for a service's
- * `env` (`'{ KEY = "value" }'` — `parseFlatToml` has no inline-table support).
- * Quoted string values only, which is all an env var needs. Returns null when
- * the string is not a `{ … }` table at all, so the caller can report the right
- * error.
- */
-function parseInlineEnvTable(raw: string): Record<string, string> | null {
-  const s = raw.trim();
-  if (!s.startsWith("{") || !s.endsWith("}")) return null;
-  const out: Record<string, string> = {};
-  for (const m of s.slice(1, -1).matchAll(/([A-Za-z0-9_]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) {
-    const key = m[1] ?? "";
-    const value = (m[2] ?? m[3] ?? "").trim();
-    if (!key) continue;
-    out[key] = value;
-  }
-  return out;
-}
-
 /** Validate one service's port field; shared with the target parser's shape. */
 function parsePortField(
   raw: unknown,
@@ -397,14 +376,24 @@ export function parseDevServices(parsed: Record<string, unknown>): {
     let env: Record<string, string> | undefined;
     if (envRaw !== undefined) {
       if (typeof envRaw === "string") {
-        const parsedEnv = parseInlineEnvTable(envRaw);
-        if (!parsedEnv || !Object.keys(parsedEnv).length) {
+        const parsedEnv = parseTomlInlineStringTable(envRaw);
+        if (!parsedEnv?.ok) {
+          if (parsedEnv && !parsedEnv.ok) {
+            errors.push(`[dev.services] ${name}: env ${parsedEnv.error}`);
+            continue;
+          }
           errors.push(
             `[dev.services] ${name}: env must be a table with at least one KEY = "value"`,
           );
           continue;
         }
-        env = parsedEnv;
+        if (!Object.keys(parsedEnv.value).length) {
+          errors.push(
+            `[dev.services] ${name}: env must be a table with at least one KEY = "value"`,
+          );
+          continue;
+        }
+        env = parsedEnv.value;
       } else if (typeof envRaw === "object" && envRaw !== null && !Array.isArray(envRaw)) {
         const e = envRaw as Record<string, unknown>;
         for (const [k, v] of Object.entries(e)) {
