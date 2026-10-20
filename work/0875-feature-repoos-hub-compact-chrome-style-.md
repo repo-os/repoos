@@ -9,11 +9,11 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: cursor
-model_override: default
+model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-20T13:31:37Z"
-updated_at: "2026-10-20T13:40:11Z"
+updated_at: "2026-10-20T13:40:14Z"
 ---
 ## Problem
 
@@ -351,3 +351,4 @@ Test both layouts, switching between them, narrow windows, many servers, and nat
 - 2026-10-20T13:31:37Z · created · hello@repoos.org
 - 2026-10-20T13:32:30Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added); Related (added)
 - 2026-10-20T13:40:11Z · cli_override, model_override
+- 2026-10-20T13:40:14Z · model_override
