@@ -11,6 +11,7 @@ import {
   GitDirtyCheckError,
   localBranches,
   preflightMerge,
+  runGit,
   uncommittedWorkFiles,
   workFileFilter,
   worktreePathForBranch,
@@ -26,6 +27,7 @@ import { buildIntegrationSnapshot } from "./integration-status.js";
 import { resolvePipelineCheckPlan } from "./check-plan-info.js";
 import {
   readHandoffSnapshot,
+  readWorktreeReviewLock,
   verifyWorktreeHandoffIntegrity,
   writeWorktreeReviewLock,
 } from "./worktree-handoff-guard.js";
@@ -49,41 +51,79 @@ export interface CloseOutEnqueueDeps {
 export type CloseOutEnqueueResult = { ok: true; jobTaskId: string } | { ok: false; reason: string };
 
 /** Preflight data for approval policy evaluation. */
+export interface ApprovalPreflight {
+  branchMissing: boolean;
+  mergePreflightFailed: boolean;
+  /** Every conflicted path `preflightMerge` reported (including the task file). */
+  mergeConflicts: string[];
+  mergeReason?: string;
+  handoffDrift: boolean;
+  mainDirty: boolean;
+  /** Dirty paths on the primary checkout, minus ignorable runtime churn. */
+  mainDirtyFiles: string[];
+  /** True when reading main's dirty state failed (fail closed). */
+  mainDirtyCheckFailed: boolean;
+  /** Branch changes vs its merge-base with main; null when unreadable. */
+  changedPaths: string[] | null;
+  /** The task worktree, or null for hotfix/branch-less tasks. */
+  worktree: string | null;
+  /** Full worktree HEAD, when readable. */
+  headSha: string | null;
+  /** The review lock sha written at handoff, or null when no lock exists. */
+  lockSha: string | null;
+  /** Uncommitted files in the worktree; null when unreadable/no worktree. */
+  worktreeDirty: string[] | null;
+}
+
+/** Preflight data shared by the approval policy and `repoos landable` (#0867). */
 export async function gatherApprovalPreflight(
   config: RepoOSConfig,
   task: Task,
-): Promise<{
-  branchMissing: boolean;
-  mergePreflightFailed: boolean;
-  handoffDrift: boolean;
-  mainDirty: boolean;
-  changedPaths: string[] | null;
-}> {
+): Promise<ApprovalPreflight> {
   const branch = task.branch;
   let mainDirty = false;
+  let mainDirtyFiles: string[] = [];
+  let mainDirtyCheckFailed = false;
   try {
-    mainDirty = (await mainDirtyFilesForCloseOut(config.root, config)).length > 0;
+    mainDirtyFiles = await mainDirtyFilesForCloseOut(config.root, config);
+    mainDirty = mainDirtyFiles.length > 0;
   } catch {
     // Treat an unreadable main as dirty: fail closed rather than auto-landing
     // on top of a checkout we could not verify (#0727).
     mainDirty = true;
+    mainDirtyCheckFailed = true;
   }
+  const lockSha = readWorktreeReviewLock(config.root, config.cacheDir, task.id)?.sha ?? null;
   if (!branch) {
     return {
       branchMissing: true,
       mergePreflightFailed: false,
+      mergeConflicts: [],
       handoffDrift: false,
       mainDirty,
+      mainDirtyFiles,
+      mainDirtyCheckFailed,
       changedPaths: null,
+      worktree: null,
+      headSha: null,
+      lockSha,
+      worktreeDirty: null,
     };
   }
   if (!localBranches(config.root).has(branch)) {
     return {
       branchMissing: true,
       mergePreflightFailed: false,
+      mergeConflicts: [],
       handoffDrift: false,
       mainDirty,
+      mainDirtyFiles,
+      mainDirtyCheckFailed,
       changedPaths: null,
+      worktree: null,
+      headSha: null,
+      lockSha,
+      worktreeDirty: null,
     };
   }
 
@@ -94,10 +134,17 @@ export async function gatherApprovalPreflight(
   const changedPaths = worktree ? await branchChangedPaths(config.root, branch) : null;
 
   let handoffDrift = false;
+  let worktreeDirty: string[] | null = null;
+  let headSha: string | null = null;
   if (worktree) {
+    const head = await runGit(worktree, ["rev-parse", "HEAD"], 4_000);
+    if (head.status === 0 && head.stdout.trim()) headSha = head.stdout.trim();
+    // A lock that names an older sha is the same drift the review-lock check
+    // reports (#0867): the branch moved after handoff, so never auto-approve it.
+    if (lockSha && headSha && lockSha !== headSha) handoffDrift = true;
     try {
-      const dirty = await uncommittedWorkFiles(worktree, workFileFilter(config));
-      if (dirty.length > 0) handoffDrift = true;
+      worktreeDirty = await uncommittedWorkFiles(worktree, workFileFilter(config));
+      if (worktreeDirty.length > 0) handoffDrift = true;
     } catch {
       handoffDrift = true;
     }
@@ -111,7 +158,21 @@ export async function gatherApprovalPreflight(
     }
   }
 
-  return { branchMissing: false, mergePreflightFailed, handoffDrift, mainDirty, changedPaths };
+  return {
+    branchMissing: false,
+    mergePreflightFailed,
+    mergeConflicts: preflight.conflicts,
+    mergeReason: preflight.reason,
+    handoffDrift,
+    mainDirty,
+    mainDirtyFiles,
+    mainDirtyCheckFailed,
+    changedPaths,
+    worktree,
+    headSha,
+    lockSha,
+    worktreeDirty,
+  };
 }
 
 /**
