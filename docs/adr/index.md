@@ -19,4 +19,4 @@ This table is hand-maintained — adding a new ADR means adding a row here too.
 | [0005](0005-agents-use-repoos-apis-for-privileged-operations.md) | Agents use RepoOS APIs for privileged operations | accepted | 2026-08-11 |
 | [0006](0006-macos-repoos-hub.md) | macOS Hub is a native shell around isolated server web UIs | accepted | 2026-09-21 |
 | [0007](0007-telegram-identity-and-authorization.md) | Telegram users bind to allowlisted identities; chats only route | accepted | 2026-09-27 |
-| [0008](0008-centralized-agent-recovery.md) | Recover coding-agent failures with centralized pair remaps | accepted | 2026-10-20 |
+| [0008](0008-centralized-agent-recovery.md) | Recover coding-agent failures with centralized pair remaps | proposed | 2026-10-20 |
