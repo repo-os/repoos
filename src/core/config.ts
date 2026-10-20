@@ -1877,6 +1877,17 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof rvOffloadBrowser === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, offloadBrowserSteps: rvOffloadBrowser };
     }
+    const rvBrowserCaptureMode = parsed["remoteValidation.browserCaptureMode"];
+    if (
+      rvBrowserCaptureMode === "local" ||
+      rvBrowserCaptureMode === "runner-available" ||
+      rvBrowserCaptureMode === "runner-only"
+    ) {
+      cfg.remoteValidation = {
+        ...cfg.remoteValidation,
+        browserCaptureMode: rvBrowserCaptureMode,
+      };
+    }
     const rvLocalFallback = parsed["remoteValidation.localFallback"];
     if (
       rvLocalFallback === "serialize" ||
@@ -2841,6 +2852,21 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "How long queued Playwright work waits for a browser slot before failing. Default 45 minutes (2_700_000 ms).",
     },
     {
+      key: "remoteValidation.browserCaptureMode",
+      label: "Task browser work",
+      type: "select",
+      tier: "restart",
+      restartRequired: true,
+      default: "local",
+      options: [
+        { value: "local", label: "Local" },
+        { value: "runner-available", label: "Runner when available" },
+        { value: "runner-only", label: "Runner only" },
+      ],
+      description:
+        "Choose where task screenshots and UI verification run. Runner modes require remote validation and a runner with Playwright and WebKit; runner when available falls back locally if no capable runner is ready.",
+    },
+    {
       key: "remoteValidation.offloadBrowserSteps",
       label: "Remote validation: offload browser steps",
       type: "boolean",
@@ -3610,6 +3636,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "remoteValidation.hangIdleMinutes",
   "remoteValidation.fallbackToLocal",
   "remoteValidation.offloadBrowserSteps",
+  "remoteValidation.browserCaptureMode",
   "remoteValidation.localFallback",
   "remoteValidation.retryOtherHosts",
   "remoteValidation.engineerSelfCheckRemote",
