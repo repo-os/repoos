@@ -39,6 +39,13 @@ export interface ServerRegistryEntry {
   version: string;
   startedAt: string;
   kind: "server";
+  /**
+   * Engineers currently running in that server (#0871). Refreshed on a timer so
+   * every RepoOS server on the machine can size its own concurrency against the
+   * others without an HTTP round-trip in a start path.
+   */
+  activeEngineers?: number;
+  engineersUpdatedAt?: string;
 }
 
 /** Override for tests (`REPOOS_SERVERS_REGISTRY_DIR`). */
@@ -192,6 +199,44 @@ export function readServerRegistryEntry(
   registryDir?: string,
 ): ServerRegistryEntry | null {
   return readEntryFile(serverRegistryEntryPath(port, registryDir));
+}
+
+/** Every readable registry entry, regardless of whether its process is alive. */
+export function listServerRegistryEntries(registryDir?: string): ServerRegistryEntry[] {
+  const entries: ServerRegistryEntry[] = [];
+  for (const path of listServerRegistryEntryPaths(registryDir)) {
+    const entry = readEntryFile(path);
+    if (entry) entries.push(entry);
+  }
+  return entries;
+}
+
+/**
+ * Refresh the engineer count on this server's own registry file (#0871). Only
+ * the process that owns the entry may update it — after a reload handover the
+ * replacement owns it, and the exiting parent must not overwrite the new count.
+ */
+export function updateServerRegistryEngineerCount(
+  port: number,
+  activeEngineers: number,
+  registryDir?: string,
+): void {
+  const existing = readEntryFile(serverRegistryEntryPath(port, registryDir));
+  if (!existing || existing.pid !== process.pid) return;
+  const count = Math.max(0, Math.floor(activeEngineers));
+  if (existing.activeEngineers === count) return;
+  try {
+    writeServerRegistryEntry(
+      {
+        ...existing,
+        activeEngineers: count,
+        engineersUpdatedAt: new Date().toISOString(),
+      },
+      registryDir,
+    );
+  } catch {
+    /* count refresh is best-effort — never fail a start because of it */
+  }
 }
 
 export type ServerRegistryStaleReason = "dead-pid" | "health-mismatch" | "unreachable";
@@ -366,6 +411,8 @@ export function registerRunningServer(input: RegisterRunningServerInput): void {
     version: input.version,
     startedAt: input.startedAt,
     kind: "server",
+    activeEngineers: 0,
+    engineersUpdatedAt: new Date().toISOString(),
   };
   writeServerRegistryEntry(entry, input.registryDir);
 }

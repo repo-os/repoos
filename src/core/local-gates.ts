@@ -163,12 +163,25 @@ export async function acquirePlaywrightSlot(
   config: RepoOSConfig,
   env: NodeJS.ProcessEnv,
   onStatusLine?: (line: string) => void,
+  opts: { skipPressure?: boolean } = {},
 ): Promise<() => void> {
   const cacheDir = config.cacheDir ?? ".repoos";
   const board = boardRoot(repoRoot);
   const limit = playwrightMaxConcurrent(config);
   const waitMs = playwrightQueueTimeoutMs(config);
   const emit = (line: string) => onStatusLine?.(line);
+
+  // Browser work is the heaviest thing RepoOS starts on a laptop. Hold it
+  // while pressure is critical (#0871); the slot queue alone cannot see swap.
+  if (!opts.skipPressure) {
+    await waitForPressureRelief(config, {
+      onWaiting: (reason) => {
+        emit(`[pressure] ${reason}`);
+        markQueue(board, cacheDir, env, "pressure", 0, 0, reason);
+      },
+    });
+    unmarkQueue(board, cacheDir, env, "pressure");
+  }
 
   return acquireCrossProcessSlot({
     slots: limit,

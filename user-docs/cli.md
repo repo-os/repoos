@@ -216,7 +216,7 @@ done wait by default in human mode).
 | `repoos runners [--probe]` | remote-validation status + test |
 | `repoos agents` | `GET /api/agents/running` |
 | `repoos agents pause\|resume <agent> [--model M] [--until <date>] [--reason "…"]` | `PATCH /api/config` — pause/resume an allowlist agent or model (#0850) |
-| `repoos stats` | `GET /api/stats/board` |
+| `repoos stats` | `GET /api/stats/board` + `GET /api/system` — board spend, pressure, and top CPU/memory processes labeled RepoOS vs other (`--json` includes both under `system`) |
 | `repoos decisions` (`repoos attention`) | `GET /api/decisions` — CTO escalation digest with cause, evidence, and actions |
 | `repoos driver brief` | `GET /api/driver/brief` — the CTO board brief from live state (#0731) |
 
@@ -435,8 +435,8 @@ server belonging to a different repo.
 
 Lists every control-plane `repoos serve` that registered itself under
 `~/.repoos/servers/` (one `<port>.json` per listener). Shows port, project
-name, repo root, PID, uptime, and whether the entry still looks healthy (PID
-alive and `/api/health` reports the same root).
+name, repo root, PID, uptime, live engineer count, and whether the entry still
+looks healthy (PID alive and `/api/health` reports the same root).
 
 `--prune` removes stale registry files (dead PID, or a live PID whose
 `/api/health` is unreachable or reports a different root), then lists the rest.
