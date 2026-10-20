@@ -230,9 +230,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     enabled: true,
     stalenessMs: 5 * 60 * 1000,
     autoTransition: true,
-    phantomDetectMs: 2 * 60 * 1000,
-    phantomHealMax: 3,
-    phantomHealWindowMs: 60 * 60 * 1000,
+    phantomDetectMs: 3 * 60 * 1000,
   },
   autoEngineeringMode: false,
   autoEngineering: {
@@ -1722,14 +1720,6 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof phantomDetectMs === "number" && phantomDetectMs >= 15_000) {
       cfg.watchdog = { ...cfg.watchdog, phantomDetectMs };
     }
-    const phantomHealMax = parsed["watchdog.phantomHealMax"];
-    if (typeof phantomHealMax === "number" && phantomHealMax >= 1 && phantomHealMax <= 20) {
-      cfg.watchdog = { ...cfg.watchdog, phantomHealMax: Math.floor(phantomHealMax) };
-    }
-    const phantomHealWindowMs = parsed["watchdog.phantomHealWindowMs"];
-    if (typeof phantomHealWindowMs === "number" && phantomHealWindowMs >= 60_000) {
-      cfg.watchdog = { ...cfg.watchdog, phantomHealWindowMs };
-    }
 
     // [auth] section — authentication configuration.
     const authEnabled = parsed["auth.enabled"];
@@ -2515,6 +2505,22 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "work — and its rationale is recorded with the decision.",
     },
     {
+      key: "watchdog.phantomDetectMs",
+      label: "Phantom runner detect window",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      group: "general",
+      min: 15000,
+      step: 1000,
+      default: 180000,
+      description:
+        "How long a runner entry may have no live engineer process and no live child " +
+        "(milliseconds) before RepoOS clears it and restarts the same agent. " +
+        "A running check, test, or remote-validation wait is never treated as gone. " +
+        "Minimum 15000. Automatic restarts are limited to 3 per task per hour.",
+    },
+    {
       key: "ctoSkipHealthy",
       label: "Skip the CTO on a healthy board",
       type: "boolean",
@@ -2524,41 +2530,6 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description:
         "Don't call the CTO model a monitor tick when no task is stuck, the build is fresh " +
         "and the process check is normal. Disable to run a full CTO pass on every tick.",
-    },
-    {
-      key: "watchdog.phantomDetectMs",
-      label: "Phantom runner detect window",
-      type: "number",
-      tier: "live",
-      restartRequired: false,
-      default: DEFAULT_CONFIG.watchdog?.phantomDetectMs ?? 120_000,
-      description:
-        "Milliseconds a runner row may show no live engineer process and no live child " +
-        "(check, test, remote validation) before it is cleared and the same agent is " +
-        "restarted. Default 120000 (2 minutes). Minimum 15000. A live process tree is never touched.",
-    },
-    {
-      key: "watchdog.phantomHealMax",
-      label: "Phantom runner restart limit",
-      type: "number",
-      tier: "live",
-      restartRequired: false,
-      default: DEFAULT_CONFIG.watchdog?.phantomHealMax ?? 3,
-      description:
-        "How many automatic phantom restarts one task may get inside the heal window " +
-        "(1–20, default 3). Past the limit the dead row is still cleared and logged, " +
-        "and Start works, but the server does not launch another turn by itself.",
-    },
-    {
-      key: "watchdog.phantomHealWindowMs",
-      label: "Phantom runner restart window",
-      type: "number",
-      tier: "live",
-      restartRequired: false,
-      default: DEFAULT_CONFIG.watchdog?.phantomHealWindowMs ?? 3_600_000,
-      description:
-        "Window for the phantom restart limit, in milliseconds. Default 3600000 (1 hour). " +
-        "Minimum 60000.",
     },
     {
       key: "cto.actions",
@@ -3557,8 +3528,6 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "watchdog.stalenessMs",
   "watchdog.autoTransition",
   "watchdog.phantomDetectMs",
-  "watchdog.phantomHealMax",
-  "watchdog.phantomHealWindowMs",
   "whisper.provider",
   "whisper.apiKey",
   // Task previews

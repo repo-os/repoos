@@ -1814,18 +1814,11 @@ export interface WatchdogConfig {
    */
   autoTransition?: boolean;
   /**
-   * How long a runner row may have no live engineer process and no live child
-   * before it is cleared and the same agent is restarted (#0863). Default 2
-   * minutes. Minimum 15 seconds; smaller values are ignored.
+   * How long a runner entry may have no live engineer process and no live
+   * child before it is cleared and the same agent restarted (#0863).
+   * Default 3 minutes. Minimum 15 seconds.
    */
   phantomDetectMs?: number;
-  /**
-   * Automatic phantom restarts allowed per task inside `phantomHealWindowMs`.
-   * Default 3. An explicit Start still clears a dead row.
-   */
-  phantomHealMax?: number;
-  /** Window for `phantomHealMax`. Default 1 hour. */
-  phantomHealWindowMs?: number;
 }
 
 /** Browser console / overflow gate at engineer handoff for UI work (#0680). */
