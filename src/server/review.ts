@@ -98,7 +98,13 @@ import {
   gatherReviewVerificationWithoutWorktree,
 } from "./review-verification-gather.js";
 import {
-  decideAutomaticReview,
+  decideReviewAutomation,
+  reviewTriggerNote,
+  REVIEW_RUN_TRIGGERS,
+  type ReviewRunTrigger,
+} from "./review-automation.js";
+import {
+  hasOpenReviewFindings,
   reviewTreeIdentityForTask,
   type ReviewGuardReport,
 } from "./review-tree-identity.js";
@@ -136,7 +142,14 @@ export interface ReviewRunResult {
   skipped?: boolean;
   reason?: string;
   report?: ReviewReport;
+  trigger?: ReviewRunTrigger;
 }
+
+export type ReviewRunOptions = {
+  /** @deprecated use `trigger` — kept for callers migrating to {@link REVIEW_RUN_TRIGGERS}. */
+  manual?: boolean;
+  trigger?: ReviewRunTrigger;
+};
 
 /** Review failed only because handoff evidence is stale (#0766). */
 export function isStaleEvidenceOnlyReview(report: string, verdict: string | null): boolean {
@@ -881,26 +894,39 @@ export class ReviewManager {
    * a new assessment (the initial landing review, or a deliberate "Review
    * again"), never a continuation of the prior one (0110).
    */
-  async run(task: Task, opts: { manual?: boolean } = {}): Promise<ReviewRunResult> {
+  async run(task: Task, opts: ReviewRunOptions = {}): Promise<ReviewRunResult> {
+    const trigger =
+      opts.trigger ??
+      (opts.manual ? REVIEW_RUN_TRIGGERS.EXPLICIT_AGAIN : REVIEW_RUN_TRIGGERS.STATUS_ENTER_REVIEW);
     if (isEvidenceRefreshActive(task.id)) {
-      return { ok: false, reason: "evidence refresh is in progress for this task" };
+      return { ok: false, reason: "evidence refresh is in progress for this task", trigger };
     }
     if (this.isRunning(task.id)) {
-      return { ok: false, reason: "a review is already running for this task" };
+      return { ok: false, reason: "a review is already running for this task", trigger };
     }
     const stored = this.read(task.id);
-    const auto = decideAutomaticReview(this.config, task, stored as ReviewGuardReport | null, opts);
+    const auto = decideReviewAutomation(
+      this.config,
+      task,
+      stored as ReviewGuardReport | null,
+      trigger,
+    );
     if (auto.action === "skip") {
-      this.logger.task(task.id, "info", `review skipped — ${auto.reason}`);
-      this.appendMarker(task.id, `review skipped — ${auto.reason}`);
+      this.logger.task(task.id, "info", `review skipped (${trigger}) — ${auto.reason}`);
+      this.appendMarker(task.id, `review skipped (${reviewTriggerNote(trigger)}) — ${auto.reason}`);
       if (auto.handBackToEngineer && stored) {
-        void this.handBackToEngineerForOpenFindings(task, stored).catch((err) => {
-          console.error(
-            `[repoos] uncaught error handing #${task.id} back to engineer: ${(err as Error).message}`,
-          );
-        });
+        const fresh = this.index?.getTask(task.id) ?? task;
+        // Auto-bounce already moved open findings to the engineer; do not start a
+        // second engineer turn from the same tree guard (#0865).
+        if (fresh.status !== "active") {
+          void this.handBackToEngineerForOpenFindings(task, stored).catch((err) => {
+            console.error(
+              `[repoos] uncaught error handing #${task.id} back to engineer: ${(err as Error).message}`,
+            );
+          });
+        }
       }
-      return { ok: false, skipped: true, reason: auto.reason };
+      return { ok: false, skipped: true, reason: auto.reason, trigger };
     }
     const baseReviewer = resolveReviewerForTask(this.config, task);
     if (!baseReviewer) {
@@ -1168,20 +1194,31 @@ export class ReviewManager {
 
       const report = this.read(task.id);
       const currentIdentity = reviewTreeIdentityForTask(this.config, task);
-      if (report?.treeIdentity && currentIdentity && report.treeIdentity === currentIdentity) {
-        if (report.state === "ok") {
-          void this.handBackToEngineerForOpenFindings(task, report).catch((err) => {
-            console.error(
-              `[repoos] recovery hand-back failed for #${task.id}: ${(err as Error).message}`,
-            );
-          });
+      let scheduleRecovery = !report;
+      if (report?.state === "ok") {
+        if (report.treeIdentity && currentIdentity && report.treeIdentity === currentIdentity) {
+          const recoveryVerdict = parseVerdict(report.markdown);
+          if (hasOpenReviewFindings(recoveryVerdict)) {
+            void this.handBackToEngineerForOpenFindings(task, report).catch((err) => {
+              console.error(
+                `[repoos] recovery hand-back failed for #${task.id}: ${(err as Error).message}`,
+              );
+            });
+          }
+          continue;
         }
+        if (!report.treeIdentity) {
+          const headAt = headCommitISO(workdir);
+          scheduleRecovery =
+            !report.at || (headAt !== null && Date.parse(report.at) < Date.parse(headAt));
+        }
+        if (!scheduleRecovery) continue;
+      } else if (report && report.state !== "incomplete" && report.state !== "failed") {
         continue;
+      } else if (report) {
+        scheduleRecovery = true;
       }
-      const headAt = headCommitISO(workdir);
-      const stale =
-        !report || !report.at || (headAt !== null && Date.parse(report.at) < Date.parse(headAt));
-      if (!stale) continue;
+      if (!scheduleRecovery) continue;
 
       this.appendMarker(
         task.id,
@@ -1194,7 +1231,9 @@ export class ReviewManager {
         // or a human "Review again" may have started one in the interim.
         if (this.isRunning(task.id)) return;
         const fresh = this.index?.getTask(task.id) ?? task;
-        if (fresh.status === "review" && !fresh.isArchived) void this.run(fresh);
+        if (fresh.status === "review" && !fresh.isArchived) {
+          void this.run(fresh, { trigger: REVIEW_RUN_TRIGGERS.RECOVERY_INTERRUPTED });
+        }
       }, delay).unref?.();
       delay += 3000;
     }
@@ -1470,7 +1509,7 @@ export class ReviewManager {
             "info",
             "evidence-gap repair captured; starting one new review",
           );
-          void this.run(current);
+          void this.run(current, { trigger: REVIEW_RUN_TRIGGERS.EVIDENCE_GAP_REREVIEW });
         }
         return;
       }
@@ -1519,7 +1558,7 @@ export class ReviewManager {
       const current = this.index?.getTask(task.id) ?? task;
       if (current.status === "review" && !current.isArchived) {
         this.logger.task(task.id, "info", "stale-only evidence refreshed; starting one new review");
-        void this.run(current);
+        void this.run(current, { trigger: REVIEW_RUN_TRIGGERS.STALE_EVIDENCE_REREVIEW });
       }
     } catch (err) {
       this.logger.task(
@@ -2299,7 +2338,7 @@ export class ReviewManager {
           task.id,
           "↻ automatically retrying review — previous pass had no verdict",
         );
-        await this.run(current);
+        await this.run(current, { trigger: REVIEW_RUN_TRIGGERS.INCOMPLETE_RETRY });
       })();
     }, 4_000);
     timer.unref?.();
