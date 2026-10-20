@@ -210,6 +210,10 @@ import {
 } from "./handoff.js";
 import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
 import {
+  clearEngineerCrashRecoveryState,
+  recoverEngineerAfterCrash,
+} from "./engineer-crash-recovery.js";
+import {
   lastHandoffFailureFromBody,
   parkTaskForIdenticalHandoffFailures,
   parseHandoffFailureReason,
@@ -1875,6 +1879,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           }
         });
       },
+      onEngineerCrash: (taskId, info) => {
+        // #0869: record the crash, resume below the threshold, fail over to the
+        // next unpaused allowlist pair after it. Never a handoff by itself.
+        void recoverEngineerAfterCrash({ config, index, runner, logger }, taskId, info).catch(
+          (err: unknown) => {
+            logger.task(taskId, "warn", "engineer crash recovery rejected", {
+              error: err instanceof Error ? err.message : String(err),
+            });
+          },
+        );
+      },
+      onEngineerProgress: (taskId) => {
+        clearEngineerCrashRecoveryState({ config, index, logger }, taskId);
+      },
       onHandoff: async (request) => {
         let reachedFinalization = false;
         try {
@@ -2892,6 +2910,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // that write entirely.
   index.setReviewGuard(async (task: Task, prev: Task): Promise<boolean> => {
     if (runner.isHandoffInFlight(task.id)) return true; // our own finalization's write
+    // A raw status flip from a turn that crashed (or an agent editing its own
+    // task file after an error) is not a handoff (#0869).
+    if (runner.suppressesHandoffAfterCrash(task.id)) {
+      runner.system(
+        task.id,
+        "✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed.",
+      );
+      return false;
+    }
     startUnifiedHandoff(prev, { origin: "task-file" });
     return false;
   });

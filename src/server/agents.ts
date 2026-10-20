@@ -410,6 +410,8 @@ interface Session {
   agent?: string;
   /** Model name (e.g., "big pickle", "default"). */
   model?: string;
+  /** CLI that ran the last turn (e.g. "codex", "opencode") — crash attribution (#0869). */
+  cli?: string;
   /** Which session engine parses the CLI output into AgentOutputEntry cards. */
   engine:
     | "opencode"
@@ -1185,6 +1187,8 @@ interface PersistedSession {
   agent?: string;
   /** Model name — see Session.model. */
   model?: string;
+  /** CLI that ran the last turn — see Session.cli (#0869). */
+  cli?: string;
 }
 
 export interface AgentRunnerOptions {
@@ -1197,6 +1201,22 @@ export interface AgentRunnerOptions {
   getTask?: (taskId: string) => Task | null;
   /** Notify the live index after the runner patches a task file (#0716). */
   onTaskFilePatched?: (absPath: string) => void;
+  /**
+   * An engineer turn exited with an error and no handoff signal (#0869). The
+   * server records the crash and resumes the engineer (possibly on the next
+   * allowlisted pair); the runner never turns a crash into a handoff.
+   */
+  onEngineerCrash?: (taskId: string, info: EngineerCrashInfo) => void;
+  /** A clean engineer turn made progress: clear the bounded crash history (#0869). */
+  onEngineerProgress?: (taskId: string) => void;
+}
+
+/** What the runner reports for a crashed engineer turn (#0869). */
+export interface EngineerCrashInfo {
+  cli?: string;
+  model?: string;
+  kind: string;
+  reason: string;
 }
 
 /** Best-effort session-id extraction from agent output (opencode / claude). */
@@ -5220,6 +5240,17 @@ export class AgentRunner {
     outcome: "restart" | "rate-limited" | "cleared-for-start",
   ) => void;
 
+  /** Crash recovery hooks (#0869). */
+  private readonly onEngineerCrash?: (taskId: string, info: EngineerCrashInfo) => void;
+  private readonly onEngineerProgress?: (taskId: string) => void;
+  /**
+   * Tasks whose last turn exited with an error and never emitted the engineer's
+   * own handoff signal (#0869). A review/status write from that turn must not be
+   * read as a handoff; the flag clears on a clean turn, a real handoff signal,
+   * or a human-driven resume.
+   */
+  private readonly crashedNoHandoff = new Set<string>();
+
   /**
    * `opts.stallTimeoutMs` overrides the 90s default (tests use a small value
    * so stall detection doesn't need a real 90s wait); `opts.stallCheckIntervalMs`
@@ -5266,6 +5297,8 @@ export class AgentRunner {
     this.onTaskFilePatched = opts.onTaskFilePatched;
     this.onOrphanEngineerNote = opts.onOrphanEngineerNote;
     this.onPhantomRunner = opts.onPhantomRunner;
+    this.onEngineerCrash = opts.onEngineerCrash;
+    this.onEngineerProgress = opts.onEngineerProgress;
     this.db = getRepoOSDb(config.root);
     this.cacheDir = join(config.root, config.cacheDir);
     this.sessionsDir = join(this.cacheDir, "sessions");
@@ -5912,6 +5945,15 @@ export class AgentRunner {
     return store.requests.some((r) => r.taskId === taskId);
   }
 
+  /**
+   * True when the task's last engineer turn exited with an error and never
+   * emitted the engineer's own handoff signal (#0869). The server must not act
+   * on a review/status write from that turn — a crash is not a handoff.
+   */
+  suppressesHandoffAfterCrash(taskId: string): boolean {
+    return this.crashedNoHandoff.has(taskId);
+  }
+
   /** Live run telemetry for a task's session — zeros/nulls when none exists yet. */
   stats(taskId: string): AgentSessionStats {
     return this.snapshotStats(taskId);
@@ -5970,6 +6012,8 @@ export class AgentRunner {
       contextPack?: string;
       resumePreamble?: string;
       freshSession?: boolean;
+      /** Internal: a crash-recovery relaunch must keep the crash guard (#0869). */
+      fromCrashRecovery?: boolean;
     } = {},
   ): StartResult {
     if (!DRIVABLE_CLIS.has(agent.cli)) {
@@ -5986,6 +6030,10 @@ export class AgentRunner {
     ) {
       return { ok: false, reason: "task is already running or finalizing" };
     }
+    // A human-driven start/send is a fresh attempt: the previous crash no
+    // longer suppresses review requests. An automatic crash-recovery relaunch
+    // keeps the guard until the turn ends cleanly (#0869).
+    if (!opts.fromCrashRecovery) this.crashedNoHandoff.delete(task.id);
     const session = this.sessions.get(task.id) ?? this.loadSession(task.id) ?? this.emptySession();
     this.captureUsageBaseline(session);
     session.workdir = cwd;
@@ -6022,6 +6070,7 @@ export class AgentRunner {
     session.branch = branch;
     session.agent = agent.name;
     session.model = agent.model;
+    session.cli = agent.cli;
     this.sessions.set(task.id, session);
     // Persist the chosen id up front: a crash before the first output line must
     // not lose it, or the next turn would fall back to the ordinary id.
@@ -6096,6 +6145,7 @@ export class AgentRunner {
       engine: engineForCli(agent.cli),
       agent: agent.name,
       model: agent.model,
+      cli: agent.cli,
       accumulatedMs: 0,
       stalledEmitted: false,
       silentAwakeMs: 0,
@@ -6237,12 +6287,15 @@ export class AgentRunner {
       skipBoardDivergence?: boolean;
       cwd?: string;
       emitHumanTurn?: boolean;
+      /** Internal: an automatic resume keeps the crash guard (#0869). */
+      fromCrashRecovery?: boolean;
     } = {},
   ): StartResult {
     if (!DRIVABLE_CLIS.has(agent.cli)) {
       return { ok: false, reason: unsupportedCliMessage(agent.cli) };
     }
     this.checkExpiredMessages();
+    if (!opts.fromCrashRecovery) this.crashedNoHandoff.delete(taskId);
     // Completed/non-task conversations are deliberately not preloaded at boot.
     // Hydrate one on demand so a persisted RepoOS Guide transcript can resume
     // after a server reload instead of being visible-but-unsendable.
@@ -6341,6 +6394,9 @@ export class AgentRunner {
     queuedPreamble: string,
   ): StartResult {
     this.sessions.set(id, session);
+    session.agent = agent.name;
+    session.model = agent.model;
+    session.cli = agent.cli;
     const cwd = opts.cwd ?? session.workdir ?? this.config.root;
     session.workdir = cwd;
     this.captureUsageBaseline(session);
@@ -7723,6 +7779,9 @@ export class AgentRunner {
     if (this.isHandoffSignal(raw, entry)) {
       const running = this.entries.get(taskId);
       if (running) running.handoffRequested = true;
+      // The engineer's own request supersedes any earlier crash guard: a real
+      // signal is the one thing that makes an unclean exit a handoff (#0869).
+      this.crashedNoHandoff.delete(taskId);
       // Persist immediately so the request survives a crash before cleanup (#0235).
       if (running) {
         this.persistPendingHandoff({
@@ -8452,8 +8511,18 @@ export class AgentRunner {
     // that is handing off, was stopped, or is a review turn holds the queue:
     // those messages stay persisted and flagged and are delivered when the
     // task's own session next runs. Deferred so the new turn starts after this
-    // cleanup fully unwinds (and after handoff adoption below).
-    if (!wasReview && !entry.handoffRequested && !entry.intentionalStop && !this.isPaused(taskId)) {
+    // cleanup fully unwinds (and after handoff adoption below). An unclean
+    // engineer exit is left to crash recovery, whose relaunch drains the queue
+    // into the new turn (with the task context) instead of racing it (#0869).
+    const crashRecoveryWillResume =
+      !exitedCleanly && !wasReview && !entry.intentionalStop && !!this.onEngineerCrash;
+    if (
+      !wasReview &&
+      !entry.handoffRequested &&
+      !entry.intentionalStop &&
+      !this.isPaused(taskId) &&
+      !crashRecoveryWillResume
+    ) {
       queueMicrotask(() => this.deliverQueuedMessages(taskId));
     }
     // Kiro CLI does not print a session ID during the run. Capture it now by
@@ -8533,7 +8602,11 @@ export class AgentRunner {
         // A fresh session, never a resume: the poisoned conversation replays
         // the same loop when resumed (#0717, #0679).
         queueMicrotask(() => {
-          void this.start(task, branch, agent, { cwd, freshSession: true });
+          void this.start(task, branch, agent, {
+            cwd,
+            freshSession: true,
+            fromCrashRecovery: true,
+          });
         });
       } else if (abortKind === "provider-failure") {
         this.escalateFailedExit(
@@ -8554,6 +8627,49 @@ export class AgentRunner {
       } else if (!exitedCleanly) {
         this.escalateFailedExit(taskId, taskForHandoff, session);
       }
+    }
+    // #0869: a crash is not a handoff. Keep the task active, remember that this
+    // turn never emitted its own handoff signal (so a status write from it is
+    // not honored), and ask the server to resume — or fail over once the
+    // bounded crash threshold is reached. A deliberate stop, a paused task, a
+    // review turn, and a turn that requested its own handoff are excluded.
+    const crashKind =
+      abortKind === "provider-failure"
+        ? "provider-failure"
+        : abortKind === "degenerate-output"
+          ? "degenerate-output"
+          : "dev-error";
+    const crashReason =
+      (abortKind === "provider-failure"
+        ? session?.providerFailureDetail
+        : abortKind === "degenerate-output"
+          ? entry.degenerateDetail
+          : undefined) ?? this.lastFailureLine(session);
+    if (
+      !wasReview &&
+      !exitedCleanly &&
+      !entry.handoffRequested &&
+      !entry.intentionalStop &&
+      !this.isPaused(taskId) &&
+      !!taskForHandoff
+    ) {
+      this.crashedNoHandoff.add(taskId);
+      if (this.onEngineerCrash && abortKind !== "degenerate-retry") {
+        queueMicrotask(() => {
+          this.onEngineerCrash?.(taskId, {
+            ...(session?.cli ? { cli: session.cli } : {}),
+            ...(session?.model ? { model: session.model } : {}),
+            kind: crashKind,
+            reason: crashReason,
+          });
+        });
+      }
+    }
+    // A clean engineer turn made progress: forget the crash window and any
+    // automatic failover marker, so a later crash series can recover again.
+    if (exitedCleanly && !wasReview && taskForHandoff?.status === "active") {
+      this.crashedNoHandoff.delete(taskId);
+      if (this.onEngineerProgress) queueMicrotask(() => this.onEngineerProgress?.(taskId));
     }
     if (entry.handoffRequested) {
       if (taskForHandoff && entry.branch && entry.workdir) {
@@ -8877,6 +8993,7 @@ export class AgentRunner {
       createdAt: saved.createdAt,
       agent: saved.agent,
       model: saved.model,
+      ...(saved.cli ? { cli: saved.cli } : {}),
       accumulatedMs: 0,
       stalledEmitted: false,
       silentAwakeMs: 0,
@@ -8936,6 +9053,7 @@ export class AgentRunner {
         createdAt: session.createdAt,
         agent: session.agent,
         model: session.model,
+        ...(session.cli ? { cli: session.cli } : {}),
         completedAt,
         updatedAt: this.clock().toISOString(),
       };

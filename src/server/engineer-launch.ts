@@ -39,7 +39,7 @@ export async function relaunchEngineerOnActiveTask(
   deps: EngineerLaunchDeps,
   task: Task,
   instruction: string,
-  opts: { freshSession?: boolean } = {},
+  opts: { freshSession?: boolean; fromCrashRecovery?: boolean } = {},
 ): Promise<EngineerLaunchResult> {
   const { config, index, runner, logger } = deps;
   const id = task.id;
@@ -107,6 +107,7 @@ export async function relaunchEngineerOnActiveTask(
     contextPack: pack.content,
     resumePreamble: preamble,
     freshSession: opts.freshSession === true,
+    ...(opts.fromCrashRecovery ? { fromCrashRecovery: true } : {}),
   });
 
   if (!spawnRes.ok) {

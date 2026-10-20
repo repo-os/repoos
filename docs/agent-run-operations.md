@@ -60,6 +60,38 @@ override --cli cursor --model composer-2.5` on a paused pair is refused with the
 same message as an off-allowlist pair. A human who set a per-task override in
 the UI keeps it; a driver cannot pin a paused pair.
 
+### Engineer crashes: resume, then bounded failover (#0869)
+
+A crash is **not** a handoff. When an engineer turn exits with an error (a CLI
+crash, an unreadable final turn, an expired auth session, or a provider
+failure) the server keeps the task `active`, records the crash once with its
+real failure line, and resumes the engineer. A status/review write from that
+turn is ignored unless the engineer's own handoff signal was seen — so a crash
+can no longer produce a review on an unchanged commit.
+
+After `watchdog.engineerCrashFailoverThreshold` crashes (default 3) for the
+same agent+model inside `watchdog.engineerCrashFailoverWindowMs` (default 30
+minutes), RepoOS switches the task to the next **unpaused** budget-allowlist
+pair, starts a fresh session (a CLI session id is not portable), and re-sends
+the task context plus any queued/undelivered messages. The switch and its
+reason are written to the task activity log and the task file records the
+automatic pair, so a later human edit is distinguishable.
+
+Bounds, deliberately (ADR 0008: no unbounded fallback chain):
+
+- A **human-set override** (agent name, CLI, or model) is never replaced. Once
+  the threshold is reached RepoOS surfaces the crash for a human instead.
+- An automatic switch happens at most once per crash series. If the new pair
+  keeps crashing, the task is surfaced, not chained through the allowlist.
+- A **clean turn** clears the crash count, so an occasional crash over days
+  never triggers a switch. The automatic switch stays in place as the task's
+  pair (a later crash series is surfaced rather than chained).
+- A `dev-error` flag set by a crash clears when engineering resumes (the next
+  successful turn), instead of lingering as a stale needs-input banner.
+
+Both values are live Settings controls on **Settings → Automation** and are
+documented in [`user-docs/configuration.md`](../user-docs/configuration.md).
+
 ### Handoff and status flips
 
 - A task flipping **`active` ↔ `review` within seconds** is often the server's
