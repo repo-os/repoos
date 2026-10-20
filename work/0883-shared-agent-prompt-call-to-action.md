@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-20T22:00:39Z"
-review_passes: 1
+last_close_out_gate_ms: 508954
+last_close_out_gate_at: "2026-10-20T22:11:30.088Z"
 id: "0883"
 title: Shared agent prompt call to action
 type: feature
@@ -16,6 +16,8 @@ branch: feat/shared-agent-prompt-call-to-action
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:35Z"
+updated_at: "2026-10-20T22:11:30Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -79,4 +81,5 @@ Out of scope: provider logos, a public MCP server, and changes to install comman
 - 2026-10-20T21:59:56Z · status active→review
 - 2026-10-20T21:59:58Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (d130fbe17) during finalization (#0734)
 - 2026-10-20T22:00:38Z · note: review pass 1: good to go
+- 2026-10-20T22:11:30Z · close-out gate completed in 509s
 
