@@ -26,7 +26,10 @@ import {
   type EngineerPair,
 } from "../../core/engineer-crash-recovery";
 import { AgentRunner, HANDOFF_READY_SIGNAL } from "../../server/agents";
-import { recoverEngineerAfterCrash } from "../../server/engineer-crash-recovery";
+import {
+  recoverEngineerAfterCrash,
+  clearEngineerCrashRecoveryState,
+} from "../../server/engineer-crash-recovery";
 import type { LiveIndex } from "../../server/live-index";
 import type { Logger } from "../../core/logger";
 import { parseTask } from "../../core/task";
@@ -371,6 +374,36 @@ describe("applying crash recovery to a task (#0869)", () => {
       expect(onDisk).toMatch(
         /engineer crash recovery: switched codex \+ gpt-5 → opencode \+ big-pickle/,
       );
+    } finally {
+      fx.restorePath();
+    }
+  });
+
+  it("clears the crash window on progress but keeps the automatic pair", async () => {
+    const fx = runnerFixture(CLEAN_SCRIPT);
+    try {
+      fx.config.budget = {
+        allowlist: [
+          { cli: "codex", models: ["gpt-5"] },
+          { cli: "opencode", models: ["big-pickle"] },
+        ],
+      };
+      fx.config.watchdog = { engineerCrashFailoverThreshold: 1 };
+      const { deps } = recoveryDeps(fx);
+      await recoverEngineerAfterCrash(
+        deps,
+        "0869",
+        { cli: "codex", model: "gpt-5", kind: "dev-error", reason: "boom" },
+        { now: Date.parse("2026-10-20T12:00:00Z") },
+      );
+      expect(readFileSync(fx.taskPath, "utf8")).toContain("engineer_crash_log:");
+      clearEngineerCrashRecoveryState(deps, "0869");
+      const onDisk = readFileSync(fx.taskPath, "utf8");
+      expect(onDisk).not.toContain("engineer_crash_log:");
+      // The switched pair is now the task's selection; it is not bounced back.
+      expect(onDisk).toContain("cli_override: opencode");
+      expect(onDisk).toContain("model_override: big-pickle");
+      expect(onDisk).toContain("engineer_failover:");
     } finally {
       fx.restorePath();
     }
