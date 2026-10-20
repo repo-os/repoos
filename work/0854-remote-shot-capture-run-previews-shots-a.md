@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T05:57:04Z"
+updated_at: "2026-10-20T05:57:50Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -55,3 +55,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T05:50:06Z · note: handoff requested (cli)
 - 2026-10-20T05:57:03Z · status active→review
 - 2026-10-20T05:57:04Z · note: shots: skipped — the diff (2 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-20T05:57:50Z · note: review pass 2: back to the drawing board
