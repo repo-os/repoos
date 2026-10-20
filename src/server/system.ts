@@ -8,9 +8,12 @@
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, realpathSync, writeFileSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { cpus, totalmem, freemem, loadavg, platform } from "node:os";
 import { availableMemBytes } from "../core/sysmem.js";
+import { pressureSnapshotForDisplay, type PressureSnapshot } from "../core/pressure-guard.js";
+import { registeredEngineerCount, type GlobalEngineerCount } from "../core/global-engineers.js";
+import type { RepoOSConfig } from "../core/types.js";
 import type { RunningAgentInfo } from "./agents.js";
 
 export interface MachineInfo {
@@ -37,6 +40,27 @@ export interface ProcessInfo {
   orphaned: boolean;
   /** True when attributed by command-name match only, not by registry. */
   unverified: boolean;
+}
+
+/**
+ * One machine-wide process, labeled by whether RepoOS is responsible for it.
+ * `repoos` means the process is the server itself, a tracked agent, or a
+ * descendant of either (a build, check, preview or headless browser). Anything
+ * else is the rest of the machine — the Chrome helpers, renderer and
+ * WindowServer that made the 2026-10-20 incident look like RepoOS load.
+ */
+export interface TopProcessInfo {
+  pid: number;
+  command: string;
+  cpuPercent: number;
+  memBytes: number;
+  memPercent: number;
+  owner: "repoos" | "other";
+}
+
+export interface TopProcesses {
+  byCpu: TopProcessInfo[];
+  byMemory: TopProcessInfo[];
 }
 
 /** A live `repoos serve` process found on the machine. */
@@ -112,6 +136,12 @@ export interface SystemStats {
   serve: ServeScan | null;
   /** Codebase size facts, or null when the root is not a git repo / git is missing. */
   repo: RepoStats | null;
+  /** Memory-first pressure verdict (#0871). */
+  pressure: PressureSnapshot;
+  /** Top CPU and memory consumers across the whole machine, RepoOS vs other. */
+  topProcesses: TopProcesses;
+  /** Engineers across every registered RepoOS server on this machine (#0871). */
+  globalEngineers: GlobalEngineerCount | null;
   serverPid: number;
   at: string;
 }
@@ -172,6 +202,94 @@ export function parsePsOutput(output: string): PsRecord[] {
     .split("\n")
     .map(parsePsLine)
     .filter((r): r is PsRecord => r !== null);
+}
+
+export interface ProcessListingRecord extends PsRecord {
+  command: string;
+}
+
+/**
+ * Parse `ps ax -o pid=,ppid=,%cpu=,%mem=,rss=,comm=` into records. The command
+ * is the rest of the line, so paths with spaces survive.
+ */
+export function parseProcessListing(output: string): ProcessListingRecord[] {
+  const out: ProcessListingRecord[] = [];
+  for (const line of output.split("\n")) {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length < 6) continue;
+    const pid = Number(parts[0]);
+    const ppid = Number(parts[1]);
+    const cpuPercent = Number(parts[2]);
+    const memPercent = Number(parts[3]);
+    const rssKB = Number(parts[4]);
+    if ([pid, ppid, cpuPercent, memPercent, rssKB].some((n) => !Number.isFinite(n))) continue;
+    out.push({
+      pid,
+      ppid,
+      cpuPercent,
+      memPercent,
+      rssKB,
+      command: parts.slice(5).join(" ").trim(),
+      elapsed: "",
+    });
+  }
+  return out;
+}
+
+function commandLabel(command: string): string {
+  const raw = command.trim();
+  if (!raw) return "(unknown)";
+  // `comm` is a path on macOS and a bare name on Linux, and a macOS app path
+  // can contain spaces ("Google Chrome Helper"), so take the basename of the
+  // whole string rather than the first whitespace token.
+  const label = raw.includes("/") ? basename(raw) : raw;
+  return label.length > 40 ? `${label.slice(0, 37)}…` : label;
+}
+
+/**
+ * Top CPU/memory consumers with RepoOS ownership. A process is RepoOS-owned
+ * when it or an ancestor is in `knownPids` — the server, a tracked agent, an
+ * owned orphan or a known preview. Walk the parent chain so builds, checks and
+ * headless browsers spawned underneath those are attributed correctly without
+ * ever matching a command name.
+ *
+ * Exported for tests, which pass a fixture listing.
+ */
+export function classifyTopProcesses(
+  records: ProcessListingRecord[],
+  knownPids: Set<number>,
+  limit = 10,
+): TopProcesses {
+  const byPid = new Map(records.map((r) => [r.pid, r]));
+  const ownerOf = (record: ProcessListingRecord): "repoos" | "other" => {
+    let current: ProcessListingRecord | undefined = record;
+    const seen = new Set<number>();
+    for (let depth = 0; current && depth < 32; depth++) {
+      if (knownPids.has(current.pid)) return "repoos";
+      if (seen.has(current.pid)) break;
+      seen.add(current.pid);
+      current = byPid.get(current.ppid);
+    }
+    return "other";
+  };
+  const items = records
+    .filter((r) => r.pid > 0)
+    .map((r) => ({
+      pid: r.pid,
+      command: commandLabel(r.command),
+      cpuPercent: Math.max(0, r.cpuPercent),
+      memBytes: Math.max(0, r.rssKB) * KB,
+      memPercent: Math.max(0, r.memPercent),
+      owner: ownerOf(r),
+    }));
+  const byCpu = [...items].sort((a, b) => b.cpuPercent - a.cpuPercent).slice(0, limit);
+  const byMemory = [...items].sort((a, b) => b.memBytes - a.memBytes).slice(0, limit);
+  return { byCpu, byMemory };
+}
+
+function sampleProcessListing(): ProcessListingRecord[] {
+  const output = safeExecFileSync("ps", ["ax", "-o", "pid=,ppid=,%cpu=,%mem=,rss=,comm="]);
+  return output ? parseProcessListing(output) : [];
 }
 
 function machineInfo(): MachineInfo {
@@ -533,6 +651,10 @@ export interface SampleSystemOptions {
   root?: string;
   /** Advisory worktree ceiling surfaced in `repo.worktreeWarnThreshold`. */
   worktreeWarnThreshold?: number;
+  /** Config thresholds for the pressure verdict (#0871). */
+  config?: RepoOSConfig;
+  /** How many entries the top CPU / top memory lists carry. Default 10. */
+  topLimit?: number;
 }
 
 /**
@@ -614,6 +736,16 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
     return b.cpuPercent - a.cpuPercent;
   });
 
+  const serve = scanServeProcesses(serverPid, new Set(opts.knownServePids ?? []), opts.root);
+  const knownPids = new Set<number>([serverPid, ...agentPids]);
+  for (const o of ownershipByPid.keys()) knownPids.add(o);
+  for (const p of serve?.processes ?? []) knownPids.add(p.pid);
+  const topProcesses = classifyTopProcesses(
+    sampleProcessListing(),
+    knownPids,
+    Math.max(1, Math.min(50, opts.topLimit ?? 10)),
+  );
+
   return {
     machine,
     totals: {
@@ -622,8 +754,11 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
       memPercent: Math.round(totalMemPercent * 10) / 10,
     },
     processes,
-    serve: scanServeProcesses(serverPid, new Set(opts.knownServePids ?? []), opts.root),
+    serve,
     repo: opts.root ? sampleRepoStats(opts.root, opts.worktreeWarnThreshold) : null,
+    pressure: pressureSnapshotForDisplay(opts.config),
+    topProcesses,
+    globalEngineers: opts.root ? registeredEngineerCount(opts.root) : null,
     serverPid,
     at: new Date().toISOString(),
   };

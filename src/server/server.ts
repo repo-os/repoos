@@ -135,6 +135,7 @@ import {
   registerRunningServer,
   removeServerRegistryEntry,
   shouldRegisterServerRegistry,
+  updateServerRegistryEngineerCount,
 } from "../core/server-registry.js";
 import { onGitMutation } from "../core/git-activity.js";
 import { createRepoStatusNotifier, isSameCheckout } from "./repo-status.js";
@@ -1422,6 +1423,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // UI to refetch. Control-plane only: preview children and ephemeral test
   // servers do not own config reconciliation.
   let runningServerRegistry: { port: number; host: string; startedAt: string } | null = null;
+  let engineerCountTimer: ReturnType<typeof setInterval> | undefined;
 
   const configWatcher = isControlPlane
     ? new ConfigWatcher({
@@ -2428,6 +2430,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         knownServePids: previews.knownPids(),
         root: config.root,
         worktreeWarnThreshold: config.worktreeWarnThreshold,
+        config,
       });
       emitEvent({ type: "system.stats", stats });
     } catch {
@@ -4203,6 +4206,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             host: connectHost,
             startedAt: serverStartedAt,
           };
+          // Publish this server's engineer count for the machine-wide cap
+          // (#0871). Cheap and periodic: the start path reads registry files,
+          // and other servers only need a rough, few-seconds-old number.
+          const refreshEngineerCount = (): void => {
+            if (!runningServerRegistry) return;
+            updateServerRegistryEngineerCount(runningServerRegistry.port, runner.running().length);
+          };
+          refreshEngineerCount();
+          engineerCountTimer = setInterval(refreshEngineerCount, 5000);
+          engineerCountTimer.unref?.();
         } catch (e) {
           logServerRegistryError(logger, "register", e);
         }
@@ -4221,6 +4234,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             });
           }
           clearInterval(systemSampleTimer);
+          if (engineerCountTimer) clearInterval(engineerCountTimer);
           if (reapTimer) clearInterval(reapTimer);
           clearInterval(worktreeSweepTimer);
           clearTimeout(initialWorktreeSweep);
