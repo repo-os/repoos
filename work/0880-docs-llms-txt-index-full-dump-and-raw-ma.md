@@ -2,7 +2,7 @@
 id: "0880"
 title: "Docs llms.txt index, full dump, and raw Markdown"
 type: feature
-status: inbox
+status: ready
 paths: [user-docs]
 priority: p2
 area: docs
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T16:01:19Z"
-updated_at: "2026-10-20T16:01:19Z"
+updated_at: "2026-10-20T20:10:29Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ Out of scope: the portable skill, `user-docs/ai-agents.md`, the copy-prompt butt
 ## Activity
 
 - 2026-10-20T16:01:19Z · created · njachowski@gmail.com
+- 2026-10-20T20:10:29Z · status inbox→ready
