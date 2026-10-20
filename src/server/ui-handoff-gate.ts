@@ -384,11 +384,17 @@ export async function preflightUiEvidence(
   const prior = localShotStore(config, task.id)
     .list()
     .filter((s) => s.origin === "auto");
-  const stale = prior.filter(
-    (s) =>
-      s.planFingerprint !== planFingerprint ||
-      (sourceIdentity && s.sourceIdentity !== sourceIdentity),
-  );
+  const stale: ShotMeta[] = [];
+  for (const shot of prior) {
+    const samePlan = shot.planFingerprint === planFingerprint;
+    const currentTree =
+      !!worktree &&
+      !!sourceIdentity &&
+      !!shot.sourceIdentity &&
+      (shot.sourceIdentity === sourceIdentity ||
+        (await isEvidenceCurrent(worktree, shot.sourceIdentity, sourceIdentity, config)));
+    if (!samePlan || !currentTree) stale.push(shot);
+  }
   if (prior.length > 0 && stale.length > 0) {
     return {
       ok: true,
