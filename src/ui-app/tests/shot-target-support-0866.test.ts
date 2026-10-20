@@ -5,10 +5,12 @@
  * rendered is failed evidence rather than a passing screenshot.
  */
 import { readFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { PreviewConfig } from "../../core/types";
+import type { PreviewConfig, RepoOSConfig, Task } from "../../core/types";
 import {
   buildCapturePlan,
   resolveDeclaredShotTarget,
@@ -26,6 +28,8 @@ import {
   shotStateProblem,
   type ShotDriverPage,
 } from "../../core/shot-page";
+import { runAutoShotCapture } from "../../server/shot-capture";
+import type { PreviewManager } from "../../server/preview";
 
 const PREVIEW: PreviewConfig = {
   command: "bun run dev --port {port}",
@@ -195,6 +199,32 @@ describe("state fixture rendering (#0866)", () => {
     );
     expect(misses).toEqual([expect.stringContaining('state "drawer:shotEvidence" did not render')]);
   });
+
+  it("fails the shot when the page cannot be probed at all", async () => {
+    const page = {
+      async goto(): Promise<void> {},
+      async waitForLoadState(): Promise<void> {},
+      async waitForTimeout(): Promise<void> {},
+      async setViewportSize(): Promise<void> {},
+      locator(): unknown {
+        return {};
+      },
+      async screenshot(): Promise<Buffer> {
+        return Buffer.from("png");
+      },
+      async close(): Promise<void> {},
+    } as unknown as ShotDriverPage;
+    const misses: string[] = [];
+    await captureShotPage(
+      page,
+      "http://x/",
+      { route: "/work", state: "drawer:shotEvidence", target: DEFAULT_PREVIEW_TARGET },
+      { waitMs: 0, fullPage: false },
+      { onStateMiss: (message) => misses.push(message) },
+    );
+    expect(misses).toEqual([expect.stringContaining("could not be verified")]);
+    expect(misses[0]).toContain(`target "${DEFAULT_PREVIEW_TARGET}"`);
+  });
 });
 
 describe("route not served by the target (#0866)", () => {
@@ -217,5 +247,54 @@ describe("route not served by the target (#0866)", () => {
         "Failed to load resource: the server responded with a status of 404",
       ]),
     ).toBeUndefined();
+  });
+
+  it("also recognizes an HTML shell parsed as JavaScript (#0866 review round 2)", () => {
+    const problem = shotRouteNotServedProblem({ route: "/settings", target: "Docs site" }, [
+      "Uncaught SyntaxError: Unexpected token '<'",
+    ]);
+    expect(problem).toContain('route /settings is not served by target "Docs site"');
+  });
+});
+
+describe("auto capture refuses wrong-screen evidence (#0866 review round 2)", () => {
+  it("fails before capturing when the plan carries blocking target errors", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-shot-0866-"));
+    mkdirSync(join(root, "work"), { recursive: true });
+    const config = {
+      root,
+      workDir: "work",
+      cacheDir: ".repoos",
+      preview: { command: "echo" },
+      shot: { targets: [] },
+    } as unknown as RepoOSConfig;
+    const task = {
+      id: "0866",
+      title: "t",
+      path: "work/0866.md",
+      absPath: join(root, "work/0866.md"),
+      status: "active",
+      branch: "feat/0866",
+      area: "server",
+      body: "",
+    } as unknown as Task;
+    const logs: string[] = [];
+    const result = await runAutoShotCapture(
+      config,
+      task,
+      {} as PreviewManager,
+      (_id, _level, message) => logs.push(message),
+      undefined,
+      {
+        entries: [],
+        errors: ["shot #1: state needs the app target"],
+        blockingErrors: ["shot #1: state needs the app target"],
+        skips: [],
+        collapsed: [],
+      },
+    );
+    expect(result.status).toBe("failed");
+    expect(result.detail).toContain("declared shot cannot render");
+    expect(logs).toEqual([expect.stringContaining("shots: failed")]);
   });
 });
