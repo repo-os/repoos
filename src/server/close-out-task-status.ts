@@ -60,8 +60,13 @@ export function preserveClosingTaskReviewStatusOnMain(
   if (task.status === "done") return;
   if (task.status === "review") return;
 
-  patchTaskFile(config, absPath, {
-    status: "review",
-    note: "close-out failed — restored review status for retry (#0838)",
-  });
+  try {
+    patchTaskFile(config, absPath, {
+      status: "review",
+      note: "close-out failed — restored review status for retry (#0838)",
+    });
+  } catch {
+    // Best-effort repair: a mid-merge file (unresolved conflict markers) or a
+    // concurrent writer is left untouched. The failure handler must not throw.
+  }
 }

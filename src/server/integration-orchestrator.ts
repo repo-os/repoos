@@ -79,9 +79,14 @@ import {
   runRemotePreReviewGate,
   spawnedRepoosCheckArgs,
 } from "./pre-review-remote-gate.js";
-import { markTaskReleased, patchTaskFile, stampTaskDoneOnPublish } from "./write.js";
+import {
+  markTaskReleased,
+  patchTaskFile,
+  revertPublishDoneStamp,
+  stampTaskDoneOnPublish,
+} from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
-import { parseTask, releasedAtFromActivity } from "../core/task.js";
+import { parseTask } from "../core/task.js";
 import { resolveCheckPlan } from "../core/check-plan.js";
 import { planGateSkips } from "../core/check-skip.js";
 import {
@@ -1299,6 +1304,10 @@ export class CloseOutOrchestrator {
       );
       return { ok: false, reason };
     }
+    // #0886: a failure AFTER the publish stamp (the merge landed but a later
+    // guard/step failed) must not read `done` without a release marker — that
+    // would make the check below drop the job as "moot" and hide the retry.
+    this.revertPublishedTaskDoneStamp(job);
     this.removeCandidate(job.taskId);
     // #0692: a failed close-out abandons any in-flight resolution provenance.
     // The evidence it held described a resolution that never published; leaving
@@ -3339,6 +3348,10 @@ export class CloseOutOrchestrator {
         this.getTask?.(job.taskId)?.absPath ??
         findTaskFileById(root, this.config.workDir, job.taskId);
       if (!absPath) return;
+      // The publish merge's tip. The amend below must only ever rewrite THIS
+      // commit: another bookkeeping commit on main between the merge and here
+      // would otherwise be folded into the stamp.
+      const headBefore = (await runGit(root, ["rev-parse", "HEAD"], 4_000)).stdout.trim();
       const persistedJob = this.coordinator.getJob(job.taskId);
       const featureBranch = job.branch ?? job.taskId;
       // Same precedence as cleanup's `markTaskReleased` call, so the proof we
@@ -3350,17 +3363,24 @@ export class CloseOutOrchestrator {
         persistedJob?.handoffSha ??
         branchCommit(root, featureBranch);
       const stamped = stampTaskDoneOnPublish(this.config, absPath, mergedCommit);
-      if (!stamped) return;
+      if (!stamped?.changed) return;
       const rel = relative(root, absPath).split("\\").join("/");
       const added = await runGit(root, ["add", "--", rel], 10_000);
       if (added.status !== 0) {
         throw new Error(added.stderr.trim() || "could not stage the task file");
       }
-      const commit = ff
-        ? await runGit(root, ["commit", "-m", `docs(${job.taskId}): set status done`], 30_000)
-        : await runGit(root, ["commit", "--amend", "--no-edit"], 30_000);
+      // A real merge commit is amended so the commit that publishes the code
+      // already says `done`. A fast-forward has no RepoOS-created commit, and a
+      // merge tip that moved (a concurrent bookkeeping commit) must not be
+      // rewritten — both get their own stamp commit instead, still before the
+      // slow post-merge work.
+      const headNow = (await runGit(root, ["rev-parse", "HEAD"], 4_000)).stdout.trim();
+      const amend = !ff && headNow === headBefore;
+      const commit = amend
+        ? await runGit(root, ["commit", "--amend", "--no-edit"], 30_000)
+        : await runGit(root, ["commit", "-m", `docs(${job.taskId}): set status done`], 30_000);
       if (commit.status !== 0) {
-        throw new Error(commit.stderr.trim() || "could not amend the merge commit");
+        throw new Error(commit.stderr.trim() || "could not commit the task stamp");
       }
       notifyGitMutation(root, "commit");
     } catch (err) {
@@ -3383,32 +3403,17 @@ export class CloseOutOrchestrator {
    * recorded a real release marker.
    */
   private revertPublishedTaskDoneStamp(job: IntegrationJob): void {
-    try {
-      const root = this.config.root;
-      const absPath =
-        this.getTask?.(job.taskId)?.absPath ??
-        findTaskFileById(root, this.config.workDir, job.taskId);
-      if (!absPath) return;
-      const task = parseTask({
-        content: readFileSync(absPath, "utf8"),
-        absPath,
-        root,
-        defaultStatus: this.config.defaultStatus,
-        defaultAssignee: this.config.defaultAssignee,
-      });
-      if (task.status !== "done" || releasedAtFromActivity(task.body)) return;
-      patchTaskFile(this.config, absPath, {
-        status: "review",
-        note: "close-out post-merge step failed — restored review status for retry (#0886)",
-      });
-    } catch (err) {
-      this.logger?.integration(
-        job.taskId,
-        "warn",
-        "could not revert the publish-time done stamp after a post-merge failure",
-        { reason: err instanceof Error ? err.message : String(err) },
-      );
-    }
+    const absPath =
+      this.getTask?.(job.taskId)?.absPath ??
+      findTaskFileById(this.config.root, this.config.workDir, job.taskId);
+    if (!absPath) return;
+    const reverted = revertPublishDoneStamp(this.config, absPath);
+    if (!reverted) return;
+    this.logger?.integration(
+      job.taskId,
+      "warn",
+      "publish merged but a later close-out step failed — restored review status for retry",
+    );
   }
 
   private async publishCandidate(job: IntegrationJob): Promise<{

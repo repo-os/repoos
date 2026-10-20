@@ -175,6 +175,7 @@ import {
   discardWorktreeHandoffChanges,
   readHandoffSnapshot,
   refreshHandoffSnapshotFromWorktree,
+  restoreWorktreeReviewLockAfterFailedCloseOut,
   verifyWorktreeHandoffIntegrity,
   writeWorktreeReviewLock,
 } from "../worktree-handoff-guard.js";
@@ -2453,8 +2454,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // #0886: stop() only signals. Fence the engineer before the merge can
     // begin, and refuse rather than race a process that will not leave. The
     // closing-out lock written below also fences a phantom (#0863) the
-    // registry never tracked.
-    if (!(await runner.waitForStop(id, 5000))) {
+    // registry never tracked. A partial runner (route tests, older embedding)
+    // without `waitForStop` is treated as already stopped.
+    const engineerStopped =
+      typeof runner.waitForStop === "function" ? await runner.waitForStop(id, 5000) : true;
+    if (!engineerStopped) {
       return json(res, 409, {
         error: `the engineer process for #${id} did not stop; close-out was not started`,
       });
@@ -3948,14 +3952,12 @@ export const cancelDone: RouteHandler = (ctx, _req, res, params) => {
     jobCoordinator.removeJob(id);
   }
 
-  const snap =
-    config.root && config.cacheDir ? readHandoffSnapshot(config.root, config.cacheDir, id) : null;
-  if (snap) {
-    writeWorktreeReviewLock(config.root, config.cacheDir, id, {
-      status: "review",
-      sha: snap.sha,
-      at: snap.at,
-    });
+  // A cancelled attempt must never leave the `closing-out` write fence behind,
+  // even when the task had no handoff snapshot (a branch-mode/hotfix close-out
+  // gets a lock too, #0886). Downgrading it back to `review` is what makes the
+  // next Move to done (and the engineer's handoff) possible again.
+  if (config.root && config.cacheDir) {
+    restoreWorktreeReviewLockAfterFailedCloseOut(config.root, config.cacheDir, id);
   }
 
   // The snapshot hides cancelled jobs, so this event drops the task out of the

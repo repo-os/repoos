@@ -245,7 +245,11 @@ export async function enqueueCloseOutForTask(
   // so wait for the turn to actually leave the registry. A process that does
   // not stop is refused rather than raced; the closing-out lock below also
   // fences any write from a phantom the registry never tracked (#0863).
-  if (!(await runner.waitForStop(id, 5000))) {
+  // A partial runner without `waitForStop` (older embedding, approval tests)
+  // is treated as already stopped; the real AgentRunner always implements it.
+  const engineerStopped =
+    typeof runner.waitForStop === "function" ? await runner.waitForStop(id, 5000) : true;
+  if (!engineerStopped) {
     return {
       ok: false,
       reason: `the engineer process for #${id} did not stop; close-out was not started`,
