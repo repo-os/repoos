@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-20T12:00:56Z"
-review_passes: 16
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: handoff finalization was interrupted (server reload) — restart work to hand off again
@@ -18,6 +16,8 @@ created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
+updated_at: "2026-10-20T12:01:12Z"
+review_passes: 16
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -223,4 +223,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T11:57:43Z · status active→review
 - 2026-10-20T11:57:53Z · note: handoff requested (cli)
 - 2026-10-20T12:00:56Z · note: review pass 16: needs some work
-
+- 2026-10-20T12:01:12Z · status active→review
