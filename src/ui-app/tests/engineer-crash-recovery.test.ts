@@ -169,6 +169,18 @@ describe("engineer crash recovery policy (#0869)", () => {
       },
       expect: { action: "surface", reason: "already-failed-over" },
     },
+    {
+      name: "an automatic switch to a CLI-default model is not read as a human override",
+      input: {
+        task: planTask(
+          { cliOverride: "opencode", modelOverride: "default" },
+          { [ENGINEER_FAILOVER_KEY]: failoverMarker({ cli: "opencode", model: "default" }) },
+        ),
+        pair: { cli: "opencode", model: "default" },
+        crashes: recordsFor({ cli: "opencode", model: "default" }, THRESHOLD),
+      },
+      expect: { action: "surface", reason: "already-failed-over" },
+    },
   ];
 
   for (const testCase of cases) {
