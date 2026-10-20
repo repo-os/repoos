@@ -89,6 +89,11 @@ function landingFixture(): string {
   );
   write(root, "user-docs/ai-agents.md", "# Agent guide\n");
   write(root, "user-docs/index.md", "# Home\n");
+  write(
+    root,
+    "landing/src/components/AgentPromptCta.vue",
+    'import { STARTER_PROMPT_PREVIEW } from "../../../agent/cta";\n<template>{{ STARTER_PROMPT_PREVIEW }}</template>\n',
+  );
   write(root, "landing/dist/llms.txt", landingLlms());
   write(root, "landing/dist/assets/main.js", `var prompt=${JSON.stringify(prompt)};`);
   return root;
@@ -227,6 +232,14 @@ describe("landing agent-file build check", () => {
     write(root, "landing/dist/assets/main.js", "var prompt='a rewritten blurb';");
     expect(collectLandingAgentFileFailures(root)).toContainEqual(
       expect.stringContaining("landing call to action does not embed the shared prompt"),
+    );
+  });
+
+  it("fails when the call to action stops rendering the shared preview", () => {
+    const root = landingFixture();
+    write(root, "landing/src/components/AgentPromptCta.vue", "<template>Set up RepoOS</template>");
+    expect(collectLandingAgentFileFailures(root)).toContain(
+      "landing call to action does not render the shared prompt preview from agent/cta.ts",
     );
   });
 

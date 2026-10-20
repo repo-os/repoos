@@ -21,7 +21,6 @@ import { promptPreview } from "../../agent/prompt-preview";
 import { SITE_ORIGIN } from "../.vitepress/llms-index";
 
 const defaultDocsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const defaultRepoRoot = path.resolve(defaultDocsRoot, "..");
 
 export interface AiAgentsCheckOptions {
   docsRoot?: string;
