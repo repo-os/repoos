@@ -276,6 +276,7 @@ docsDir = "docs"
 skillsDir = "skills"
 inputsDir = "inputs"
 schedulesDir = "schedules"
+remindersDir = "reminders"
 storiesDir = "stories"
 cacheDir = ".repoos"
 taskExtensions = [".md"]
@@ -288,6 +289,7 @@ taskExtensions = [".md"]
 | `skillsDir` | string | `skills` | yes | Directory holding reusable skills (`skills/<name>/SKILL.md`). |
 | `inputsDir` | string | `inputs` | yes | Directory holding user-submitted inputs and their attachments. Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
 | `schedulesDir` | string | `schedules` | yes | Directory holding scheduled task definitions (Agents → Scheduled Tasks). Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
+| `remindersDir` | string | `reminders` | yes | Directory holding reminder notes (Agents → Reminders). Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
 | `scheduledTasks.enabled` | boolean | `false` | no | When true, the control-plane server runs enabled schedules on a cadence. Off by default; previews and task worktrees never run schedules. |
 | `storiesDir` | string | `stories` | yes | Directory holding story definitions (used when Stories are enabled). Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
 | `cacheDir` | string | `.repoos` | yes | Derived state only — logs, indexes, cached databases. Delete it and RepoOS rebuilds from the task files; nothing of record is lost. |
@@ -304,12 +306,26 @@ reconcile the docs) — never move the directories so the config no longer match
 where your content lives.
 
 On the `repoos/` layout, `repoos init` writes `workDir`, `docsDir`,
-`skillsDir`, `storiesDir`, `inputsDir` and `cacheDir` together, all under the
-namespace, so every RepoOS-owned directory stays in one place. A layout where
-`workDir` is namespaced but `storiesDir` is still top-level (as init wrote
-before #0703) scatters stories to the repo root; `repoos doctor` warns about that
-mismatch and suggests `storiesDir = "<namespace>/stories"`, but never moves
-anything for you.
+`skillsDir`, `storiesDir`, `inputsDir`, `schedulesDir`, `remindersDir` and
+`cacheDir` together, all under the namespace, so every RepoOS-owned directory
+stays in one place. A layout where `workDir` is namespaced but `storiesDir` is
+still top-level (as init wrote before #0703) scatters stories to the repo root;
+`repoos doctor` warns about that mismatch and suggests
+`storiesDir = "<namespace>/stories"`, but never moves anything for you.
+
+**Existing projects keep their current paths.** The `schedulesDir` and
+`remindersDir` defaults are `schedules` and `reminders`, so a repository
+created before those keys followed the namespace keeps working unchanged.
+RepoOS never moves a directory silently. To relocate either one, set the key in
+`repoos.toml` and move the files yourself, for example:
+
+```sh
+git mv schedules repoos/schedules
+git mv reminders repoos/reminders
+```
+
+then add `schedulesDir = "repoos/schedules"` and
+`remindersDir = "repoos/reminders"` to `repoos.toml`.
 
 ## Board behavior
 

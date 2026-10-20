@@ -1390,12 +1390,12 @@ onUnmounted(() => {
                 <span class="live-dot"></span>{{ group.section.label }}
               </div>
               <template v-for="f in group.fields" :key="f.key">
-                <div :id="`setting-${f.key}`" :data-config-key="f.key" class="setting-row">
+                <div :id="`setting-${f.key}`" class="setting-row">
                   <div class="setting-info">
                     <div class="setting-label">{{ f.label }}</div>
                     <div class="setting-desc">{{ f.description }}</div>
                   </div>
-                  <div class="setting-input">
+                  <div :data-config-key="f.key" class="setting-input">
                     <Select
                       v-if="f.type === 'select'"
                       :model-value="String(form[f.key])"
@@ -1588,12 +1588,12 @@ onUnmounted(() => {
                 </div>
               </div>
               <template v-for="f in remoteValidationGeneralFields" :key="f.key">
-                <div :id="`setting-${f.key}`" :data-config-key="f.key" class="setting-row">
+                <div :id="`setting-${f.key}`" class="setting-row">
                   <div class="setting-info">
                     <div class="setting-label">{{ f.label }}</div>
                     <div class="setting-desc">{{ f.description }}</div>
                   </div>
-                  <div class="setting-input">
+                  <div :data-config-key="f.key" class="setting-input">
                     <Select
                       v-if="f.type === 'select'"
                       :model-value="String(form[f.key])"
@@ -2029,7 +2029,7 @@ onUnmounted(() => {
                 <div class="setting-label">{{ f.label }}</div>
                 <div class="setting-desc">{{ f.description }}</div>
               </div>
-              <div class="setting-input">
+              <div :data-config-key="f.key" class="setting-input">
                 <Input
                   v-if="f.type === 'string'"
                   :model-value="String(form[f.key])"

@@ -318,6 +318,121 @@ describe("publish-time dirty-main guard (#0211)", () => {
     }
   });
 
+  it("auto-checkpoints and publishes dirty reminder files, modified and untracked (#0860)", async () => {
+    // Reminders are server-written, repo-native notes. Creating, snoozing or
+    // completing one while a close-out is in flight must not block an
+    // unrelated landing, exactly like a work/ task file.
+    const { root, clean } = makeRepo();
+    try {
+      mkdirSync(join(root, "reminders"), { recursive: true });
+      writeFileSync(
+        join(root, "reminders", "00000000-0000-4000-8000-000000000001.md"),
+        "tracked reminder\n",
+      );
+      git(root, ["add", "reminders"]);
+      git(root, ["commit", "-m", "docs(reminders): seed"]);
+
+      const branch = "repoos/integrate/T-reminder";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "new\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "candidate work"]);
+      const mainSha = git(root, ["rev-parse", "main"]);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T-reminder", branch } as any);
+      coordinator.updateJob("T-reminder", {
+        phase: "publishing",
+        startedAt: new Date().toISOString(),
+        baseMainSha: mainSha,
+        branchSha: candidateSha,
+        candidateSha,
+      });
+
+      // Modified tracked note plus a brand-new untracked note — the exact
+      // snooze/complete/create traffic that dirties main mid-close-out.
+      writeFileSync(
+        join(root, "reminders", "00000000-0000-4000-8000-000000000001.md"),
+        "tracked reminder — snoozed\n",
+      );
+      writeFileSync(
+        join(root, "reminders", "00000000-0000-4000-8000-000000000002.md"),
+        "untracked reminder\n",
+      );
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+
+      expect(result.ok).toBe(true);
+      expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
+      expect(git(root, ["status", "--porcelain"])).toBe("");
+      expect(git(root, ["log", "--oneline", "-5"])).toMatch(/checkpoint bookkeeping\/config/);
+      expect(git(root, ["log", "--name-only", "-3"])).toContain(
+        "reminders/00000000-0000-4000-8000-000000000002.md",
+      );
+    } finally {
+      clean();
+    }
+  });
+
+  it("auto-checkpoints and publishes dirty schedule files, modified and untracked (#0860)", async () => {
+    // Schedule definitions are stamped by the server (`last_run_at`,
+    // `last_occurrence_key`) with the same kind of routine churn.
+    const { root, clean } = makeRepo();
+    try {
+      mkdirSync(join(root, "schedules"), { recursive: true });
+      writeFileSync(join(root, "schedules", "0001-daily.md"), "tracked schedule\n");
+      git(root, ["add", "schedules"]);
+      git(root, ["commit", "-m", "docs(schedules): seed"]);
+
+      const branch = "repoos/integrate/T-schedule";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "new\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "candidate work"]);
+      const mainSha = git(root, ["rev-parse", "main"]);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T-schedule", branch } as any);
+      coordinator.updateJob("T-schedule", {
+        phase: "publishing",
+        startedAt: new Date().toISOString(),
+        baseMainSha: mainSha,
+        branchSha: candidateSha,
+        candidateSha,
+      });
+
+      writeFileSync(join(root, "schedules", "0001-daily.md"), "tracked schedule — ran\n");
+      writeFileSync(join(root, "schedules", "0002-weekly.md"), "untracked schedule\n");
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+
+      expect(result.ok).toBe(true);
+      expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
+      expect(git(root, ["status", "--porcelain"])).toBe("");
+      expect(git(root, ["log", "--oneline", "-5"])).toMatch(/checkpoint bookkeeping\/config/);
+    } finally {
+      clean();
+    }
+  });
+
   it("still refuses when repoos.toml is dirty ALONGSIDE a non-bookkeeping file", async () => {
     // The allowlist is per-file, not "any dirty set that happens to include
     // an allowed file" — a genuinely ambiguous file riding along with
@@ -840,6 +955,65 @@ describe("main-drift bookkeeping classification, inputs/stories/dist (#0637)", (
       commit(root, "work/9999-other.md", "# other\n", "docs(9999): update task");
       commit(root, "docs/runbook.md", "# runbook\n", "docs: update runbook");
       const head = git(root, ["rev-parse", "main"]);
+      expect(
+        await mainDriftIsBookkeepingOnly({
+          root,
+          baseMainSha: base,
+          currentMainSha: head,
+          dirs: {},
+        }),
+      ).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("classifies reminders-only and schedules-only advances as bookkeeping (#0860)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const base = git(root, ["rev-parse", "main"]);
+      commit(
+        root,
+        "reminders/00000000-0000-4000-8000-000000000001.md",
+        "reminder\n",
+        "docs(reminders): snooze",
+      );
+      commit(root, "schedules/0001-daily.md", "schedule\n", "docs(schedules): stamp run");
+      const head = git(root, ["rev-parse", "main"]);
+      expect(
+        await mainDriftIsBookkeepingOnly({
+          root,
+          baseMainSha: base,
+          currentMainSha: head,
+          dirs: {},
+        }),
+      ).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("respects custom remindersDir and schedulesDir values (#0860)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const base = git(root, ["rev-parse", "main"]);
+      commit(
+        root,
+        "repoos/reminders/00000000-0000-4000-8000-000000000001.md",
+        "note\n",
+        "reminder",
+      );
+      commit(root, "repoos/schedules/0001-daily.md", "schedule\n", "schedule");
+      const head = git(root, ["rev-parse", "main"]);
+      expect(
+        await mainDriftIsBookkeepingOnly({
+          root,
+          baseMainSha: base,
+          currentMainSha: head,
+          dirs: { remindersDir: "repoos/reminders", schedulesDir: "repoos/schedules" },
+        }),
+      ).toBe(true);
+      // The defaults stop covering these paths once custom dirs are configured.
       expect(
         await mainDriftIsBookkeepingOnly({
           root,

@@ -236,6 +236,16 @@ through the same commit path a handoff uses, so the close-out's own build and
 check then validate the result. **Cancel** changes nothing: the task stays in
 `review` with every file exactly where it was.
 
+Once a close-out is running, routine server-written churn that appears on the
+primary checkout mid-job does not pause it. At publish time a dirty file under
+the task directory, `inputsDir`, `storiesDir`, `schedulesDir` or `remindersDir`
+(or a dirty `repoos.toml`) is checkpoint-committed automatically, and main
+advancing only by commits in those directories counts as non-code drift, so the
+candidate is not rebuilt. A dirty **source** file still pauses the close-out
+exactly as above — the exemption is per-directory and fails closed for anything
+else. Reminder and schedule files are server-written bookkeeping like task files
+(#0860).
+
 **Engineer checkpoint after handoff (#0834):** if the only new commits on the
 branch since handoff are automatic `WIP: engineer self-check checkpoint` commits
 (from a scoped `repoos check` while the task sat in `review`), Move to done
@@ -420,11 +430,13 @@ evidence** in the Changes tab or run `repoos verify <id>`. RepoOS refreshes the
 shots and verification record against the current branch HEAD without an
 engineer turn. The worktree must be clean, and the action is refused while an
 agent or close-out is running.
-**Bookkeeping-only commits do not stale a capture (#0766):** HEAD movement
-provably caused by `work/*.md` task files — status flips, review counters,
-activity notes — never changes what the captures describe, so the record still
-reads as current for the reviewer; any other path (source, docs, config) makes
-the capture stale as before.
+**Bookkeeping-only commits do not stale a capture (#0766, #0861):** freshness
+compares the captured commit with the reviewed HEAD. A diff containing only
+configured task, input, story, schedule, reminder, RepoOS cache, or attachment
+paths is still current; the reviewer is told that only bookkeeping changed.
+Any other path (source, tests, docs, config, package files) makes the capture
+stale. Git errors or unknown commits fail closed as stale. Shot reuse,
+automatic refresh, `repoos verify`, and the Changes tab use this same check.
 **Whole-window default (#0613):** declared shots capture the whole
 visible viewport (`fullPage: false`) with changed elements outlined via
 `highlight`; `selector` (element crop) is the exception, and `fullPage` stays

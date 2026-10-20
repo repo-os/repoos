@@ -2,21 +2,22 @@
 id: "0859"
 title: "Easter eggs bundle: tmp-fixture leak hardening (follow-ups from #0858)"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: [core, web]
 depends_on: ["0858"]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-20T03:43:18Z"
+updated_at: "2026-10-20T08:30:42Z"
 ---
 ## Items
 
 - [ ] **E1 · Server teardown survives a browser-close failure** (core) — in the UI smoke and contrast harnesses, close the server in its own `finally` so a throwing `context.close()`/`browser.close()` cannot skip it. Source: #0858 review, 2026-10-20.
 - [ ] **E2 · Worker-kill reaches nested fixtures deeper than 4 levels** (core) — `killSpawnedLogs` recurses only four levels, so a deeper fixture's child process survives a worker kill. Source: #0858 review.
 - [ ] **E3 · Test the smoke/contrast "0 new dirs in the real tmpdir" behaviour** (core) — that half of #0858's fix was only hand-verified. Source: #0858 review.
+- [ ] **E4 · RepoOS Hub opens at its minimum size instead of filling the screen** (macos) — RepoOSHubApp.swift WindowGroup sets only a min frame (880x520) and no default size, so a fresh window opens near that minimum, centered. Give the window a default size that fills the visible screen (use .defaultSize/.windowResizability or size the NSWindow to screen.visibleFrame on first creation, like a browser), keep it resizable, and let macOS frame restore win once the user resizes it.. Source: Nick, 2026-10-20: Hub always opens about 25% of the screen, centered; wants it to open large like a browser..
 
 Add further small, independent fixes here with `repoos bundle add <id> ...` (one open bundle at a time). Start this bundle after #0858 lands.
 
@@ -65,6 +66,23 @@ A test fails if running the smoke or contrast harness (or its fixture creation p
 ### Notes for AI
 Reuse the tmp-isolation and reap helpers from #0858 (`tmp-isolation.ts`, `global-reap.ts`, `reap-fixtures.test.ts`). Never touch repoos.toml.
 
+
+## E4 · RepoOS Hub opens at its minimum size instead of filling the screen
+
+### Problem
+
+
+### Desired UX
+
+
+### Acceptance criteria
+
+- Test: Unit-test the pure default-size helper (visible frame in, window size out, clamped to the min size) and manually launch the Hub.
+
+### Notes for AI
+
+
+
 ## Problem
 Three small, independent follow-ups from #0858's review; see the E-sections.
 
@@ -80,3 +98,6 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 ## Activity
 
 - 2026-10-20T03:43:18Z · created · njachowski@gmail.com
+- 2026-10-20T04:46:48Z · status inbox→ready
+- 2026-10-20T08:30:42Z · body: Items (added 1); E4 · RepoOS Hub opens at its minimum size instead of filling the screen (added)
+- 2026-10-20T08:30:42Z · note: bundle add E4

@@ -111,6 +111,7 @@ import {
   runUiHandoffGate,
   type TaskLog,
 } from "../ui-handoff-gate.js";
+import { isEvidenceCurrent } from "../evidence-current.js";
 import { localShotStore } from "../shots.js";
 import {
   endEvidenceRefresh,
@@ -1168,7 +1169,7 @@ export const getTaskUiVerification: RouteHandler = async (ctx, _req, res, params
   // is pure task bookkeeping (#0766), which does not change what captures show.
   const reviewedHead = branchHeadForTask(config, task);
   const worktree = worktreeEvidenceSource(config, task);
-  const status = await effectiveHandoffTreeStatus(worktree, evidence, reviewedHead);
+  const status = await effectiveHandoffTreeStatus(worktree, evidence, reviewedHead, config);
   if (!evidence) return json(res, 200, { ok: true, evidence: null });
   return json(res, 200, {
     ok: true,
@@ -1382,7 +1383,7 @@ export async function automaticStaleEvidenceRefresh(
       const head = headResult.status === 0 ? headResult.stdout.trim() : "";
       if (!head) return false;
       const currentEvidence = readUiHandoffGateEvidence(config, task.id);
-      if ((await effectiveHandoffTreeStatus(worktree, currentEvidence, head)) !== "stale") {
+      if ((await effectiveHandoffTreeStatus(worktree, currentEvidence, head, config)) !== "stale") {
         return false;
       }
       const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
@@ -1504,6 +1505,19 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
     if (dirty.stdout.trim()) {
       return json(res, 409, {
         error: `Task #${id}'s worktree is dirty; commit or discard changes before refreshing evidence`,
+      });
+    }
+    const headResult = await runGit(worktree, ["rev-parse", "--short", "HEAD"], 10_000);
+    const currentHead = headResult.status === 0 ? headResult.stdout.trim() : "";
+    const existingEvidence = readUiHandoffGateEvidence(config, id);
+    if (await isEvidenceCurrent(worktree, existingEvidence?.sourceIdentity, currentHead, config)) {
+      return json(res, 200, {
+        ok: true,
+        refreshed: false,
+        headIdentity: currentHead,
+        detail: "Handoff evidence is already current; no refresh was needed.",
+        issues: existingEvidence?.issues ?? [],
+        shots: localShotStore(config, id).list(),
       });
     }
     const captured = await guardedForceRefreshCapture(
@@ -4108,7 +4122,13 @@ export const getMergeConflictForTask: RouteHandler = async (ctx, _req, res, para
   const dirs = bookkeepingDirs(config);
   const conflict = await computeMergeConflict(config.root, task.branch, {
     autoResolve: [relative(config.root, task.absPath)],
-    autoResolveOurs: [`${dirs.workDir}/`, `${dirs.inputsDir}/`, `${dirs.storiesDir}/`],
+    autoResolveOurs: [
+      `${dirs.workDir}/`,
+      `${dirs.inputsDir}/`,
+      `${dirs.storiesDir}/`,
+      `${dirs.remindersDir}/`,
+      `${dirs.schedulesDir}/`,
+    ],
   });
   return json(res, 200, { ok: true, conflict });
 };

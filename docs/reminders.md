@@ -1,9 +1,14 @@
 # Agent availability reminders
 
-Reminders are personal notes under `reminders/<uuid>.md`, relative to the repository
-root. They are human-readable and diffable; RepoOS does not auto-commit them. Add
-and commit them explicitly if you want shared Git history. They are currently
-repo-wide, visible to authorized users of this server, not private per-user data.
+Reminders are personal notes under `reminders/<uuid>.md` by default, relative
+to the repository root. The directory is configurable with `remindersDir` in
+`repoos.toml`; a `repoos/` project gets `<namespace>/reminders` from
+`repoos init`, and an existing project can relocate by setting the key and
+moving the files (RepoOS never moves them). Notes are human-readable and
+diffable. RepoOS does not commit each edit immediately, but routine reminder
+changes can be checkpointed during close-out. Add and commit them explicitly
+if you want shared Git history outside that process. They are currently repo-wide, visible to
+authorized users of this server, not private per-user data.
 
 ```markdown
 ---

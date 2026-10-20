@@ -202,6 +202,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   skillsDir: "skills",
   inputsDir: "inputs",
   schedulesDir: "schedules",
+  remindersDir: "reminders",
   scheduledTasks: {
     enabled: false,
   },
@@ -1150,12 +1151,13 @@ export function normalizeRelativeDir(raw: unknown, key: string): string | null {
  * The managed bookkeeping directories, each resolved through the documented
  * defaults when config omits it (#0726).
  *
- * These three directories are RepoOS's own churn rather than a task's
- * implementation: task files under the work dir, human-submitted inputs, and
- * story definitions. Every close-out guard that must distinguish "the server's
- * bookkeeping" from "the branch's real work" derives its prefixes from this one
- * helper, so adding a new managed directory is a one-line change here instead
- * of a hunt through the reset, conflict-resolution and dirty-main paths.
+ * These five directories are RepoOS's own churn rather than a task's
+ * implementation: task files under the work dir, human-submitted inputs, story
+ * definitions, reminder notes, and scheduled-task definitions. Every close-out
+ * guard that must distinguish "the server's bookkeeping" from "the branch's
+ * real work" derives its prefixes from this one helper, so adding a new managed
+ * directory is a one-line change here instead of a hunt through the reset,
+ * conflict-resolution and dirty-main paths.
  *
  * Deliberately excludes `docs/`, `user-docs/` and `dist/`: docs changes can
  * alter a validation result (the check plan builds user-docs and tests may read
@@ -1165,17 +1167,23 @@ export interface BookkeepingDirs {
   workDir: string;
   inputsDir: string;
   storiesDir: string;
+  remindersDir: string;
+  schedulesDir: string;
 }
 
 export function bookkeepingDirs(config: {
   workDir?: string;
   inputsDir?: string;
   storiesDir?: string;
+  remindersDir?: string;
+  schedulesDir?: string;
 }): BookkeepingDirs {
   return {
     workDir: config.workDir || "work",
     inputsDir: config.inputsDir || "inputs",
     storiesDir: config.storiesDir || "stories",
+    remindersDir: config.remindersDir || "reminders",
+    schedulesDir: config.schedulesDir || "schedules",
   };
 }
 
@@ -1270,6 +1278,11 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (schedulesDirRaw !== undefined) {
       cfg.schedulesDir =
         normalizeRelativeDir(schedulesDirRaw, "schedulesDir") ?? DEFAULT_CONFIG.schedulesDir;
+    }
+    const remindersDirRaw = get("remindersDir");
+    if (remindersDirRaw !== undefined) {
+      cfg.remindersDir =
+        normalizeRelativeDir(remindersDirRaw, "remindersDir") ?? DEFAULT_CONFIG.remindersDir;
     }
     const scheduledTasksEnabled = parsed["scheduledTasks.enabled"];
     if (typeof scheduledTasksEnabled === "boolean") {
@@ -2413,6 +2426,15 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description: "Directory holding scheduled task definitions (relative to repo root)",
     },
     {
+      key: "remindersDir",
+      label: "Reminders directory",
+      type: "string",
+      tier: "guarded",
+      restartRequired: true,
+      default: DEFAULT_CONFIG.remindersDir,
+      description: "Directory holding reminder notes (relative to repo root)",
+    },
+    {
       key: "scheduledTasks.enabled",
       label: "Scheduled task automation",
       type: "boolean",
@@ -3402,6 +3424,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "skillsDir",
   "inputsDir",
   "schedulesDir",
+  "remindersDir",
   "scheduledTasks.enabled",
   "storiesDir",
   "cacheDir",
