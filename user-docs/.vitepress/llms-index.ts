@@ -45,7 +45,7 @@ export interface DocsPage {
   source: string;
   /** Raw Markdown URL path (what the generator writes into dist). */
   markdownPath: string;
-  /** HTML route path (clean URL; `index.html` for the home page). */
+  /** File VitePress writes for the HTML route (`dir/index.html` for a nested index). */
   htmlPath: string;
 }
 
@@ -85,7 +85,7 @@ export function discoverDocsPages(docsRoot: string): DocsPage[] {
       pages.push({
         source,
         markdownPath,
-        htmlPath: markdownPath.replace(/\.md$/, ".html"),
+        htmlPath: source.replace(/\.md$/, ".html"),
       });
     }
   };
