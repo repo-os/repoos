@@ -16,7 +16,7 @@ import {
   writeStoryDefinition,
 } from "../../core/story-definition-files";
 import { mergeStoriesForDisplay } from "../../core/story-display";
-import { storyKey } from "../../core/stories";
+import { sortStoryGroupsForPage, storyKey } from "../../core/stories";
 
 function config(root: string): RepoOSConfig {
   return {
@@ -308,5 +308,47 @@ describe("story definition last-modified time (#0885)", () => {
       ],
     );
     expect(merged[0]!.definitionUpdatedAt).toBe("2026-10-20T16:00:00Z");
+  });
+
+  it("puts a story created later first by recency even when its number is smaller", () => {
+    // The reported shape: #0011 was created earlier; #0001 was created later.
+    // "Most recently updated" follows the timestamps, not the number, while
+    // the number sorts still compare the numbers themselves (1 < 11).
+    const merged = mergeStoriesForDisplay(
+      [],
+      [
+        {
+          key: storyKey("Older larger number"),
+          name: "Older larger number",
+          number: "0011",
+          path: "stories/older.md",
+          body: "",
+          createdAt: "2026-09-01T00:00:00Z",
+          updatedAt: "2026-09-01T00:00:00Z",
+          createdBy: "a",
+        },
+        {
+          key: storyKey("Newer smaller number"),
+          name: "Newer smaller number",
+          number: "0001",
+          path: "stories/newer.md",
+          body: "",
+          createdAt: "2026-10-20T16:00:00Z",
+          updatedAt: "2026-10-20T16:00:00Z",
+          createdBy: "a",
+        },
+      ],
+    );
+
+    expect(sortStoryGroupsForPage(merged, "recent").map((g) => g.name)).toEqual([
+      "Newer smaller number",
+      "Older larger number",
+    ]);
+    expect(
+      sortStoryGroupsForPage(merged, "taskNumberNewest", (g) => g.number).map((g) => g.name),
+    ).toEqual(["Older larger number", "Newer smaller number"]);
+    expect(
+      sortStoryGroupsForPage(merged, "taskNumberOldest", (g) => g.number).map((g) => g.name),
+    ).toEqual(["Newer smaller number", "Older larger number"]);
   });
 });
