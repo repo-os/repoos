@@ -3,9 +3,6 @@ id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "2026-10-20T10:43:35.849544Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 90846"
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T11:09:18Z"
+updated_at: "2026-10-20T11:09:19Z"
 review_passes: 12
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -180,3 +177,5 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T11:09:09Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T11:09:18Z · agent exited with an error (codex) · 2026-10-20T10:43:35.849544Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 90846
 - 2026-10-20T11:09:18Z · status active→review
+- 2026-10-20T11:09:19Z · needs_input
+- 2026-10-20T11:09:19Z · note: handoff requested (cli)
