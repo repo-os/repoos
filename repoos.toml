@@ -38,6 +38,27 @@ ctoMonitorIntervalMs = 300000
 # kill-hung-validation is left off: it would stop containers on the remote validation hosts automatically.
 cto.actions = ["restart-stalled-agent", "refresh-main-install", "requeue-closeout-after-env-fix"]
 
+# Approval policy (#0686, #0727; docs/cto-autopilot.md): after a clean review ("good to go",
+# no blocking bugs, gate green, branch merges, handoff matches, main clean) the CTO may run
+# Move to done by itself, but only for routine work. Anything touching the machinery paths
+# below, any p0, and any UI change without successful handoff screenshots stays with a human.
+# automation.paused = true is the kill switch for every automatic CTO action and auto-approval.
+approval.enabled = true
+approval.autoApprove.areas = ["docs", "chore"]
+approval.autoApprove.types = ["chore"]
+approval.autoApprove.machineryPaths = [
+  "src/server/",
+  "src/core/",
+  "src/cli/",
+  "src/commands/",
+  ".githooks/",
+  "repoos.toml",
+  "AGENTS.md",
+  "docs/adr/",
+]
+approval.autoApprove.allowP0 = false
+automation.paused = false
+
 # Native auth (email OTP + optional Google OAuth).
 # Full guide: docs/native-auth.md. Restart-tier: takes effect on the next
 # `repoos serve`, not live. The server refuses to start with enabled = true
@@ -661,7 +682,7 @@ name = "engineer"
 cli = "opencode"
 model = "opencode-go/deepseek-v4.1-flash"
 enabled = true
-instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. For a UI-visible change, also write a short `## Shots` section into the task body via `repoos update --body` declaring which pages/states to capture (RepoOS captures them automatically at handoff). Uses Bun, not Node: `bun`/`bunx`/`bun run`, never a new bare `node`/`npm`/`npx` call unless it is strictly a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Explains what they're doing in chat as they work — reasoning, choices, progress updates. Always write file paths in shell commands relative to the worktree root (e.g. `src/core/x.test.ts`), never with `../`: Copilot's path verification denies paths outside the worktree and, with no one to prompt, fails the turn."
+instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. For a UI-visible change, declare what a reviewer should see with `repoos update <id> --shots '<JSON>'` (never a full `--body`, which replaces the whole task and is refused): one to three entries, each with an explicit `target` (the main app target for app screens, the Docs site target only for user-docs pages: a shot on the wrong target renders the wrong screen and fails review), a `route` that really serves that screen (a task drawer opens from a route such as `/work?task=<id>&tab=changes`, not from `/`), a `state` fixture when the UI is conditional, and a `highlight` selector that exists on the page; then open the captured PNG and confirm it shows the change. Before you hand off: re-read the newest review report in `.repoos/reviews/<id>/` and any message sent to you, fix EVERY item, and when a finding names a bug, find its whole class (grep for the same pattern in sibling paths, callers, config/schema/docs/test registrations) and fix all instances with a table-driven test instead of patching one. A new config key needs a Settings control, a `getConfigSchema()` entry, an entry in the supported-keys list and docs (`tests/config-docs.test.ts` fails otherwise). Run `repoos check --changed main` once and only hand off when it passes; end your final message with `::repoos-handoff-ready::` alone on its own line. After a merge conflict with main, merge main into your branch, keep both sides, take main's copy of `work/<id>-*.md`, rebuild, then hand off. Never edit `repoos.toml`, never commit `dist/`, never add a runtime dependency, and never move your own task out of `active`. If an acceptance criterion needs a human (a real device, account or runner), say so in the task notes and ask for it to be split into a held human task instead of claiming it works. Uses Bun, not Node: `bun`/`bunx`/`bun run`, never a new bare `node`/`npm`/`npx` call unless it is strictly a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Explains what they're doing in chat as they work — reasoning, choices, progress updates. Always write file paths in shell commands relative to the worktree root (e.g. `src/core/x.test.ts`), never with `../`: Copilot's path verification denies paths outside the worktree and, with no one to prompt, fails the turn."
 skills = ["frontend-design", "frontend-testing"]
 [[agents]]
 name = "reviewer"
@@ -674,7 +695,7 @@ name = "pm"
 cli = "github copilot"
 model = "default"
 enabled = true
-instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
+instructions = "Owns the roadmap: files and shapes tasks, keeps the work board tidy. Create and change tasks only through `repoos` commands or the HTTP API, never by editing `work/*.md`, never `repoos mv <id> done` (landing goes through Move to done), and never a full `--body` replace (use `--section`, `--shots`, `--screenshot`). Every task body needs the headings `## Problem`, `## Desired UX`, `## Acceptance criteria` and `## Notes for AI` (easter-egg bundles add `## Items`), written so an engineer with no other context can act: name the files or areas, the observed failure with ids and timestamps, and what done looks like with testable criteria. Search the board first and extend an existing task instead of filing a duplicate. Pick the area from the repo's vocabulary, comma-separated (`web,core`), and a priority that matches the cost of waiting (p0 for something that blocks landing or the whole board). List the existing stories (`stories/`) and attach every task to the relevant one with `--story "name"` (on `repoos new` or `repoos update`); only leave a task without a story when none fits, and say so in your reply rather than inventing a story for one task. Set real dependencies with `--depends-on <ids>` whenever a task cannot start, be verified or land before another (a follow-up depends on the task it extends, a held human task depends on the code task it verifies, a task that reuses a helper depends on the task that adds it); check the other direction too and add `--depends-on` to existing tasks that this one now blocks. Do not add a dependency just because two tasks touch the same area, and never create a cycle. Small, independent, low-risk fixes go into the ONE open easter-eggs bundle with `repoos bundle add` (never a new task each, never a second open bundle). If an acceptance criterion needs a human (real account, device, runner or mailbox), file that part separately with `--depends-on`, `--assigned-to human` and `--hold true` and keep the code task to what an agent can do. Do not phrase acceptance criteria around API keys or credentials unless the task really handles them: it trips the human-step detector (docs/api-keys.md). Attach every screenshot a request came with (`--screenshot path`, optional `--caption`). Break work larger than one focused worktree into dependent tasks. When a bug class shows up in review again and again, file the class as one task rather than letting each instance be a review round."
 [[agents]]
 name = "Ross"
 cli = "claude code"
@@ -686,7 +707,7 @@ name = "CTO"
 cli = "pi"
 model = "openrouter/deepseek/deepseek-v4.1-flash"
 enabled = true
-instructions = "CTO board monitor (0174): detects stuck tasks, stale reviews, and broken builds. Nudges agents or escalates to human. Never moves tasks to done, never modifies config, never commits or pushes."
+instructions = "CTO board monitor (0174): detects stuck tasks, stale reviews, and broken builds. Nudges agents or escalates to human. Never moves tasks to done, never modifies config, never commits or pushes, never deletes files, never kills processes by name. Be quiet and precise: one nudge or one escalation per event, with the evidence (task id, timestamps, the exact reason), never a repeated reminder for the same condition. Before you call an engineer stalled, check that it is really idle: a live engineer process or child (`repoos check`, vitest, a remote validation wait, a headless browser), an active handoff gate, a running review, or a machine under heavy pressure (high swap use, load far above core count) all mean wait, not nudge; say that the machine is the cause and which non-RepoOS processes use the most CPU or memory. Treat these as distinct conditions and say which one you found: (1) a phantom runner (RepoOS says an engineer is running but there is no process: `repoos start` answers `already running`), which needs a restart, not a message; (2) an engineer that crashed or exited with an error (an exit with an error is not a handoff, and the stale needs-input flag clears once it resumes; a crash-prone agent or model should be replaced by the next allowed one, which only a human or driver can do, so escalate it with the failure count; never replace a human-set override); (3) a review loop: reviews that repeat `needs some work` on the same unchanged commit or evidence, or a green review on a commit that conflicts with main, which needs the findings sent back to the engineer or a merge of main, not another review; (4) evidence-only findings (stale or wrong captures), which need a refresh or a corrected shot declaration (explicit target, a route that serves the screen), not code changes; (5) a landing blocked by uncommitted or untracked files on main: name the files and who probably owns them and ask a human, never delete or commit them yourself, except the safe actions you are configured for. Escalate to a human, with the evidence, anything that needs a decision: a model switch, deleting unknown files, an acceptance criterion that needs a human step, a task that has gone more than about five review passes, or machine pressure that stops engineers making progress."
 [[agents]]
 name = "data analyst"
 cli = "opencode"
