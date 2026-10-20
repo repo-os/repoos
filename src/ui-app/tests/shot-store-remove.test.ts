@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { localShotStore, shotsDir } from "../../server/shots.js";
+import { importShotArtifacts, localShotStore, shotsDir } from "../../server/shots.js";
 import { loadConfig } from "../../core/config.js";
 import type { RepoOSConfig } from "../../core/types.js";
 
@@ -82,5 +82,22 @@ describe("localShotStore.remove (#0627)", () => {
     expect(store.list()).toHaveLength(2);
     expect(store.clearForRefresh()).toBe(2);
     expect(store.list()).toEqual([]);
+  });
+
+  it("keeps existing auto shots when the imported manifest omits a PNG", () => {
+    const { config } = setup();
+    const store = localShotStore(config, "0854");
+    const existing = store.save({ target: "default", origin: "auto", data: PNG_1PX });
+    if ("error" in existing) throw new Error(existing.error);
+    const manifest = Buffer.from(
+      JSON.stringify({
+        shots: [{ name: "runner-shot.png", target: "default", origin: "auto" }],
+      }),
+    ).toString("base64");
+
+    expect(() =>
+      importShotArtifacts(config, "0854", [{ name: "shots/shots.json", data: manifest }]),
+    ).toThrow("runner omitted shot image runner-shot.png");
+    expect(store.list().map((shot) => shot.name)).toEqual([existing.name]);
   });
 });

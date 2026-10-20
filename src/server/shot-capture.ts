@@ -568,19 +568,20 @@ export async function runAutoShotCapture(
     config.remoteValidation?.browserCaptureMode &&
     config.remoteValidation.browserCaptureMode !== "local"
   ) {
-    const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
-    const head = worktree ? await runGit(worktree, ["rev-parse", "HEAD"], 10_000) : null;
-    const request =
-      worktree && head?.status === 0 && task.branch
-        ? {
-            taskId: task.id,
-            worktreePath: worktree,
-            branch: task.branch,
-            candidateSha: head.stdout.trim(),
-            operation: "shots" as const,
-          }
-        : null;
+    inFlight.add(task.id);
     try {
+      const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+      const head = worktree ? await runGit(worktree, ["rev-parse", "HEAD"], 10_000) : null;
+      const request =
+        worktree && head?.status === 0 && task.branch
+          ? {
+              taskId: task.id,
+              worktreePath: worktree,
+              branch: task.branch,
+              candidateSha: head.stdout.trim(),
+              operation: "shots" as const,
+            }
+          : null;
       return await runBrowserCaptureWithPolicy({
         config,
         request: request ?? {
@@ -592,6 +593,7 @@ export async function runAutoShotCapture(
         },
         transport: request ? remoteTransport : undefined,
         local: async () => {
+          inFlight.delete(task.id);
           const localConfig = {
             ...config,
             remoteValidation: { ...config.remoteValidation, browserCaptureMode: "local" as const },
@@ -938,6 +940,35 @@ export async function captureDeclaredShot(
   remoteTransport?: BrowserEvidenceTransport,
   onFallback?: (message: string) => void,
 ): Promise<DeclaredShotCapture> {
+  if (inFlight.has(task.id)) {
+    return { error: "a capture is already in flight for this task", busy: true };
+  }
+  inFlight.add(task.id);
+  try {
+    return await captureDeclaredShotImpl(
+      config,
+      task,
+      previews,
+      entry,
+      remoteTransport,
+      onFallback,
+    );
+  } finally {
+    inFlight.delete(task.id);
+  }
+}
+
+async function captureDeclaredShotImpl(
+  config: RepoOSConfig,
+  task: Task,
+  previews: PreviewManager,
+  entry: CaptureEntry & {
+    route: string;
+    declared?: DeclaredShot;
+  },
+  remoteTransport?: BrowserEvidenceTransport,
+  onFallback?: (message: string) => void,
+): Promise<DeclaredShotCapture> {
   if (
     config.remoteValidation?.browserCaptureMode &&
     config.remoteValidation.browserCaptureMode !== "local"
@@ -967,7 +998,7 @@ export async function captureDeclaredShot(
       },
       transport: request ? remoteTransport : undefined,
       local: () =>
-        captureDeclaredShot(
+        captureDeclaredShotImpl(
           {
             ...config,
             remoteValidation: { ...config.remoteValidation, browserCaptureMode: "local" },
