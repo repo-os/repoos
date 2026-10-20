@@ -11,7 +11,10 @@ branch: feat/p0-bookkeeping-only-commits-must-not-mak
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:47:38Z"
-updated_at: "2026-10-20T04:47:58Z"
+updated_at: "2026-10-20T07:35:50Z"
+review_passes: 1
+last_check_failure: "repoos check at 2026-10-20T07:15:20.788Z: repoos check failed: rendered-contrast — $ bun scripts/ui-contrast-audit.mjs"
+dev_error_count: 1
 ---
 ## Problem
 A task whose code is correct is repeatedly held in review because its screenshot/verification evidence is flagged **stale** when the only commits since the capture are RepoOS bookkeeping. Example (#0843, 2026-10-20): review pass 10 found no bugs and no edge cases, but the verdict was "needs some work" with `Evidence: ... captured at d87648624, while reviewed HEAD is b1eda86f8. The only intervening change is task-file bookkeeping, but the capture is still stale by the handoff evidence rule.` It then needed a manual `repoos verify` + `repoos review again` to get another pass (which found a new unrelated issue, but the stale-evidence round was pure waste). The same thing happened to #0832 and others.
@@ -34,9 +37,39 @@ Evidence is stale only when something that can change what the shots show has ch
 ## Notes for AI
 Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (src/server/worktree-handoff-guard.ts and the integration orchestrator's `bookkeepingDirs`) rather than adding a parallel path list. Check src/server/review.ts (~2262-2300), src/server/shot-capture.ts (`headIdentity`, `reusableAutoCaptures`), src/server/ui-handoff-gate.ts and src/ui-app/src/lib/handoff-verification.ts. Keep it fail-closed. Related: #0766 (refresh evidence on demand), #0734, #0600 (work/*.md-only commits tolerated at close-out), #0860 (reminders/schedules as bookkeeping). Do not touch repoos.toml. Source: Nick, 2026-10-20 (#0843 pass 10).
 
+## Shots
+```json
+[
+{
+  "label": "Changes tab with bookkeeping-current handoff evidence",
+  "target": "default",
+  "route": "/",
+  "state": "drawer:shotEvidence"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-20T04:47:38Z · created · njachowski@gmail.com
 - 2026-10-20T04:47:52Z · status inbox→ready
 - 2026-10-20T04:47:56Z · cli_override, model_override
 - 2026-10-20T04:47:58Z · status ready→active, branch
+- 2026-10-20T04:56:29Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-10-20T04:56:46Z · agent exited with an error (codex) · 2026-10-20T04:56:32.304823Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
+- 2026-10-20T05:49:27Z · needs_input
+- 2026-10-20T05:53:43Z · body
+- 2026-10-20T05:57:42Z · body
+- 2026-10-20T06:17:09Z · message_queued at 2026-10-20T06:17:09.557Z
+- 2026-10-20T06:17:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-20T06:25:12Z · body
+- 2026-10-20T06:26:29Z · message_queued at 2026-10-20T06:26:29.923Z
+- 2026-10-20T06:56:38Z · message_delivered: 2 message(s)
+- 2026-10-20T07:03:28Z · body
+- 2026-10-20T07:06:06Z · body
+- 2026-10-20T07:18:08Z · body
+- 2026-10-20T07:23:49Z · status active→review
+- 2026-10-20T07:30:24Z · note: review pass 1: needs some work
+- 2026-10-20T07:32:16Z · status review→active
+- 2026-10-20T07:32:16Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
+- 2026-10-20T07:35:50Z · body
