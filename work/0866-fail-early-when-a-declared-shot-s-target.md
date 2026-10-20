@@ -3,6 +3,9 @@ id: "0866"
 title: Fail early when a declared shot's target cannot render its state or route
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The same worktree can be resumed and retried."
 priority: p2
 area: server
 assigned_to: ai
@@ -11,10 +14,12 @@ branch: feat/fail-early-when-a-declared-shot-s-target
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T11:55:38Z"
-updated_at: "2026-10-20T23:15:31Z"
+updated_at: "2026-10-20T23:17:21Z"
 review_rounds: 1
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-20T21:59:05.771Z: repoos check failed: ◆ Check plan"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-20T23:17:21.436Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 A declared shot that resolves to the wrong preview target produces a capture of the wrong screen, and the failure shows up far from the cause. Observed 2026-10-20: #0860's Settings shot resolved to the Docs site target (console error "'text/html' is not a valid JavaScript MIME type", highlight matched nothing, handoff failed UI verification), and #0861's `drawer:shotEvidence` shot was captured on the Docs site / the board instead of a task drawer, so the reviewer reported an evidence gap on pass after pass. Each cost several rounds because the engineer only learns about it from a later review, and weaker models do not self-correct from the message.
@@ -66,3 +71,5 @@ See the shot declaration and capture code in src/server/shot-capture.ts, `planAu
 - 2026-10-20T23:14:18Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-10-20T23:15:28Z · note: review pass 2: needs some work
 - 2026-10-20T23:15:31Z · status review→active
+- 2026-10-20T23:17:21Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The same worktree can be resumed and retried.
+- 2026-10-20T23:17:21Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The same worktree can be resumed and retried.
