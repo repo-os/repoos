@@ -11,7 +11,7 @@ branch: feat/fail-early-when-a-declared-shot-s-target
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T11:55:38Z"
-updated_at: "2026-10-20T23:00:34Z"
+updated_at: "2026-10-20T23:00:41Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-20T21:59:05.771Z: repoos check failed: ◆ Check plan"
 ---
@@ -58,3 +58,4 @@ See the shot declaration and capture code in src/server/shot-capture.ts, `planAu
 - 2026-10-20T22:58:38Z · assigned_to
 - 2026-10-20T23:00:21Z · assigned_to
 - 2026-10-20T23:00:34Z · status review→active
+- 2026-10-20T23:00:41Z · note: handoff requested (ui-review)
