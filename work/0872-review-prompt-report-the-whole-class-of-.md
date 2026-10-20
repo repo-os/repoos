@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T12:06:43Z"
-updated_at: "2026-10-20T12:18:27Z"
+updated_at: "2026-10-20T12:18:31Z"
 ---
 ## Problem
 The review prompt built in src/server/review.ts (the shared part every project gets) does not tell the reviewer to find every instance of a bug class, to read earlier review reports, or to check that the branch merges with its base. The result on 2026-10-20: #0843 needed 22+ review passes, #0854 15+, #0861 13, each pass finding one more instance of the same class (service-lifecycle teardown, runner fallback and import safety, config-key registration), plus avoidable rounds on evidence-only gaps and a "good to go" on a commit that still conflicted with main (#0860). For RepoOS itself the reviewer role text in repoos.toml was updated by hand on 2026-10-20; every other project still gets the old behavior.
@@ -34,9 +34,9 @@ Project-specific rules (Bun not Node, never edit repoos.toml, never commit dist/
 - Do NOT edit this repo's own repoos.toml: the human already updated its reviewer, engineer and pm instructions on 2026-10-20.
 - Docs updated (review and close-out docs, init docs).
 
-
 ## Notes for AI
-The repoos.toml reviewer instructions were already extended with the same guidance on 2026-10-20 and can be used as the wording source (grep `Report the WHOLE CLASS` in repoos.toml). Keep the prompt short enough that it does not slow reviews noticeably. Related: #0865 (stop reviews chaining), #0866 (shot target validation), the landable command task.
+Wording sources, all in this repo's repoos.toml as edited on 2026-10-20: the reviewer instructions (grep `Report the WHOLE CLASS`), the engineer instructions (grep `declare what a reviewer should see`) and the pm instructions (grep `Owns the roadmap`). Strip the RepoOS-specific parts (Bun, dist/, repoos.toml, Copilot path rule) when copying them into defaults. Find where `repoos init` writes the default roles (src/commands/init.ts) and where built-in default role instructions live (src/core/config.ts). Keep the reviewer prompt short enough not to slow reviews noticeably. Related: #0865 (stop reviews chaining), #0866 (shot target validation), #0867 (landable command: the reviewer's merge check can call it once it exists).
+
 
 ## Activity
 
@@ -44,3 +44,4 @@ The repoos.toml reviewer instructions were already extended with the same guidan
 - 2026-10-20T12:18:19Z · title
 - 2026-10-20T12:18:23Z · body: Desired UX (added 5, removed 1)
 - 2026-10-20T12:18:27Z · body: Acceptance criteria (added 7, removed 5)
+- 2026-10-20T12:18:31Z · body: Notes for AI (added 1, removed 1)
