@@ -522,9 +522,8 @@ export function parseShotPlan(
 
 /**
  * Decide which target a declared shot names. An omitted target follows the
- * resolved set. An explicit `default` always means the main app target; it
- * must not alias a sole Docs site (or other named target) merely because that
- * target matched the task's changed paths.
+ * resolved set. An explicit `default` means the main app target when it is
+ * configured; otherwise it aliases the sole resolved named target.
  */
 export function resolveDeclaredTarget(
   declared: string | undefined,
@@ -541,7 +540,8 @@ export function resolveDeclaredTarget(
     };
   }
   if (declared === DEFAULT_FALLBACK_TARGET) {
-    return { target: DEFAULT_FALLBACK_TARGET };
+    if (targets.includes(DEFAULT_FALLBACK_TARGET)) return { target: DEFAULT_FALLBACK_TARGET };
+    if (targets.length === 1) return { target: targets[0] };
   }
   if (!targets.includes(declared)) {
     return {
