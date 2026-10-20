@@ -3,9 +3,6 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — validation diagnostics can expose fragments of secret environment values.
 priority: p2
 area: [core, web]
 assigned_to: human
@@ -359,3 +356,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T15:16:56Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (36662d045) during finalization (#0734)
 - 2026-10-20T15:16:59Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (36662d045) during finalization (#0734)
 - 2026-10-20T15:18:21Z · note: review pass 28: good to go
+- 2026-10-20T15:18:21Z · needs_input
