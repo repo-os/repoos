@@ -648,14 +648,6 @@ export class DevTargetManager {
       const token = servicePortToken(def.name) || "service";
       const servicePort = servicePorts.get(def.name)!;
 
-      // Register the service BEFORE any fallible step (port reservation, cwd
-      // resolution, spawn), so a startup failure is recorded against THIS
-      // service instead of leaving it an unexplained "stopped" row
-      // (#0843 review).
-      this.setServiceStates(t.name, [
-        ...(this.states.get(t.name)?.services ?? []).filter((s) => s.name !== def.name),
-        { name: def.name, token, status: "starting", log: [] },
-      ]);
       /** Record `def` as failed — with the reason — before failing the target. */
       const failService = async (message: string): Promise<DevActionResult> => {
         this.patchServiceState(t.name, def.name, { status: "failed", error: message });
@@ -1383,7 +1375,14 @@ export class DevTargetManager {
     // so a never-started target still shows its services as stopped rows.
     let services: DevServiceView[] | undefined;
     if (t.services?.length) {
-      services = t.services.map((name) => {
+      // Include services pulled in through `dependsOn` as well as the ones the
+      // target lists: they boot with the stack, so their state belongs in the
+      // view (and their reserved port is what a forward/backward reference
+      // resolves to). Unresolved names still get a stopped row so the config
+      // error is visible next to the target that asked for it.
+      const resolved = this.resolveServices(t);
+      const names = [...resolved.defs.map((def) => def.name), ...resolved.unresolved];
+      services = names.map((name) => {
         const def = this.serviceDefs().find((s) => s.name === name);
         const src: DevServiceState =
           state.services?.find((s) => s.name === name) ??

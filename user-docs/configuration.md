@@ -1848,7 +1848,9 @@ url = "http://localhost:{port}"
 ```
 
 On **Start**, RepoOS allocates ports for every selected service before
-starting any process, so forward, backward and self references resolve. Each
+starting any process, so **forward references are allowed**: a target (or a
+service) may reference a service declared later in `repoos.toml`, as well as
+one declared earlier or itself. Each
 service then boots before the target and is health-gated: a service whose health check (or, with none
 declared, a short alive-settle) does not pass fails the start with the
 service's name in the reason, and everything started so far is torn down — the
@@ -1862,8 +1864,8 @@ are substituted too. Inside a service's own `command` and `healthCheck.url`,
 `{port}` (and `PORT`) is the service's own port. `dependsOn` starts dependencies
 before dependents and includes them in the target's service stack; unknown
 dependencies and actual dependency cycles are configuration errors. A service
-may reference a sibling declared later in TOML because all selected ports are
-assigned first. Service names referenced by
+may reference a sibling declared later in TOML — and a target may reference a
+service declared later — because all selected ports are assigned first. Service names referenced by
 one target must map to distinct placeholder tokens: two names that normalize to
 the same `{<token>.port}` (for example `api-v1` and `api_v1`) are a config
 error, not silently disambiguated, so a documented token can never resolve to
