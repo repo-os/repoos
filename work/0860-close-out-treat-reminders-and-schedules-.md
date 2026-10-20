@@ -1,15 +1,15 @@
 ---
 id: "0860"
-title: "Close-out: treat reminders/ and schedules/ as server-written bookkeeping, like work/ inputs/ stories/"
+title: "Close-out and layout: reminders/ and schedules/ are server-written bookkeeping, and follow the repoos/ layout"
 type: bug
 status: inbox
 priority: p2
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T04:20:16Z"
+updated_at: "2026-10-20T04:26:08Z"
 ---
 ## Problem
 Move to done refuses to publish when a reminder file is dirty on main: "main has 1 uncommitted file at publish time, so the merge would abort: reminders/37fba592-....md. The candidate was NOT merged; commit or stash those on main (or use 'Commit & continue') and retry." Reminders (#0851) are server-written, repo-native files exactly like tasks, inputs and stories, but the close-out only knows `work/`, `inputs/` and `stories/` as routine server-written churn (`bookkeepingDirs` / `bookkeepingKeepOursPrefixes` in `src/server/integration-orchestrator.ts`, ~line 334; `isNonCodePublishDrift`; the dirty-main guard in docs/close-out-pipeline.md). So every time a reminder is created, snoozed or marked done while a close-out runs, an unrelated landing is blocked and needs a manual "Commit & continue". Scheduled-task definitions (`schedules/`, #0093) are stamped by the server (`last_run_at`, `last_occurrence_key`) and have the same problem.
@@ -33,3 +33,4 @@ Extend `bookkeepingDirs` and its callers rather than adding a parallel list, and
 ## Activity
 
 - 2026-10-20T04:20:16Z · created · njachowski@gmail.com
+- 2026-10-20T04:26:08Z · title
