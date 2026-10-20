@@ -409,7 +409,6 @@ import {
   automaticEvidenceGapRepair,
   getTaskShot,
   uploadTaskShot,
-  captureTaskShot,
   deleteTaskShot,
   postTaskBundle,
   // Config routes
@@ -3551,7 +3550,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/ui-verification$/, getTaskUiVerification);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/verify$/, refreshTaskEvidence);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/shots$/, uploadTaskShot);
-  router.register("POST", /^\/api\/tasks\/([^/]+)\/shots\/capture$/, captureTaskShot);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/bundle$/, postTaskBundle);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/shots\/([^/]+)$/, getTaskShot);
   // Task drawer shot management (#0627): declare-and-capture via POST (the
