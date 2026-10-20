@@ -13,7 +13,7 @@ branch: feat/docs-llms-txt-index-full-dump-and-raw-ma
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:01:19Z"
-updated_at: "2026-10-20T20:10:38Z"
+updated_at: "2026-10-20T20:34:30Z"
 ---
 ## Problem
 
@@ -41,9 +41,24 @@ The landing `llms.txt` is a short overview, not this index. Do not copy `user-do
 
 Out of scope: the portable skill, `user-docs/ai-agents.md`, the copy-prompt button, and paid inference.
 
+## Decision
+Kept `vitepress-plugin-llms` (devDependency of `user-docs/`) rather than hand-writing a `buildEnd` step. A clean `bun run build` with the existing `themeBootPlugin()`, `cleanUrls: true`, and the `.vitepress/dist` output produced `/llms.txt`, `/llms-full.txt`, and one `/<route>.md` per page; theme boot and HTML routes were unchanged. `README.md` (build runbook) and `index.md` (marketing home layout with no article title) are the recorded skips in `user-docs/.vitepress/llms-index.ts`; every other page is required by `user-docs/scripts/check-llms.ts`, which runs as part of the build.
+
+`agents.txt` is deliberately not emitted: no concrete client in this story reads it, and the chosen generator does not write it. Revisit only when a real consumer exists.
+
 ## Activity
 
 - 2026-10-20T16:01:19Z · created · njachowski@gmail.com
 - 2026-10-20T20:10:29Z · status inbox→ready
 - 2026-10-20T20:10:36Z · cli_override, model_override
 - 2026-10-20T20:10:38Z · status ready→active, branch
+- 2026-10-20T20:16:15Z · body: Decision (added)
+- 2026-10-20T20:16:16Z · message_queued at 2026-10-20T20:16:16.176Z
+- 2026-10-20T20:18:06Z · body
+- 2026-10-20T20:23:33Z · body
+- 2026-10-20T20:27:44Z · body
+- 2026-10-20T20:29:51Z · body
+- 2026-10-20T20:32:13Z · body
+- 2026-10-20T20:33:39Z · body
+- 2026-10-20T20:34:29Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-20T20:34:30Z · message_delivered: 1 message(s)

@@ -11,7 +11,8 @@ branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
-updated_at: "2026-10-20T20:10:03Z"
+updated_at: "2026-10-20T20:33:50Z"
+dev_error_count: 1
 ---
 ## Problem
 During Move to done, a task can show as `inbox` on the board for about 3 minutes. Observed on #0863 (2026-10-21 ~01:08-01:11 local): the pre-merge main copy and the branch copy both said `status: review`, but the close-out merge commit `7ecfcb7f1` itself contains `status: inbox` (updated_at 17:08:41Z). A stray `handoff requested (cli)` from the still-running engineer landed in the same second and failed with "task must be active or review, but is inbox". The status only becomes `done` at the later `docs(0863): set status done` commit (17:11:26Z, `markTaskReleased` in src/server/write.ts), so users see the task in the inbox column and may think it was reset.
@@ -61,3 +62,9 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T20:02:08Z · body
 - 2026-10-20T20:05:03Z · body
 - 2026-10-20T20:10:03Z · body
+- 2026-10-20T20:10:22Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-20T20:12:56Z · body
+- 2026-10-20T20:18:48Z · needs_input
+- 2026-10-20T20:19:01Z · assigned_to
+- 2026-10-20T20:33:48Z · assigned_to
+- 2026-10-20T20:33:50Z · note: handoff requested (ui-review)

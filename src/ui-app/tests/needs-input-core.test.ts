@@ -41,6 +41,8 @@ describe("needs-input core helpers", () => {
   it("clears provider-failure and degenerate-output when engineering resumes (#0716)", () => {
     expect(needsInputClearsOnNewEngineerRun("provider-failure")).toBe(true);
     expect(needsInputClearsOnNewEngineerRun("degenerate-output")).toBe(true);
+    // A `dev-error` is cleared by a clean TURN, not by merely starting one
+    // (#0613 start semantics, #0869): an unrelated crash flag survives a start.
     expect(needsInputClearsOnNewEngineerRun("dev-error")).toBe(false);
     expect(needsInputClearsOnNewEngineerRun(undefined)).toBe(true);
   });
