@@ -89,3 +89,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T08:30:23Z · body
 - 2026-10-20T08:36:25Z · note: Remote capture proof attempt: direct TailscaleRunner capture for the current task SHA queued on bee while its validation slot was occupied, and was canceled before container execution. The local WebKit process count was 57 before and during the wait; no capture artifacts were returned. The required handoff proof is still outstanding.
 - 2026-10-20T08:36:43Z · status active→review
+- 2026-10-20T08:36:43Z · note: handoff requested (cli)
