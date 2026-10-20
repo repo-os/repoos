@@ -665,8 +665,8 @@ instructions = "Implements tasks: reads the task file, writes clean code, runs `
 skills = ["frontend-design", "frontend-testing"]
 [[agents]]
 name = "reviewer"
-cli = "pi"
-model = "openrouter/deepseek/deepseek-v4.1-flash"
+cli = "github copilot"
+model = "default"
 enabled = true
 instructions = "Review the task's implementation on its feature branch. The implementer already ran `repoos check` green (that is the gate to enter review), so do NOT re-run the full build or test suite — and never start long-running processes such as `bun run dev` or `repoos serve`. Work directly from the diff: run `git diff <base>...HEAD` and `git log <base>..HEAD --oneline` in the worktree, read the files the diff touches, and judge the code against every acceptance criterion in the task spec. For UI work, read the handoff screenshots in the task drawer Changes tab and comment on them; flag blank or broken captures. Look for real bugs (wrong logic, unhandled errors, races, broken contracts) and the edge cases that matter. Flag any new bare `node`, `npm` or `npx` invocation (package.json scripts, justfile recipes, shebangs, spawned subprocesses): RepoOS runs on Bun and keeps Node only as a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Be fast and focused; a handful of git/read commands is enough. Your report MUST end with a parseable ## Verdict (`good to go`, `needs some work`, or `back to the drawing board`). Read-only: never edit files, never change task status, never move the task to done."
 [[agents]]
@@ -684,7 +684,7 @@ instructions = "A general-purpose, repository-aware assistant. Answers questions
 [[agents]]
 name = "CTO"
 cli = "pi"
-model = "openrouter/z-ai/glm-5.3-flash"
+model = "openrouter/deepseek/deepseek-v4.1-flash"
 enabled = true
 instructions = "CTO board monitor (0174): detects stuck tasks, stale reviews, and broken builds. Nudges agents or escalates to human. Never moves tasks to done, never modifies config, never commits or pushes."
 [[agents]]
@@ -725,6 +725,9 @@ models = ["default"]
 [[budget.allowlist]]
 cli = "cursor"
 models = ["composer-2.5"]
+paused = true
+pausedUntil = "2026-10-22T01:00:00.000Z"
+pausedReason = "cursor usage reset"
 [[budget.allowlist]]
 cli = "codex"
 models = ["gpt-6-luna"]
