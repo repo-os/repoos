@@ -5,13 +5,13 @@ type: bug
 status: active
 priority: p2
 area: server
-assigned_to: human
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fail-early-when-a-declared-shot-s-target
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T11:55:38Z"
-updated_at: "2026-10-20T23:18:39Z"
+updated_at: "2026-10-20T23:29:28Z"
 review_rounds: 1
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-20T21:59:05.771Z: repoos check failed: ◆ Check plan"
@@ -72,3 +72,8 @@ See the shot declaration and capture code in src/server/shot-capture.ts, `planAu
 - 2026-10-20T23:17:21Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The same worktree can be resumed and retried.
 - 2026-10-20T23:18:30Z · needs_input
 - 2026-10-20T23:18:39Z · assigned_to
+- 2026-10-20T23:25:42Z · body
+- 2026-10-20T23:26:29Z · body
+- 2026-10-20T23:27:43Z · assigned_to
+- 2026-10-20T23:28:06Z · note: handoff requested (ui-review)
+- 2026-10-20T23:29:28Z · body
