@@ -2,7 +2,7 @@
 id: "0882"
 title: Agent getting-started guide at /ai-agents
 type: feature
-status: active
+status: review
 paths: [user-docs/ai-agents.md, user-docs/.vitepress/config.mts, agent/starter-prompt.md]
 priority: p2
 area: docs
@@ -14,7 +14,7 @@ branch: feat/agent-getting-started-guide-at-ai-agents
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:17Z"
-updated_at: "2026-10-20T21:10:01Z"
+updated_at: "2026-10-20T21:30:11Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ Declare a docs-site shot if you want review to open the new page: target the doc
 - 2026-10-20T21:09:56Z · status inbox→ready
 - 2026-10-20T21:10:00Z · cli_override, model_override
 - 2026-10-20T21:10:01Z · status ready→active, branch
+- 2026-10-20T21:30:11Z · status active→review
