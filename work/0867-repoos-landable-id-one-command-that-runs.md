@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-20T19:42:54Z"
-review_passes: 1
+last_close_out_gate_ms: 82630
+last_close_out_gate_at: "2026-10-20T19:46:20.768Z"
 id: "0867"
 title: "repoos landable <id>: one command that runs the landing pre-checks"
 type: feature
@@ -14,6 +14,8 @@ branch: feat/repoos-landable-id-one-command-that-runs
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:05:58Z"
+updated_at: "2026-10-20T19:46:20Z"
+review_passes: 1
 ---
 ## Problem
 Whether a task in review can actually land is decided by a handful of manual checks that live in driver prose and AGENTS.md: the lock sha equals the worktree HEAD, the worktree is clean, the branch merges with main (conflicts only in the task's own work/<id>-*.md), the diff has no repoos.toml and no other tasks' work/ files, and main has no blocking dirty files. Each driver re-does these by hand and gets them wrong sometimes. On 2026-10-20 #0860 had a "good to go" review on a HEAD that still conflicted with main in src/core/types.ts, and the conflict was only discovered when Move to done refused; reviews kept re-running on the same unchanged commit.
@@ -80,4 +82,5 @@ The close-out approval policy already computes most of these checks: `evaluateAp
 - 2026-10-20T19:41:38Z · status active→review
 - 2026-10-20T19:41:38Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-20T19:42:54Z · note: review pass 1: good to go
+- 2026-10-20T19:46:20Z · close-out gate completed in 83s
 
