@@ -2,7 +2,7 @@
 id: "0867"
 title: "repoos landable <id>: one command that runs the landing pre-checks"
 type: feature
-status: review
+status: active
 priority: p1
 area: [core, server]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
