@@ -11,7 +11,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T11:09:49Z"
+updated_at: "2026-10-20T11:09:50Z"
 review_passes: 3
 review_rounds: 1
 handoff_signal_retry_count: 1
@@ -123,3 +123,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:08:33Z · note: handoff requested (cli)
 - 2026-10-20T11:09:36Z · needs_input
 - 2026-10-20T11:09:49Z · status active→review
+- 2026-10-20T11:09:50Z · note: shots: skipped — 14 shots already captured — an engineer-made capture pre-empts the automatic one
