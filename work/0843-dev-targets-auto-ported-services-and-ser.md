@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: Reading additional input from stdin...
+debug_tldr: "Dev-target placeholder validation and startup ordering break three tests — fix those regressions, then rerun the test file and gate."
+debug_tldr_at: "2026-10-20T11:08:51Z"
+debug_tldr_key: dev-error|Reading additional input from stdin...
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -16,7 +19,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T11:08:27Z"
+updated_at: "2026-10-20T11:08:51Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'service env', tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'target env', tests/dev-targets.test.ts > DevTargetManager with services (#0843) > boots the service first, then the target, and exposes both states on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 32da7ef6ac6aceaa9a76587d2e0bcc567e9ce4b3
 review_passes: 20
