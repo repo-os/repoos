@@ -29,8 +29,8 @@ export const DEFAULT_PREVIEW_TARGET = "default";
  * Route prefixes served by the main app UI. A declared shot whose `route` is
  * one of these is an app screen, so an omitted `target` must default to the app
  * target rather than whichever target the diff happened to resolve first
- * (#0866). Mirrors `src/ui-app/src/router.ts`; `shot-targets.test.ts` fails if
- * the two drift apart.
+ * (#0866). Mirrors `src/ui-app/src/router.ts`; `shot-target-support-0866.test.ts`
+ * fails if the two drift apart.
  */
 export const APP_ROUTE_PREFIXES = [
   "/login",
