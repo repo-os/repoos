@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-20T21:17:18Z"
-review_passes: 1
 id: "0886"
 title: "Close-out: task shows as inbox between the merge and 'set status done'; stamp done atomically and ignore engineer writes while closing"
 type: bug
@@ -13,6 +11,8 @@ branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
+updated_at: "2026-10-20T21:20:44Z"
+review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
