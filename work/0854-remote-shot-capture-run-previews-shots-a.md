@@ -2,7 +2,7 @@
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, core]
 assigned_to: ai
