@@ -14,7 +14,7 @@ branch: feat/agent-getting-started-guide-at-ai-agents
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:17Z"
-updated_at: "2026-10-20T21:30:11Z"
+updated_at: "2026-10-20T21:30:12Z"
 ---
 ## Problem
 
@@ -62,3 +62,4 @@ Declare a docs-site shot if you want review to open the new page: target the doc
 - 2026-10-20T21:20:07Z · body
 - 2026-10-20T21:21:28Z · body
 - 2026-10-20T21:30:11Z · status active→review
+- 2026-10-20T21:30:12Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (5323b5329) during finalization (#0734)
