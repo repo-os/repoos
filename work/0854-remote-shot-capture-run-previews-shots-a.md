@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T07:16:16Z"
+updated_at: "2026-10-20T07:20:31Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 238826f5072be220a6a7a5fe1ac19aa5ffb346a4
 review_rounds: 2
@@ -35,6 +35,18 @@ Shot capture and UI verification can run on a runner:
 
 ## Notes for AI
 Start with the design doc and a small spike: reuse `validate.sh`, the bundle upload and the artifacts channel from remote validation, and the existing shot planner (src/core/shot-plan.ts, src/server/shot*.ts). Depends on nothing but benefits from the preview-teardown fix (separate task). Do not touch repoos.toml. Source: Nick, 2026-10-19.
+
+## Shots
+```json
+[
+{
+  "label": "Performance setting for task browser work",
+  "target": "default",
+  "route": "/settings",
+  "highlight": "[data-test-id=\"setting-remoteValidation.browserCaptureMode\"]"
+}
+]
+```
 
 ## Activity
 
@@ -68,3 +80,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T07:10:20Z · status ready→active
 - 2026-10-20T07:15:43Z · body
 - 2026-10-20T07:16:16Z · body
+- 2026-10-20T07:20:31Z · body
