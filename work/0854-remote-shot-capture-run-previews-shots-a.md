@@ -2,7 +2,7 @@
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T07:32:57Z"
+updated_at: "2026-10-20T09:59:56Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: c901144ecd9535bba7464aede335bb76abcc67d2
 review_rounds: 2
@@ -84,4 +84,5 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T07:20:43Z · status active→review
 - 2026-10-20T07:20:43Z · note: handoff requested (cli)
 - 2026-10-20T07:27:44Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on thinkpad — fix it in the feature branch and re-run the gate
-
+- 2026-10-20T09:59:55Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on thinkpad — fix it in the feature branch and re-run the gate · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-20T09:59:56Z · note: handoff requested (cli)
