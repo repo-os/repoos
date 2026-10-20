@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-20T21:59:05.771Z: repoos check failed: ◆ Check plan"
 id: "0866"
 title: Fail early when a declared shot's target cannot render its state or route
 type: bug
@@ -43,3 +45,4 @@ See the shot declaration and capture code in src/server/shot-capture.ts, `planAu
 - 2026-10-20T21:45:02Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-20T21:45:03Z · message_delivered: 1 message(s)
 - 2026-10-20T21:59:02Z · handoff failed · handoff recovery attempted · finalization failed
+
