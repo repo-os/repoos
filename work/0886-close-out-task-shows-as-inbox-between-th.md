@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 4888f355 to e1bf06da) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 4888f35575fbdbdcd27ee3ba9d0b8cdb33dd2646
 id: "0886"
 title: "Close-out: task shows as inbox between the merge and 'set status done'; stamp done atomically and ignore engineer writes while closing"
 type: bug
@@ -13,7 +11,9 @@ branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
-updated_at: "2026-10-20T20:57:36Z"
+updated_at: "2026-10-20T20:57:41Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 4888f355 to e1bf06da) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 4888f35575fbdbdcd27ee3ba9d0b8cdb33dd2646
 dev_error_count: 1
 ---
 ## Problem
@@ -75,4 +75,4 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T20:52:56Z · body
 - 2026-10-20T20:54:35Z · body
 - 2026-10-20T20:57:36Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 4888f355 to e1bf06da) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-
+- 2026-10-20T20:57:41Z · body
