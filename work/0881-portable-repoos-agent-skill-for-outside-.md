@@ -2,7 +2,7 @@
 id: "0881"
 title: Portable RepoOS Agent Skill for outside agents
 type: feature
-status: inbox
+status: ready
 paths: [agent/skill, landing, user-docs]
 priority: p2
 area: docs
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T16:01:54Z"
-updated_at: "2026-10-20T16:01:54Z"
+updated_at: "2026-10-20T20:10:59Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ Do not add CLI features, a public MCP server, or provider-specific plugins. Inst
 ## Activity
 
 - 2026-10-20T16:01:54Z · created · njachowski@gmail.com
+- 2026-10-20T20:10:59Z · status inbox→ready
