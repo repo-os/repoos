@@ -1,4 +1,5 @@
-import { bookkeepingDirs, type RepoOSConfig } from "../core/config.js";
+import { bookkeepingDirs } from "../core/config.js";
+import type { RepoOSConfig } from "../core/types.js";
 import { runGit } from "../core/git.js";
 
 /** True when the captured commit still describes the reviewed tree. Git errors fail closed. */
