@@ -90,6 +90,7 @@ export default defineConfig({
         text: "Getting started",
         items: [
           { text: "Install and first task", link: "/getting-started" },
+          { text: "Set up with an AI coding agent", link: "/ai-agents" },
           {
             text: "Starting a project as an agent",
             link: "/getting-started#starting-a-new-project-as-an-agent",
