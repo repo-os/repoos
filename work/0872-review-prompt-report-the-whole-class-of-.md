@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T12:06:43Z"
-updated_at: "2026-10-20T12:19:08Z"
+updated_at: "2026-10-20T12:19:13Z"
 ---
 ## Problem
 The review prompt built in src/server/review.ts (the shared part every project gets) does not tell the reviewer to find every instance of a bug class, to read earlier review reports, or to check that the branch merges with its base. The result on 2026-10-20: #0843 needed 22+ review passes, #0854 15+, #0861 13, each pass finding one more instance of the same class (service-lifecycle teardown, runner fallback and import safety, config-key registration), plus avoidable rounds on evidence-only gaps and a "good to go" on a commit that still conflicted with main (#0860). For RepoOS itself the reviewer role text in repoos.toml was updated by hand on 2026-10-20; every other project still gets the old behavior.
@@ -23,7 +23,10 @@ Engineer default: declare shots with `repoos update --shots` (explicit target, a
 
 PM default: create and change tasks only through `repoos` commands or the API; the required body headings; search the board before filing; area vocabulary and priority by cost of waiting; attach every task to the relevant story with `--story` (leave it empty and say so when none fits); set real dependencies with `--depends-on` in both directions without cycles; small independent fixes into the one open easter-egg bundle; human-only criteria as a separate held task; attach every screenshot; file a recurring review bug class as one task.
 
+CTO default: be quiet and precise (one nudge or escalation per event, with evidence); do not call an engineer stalled while a live process or child, a handoff gate, a running review or heavy machine pressure explains the silence, and name the non-RepoOS processes causing pressure; distinguish phantom runners, crashed engineers (an error exit is not a handoff; crash-prone agents are escalated for replacement, a human override is never replaced), review loops (repeated "needs some work" on an unchanged commit, or a green review on a commit that conflicts with main), evidence-only findings, and landings blocked by files on main (name the files and probable owner, never delete or commit them); escalate decisions (model switch, unknown files, human-only criteria, more than about five review passes, machine pressure) to a human with evidence.
+
 Project-specific rules (Bun not Node, never edit repoos.toml, never commit dist/, no runtime dependencies, Copilot path rules) stay in each project's own repoos.toml and AGENTS.md and are NOT in the built-in defaults.
+
 
 ## Acceptance criteria
 - src/server/review.ts shared review prompt contains the class-enumeration, earlier-report, evidence-gap and merge-ability instructions; the verdict and section format rules are unchanged and the parser tests pass.
@@ -46,3 +49,4 @@ Wording sources, all in this repo's repoos.toml as edited on 2026-10-20: the rev
 - 2026-10-20T12:18:27Z · body: Acceptance criteria (added 7, removed 5)
 - 2026-10-20T12:18:31Z · body: Notes for AI (added 1, removed 1)
 - 2026-10-20T12:19:08Z · title
+- 2026-10-20T12:19:13Z · body: Desired UX (added 1)
