@@ -2,7 +2,7 @@
 id: "0879"
 title: Canonical starter prompt and landing llms.txt
 type: feature
-status: inbox
+status: ready
 paths: [agent/starter-prompt.md, landing]
 priority: p2
 area: landing
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T16:00:59Z"
-updated_at: "2026-10-20T16:00:59Z"
+updated_at: "2026-10-20T19:46:58Z"
 ---
 ## Problem
 
@@ -51,3 +51,4 @@ Out of scope: the docs-site `llms.txt` / `llms-full.txt`, the Agent Skill, `user
 ## Activity
 
 - 2026-10-20T16:00:59Z · created · njachowski@gmail.com
+- 2026-10-20T19:46:58Z · status inbox→ready
