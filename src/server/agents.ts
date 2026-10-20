@@ -5246,8 +5246,10 @@ export class AgentRunner {
   /**
    * Tasks whose last turn exited with an error and never emitted the engineer's
    * own handoff signal (#0869). A review/status write from that turn must not be
-   * read as a handoff; the flag clears on a clean turn, a real handoff signal,
-   * or a human-driven resume.
+   * read as a handoff. The flag clears on a real handoff signal, on a fresh
+   * start/send, and on the recovered turn's first real output — so the stale
+   * write is rejected while a live resumed engineer's own `repoos mv review`
+   * is still honored. A clean turn also clears it.
    */
   private readonly crashedNoHandoff = new Set<string>();
 
@@ -7239,6 +7241,13 @@ export class AgentRunner {
    * the flag, never lower it.
    */
   private lineTouched(taskId: string, session: Session, raw: string): void {
+    // A live, non-review turn is emitting output: any status write from the
+    // crashed turn has already been seen (cleanup sets the flag after the
+    // process exits, before the recovery relaunch spawns). Lifting the crash
+    // guard here keeps the resumed engineer's own `repoos mv review` from
+    // being mistaken for the crashed turn's request (#0869).
+    const running = this.entries.get(taskId);
+    if (running && !running.review) this.crashedNoHandoff.delete(taskId);
     const usageChanged = this.applyUsage(taskId, session, raw);
     session.lastOutputAt = now();
     session.silentAwakeMs = 0;
