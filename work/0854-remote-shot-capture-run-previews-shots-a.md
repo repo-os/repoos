@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/toml-validate.test.ts > validateToml accepts > the repository's own repoos.toml on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: a69f5cbf1a167a4285061a9fd2e01132d83d6dd9
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
@@ -13,9 +11,12 @@ area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
-model_override: openrouter/deepseek/deepseek-v4.1-flash
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T13:35:30Z"
+updated_at: "2026-10-20T15:31:43Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/toml-validate.test.ts > validateToml accepts > the repository's own repoos.toml on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: a69f5cbf1a167a4285061a9fd2e01132d83d6dd9
 review_passes: 18
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -254,4 +255,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T13:25:15Z · note: handoff requested (ui-review)
 - 2026-10-20T13:27:51Z · note: handoff requested (ui-review)
 - 2026-10-20T13:35:30Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/toml-validate.test.ts > validateToml accepts > the repository's own repoos.toml on bee — fix it in the feature branch and re-run the gate
-
+- 2026-10-20T15:31:43Z · cli_override, model_override
