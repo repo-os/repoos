@@ -11,7 +11,7 @@ branch: feat/memory-pressure-guard-stop-starts-and-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:35Z"
-updated_at: "2026-10-20T23:26:39Z"
+updated_at: "2026-10-20T23:26:40Z"
 ---
 ## Problem
 The pressure guard from #0836 keys off load average, which is inflated by threads waiting on a thrashing machine (load 200-500 with CPU idle near 0 and swap full on 2026-10-20), so it reacts late and tells a driver nothing about the cause. Most of the load that day was not RepoOS (Chrome helpers at 80-120% CPU, the Claude app renderer, WindowServer, a second RepoOS project on the same laptop), but RepoOS had no way to say so, and engineers simply stalled. Gates, reviews and handoffs all slowed, adding timeouts and retries.
@@ -69,3 +69,4 @@ Builds on #0836 (caps and pressure guard) and #0853 (preview teardown). Use `vm.
 - 2026-10-20T23:10:11Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-20T23:10:12Z · message_delivered: 1 message(s)
 - 2026-10-20T23:26:39Z · status active→review
+- 2026-10-20T23:26:40Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (0f734ebb5) during finalization (#0734)
