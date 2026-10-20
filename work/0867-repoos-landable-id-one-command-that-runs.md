@@ -12,7 +12,7 @@ branch: feat/repoos-landable-id-one-command-that-runs
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:05:58Z"
-updated_at: "2026-10-20T18:47:36Z"
+updated_at: "2026-10-20T18:51:16Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/send-to-engineer-note.test.ts > Send to engineer note dialog (#0295) > still sends when opening the dialog dismissed the drawer's modal, tests/task-drawer-ui-changes-rows.test.ts > Changes → UI changes rows (#0611) > orders UI changes toolbar actions with Add shot on the right (#0778), tests/task-drawer-ui-changes-rows.test.ts > Changes → UI changes rows (#0611) > shows a UI-changes empty state for an unmanaged, shot-less task on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: d33b16451366a286d4e279e35eba6afee7719b45
 ---
@@ -72,3 +72,4 @@ The close-out approval policy already computes most of these checks: `evaluateAp
 - 2026-10-20T18:37:39Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/send-to-engineer-note.test.ts > Send to engineer note dialog (#0295) > still sends when opening the dialog dismissed the drawer's modal, tests/task-drawer-ui-changes-rows.test.ts > Changes → UI changes rows (#0611) > orders UI changes toolbar actions with Add shot on the right (#0778), tests/task-drawer-ui-changes-rows.test.ts > Changes → UI changes rows (#0611) > shows a UI-changes empty state for an unmanaged, shot-less task on bee — fix it in the feature branch and re-run the gate
 - 2026-10-20T18:47:36Z · message_queued at 2026-10-20T18:47:36.186Z
 - 2026-10-20T18:47:36Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-20T18:51:16Z · body
