@@ -3,6 +3,9 @@ id: "0860"
 title: "Close-out and layout: reminders/ and schedules/ are server-written bookkeeping, and follow the repoos/ layout"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — narrow conflict resolution can union reminder/schedule edits instead of keeping main’s copy.
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T11:47:24Z"
+updated_at: "2026-10-20T11:47:25Z"
 review_passes: 7
 review_rounds: 2
 handoff_signal_retry_count: 1
@@ -153,3 +156,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:44:23Z · body
 - 2026-10-20T11:45:34Z · status active→review
 - 2026-10-20T11:47:24Z · note: review pass 8: needs some work
+- 2026-10-20T11:47:25Z · needs_input
