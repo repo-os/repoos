@@ -74,6 +74,13 @@ same prompt. Its heading, sentence, button labels and guide link come from
 — the docs homepage imports the same module, so neither site keeps its own copy
 of the call-to-action strings.
 
+`bun run build` ends with `scripts/check-agent-files.ts`. It fails, naming the
+file, when `dist/llms.txt` is missing, when its install block (or the copy in
+`InstallBox.vue`, `user-docs/getting-started.md`, or the portable skill) drifts
+from the published six commands in `../agent/install-commands.ts`, when the
+built call to action no longer embeds `../agent/starter-prompt.md`, or when a
+`docs.repoos.org` link in `llms.txt` points at a page that does not exist.
+
 ## Local development
 
 ```bash

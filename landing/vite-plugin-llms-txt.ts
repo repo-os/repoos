@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { Plugin } from "vite";
+import { INSTALL_COMMANDS } from "../agent/install-commands.js";
+
+// Re-exported for the tests and for callers that read the published list.
+export { INSTALL_COMMANDS };
 
 // The one committed copy of the starter prompt lives at the repo root, outside
 // landing/ and docs/, so the landing build and the docs site can share it.
@@ -11,18 +15,6 @@ export function defaultStarterPromptPath(): string {
   if (url.startsWith("file:")) return fileURLToPath(new URL("../agent/starter-prompt.md", url));
   return `${process.cwd()}/agent/starter-prompt.md`;
 }
-
-// Keep these identical to the published commands in
-// landing/src/components/InstallBox.vue and user-docs/getting-started.md.
-// mise's long form comes from getting-started; `-g` is the same flag.
-export const INSTALL_COMMANDS = [
-  "curl -fsSL https://repoos.org/install | bash",
-  "brew install repo-os/tap/repoos",
-  "npm install -g @repo-os/repoos",
-  "bun add -g @repo-os/repoos",
-  "pnpm add -g @repo-os/repoos",
-  "mise use --global npm:@repo-os/repoos",
-] as const;
 
 /** The one portable Agent Skill directory published for outside agents. */
 export const AGENT_SKILL_URL = "https://github.com/repo-os/repoos/tree/main/agent/skill";
