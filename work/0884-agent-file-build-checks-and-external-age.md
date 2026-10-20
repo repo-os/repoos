@@ -1,15 +1,14 @@
 ---
-last_close_out_gate_ms: 242534
-last_close_out_gate_at: "2026-10-20T23:16:40.525Z"
 id: "0884"
 title: Agent-file build checks and drift checks
 type: feature
-status: review
+status: done
 paths: [landing, user-docs, agent]
 priority: p2
 area: [landing, docs]
 story: Agent-discoverable RepoOS
 depends_on: ["0880", "0881", "0883"]
+merged_commit: d534e70ab1025b0bc4d80fdef47cde6d06290ef0
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/agent-file-build-checks-and-drift-checks
@@ -17,6 +16,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:55Z"
 updated_at: "2026-10-20T23:16:40Z"
+last_close_out_gate_ms: 242534
+last_close_out_gate_at: "2026-10-20T23:16:40.525Z"
 review_passes: 1
 ---
 ## Problem
