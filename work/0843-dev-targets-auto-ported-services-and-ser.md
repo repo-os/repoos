@@ -3,6 +3,9 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — service bind failures can bypass the port-conflict summary and holder lookup.
 priority: p2
 area: [core, web]
 assigned_to: human
@@ -339,4 +342,5 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T14:33:16Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (5dfcb513a) during finalization (#0734)
 - 2026-10-20T14:33:17Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (5dfcb513a) during finalization (#0734)
 - 2026-10-20T14:35:53Z · note: review pass 26: needs some work
+- 2026-10-20T14:35:53Z · needs_input
 - 2026-10-20T14:35:53Z · needs_input
