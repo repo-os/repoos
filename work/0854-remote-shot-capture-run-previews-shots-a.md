@@ -145,3 +145,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T10:33:21Z · needs_input
 - 2026-10-20T10:37:58Z · status review→active
 - 2026-10-20T10:37:58Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
+- 2026-10-20T10:37:58Z · message_delivered: 1 message(s)
