@@ -64,6 +64,7 @@ import { extractFailedTests, remoteRunHistoryMeta } from "../core/check-failure-
 import {
   getCheckStore,
   resolveCheckStoreRoot,
+  validateCheckTaskId,
   type CheckRunOutcome,
   type CheckRunPhase,
 } from "../core/check-store.js";
@@ -4179,6 +4180,16 @@ function recordRemoteRunHistory(
 ): void {
   try {
     const storeRoot = resolveCheckStoreRoot(config.root, process.env);
+    // #0870: a remote row's task id comes from task metadata, not a process
+    // env, so validate it against the project's own task files. A polluted id
+    // (or one from another project) is recorded task-less, never as this
+    // project's task.
+    const taskId = validateCheckTaskId(
+      {},
+      storeRoot,
+      config.workDir,
+      /^\d+$/.test(opts.taskId) ? opts.taskId : null,
+    );
     const meta = summary
       ? remoteRunHistoryMeta(outcome, {
           output: summary.output,
@@ -4190,7 +4201,7 @@ function recordRemoteRunHistory(
         })
       : remoteRunHistoryMeta(outcome, { detail: detail ?? null });
     getCheckStore(storeRoot, config.cacheDir).record({
-      taskId: /^\d+$/.test(opts.taskId) ? opts.taskId : null,
+      taskId,
       phase: opts.phase ?? "pre-review",
       candidateSha: opts.candidateSha,
       machine,

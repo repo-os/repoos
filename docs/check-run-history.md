@@ -30,6 +30,12 @@ keeps its id — #0695), so only a work dir that *is* inspectable can reject an
 id. When an id is rejected the run records task-less, or with the id resolved
 from its own checked-out branch.
 
+Attribution is resolved against the **execution worktree**, not the store root:
+the branch that names a task is checked out there, while the main checkout that
+receives the row is usually still on `main`. Remote rows go through the same
+check (`validateCheckTaskId`), so a polluted `opts.taskId` in-process is
+recorded task-less rather than attributed to another project's task.
+
 ## Incident (2026-10-20)
 
 A check run in a LightingAI worktree inherited `REPOOS_CHECK_STORE_ROOT` from
