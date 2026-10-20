@@ -2,17 +2,18 @@
 id: "0865"
 title: Reviews must not chain back to back on a task with open findings; queued messages must be delivered between passes
 type: bug
-status: inbox
+status: done
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+merged_commit: 44e53cd910712a7198ec9788af85049dd305358a
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/reviews-must-not-chain-back-to-back-on-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T11:55:25Z"
-updated_at: "2026-10-20T18:31:15Z"
+updated_at: "2026-10-20T18:32:25Z"
 last_close_out_gate_ms: 115421
 last_close_out_gate_at: "2026-10-20T18:31:11.391Z"
 review_passes: 3
@@ -95,3 +96,4 @@ Not gated: `ReviewManager.runCheckpointDelta` (post-handoff checkpoint delta rev
 - 2026-10-20T18:31:11Z · close-out gate completed in 115s
 - 2026-10-20T18:31:14Z · note: handoff requested (cli)
 - 2026-10-20T18:31:15Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-20T18:32:25Z · status inbox→done, release:success
