@@ -11,7 +11,7 @@ branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
-updated_at: "2026-10-20T20:33:48Z"
+updated_at: "2026-10-20T20:33:50Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -67,3 +67,4 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T20:18:48Z · needs_input
 - 2026-10-20T20:19:01Z · assigned_to
 - 2026-10-20T20:33:48Z · assigned_to
+- 2026-10-20T20:33:50Z · note: handoff requested (ui-review)
