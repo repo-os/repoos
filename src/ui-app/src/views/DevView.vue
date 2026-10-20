@@ -157,6 +157,46 @@ function toggleLog(t: DevTargetView): void {
   persistOutputExpanded();
 }
 
+/**
+ * Per-service collapsible output (#0843), same persisted pattern as a target's:
+ * minimised by default, open while a service failed — its error is the reason
+ * the target degraded.
+ */
+const SERVICE_EXPANDED_KEY = "repoos.dev.serviceExpanded";
+
+function readServiceExpanded(): Record<string, boolean> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SERVICE_EXPANDED_KEY) ?? "{}");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter(([, v]) => typeof v === "boolean"),
+    ) as Record<string, boolean>;
+  } catch {
+    return {};
+  }
+}
+
+const serviceExpanded = ref<Record<string, boolean>>(readServiceExpanded());
+
+function serviceKey(target: string, service: string): string {
+  return `${target}::${service}`;
+}
+
+function isServiceLogExpanded(t: DevTargetView, name: string): boolean {
+  const saved = serviceExpanded.value[serviceKey(t.name, name)];
+  return typeof saved === "boolean" ? saved : t.status === "failed";
+}
+
+function toggleServiceLog(t: DevTargetView, name: string): void {
+  const k = serviceKey(t.name, name);
+  serviceExpanded.value = { ...serviceExpanded.value, [k]: !isServiceLogExpanded(t, name) };
+  try {
+    localStorage.setItem(SERVICE_EXPANDED_KEY, JSON.stringify(serviceExpanded.value));
+  } catch {
+    /* ignore quota / privacy-mode failures */
+  }
+}
+
 async function load(silent = false): Promise<void> {
   // A capture can pin a failed target via `?shotState=dev:failed` (preview
   // builds only, #0775), so its shot shows the failure summary and port holder
@@ -463,6 +503,73 @@ watch(
                 </dd>
               </div>
             </dl>
+
+            <div v-if="t.services?.length" class="dev-services" data-test-id="dev-services">
+              <div class="dev-services-label">
+                Services
+                <span class="dev-services-note"
+                  >booted before the target, each on its own port</span
+                >
+              </div>
+              <!-- #0843: one sub-row per companion service: its own status pill,
+                   the real port it was given, its PID, and a collapsible output. -->
+              <div
+                v-for="s in t.services"
+                :key="s.name"
+                class="dev-service"
+                :data-status="s.status"
+              >
+                <div class="dev-service-head">
+                  <span class="dev-state-pill" :data-status="s.status">
+                    <span class="dev-dot"></span>{{ STATE_LABEL[s.status] }}
+                  </span>
+                  <code class="dev-service-name">{{ s.name }}</code>
+                  <span v-if="typeof s.port === 'number'" class="dev-service-port">
+                    <code>:{{ s.port }}</code>
+                  </span>
+                  <span v-if="s.pid !== undefined" class="dev-service-pid">PID {{ s.pid }}</span>
+                  <span class="dev-service-side">
+                    <a
+                      v-if="s.url && s.status === 'running'"
+                      class="dev-open"
+                      :href="s.url"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {{ s.url.replace(/^https?:\/\//, "") }} ↗
+                    </a>
+                    <button
+                      v-if="s.log.length"
+                      type="button"
+                      class="dev-log-toggle"
+                      :aria-label="
+                        isServiceLogExpanded(t, s.name) ? 'Collapse output' : 'Expand output'
+                      "
+                      :aria-expanded="isServiceLogExpanded(t, s.name)"
+                      :data-tip="
+                        isServiceLogExpanded(t, s.name)
+                          ? 'Collapse the service output'
+                          : 'Expand the service output'
+                      "
+                      @click="toggleServiceLog(t, s.name)"
+                    >
+                      <ChevronDown
+                        class="size-3.5 dev-log-chev"
+                        :class="{ open: isServiceLogExpanded(t, s.name) }"
+                      />
+                    </button>
+                  </span>
+                </div>
+                <p v-if="s.error" class="dev-service-error">{{ s.error }}</p>
+                <pre
+                  v-show="isServiceLogExpanded(t, s.name) && s.log.length"
+                  class="dev-log-body dev-service-log"
+                  tabindex="0"
+                  role="region"
+                  :aria-label="`Output of service ${s.name} for ${t.label}`"
+                ><code>{{ fullLog(s.log) }}</code></pre>
+              </div>
+            </div>
 
             <section
               v-if="t.status === 'failed' && (t.failure || t.error)"
@@ -899,6 +1006,84 @@ watch(
   justify-content: flex-end;
   gap: 9px;
   flex-wrap: wrap;
+}
+
+/* Companion-service sub-rows (#0843): a quiet inset list inside the card, so
+   each service reads as part of the target rather than a second target. */
+.dev-services {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: color-mix(in srgb, var(--border) 16%, transparent);
+}
+.dev-services-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--txt-faint);
+}
+.dev-services-note {
+  margin-left: 6px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.dev-service {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 4px 2px;
+  border-top: 1px solid var(--border);
+}
+.dev-service:first-of-type {
+  border-top: none;
+}
+.dev-service-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.dev-service-name {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: var(--txt);
+}
+.dev-service-port code {
+  font-family: "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--txt);
+}
+.dev-service-pid {
+  font-size: 11px;
+  color: var(--txt-faint);
+  font-variant-numeric: tabular-nums;
+}
+.dev-service-side {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.dev-service-side .dev-open {
+  font-size: 11.5px;
+}
+.dev-service-error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--red);
+  overflow-wrap: anywhere;
+}
+.dev-service-log {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  max-height: calc(4 * 1.5em + 20px);
 }
 
 .dev-log {

@@ -26,6 +26,18 @@ export interface DevTargetDraft {
   autoPort: boolean;
   /** Fixed/preferred port as typed; validated by the parser ("" = unset). */
   port: string;
+  /**
+   * Names of `[[dev.services]]` rows booted before this target (#0843),
+   * comma-separated in the form. The service DEFINITIONS stay TOML-only;
+   * this list only references them by name.
+   */
+  services: string;
+  /**
+   * The on-disk name this row started as (unset for a new row). The server
+   * restores TOML-only fields (`cwd`, `env`) from that row, so a rename keeps
+   * them without those values ever reaching the browser (#0843).
+   */
+  sourceName?: string;
 }
 
 /** A target as `safeConfigForBrowser` serializes it (`dev.targets`). */
@@ -41,6 +53,8 @@ export interface DevTargetPayload {
   autoPort?: boolean;
   /** Preferred/fixed port for `{port}` (#0802). */
   port?: number;
+  /** Companion `[[dev.services]]` names, booted before the target (#0843). */
+  services?: string[];
 }
 
 /** A blank draft for the "Add target" dialog. */
@@ -56,6 +70,7 @@ export function emptyDevTargetDraft(): DevTargetDraft {
     healthCheckFile: "",
     autoPort: true,
     port: "",
+    services: "",
   };
 }
 
@@ -72,11 +87,22 @@ export function draftFromTarget(t: DevTargetPayload): DevTargetDraft {
     healthCheckFile: t.healthCheck?.file ?? "",
     autoPort: t.autoPort !== false,
     port: t.port !== undefined ? String(t.port) : "",
+    services: (t.services ?? []).join(", "),
+    sourceName: t.name,
   };
+}
+
+/** The draft's `services` text as a clean name list ("" = none). */
+function servicesFromDraft(d: DevTargetDraft): string[] {
+  return (d.services ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /** Serialize a draft back to the wire row the config PATCH accepts. */
 export function targetFromDraft(d: DevTargetDraft): Record<string, unknown> {
+  const services = servicesFromDraft(d);
   return {
     name: d.name,
     kind: d.kind,
@@ -88,6 +114,8 @@ export function targetFromDraft(d: DevTargetDraft): Record<string, unknown> {
     healthCheckFile: d.healthCheckFile,
     autoPort: d.autoPort,
     port: d.port.trim(),
+    ...(services.length ? { services } : {}),
+    ...(d.sourceName ? { sourceName: d.sourceName } : {}),
   };
 }
 
@@ -99,6 +127,7 @@ export function targetFromDraft(d: DevTargetDraft): Record<string, unknown> {
  * server would reject.
  */
 function parseRowFromDraft(d: DevTargetDraft): Record<string, unknown> {
+  const services = servicesFromDraft(d);
   const row: Record<string, unknown> = {
     name: d.name,
     kind: d.kind,
@@ -109,6 +138,7 @@ function parseRowFromDraft(d: DevTargetDraft): Record<string, unknown> {
     autoPort: d.autoPort,
   };
   if (d.port.trim()) row.port = d.port.trim();
+  if (services.length) row.services = services;
   if (d.healthCheckUrl.trim()) row["healthCheck.url"] = d.healthCheckUrl.trim();
   if (d.healthCheckFile.trim()) row["healthCheck.file"] = d.healthCheckFile.trim();
   return row;

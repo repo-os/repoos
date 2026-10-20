@@ -20,6 +20,12 @@ import {
 } from "../../core/config.js";
 import { effectiveAreaVocabulary } from "../../core/areas.js";
 import { effectiveAreaNames, unresolvedAreaReport } from "../../core/areas.js";
+import { normalizeStringList } from "../../core/config.js";
+import {
+  DEV_TARGET_PASSTHROUGH_FIELDS,
+  devTargetServiceErrors,
+  redactDevEnv,
+} from "../../core/dev-targets.js";
 import { normalizeAllowlistRows } from "../../core/budget-allowlist.js";
 import {
   MAX_ROUTING_TIMEOUT_MS,
@@ -91,8 +97,12 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
       };
     }
   }
+  // Env values (dev targets and services) may be credentials: they never reach
+  // the browser. Settings saves restore them from disk (#0843 review round 25).
+  const safeDev = rest.dev ? redactDevEnv(rest.dev as never) : rest.dev;
   return {
     ...rest,
+    ...(safeDev !== undefined ? { dev: safeDev } : {}),
     auth: safeAuth,
     "whisper.provider": whisper.provider ?? "none",
     whisperEnabled,
@@ -117,7 +127,7 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
      * loud validation errors `loadConfig` recorded for rows it had to drop —
      * the form shows them inline rather than silently losing a target.
      */
-    devTargets: (config.dev as { targets?: unknown } | undefined)?.targets ?? [],
+    devTargets: (safeDev as { targets?: unknown } | undefined)?.targets ?? [],
     devTargetErrors: config.devTargetErrors ?? [],
     board: {
       ...((rest as Record<string, unknown>).board as Record<string, unknown> | undefined),
@@ -347,6 +357,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     // Rebuild each submitted row into the shape `parseDevTargets` understands:
     // the health check is flattened to its dotted keys (the flat TOML parser's
     // own form) so validation and serialization share one representation.
+    const onDiskTargets = loadConfig(config.root).dev?.targets ?? [];
     const rawRows = (body.devTargets as unknown[]).map((entry) => {
       const r = (entry ?? {}) as Record<string, unknown>;
       const row: Record<string, unknown> = {
@@ -357,8 +368,28 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         artifactPath: r.artifactPath,
         label: r.label,
       };
+      // #0843 review rounds 24-25: fields the Settings form does not edit
+      // (`cwd`, `env`: TOML-only; env may hold credentials) are NEVER accepted
+      // from or sent to the browser. A save restores them from the on-disk row
+      // the browser says it started from (`sourceName`, so a rename keeps
+      // them), falling back to the same name for older clients.
+      const sourceName =
+        typeof r.sourceName === "string" && r.sourceName.trim()
+          ? r.sourceName.trim()
+          : typeof r.name === "string"
+            ? r.name.trim()
+            : "";
+      const source = onDiskTargets.find((t) => t.name === sourceName);
+      for (const field of DEV_TARGET_PASSTHROUGH_FIELDS) {
+        if (source?.[field] !== undefined) row[field] = source[field];
+      }
       if (typeof r.autoPort === "boolean") row.autoPort = r.autoPort;
       if (r.port !== undefined && r.port !== "") row.port = r.port;
+      // #0843: the companion-service name list round-trips like any other
+      // field; rows are validated against the declared [[dev.services]] after
+      // the shape pass below.
+      const rowServices = normalizeStringList(r.services);
+      if (rowServices.length) row.services = rowServices;
       if (typeof r.healthCheckUrl === "string" && r.healthCheckUrl.trim()) {
         row["healthCheck.url"] = r.healthCheckUrl.trim();
       }
@@ -368,6 +399,13 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       return row;
     });
     const parsed = parseDevTargets({ "dev.targets": rawRows });
+    if (!parsed.errors.length) {
+      // #0843: a target naming a service no [[dev.services]] block defines —
+      // or listing one twice — is rejected here with the loader's exact
+      // message, so the server stays the authority and the UI cannot drift.
+      const declared = loadConfig(config.root).dev?.services;
+      parsed.errors.push(...devTargetServiceErrors(parsed.targets, declared));
+    }
     if (parsed.errors.length) {
       // Inline validation lives in the client too; the server stays the
       // authority and echoes the parser's messages so the two can't drift.
@@ -382,6 +420,12 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       if (t.url) row.url = t.url;
       if (t.artifactPath) row.artifactPath = t.artifactPath;
       if (t.label) row.label = t.label;
+      for (const field of DEV_TARGET_PASSTHROUGH_FIELDS) {
+        if (t[field] !== undefined) row[field] = t[field];
+      }
+      // #0843: write the companion-service name list when set, so an edited
+      // target keeps its services and one without them gains no line.
+      if (t.services?.length) row.services = t.services;
       // #0802: write the auto-pick opt-OUT only (the default is on), so a row
       // that never touched the setting gains no line. `port` is written
       // whenever set — it is the preferred port even while auto-pick is on.
@@ -395,14 +439,17 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     // on every save, so a list that already matches disk must not rewrite the
     // file. Compare the normalized name/kind/command/url/artifactPath/label/
     // health fields, order included (order is meaningful — the form can reorder).
-    const onDisk = loadConfig(config.root).dev?.targets ?? [];
+    const onDisk = onDiskTargets;
     const norm = (t: (typeof onDisk)[number]) => ({
+      cwd: t.cwd ?? "",
+      env: JSON.stringify(Object.entries(t.env ?? {}).sort(([a], [b]) => a.localeCompare(b))),
       name: t.name,
       kind: t.kind,
       command: t.command,
       url: t.url ?? "",
       artifactPath: t.artifactPath ?? "",
       label: t.label ?? "",
+      services: (t.services ?? []).join(","),
       autoPort: t.autoPort !== false,
       port: t.port ?? 0,
       hcUrl: t.healthCheck?.url ?? "",

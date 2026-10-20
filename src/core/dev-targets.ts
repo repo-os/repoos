@@ -13,7 +13,8 @@
  * is a loud validation error rather than a silent drop: a target with a missing
  * name/command/kind or a conflicting field is reported with a clear message.
  */
-import type { DevTargetConfig } from "./types.js";
+import type { DevServiceConfig, DevTargetConfig } from "./types.js";
+import { parseTomlInlineStringTable } from "./toml-line.js";
 
 /**
  * Parse the flat TOML parser's leftover inline-table string for `healthCheck`
@@ -23,15 +24,13 @@ import type { DevTargetConfig } from "./types.js";
  * error. Quoted string values only, which is all a URL or a file path needs.
  */
 function parseInlineHealthCheck(raw: string): { url?: string; file?: string } | null {
-  const s = raw.trim();
-  if (!s.startsWith("{") || !s.endsWith("}")) return null;
+  const parsed = parseTomlInlineStringTable(raw);
+  if (!parsed?.ok) return null;
   const out: { url?: string; file?: string } = {};
-  for (const m of s.slice(1, -1).matchAll(/([A-Za-z0-9_]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) {
-    const value = (m[2] ?? m[3] ?? "").trim();
-    if (!value) continue;
-    if (m[1] === "url") out.url = value;
-    else if (m[1] === "file") out.file = value;
-  }
+  const url = parsed.value.url?.trim();
+  const file = parsed.value.file?.trim();
+  if (url) out.url = url;
+  if (file) out.file = file;
   return out;
 }
 
@@ -40,6 +39,22 @@ function parseInlineHealthCheck(raw: string): { url?: string; file?: string } | 
  * as a literal here so this node-free module never imports the server.
  */
 const DEV_PORT_TOKEN = "{port}";
+
+/**
+ * `[[dev.targets]]` fields the Settings form does not edit. Every path that
+ * rebuilds a target row from the form (draft, wire row, parser input,
+ * serialization, no-op comparison) must carry these through, or a save silently
+ * strips them from repoos.toml (#0843 review round 24). Add a new TOML-only
+ * target field here, not at each call site.
+ */
+export const DEV_TARGET_PASSTHROUGH_FIELDS = ["cwd", "env"] as const;
+
+/** Read a flat string list (the flat TOML parser's shape for a string array). */
+function stringList(v: unknown): string[] {
+  if (v === undefined || v === null) return [];
+  const items = Array.isArray(v) ? v : [v];
+  return items.map((x) => (typeof x === "string" ? x.trim() : "")).filter(Boolean);
+}
 
 /** Whether any of a target's fields use the `{port}` placeholder. */
 function usesPortPlaceholder(t: DevTargetConfig): boolean {
@@ -96,6 +111,38 @@ export function parseDevTargets(parsed: Record<string, unknown>): {
       continue;
     }
     const target: DevTargetConfig = { name, kind: kindRaw, command };
+    const cwd = typeof r.cwd === "string" ? r.cwd.trim() : "";
+    if (cwd) target.cwd = cwd;
+    if (r.env !== undefined) {
+      let env: Record<string, string> | undefined;
+      if (typeof r.env === "string") {
+        const parsedEnv = parseTomlInlineStringTable(r.env);
+        if (!parsedEnv?.ok) {
+          errors.push(`[dev.targets] ${name}: env must be a table of string values`);
+          continue;
+        }
+        env = parsedEnv.value;
+      } else if (typeof r.env === "object" && r.env !== null && !Array.isArray(r.env)) {
+        env = Object.fromEntries(
+          Object.entries(r.env as Record<string, unknown>).filter(
+            (entry): entry is [string, string] => typeof entry[1] === "string",
+          ),
+        );
+      }
+      if (!env) {
+        errors.push(`[dev.targets] ${name}: env must be a table of string values`);
+        continue;
+      }
+      target.env = env;
+    }
+    const targetDottedEnv = Object.fromEntries(
+      Object.entries(r)
+        .filter(([key, value]) => key.startsWith("env.") && typeof value === "string")
+        .map(([key, value]) => [key.slice("env.".length).trim(), (value as string).trim()])
+        .filter(([key]) => Boolean(key)),
+    );
+    if (Object.keys(targetDottedEnv).length)
+      target.env = { ...(target.env ?? {}), ...targetDottedEnv };
 
     const url = typeof r.url === "string" ? r.url.trim() : "";
     const artifactPath = typeof r.artifactPath === "string" ? r.artifactPath.trim() : "";
@@ -135,6 +182,12 @@ export function parseDevTargets(parsed: Record<string, unknown>): {
 
     const label = typeof r.label === "string" ? r.label.trim() : "";
     if (label) target.label = label;
+
+    // #0843: the companion services this target boots before its own command,
+    // by name. Names are cross-validated against `[[dev.services]]` by
+    // `devTargetServiceErrors` (the loader runs it for both lists together).
+    const targetServices = stringList(r.services);
+    if (targetServices.length) target.services = targetServices;
 
     // #0802: per-target port handling. `autoPort` defaults to on; an explicit
     // `false` opts into a fixed `port`. The value is accepted for any kind — a
@@ -222,4 +275,540 @@ export function parseDevTargets(parsed: Record<string, unknown>): {
     targets.push(target);
   }
   return { targets, errors };
+}
+
+/**
+ * Turn a service name into a placeholder/env token: lowercase, runs of
+ * non-alphanumerics collapsed to `_`, edges trimmed. Shared with the preview
+ * supervisor so `[[preview.services]]` and `[[dev.services]]` substitute
+ * identically (#0681, #0843).
+ */
+export function servicePortToken(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+/**
+ * The canonical placeholder token for a service name *or* a reference token
+ * (#0843 review round 23). Both sides of the config must use this one function:
+ * validation normalizes the token a user wrote (`{API.port}`, `{api-v1.port}`)
+ * and expansion looks it up in the same canonical space, so a spelling the
+ * validator accepts can never survive into the spawned command as a literal.
+ * An all-punctuation name still needs a usable token, hence the `service`
+ * fallback (the same fallback the supervisors use for their token maps).
+ */
+export function canonicalServiceToken(raw: string): string {
+  return servicePortToken(raw) || "service";
+}
+
+/**
+ * The first pair of distinct service names in `names` that normalize to the
+ * same placeholder token (`api-v1` / `api_v1`), or undefined. The ONE collision
+ * check: config validation runs it over the target's full resolved service set
+ * (listed services plus their transitive `dependsOn`) and the supervisor runs
+ * it over the services it is about to boot, so the two can never disagree about
+ * which stacks are ambiguous (#0843 review round 25).
+ */
+export function findServiceTokenClash(
+  names: Iterable<string>,
+): { first: string; second: string; token: string } | undefined {
+  const seen = new Map<string, string>();
+  for (const name of names) {
+    const token = canonicalServiceToken(name);
+    const first = seen.get(token);
+    if (first !== undefined && first !== name) return { first, second: name, token };
+    seen.set(token, name);
+  }
+  return undefined;
+}
+
+/**
+ * A `dev` config block safe to send to a browser: every target's and service's
+ * `env` is dropped (values may be credentials). The server keeps the real
+ * values; the Settings round-trip restores them from disk by row identity.
+ */
+export function redactDevEnv<T extends { targets?: unknown; services?: unknown }>(dev: T): T {
+  const strip = (rows: unknown): unknown =>
+    Array.isArray(rows)
+      ? rows.map((row) => {
+          if (!row || typeof row !== "object") return row;
+          const { env: _env, ...rest } = row as Record<string, unknown>;
+          return rest;
+        })
+      : rows;
+  return { ...dev, targets: strip(dev.targets), services: strip(dev.services) };
+}
+
+/**
+ * The single grammar for a service port/URL placeholder (#0843 review round
+ * 23): `{<token>.port}` / `{<token>.url}`, case-insensitive, with the same
+ * name characters the config accepts and optional whitespace. A token may
+ * contain dots (`api.v1`); the final `.port` / `.url` selects the kind.
+ *
+ * Doubled and backslash-escaped braces are deliberately NOT matched — the
+ * feature defines no escape syntax, so validation reports them as malformed
+ * rather than letting expansion half-resolve them.
+ */
+const SERVICE_REF_SOURCE = String.raw`(?<!\\)\{\s*([A-Za-z0-9_.-]+?)\s*\.\s*(port|url)\s*\}(?!\})`;
+
+function serviceRefRegex(): RegExp {
+  return new RegExp(SERVICE_REF_SOURCE, "gi");
+}
+
+/** One `{<service>.port}` / `{<service>.url}` reference in a templated field. */
+export interface ServicePlaceholderRef {
+  /** The exact matched text, including braces. */
+  raw: string;
+  /** The token as written by the user, trimmed (e.g. `API`, `api-v1`). */
+  token: string;
+  /** The canonical token used by validation and expansion (`api`, `api_v1`). */
+  canonical: string;
+  kind: "port" | "url";
+}
+
+/** Every service placeholder in a templated field, in source order. */
+export function servicePlaceholderRefs(text: string | undefined): ServicePlaceholderRef[] {
+  if (!text) return [];
+  return [...text.matchAll(serviceRefRegex())].map((match) => ({
+    raw: match[0],
+    token: match[1]!,
+    canonical: canonicalServiceToken(match[1]!),
+    kind: match[2]!.toLowerCase() as "port" | "url",
+  }));
+}
+
+/**
+ * Placeholder-shaped text that the grammar above cannot resolve. These are
+ * reported as config errors instead of being left literally in a command:
+ * doubled/escaped braces, a misspelled kind (`portx`, `urls`) and an unclosed
+ * reference all fail validation with a clear message.
+ */
+function malformedServicePlaceholders(text: string | undefined): string[] {
+  if (!text) return [];
+  const problems: string[] = [];
+  // Strip the valid references first, so the checks below only see leftovers.
+  const rest = text.replace(serviceRefRegex(), "");
+
+  for (const match of rest.matchAll(/\{\{[\s\S]*?\}\}/g)) {
+    if (/[A-Za-z0-9_.-]+\s*\.\s*(?:port|url)\b/i.test(match[0])) {
+      problems.push(
+        `doubled braces are not supported in service placeholders: ${match[0]} — use {<service>.port} or {<service>.url}`,
+      );
+    }
+  }
+  for (const match of rest.matchAll(/\\\{\s*[A-Za-z0-9_.-]+\s*\.\s*(?:port|url)\s*\\\}/gi)) {
+    problems.push(
+      `escaped service placeholders are not supported: ${match[0]} — use {<service>.port} or {<service>.url}`,
+    );
+  }
+  for (const match of rest.matchAll(/\{([^{}]+)\}/g)) {
+    const body = match[1]!.trim();
+    const dot = body.lastIndexOf(".");
+    if (dot <= 0) continue;
+    const head = body.slice(0, dot).trim();
+    const tail = body.slice(dot + 1).trim();
+    if (!/^[A-Za-z0-9_.-]+$/.test(head)) continue;
+    if (/^(?:port|url)[A-Za-z0-9_-]*$/i.test(tail) && !/^(?:port|url)$/i.test(tail)) {
+      problems.push(
+        `malformed service placeholder ${match[0]} — use {<service>.port} or {<service>.url}`,
+      );
+    }
+  }
+  for (const match of rest.matchAll(/\{\s*[A-Za-z0-9_.-]+\s*\.\s*(?:port|url)\b(?![^{}]*\})/gi)) {
+    problems.push(
+      `unclosed service placeholder ${match[0]} — use {<service>.port} or {<service>.url}`,
+    );
+  }
+  for (const match of rest.matchAll(/(?<!\{)[A-Za-z0-9_.-]+\s*\.\s*(?:port|url)\s*\}/gi)) {
+    problems.push(
+      `malformed service placeholder ${match[0]} — use {<service>.port} or {<service>.url}`,
+    );
+  }
+  return problems;
+}
+
+/** Validate one service's port field; shared with the target parser's shape. */
+function parsePortField(
+  raw: unknown,
+  message: (problem: string) => string,
+): { port?: number; error?: string } {
+  if (raw === undefined || raw === "") return {};
+  const port =
+    typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw.trim()) : Number.NaN;
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    return { error: message("port must be a whole number between 1 and 65535") };
+  }
+  return { port };
+}
+
+/**
+ * Parse the `[[dev.services]]` array of tables — companion processes a dev
+ * target boots before its main command, each on its own port (#0843). Same
+ * contract as `parseDevTargets`: bad rows are loud validation errors, never
+ * silent drops, so a typo is visible on the Dev page instead of a half-booted
+ * stack.
+ */
+export function parseDevServices(parsed: Record<string, unknown>): {
+  services: DevServiceConfig[];
+  errors: string[];
+} {
+  const raw = parsed["dev.services"];
+  const services: DevServiceConfig[] = [];
+  const errors: string[] = [];
+  if (raw === undefined) return { services, errors };
+  if (!Array.isArray(raw)) {
+    errors.push("[dev.services] must be an array of tables");
+    return { services, errors };
+  }
+  const seen = new Set<string>();
+  for (const entry of raw) {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+      errors.push("[dev.services] ignoring a non-table row");
+      continue;
+    }
+    const r = entry as Record<string, unknown>;
+    const name = typeof r.name === "string" ? r.name.trim() : "";
+    if (!name) {
+      errors.push("[dev.services] a service is missing a name");
+      continue;
+    }
+    if (seen.has(name)) {
+      errors.push(`[dev.services] duplicate service name "${name}"`);
+      continue;
+    }
+    const command = typeof r.command === "string" ? r.command.trim() : "";
+    if (!command) {
+      errors.push(`[dev.services] ${name}: a command is required`);
+      continue;
+    }
+    const service: DevServiceConfig = { name, command };
+
+    const cwd = typeof r.cwd === "string" ? r.cwd.trim() : "";
+    if (cwd) service.cwd = cwd;
+    const dependsOn = stringList(r.dependsOn ?? r.depends_on);
+    if (dependsOn.length) service.dependsOn = dependsOn;
+
+    // Same per-service port handling as a target's (#0802): auto-pick defaults
+    // on (the configured `port` is only a preference); auto-pick off pins it.
+    const autoPortRaw = r.autoPort;
+    if (autoPortRaw !== undefined && typeof autoPortRaw !== "boolean") {
+      errors.push(`[dev.services] ${name}: autoPort must be true or false`);
+      continue;
+    }
+    if (typeof autoPortRaw === "boolean") service.autoPort = autoPortRaw;
+    const port = parsePortField(r.port, (problem) => `[dev.services] ${name}: ${problem}`);
+    if (port.error) {
+      errors.push(port.error);
+      continue;
+    }
+    if (port.port !== undefined) service.port = port.port;
+    // #0843 review round 1: a pinned service needs a port to pin — reject it
+    // at config time rather than only when Start is clicked.
+    if (service.autoPort === false && service.port === undefined) {
+      errors.push(
+        `[dev.services] ${name}: auto-pick is off but no port is set — set a port or turn auto-pick back on`,
+      );
+      continue;
+    }
+
+    // healthCheck arrives in the same three shapes a target's does (an object,
+    // the raw inline-table string, or dotted keys) — one shared reader keeps
+    // the two parsers honest.
+    const hcRaw = r.healthCheck;
+    let hcUrl =
+      typeof r["healthCheck.url"] === "string" ? (r["healthCheck.url"] as string).trim() : "";
+    let hcFile =
+      typeof r["healthCheck.file"] === "string" ? (r["healthCheck.file"] as string).trim() : "";
+    const hasInlineKeys = r["healthCheck.url"] !== undefined || r["healthCheck.file"] !== undefined;
+    if (hcRaw !== undefined) {
+      if (typeof hcRaw === "string") {
+        const parsedHc = parseInlineHealthCheck(hcRaw);
+        if (!parsedHc) {
+          errors.push(`[dev.services] ${name}: healthCheck must be a table with url or file`);
+          continue;
+        }
+        hcUrl = hcUrl || parsedHc.url || "";
+        hcFile = hcFile || parsedHc.file || "";
+      } else if (typeof hcRaw === "object" && hcRaw !== null && !Array.isArray(hcRaw)) {
+        const hc = hcRaw as Record<string, unknown>;
+        hcUrl = hcUrl || (typeof hc.url === "string" ? hc.url.trim() : "");
+        hcFile = hcFile || (typeof hc.file === "string" ? hc.file.trim() : "");
+      } else {
+        errors.push(`[dev.services] ${name}: healthCheck must be a table with url or file`);
+        continue;
+      }
+    }
+    if (hcUrl || hcFile) {
+      service.healthCheck = {
+        ...(hcUrl ? { url: hcUrl } : {}),
+        ...(hcFile ? { file: hcFile } : {}),
+      };
+    } else if (hcRaw !== undefined || hasInlineKeys) {
+      errors.push(`[dev.services] ${name}: healthCheck needs a url or a file`);
+      continue;
+    }
+
+    // env arrives in the same three shapes: an object (a real parser or a
+    // test), the inline-table string the flat parser leaves, or dotted
+    // `env.KEY` keys on the row.
+    const envRaw = r.env;
+    let env: Record<string, string> | undefined;
+    if (envRaw !== undefined) {
+      if (typeof envRaw === "string") {
+        const parsedEnv = parseTomlInlineStringTable(envRaw);
+        if (!parsedEnv?.ok) {
+          if (parsedEnv && !parsedEnv.ok) {
+            errors.push(`[dev.services] ${name}: env ${parsedEnv.error}`);
+            continue;
+          }
+          errors.push(
+            `[dev.services] ${name}: env must be a table with at least one KEY = "value"`,
+          );
+          continue;
+        }
+        if (!Object.keys(parsedEnv.value).length) {
+          errors.push(
+            `[dev.services] ${name}: env must be a table with at least one KEY = "value"`,
+          );
+          continue;
+        }
+        env = parsedEnv.value;
+      } else if (typeof envRaw === "object" && envRaw !== null && !Array.isArray(envRaw)) {
+        const e = envRaw as Record<string, unknown>;
+        for (const [k, v] of Object.entries(e)) {
+          if (typeof v !== "string") continue;
+          env = { ...(env ?? {}), [k]: v };
+        }
+        if (!env || !Object.keys(env).length) {
+          errors.push(
+            `[dev.services] ${name}: env must be a table with at least one KEY = "value"`,
+          );
+          continue;
+        }
+      } else {
+        errors.push(`[dev.services] ${name}: env must be a table with at least one KEY = "value"`);
+        continue;
+      }
+    }
+    const dottedEnv: Record<string, string> = {};
+    for (const [k, v] of Object.entries(r)) {
+      if (!k.startsWith("env.")) continue;
+      const key = k.slice("env.".length).trim();
+      if (key && typeof v === "string") dottedEnv[key] = v.trim();
+    }
+    if (Object.keys(dottedEnv).length) env = { ...(env ?? {}), ...dottedEnv };
+    if (env) service.env = env;
+
+    seen.add(name);
+    services.push(service);
+  }
+  return { services, errors };
+}
+
+/**
+ * Cross-validate a target's `services` name list against the declared
+ * `[[dev.services]]` rows (#0843): an unknown name or a repeated entry is a
+ * config error, never a silently partial boot. Returns one message per
+ * problem; empty when everything resolves.
+ */
+export function devTargetServiceErrors(
+  targets: readonly DevTargetConfig[],
+  services: readonly DevServiceConfig[] | undefined,
+): string[] {
+  const errors: string[] = [];
+  const known = new Set((services ?? []).map((s) => s.name));
+  const serviceByName = new Map((services ?? []).map((service) => [service.name, service]));
+  const serviceNamesByToken = new Map<string, string[]>();
+  for (const service of services ?? []) {
+    const token = canonicalServiceToken(service.name);
+    serviceNamesByToken.set(token, [...(serviceNamesByToken.get(token) ?? []), service.name]);
+    for (const dependency of service.dependsOn ?? []) {
+      if (!known.has(dependency)) {
+        errors.push(
+          `[dev.services] ${service.name}: dependsOn references unknown service "${dependency}"`,
+        );
+      }
+    }
+  }
+
+  // Detect actual cycles in the declared dependency graph, independently of
+  // TOML row order or the target's service list order.
+  const visited = new Set<string>();
+  const visiting: string[] = [];
+  const reportedCycles = new Set<string>();
+  const visit = (name: string): void => {
+    const cycleStart = visiting.indexOf(name);
+    if (cycleStart >= 0) {
+      const cycle = [...visiting.slice(cycleStart), name];
+      const key = [...new Set(cycle.slice(0, -1))].sort().join("|");
+      if (!reportedCycles.has(key)) {
+        reportedCycles.add(key);
+        errors.push(`[dev.services] dependency cycle: ${cycle.join(" -> ")}`);
+      }
+      return;
+    }
+    if (visited.has(name)) return;
+    const service = serviceByName.get(name);
+    if (!service) return;
+    visiting.push(name);
+    for (const dependency of service.dependsOn ?? []) if (known.has(dependency)) visit(dependency);
+    visiting.pop();
+    visited.add(name);
+  };
+  for (const service of services ?? []) visit(service.name);
+
+  /**
+   * Validate placeholders in one templated field. `secretKey` marks the text as
+   * an env VALUE: env values may be credentials and these messages reach the
+   * browser (`devTargetErrors`), so diagnostics name the env KEY and the kind
+   * of problem only, never the value or any fragment of it (#0843 review
+   * round 27). Every env value, target or service, goes through this path.
+   */
+  const validateText = (
+    owner: string,
+    text: string | undefined,
+    available: Set<string>,
+    allowSelf?: string,
+    secretKey?: string,
+  ): void => {
+    const where = secretKey === undefined ? owner : `${owner} env ${secretKey}`;
+    const problems = malformedServicePlaceholders(text);
+    if (secretKey !== undefined) {
+      if (problems.length) {
+        errors.push(
+          `[${where}]: contains a malformed service placeholder (value not shown) — use {<service>.port} or {<service>.url}`,
+        );
+      }
+    } else {
+      for (const problem of problems) errors.push(`[${where}]: ${problem}`);
+    }
+    for (const ref of servicePlaceholderRefs(text)) {
+      const matches = serviceNamesByToken.get(ref.canonical) ?? [];
+      const valid = matches.find((name) => name === allowSelf || available.has(name));
+      if (valid) continue;
+      const knownService = matches[0];
+      errors.push(
+        knownService
+          ? `[${where}]: references service "${knownService}" outside the target's services/dependencies`
+          : secretKey !== undefined
+            ? `[${where}]: references an unknown service placeholder (value not shown)`
+            : `[${where}]: references unknown service placeholder "${ref.token}"`,
+      );
+    }
+  };
+  const validateFields = (
+    owner: string,
+    texts: (string | undefined)[],
+    available: Set<string>,
+    allowSelf?: string,
+  ): void => {
+    for (const text of texts) validateText(owner, text, available, allowSelf);
+  };
+  const validateEnv = (
+    owner: string,
+    env: Record<string, string> | undefined,
+    available: Set<string>,
+    allowSelf?: string,
+  ): void => {
+    for (const [key, value] of Object.entries(env ?? {})) {
+      validateText(owner, value, available, allowSelf, key);
+    }
+  };
+  for (const t of targets) {
+    const listed = new Set<string>();
+    for (const name of t.services ?? []) {
+      if (!known.has(name)) {
+        errors.push(
+          `[dev.targets] ${t.name}: references unknown service "${name}" — declare it as a [[dev.services]] block in repoos.toml`,
+        );
+        continue;
+      }
+      if (listed.has(name)) {
+        errors.push(`[dev.targets] ${t.name}: service "${name}" is listed more than once`);
+        continue;
+      }
+      listed.add(name);
+    }
+
+    // Dependencies are implicitly part of the started service set, so refs in
+    // their fields can resolve. A self-reference is valid and resolves to the
+    // service's own allocated port.
+    const available = new Set<string>();
+    const include = (name: string): void => {
+      if (available.has(name)) return;
+      const service = serviceByName.get(name);
+      if (!service) return;
+      available.add(name);
+      for (const dependency of service.dependsOn ?? []) include(dependency);
+    };
+    for (const name of listed) include(name);
+    // Two distinct names can normalize to the same placeholder token
+    // (`api-v1` / `api_v1`), which makes the documented `{<name>.port}`
+    // reference ambiguous. Check the FULL resolved set, dependencies included:
+    // that is exactly what Start boots (#0843 review rounds 23 and 25).
+    const clash = findServiceTokenClash(available);
+    if (clash) {
+      errors.push(
+        `[dev.targets] ${t.name}: services "${clash.first}" and "${clash.second}" both map to the placeholder "{${clash.token}.port}" — rename one so each has a distinct token`,
+      );
+    }
+    validateFields(
+      `dev.targets ${t.name}`,
+      [t.command, t.cwd, t.url, t.healthCheck?.url],
+      available,
+    );
+    validateEnv(`dev.targets ${t.name}`, t.env, available);
+    for (const name of available) {
+      const service = serviceByName.get(name)!;
+      validateFields(
+        `dev.services ${name}`,
+        [service.command, service.cwd, service.healthCheck?.url],
+        available,
+        name,
+      );
+      validateEnv(`dev.services ${name}`, service.env, available, name);
+    }
+  }
+  return errors;
+}
+
+/** The dev services' placeholder host — the same one the preview supervisor uses. */
+const SERVICE_URL_HOST = "127.0.0.1";
+
+/**
+ * Expand a dev-target template (#0843): `{port}` for the target's OWN port,
+ * plus `{<token>.port}` / `{<token>.url}` for every companion service — the
+ * same expansion rule the preview supervisor applies (#0681).
+ *
+ * Service references go through {@link servicePortToken}/`canonicalServiceToken`
+ * exactly like validation does (#0843 review round 23), so every accepted
+ * spelling (`{API.port}`, `{api-v1.port}`, `{ api . url }`) resolves to the
+ * reserved port instead of surviving literally. Left untouched: the own-port
+ * token when no port was resolved (a target that never started keeps the value
+ * it declared), and any service token without a reserved port.
+ */
+export function expandServiceRefs(
+  template: string,
+  port: number | undefined,
+  tokens: Record<string, number>,
+): string {
+  const servicePorts = new Map<string, number>();
+  for (const [token, servicePort] of Object.entries(tokens)) {
+    servicePorts.set(canonicalServiceToken(token), servicePort);
+  }
+  let out = template.replace(
+    serviceRefRegex(),
+    (whole: string, rawToken: string, rawKind: string): string => {
+      const servicePort = servicePorts.get(canonicalServiceToken(rawToken));
+      if (servicePort === undefined) return whole;
+      return rawKind.toLowerCase() === "url"
+        ? `http://${SERVICE_URL_HOST}:${servicePort}`
+        : String(servicePort);
+    },
+  );
+  if (port !== undefined) out = out.replaceAll("{port}", String(port));
+  return out;
 }
