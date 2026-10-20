@@ -111,12 +111,17 @@ sources as VitePress, so there is no second manual to keep in sync. This repo's
 only recorded skips; both live in `.vitepress/llms-index.ts` next to the index
 template. `scripts/check-llms.ts` runs as part of `bun run build` and fails when
 a page is missing from the index, the full dump, or its raw copy — so a page
-cannot be added yet silently omitted from the agent outputs.
+cannot be added yet silently omitted from the agent outputs. It also resolves
+every docs link in `llms.txt`: a raw `/<route>.md` link must keep its HTML route
+built beside it, and no raw link may shadow a route that failed to build.
 
 `scripts/check-ai-agents.ts` runs in the same build. It compares the prompt in
 `/ai-agents` (and its raw Markdown copy) with the canonical
-`../agent/starter-prompt.md`, and fails if the guide loses one of its required
-agent links or its permission guidance.
+`../agent/starter-prompt.md`, compares the docs homepage preview with the same
+file, and fails if the guide loses one of its required agent links, an internal
+link or `#anchor` does not resolve, the portable skill has a broken relative
+link, or the docs-side install commands drift from
+`../agent/install-commands.ts`.
 
 The docs homepage's agent call to action is `.vitepress/theme/AgentPromptCta.vue`,
 registered in `.vitepress/theme/index.ts` and mounted from `index.md`. It imports
