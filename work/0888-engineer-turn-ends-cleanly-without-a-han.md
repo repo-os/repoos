@@ -39,3 +39,4 @@ Relevant code: src/server/agents.ts (`cleanup()`, `deliverQueuedMessages`, crash
 - 2026-10-20T23:43:00Z · body
 - 2026-10-20T23:46:24Z · body
 - 2026-10-20T23:52:12Z · message_queued at 2026-10-20T23:52:12.104Z
+- 2026-10-20T23:52:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
