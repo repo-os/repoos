@@ -3,6 +3,9 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — invalid service working directories can emit an unhandled spawn error; the required capture is also stale.
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -254,3 +257,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T10:30:55Z · body
 - 2026-10-20T10:31:21Z · status active→review
 - 2026-10-20T10:32:56Z · note: review pass 20: needs some work
+- 2026-10-20T10:32:56Z · needs_input
