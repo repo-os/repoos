@@ -2,7 +2,7 @@
 id: "0867"
 title: "repoos landable <id>: one command that runs the landing pre-checks"
 type: feature
-status: active
+status: review
 priority: p1
 area: [core, server]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/repoos-landable-id-one-command-that-runs
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:05:58Z"
-updated_at: "2026-10-20T18:18:58Z"
+updated_at: "2026-10-20T18:24:15Z"
 ---
 ## Problem
 Whether a task in review can actually land is decided by a handful of manual checks that live in driver prose and AGENTS.md: the lock sha equals the worktree HEAD, the worktree is clean, the branch merges with main (conflicts only in the task's own work/<id>-*.md), the diff has no repoos.toml and no other tasks' work/ files, and main has no blocking dirty files. Each driver re-does these by hand and gets them wrong sometimes. On 2026-10-20 #0860 had a "good to go" review on a HEAD that still conflicted with main in src/core/types.ts, and the conflict was only discovered when Move to done refused; reviews kept re-running on the same unchanged commit.
@@ -62,3 +62,5 @@ The close-out approval policy already computes most of these checks: `evaluateAp
 - 2026-10-20T18:04:11Z · body
 - 2026-10-20T18:07:29Z · body
 - 2026-10-20T18:18:58Z · handoff failed · remote validation failed: test failure: tests/send-to-engineer-note.test.ts > Send to engineer note dialog (#0295) > still sends when opening the dialog dismissed the drawer's modal, tests/task-drawer-ui-changes-rows.test.ts > Changes → UI changes rows (#0611) > orders UI changes toolbar actions with Add shot on the right (#0778), tests/task-drawer-ui-changes-rows.test.ts > Changes → UI changes rows (#0611) > shows a UI-changes empty state for an unmanaged, shot-less task on bee — fix it in the feature branch and re-run the gate
+- 2026-10-20T18:24:15Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/send-to-engineer-note.test.ts > Send to engineer note dialog (#0295) > still sends when opening the dialog dismissed the drawer's modal, tests/task-drawer-ui-changes-rows.test.ts > Changes → UI changes rows (#0611) > orders UI changes toolbar actions with Add shot on the right (#0778), tests/task-drawer-ui-changes-rows.test.ts > Changes → UI changes rows (#0611) > shows a UI-changes empty state for an unmanaged, shot-less task on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-20T18:24:15Z · note: handoff requested (cli)
