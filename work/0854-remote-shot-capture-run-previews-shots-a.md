@@ -3,12 +3,6 @@ id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: handoff finalization was interrupted (server reload) — restart work to hand off again
-debug_tldr: The RepoOS server reloaded during handoff finalization — restart the task and request handoff again.
-debug_tldr_at: "2026-10-20T11:58:11Z"
-debug_tldr_key: dev-error|handoff finalization was interrupted (server reload) — restart work to hand off again
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -16,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T12:01:15Z"
+updated_at: "2026-10-20T12:06:27Z"
 review_passes: 16
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -226,3 +220,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T12:01:12Z · status active→review
 - 2026-10-20T12:01:13Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d8861379a) during finalization (#0734)
 - 2026-10-20T12:01:15Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d8861379a) during finalization (#0734)
+- 2026-10-20T12:06:27Z · needs_input
