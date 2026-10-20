@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T08:30:23Z"
+updated_at: "2026-10-20T08:36:25Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: c901144ecd9535bba7464aede335bb76abcc67d2
 review_rounds: 2
@@ -87,3 +87,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T08:25:38Z · body
 - 2026-10-20T08:26:45Z · body
 - 2026-10-20T08:30:23Z · body
+- 2026-10-20T08:36:25Z · note: Remote capture proof attempt: direct TailscaleRunner capture for the current task SHA queued on bee while its validation slot was occupied, and was canceled before container execution. The local WebKit process count was 57 before and during the wait; no capture artifacts were returned. The required handoff proof is still outstanding.
