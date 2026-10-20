@@ -12,7 +12,7 @@ branch: feat/memory-pressure-guard-stop-starts-and-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:35Z"
-updated_at: "2026-10-20T23:52:01Z"
+updated_at: "2026-10-20T23:53:21Z"
 last_close_out_gate_ms: 1254629
 last_close_out_gate_at: "2026-10-20T23:52:01.204Z"
 review_passes: 1
@@ -76,4 +76,4 @@ Builds on #0836 (caps and pressure guard) and #0853 (preview teardown). Use `vm.
 - 2026-10-20T23:26:40Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (0f734ebb5) during finalization (#0734)
 - 2026-10-20T23:27:45Z · note: review pass 1: good to go
 - 2026-10-20T23:52:01Z · close-out gate completed in 1255s
-
+- 2026-10-20T23:53:21Z · status done→done, release:success
