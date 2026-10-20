@@ -90,3 +90,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T07:34:08Z · note: highlight [data-config-key="remindersDir"] matched nothing on /settings?tab=general
 - 2026-10-20T07:41:07Z · body
 - 2026-10-20T08:09:08Z · message_queued at 2026-10-20T08:09:08.167Z
+- 2026-10-20T08:09:08Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
