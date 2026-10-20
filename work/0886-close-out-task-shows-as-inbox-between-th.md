@@ -11,7 +11,7 @@ branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
-updated_at: "2026-10-20T20:54:35Z"
+updated_at: "2026-10-20T20:57:36Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/moot-failure-reconcile.test.ts > moot close-out failure reconciliation (#0289) > drops a failed close-out job whose task is already done instead of leaving a failed record on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 9d313878c6cd11f45b988a4c0adc12cfc00fbecf
 dev_error_count: 1
@@ -74,3 +74,4 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T20:48:49Z · note: handoff requested (ui-review)
 - 2026-10-20T20:52:56Z · body
 - 2026-10-20T20:54:35Z · body
+- 2026-10-20T20:57:36Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 4888f355 to e1bf06da) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
