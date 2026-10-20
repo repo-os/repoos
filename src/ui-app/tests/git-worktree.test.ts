@@ -1042,12 +1042,12 @@ describe("mergeBranch conflict reporting (#0271)", () => {
       const candPath = candidate.path!;
       git(candPath, ["reset", "--hard", "main"]);
 
-      // The three managed bookkeeping dirs are the close-out's `autoResolveOurs`
+      // The five managed bookkeeping dirs are the close-out's `autoResolveOurs`
       // set (bookkeepingKeepOursPrefixes), so a conflict here keeps main's copy
       // instead of blocking the merge.
       const result = await mergeBranch(candPath, "feat/task120", {
         autoResolve: ["dist/", "work/0120-some-task.md"],
-        autoResolveOurs: ["work/", "inputs/", "stories/"],
+        autoResolveOurs: ["work/", "inputs/", "stories/", "reminders/", "schedules/"],
       });
 
       expect(result.merged).toBe(true);
