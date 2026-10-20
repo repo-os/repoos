@@ -192,11 +192,12 @@ export function handoffTreeNote(
  */
 /**
  * The staleness verdict as the review should act on it (#0766): the mechanical
- * {@link handoffTreeStatus} comparison, softened only for HEAD movement that is
- * provably pure task bookkeeping — a diff of nothing but `work/*.md` files
- * between the captured tree and the reviewed one. Returns "stale" for every
- * git problem (an unreachable sha, a missing worktree), so an unclassifiable
- * drift is never presented as current evidence.
+ * {@link handoffTreeStatus} comparison, softened only for HEAD movement that
+ * changes bookkeeping paths: configured work, inputs, stories, reminders, and
+ * schedules directories, plus `.repoos/` and attachment paths. A diff that
+ * touches any other path is stale. Returns "stale" for every git problem (an
+ * unreachable sha, a missing worktree), so unclassifiable drift is never
+ * presented as current evidence.
  */
 export async function effectiveHandoffTreeStatus(
   diffRoot: string | null | undefined,
