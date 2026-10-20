@@ -1974,6 +1974,47 @@ describe("DevTargetManager with services (#0843)", () => {
     }
   });
 
+  // #0843 review round 26 — a companion service's output lives in its own log,
+  // so a service that dies on a bind error must still give its target the
+  // port-conflict summary, on the start path and the runtime path alike.
+  it.each([
+    {
+      label: "names the port in its output",
+      script:
+        "console.error('Error: listen EADDRINUSE: address already in use 127.0.0.1:4123'); process.exit(1)",
+      expectPort: 4123,
+    },
+    {
+      label: "names no port in its output",
+      script: "console.error('bind: Address already in use'); process.exit(1)",
+      expectPort: undefined,
+    },
+  ])("summarizes a service port clash on its target when the service $label", async (c) => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svc-clash-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [{ name: "api", command: `bun -e "${c.script}"` }],
+          targets: [{ name: "app", kind: "process" as const, command: "true", services: ["api"] }],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      const view = mgr.get("app");
+      expect(view?.status).toBe("failed");
+      expect(view?.failure?.kind).toBe("port-in-use");
+      const servicePort = view?.services?.[0]?.port;
+      expect(view?.failure?.port).toBe(c.expectPort ?? servicePort);
+      expect(view?.failure?.port).toBeDefined();
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   const stackLifecycleCases = [
     ...(["target", "service-a", "service-b"] as const).flatMap((member) =>
       (["starting", "after-ready"] as const).flatMap((phase) =>

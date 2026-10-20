@@ -51,6 +51,7 @@ import type { RepoOSConfig, DevServiceConfig, DevTargetConfig } from "../core/ty
 import {
   DEV_LOG_MAX_LINES,
   failureSummary,
+  hasPortInUseLine,
   PORT_IN_USE,
   type DevFailure,
 } from "../core/dev-failure.js";
@@ -465,6 +466,30 @@ export class DevTargetManager {
    */
   private pidOwner(pid: number): { target: string; stale: boolean } | null {
     return devPidOwner(this.states, new Set(this.running.keys()), pid);
+  }
+
+  /**
+   * The output and port a failed target's summary is built from (#0843 review
+   * round 26). A companion service's stdout/stderr lives in its OWN log, so a
+   * service that dies on a port clash (or any bind error) would otherwise leave
+   * the target with only a generic "service exited" reason. The summary reads
+   * the target's log plus every failed service's log, and a failed service's
+   * own port is the fallback hint when its output names no port. Both the
+   * start-time and the runtime failure paths come through here.
+   */
+  private failureEvidence(
+    t: DevTargetConfig,
+    state: DevTargetState,
+  ): { log: string[]; portHint: number | undefined } {
+    const failed = (state.services ?? []).filter(
+      (s) => s.status === "failed" || (s.error !== undefined && s.status !== "running"),
+    );
+    const log = [...failed.flatMap((s) => s.log), ...state.log];
+    const clashing = failed.find((s) => hasPortInUseLine(s.log));
+    return {
+      log,
+      portHint: clashing?.port ?? this.portHint(t, state),
+    };
   }
 
   /** The port a target is configured to use, when it declares one. */
@@ -1426,8 +1451,7 @@ export class DevTargetManager {
         ...failureSummary({
           label: view.label,
           error: state.error,
-          log: state.log,
-          portHint: this.portHint(t, state),
+          ...this.failureEvidence(t, state),
         }),
         canStopHolder: false,
       };
