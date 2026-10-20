@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-20T21:33:18Z"
-review_passes: 2
 id: "0886"
 title: "Close-out: task shows as inbox between the merge and 'set status done'; stamp done atomically and ignore engineer writes while closing"
 type: bug
@@ -13,6 +11,7 @@ branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
+updated_at: "2026-10-20T21:16:19Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -67,23 +66,4 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T20:12:56Z · body
 - 2026-10-20T20:18:48Z · needs_input
 - 2026-10-20T20:19:01Z · assigned_to
-- 2026-10-20T20:33:48Z · assigned_to
-- 2026-10-20T20:33:50Z · note: handoff requested (ui-review)
-- 2026-10-20T20:41:44Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/moot-failure-reconcile.test.ts > moot close-out failure reconciliation (#0289) > drops a failed close-out job whose task is already done instead of leaving a failed record on thinkpad — fix it in the feature branch and re-run the gate
-- 2026-10-20T20:48:49Z · note: handoff requested (ui-review)
-- 2026-10-20T20:52:56Z · body
-- 2026-10-20T20:54:35Z · body
-- 2026-10-20T20:57:36Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 4888f355 to e1bf06da) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-- 2026-10-20T20:57:41Z · body
-- 2026-10-20T21:07:40Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > returns 409 + needsCommit against a dirty main and never enqueues, tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > surfaces an uncommitted repoos.toml instead of silently committing it (#0819), tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > does not block close-out when the only dirty files on main are shot captures (#0713) on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-20T21:07:41Z · note: handoff requested (cli)
-- 2026-10-20T21:11:08Z · assigned_to
 - 2026-10-20T21:16:19Z · status active→review
-- 2026-10-20T21:16:20Z · note: shots: skipped — the diff (17 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-10-20T21:17:18Z · note: review pass 1: good to go
-- 2026-10-20T21:23:33Z · status review→active
-- 2026-10-20T21:23:38Z · note: handoff requested (ui-review)
-- 2026-10-20T21:32:15Z · status active→review
-- 2026-10-20T21:32:16Z · note: shots: skipped — the diff (17 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-10-20T21:33:18Z · note: review pass 2: good to go
-
