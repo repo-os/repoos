@@ -1167,7 +1167,7 @@ export const getTaskUiVerification: RouteHandler = async (ctx, _req, res, params
   // is pure task bookkeeping (#0766), which does not change what captures show.
   const reviewedHead = branchHeadForTask(config, task);
   const worktree = worktreeEvidenceSource(config, task);
-  const status = await effectiveHandoffTreeStatus(worktree, evidence, reviewedHead);
+  const status = await effectiveHandoffTreeStatus(worktree, evidence, reviewedHead, config);
   if (!evidence) return json(res, 200, { ok: true, evidence: null });
   return json(res, 200, {
     ok: true,
@@ -1378,7 +1378,7 @@ export async function automaticStaleEvidenceRefresh(
       const head = headResult.status === 0 ? headResult.stdout.trim() : "";
       if (!head) return false;
       const currentEvidence = readUiHandoffGateEvidence(config, task.id);
-      if ((await effectiveHandoffTreeStatus(worktree, currentEvidence, head)) !== "stale") {
+      if ((await effectiveHandoffTreeStatus(worktree, currentEvidence, head, config)) !== "stale") {
         return false;
       }
       const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
