@@ -8,10 +8,12 @@ area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-and-layout-reminders-and-sched
-cli_override: opencode
-model_override: opencode-go/deepseek-v4.1-flash
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T04:46:00Z"
+updated_at: "2026-10-20T07:34:08Z"
+handoff_signal_retry_count: 1
+last_check_failure: "repoos check at 2026-10-20T06:20:53.646Z: repoos check failed: ◆ Check plan"
 ---
 ## Problem
 (1) Close-out blocks on reminder files. Move to done refuses to publish when a reminder file is dirty on main: 'main has 1 uncommitted file at publish time, so the merge would abort: reminders/37fba592-....md'. Reminders (#0851) are server-written, repo-native files like tasks, inputs and stories, but the close-out only knows work/, inputs/ and stories/ as routine server-written churn (bookkeepingDirs / bookkeepingKeepOursPrefixes in src/server/integration-orchestrator.ts ~line 334; isNonCodePublishDrift; the dirty-main guard in docs/close-out-pipeline.md). Every time a reminder is created, snoozed or marked done while a close-out runs, an unrelated landing is blocked and needs a manual 'Commit & continue'. Scheduled-task definitions (schedules/, #0093) are stamped by the server (last_run_at, last_occurrence_key) and have the same problem.
@@ -33,6 +35,24 @@ B. Both directories are configurable and follow the layout: add a remindersDir s
 ## Notes for AI
 Extend bookkeepingDirs and its callers rather than adding a parallel list, and check every place that enumerates the three bookkeeping dirs (grep workDir/inputsDir/storiesDir in src/server and src/core). Keep the allowlist semantic and fail-closed (AGENTS.md 'Integration conflicts'). The default for remindersDir stays 'reminders' so existing behaviour is identical. Related: #0851 (reminders), #0093 (schedules), #0703 (the repoos/ layout leak). Do not touch repoos.toml itself. Source: Nick, 2026-10-20.
 
+## Shots
+```json
+[
+{
+"label": "Settings with configurable reminders directory",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": "[data-config-key=\"remindersDir\"]"
+},
+{
+"label": "Configuration docs for reminders and schedules paths",
+"target": "Docs site",
+"route": "/configuration",
+"highlight": "h2#layout-and-repository-paths"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-20T04:20:16Z · created · njachowski@gmail.com
@@ -47,3 +67,24 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T04:38:49Z · body
 - 2026-10-20T04:46:00Z · message_queued at 2026-10-20T04:46:00.799Z
 - 2026-10-20T04:46:00Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-20T05:34:14Z · message_delivered: 1 message(s)
+- 2026-10-20T05:51:46Z · body
+- 2026-10-20T06:20:58Z · message_queued at 2026-10-20T06:20:58.353Z
+- 2026-10-20T06:42:02Z · message_queued at 2026-10-20T06:42:02.729Z
+- 2026-10-20T06:42:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-20T06:54:07Z · message_delivered: 2 message(s)
+- 2026-10-20T06:54:31Z · cli_override, model_override
+- 2026-10-20T06:54:45Z · status active→ready
+- 2026-10-20T06:54:52Z · status ready→active
+- 2026-10-20T07:00:32Z · body
+- 2026-10-20T07:03:51Z · body
+- 2026-10-20T07:06:13Z · note: ui verification failed (2 issue(s)): [console] TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:59478/settings/index.md?import&t=1792479970731'. (http://127.0.0.1:59478/node_modules/vitepress/dist/client/app/router.js?v=a33402cb); [missing-target] Settings with configurable reminders directory: highlight [data-config-key="remindersDir"] matched nothing on /settings?tab=general (http://127.0.0.1:59478/settings?tab=general)
+- 2026-10-20T07:06:14Z · handoff failed · check failed after 2 automatic retries · ui verification failed (2 issue(s)): [console] TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:59478/settings/index.md?import&t=1792479970731'. (http://127.0.0.1:59478/node_modules/vitepress/dist/client/app/router.js?v=a33402cb); [missing-target] Settings with configurable reminders directory: highlight [data-config-key="remindersDir"] matched nothing on /settings?tab=general (http://127.0.0.1:59478/settings?tab=general)
+- 2026-10-20T07:08:30Z · body
+- 2026-10-20T07:10:41Z · body
+- 2026-10-20T07:11:21Z · note: highlight [data-config-key="remindersDir"] matched nothing on /settings?tab=general
+- 2026-10-20T07:13:49Z · body
+- 2026-10-20T07:23:02Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · ui verification failed (2 issue(s)): [console] TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:59478/settings/index.md?import&t=1792479970731'. (http://127.0.0.1:59478/node_modules/vitepress/dist/client/app/router.js?v=a33402cb); [missing-target] Settings with configurable reminders directory: highlight [data-config-key="remindersDir"] matched nothing on /settings?tab=general (http://127.0.0.1:59478/settings?tab=general) · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-20T07:27:55Z · needs_input
+- 2026-10-20T07:33:40Z · body
+- 2026-10-20T07:34:08Z · note: highlight [data-config-key="remindersDir"] matched nothing on /settings?tab=general
