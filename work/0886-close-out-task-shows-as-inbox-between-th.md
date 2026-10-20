@@ -12,8 +12,6 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
 updated_at: "2026-10-20T21:16:20Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 4888f355 to e1bf06da) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 4888f35575fbdbdcd27ee3ba9d0b8cdb33dd2646
 dev_error_count: 1
 ---
 ## Problem
@@ -81,3 +79,4 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T21:11:08Z · assigned_to
 - 2026-10-20T21:16:19Z · status active→review
 - 2026-10-20T21:16:20Z · note: shots: skipped — the diff (17 changed paths) touches no capture target's globs — no UI change to capture
+
