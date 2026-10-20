@@ -1,15 +1,15 @@
 ---
 id: "0872"
-title: "Review prompt: report the whole class of each bug once, check merge-ability, and flag evidence-only gaps (all projects)"
+title: "Default agent prompts for every project: reviewer (whole class, merge check, evidence gaps), engineer and PM learnings"
 type: chore
 status: inbox
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T12:06:43Z"
-updated_at: "2026-10-20T12:06:43Z"
+updated_at: "2026-10-20T12:18:19Z"
 ---
 ## Problem
 The review prompt built in src/server/review.ts (the shared part every project gets) does not tell the reviewer to find every instance of a bug class, to read earlier review reports, or to check that the branch merges with its base. The result on 2026-10-20: #0843 needed 22+ review passes, #0854 15+, #0861 13, each pass finding one more instance of the same class (service-lifecycle teardown, runner fallback and import safety, config-key registration), plus avoidable rounds on evidence-only gaps and a "good to go" on a commit that still conflicted with main (#0860). For RepoOS itself the reviewer role text in repoos.toml was updated by hand on 2026-10-20; every other project still gets the old behavior.
@@ -30,3 +30,4 @@ The repoos.toml reviewer instructions were already extended with the same guidan
 ## Activity
 
 - 2026-10-20T12:06:43Z · created · njachowski@gmail.com
+- 2026-10-20T12:18:19Z · title
