@@ -1877,12 +1877,15 @@ Stopping or restarting the target stops its services with it, and a start
 that fails at the target — its command cannot launch, or its readiness check
 never passes — tears the already-booted services down too. A service that
 crashes while the target runs (including after a reload handover, where the
-same PID-liveness check that re-adopts services catches the death) marks the
-target failed with the service's name in the reason, so the degradation is
-visible on the Dev page (each service has
-its own sub-row there — status, real port, PID, and its own output). The
-target's own crash tears its services down with it, so a companion can never
-outlive the stack it was booted for. Every
+PID-liveness check catches the death) tears down the whole stack: the target
+and every sibling service are stopped, their recorded PIDs are cleared, and
+the target is marked failed with the service's name in the reason. A target
+crash does the same cleanup and marks the target failed. These states remain
+visible on the Dev page (each service has its own sub-row there — status, real
+port, PID, and its own output). Startup or health-check failure also tears down
+every process that already started. Stop, restart, server shutdown, and a
+reload that cannot adopt a complete live stack use the same cleanup. A healthy
+stack adopted during reload keeps running and remains manageable. Every
 declared service also answers on `repoos dev <name> status|logs --service <name>`.
 
 For an `artifact` target, companion services stay available while the build
