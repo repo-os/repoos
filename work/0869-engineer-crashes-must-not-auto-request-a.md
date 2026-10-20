@@ -6,13 +6,13 @@ status: active
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/engineer-crashes-must-not-auto-request-a
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:17Z"
-updated_at: "2026-10-20T19:51:00Z"
+updated_at: "2026-10-20T19:51:05Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-20T18:37:06.042Z: repoos check failed: ◆ Check plan"
@@ -81,3 +81,4 @@ Look at the watchdog, the CTO restart-stalled-agent action, the handoff request 
 - 2026-10-20T19:46:51Z · status review→active
 - 2026-10-20T19:46:52Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-20T19:51:00Z · needs_input
+- 2026-10-20T19:51:05Z · assigned_to
