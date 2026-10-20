@@ -3,6 +3,9 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — required unknown-service validation is skipped when another target or service row is invalid.
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -207,3 +210,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T08:17:04Z · body
 - 2026-10-20T08:24:58Z · status active→review
 - 2026-10-20T08:28:09Z · note: review pass 14: needs some work
+- 2026-10-20T08:28:09Z · needs_input
