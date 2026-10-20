@@ -542,7 +542,7 @@ export function resolveCheckRunAttribution(
   const branchTaskId = taskIdFromWorktreeBranch(repoRoot, workDir);
   if (!callerTaskId) {
     if (!branchTaskId) return { taskId: null, phase };
-    return { taskId: branchTaskId, phase: "cli" };
+    return { taskId: branchTaskId, phase };
   }
   const envRoot = env.REPOOS_ROOT?.trim();
   const foreignRoot = !!envRoot && !sameCheckProject(envRoot, repoRoot);
@@ -556,7 +556,7 @@ export function resolveCheckRunAttribution(
       );
     }
     if (!branchTaskId) return { taskId: null, phase };
-    return { taskId: branchTaskId, phase: "cli" };
+    return { taskId: branchTaskId, phase };
   }
   return { taskId: callerTaskId, phase };
 }

@@ -184,6 +184,19 @@ describe("check store root derives from the worktree's project (#0870)", () => {
     ).toEqual({ taskId: null, phase: "pre-review" });
   });
 
+  it("falls back to this project's task branch, keeping the caller phase", () => {
+    const foreign = foreignProject();
+    const own = ownProject();
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    // The foreign id is rejected, but the worktree's own branch still
+    // identifies this project's task — and the run is still a pre-review one.
+    expect(resolveCheckRunAttribution(foreignEnv(foreign), own.worktree, "repoos/work")).toEqual({
+      taskId: "0870",
+      phase: "pre-review",
+    });
+    expect(err).toHaveBeenCalledWith(expect.stringContaining("does not belong to this project"));
+  });
+
   it("keeps a task id that really belongs to this project", () => {
     const own = ownProject();
     expect(
