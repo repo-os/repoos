@@ -36,6 +36,7 @@ import type {
   CtoState,
   Health,
   IntegrationPipelineSnapshot,
+  LandableResult,
   RemoteValidationEvent,
   RepoEvent,
   RepoIndex,
@@ -803,6 +804,8 @@ export const useRepoStore = defineStore("repo", () => {
   const diffs = ref<Record<string, { patch: string; truncated: boolean } | null>>({});
   /** Live merge conflict (task branch vs main) per task; undefined until first load. */
   const mergeConflicts = ref<Record<string, MergeConflictReport | undefined>>({});
+  /** Landing pre-checks (#0867) per task; undefined until first load. */
+  const landable = ref<Record<string, LandableResult | undefined>>({});
   /** Captured preview shots per task (#0582), hydrated on demand. */
   const shots = ref<Record<string, ShotMeta[]>>({});
   /** Area/target mismatch warning per task (#0582), from the shots response. */
@@ -3056,6 +3059,15 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   /**
+   * Seed landing pre-checks for one task without a request. Used by the
+   * shot-preview fixture (#0867): the capture board's fake task has no server
+   * record, so `/api/tasks/9999/landable` cannot answer.
+   */
+  function seedLandable(id: string, result: LandableResult): void {
+    landable.value = { ...landable.value, [id]: result };
+  }
+
+  /**
    * Seed a pending worktree-handoff conflict without a real 409. Used by the
    * shot-preview fixture (#0810): the modal only opens from a failed Move to
    * done, which a capture cannot trigger.
@@ -3165,6 +3177,27 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Get the full diff for a task, or undefined if not yet fetched. */
   const diffFor = (id: string) => diffs.value[id] ?? undefined;
+
+  /**
+   * Load the read-only landing pre-checks for a task (#0867). Best-effort:
+   * the drawer shows its checklist when this succeeds and simply omits it when
+   * the endpoint is unavailable (older server, transient failure).
+   */
+  async function loadLandable(id: string): Promise<void> {
+    if (isSeededShotFixtureTask(id)) return;
+    try {
+      const r = await api<LandableResult>(`/api/tasks/${id}/landable`);
+      // Older servers and generic test doubles answer 200 without the
+      // checklist shape; storing that would crash the drawer's template.
+      if (!r || !Array.isArray(r.checks) || !r.summary) return;
+      landable.value = { ...landable.value, [id]: r };
+    } catch {
+      /* endpoint unavailable — the checklist is advisory */
+    }
+  }
+
+  /** Latest landing pre-checks for a task, or undefined until loaded. */
+  const landableFor = (id: string) => landable.value[id] ?? undefined;
 
   /**
    * Load the task's captured preview shots and mismatch warning (#0582).
@@ -4167,6 +4200,7 @@ export const useRepoStore = defineStore("repo", () => {
     loadDiffStats,
     diffStatsFor,
     seedDiffStats,
+    seedLandable,
     seedWorktreeHandoffConflict,
     seedShotEvidence,
     taskUsage,
@@ -4181,6 +4215,9 @@ export const useRepoStore = defineStore("repo", () => {
     diffFor,
     loadMergeConflict,
     mergeConflicts,
+    loadLandable,
+    landable,
+    landableFor,
     loadShots,
     loadUiVerification,
     refreshEvidence,

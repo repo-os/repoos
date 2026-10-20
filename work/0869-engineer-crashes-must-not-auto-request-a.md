@@ -12,7 +12,11 @@ branch: feat/engineer-crashes-must-not-auto-request-a
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:17Z"
-updated_at: "2026-10-20T18:22:48Z"
+updated_at: "2026-10-20T19:59:05Z"
+review_rounds: 1
+review_passes: 1
+last_check_failure: "repoos check at 2026-10-20T18:37:06.042Z: repoos check failed: ◆ Check plan"
+dev_error_count: 1
 ---
 ## Problem
 On 2026-10-20 codex runs crashed intermittently ("agent exited with an error (codex) - Reading additional input from stdin", tool errors such as "write_stdin failed: Unknown process id") and the server then requested a handoff on the unfinished branch (#0843, #0860: HEAD unchanged, merge with main never done), leaving needs_input dev-error flags that stayed stale after the engineer resumed. The CTO's restart-stalled-agent action only restarts the SAME agent and model, so a crash-prone model keeps being chosen; a human or driver has to run `repoos override` and resend context. Reviews then ran on the unchanged commit and failed for reasons the engineer never saw.
@@ -55,3 +59,29 @@ Look at the watchdog, the CTO restart-stalled-agent action, the handoff request 
 - 2026-10-20T17:58:32Z · body
 - 2026-10-20T18:06:49Z · handoff failed · remote validation failed: test failure: tests/task-underspecified-flag.test.ts > underspecified flag on task start (#0613) > preserves an unrelated needs_input reason during start on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-20T18:22:48Z · body
+- 2026-10-20T18:37:03Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-10-20T18:39:18Z · status active→ready
+- 2026-10-20T18:39:30Z · status ready→active
+- 2026-10-20T18:44:51Z · body
+- 2026-10-20T18:47:11Z · body
+- 2026-10-20T18:52:36Z · message_queued at 2026-10-20T18:52:36.190Z
+- 2026-10-20T18:52:36Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-20T19:09:22Z · status active→ready
+- 2026-10-20T19:09:27Z · body
+- 2026-10-20T19:09:33Z · status ready→active
+- 2026-10-20T19:09:37Z · message_delivered: 1 message(s)
+- 2026-10-20T19:14:10Z · body
+- 2026-10-20T19:17:08Z · body
+- 2026-10-20T19:40:02Z · body
+- 2026-10-20T19:40:39Z · body
+- 2026-10-20T19:43:19Z · status active→review
+- 2026-10-20T19:43:19Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (9e02ec889) during finalization (#0734)
+- 2026-10-20T19:43:20Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (9e02ec889) during finalization (#0734)
+- 2026-10-20T19:46:51Z · note: review pass 1: needs some work
+- 2026-10-20T19:46:51Z · status review→active
+- 2026-10-20T19:46:52Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-20T19:51:00Z · needs_input
+- 2026-10-20T19:51:05Z · assigned_to
+- 2026-10-20T19:55:53Z · body
+- 2026-10-20T19:58:52Z · assigned_to
+- 2026-10-20T19:59:05Z · note: handoff requested (ui-review)

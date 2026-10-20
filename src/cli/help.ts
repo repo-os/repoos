@@ -150,6 +150,12 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--commit-dirty · --wait · --json · --port",
       },
       {
+        name: "landable",
+        usage: "landable <id> [--json] [--port N]",
+        desc: "Read-only landing pre-checks (verdict, lock, worktree, merge, scope, main) — exits non-zero when not landable (GET /api/tasks/:id/landable)",
+        flags: "--json · --port",
+      },
+      {
         name: "override",
         usage: "override <id> [--cli <name>] [--model <model>] [--json] [--port N]",
         desc: "Set per-task engineer overrides (PATCH /api/tasks/:id). --help prints the agent-driver budget allowlist",
