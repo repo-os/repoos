@@ -3,9 +3,6 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "by one target must map to distinct placeholder tokens: two names that"
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -280,3 +277,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T11:01:55Z · agent exited with an error (codex) · by one target must map to distinct placeholder tokens: two names that
 - 2026-10-20T11:01:55Z · status active→review
 - 2026-10-20T11:01:56Z · note: handoff requested (cli)
+- 2026-10-20T11:01:57Z · needs_input
