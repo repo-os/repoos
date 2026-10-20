@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T10:28:44Z"
+updated_at: "2026-10-20T10:28:45Z"
 review_passes: 7
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -139,3 +139,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T10:28:26Z · message_queued at 2026-10-20T10:28:26.804Z
 - 2026-10-20T10:28:44Z · status active→review
 - 2026-10-20T10:28:44Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (8337270ca) during finalization (#0734)
+- 2026-10-20T10:28:45Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (8337270ca) during finalization (#0734)
