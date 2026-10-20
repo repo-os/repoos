@@ -596,10 +596,14 @@ body, and shown as the **UI changes** sub-tab of the drawer's Changes tab. This
 is the default local attachment storage; an opt-in cloud provider is configured
 under [`storage.provider`](/configuration#attachment-storage).
 
-`repoos shot` always runs locally on the control-plane machine. The
+`repoos shot` follows the
 [`remoteValidation.browserCaptureMode`](/configuration#remote-validation)
-setting only affects the automatic handoff capture and UI verification; it never
-moves this CLI command to a runner.
+setting. In `runner-available` it captures on a runner when one is available
+and falls back to local capture with a note; `runner-only` reports the runner's
+failure instead of using the laptop. An absolute URL, or an explicit
+`--viewport`, `--wait`, or `--full-page`, stays local with a note because the
+runner's single-shot path captures the declared plan as-is. Command capture
+targets also stay local, since they run a command rather than a browser.
 
 ```bash
 repoos shot                          # capture the preview root for this task

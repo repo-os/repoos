@@ -38,7 +38,7 @@ vi.mock("../../server/shot-capture.js", () => ({
 }));
 
 import { captureDeclaredShot } from "../../server/shot-capture.js";
-import { deleteTaskShot, uploadTaskShot } from "../../server/routes/tasks.js";
+import { captureTaskShot, deleteTaskShot, uploadTaskShot } from "../../server/routes/tasks.js";
 
 const mockedCapture = vi.mocked(captureDeclaredShot);
 
@@ -608,6 +608,92 @@ describe("DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627
       param2: "missing.png",
     });
     expect(capture.statusCode).toBe(404);
+  });
+});
+
+describe("POST /api/tasks/:id/shots/capture — CLI capture honours browserCaptureMode (#0854)", () => {
+  function captureCtx() {
+    const log = vi.fn();
+    return {
+      ctx: {
+        ...makeCtx(),
+        logger: { task: log },
+      },
+      log,
+    };
+  }
+
+  it("captures through captureDeclaredShot and does NOT declare the shot", async () => {
+    mockedCapture.mockResolvedValue(SHOT_RESULT as never);
+    const before = readFileSync(task.absPath, "utf8");
+    const { ctx } = captureCtx();
+    const { capture, res } = resCapture();
+    await captureTaskShot(
+      ctx as never,
+      bodyReq({ entry: { target: "default", route: "/" } }),
+      res,
+      {
+        param1: task.id,
+      },
+    );
+    expect(capture.statusCode).toBe(201);
+    expect((capture.body as { shot: { name: string } }).shot.name).toBe("default-1.png");
+    // captureDeclaredShot (the shared policy path) was used — the same one the
+    // automatic handoff and the drawer's Add shot use.
+    expect(mockedCapture).toHaveBeenCalledOnce();
+    const passed = mockedCapture.mock.calls[0][3] as { route: string; provenance: unknown };
+    expect(passed.route).toBe("/");
+    expect(passed.provenance).toEqual({ kind: "declared" });
+    // An ad-hoc `repoos shot` capture must not append a declaration.
+    expect(readFileSync(task.absPath, "utf8")).toBe(before);
+  });
+
+  it("surfaces the runner-available fallback note to the CLI", async () => {
+    mockedCapture.mockImplementation(
+      async (_config, _task, _previews, _entry, _transport, onFallback) => {
+        onFallback?.(
+          "remote browser capture unavailable (runner offline); falling back to local capture",
+        );
+        return SHOT_RESULT as never;
+      },
+    );
+    const { ctx, log } = captureCtx();
+    const { capture, res } = resCapture();
+    await captureTaskShot(
+      ctx as never,
+      bodyReq({ entry: { target: "default", route: "/" } }),
+      res,
+      {
+        param1: task.id,
+      },
+    );
+    expect(capture.statusCode).toBe(201);
+    expect((capture.body as { note: string }).note).toContain("falling back to local capture");
+    expect(log).toHaveBeenCalledWith(
+      task.id,
+      "warn",
+      expect.stringContaining("falling back to local capture"),
+    );
+  });
+
+  it("returns a runner-only failure as a structured error, never a thrown request", async () => {
+    mockedCapture.mockResolvedValue({
+      error: "remote capture failed: runner-only browser capture failed: no runner",
+    } as never);
+    const { ctx } = captureCtx();
+    const { capture, res } = resCapture();
+    await captureTaskShot(
+      ctx as never,
+      bodyReq({ entry: { target: "default", route: "/" } }),
+      res,
+      {
+        param1: task.id,
+      },
+    );
+    expect(capture.statusCode).toBe(400);
+    expect((capture.body as { error: string }).error).toContain(
+      "runner-only browser capture failed",
+    );
   });
 });
 
