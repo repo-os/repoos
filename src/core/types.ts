@@ -482,6 +482,8 @@ export interface RepoOSConfig {
   inputsDir?: string;
   /** Git-tracked task schedule definitions (`schedules/*.md`). */
   schedulesDir?: string;
+  /** Directory holding reminder notes (`reminders/<uuid>.md`). Default "reminders". */
+  remindersDir?: string;
   /**
    * Automatic schedule ticks (boot catch-up and minute loop). Off by default so
    * serving a checkout never creates tasks until explicitly enabled in Settings.

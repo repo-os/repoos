@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -96,6 +96,32 @@ describe("schedules API", () => {
     );
     expect(preview.capture.status).toBe(200);
     expect((preview.capture.body as { preview: string }).preview).toBeTruthy();
+  });
+
+  it("honours a custom schedulesDir (#0860)", async () => {
+    root = mkdtempSync(join(tmpdir(), "repoos-schedules-"));
+    writeFileSync(join(root, "repoos.toml"), 'schedulesDir = "repoos/schedules"\n');
+    mkdirSync(join(root, "repoos", "schedules"), { recursive: true });
+    const ctx = makeCtx(root);
+    expect(ctx.config.schedulesDir).toBe("repoos/schedules");
+
+    const created = makeRes();
+    await postSchedule(
+      ctx,
+      jsonReq({
+        title: "Namespaced",
+        cadence: "daily",
+        timezone: "UTC",
+        timeOfDay: "09:00",
+        taskTitle: "Namespaced task",
+      }),
+      created.res,
+      {} as never,
+    );
+    expect(created.capture.status).toBe(201);
+    const id = (created.capture.body as { id: string }).id;
+    expect(existsSync(join(root, "repoos/schedules", `${id}-namespaced.md`))).toBe(true);
+    expect(existsSync(join(root, "schedules"))).toBe(false);
   });
 
   it("prevents duplicate occurrence locks", () => {
