@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-20T09:01:01Z"
-review_passes: 14
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
@@ -15,6 +13,8 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
+updated_at: "2026-10-20T09:01:47Z"
+review_passes: 14
 last_check_failure: "repoos check at 2026-10-20T06:48:16.394Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
 dev_error_count: 1
