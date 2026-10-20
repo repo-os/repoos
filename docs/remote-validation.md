@@ -83,6 +83,34 @@ for the test suite to be skipped. A failed handoff remote gate is recorded as a
 check run (Debug tab), and a failed CLI run awaits runner teardown before exiting
 so it cannot leak a warm VM. Repos with remote validation off behave as before.
 
+## Existing validation hook points
+
+### Remote browser evidence (#0854)
+
+Browser evidence is a separate workload from the check gate. The runner image
+must include Bun, this repository's development dependencies, Playwright,
+Playwright WebKit, and the UI's system fonts. It builds the bundled commit and
+runs the preview without login in its isolated checkout; fixture state and the
+existing shot-plan entries are inputs to the same capture and verification
+code used locally. The request is limited to the task bundle, task id, expected
+commit, mode, and shot-plan data. Environment variables, dotenv files, API
+keys, account credentials, and the control-plane config are never bundled.
+
+The capture worker writes a bounded artifact set (`shots/*.png`,
+`shots/shots.json`, and optionally `verification.json`). The control plane must
+validate names, types, task id, and total size before installing artifacts in
+the existing attachment/cache locations. In `local` mode capture stays on the
+control plane. `runner-available` prefers a runner and records a visible local
+fallback note when one is unavailable or fails. `runner-only` reports that
+failure without starting local browser work. Declared target misses preserve
+the local handoff failure; automatic misses remain warnings. The setting
+defaults to `local` until a runner image and artifact round trip have passed a
+real end-to-end proof. Interactive Preview remains local.
+
+The `scripts/remote-runner/capture-browser.ts` worker is the runner-side entry
+point. It reuses `runAutoShotCapture` and `runUiHandoffGate` rather than
+reimplementing fixtures or browser choreography.
+
 ## Hook points
 
 The pre-review, close-out and release gates share `runRemotePreReviewGate` (`src/server/pre-review-remote-gate.ts`); the legacy single-shot path does not:
