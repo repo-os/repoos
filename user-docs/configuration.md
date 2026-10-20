@@ -151,6 +151,8 @@ enabled = true
 stalenessMs = 300000
 autoTransition = true
 phantomDetectMs = 180000
+engineerCrashFailoverThreshold = 3
+engineerCrashFailoverWindowMs = 1800000
 
 [whisper]
 provider = "none"  # none | groq | openai
@@ -898,6 +900,8 @@ enabled = true
 stalenessMs = 300000
 autoTransition = true
 phantomDetectMs = 180000
+engineerCrashFailoverThreshold = 3
+engineerCrashFailoverWindowMs = 1800000
 
 [whisper]
 provider = "none"
@@ -931,6 +935,8 @@ agent is running, the task is paused, or its worktree has recent activity.
 | `watchdog.stalenessMs` | number | `300000` (5 min) | yes | Milliseconds of silence before an `active` task is a candidate-stuck. Minimum `60000`; smaller values are ignored. |
 | `watchdog.autoTransition` | boolean | `true` | yes | Whether a stuck task auto-transitions out of `active` — to `review` when its worktree holds work, else back to `ready`. When false, it is only flagged `needsInput`. |
 | `watchdog.phantomDetectMs` | number | `180000` (3 min) | yes | How long a runner entry may have no live engineer process and no live child before it is cleared and the same agent restarted. A live child (check, test, remote-validation wait) is never touched. Minimum `15000`; smaller values are ignored. Automatic restarts are limited to 3 per task per hour and written to the activity log and the Debug tab. `repoos start` on a phantom entry clears it immediately and starts. |
+| `watchdog.engineerCrashFailoverThreshold` | number | `3` | yes | Crashes or usage/auth failures for the same agent+model inside the failover window before RepoOS switches the task to the next unpaused `[[budget.allowlist]]` pair. Below it the engineer is resumed and the task stays `active`. Minimum `1`; a crash never requests a handoff by itself. A human-set task override is never replaced — that case is surfaced for a human. |
+| `watchdog.engineerCrashFailoverWindowMs` | number | `1800000` (30 min) | yes | How far back RepoOS counts engineer crashes for the failover threshold. A clean turn clears the count. Minimum `60000`; smaller values are ignored. |
 | `whisper.provider` | select | `none` | yes | Voice-to-text provider for text areas: `none`, `groq`, or `openai`. |
 | `whisper.apiKey` | string | `""` | **exception** | API key for the selected whisper provider. Accepted here, but a secret — prefer `REPOOS_WHISPER_KEY` in `.env`. |
 
