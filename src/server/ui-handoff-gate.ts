@@ -165,7 +165,13 @@ export function handoffTreeNote(
   evidence: Pick<UiHandoffGateEvidence, "sourceIdentity"> | null | undefined,
   currentHead: string | null | undefined,
 ): string {
-  if (status === "current") return "";
+  if (status === "current") {
+    const captured = evidence?.sourceIdentity?.trim();
+    const head = currentHead?.trim();
+    return captured && head && captured !== head
+      ? `The capture is from earlier tree ${captured}; only RepoOS bookkeeping changed before reviewed HEAD ${head}, so the evidence remains current.`
+      : "";
+  }
   if (status === "stale") {
     return (
       `STALE — handoff capture is for tree ${evidence?.sourceIdentity ?? "(unknown)"} ` +
@@ -199,7 +205,7 @@ export async function effectiveHandoffTreeStatus(
   config: RepoOSConfig,
 ): Promise<HandoffTreeStatus> {
   const status = handoffTreeStatus(evidence, currentHead);
-  if (status !== "stale") return status;
+  if (status === "unknown") return status;
   const captured = evidence?.sourceIdentity?.trim();
   const head = currentHead?.trim();
   if (!diffRoot || !captured || !head || captured === head) return status;

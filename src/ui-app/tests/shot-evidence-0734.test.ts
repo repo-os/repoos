@@ -193,6 +193,11 @@ describe("stale capture reuse (#0734)", () => {
     expect(reusableAutoCaptures(shots, "fp-1", "new")).toEqual([]);
   });
 
+  it("reuses a different commit when the caller proved only bookkeeping changed", () => {
+    const shots = [shot({ planFingerprint: "fp-1", sourceIdentity: "old" })];
+    expect(reusableAutoCaptures(shots, "fp-1", "new", new Set(["old"]))).toHaveLength(1);
+  });
+
   it("does NOT reuse a pre-#0734 capture with no fingerprint", () => {
     const shots = [shot({})];
     expect(reusableAutoCaptures(shots, "fp-1", "abc")).toEqual([]);
