@@ -1,19 +1,22 @@
 ---
-updated_at: "2026-10-20T20:08:49Z"
-review_passes: 2
 id: "0869"
 title: Engineer crashes must not auto-request a handoff; fail over to the next allowed agent
 type: bug
-status: review
+status: done
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+merged_commit: 0dcd711371e0af0a9b5bedbfa79ae714c46e2975
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineer-crashes-must-not-auto-request-a
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:17Z"
+updated_at: "2026-10-20T20:18:30Z"
+last_close_out_gate_ms: 138173
+last_close_out_gate_at: "2026-10-20T20:17:21.760Z"
+review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-10-20T18:37:06.042Z: repoos check failed: ◆ Check plan"
 dev_error_count: 1
@@ -90,4 +93,5 @@ Look at the watchdog, the CTO restart-stalled-agent action, the handoff request 
 - 2026-10-20T20:07:49Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (0dcd71137) during finalization (#0734)
 - 2026-10-20T20:07:50Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (0dcd71137) during finalization (#0734)
 - 2026-10-20T20:08:48Z · note: review pass 2: good to go
-
+- 2026-10-20T20:17:21Z · close-out gate completed in 138s
+- 2026-10-20T20:18:30Z · status review→done, release:success
