@@ -83,7 +83,7 @@ for the test suite to be skipped. A failed handoff remote gate is recorded as a
 check run (Debug tab), and a failed CLI run awaits runner teardown before exiting
 so it cannot leak a warm VM. Repos with remote validation off behave as before.
 
-## Existing validation hook points
+## Remote browser evidence design (#0854)
 
 ### Remote browser evidence (#0854)
 
@@ -96,7 +96,7 @@ code used locally. The request is limited to the task bundle, task id, expected
 commit, mode, and shot-plan data. Environment variables, dotenv files, API
 keys, account credentials, and the control-plane config are never bundled.
 
-The capture worker writes a bounded artifact set (`shots/*.png`,
+The intended capture worker writes a bounded artifact set (`shots/*.png`,
 `shots/shots.json`, and optionally `verification.json`). The control plane must
 validate names, types, task id, and total size before installing artifacts in
 the existing attachment/cache locations. In `local` mode capture stays on the
@@ -108,8 +108,10 @@ defaults to `local` until a runner image and artifact round trip have passed a
 real end-to-end proof. Interactive Preview remains local.
 
 The `scripts/remote-runner/capture-browser.ts` worker is the runner-side entry
-point. It reuses `runAutoShotCapture` and `runUiHandoffGate` rather than
-reimplementing fixtures or browser choreography.
+point prototype. It reuses `runAutoShotCapture` and `runUiHandoffGate` rather
+than reimplementing fixtures or browser choreography. The control-plane
+transport and call-site integration are still required before these policies
+describe active behavior.
 
 ## Hook points
 
