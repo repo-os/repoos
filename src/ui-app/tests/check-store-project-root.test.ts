@@ -207,6 +207,25 @@ describe("check store root derives from the worktree's project (#0870)", () => {
       ),
     ).toEqual({ taskId: "0870", phase: "pre-review" });
   });
+
+  it("keeps a managed task id when the project has no task files to inspect (#0695)", () => {
+    // A server-managed run sets REPOOS_AGENT/REPOOS_TASK_ID. A project without
+    // a work dir cannot prove the id foreign, so it must not drop attribution.
+    const root = mkdtempSync(join(tmpdir(), "repoos-0870-bare-"));
+    dirs.push(root);
+    expect(
+      resolveCheckRunAttribution({ REPOOS_AGENT: "1", REPOOS_TASK_ID: "0695" }, root, "work"),
+    ).toEqual({ taskId: "0695", phase: "pre-review" });
+  });
+
+  it("rejects a numeric id an inspectable work dir does not contain", () => {
+    const own = ownProject();
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(
+      resolveCheckRunAttribution({ REPOOS_CHECK_TASK_ID: "9999" }, own.main, "repoos/work"),
+    ).toEqual({ taskId: null, phase: "pre-review" });
+    expect(err).toHaveBeenCalledWith(expect.stringContaining("does not belong to this project"));
+  });
 });
 
 describe("cmdCheck writes only into the owning project (#0870)", () => {
