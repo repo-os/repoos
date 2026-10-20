@@ -64,8 +64,8 @@ can't assume any.
   `approval-policy`/`cto-actions` or enabling them in `repoos.toml`.
 - `adr/` — Architecture Decision Records. Immutable once accepted: a changed
   decision gets a new ADR, not an edit.
-- `native-auth.md`, `remote-validation.md`, `tunnel-registry.md`, `releases.md` —
-  subsystem guides.
+- `native-auth.md`, `remote-validation.md`, `tunnel-registry.md`, `releases.md`,
+  `memory-pressure-guard.md` — subsystem guides.
 - `ai-chat-standards.md` — the contract every AI chat surface in the web UI
   obeys (scroll-to-newest, remembered position, jump-to-latest, pulsing working
   indicator). Read before adding or editing an AI chat.

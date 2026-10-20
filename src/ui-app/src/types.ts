@@ -1744,7 +1744,59 @@ export interface SystemStats {
   processes: ProcessInfo[];
   serve: ServeScan | null;
   repo?: RepoStats | null;
+  /** Memory-first pressure verdict (#0871). Optional for older servers. */
+  pressure?: PressureSnapshot;
+  /** Top CPU / memory consumers across the machine (#0871). */
+  topProcesses?: TopProcesses;
+  /** Engineers across every registered RepoOS server on this machine (#0871). */
+  globalEngineers?: GlobalEngineerCount | null;
   serverPid: number;
+  at: string;
+}
+
+/** Mirrors `src/core/pressure-guard.ts` (#0871). */
+export interface PressureSnapshot {
+  level: "normal" | "warning" | "critical";
+  availableMemRatio: number;
+  loadPerCpu: number;
+  swapUsedBytes: number | null;
+  swapTotalBytes: number | null;
+  swapUsedRatio: number | null;
+  compressorBytes: number | null;
+  compressorRatio: number | null;
+  memoryFreePercent: number | null;
+  totalMemBytes: number;
+  source: "memory" | "load";
+  reasons: string[];
+  warnings: string[];
+  reason: string | null;
+}
+
+export interface TopProcessInfo {
+  pid: number;
+  command: string;
+  cpuPercent: number;
+  memBytes: number;
+  memPercent: number;
+  owner: "repoos" | "other";
+}
+
+export interface TopProcesses {
+  byCpu: TopProcessInfo[];
+  byMemory: TopProcessInfo[];
+}
+
+export interface GlobalEngineerCount {
+  own: number;
+  others: number;
+  servers: {
+    port: number;
+    pid: number;
+    root: string;
+    projectName: string;
+    activeEngineers: number;
+    own: boolean;
+  }[];
   at: string;
 }
 
