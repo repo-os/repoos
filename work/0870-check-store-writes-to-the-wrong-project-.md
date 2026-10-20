@@ -2,7 +2,7 @@
 id: "0870"
 title: Check store writes to the wrong project root (LightingAI wrote repoos/.repoos/checks.db into the RepoOS checkout)
 type: bug
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -63,4 +63,4 @@ Evidence: the SQLite file's rows (check_runs) and worktree column named a lighti
 - 2026-10-20T22:48:56Z · body
 - 2026-10-20T22:49:25Z · assigned_to
 - 2026-10-20T22:49:48Z · note: handoff requested (ui-review)
-- 2026-10-20T22:57:53Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-20T22:57:53Z · status active→review
