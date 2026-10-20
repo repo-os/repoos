@@ -11,7 +11,7 @@ branch: feat/p0-bookkeeping-only-commits-must-not-mak
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:47:38Z"
-updated_at: "2026-10-20T07:03:28Z"
+updated_at: "2026-10-20T07:06:06Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-20T06:56:38.269Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
@@ -37,6 +37,18 @@ Evidence is stale only when something that can change what the shots show has ch
 ## Notes for AI
 Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (src/server/worktree-handoff-guard.ts and the integration orchestrator's `bookkeepingDirs`) rather than adding a parallel path list. Check src/server/review.ts (~2262-2300), src/server/shot-capture.ts (`headIdentity`, `reusableAutoCaptures`), src/server/ui-handoff-gate.ts and src/ui-app/src/lib/handoff-verification.ts. Keep it fail-closed. Related: #0766 (refresh evidence on demand), #0734, #0600 (work/*.md-only commits tolerated at close-out), #0860 (reminders/schedules as bookkeeping). Do not touch repoos.toml. Source: Nick, 2026-10-20 (#0843 pass 10).
 
+## Shots
+```json
+[
+{
+  "label": "Changes tab with bookkeeping-current handoff evidence",
+  "target": "default",
+  "route": "/",
+  "state": "drawer:shotEvidence"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-20T04:47:38Z · created · njachowski@gmail.com
@@ -54,3 +66,4 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 - 2026-10-20T06:26:29Z · message_queued at 2026-10-20T06:26:29.923Z
 - 2026-10-20T06:56:38Z · message_delivered: 2 message(s)
 - 2026-10-20T07:03:28Z · body
+- 2026-10-20T07:06:06Z · body
