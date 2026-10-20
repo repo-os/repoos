@@ -1,31 +1,32 @@
 ---
-updated_at: "2026-10-20T12:45:57Z"
-review_passes: 18
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — `repoos shot` still captures locally, and the branch has a source-file merge conflict."
+status: done
 priority: p2
 area: [server, core]
-assigned_to: ai
+merged_commit: 3c6588a3c9e11e79ded61241bb8973248ed3a130
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
-model_override: openrouter/deepseek/deepseek-v4.1-flash
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
+updated_at: "2026-10-20T16:09:39Z"
+last_close_out_gate_ms: 61892
+last_close_out_gate_at: "2026-10-20T16:09:25.328Z"
+review_passes: 19
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 5
+dev_error_count: 6
 ---
 ## Problem
 Tests already run on Tailscale runners (docs/remote-validation.md), but everything browser-related still runs on the control-plane laptop: the per-task preview (`bun run build` with vue-tsc + vite, then `repoos serve`), Playwright/WebKit captures of declared and automatic shots, the handoff UI verification, `repoos shot` and `repoos verify`. With several engineers handing off at once this is the dominant local load (dozens of WebKit processes, repeated full UI builds, 20+ GB of memory pressure on 2026-10-18/19). `remoteValidation.offloadBrowserSteps` (#0836, default off) only moves the smoke and rendered-contrast gate steps, not shots or UI verification.
 
 ## Desired UX
 Shot capture and UI verification can run on a runner:
-- At handoff (and for `repoos shot` / `repoos verify`), when a runner with Playwright/WebKit is available, the control plane ships the task bundle (already done for tests), the runner builds the UI, starts the app in preview mode inside the runner's container, captures every declared and automatic shot and the UI-verification record using the same fixtures and step vocabulary, and returns the PNGs, `shots.json` and the verification record as artifacts. Results land in the same places (`work/.attachments/<id>/shots`, task activity) so the Changes tab and the reviewer see no difference.
+- At handoff (the automatic shots and UI verification only; manual `repoos shot` and `repoos verify` stay local by design, offloading them is #0874), when a runner with Playwright/WebKit is available, the control plane ships the task bundle (already done for tests), the runner builds the UI, starts the app in preview mode inside the runner's container, captures every declared and automatic shot and the UI-verification record using the same fixtures and step vocabulary, and returns the PNGs, `shots.json` and the verification record as artifacts. Results land in the same places (`work/.attachments/<id>/shots`, task activity) so the Changes tab and the reviewer see no difference.
 - A Settings control (Performance) selects where browser work runs: `local`, `runner when available` (default once proven), `runner only`. Local stays the fallback and stays under the existing Playwright cap.
 - The laptop no longer builds or serves a preview for routine handoff evidence; a human-requested interactive preview (the Preview button) stays local.
 
@@ -240,4 +241,34 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T12:43:12Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (7cfb09304) during finalization (#0734)
 - 2026-10-20T12:45:56Z · note: review pass 18: needs some work
 - 2026-10-20T12:45:57Z · needs_input
-
+- 2026-10-20T13:15:49Z · body: Desired UX (added 1, removed 1)
+- 2026-10-20T13:16:00Z · needs_input
+- 2026-10-20T13:16:01Z · status review→active
+- 2026-10-20T13:16:01Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
+- 2026-10-20T13:16:02Z · message_delivered: 1 message(s)
+- 2026-10-20T13:21:26Z · body
+- 2026-10-20T13:22:39Z · note: handoff requested (ui-review)
+- 2026-10-20T13:22:46Z · agent exited with an error (opencode) · handoff finalization was interrupted (server reload) — restart work to hand off again
+- 2026-10-20T13:23:38Z · note: handoff requested (ui-review)
+- 2026-10-20T13:25:15Z · note: handoff requested (ui-review)
+- 2026-10-20T13:27:51Z · note: handoff requested (ui-review)
+- 2026-10-20T13:35:30Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/toml-validate.test.ts > validateToml accepts > the repository's own repoos.toml on bee — fix it in the feature branch and re-run the gate
+- 2026-10-20T15:31:43Z · cli_override, model_override
+- 2026-10-20T15:31:54Z · needs_input
+- 2026-10-20T15:32:10Z · status active→ready
+- 2026-10-20T15:32:16Z · status ready→active
+- 2026-10-20T15:35:10Z · body
+- 2026-10-20T15:36:12Z · note: handoff requested (ui-review)
+- 2026-10-20T15:36:25Z · assigned_to
+- 2026-10-20T15:44:19Z · body
+- 2026-10-20T15:44:57Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 0ecb3b49 to 6e5df49a) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-20T15:45:08Z · note: handoff requested (ui-review)
+- 2026-10-20T15:53:30Z · body
+- 2026-10-20T15:53:32Z · body
+- 2026-10-20T15:53:38Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 6e5df49a to 5f847ccf) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-20T15:53:50Z · note: handoff requested (ui-review)
+- 2026-10-20T16:02:52Z · status active→review
+- 2026-10-20T16:02:54Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (3c6588a3c) during finalization (#0734)
+- 2026-10-20T16:04:28Z · note: review pass 19: good to go
+- 2026-10-20T16:09:25Z · close-out gate completed in 62s
+- 2026-10-20T16:09:39Z · status review→done, release:success

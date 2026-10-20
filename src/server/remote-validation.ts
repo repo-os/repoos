@@ -290,6 +290,15 @@ export interface ValidateOptions {
    * in-stage upload detail here. Not fired when the upload fails.
    */
   onUploadComplete?: () => void;
+  /** Run task screenshots/UI verification on the runner and return bounded artifacts. */
+  browserCapture?: {
+    operation: "shots" | "verify" | "both" | "single-shot";
+    branch: string;
+    taskId: string;
+    entry?: import("../core/shot-plan.js").CaptureEntry & { route: string };
+    /** Canonical task/config/plan the worker uses instead of the bundled copy (#0854). */
+    canonical?: import("../core/remote-capture.js").CanonicalCaptureContext;
+  };
 }
 
 /** One host's live state, surfaced by `/api/remote-validation/status` (#0521). */
@@ -1854,6 +1863,7 @@ export function validateScriptArgs(
   artifactsDir: string,
   changedRef?: string,
   mirrorPath?: string,
+  browserCapture?: ValidateOptions["browserCapture"],
 ): string {
   const parts = [VALIDATE_SCRIPT, remoteBundle, candidateSha, artifactsDir];
   const ref = changedRef?.trim();
@@ -1866,7 +1876,20 @@ export function validateScriptArgs(
   // Mirror path is appended last so an older installed validate.sh (which reads
   // only $4 as the changed ref) still receives a valid positional layout.
   if (mirrorPath) parts.push(shellQuote(mirrorPath));
-  return parts.join(" ");
+  const captureEnv = browserCapture
+    ? `REPOOS_BROWSER_CAPTURE_MODE=${shellQuote(browserCapture.operation)} ` +
+      `REPOOS_BROWSER_CAPTURE_TASK=${shellQuote(browserCapture.taskId)} ` +
+      `REPOOS_BROWSER_CAPTURE_BRANCH=${shellQuote(browserCapture.branch)} ` +
+      (browserCapture.entry
+        ? `REPOOS_BROWSER_CAPTURE_ENTRY=${shellQuote(JSON.stringify(browserCapture.entry))} `
+        : "") +
+      // The canonical task/config/plan travels as one JSON blob; the worker uses
+      // it instead of planning from the (possibly stale) bundled branch (#0854).
+      (browserCapture.canonical
+        ? `REPOOS_BROWSER_CAPTURE_CANONICAL=${shellQuote(JSON.stringify(browserCapture.canonical))} `
+        : "")
+    : "";
+  return `${captureEnv}${parts.join(" ")}`;
 }
 
 export function defaultRemoteExec(): RemoteExecDeps {
@@ -2659,6 +2682,7 @@ export class RemoteValidationRunner implements RemoteValidator {
           paths.artifacts,
           remoteTestRef ?? undefined,
           upload.mirrorPath || undefined,
+          opts.browserCapture,
         );
         run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
         if (
@@ -4721,6 +4745,7 @@ export class TailscaleRunner implements RemoteValidator {
             paths.artifacts,
             remoteTestRef ?? undefined,
             upload.mirrorPath || undefined,
+            opts.browserCapture,
           );
         const waitSecs =
           opts.deadlineAt !== undefined

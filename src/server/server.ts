@@ -177,6 +177,8 @@ import {
   resolveRepoGuide,
   runPrompt,
 } from "./agents.js";
+import { relaunchEngineerOnActiveTask } from "./engineer-launch.js";
+import { PHANTOM_RATE_LIMITED_NOTE, PHANTOM_RESTARTED_NOTE } from "./phantom-runner.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { runAreaMigrationPass } from "./area-migration.js";
 import { runTaskBodyMigrationPass } from "./task-body-migration.js";
@@ -220,6 +222,7 @@ import { PreviewManager, probePreview, type PreviewReconcileOptions } from "./pr
 import { DevTargetManager } from "./dev.js";
 import { ConfigWatcher } from "./config-watch.js";
 import { runAutoShotCapture } from "./shot-capture.js";
+import { remoteBrowserEvidenceTransport } from "./browser-capture-policy.js";
 import { ReviewManager } from "./review.js";
 import { notifyEngineerOfRequirementsChange } from "./requirements-notice.js";
 import { tryAutoApproveAfterCleanReview } from "./approval-policy.js";
@@ -1843,6 +1846,35 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         const updated = patchTaskFile(config, task.absPath, { note });
         index.applyFileChange(updated.absPath, { guarded: true });
       },
+      onPhantomRunner: (taskId, outcome) => {
+        const task = index.getTask(taskId);
+        const note =
+          outcome === "rate-limited" ? PHANTOM_RATE_LIMITED_NOTE : PHANTOM_RESTARTED_NOTE;
+        logger.task(taskId, "warn", note);
+        if (task) {
+          try {
+            const updated = patchTaskFile(config, task.absPath, { note });
+            index.applyFileChange(updated.absPath, { guarded: true });
+          } catch (err) {
+            logger.task(taskId, "warn", "phantom runner activity note failed", {
+              error: (err as Error).message,
+            });
+          }
+        }
+        // Automatic heal only. An explicit Start launches the turn itself.
+        if (outcome !== "restart") return;
+        const current = index.getTask(taskId);
+        if (!current || current.status !== "active" || current.isArchived) return;
+        void relaunchEngineerOnActiveTask(
+          { config, index, runner, logger },
+          current,
+          "The server restarted this engineer because its runner entry had no live process.",
+        ).then((result) => {
+          if (!result.ok) {
+            logger.task(taskId, "warn", "phantom runner restart failed", { reason: result.reason });
+          }
+        });
+      },
       onHandoff: async (request) => {
         let reachedFinalization = false;
         try {
@@ -2142,6 +2174,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         {
           config,
           previews,
+          remoteTransport: remoteBrowserEvidenceTransport(config, remoteValidator),
           rootLock,
           closingOut: () => closeOutLock.closingOut(),
           log: (id, level, message) => {
@@ -2158,6 +2191,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         {
           config,
           previews,
+          remoteTransport: remoteBrowserEvidenceTransport(config, remoteValidator),
           rootLock,
           closingOut: () => closeOutLock.closingOut(),
           log: (id, level, message) => {
@@ -2598,8 +2632,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // regular capture path `repoos shot` uses — nothing parallel to maintain.
   const scheduleAutoShotCapture = (task: Task): void => {
     if (!task.branch) return;
-    void runAutoShotCapture(config, task, previews, (id, level, message) =>
-      logger.task(id, level, message),
+    void runAutoShotCapture(
+      config,
+      task,
+      previews,
+      (id, level, message) => logger.task(id, level, message),
+      remoteBrowserEvidenceTransport(config, remoteValidator),
     ).catch((err: unknown) => {
       logger.system("warn", `automatic shot capture crashed for #${task.id}`, {
         error: err instanceof Error ? err.message : String(err),

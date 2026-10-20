@@ -255,6 +255,7 @@ const REMOTE_VALIDATION_RULES: Record<string, RemoteValidationRule> = {
   engineerSelfCheckRemote: { kind: "boolean" },
   useForReleases: { kind: "boolean" },
   offloadBrowserSteps: { kind: "boolean" },
+  browserCaptureMode: { kind: "string" },
   localFallback: { kind: "string" },
 };
 

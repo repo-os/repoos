@@ -2,21 +2,22 @@
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: active
+status: done
 priority: p2
 area: [core, web]
+merged_commit: 36662d045d56b904da2dbf1fc747eb2e41a23330
 assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-auto-ported-services-and-ser
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
-review_cli_override: github copilot
-review_model_override: default
+review_cli_override: cursor
+review_model_override: composer-2.5
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T13:05:32Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 3a1a8c45 to 96d84739) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 3a1a8c456c221f73fd307dcbce3f299c529e9eb1
-review_passes: 22
+updated_at: "2026-10-20T16:09:58Z"
+last_close_out_gate_ms: 495445
+last_close_out_gate_at: "2026-10-20T15:27:19.126Z"
+review_passes: 27
 last_check_failure: "repoos check at 2026-10-20T10:20:49.854Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 886d9960 to 9241cb9c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 dev_error_count: 4
@@ -322,3 +323,44 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T13:01:15Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 3a1a8c45 to 96d84739) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-10-20T13:02:56Z · body
 - 2026-10-20T13:05:32Z · note: handoff requested (ui-review)
+- 2026-10-20T13:16:10Z · status active→review
+- 2026-10-20T13:16:10Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (96d847392) during finalization (#0734)
+- 2026-10-20T13:16:12Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (96d847392) during finalization (#0734)
+- 2026-10-20T13:21:37Z · note: review pass 24: needs some work
+- 2026-10-20T13:21:37Z · needs_input
+- 2026-10-20T13:26:27Z · status review→active
+- 2026-10-20T13:32:40Z · note: handoff requested (ui-review)
+- 2026-10-20T13:40:52Z · status active→review
+- 2026-10-20T13:40:52Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (1bae36f68) during finalization (#0734)
+- 2026-10-20T13:40:53Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (1bae36f68) during finalization (#0734)
+- 2026-10-20T13:45:49Z · note: review pass 25: needs some work
+- 2026-10-20T13:45:49Z · needs_input
+- 2026-10-20T13:45:50Z · needs_input
+- 2026-10-20T14:18:55Z · status review→active
+- 2026-10-20T14:24:36Z · note: handoff requested (ui-review)
+- 2026-10-20T14:33:15Z · status active→review
+- 2026-10-20T14:33:16Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (5dfcb513a) during finalization (#0734)
+- 2026-10-20T14:33:17Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (5dfcb513a) during finalization (#0734)
+- 2026-10-20T14:35:53Z · note: review pass 26: needs some work
+- 2026-10-20T14:35:53Z · needs_input
+- 2026-10-20T14:35:53Z · needs_input
+- 2026-10-20T14:38:28Z · status review→active
+- 2026-10-20T14:40:42Z · note: handoff requested (ui-review)
+- 2026-10-20T14:48:44Z · status active→review
+- 2026-10-20T14:48:44Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (1be2a0c1a) during finalization (#0734)
+- 2026-10-20T14:48:46Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (1be2a0c1a) during finalization (#0734)
+- 2026-10-20T14:51:19Z · note: review pass 27: needs some work
+- 2026-10-20T14:51:19Z · needs_input
+- 2026-10-20T14:51:20Z · needs_input
+- 2026-10-20T15:08:25Z · status review→active
+- 2026-10-20T15:08:30Z · note: handoff requested (ui-review)
+- 2026-10-20T15:09:26Z · review_cli_override, review_model_override
+- 2026-10-20T15:16:56Z · status active→review
+- 2026-10-20T15:16:56Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (36662d045) during finalization (#0734)
+- 2026-10-20T15:16:59Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (36662d045) during finalization (#0734)
+- 2026-10-20T15:18:21Z · note: review pass 28: good to go
+- 2026-10-20T15:18:21Z · needs_input
+- 2026-10-20T15:27:19Z · close-out gate completed in 495s
+- 2026-10-20T15:28:11Z · status review→done, release:success
+- 2026-10-20T15:31:57Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-20T16:09:58Z · message_overdue: still queued after 60m without being delivered

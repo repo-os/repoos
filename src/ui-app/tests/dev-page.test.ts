@@ -208,6 +208,84 @@ describe("DevView layout and state (#0748)", () => {
     expect(apk.text()).toContain("dist/app.apk");
   });
 
+  // #0843 — companion services render as sub-rows with their own status,
+  // real port, PID and a collapsible output.
+  it("shows a target's companion services as sub-rows with their own state", async () => {
+    installFetch({
+      targets: [
+        target({
+          name: "app",
+          status: "running",
+          url: "http://localhost:5173",
+          port: 5173,
+          services: [
+            {
+              name: "api",
+              token: "api",
+              status: "running",
+              pid: 4242,
+              port: 41257,
+              url: "http://localhost:41257/api/health",
+              command: "bun --watch src/server/index.ts",
+              log: ["listening on :41257"],
+            },
+          ],
+        }),
+        target({ name: "solo", label: "Solo", status: "stopped" }),
+      ],
+    });
+    const wrapper = mountView();
+    await flush();
+
+    expect(wrapper.findAll(".dev-service")).toHaveLength(1);
+    const sub = wrapper.find(".dev-service");
+    expect(sub.find(".dev-service-name").text()).toBe("api");
+    expect(sub.text()).toContain("41257");
+    expect(sub.text()).toContain("PID 4242");
+    expect(sub.find(".dev-state-pill").text()).toContain("Running");
+    // The readiness URL resolves once the service has a real port.
+    expect(sub.find(".dev-open").attributes("href")).toBe("http://localhost:41257/api/health");
+    // A target with no services renders no sub-rows.
+    const solo = wrapper.findAll(".dev-card")[1];
+    expect(solo.find(".dev-service").exists()).toBe(false);
+  });
+
+  it("expands and collapses a service's own output independently of the target's", async () => {
+    installFetch({
+      targets: [
+        target({
+          name: "app",
+          status: "running",
+          services: [
+            {
+              name: "api",
+              token: "api",
+              status: "running",
+              port: 41257,
+              log: ["listening"],
+            },
+          ],
+        }),
+      ],
+    });
+    const wrapper = mountView();
+    await flush();
+    const sub = wrapper.find(".dev-service");
+    // Assert on the inline display v-show sets — `isVisible()` reads a stale
+    // computed style for VTU-mounted (detached) nodes in jsdom (see the
+    // target-log collapse test below for the same caveat).
+    const svcDisplay = () => (sub.find(".dev-service-log").element as HTMLElement).style.display;
+    const svcToggle = sub.find(".dev-log-toggle");
+    expect(svcDisplay()).toBe("none");
+    await svcToggle.trigger("click");
+    await flush();
+    expect(svcDisplay()).toBe("");
+    // The chevron and expanded state track the toggle.
+    expect(svcToggle.attributes("aria-expanded")).toBe("true");
+    // A target with no log renders no toggle of its own.
+    expect(wrapper.find(".dev-log-head").exists()).toBe(false);
+  });
+
   it("renders a process target with no URL link, its state and its log", async () => {
     installFetch({
       targets: [

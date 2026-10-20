@@ -623,6 +623,17 @@ export async function cmdPreview(args: string[]): Promise<number> {
   }
 }
 
+/** One companion service as the dev-target API returns it (#0843). */
+interface DevServiceLike {
+  name: string;
+  status: string;
+  error?: string;
+  pid?: number;
+  port?: number;
+  url?: string;
+  log?: string[];
+}
+
 export async function cmdDev(args: string[]): Promise<number> {
   const { rest, opts, error } = parseCommonFlags(args);
   if (error) {
@@ -631,7 +642,22 @@ export async function cmdDev(args: string[]): Promise<number> {
   }
   // `repoos dev list` · `repoos dev <name> start|stop|restart` · `repoos dev <name>`
   // The command run is ALWAYS the one declared in repoos.toml, resolved by name.
-  const sub = rest[0];
+  // #0843: `--service <name>` scopes status/logs at one companion service.
+  let service: string | undefined;
+  const positional: string[] = [];
+  for (let i = 0; i < rest.length; i++) {
+    const a = rest[i]!;
+    if (a === "--service") {
+      service = rest[++i];
+      if (!service) {
+        printErr("--service requires a service name");
+        return 1;
+      }
+      continue;
+    }
+    positional.push(a);
+  }
+  const sub = positional[0];
   if (!sub || sub === "list" || sub === "status") {
     const api = new RepoOsApi({ port: opts.port });
     try {
@@ -645,6 +671,7 @@ export async function cmdDev(args: string[]): Promise<number> {
           url?: string;
           artifactPath?: string;
           error?: string;
+          services?: DevServiceLike[];
         }>;
         errors?: string[];
       };
@@ -674,6 +701,23 @@ export async function cmdDev(args: string[]): Promise<number> {
           `  ${dot} ${t.name} ${c.dim(`[${t.kind}] ${t.status}`)}${target ? c.dim(` ${target}`) : ""}`,
         );
         if (t.error) console.log(c.red(`      ${t.error}`));
+        // #0843: companion services render as sub-rows with their own state —
+        // the real port the service was given, not a placeholder.
+        for (const s of t.services ?? []) {
+          const sDot =
+            s.status === "running"
+              ? c.green("●")
+              : s.status === "failed"
+                ? c.red("●")
+                : s.status === "starting"
+                  ? c.yellow("●")
+                  : c.dim("○");
+          const port = typeof s.port === "number" ? ` :${s.port}` : "";
+          console.log(
+            `    ${sDot} ${c.dim("service")} ${s.name}${port} ${c.dim(String(s.status))}`,
+          );
+          if (s.error) console.log(c.red(`        ${s.error}`));
+        }
       }
       return 0;
     } catch (e) {
@@ -683,11 +727,11 @@ export async function cmdDev(args: string[]): Promise<number> {
   }
 
   const name = sub;
-  const action = rest[1] ?? "status";
+  const action = positional[1] ?? "status";
   const valid = ["start", "stop", "restart", "status", "logs"];
   if (!valid.includes(action)) {
     printErr(
-      "Usage: repoos dev [list] · repoos dev <name> start|stop|restart|status|logs [--json] [--port N]",
+      "Usage: repoos dev [list] · repoos dev <name> start|stop|restart|status|logs [--service <name>] [--json] [--port N]",
     );
     return 1;
   }
@@ -721,10 +765,32 @@ export async function cmdDev(args: string[]): Promise<number> {
           status?: string;
           error?: string;
           log?: string[];
+          services?: DevServiceLike[];
         };
       };
       if (opts.json) {
         printJson(data);
+        return 0;
+      }
+      // #0843: `--service <name>` shows one companion service instead of the
+      // target — its state and, for `logs`, its own captured output.
+      if (service) {
+        const svc = data.target?.services?.find((s) => s.name === service);
+        if (!svc) {
+          printErr(
+            `dev target "${name}" has no service "${service}"` +
+              (data.target?.services?.length
+                ? ` (declared: ${data.target.services.map((s) => s.name).join(", ")})`
+                : " (no services declared)"),
+          );
+          return 1;
+        }
+        console.log(c.dim(`  ${name}/${service}: ${svc.status}`));
+        if (typeof svc.port === "number") console.log(c.dim(`  port ${svc.port}`));
+        if (svc.error) console.log(c.red(`  ${svc.error}`));
+        if (action === "logs") {
+          for (const line of svc.log ?? []) console.log(`  ${line}`);
+        }
         return 0;
       }
       console.log(c.dim(`  ${name}: ${data.target?.status ?? "unknown"}`));

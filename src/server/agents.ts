@@ -5210,6 +5210,15 @@ export class AgentRunner {
   private readonly onTaskFilePatched?: (absPath: string) => void;
   /** Activity log hook for orphan engineer adopt/stop (#0837). */
   private readonly onOrphanEngineerNote?: (taskId: string, note: string) => void;
+  /**
+   * Phantom runner row cleared (#0863). `restart` asks the server to launch
+   * the same engineer; `rate-limited` only records the note; `cleared-for-start`
+   * means an explicit Start is about to launch, so the server must not launch twice.
+   */
+  private readonly onPhantomRunner?: (
+    taskId: string,
+    outcome: "restart" | "rate-limited" | "cleared-for-start",
+  ) => void;
 
   /**
    * `opts.stallTimeoutMs` overrides the 90s default (tests use a small value
@@ -5237,6 +5246,11 @@ export class AgentRunner {
       onDiagnosableFailure?: (taskId: string, reason: string) => void;
       /** Records `adopted` / `stopped orphaned engineer pid N` on the task (#0837). */
       onOrphanEngineerNote?: (taskId: string, note: string) => void;
+      /** Phantom row cleared — restart, or record a rate-limit note (#0863). */
+      onPhantomRunner?: (
+        taskId: string,
+        outcome: "restart" | "rate-limited" | "cleared-for-start",
+      ) => void;
       logger?: Logger;
     } & AgentRunnerOptions = {},
   ) {
@@ -5251,6 +5265,7 @@ export class AgentRunner {
     this.getTask = opts.getTask;
     this.onTaskFilePatched = opts.onTaskFilePatched;
     this.onOrphanEngineerNote = opts.onOrphanEngineerNote;
+    this.onPhantomRunner = opts.onPhantomRunner;
     this.db = getRepoOSDb(config.root);
     this.cacheDir = join(config.root, config.cacheDir);
     this.sessionsDir = join(this.cacheDir, "sessions");
@@ -5820,6 +5835,14 @@ export class AgentRunner {
 
   isRunning(taskId: string): boolean {
     return this.entries.has(taskId);
+  }
+
+  /**
+   * Name main's CTO relaunch path calls. Same as {@link releasePhantomRunner}:
+   * a dead row is cleared, a live process is left in place.
+   */
+  releasePhantomForStart(taskId: string): boolean {
+    return this.releasePhantomRunner(taskId);
   }
 
   /**
@@ -7959,18 +7982,24 @@ export class AgentRunner {
     if (kind === "watching" || kind === "live") return false;
     if (kind === "rate-limited") {
       this.discardPhantom(taskId, entry, PHANTOM_RATE_LIMITED_NOTE);
+      this.onPhantomRunner?.(taskId, "rate-limited");
       return true;
     }
     this.phantomHeals.set(taskId, [...recentPhantomHeals(stamps, nowMs), nowMs]);
     const branch = entry.branch;
     const workdir = entry.workdir;
     this.discardPhantom(taskId, entry, PHANTOM_RESTARTED_NOTE);
-    const task = this.getTask?.(taskId);
-    const agent = task ? resolveAgentForTask(this.config, task) : undefined;
-    if (task && agent && branch) {
-      queueMicrotask(() => {
-        this.start(task, branch, agent, { cwd: workdir });
-      });
+    if (this.onPhantomRunner) {
+      // The server relaunches through the same engineer path as a CTO restart.
+      this.onPhantomRunner(taskId, "restart");
+    } else {
+      const task = this.getTask?.(taskId);
+      const agent = task ? resolveAgentForTask(this.config, task) : undefined;
+      if (task && agent && branch) {
+        queueMicrotask(() => {
+          this.start(task, branch, agent, { cwd: workdir });
+        });
+      }
     }
     return true;
   }
