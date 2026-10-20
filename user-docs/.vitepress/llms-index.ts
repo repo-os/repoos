@@ -70,7 +70,14 @@ export function discoverDocsPages(docsRoot: string): DocsPage[] {
 
   const walk = (dir: string): void => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name === "node_modules" || entry.name === "dist" || entry.name.startsWith(".")) {
+      // `public/` is copied verbatim, not rendered as pages; hidden dirs hold
+      // VitePress state (`.vitepress/`, caches).
+      if (
+        entry.name === "node_modules" ||
+        entry.name === "dist" ||
+        entry.name === "public" ||
+        entry.name.startsWith(".")
+      ) {
         continue;
       }
       const absolute = path.join(dir, entry.name);
