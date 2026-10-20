@@ -25,8 +25,9 @@ small and fetch more only when it needs it:
 - **The docs index next, only if needed.** [docs.repoos.org/llms.txt](/llms.txt)
   lists every page with a link to its raw Markdown. For the whole manual in one
   fetch, use [llms-full.txt](/llms-full.txt).
-- **One starter prompt.** The text below is the only copy: the landing page and
-  the docs homepage render their copy button from the same file.
+- **One starter prompt.** The text below is the only copy. Every surface that
+  offers to copy it reads the same canonical file, so there is no second version
+  to drift.
 - **One portable skill.** The
   [RepoOS Agent Skill](https://github.com/repo-os/repoos/tree/main/agent/skill)
   follows the [Agent Skills specification](https://agentskills.io/specification).
@@ -41,9 +42,8 @@ an agent can fetch the source instead of the rendered HTML.
 
 ## The starter prompt
 
-Paste this into your agent, or use the copy button on
-[repoos.org](https://repoos.org). It tells the agent what to read, what to
-inspect, and when to ask.
+Copy this into your agent. It tells the agent what to read, what to inspect, and
+when to ask.
 
 <<< ../agent/starter-prompt.md
 
