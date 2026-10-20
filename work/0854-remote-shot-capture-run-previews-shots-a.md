@@ -2,14 +2,14 @@
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [server, core]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-19T14:24:21Z"
+updated_at: "2026-10-20T04:26:47Z"
 ---
 ## Problem
 Tests already run on Tailscale runners (docs/remote-validation.md), but everything browser-related still runs on the control-plane laptop: the per-task preview (`bun run build` with vue-tsc + vite, then `repoos serve`), Playwright/WebKit captures of declared and automatic shots, the handoff UI verification, `repoos shot` and `repoos verify`. With several engineers handing off at once this is the dominant local load (dozens of WebKit processes, repeated full UI builds, 20+ GB of memory pressure on 2026-10-18/19). `remoteValidation.offloadBrowserSteps` (#0836, default off) only moves the smoke and rendered-contrast gate steps, not shots or UI verification.
@@ -32,3 +32,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 ## Activity
 
 - 2026-10-19T14:24:21Z · created · njachowski@gmail.com
+- 2026-10-20T04:26:47Z · status inbox→ready
