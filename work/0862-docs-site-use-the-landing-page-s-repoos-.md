@@ -2,14 +2,14 @@
 id: "0862"
 title: "Docs site: use the landing page's RepoOS logo (theme-aware, no extra border)"
 type: chore
-status: inbox
+status: ready
 priority: p2
 area: [docs, landing]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-20T06:23:25Z"
+updated_at: "2026-10-20T11:25:37Z"
 ---
 ## Problem
 The docs site (VitePress, `user-docs/`) and the landing page (`landing/`) show the RepoOS logo differently. In the attached screenshots (in order: 1 landing Gruvbox dark, 2 landing Gruvbox light, 3 landing Classic light, 4 docs site, 5 landing Classic dark) the landing logo is a plain hexagon with the three-bar mark that **changes with the theme**: its stroke gradient and bar colours follow the theme tokens in Gruvbox, Classic, light and dark. The docs site logo (4) sits inside an **extra rounded-square border/box** and stays one fixed colour set whatever theme or appearance is selected.
@@ -44,3 +44,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 
 - 2026-10-20T06:23:23Z · created · njachowski@gmail.com
 - 2026-10-20T06:23:25Z · screenshots
+- 2026-10-20T11:25:37Z · status inbox→ready
