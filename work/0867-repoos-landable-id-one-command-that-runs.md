@@ -77,3 +77,4 @@ The close-out approval policy already computes most of these checks: `evaluateAp
 - 2026-10-20T19:18:02Z · body
 - 2026-10-20T19:30:34Z · body
 - 2026-10-20T19:31:53Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-20T19:31:53Z · message_delivered: 1 message(s)
