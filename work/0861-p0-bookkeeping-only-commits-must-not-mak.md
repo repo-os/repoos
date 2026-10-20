@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-20T06:56:38.269Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0861"
 title: "P0: bookkeeping-only commits must not make handoff evidence stale or block a good review"
 type: bug
@@ -51,3 +53,4 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 - 2026-10-20T06:25:12Z · body
 - 2026-10-20T06:26:29Z · message_queued at 2026-10-20T06:26:29.923Z
 - 2026-10-20T06:56:38Z · message_delivered: 2 message(s)
+
