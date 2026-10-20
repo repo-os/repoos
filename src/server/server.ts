@@ -227,6 +227,7 @@ import { DevTargetManager } from "./dev.js";
 import { ConfigWatcher } from "./config-watch.js";
 import { runAutoShotCapture } from "./shot-capture.js";
 import { remoteBrowserEvidenceTransport } from "./browser-capture-policy.js";
+import { REVIEW_RUN_TRIGGERS } from "./review-automation.js";
 import { ReviewManager } from "./review.js";
 import { notifyEngineerOfRequirementsChange } from "./requirements-notice.js";
 import { tryAutoApproveAfterCleanReview } from "./approval-policy.js";
@@ -376,6 +377,7 @@ import {
   getDiffStatsForTask,
   getDiffForTask,
   getMergeConflictForTask,
+  getTaskLandable,
   getWorktreeDirtyForTask,
   getTaskFile,
   taskAction,
@@ -1816,7 +1818,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
       if (pendingReview.delete(e.id)) {
         const task = index.getTask(e.id);
-        if (task?.status === "review" && !task.isArchived) void reviews.run(task);
+        if (task?.status === "review" && !task.isArchived) {
+          void reviews.run(task, { trigger: REVIEW_RUN_TRIGGERS.ENGINEER_EXITED_PENDING });
+        }
       }
       // #0271 follow-up: when the engineer session `scheduleMergeConflictRetry`
       // resumed finishes its turn, automatically re-enqueue the close-out —
@@ -2963,7 +2967,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // may be newer than HEAD because the engineer's change is still being
     // committed, or because the task needed a non-source fix. The index emits
     // this transition once; ReviewManager rejects an already-running review.
-    void reviews.run(task);
+    void reviews.run(task, { trigger: REVIEW_RUN_TRIGGERS.STATUS_ENTER_REVIEW });
   };
 
   // The file-watcher path (a direct task-file edit on disk) bypasses
@@ -3343,6 +3347,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff$/, getDiffForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/merge-conflict$/, getMergeConflictForTask);
+  // Read-only landing pre-checks (#0867), shared with the approval policy.
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/landable$/, getTaskLandable);
   // Uncommitted files in a task's worktree — fetched by the restart dialog so
   // "Start clean" can name what it would discard (#0512).
   router.register("GET", /^\/api\/tasks\/([^/]+)\/worktree-dirty$/, getWorktreeDirtyForTask);

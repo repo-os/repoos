@@ -287,6 +287,7 @@ Crash.
   };
   return {
     root,
+    bin,
     task,
     taskPath,
     config,
@@ -554,6 +555,65 @@ describe("AgentRunner crash matrix (#0869)", () => {
   );
 });
 
+const RECORDING_CLEAN_SCRIPT = `#!/usr/bin/env node
+const fs = require("fs");
+if (process.env.REPOOS_ARGV_LOG) {
+  fs.writeFileSync(process.env.REPOOS_ARGV_LOG, process.argv.slice(2).join("\\n"));
+}
+process.stdout.write("working\\n");
+process.exit(0);
+`;
+
+describe("AgentRunner crash queue handoff (#0869)", () => {
+  it("delivers a message queued during the crashed turn to the resumed turn", async () => {
+    const fx = runnerFixture(CRASH_DELAYED_SCRIPT);
+    const argvLog = join(fx.root, "argv.log");
+    const previousLog = process.env.REPOOS_ARGV_LOG;
+    process.env.REPOOS_ARGV_LOG = argvLog;
+    try {
+      const crashes: unknown[] = [];
+      let progress = 0;
+      const runner = new AgentRunner(fx.config, () => {}, {
+        stallTimeoutMs: 10_000,
+        onEngineerCrash: (_taskId, info) => crashes.push(info),
+        onEngineerProgress: () => {
+          progress++;
+        },
+      });
+      expect(runner.start(fx.task, "feat/0869-crash", fx.agent, { cwd: fx.root }).ok).toBe(true);
+      await waitFor(() => runner.stats("0869").lastOutputAt != null, "engineer output");
+      expect(runner.send("0869", "queued follow-up", fx.agent)).toMatchObject({
+        ok: true,
+        queued: true,
+      });
+      await waitFor(() => crashes.length === 1, "crash callback");
+      expect(runner.hasQueuedMessages("0869")).toBe(true);
+
+      // The recovery relaunch uses a fresh CLI process in the same session and
+      // must carry the queued message into its mission text.
+      writeFileSync(join(fx.bin, "opencode"), RECORDING_CLEAN_SCRIPT, { mode: 0o755 });
+      const resumed = runner.start(fx.task, "feat/0869-crash", fx.agent, {
+        cwd: fx.root,
+        fromCrashRecovery: true,
+        resumePreamble: "resume context",
+      });
+      expect(resumed.ok).toBe(true);
+      await waitFor(() => progress === 1, "resumed turn progress");
+      expect(runner.hasQueuedMessages("0869")).toBe(false);
+      expect(readFileSync(argvLog, "utf8")).toContain("queued follow-up");
+    } finally {
+      if (previousLog === undefined) delete process.env.REPOOS_ARGV_LOG;
+      else process.env.REPOOS_ARGV_LOG = previousLog;
+      fx.restorePath();
+    }
+  });
+});
+
+const CLEAN_DELAYED_SCRIPT = `#!/usr/bin/env node
+process.stdout.write("working\\n");
+setTimeout(() => process.exit(0), 400);
+`;
+
 describe("AgentRunner crash handling (#0869)", () => {
   it("reports a crash without a handoff signal once and suppresses the handoff", async () => {
     const fx = runnerFixture(CRASH_SCRIPT);
@@ -628,13 +688,17 @@ describe("AgentRunner crash handling (#0869)", () => {
     }
   });
 
-  it("lifts the crash guard on the resumed turn's first output, so its own review request is honored", async () => {
+  it("keeps the crash guard through the resumed turn until it ends cleanly", async () => {
     const fx = runnerFixture(CRASH_DELAYED_SCRIPT);
     try {
       const crashes: unknown[] = [];
+      let progress = 0;
       const runner = new AgentRunner(fx.config, () => {}, {
         stallTimeoutMs: 10_000,
         onEngineerCrash: (_taskId, info) => crashes.push(info),
+        onEngineerProgress: () => {
+          progress++;
+        },
       });
       runner.start(fx.task, "feat/0869-crash", fx.agent, { cwd: fx.root });
       await waitFor(() => crashes.length === 1, "crash callback");
@@ -647,16 +711,20 @@ describe("AgentRunner crash handling (#0869)", () => {
         defaultStatus: fx.config.defaultStatus,
         defaultAssignee: fx.config.defaultAssignee,
       });
-      // A crash-recovery relaunch keeps the guard through the spawn so the
-      // crashed turn's stale status write is still rejected...
+      writeFileSync(join(fx.bin, "opencode"), CLEAN_DELAYED_SCRIPT, { mode: 0o755 });
       expect(
         runner.start(task, "feat/0869-crash", fx.agent, {
           cwd: fx.root,
           fromCrashRecovery: true,
         }).ok,
       ).toBe(true);
-      // ...but its first real output means the task belongs to the new turn.
-      await waitFor(() => !runner.suppressesHandoffAfterCrash("0869"), "guard lifted on output");
+      // A late `status: review` write from the crashed turn can arrive after
+      // the resumed turn's first line, so output alone must NOT lift the guard.
+      await waitFor(() => runner.stats("0869").lastOutputAt != null, "resumed output");
+      expect(runner.suppressesHandoffAfterCrash("0869")).toBe(true);
+      // The clean end of the resumed turn is what clears it.
+      await waitFor(() => progress === 1, "resumed clean turn");
+      expect(runner.suppressesHandoffAfterCrash("0869")).toBe(false);
     } finally {
       fx.restorePath();
     }

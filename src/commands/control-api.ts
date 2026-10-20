@@ -18,6 +18,7 @@ import {
   pairPauseInfo,
 } from "../core/budget-allowlist.js";
 import type { RepoOSConfig } from "../core/types.js";
+import type { LandableCheck, LandableResult } from "../core/landable.js";
 
 interface CommonOpts {
   json: boolean;
@@ -1047,6 +1048,59 @@ export async function cmdStats(args: string[]): Promise<number> {
       else console.log(JSON.stringify(data));
     }
     return 0;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
+function landableIcon(status: LandableCheck["status"]): string {
+  if (status === "pass") return c.green("✓");
+  if (status === "warn") return c.yellow("!");
+  return c.red("✗");
+}
+
+/**
+ * `repoos landable <id>` (#0867): print the read-only landing pre-checks and
+ * exit 0 only when every check passes. Never edits, commits or moves status.
+ */
+export async function cmdLandable(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const id = rest[0];
+  if (!id) {
+    printErr("Usage: repoos landable <id> [--json] [--port N]");
+    return 1;
+  }
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const result = (await api.requestOk(
+      "GET",
+      `/api/tasks/${id}/landable`,
+    )) as unknown as LandableResult;
+    if (opts.json) printJson(result);
+    else {
+      const verdict = result.landable
+        ? c.green(`#${id} is landable`)
+        : c.red(`#${id} is not landable yet`);
+      console.log(`  ${verdict}`);
+      for (const check of result.checks) {
+        console.log(`    ${landableIcon(check.status)} ${c.bold(check.label)} — ${check.detail}`);
+        if (check.nextStep) console.log(c.dim(`        next: ${check.nextStep}`));
+      }
+      const { pass, warn, fail } = result.summary;
+      const parts = [
+        `${pass} passed`,
+        `${warn} warning${warn === 1 ? "" : "s"}`,
+        `${fail} failing`,
+      ];
+      console.log(c.dim(`  ${parts.join(" · ")}`));
+    }
+    return result.landable ? 0 : 1;
   } catch (e) {
     printErr((e as RepoOsApiError).message);
     return 1;
