@@ -2,7 +2,7 @@
 id: "0869"
 title: Engineer crashes must not auto-request a handoff; fail over to the next allowed agent
 type: bug
-status: ready
+status: active
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/engineer-crashes-must-not-auto-request-a
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:17Z"
-updated_at: "2026-10-20T19:09:27Z"
+updated_at: "2026-10-20T19:09:33Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-20T18:37:06.042Z: repoos check failed: ◆ Check plan"
 ---
@@ -66,3 +66,4 @@ Look at the watchdog, the CTO restart-stalled-agent action, the handoff request 
 - 2026-10-20T18:52:36Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-20T19:09:22Z · status active→ready
 - 2026-10-20T19:09:27Z · body
+- 2026-10-20T19:09:33Z · status ready→active
