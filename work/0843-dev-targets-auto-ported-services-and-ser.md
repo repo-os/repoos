@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-20T04:44:46Z"
-review_passes: 10
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — Valid inline TOML environment values with escaped quotes are silently truncated.
@@ -18,6 +16,8 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
+updated_at: "2026-10-20T04:46:55Z"
+review_passes: 10
 review_rounds: 2
 dev_error_count: 1
 ---
@@ -173,4 +173,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T04:41:02Z · note: review pass 10: needs some work
 - 2026-10-20T04:44:45Z · note: review pass 11: needs some work
 - 2026-10-20T04:44:45Z · needs_input
-
+- 2026-10-20T04:46:55Z · status review→active
