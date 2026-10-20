@@ -47,10 +47,10 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 "highlight": "[data-config-key=\"remindersDir\"]",
 "steps": [
 {
-  "click": "#settings-tab-advanced"
+"click": "#settings-tab-advanced"
 },
 {
-  "waitFor": "[data-config-key=\"remindersDir\"]"
+"waitFor": "[data-config-key=\"remindersDir\"]"
 }
 ]
 },
@@ -113,3 +113,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T08:25:47Z · body
 - 2026-10-20T08:28:24Z · body
 - 2026-10-20T08:37:37Z · status active→review
+- 2026-10-20T08:37:37Z · note: shots: skipped — 14 shots already captured — an engineer-made capture pre-empts the automatic one
