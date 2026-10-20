@@ -1661,6 +1661,9 @@ describe("DevTargetManager with services (#0843)", () => {
             ...(restarted.target?.services ?? []).map((row) => row.pid),
           ].filter((pid): pid is number => typeof pid === "number");
           expect(restartedPids).toHaveLength(3);
+          expect(restarted.target?.status).toBe("running");
+          for (const pid of pids) expect(await waitForDead(pid)).toBe(true);
+          await mgr.stop("app");
           for (const pid of restartedPids) expect(await waitForDead(pid)).toBe(true);
         }
         await start.catch(() => {});
@@ -2137,8 +2140,9 @@ describe("DevTargetManager with services (#0843)", () => {
       expect(result.error).toContain('service "api"');
       expect(mgr.get("app")?.error).toContain('service "api"');
       expect(mgr.get("app")?.services?.[0].status).toBe("failed");
-      // The start did not churn on for the whole readiness timeout.
-      expect(mgr.get("app")?.services?.[0].pid).toBeDefined();
+      // Teardown clears process ownership after stopping the failed stack.
+      expect(mgr.get("app")?.pid).toBeUndefined();
+      expect(mgr.get("app")?.services?.[0].pid).toBeUndefined();
     } finally {
       await mgr.stopAll();
       rmSync(dir, { recursive: true, force: true });
@@ -2178,10 +2182,8 @@ describe("DevTargetManager with services (#0843)", () => {
         const view = mgr.get("app");
         expect(view?.status).toBe("failed");
         expect(view?.services?.[0].status).toBe("failed");
-        expect(typeof view?.pid).toBe("number");
-        expect(typeof view?.services?.[0].pid).toBe("number");
-        expect(await waitForDead(view!.pid!)).toBe(true);
-        expect(await waitForDead(view!.services![0]!.pid!)).toBe(true);
+        expect(view?.pid).toBeUndefined();
+        expect(view?.services?.[0].pid).toBeUndefined();
       } finally {
         await mgr.stopAll();
         rmSync(dir, { recursive: true, force: true });
