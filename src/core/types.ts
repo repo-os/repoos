@@ -1096,6 +1096,8 @@ export interface PressureGuardConfig {
 }
 
 export interface RemoteValidationConfig {
+  /** Where task screenshots and UI verification should run. */
+  browserCaptureMode?: "local" | "runner-available" | "runner-only";
   /** Master switch. Default false. */
   enabled?: boolean;
   /**

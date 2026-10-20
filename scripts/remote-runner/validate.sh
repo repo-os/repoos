@@ -8,6 +8,10 @@
 # SHA RepoOS asked for, then runs `bun install && bun run build && bun run test`
 # inside the prebuilt `repoos-ci` container with a persistent bun cache.
 #
+# Browser capture also needs a linked git worktree for the task branch; the host
+# creates it under $WORK/worktrees and bind-mounts it at /repo-worktrees (see
+# WORKTREES below), so the non-root capture user can write it.
+#
 # When `mirror-path` is given, the bundle is fetched into a persistent bare
 # mirror on the host (`~/.repoos-cache/<repo>.git`) and the candidate is checked
 # out from there. That lets RepoOS upload only the commits the host does not
@@ -67,6 +71,14 @@ docker ps -aq --filter "name=repoos-validate-" \
 
 WORK="$(mktemp -d "$HOME/.repoos-validate.XXXXXX")"
 rm -rf "$ART" && mkdir -p "$ART"
+# Browser capture (#0854) creates a linked git worktree for the task branch at
+# `worktreesDir("/repo")` — the sibling path `/repo-worktrees`, which lives
+# OUTSIDE the /repo bind mount. The container runs as the host uid and cannot
+# `mkdir` at the container root, so create the mount source here (same uid) and
+# bind it in below. The worktree, its node_modules, and any preview output are
+# then all writable by the capture user.
+WORKTREES="$WORK/worktrees"
+mkdir -p "$WORKTREES"
 # Per-run dirs live under the shared parent; prune ones nobody collected.
 find "$HOME/.repoos-artifacts" -mindepth 1 -maxdepth 1 -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
 _rvcleanup() {
@@ -158,16 +170,25 @@ set +e
 docker run --rm \
   --name "$CONTAINER" \
   -v "$WORK/repo":/repo \
+  -v "$WORKTREES":/repo-worktrees \
   -v "$CACHE_VOLUME":/bun-cache \
   -v "$ART":/artifacts \
   -e BUN_INSTALL_CACHE_DIR=/bun-cache \
   -e BUN_TMPDIR=/tmp \
+  -e TMPDIR=/tmp \
   -e HOME=/repo \
+  -e REPOOS_ROOT=/repo \
+  -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
   -w /repo \
   --user "$(id -u):$(id -g)" \
   -e "REPOOS_OFFLOAD_BROWSER_STEPS=${REPOOS_OFFLOAD_BROWSER_STEPS:-}" \
+  -e "REPOOS_BROWSER_CAPTURE_MODE=${REPOOS_BROWSER_CAPTURE_MODE:-}" \
+  -e "REPOOS_BROWSER_CAPTURE_TASK=${REPOOS_BROWSER_CAPTURE_TASK:-}" \
+  -e "REPOOS_BROWSER_CAPTURE_BRANCH=${REPOOS_BROWSER_CAPTURE_BRANCH:-}" \
+  -e "REPOOS_BROWSER_CAPTURE_ENTRY=${REPOOS_BROWSER_CAPTURE_ENTRY:-}" \
+  -e "REPOOS_BROWSER_CAPTURE_CANONICAL=${REPOOS_BROWSER_CAPTURE_CANONICAL:-}" \
   "$IMAGE" \
-  "set -o pipefail; bun install --frozen-lockfile || exit 4; bun run build && printf '#!/bin/sh\nexec bun /repo/dist/cli/index.js \"\$@\"\n' > /tmp/repoos && chmod +x /tmp/repoos && export PATH=\"/tmp:\$PATH\" && if [ -n \"${CHANGED_REF}\" ]; then bun run test -- --changed \"${CHANGED_REF}\"; else bun run test; fi 2>&1 | tee /artifacts/test-output.log && if [ \"\${REPOOS_OFFLOAD_BROWSER_STEPS}\" = \"1\" ]; then echo '[validate] running browser gate (ui-smoke + rendered-contrast)'; repoos check --step ui-smoke --step rendered-contrast 2>&1 | tee -a /artifacts/browser-gate.log || exit \$?; echo '[validate] browser gate exit 0'; fi"
+  "set -o pipefail; bun install --frozen-lockfile || exit 4; bun run build && printf '#!/bin/sh\nexec bun /repo/dist/cli/index.js \"\$@\"\n' > /tmp/repoos && chmod +x /tmp/repoos && export PATH=\"/tmp:\$PATH\" && if [ -n \"\${REPOOS_BROWSER_CAPTURE_MODE}\" ]; then git checkout --detach ${SHA} && mkdir -p \"/repo-worktrees/\$(dirname \"\${REPOOS_BROWSER_CAPTURE_BRANCH}\")\" && git worktree add -b \"\${REPOOS_BROWSER_CAPTURE_BRANCH}\" \"/repo-worktrees/\${REPOOS_BROWSER_CAPTURE_BRANCH}\" ${SHA} && cd \"/repo-worktrees/\${REPOOS_BROWSER_CAPTURE_BRANCH}\" && bun install --frozen-lockfile || exit 4; bun scripts/remote-runner/capture-browser.ts \"\${REPOOS_BROWSER_CAPTURE_TASK}\" \"\${REPOOS_BROWSER_CAPTURE_MODE}\" /artifacts/browser-capture; else if [ -n \"${CHANGED_REF}\" ]; then bun run test -- --changed \"${CHANGED_REF}\"; else bun run test; fi 2>&1 | tee /artifacts/test-output.log; fi && if [ \"\${REPOOS_OFFLOAD_BROWSER_STEPS}\" = \"1\" ]; then echo '[validate] running browser gate (ui-smoke + rendered-contrast)'; repoos check --step ui-smoke --step rendered-contrast 2>&1 | tee -a /artifacts/browser-gate.log || exit \$?; echo '[validate] browser gate exit 0'; fi"
 CODE=$?
 set -e
 
