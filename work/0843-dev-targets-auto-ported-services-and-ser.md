@@ -3,6 +3,9 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — Settings edits can silently remove existing TOML-only target fields.
 priority: p2
 area: [core, web]
 assigned_to: human
@@ -324,3 +327,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T13:16:10Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (96d847392) during finalization (#0734)
 - 2026-10-20T13:16:12Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (96d847392) during finalization (#0734)
 - 2026-10-20T13:21:37Z · note: review pass 24: needs some work
+- 2026-10-20T13:21:37Z · needs_input
