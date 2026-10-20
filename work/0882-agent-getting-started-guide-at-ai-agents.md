@@ -11,8 +11,10 @@ depends_on: ["0879", "0880", "0881"]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:17Z"
-updated_at: "2026-10-20T21:09:56Z"
+updated_at: "2026-10-20T21:10:00Z"
 ---
 ## Problem
 
@@ -43,3 +45,4 @@ Declare a docs-site shot if you want review to open the new page: target the doc
 
 - 2026-10-20T16:02:17Z · created · njachowski@gmail.com
 - 2026-10-20T21:09:56Z · status inbox→ready
+- 2026-10-20T21:10:00Z · cli_override, model_override
