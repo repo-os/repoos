@@ -2,7 +2,10 @@
 id: "0860"
 title: "Close-out and layout: reminders/ and schedules/ are server-written bookkeeping, and follow the repoos/ layout"
 type: bug
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "you want shared Git history. They are currently repo-wide, visible to"
 priority: p2
 area: server
 assigned_to: ai
@@ -11,12 +14,12 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T11:13:33Z"
+updated_at: "2026-10-20T11:13:38Z"
 review_passes: 5
 review_rounds: 1
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-10-20T06:20:53.646Z: repoos check failed: ◆ Check plan"
-dev_error_count: 1
+dev_error_count: 2
 ---
 ## Problem
 (1) Close-out blocks on reminder files. Move to done refuses to publish when a reminder file is dirty on main: 'main has 1 uncommitted file at publish time, so the merge would abort: reminders/37fba592-....md'. Reminders (#0851) are server-written, repo-native files like tasks, inputs and stories, but the close-out only knows work/, inputs/ and stories/ as routine server-written churn (bookkeepingDirs / bookkeepingKeepOursPrefixes in src/server/integration-orchestrator.ts ~line 334; isNonCodePublishDrift; the dirty-main guard in docs/close-out-pipeline.md). Every time a reminder is created, snoozed or marked done while a close-out runs, an unrelated landing is blocked and needs a manual 'Commit & continue'. Scheduled-task definitions (schedules/, #0093) are stamped by the server (last_run_at, last_occurrence_key) and have the same problem.
@@ -128,3 +131,5 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:13:10Z · note: review pass 5: good to go
 - 2026-10-20T11:13:33Z · status review→active
 - 2026-10-20T11:13:33Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
+- 2026-10-20T11:13:38Z · agent exited with an error (codex) · you want shared Git history. They are currently repo-wide, visible to
+- 2026-10-20T11:13:38Z · status active→review
