@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T10:39:13Z"
+updated_at: "2026-10-20T10:39:14Z"
 review_passes: 19
 last_check_failure: "repoos check at 2026-10-20T10:20:49.854Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 886d9960 to 9241cb9c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -260,3 +260,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T10:33:13Z · message_queued at 2026-10-20T10:33:13.238Z
 - 2026-10-20T10:39:13Z · status active→review
 - 2026-10-20T10:39:13Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (32da7ef6a) during finalization (#0734)
+- 2026-10-20T10:39:14Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (32da7ef6a) during finalization (#0734)
