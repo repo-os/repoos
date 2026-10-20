@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T13:23:38Z"
+updated_at: "2026-10-20T13:25:15Z"
 review_passes: 18
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -249,3 +249,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T13:22:39Z · note: handoff requested (ui-review)
 - 2026-10-20T13:22:46Z · agent exited with an error (opencode) · handoff finalization was interrupted (server reload) — restart work to hand off again
 - 2026-10-20T13:23:38Z · note: handoff requested (ui-review)
+- 2026-10-20T13:25:15Z · note: handoff requested (ui-review)
