@@ -2,7 +2,7 @@
 id: "0866"
 title: Fail early when a declared shot's target cannot render its state or route
 type: bug
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/fail-early-when-a-declared-shot-s-target
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T11:55:38Z"
-updated_at: "2026-10-20T22:21:49Z"
+updated_at: "2026-10-20T22:23:02Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-20T21:59:05.771Z: repoos check failed: ◆ Check plan"
 ---
@@ -53,3 +53,4 @@ See the shot declaration and capture code in src/server/shot-capture.ts, `planAu
 - 2026-10-20T22:21:02Z · status review→active
 - 2026-10-20T22:21:02Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T22:21:49Z · body
+- 2026-10-20T22:23:02Z · status active→review
