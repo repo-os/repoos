@@ -11,6 +11,7 @@ import type { ActivityAnimationStyle } from "../../../core/activity-animation.js
 import type { useConfigStore } from "../stores/config";
 import type { useRepoStore } from "../stores/repo";
 import { useNoticesStore } from "../stores/notices";
+import { useRemindersStore } from "../stores/reminders";
 import { useUiStore } from "../stores/ui";
 import type {
   CloseOutOutcomeEvent,
@@ -402,6 +403,43 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
   // pin freezing the live snapshot (#0782).
   pinnedIntegration = null;
   switch (fixture) {
+    case "reminders:due": {
+      const reminders = useRemindersStore();
+      reminders.fixturePinned = true;
+      const now = Date.now();
+      reminders.now = now;
+      reminders.links = [
+        { value: "agent:cursor", label: "Agent · cursor" },
+        { value: "provider:openrouter", label: "Provider · OpenRouter" },
+      ];
+      reminders.reminders = [
+        {
+          id: "00000000-0000-4000-8000-000000000001",
+          text: "Check Cursor credit — the reset should be ready",
+          fireAt: new Date(now - 3_600_000).toISOString(),
+          link: "agent:cursor",
+          doneAt: "",
+          snoozedAt: "",
+          notifiedFireAt: "",
+          createdAt: new Date(now).toISOString(),
+          updatedAt: new Date(now).toISOString(),
+          state: "due",
+        },
+        {
+          id: "00000000-0000-4000-8000-000000000002",
+          text: "Check OpenRouter after the maintenance window",
+          fireAt: new Date(now + 52 * 3_600_000).toISOString(),
+          link: "provider:openrouter",
+          doneAt: "",
+          snoozedAt: "",
+          notifiedFireAt: "",
+          createdAt: new Date(now).toISOString(),
+          updatedAt: new Date(now).toISOString(),
+          state: "upcoming",
+        },
+      ];
+      break;
+    }
     case "closeOut:active":
       repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID);
       pinnedIntegration = repo.integration;
@@ -581,6 +619,18 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         deletions: 5,
       });
       break;
+    case "card:noChanges":
+      ensureFixtureTask(repo, "ready", {
+        branch: "feat/no-changes",
+        assignee: "human",
+        assignedTo: "Nick",
+      });
+      repo.seedDiffStats(SHOT_PREVIEW_FIXTURE_TASK_ID, {
+        filesChanged: 0,
+        additions: 0,
+        deletions: 0,
+      });
+      break;
     case "drawer:reviewWithBranch":
       // A review-status task with a non-empty branch, for TaskDrawer shots.
       // TaskCard and TaskDrawer only show actions and UI-changes pane when the
@@ -722,7 +772,11 @@ const SETTINGS_FIXTURE_STYLE: Partial<Record<ShotPreviewFixtureId, ActivityAnima
 
 /** Config-only shot fixtures (applied after `/api/config` loads, #0805). */
 export function isShotPreviewConfigFixture(fixture: ShotPreviewFixtureId): boolean {
-  return fixture === "editor:unconfigured" || fixture in SETTINGS_FIXTURE_STYLE;
+  return (
+    fixture === "editor:unconfigured" ||
+    fixture === "budget:paused" ||
+    fixture in SETTINGS_FIXTURE_STYLE
+  );
 }
 
 export function applyShotPreviewConfigFixture(
@@ -736,6 +790,35 @@ export function applyShotPreviewConfigFixture(
     if (editor) editor.command = "";
     const dev = data.dev as { inspector?: { editorCommand?: string } } | undefined;
     if (dev?.inspector) dev.inspector.editorCommand = "";
+    return;
+  }
+  if (fixture === "budget:paused") {
+    // #0850 — one whole-agent pause and one per-model pause, with a reason and
+    // a future resume date so the chip renders exactly as a real paused row.
+    const until = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    if (config.data) {
+      config.data["budget.allowlist"] = [
+        {
+          cli: "cursor",
+          models: ["composer-2.5"],
+          paused: true,
+          pausedUntil: until,
+          pausedReason: "Cursor credits exhausted",
+        },
+        {
+          cli: "opencode",
+          models: ["deepseek v4", "big pickle"],
+          pausedModels: [
+            {
+              model: "big pickle",
+              pausedReason: "Rate limited",
+              pausedUntil: until,
+            },
+          ],
+        },
+        { cli: "claude code", models: ["sonnet"] },
+      ];
+    }
     return;
   }
   const style = SETTINGS_FIXTURE_STYLE[fixture];

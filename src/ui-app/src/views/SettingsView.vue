@@ -2529,9 +2529,10 @@ onUnmounted(() => {
               <div class="setting-desc" style="margin: 0">
                 The whole file, including sections the other tabs don't cover —
                 <code>[preview]</code>, <code>[check]</code>, <code>[release]</code>,
-                <code>[[deployments]]</code>, and anything you add. Values stay on one line:
-                RepoOS's config reader doesn't support multi-line arrays, multi-line strings, or
-                inline tables. Keep secrets in <code>.env</code>, not here.
+                <code>[[deployments]]</code>, and anything you add. Any TOML string form works
+                (<code>"…"</code>, <code>'…'</code>, <code>"""…"""</code>, <code>'''…'''</code>);
+                multi-line arrays and inline tables are not supported. Keep secrets in
+                <code>.env</code>, not here.
               </div>
               <div class="toml-raw-actions">
                 <Button

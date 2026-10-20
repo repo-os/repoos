@@ -2039,7 +2039,9 @@
   transform-origin: center;
   z-index: 2;
   pointer-events: none;
-  background: #e91e63;
+  /* Same deep pink as .preview-build-banner: white on the old #e91e63 was
+     4.35:1, below the WCAG floor for this small label. */
+  background: #c2185b;
   color: #fff;
   font-family: "JetBrains Mono", monospace;
   font-size: 7.5px;
@@ -2049,21 +2051,23 @@
   line-height: 1;
   padding: 2.5px 5px;
   border-radius: 2px;
-  box-shadow: 0 2px 8px rgba(233, 30, 99, 0.45);
+  box-shadow: 0 2px 8px rgba(194, 24, 91, 0.45);
 }
-/*.preview-build-banner{display:inline-flex;align-items:center;padding:4px 8px;background:#e91e63;color:#fff;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.04em;border-radius:3px;box-shadow:0 2px 8px rgba(233,30,99,.35)}*/
+/*.preview-build-banner{display:inline-flex;align-items:center;padding:4px 8px;background:#c2185b;color:#fff;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.04em;border-radius:3px;box-shadow:0 2px 8px rgba(194,24,91,.35)}*/
 .preview-build-banner {
   display: inline-flex;
   align-items: center;
   padding: 4px 8px;
-  background: #e91e63;
+  /* Deep pink, not #e91e63: white on that pink is 4.35:1, below the WCAG
+     floor for 10px text. #c2185b keeps the same preview marker at 5.5:1. */
+  background: #c2185b;
   color: #fff;
   font-family: "JetBrains Mono", monospace;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
   border-radius: 3px;
-  box-shadow: 0 2px 8px rgba(233, 30, 99, 0.35);
+  box-shadow: 0 2px 8px rgba(194, 24, 91, 0.35);
   transform: rotate(-6deg);
   transform-origin: center;
 }

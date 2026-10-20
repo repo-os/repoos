@@ -6,6 +6,8 @@ export interface SelectSearchOption {
   value: string;
   label: string;
   disabled: boolean;
+  /** Why a disabled option can't be picked (e.g. "already allowed", #0856). */
+  hint?: string;
 }
 
 const props = defineProps<{ options: SelectSearchOption[] }>();

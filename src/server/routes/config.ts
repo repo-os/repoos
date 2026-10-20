@@ -34,7 +34,7 @@ import type { RepoOSConfig } from "../../core/types.js";
 import type { Logger } from "../../core/logger.js";
 import { resolveRemoteHosts } from "../../core/remote-hosts.js";
 import { formatTomlError, validateToml } from "../../core/toml-validate.js";
-import { stripTomlComment } from "../../core/toml-line.js";
+import { stripTomlComment, tomlContinuationLines } from "../../core/toml-line.js";
 import { readTunnelConfig, writeTunnelConfig } from "../../core/tunnel.js";
 import { listSkills } from "./helpers.js";
 import {
@@ -926,20 +926,20 @@ function hashConfigContent(content: string): string {
 function dropTomlTableArray(tomlPath: string, key: string): void {
   if (!existsSync(tomlPath)) return;
   const lines = readFileSync(tomlPath, "utf8").replace(/\r\n/g, "\n").split("\n");
+  // Lines inside a `'''`/`"""` string are content: a `[[key]]`-shaped (or
+  // header-shaped) line there must not be mistaken for a block boundary.
+  const continuation = tomlContinuationLines(lines);
   const kept: string[] = [];
   let removed = false;
   let i = 0;
   while (i < lines.length) {
-    if (stripTomlComment(lines[i] ?? "").trim() === `[[${key}]]`) {
+    const stripped = continuation[i] ? "" : stripTomlComment(lines[i] ?? "").trim();
+    if (stripped === `[[${key}]]`) {
       removed = true;
       i++;
       while (i < lines.length) {
-        if (
-          stripTomlComment(lines[i] ?? "")
-            .trim()
-            .startsWith("[")
-        )
-          break;
+        const s = continuation[i] ? "" : stripTomlComment(lines[i] ?? "").trim();
+        if (s.startsWith("[")) break;
         i++;
       }
       continue;

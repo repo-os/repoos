@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import { api } from "../api";
 import type { CloseOutOutcome, CloseOutOutcomeEvent } from "../types";
 import { useNotificationsStore } from "./notifications";
+import { useRemindersStore } from "./reminders";
 
 /**
  * Non-task notices (#0606): server events a human should know about but that
@@ -39,7 +40,8 @@ export type NoticeKind =
   | "awaitingVisualCheck"
   | "remoteFallback"
   | "remoteHostDegraded"
-  | "ctoAction";
+  | "ctoAction"
+  | "reminderDue";
 
 export interface NoticeItem {
   /** Stable per event: `<kind>:<eventKey>`. Dedupe + dismissed/read keys. */
@@ -74,6 +76,7 @@ export const NOTICE_KIND_LABELS: Record<NoticeKind, string> = {
   remoteFallback: "Ran locally",
   remoteHostDegraded: "Remote runner degraded",
   ctoAction: "CTO safe action",
+  reminderDue: "Reminder due",
 };
 
 /** Dot / accent color per kind — CSS tokens only (hardcoded-colors guard). */
@@ -95,6 +98,7 @@ export const NOTICE_KIND_COLOR: Record<NoticeKind, string> = {
   remoteFallback: "var(--amber)",
   remoteHostDegraded: "var(--amber)",
   ctoAction: "var(--violet)",
+  reminderDue: "var(--amber)",
 };
 
 /** Kinds surfaced as bell notices from `GET /api/attention` (#0687). */
@@ -258,15 +262,33 @@ export const useNoticesStore = defineStore("notices", () => {
   /** Enough history for the status bar's last-15 median with headroom. */
   const CLOSE_OUT_TIMING_LIMIT = 50;
 
-  const unreadNotices = computed(() => notices.value.filter((n) => !n.dismissed && !n.read));
+  const reminders = useRemindersStore();
+  // Live, authoritative notes: read/dismiss markers cannot hide an unresolved reminder.
+  const reminderNotices = computed<NoticeItem[]>(() =>
+    reminders.due.map((r) => ({
+      id: `reminderDue:${r.id}:${r.fireAt}`,
+      kind: "reminderDue",
+      title: r.text,
+      detail: `${reminders.state(r)} · ${new Date(r.fireAt).toLocaleString()}`,
+      link: `/agents?tab=reminders&reminder=${r.id}`,
+      createdAt: r.fireAt,
+      read: false,
+      dismissed: false,
+    })),
+  );
+  const unreadNotices = computed(() => [
+    ...reminderNotices.value,
+    ...notices.value.filter((n) => !n.dismissed && !n.read),
+  ]);
 
-  /** Non-dismissed notices, newest first — the feed the bell/panel render. */
-  const activeNotices = computed(() =>
-    notices.value
+  /** Unresolved reminders first; ordinary notices retain the existing feed cap. */
+  const activeNotices = computed(() => [
+    ...reminderNotices.value,
+    ...notices.value
       .filter((n) => !n.dismissed)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, NOTICE_FEED_LIMIT),
-  );
+  ]);
 
   const dismissedCount = computed(() => notices.value.filter((n) => n.dismissed).length);
 
@@ -380,6 +402,7 @@ export const useNoticesStore = defineStore("notices", () => {
 
   /** Ring/push for a newly created notice, best-effort and never throws. */
   async function fireChannels(kind: NoticeKind, title: string, body: string): Promise<void> {
+    if (kind === "reminderDue") return;
     try {
       const n = useNotificationsStore();
       await n.notify(kind, title, body);
@@ -529,6 +552,7 @@ export const useNoticesStore = defineStore("notices", () => {
   function start(): void {
     if (polling) return;
     polling = true;
+    reminders.start();
     void pollReleaseRun();
     void pollCloseOutOutcomes();
     void pollAttention();
@@ -541,6 +565,7 @@ export const useNoticesStore = defineStore("notices", () => {
   }
 
   function onFocus(): void {
+    void reminders.refresh();
     void pollReleaseRun();
     void pollCloseOutOutcomes();
     void pollAttention();
@@ -548,6 +573,7 @@ export const useNoticesStore = defineStore("notices", () => {
 
   function onVisibility(): void {
     if (document.visibilityState === "visible") {
+      void reminders.refresh();
       void pollReleaseRun();
       void pollCloseOutOutcomes();
       void pollAttention();
@@ -555,6 +581,7 @@ export const useNoticesStore = defineStore("notices", () => {
   }
 
   function stop(): void {
+    reminders.stop();
     if (pollTimer) clearTimeout(pollTimer);
     pollTimer = null;
     polling = false;

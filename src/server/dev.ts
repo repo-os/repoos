@@ -892,6 +892,8 @@ export class DevTargetManager {
     // failed (the process is gone), and the start answer must agree.
     const finalState = this.states.get(t.name);
     if (finalState?.status === "failed") {
+      await this.killProcess(t.name);
+      await this.killServiceRuns(t.name);
       return { ok: false, error: finalState.error ?? "the target failed", target: this.view(t) };
     }
     return { ok: true, target: this.view(t) };
@@ -912,9 +914,22 @@ export class DevTargetManager {
   ): Promise<{ ok: boolean; error: string }> {
     /** Abort the poll the moment something else has failed the target. */
     const degraded = (): { ok: boolean; error: string } | null => {
-      const s = this.states.get(t.name);
-      if (s?.status !== "failed") return null;
-      return { ok: false, error: s.error ?? "the target failed during startup" };
+      const state = this.states.get(t.name);
+      if (state?.status === "failed") {
+        return { ok: false, error: state.error ?? "the target failed during startup" };
+      }
+      // A companion can exit while the asynchronous target health probe is
+      // in flight, before its exit callback updates persisted state. Check
+      // the owned child handles as well as the status snapshot before accepting
+      // readiness.
+      const deadRun = (this.serviceRuns.get(t.name) ?? []).find((run) => !this.isAlive(run.child));
+      const deadService = state?.services?.find((service) => service.pid === deadRun?.child.pid);
+      if (!deadRun || !deadService) return null;
+      const reason = `service "${deadService.name}" exited unexpectedly`;
+      this.patchServiceState(t.name, deadService.name, { status: "failed", error: reason });
+      this.setState(t.name, { status: "failed", error: reason });
+      this.appendLog(t.name, `[repoos] ${reason}`);
+      return { ok: false, error: reason };
     };
     const hc = t.healthCheck;
     if (hc?.file) {
@@ -943,8 +958,9 @@ export class DevTargetManager {
     if (url) {
       const deadline = Date.now() + HEALTH_TIMEOUT_MS;
       while (Date.now() < deadline) {
-        if (await probeUrl(url)) return { ok: true, error: "" };
+        const answers = await probeUrl(url);
         if (degraded()) return degraded()!;
+        if (answers) return { ok: true, error: "" };
         if (!this.isAlive(child)) {
           return { ok: false, error: "process exited before it answered its health check" };
         }

@@ -24,6 +24,8 @@ import SelectViewport from "../components/ui/select/viewport.vue";
 import AgentCard from "../components/AgentCard.vue";
 import BuiltInAgentCard from "../components/BuiltInAgentCard.vue";
 import ScheduledTasksPanel from "../components/ScheduledTasksPanel.vue";
+import RemindersPanel from "../components/RemindersPanel.vue";
+import { useRemindersStore } from "../stores/reminders";
 import { sortHeadlessAgents } from "../lib/headless-agent-order";
 import ModelPlaygroundPanel from "../components/ModelPlaygroundPanel.vue";
 import ModelProvidersPanel from "../components/ModelProvidersPanel.vue";
@@ -42,12 +44,14 @@ const config = useConfigStore();
 const router = useRouter();
 const route = useRoute();
 const docs = useDocsStore();
+const reminders = useRemindersStore();
 
 type AgentTab =
   | "default"
   | "custom"
   | "team"
   | "scheduled"
+  | "reminders"
   | "detected"
   | "playground"
   | "providers"
@@ -59,6 +63,7 @@ const AGENT_TAB_LABELS: Record<AgentTab, string> = {
   custom: "Custom Agents",
   team: "Build Your Team",
   scheduled: "Scheduled Tasks",
+  reminders: "Reminders",
   detected: "Detected Coding Agents",
   playground: "Model Playground",
   providers: "Model providers",
@@ -71,6 +76,7 @@ const AGENT_TABS: AgentTab[] = [
   "custom",
   "team",
   "scheduled",
+  "reminders",
   "detected",
   "playground",
   "providers",
@@ -708,6 +714,12 @@ onUnmounted(() => {
           @click="activeTab = t"
         >
           {{ AGENT_TAB_LABELS[t] }}
+          <span
+            v-if="t === 'reminders' && reminders.due.length"
+            class="chip"
+            aria-label="Due reminders"
+            >{{ reminders.due.length }}</span
+          >
         </button>
       </div>
 
@@ -875,6 +887,9 @@ onUnmounted(() => {
           style="padding: 0 18px 6px; margin-bottom: 16px"
         >
           <ScheduledTasksPanel />
+        </div>
+        <div class="agent-tab-panel" v-show="activeTab === 'reminders'">
+          <RemindersPanel />
         </div>
 
         <div

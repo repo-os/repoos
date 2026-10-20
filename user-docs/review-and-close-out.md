@@ -186,8 +186,9 @@ merging, stopping, or deleting anything: the status stays `review` underneath,
 the branch and worktree are kept, and the task moves to the **Archived** list
 below the board. Add an optional reason, and unarchive it later to drop it
 back into the Review column exactly where it left off. See
-[Concepts → Archiving a task](/concepts) for the full behaviour, including why
-archiving is refused while a run, review, preview, or close-out is live.
+[Concepts → Archiving a task](/concepts) for the full behaviour: why archiving
+is refused while a run, review, or close-out is live, and why a running
+preview is stopped as part of archiving rather than refusing the archive.
 
 ## The Move-to-done pipeline
 

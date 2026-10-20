@@ -75,12 +75,11 @@ work, not a different DMG layout.
 ## Hub settings
 
 The Hub's app-wide preferences live in one settings window. Open it from the
-**`…` button at the top right of the Hub window** (next to the back/forward/
-reload controls, labelled "RepoOS Hub settings"), or with the standard macOS
-**`⌘,`** shortcut. Both open the same window — there is no second app-level
-settings surface. Per-server settings stay where they are: right-click a
-server → **Notifications…** for attention, capability tokens, and
-cross-server search.
+**gear button at the bottom of the native sidebar** (labelled "RepoOS Hub
+settings"), or with the standard macOS **`⌘,`** shortcut. Both open the same
+window — there is no second app-level settings surface. Per-server settings
+stay where they are: right-click a server → **Notifications…** for attention,
+capability tokens, and cross-server search.
 
 The settings window holds four sections:
 
@@ -100,7 +99,7 @@ The settings window holds four sections:
 
 ## Updates
 
-Check from inside the app: open Hub settings (`…` → settings, or `⌘,`) and
+Check from inside the app: open Hub settings (the sidebar gear, or `⌘,`) and
 use **Check for Updates** in the Updates section. It shows the installed
 version and build, queries the GitHub latest-release endpoint on demand, and
 reports one honest outcome: you're up to date, a specific newer version is
@@ -211,6 +210,27 @@ for that project (using a `repoos` on your PATH or at the standard Homebrew/Bun
 install locations). The entry appears once the Hub has seen the server online
 at least once, so it knows where the project lives.
 
+## Window layout
+
+The Hub has **no visible titlebar or toolbar row**: the sidebar runs to the top
+edge of the window and the embedded web page fills the reclaimed space, while
+the native red/yellow/green window controls stay in their usual upper-left
+position. The controls that used to live in the titlebar are now quiet icon
+buttons in the sidebar:
+
+- **Back / Forward / Reload** sit in a compact row at the top of the sidebar.
+  Back and forward are disabled when there is no history, and each has a native
+  tooltip.
+- The **sidebar toggle** on the right of that row hides the native sidebar;
+  the embedded RepoOS web app's own sidebar is unaffected. When the native
+  sidebar is hidden, a slim chevron tab flush against the window's left edge,
+  just below the window controls, brings it back. The collapsed state is
+  remembered across launches.
+- **Settings** (the gear) sits in the sidebar footer, next to **Add server**.
+
+The existing window behavior is unchanged — dragging, resizing, minimizing,
+and fullscreen all work as before.
+
 ## Switching and the keyboard workflow
 
 **⌘K** opens the **Quick Switcher** — a command palette over everything in your
@@ -306,7 +326,7 @@ counts:
 - **Include this server in cross-server task search** — lets ⌘K query this
   server's tasks directly. Off by default.
 
-**Globally** — Hub settings (`…` button, or `⌘,`):
+**Globally** — Hub settings (the sidebar gear, or `⌘,`):
 
 - **Native notifications** (on by default)
 - **Dock badge total** (on by default)
@@ -559,7 +579,7 @@ the provider's embedded-browser restrictions — see
 
 Work through, in order:
 
-1. **Hub settings → Native notifications** is on (the `…` button, or `⌘,`),
+1. **Hub settings → Native notifications** is on (the sidebar gear, or `⌘,`),
    and macOS granted the app
    notification permission.
 2. The server has **Enable attention and notifications** on (server context
@@ -585,7 +605,7 @@ Work through, in order:
 It sums *in-review + needs-input* only across servers with attention enabled,
 and it falls back to the last known counts when a server is stale — check the
 server details popover for freshness. Disable it in **Hub settings → Dock badge
-total** (the `…` button, or `⌘,`).
+total** (the sidebar gear, or `⌘,`).
 
 ## Further reading
 

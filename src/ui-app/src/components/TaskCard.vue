@@ -1124,12 +1124,6 @@ async function openDebuggerFromError(): Promise<void> {
           <FileText class="tc-file-chip-icon" aria-hidden="true" />{{ diffStats.filesChanged }}
         </span>
         <span
-          v-else-if="diffStats && diffStats.filesChanged === 0 && task.branch"
-          class="diff-stats-empty rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
-          title="No code changes"
-          >0 changes</span
-        >
-        <span
           v-if="worktreeFrozen"
           class="tc-lock ml-auto"
           tabindex="0"

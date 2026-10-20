@@ -8,6 +8,34 @@ output into the task, and recording its token spend.
 Driving a whole board with agents? See
 [Running a project with AI agents](/running-with-agents) for the practical loop.
 
+## Availability reminders
+
+Open **Agents → Reminders** to leave a note for a credit reset, rate-limit reset,
+or provider returning online. **New reminder** takes text, date, time and an
+optional agent/model/provider link. Times use your browser’s timezone. The list
+shows soonest first, with a countdown and upcoming, due, overdue (after 24 hours),
+snoozed or done state.
+
+Due notes stay in the bell and the Reminders tab badge until **Done**, **Snooze**
+or **Delete**. Clicking a bell note opens this tab. Snooze for an hour, tomorrow
+at 09:00 local time, one day (24 hours), or a custom date/time. Editing the fire
+time reopens a completed reminder. Nothing starts agents or changes settings.
+
+Notes survive restarts in human-readable `reminders/<id>.md` files. They are
+repo-wide, not private per-user notes, and are not automatically committed.
+
+```bash
+repoos reminder add --text "Check Cursor credit" --at 2026-10-22T09:00:00+08:00 --link agent:cursor
+repoos reminder list
+repoos reminder done <id>
+repoos reminder snooze <id> --at 2026-10-23T09:00:00+08:00
+repoos reminder delete <id> --yes
+```
+
+These commands require the running server. The pause-allowlist quick path and
+resume-on-Done option will follow once pause support (#0850) is available.
+See `docs/reminders.md` for the storage format and API.
+
 ## Supported coding agents
 
 RepoOS has a driver for eight CLIs:
@@ -271,8 +299,9 @@ human-approved subset.
 - **Agent+Models Allowlists for Agent Drivers** lists the allowed coding agents;
   each one has its own list of allowed models, collapsed by default with a
   model count (for example `claude code · 2 models`). Expand a row to see its
-  models; add or remove entries with the same coding agent + model selector the
-  rest of the page uses.
+  models and remove a model or agent from the row. Add a pair with **+ Add to
+  allowlist**, which opens a modal using the same coding agent + model selector
+  the rest of the page uses; a pair already on the list can't be added twice.
 - The allowlist is **optional**. Leave it empty and nothing is restricted —
   agent drivers behave exactly as they do today.
 - A **human using the web UI is never restricted** and always sees the full
@@ -283,6 +312,17 @@ human-approved subset.
   `cliOverride`/`modelOverride`) to a pair outside the allowlist, the server
   refuses with an error listing every allowed pair. `repoos override --help`
   also prints the allowlist.
+- **Pause** an agent or a single model instead of removing it when a provider
+  runs out of credit or is rate-limited. A paused row keeps its Paused chip,
+  optional resume date and reason, and is never selected — engineer/reviewer/
+  PM/CTO defaults, Start, auto-dispatch, failover and agent drivers all skip it and
+  fall back to the next allowed pair, recording the swap and reason in the task
+  activity log. If every allowed pair is paused, starting a task fails with
+  "All allowed agent+model pairs are paused". Pause from the row or model chip
+  (with an optional resume date/time and reason) or from a shell:
+  `repoos agents pause <agent> [--model <model>] [--until <date>] [--reason "…"]`
+  and `repoos agents resume <agent> [--model <model>]`. An expired resume date
+  takes effect automatically, with no restart.
 
 The allowlist is stored in `repoos.toml` as `[[budget.allowlist]]` rows; see
 [Configuration](/configuration#budget-controls-agent-drivers).

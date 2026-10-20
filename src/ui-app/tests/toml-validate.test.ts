@@ -41,6 +41,15 @@ describe("validateToml accepts", () => {
       "d = 1979-05-27T07:32:00Z\nh = 0xDEAD_beef\nf = -1.5e3\nn = inf\n",
     ],
     ["crlf line endings", 'a = 1\r\nb = "x"\r\n'],
+    ["multi-line basic string", 'a = """x\ny"""\n'],
+    ["multi-line literal string", "a = '''x\ny'''\n"],
+    ["multi-line closing run with empty content", 'a = """"""\n'],
+    ["multi-line closing run with one content quote", 'a = """""""\n'],
+    ["multi-line closing run with two content quotes", 'a = """"""""\n'],
+    ["multi-line literal closing run at the limit", "a = '''''''\n"],
+    ["valid escapes in a basic string", 'a = "a\\tb\\n\\"c\\\\d\\u0041\\U0001F600"\n'],
+    ["valid unicode scalar boundaries", 'a = "\\uD7FF\\uE000\\U0010FFFF"\n'],
+    ["line-ending backslash in a multi-line string", 'a = """x \\\n   y"""\n'],
   ])("%s", (_name, source) => {
     expect(validateToml(source)).toEqual({ ok: true });
   });
@@ -57,6 +66,13 @@ describe("validateToml rejects", () => {
     ["unclosed table header", "[a\n", 1],
     ["unclosed array on one line", "a = [1, 2", 1],
     ["junk after statement", "[a] extra\n", 1],
+    ["invalid escape in a basic string", 'a = "bad\\q"\n', 1],
+    ["invalid escape in a multi-line basic string", 'a = """bad\\q"""\n', 1],
+    ["short unicode escape", 'a = """\\u12G4"""\n', 1],
+    ["surrogate unicode escape", 'a = "\\uD800"\n', 1],
+    ["surrogate in a multi-line string", 'a = """\\uDFFF"""\n', 1],
+    ["out-of-range unicode escape", 'a = "\\U00110000"\n', 1],
+    ["backslash before a space with no newline", 'a = """x \\ y"""\n', 1],
   ])("%s reports line %i", (_name, source, line) => {
     const result = validateToml(source);
     expect(result.ok).toBe(false);
@@ -68,8 +84,6 @@ describe("validateToml rejects", () => {
   // a save would be accepted and then silently ignored (#0375 review).
   it.each([
     ["multi-line array", "a = [\n  1,\n  2,\n]\n"],
-    ["multi-line basic string", 'a = """x\ny"""\n'],
-    ["multi-line literal string", "a = '''x\ny'''\n"],
     ["inline table", 'a = { b = 1, c = "x" }\n'],
   ])("refuses %s as unsupported by the config reader", (_name, source) => {
     const result = validateToml(source);

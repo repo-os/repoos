@@ -23,7 +23,7 @@
 		C0000000000000000000000E /* ReachabilityStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000020 /* ReachabilityStateTests.swift */; };
 		C0000000000000000000000F /* HubNavigationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000027 /* HubNavigationModels.swift */; };
 		C00000000000000000000010 /* HubCommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000028 /* HubCommandPaletteView.swift */; };
-		C00000000000000000000011 /* HubWorkspaceToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000029 /* HubWorkspaceToolbar.swift */; };
+		C00000000000000000000011 /* HubSidebarControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000029 /* HubSidebarControls.swift */; };
 		C00000000000000000000012 /* CommandPaletteMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002A /* CommandPaletteMatcherTests.swift */; };
 		C00000000000000000000013 /* HubRecentsRetentionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002B /* HubRecentsRetentionTests.swift */; };
 		C00000000000000000000014 /* PinTaskContextSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002C /* PinTaskContextSheet.swift */; };
@@ -94,7 +94,7 @@
 		A00000000000000000000020 /* ReachabilityStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReachabilityStateTests.swift; sourceTree = "<group>"; };
 		A00000000000000000000027 /* HubNavigationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubNavigationModels.swift; sourceTree = "<group>"; };
 		A00000000000000000000028 /* HubCommandPaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubCommandPaletteView.swift; sourceTree = "<group>"; };
-		A00000000000000000000029 /* HubWorkspaceToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubWorkspaceToolbar.swift; sourceTree = "<group>"; };
+		A00000000000000000000029 /* HubSidebarControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubSidebarControls.swift; sourceTree = "<group>"; };
 		A0000000000000000000002A /* CommandPaletteMatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPaletteMatcherTests.swift; sourceTree = "<group>"; };
 		A0000000000000000000002B /* HubRecentsRetentionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubRecentsRetentionTests.swift; sourceTree = "<group>"; };
 		A0000000000000000000002C /* PinTaskContextSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinTaskContextSheet.swift; sourceTree = "<group>"; };

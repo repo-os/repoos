@@ -85,10 +85,9 @@ async function flush(): Promise<void> {
   for (let i = 0; i < 5; i++) await nextTick();
 }
 
-function stubFetch(
-  task: Task,
-  stats: { filesChanged: number; additions: number; deletions: number },
-) {
+type DiffStats = { filesChanged: number; additions: number; deletions: number };
+
+function stubFetch(task: Task, stats: DiffStats | Promise<DiffStats>) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string) => {
@@ -97,7 +96,7 @@ function stubFetch(
       if (url.includes("/api/index"))
         return json({ tasks: [task], counts: { ...EMPTY_COUNTS, ready: 1 }, taskCount: 1 });
       // Must be checked before the bare /api/tasks/<id> route below.
-      if (url.includes("/diff-stats")) return json({ ok: true, stats });
+      if (url.includes("/diff-stats")) return json({ ok: true, stats: await stats });
       if (url.includes(`/api/tasks/${task.id}`)) return json(task);
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
       throw new Error("unexpected fetch: " + url);
@@ -105,8 +104,11 @@ function stubFetch(
   );
 }
 
-async function mountCard(pinia: Pinia, task: Task) {
-  const stats = { filesChanged: 10, additions: 377, deletions: 5 };
+async function mountCard(
+  pinia: Pinia,
+  task: Task,
+  stats: DiffStats = { filesChanged: 10, additions: 377, deletions: 5 },
+) {
   stubFetch(task, stats);
   const repo = useRepoStore();
   await repo.init();
@@ -168,6 +170,46 @@ describe("TaskCard file-change chip (#0776)", () => {
     expect(chip.find("svg").exists()).toBe(true);
     // Line counts stay available in the tooltip.
     expect(chip.attributes("title")).toBe("10 files, +377 −5");
+  });
+
+  it("shows no chip or placeholder when a branched task has no changes", async () => {
+    const pinia = newPinia();
+    const task = makeTask({ branch: "feat/no-changes" });
+    const wrapper = await mountCard(pinia, task, {
+      filesChanged: 0,
+      additions: 0,
+      deletions: 0,
+    });
+
+    expect(wrapper.find(".tc-file-chip").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("0 changes");
+  });
+
+  it("does not show a chip while diff stats are loading", async () => {
+    const pinia = newPinia();
+    const task = makeTask({ branch: "feat/no-changes" });
+    let resolveStats!: (stats: DiffStats) => void;
+    const stats = new Promise<DiffStats>((resolve) => {
+      resolveStats = resolve;
+    });
+    stubFetch(task, stats);
+    const repo = useRepoStore();
+    await repo.init();
+    const wrapper = mount(TaskCard, {
+      props: { task, dragEnabled: false },
+      global: { plugins: [pinia] },
+    });
+    await flush();
+
+    expect(repo.diffStatsFor(task.id)).toBeUndefined();
+    expect(wrapper.find(".tc-file-chip").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("0 changes");
+
+    resolveStats({ filesChanged: 0, additions: 0, deletions: 0 });
+    await vi.waitFor(() => expect(repo.diffStatsFor(task.id)).toBeDefined());
+    await flush();
+    expect(wrapper.find(".tc-file-chip").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("0 changes");
   });
 });
 

@@ -101,9 +101,10 @@ that same column. Nothing else changes: the branch and worktree are kept, so an
 archived task resumes exactly where it left off.
 
 Use **Archive task** at the bottom of the task panel and optionally give a
-reason. Archiving is refused while a run, review, preview, or close-out is
-still live, because hiding a half-stopped run from the automatic scanners
-would orphan it — stop the work first.
+reason. Archiving is refused while a run, review, or close-out is still live,
+because hiding a half-stopped run from the automatic scanners would orphan it —
+stop the work first. A running preview is not a refusal: archiving stops it
+(the recorded preview process and its build shell) as part of parking the task.
 
 Archived tasks live in a minimised **Archived (n)** list below the board on the
 Work Queue page. Archiving is orthogonal to status: there is no `archived`

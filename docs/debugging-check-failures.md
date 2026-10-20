@@ -90,6 +90,13 @@ concluding anything.
   every `bun run test` now runs a global reap that **warns when it removes >50
   in one run** — that warning is how a new leak becomes visible, so don't
   ignore it.
+  A later warning (74 dirs, #0858) traced to files that never cleaned their own
+  fixture roots at all — `built-in-agents.test.ts` alone created one
+  `repoos-techdebt-*` per test. Each test file now gets its own tmpdir under a
+  per-run root (`src/ui-app/tests/setup/tmp-isolation.ts`), which is removed
+  both at the end of the file and in `global-reap`'s teardown after every
+  worker exits, so the warning should only fire after a crashed or killed
+  worker.
 - **Nothing enforced formatting before `665f6289`**, so source drifted while
   `dist/` built fine. `fmt:check` + `lint` are now part of the gate.
 

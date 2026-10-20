@@ -17,6 +17,7 @@ import {
 import { cmdDocs, cmdNewDoc } from "../commands/docs.js";
 import { cmdStory } from "../commands/stories.js";
 import { cmdSchedule } from "../commands/schedule.js";
+import { cmdReminder } from "../commands/reminder.js";
 import { cmdGc } from "../commands/gc.js";
 import { cmdMigrate } from "../commands/migrate.js";
 import { cmdOutline } from "../commands/outline.js";
@@ -217,6 +218,11 @@ function main(): void {
     case "story":
     case "stories":
       cmdStory(rest);
+      break;
+    case "reminder":
+      void cmdReminder(rest).then((code) => {
+        process.exitCode = code;
+      });
       break;
     case "schedule":
     case "schedules":

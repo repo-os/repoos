@@ -237,7 +237,7 @@ export async function enqueueCloseOutForTask(
     }
   }
 
-  await previews.stop(id);
+  await previews.stop(id, "task done");
   reviews.cancel(id);
   void runner.stop(id);
 

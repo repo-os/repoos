@@ -56,6 +56,12 @@ const FILE_CLI_MATCHERS: Matcher[] = [
   re("DELETE", /^\/api\/tasks\/([^/]+)$/.source),
   exact("GET", "/api/check-plan"),
   // `repoos schedule …` (#0093): task schedule definitions under schedules/.
+  exact("GET", "/api/reminders"),
+  exact("POST", "/api/reminders"),
+  re("PATCH", /^\/api\/reminders\/([^/]+)$/.source),
+  re("DELETE", /^\/api\/reminders\/([^/]+)$/.source),
+  re("POST", /^\/api\/reminders\/([^/]+)\/done$/.source),
+  re("POST", /^\/api\/reminders\/([^/]+)\/snooze$/.source),
   exact("GET", "/api/schedules"),
   exact("POST", "/api/schedules"),
   exact("POST", "/api/schedules/preview"),

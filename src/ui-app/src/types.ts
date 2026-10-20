@@ -859,6 +859,7 @@ export type RepoEvent =
       runDoc: string | null;
       at: string;
     }
+  | { type: "reminder.changed"; at: string }
   | { type: "schedule.changed"; at: string }
   | {
       type: "schedule.run";

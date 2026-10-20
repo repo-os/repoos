@@ -202,7 +202,11 @@ export async function runCtoSafeAction(
         defaultStatus: deps.config.defaultStatus,
         defaultAssignee: deps.config.defaultAssignee,
       });
-      const note = `CTO action: restart-stalled-agent (${strategy}) · ${reason}`;
+      // #0850: record a paused-allowlist fallback with the restart, so the
+      // activity log names the pair actually used and why.
+      const note = `CTO action: restart-stalled-agent (${strategy}) · ${reason}${
+        launch.pauseNote ? ` · ${launch.pauseNote}` : ""
+      }`;
       recordChange(current, note);
       writeFileSync(task.absPath, serializeTask(current));
       commitTaskFile(deps.config.root, task.absPath, `docs(${current.id}): CTO restart engineer`);

@@ -28,11 +28,18 @@ and the safe `.env.example` — is in
    field (for example `NTFY_BASE_URL` overrides `ntfyBaseUrl`, and
    `REPOOS_RESEND_API_KEY` fills `[auth.emailProvider]`).
 
-`repoos.toml` is deliberately small and flat. Values stay on one line: RepoOS
-does not accept multi-line arrays, multi-line strings, or inline tables. Nested
-sections use `[section]` headers and arrays of tables use `[[section]]` rows.
-The only place the parser accepts both `[check]` and `[checks]` spellings is the
-`[check]` section, kept for backwards compatibility.
+`repoos.toml` is deliberately small and flat. Nested sections use `[section]`
+headers and arrays of tables use `[[section]]` rows. The parser supports any
+valid TOML scalar string form: basic (`"..."`), literal (`'...'`), multi-line
+basic (`"""..."""`), and multi-line literal (`'''...'''`). Multi-line arrays
+and inline tables are not accepted; the only place the parser accepts both
+`[check]` and `[checks]` spellings is the `[check]` section, kept for backwards
+compatibility.
+
+A write from Settings or `repoos config set` rewrites the rows it touches as
+single-line basic strings (`"..."`), so a hand-written `'''...'''` value keeps
+the same decoded text — only its quoting style may change. Rows it does not
+touch are preserved byte-for-byte, including their multi-line strings.
 
 The Settings UI edits the most common fields directly, and its raw
 `repoos.toml` editor can edit the whole file — including `[preview]`, `[check]`,
@@ -96,11 +103,14 @@ closeOut.timeoutMs = 360000  # 6-minute budget per close-out attempt; 0 = no lim
 
 # ── Budget controls (agent drivers) ──────────────────────────────────────
 # Steer agent drivers (CLI/API sessions) to a human-approved subset of
-# coding agents + models. Empty = unrestricted. Edit on the Agents page's
-# Budget Controls tab, or as [[budget.allowlist]] rows here.
+# coding agents + models. Empty = unrestricted. Pause an entry with
+# paused/pausedUntil/pausedReason (agent) or pausedModels (one model)
+# instead of deleting it. Edit on the Agents page's Budget Controls tab,
+# or as [[budget.allowlist]] rows here.
 # [[budget.allowlist]]
 # cli = "opencode"
 # models = ["big pickle", "deepseek v4"]
+# paused = false
 
 # ── Approval policy (opt-in; default off) ────────────────────────────────
 # approval.enabled = true
@@ -493,12 +503,26 @@ models = ["sonnet"]
 | --- | --- | --- | --- | --- |
 | `budget.allowlist[].cli` | string | *(required)* | yes | A coding-agent CLI id (the `AGENT_CLIS` string, e.g. `opencode`, `claude code`). An agent driver may only use a listed CLI. |
 | `budget.allowlist[].models` | array of strings | *(required)* | yes | The model ids allowed for that CLI. A model not listed is refused. Rows for the same `cli` are merged; a row with no models is dropped. |
+| `budget.allowlist[].paused` | boolean | `false` | yes | Pauses the whole agent (every model on the row) without removing it. A paused entry is never selected by defaults, Start, dispatch, failover or agent drivers. |
+| `budget.allowlist[].pausedUntil` | ISO date/time | *(none — indefinite)* | yes | When the pause ends. The entry resumes automatically at that time with no restart. |
+| `budget.allowlist[].pausedReason` | string | *(none)* | yes | Free-text reason shown with the Paused chip and in fallback logs. |
+| `budget.allowlist[].pausedModels` | array of strings or `{ model, pausedUntil?, pausedReason? }` | *(none)* | yes | Pauses individual models. Use the object form to give one model its own resume date/reason. A bare `"default"` model selection is treated as paused if any model on its row is paused (fail closed). |
 
 Edit it on the **Agents page → Budget Controls tab**
 (`/agents?tab=budget-controls`), which lists each allowed agent with its models
 collapsed by default and adds entries through the shared coding agent + model
-selector. The `budget.allowlist` key is also in the Settings schema so search
-can find it.
+selector. Each row and model chip has **Pause** / **Resume** controls; Pause
+opens a dialog for an optional resume date/time and reason. From a driver shell,
+use `repoos agents pause <agent> [--model <model>] [--until <date>] [--reason "…"]`
+and `repoos agents resume <agent> [--model <model>]`. The `budget.allowlist` key
+is also in the Settings schema so search can find it.
+
+When an allowlist entry is paused, selection falls back to the next allowed
+pair that is not paused and records the swap (and the reason) in the task's
+activity log. If every allowed pair is paused, starting a task fails with
+"All allowed agent+model pairs are paused" instead of retrying the same broken
+pair. A per-task override a **human** set in the UI keeps working even if that
+pair is paused; an agent driver's attempt to set a paused override is refused.
 
 Enforcement: when an agent driver sets an engineer/reviewer override
 (`repoos override <id> --cli … --model …`, or a direct

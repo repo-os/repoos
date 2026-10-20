@@ -1,0 +1,82 @@
+---
+id: "0859"
+title: "Easter eggs bundle: tmp-fixture leak hardening (follow-ups from #0858)"
+type: chore
+status: inbox
+priority: p3
+area: [core, web]
+depends_on: ["0858"]
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-20T03:43:18Z"
+updated_at: "2026-10-20T03:43:18Z"
+---
+## Items
+
+- [ ] **E1 · Server teardown survives a browser-close failure** (core) — in the UI smoke and contrast harnesses, close the server in its own `finally` so a throwing `context.close()`/`browser.close()` cannot skip it. Source: #0858 review, 2026-10-20.
+- [ ] **E2 · Worker-kill reaches nested fixtures deeper than 4 levels** (core) — `killSpawnedLogs` recurses only four levels, so a deeper fixture's child process survives a worker kill. Source: #0858 review.
+- [ ] **E3 · Test the smoke/contrast "0 new dirs in the real tmpdir" behaviour** (core) — that half of #0858's fix was only hand-verified. Source: #0858 review.
+
+Add further small, independent fixes here with `repoos bundle add <id> ...` (one open bundle at a time). Start this bundle after #0858 lands.
+
+## E1 · Server teardown survives a browser-close failure
+
+### Problem
+In `src/commands/ui-smoke.ts` and `src/commands/ui-contrast-audit.ts` (via `ui-harness.ts`), if `context.close()` or `browser.close()` throws, `await server.close()` is skipped and the fixture directory is still deleted while the server keeps running. The `port === 0` root-reaper fires `void handle.close()` asynchronously, so the leak can still recur on that narrow failure path. This ordering already existed before #0858; it is a hardening item, not a regression.
+
+### Desired UX
+Server shutdown always runs, whether or not browser/context teardown fails, and a teardown error is reported without hiding the original result.
+
+### Acceptance criteria
+- Test: with a browser/context `close()` that throws, `server.close()` is still awaited and the fixture dir is removed only after the server is closed.
+- Test: when both throw, both errors surface (for example `Promise.allSettled` plus a combined message) and the harness still exits with the right status.
+
+### Notes for AI
+Move `await server.close()` into its own `finally`, or run browser and server teardown through `Promise.allSettled`. Keep the harness's exit codes unchanged. Never touch repoos.toml.
+
+## E2 · Worker-kill reaches nested fixtures deeper than 4 levels
+
+### Problem
+`killSpawnedLogs` recurses only 4 levels. A fixture nested deeper than that survives a worker kill: its directory is still removed but its child process is not. The review also noticed a comment/Findings line saying "scans one nested level" while the code scans four; fix any such wording that is in the repo.
+
+### Desired UX
+A worker kill reaches every spawned fixture process however deep the fixture is nested, or the depth limit is explicit, raised and documented with a reason.
+
+### Acceptance criteria
+- Test: a fixture nested deeper than four levels has its child process stopped on worker kill (or the documented new limit is enforced and tested at its boundary).
+- Any in-repo comment or doc that says the scan covers one nested level is corrected to match the code.
+
+### Notes for AI
+Start from the `killSpawnedLogs` helper added in #0858 (src/ui-app/tests/setup or helpers). Prefer an iterative walk with a generous cap over a small recursion depth. Kill by recorded PID only, never by name. Never touch repoos.toml.
+
+## E3 · Test the smoke/contrast "0 new dirs in the real tmpdir" behaviour
+
+### Problem
+#0858 fixed the smoke and contrast harnesses so they no longer leave `repoos-*` directories in the real tmpdir, but that half of the fix was only checked by hand. Nothing will catch a regression.
+
+### Desired UX
+A test fails if running the smoke or contrast harness (or its fixture creation path) adds directories to the real tmpdir.
+
+### Acceptance criteria
+- Test: run the harness's fixture setup and teardown against a temporary TMPDIR and assert zero new `repoos-*` entries remain, including after a simulated browser-close failure (ties into E1).
+- The test runs in the normal suite without needing Playwright (use the fixture helpers or a fake browser).
+
+### Notes for AI
+Reuse the tmp-isolation and reap helpers from #0858 (`tmp-isolation.ts`, `global-reap.ts`, `reap-fixtures.test.ts`). Never touch repoos.toml.
+
+## Problem
+Three small, independent follow-ups from #0858's review; see the E-sections.
+
+## Desired UX
+No leaked servers or fixture processes after a failed browser teardown or a worker kill, and a test that notices if smoke/contrast leak tmp dirs again.
+
+## Acceptance criteria
+See each item's Acceptance criteria (E1, E2, E3); all items must hold.
+
+## Notes for AI
+Items are independent; edit them with `repoos bundle edit`, never a full `--body`. Never touch repoos.toml.
+
+## Activity
+
+- 2026-10-20T03:43:18Z · created · njachowski@gmail.com

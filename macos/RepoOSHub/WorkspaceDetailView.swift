@@ -26,7 +26,6 @@ struct WorkspaceDetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
-        .navigationTitle(appState.selectedEntry?.name ?? "Workspace")
     }
 }
 

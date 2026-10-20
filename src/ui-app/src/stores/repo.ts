@@ -11,6 +11,7 @@ import {
 import { useUiStore, type PendingScreenshot } from "./ui";
 import { useNotificationsStore, type NotificationType } from "./notifications";
 import { useNoticesStore } from "./notices";
+import { useRemindersStore } from "./reminders";
 import { describeCloseOutFailure } from "../lib/closeOutFailure";
 import { builtInRunNotice } from "../lib/builtInRunNotice";
 import { retryCountFrom } from "../lib/retryHints";
@@ -1434,6 +1435,10 @@ export const useRepoStore = defineStore("repo", () => {
       void useNoticesStore().pollAttention();
       return;
     }
+    if (e.type === "reminder.changed") {
+      void useRemindersStore().refresh();
+      return;
+    }
     if (e.type === "schedule.changed") {
       void refreshSchedules();
       return;
@@ -2223,6 +2228,7 @@ export const useRepoStore = defineStore("repo", () => {
       "hello",
       "index.rebuilt",
       "input.enriched",
+      "reminder.changed",
       "schedule.changed",
       "schedule.run",
       "task.created",

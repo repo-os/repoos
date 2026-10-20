@@ -48,6 +48,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // a capture can show the combined area chip, the human chip and the
   // file-count chip.
   "board:cardChips",
+  // #0847 — a ready human task with a branch and zero diff stats, so shots
+  // verify the card has no empty file-change chip.
+  "card:noChanges",
   // #0787 — active engineer run on the board so captures can show the compact
   // coding indicator on a task card.
   "board:activeCoding",
@@ -82,8 +85,12 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "panel:newInputOutstandingUpload",
   // #0664 — New-task freeform panel with a failed screenshot retry row.
   "panel:freeformFailedScreenshot",
+  // #0850 — Agents page Budget Controls with a paused allowlist row, so a
+  // capture can show the Paused chip, reason and resume date.
+  "budget:paused",
   // #0841 — Agents scheduled tab with the New schedule drawer open.
   "schedule:newPanel",
+  "reminders:due",
 ] as const;
 
 export type ShotPreviewFixtureId = (typeof SHOT_PREVIEW_FIXTURE_IDS)[number];

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ServerSidebarView: View {
     @EnvironmentObject private var appState: HubAppState
+    @Binding var columnVisibility: NavigationSplitViewVisibility
 
     private var serverSelection: Binding<UUID?> {
         Binding(
@@ -16,59 +17,74 @@ struct ServerSidebarView: View {
             sidebarBackground
                 .ignoresSafeArea()
                 .padding(.leading, -16)
-            List(selection: serverSelection) {
-                if !appState.pinnedTaskContextsForSidebar.isEmpty {
-                    Section("Pinned tasks") {
-                        ForEach(appState.pinnedTaskContextsForSidebar) { context in
-                            PinnedContextSidebarRow(context: context)
-                        }
-                    }
-                }
+            VStack(spacing: 0) {
+                HubSidebarNavigationBar(columnVisibility: $columnVisibility)
+                serverList
+            }
+        }
+    }
 
-                if !appState.pinnedEntries.isEmpty {
-                    Section("Pinned") {
-                        ForEach(appState.pinnedEntries) { entry in
-                            ServerSidebarRow(entry: entry)
-                                .tag(entry.id)
-                        }
-                        .onMove(perform: appState.movePinned)
-                    }
-                }
-
-                ForEach(appState.groupedEntries, id: \.title) { group in
-                    Section(group.title) {
-                        ForEach(group.entries) { entry in
-                            ServerSidebarRow(entry: entry)
-                                .tag(entry.id)
-                        }
-                        .onMove { source, destination in
-                            appState.moveGroup(named: group.title, from: source, to: destination)
-                        }
+    private var serverList: some View {
+        List(selection: serverSelection) {
+            if !appState.pinnedTaskContextsForSidebar.isEmpty {
+                Section("Pinned tasks") {
+                    ForEach(appState.pinnedTaskContextsForSidebar) { context in
+                        PinnedContextSidebarRow(context: context)
                     }
                 }
             }
-            .listStyle(.sidebar)
-            .scrollContentBackground(.hidden)
-            .navigationTitle("RepoOS")
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                Button {
-                    appState.presentAddServer()
-                } label: {
-                    Label("Add server", systemImage: "plus")
-                        .frame(maxWidth: .infinity)
+
+            if !appState.pinnedEntries.isEmpty {
+                Section("Pinned") {
+                    ForEach(appState.pinnedEntries) { entry in
+                        ServerSidebarRow(entry: entry)
+                            .tag(entry.id)
+                    }
+                    .onMove(perform: appState.movePinned)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.regular)
-                .padding(12)
-                .background(sidebarBackground)
-                .help("Add a RepoOS server to the local registry")
             }
-            .overlay {
-                if appState.entries.isEmpty {
-                    SidebarEmptyHint()
+
+            ForEach(appState.groupedEntries, id: \.title) { group in
+                Section(group.title) {
+                    ForEach(group.entries) { entry in
+                        ServerSidebarRow(entry: entry)
+                            .tag(entry.id)
+                    }
+                    .onMove { source, destination in
+                        appState.moveGroup(named: group.title, from: source, to: destination)
+                    }
                 }
             }
         }
+        .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            sidebarFooter
+        }
+        .overlay {
+            if appState.entries.isEmpty {
+                SidebarEmptyHint()
+            }
+        }
+    }
+
+    private var sidebarFooter: some View {
+        VStack(spacing: 8) {
+            Button {
+                appState.presentAddServer()
+            } label: {
+                Label("Add server", systemImage: "plus")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
+            .help("Add a RepoOS server to the local registry")
+
+            HubSidebarSettingsButton()
+                .environmentObject(appState)
+        }
+        .padding(12)
+        .background(sidebarBackground)
     }
 
     private var sidebarBackground: Color {
@@ -78,6 +94,40 @@ struct ServerSidebarView: View {
         case .light, .system:
             return .white
         }
+    }
+}
+
+/// Application-level Settings, kept in the sidebar footer beside the other
+/// app-wide controls rather than competing with server navigation (#0855).
+private struct HubSidebarSettingsButton: View {
+    @EnvironmentObject private var appState: HubAppState
+    @State private var isHovering = false
+
+    var body: some View {
+        Button {
+            HubSettingsOpener.open(appState: appState)
+        } label: {
+            HStack(spacing: 7) {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 12, weight: .medium))
+                    .frame(width: 16)
+                Text("Settings")
+                    .font(.subheadline)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(isHovering ? Color.primary.opacity(0.07) : Color.clear)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .help("RepoOS Hub settings")
+        .accessibilityLabel("RepoOS Hub settings")
     }
 }
 

@@ -17,6 +17,12 @@ const props = defineProps<{
    */
   memoryKey: string;
   disabled?: boolean;
+  /**
+   * Label shown while nothing is chosen yet (#0856). Defaults to
+   * "Agent + Model" so existing consumers keep their wording; a creation
+   * flow can pass a clearly-empty "Select…" prompt instead.
+   */
+  placeholder?: string;
 }>();
 
 const emit = defineEmits<{
@@ -26,14 +32,18 @@ const emit = defineEmits<{
 
 const modalOpen = ref(false);
 
-const cliLabel = computed(() => props.cli || "Agent");
-const modelLabel = computed(() => (props.model ? labelForModel(props.model, props.cli) : "Model"));
+const label = computed(() => {
+  if (!props.cli && !props.model) return props.placeholder ?? "Agent + Model";
+  const cli = props.cli || "Agent";
+  const model = props.model ? labelForModel(props.model, props.cli) : "Model";
+  return `${cli} + ${model}`;
+});
 </script>
 
 <template>
   <button type="button" class="am-control" :disabled="disabled" @click="modalOpen = true">
     <Settings2 class="size-3.5 am-control-icon" />
-    <span class="am-control-label">{{ cliLabel }} + {{ modelLabel }}</span>
+    <span class="am-control-label">{{ label }}</span>
   </button>
   <AgentModelModal
     :open="modalOpen"
