@@ -27,6 +27,18 @@ describe("repoos.toml and environment docs", () => {
     expect(missing).toEqual([]);
   });
 
+  it("exposes remindersDir as a guarded layout setting (#0860)", () => {
+    const field = getConfigSchema().find((f) => f.key === "remindersDir");
+    expect(field).toMatchObject({
+      type: "string",
+      tier: "guarded",
+      restartRequired: true,
+      default: "reminders",
+    });
+    expect(field?.label).toMatch(/reminders/i);
+    expect(field?.description).toMatch(/reminder/i);
+  });
+
   it("documents every key the parser supports, including parser-only sections", () => {
     // Normalize the doc's `preview.targets[]` array notation so it matches the
     // dotted parser keys.

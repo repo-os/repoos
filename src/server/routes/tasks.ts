@@ -4094,7 +4094,13 @@ export const getMergeConflictForTask: RouteHandler = async (ctx, _req, res, para
   const dirs = bookkeepingDirs(config);
   const conflict = await computeMergeConflict(config.root, task.branch, {
     autoResolve: [relative(config.root, task.absPath)],
-    autoResolveOurs: [`${dirs.workDir}/`, `${dirs.inputsDir}/`, `${dirs.storiesDir}/`],
+    autoResolveOurs: [
+      `${dirs.workDir}/`,
+      `${dirs.inputsDir}/`,
+      `${dirs.storiesDir}/`,
+      `${dirs.remindersDir}/`,
+      `${dirs.schedulesDir}/`,
+    ],
   });
   return json(res, 200, { ok: true, conflict });
 };
