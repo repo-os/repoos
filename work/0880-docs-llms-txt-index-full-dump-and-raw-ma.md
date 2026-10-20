@@ -13,7 +13,7 @@ branch: feat/docs-llms-txt-index-full-dump-and-raw-ma
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:01:19Z"
-updated_at: "2026-10-20T20:32:13Z"
+updated_at: "2026-10-20T20:33:39Z"
 ---
 ## Problem
 
@@ -59,3 +59,4 @@ Kept `vitepress-plugin-llms` (devDependency of `user-docs/`) rather than hand-wr
 - 2026-10-20T20:27:44Z · body
 - 2026-10-20T20:29:51Z · body
 - 2026-10-20T20:32:13Z · body
+- 2026-10-20T20:33:39Z · body
