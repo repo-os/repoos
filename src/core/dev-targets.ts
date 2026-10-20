@@ -305,6 +305,44 @@ export function canonicalServiceToken(raw: string): string {
 }
 
 /**
+ * The first pair of distinct service names in `names` that normalize to the
+ * same placeholder token (`api-v1` / `api_v1`), or undefined. The ONE collision
+ * check: config validation runs it over the target's full resolved service set
+ * (listed services plus their transitive `dependsOn`) and the supervisor runs
+ * it over the services it is about to boot, so the two can never disagree about
+ * which stacks are ambiguous (#0843 review round 25).
+ */
+export function findServiceTokenClash(
+  names: Iterable<string>,
+): { first: string; second: string; token: string } | undefined {
+  const seen = new Map<string, string>();
+  for (const name of names) {
+    const token = canonicalServiceToken(name);
+    const first = seen.get(token);
+    if (first !== undefined && first !== name) return { first, second: name, token };
+    seen.set(token, name);
+  }
+  return undefined;
+}
+
+/**
+ * A `dev` config block safe to send to a browser: every target's and service's
+ * `env` is dropped (values may be credentials). The server keeps the real
+ * values; the Settings round-trip restores them from disk by row identity.
+ */
+export function redactDevEnv<T extends { targets?: unknown; services?: unknown }>(dev: T): T {
+  const strip = (rows: unknown): unknown =>
+    Array.isArray(rows)
+      ? rows.map((row) => {
+          if (!row || typeof row !== "object") return row;
+          const { env: _env, ...rest } = row as Record<string, unknown>;
+          return rest;
+        })
+      : rows;
+  return { ...dev, targets: strip(dev.targets), services: strip(dev.services) };
+}
+
+/**
  * The single grammar for a service port/URL placeholder (#0843 review round
  * 23): `{<token>.port}` / `{<token>.url}`, case-insensitive, with the same
  * name characters the config accepts and optional whitespace. A token may
@@ -653,7 +691,6 @@ export function devTargetServiceErrors(
   };
   for (const t of targets) {
     const listed = new Set<string>();
-    const tokenNames = new Map<string, string>();
     for (const name of t.services ?? []) {
       if (!known.has(name)) {
         errors.push(
@@ -666,19 +703,6 @@ export function devTargetServiceErrors(
         continue;
       }
       listed.add(name);
-      // Two distinct names can normalize to the same placeholder token
-      // (`api-v1` / `api_v1`); the documented `{<name>.port}` reference would
-      // then be ambiguous, so reject it as a config error rather than silently
-      // disambiguating it with an undocumented suffix (#0843 review).
-      const token = canonicalServiceToken(name);
-      const clash = tokenNames.get(token);
-      if (clash) {
-        errors.push(
-          `[dev.targets] ${t.name}: services "${clash}" and "${name}" both map to the placeholder "{${token}.port}" — rename one so each has a distinct token`,
-        );
-        continue;
-      }
-      tokenNames.set(token, name);
     }
 
     // Dependencies are implicitly part of the started service set, so refs in
@@ -693,6 +717,16 @@ export function devTargetServiceErrors(
       for (const dependency of service.dependsOn ?? []) include(dependency);
     };
     for (const name of listed) include(name);
+    // Two distinct names can normalize to the same placeholder token
+    // (`api-v1` / `api_v1`), which makes the documented `{<name>.port}`
+    // reference ambiguous. Check the FULL resolved set, dependencies included:
+    // that is exactly what Start boots (#0843 review rounds 23 and 25).
+    const clash = findServiceTokenClash(available);
+    if (clash) {
+      errors.push(
+        `[dev.targets] ${t.name}: services "${clash.first}" and "${clash.second}" both map to the placeholder "{${clash.token}.port}" — rename one so each has a distinct token`,
+      );
+    }
     validateFields(
       `dev.targets ${t.name}`,
       [t.command, t.cwd, t.url, t.healthCheck?.url, ...Object.values(t.env ?? {})],

@@ -54,7 +54,11 @@ import {
   PORT_IN_USE,
   type DevFailure,
 } from "../core/dev-failure.js";
-import { canonicalServiceToken, expandServiceRefs } from "../core/dev-targets.js";
+import {
+  canonicalServiceToken,
+  expandServiceRefs,
+  findServiceTokenClash,
+} from "../core/dev-targets.js";
 
 /** The four states a dev target can be in. */
 export type DevTargetStatus = "running" | "stopped" | "starting" | "failed";
@@ -582,17 +586,12 @@ export class DevTargetManager {
     // that normalize to the same token (`api-v1` and `api_v1`) make the
     // documented `{<token>.port}` reference ambiguous, so fail loudly rather
     // than silently disambiguating it (#0843 review).
-    const seenTokens = new Map<string, string>();
-    for (const def of resolved.defs) {
-      const token = canonicalServiceToken(def.name);
-      const clash = seenTokens.get(token);
-      if (clash) {
-        return fail(
-          `services "${clash}" and "${def.name}" both map to the placeholder ` +
-            `"{${token}.port}" — rename one so each has a distinct token`,
-        );
-      }
-      seenTokens.set(token, def.name);
+    const clash = findServiceTokenClash(resolved.defs.map((def) => def.name));
+    if (clash) {
+      return fail(
+        `services "${clash.first}" and "${clash.second}" both map to the placeholder ` +
+          `"{${clash.token}.port}" — rename one so each has a distinct token`,
+      );
     }
 
     const servicePorts = new Map<string, number>();
