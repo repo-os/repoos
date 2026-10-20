@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T09:18:01Z"
+updated_at: "2026-10-20T09:22:21Z"
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -32,7 +32,7 @@ Shot capture and UI verification can run on a runner:
 - Settings control, docs/remote-validation.md and docs/previews.md updated.
 
 ## Notes for AI
-Start with the design doc and a small spike: reuse validate.sh, the bundle upload and the artifacts channel from remote validation, and the existing shot planner (src/core/shot-plan.ts, src/server/shot*.ts). Depends on nothing but benefits from the preview-teardown fix (separate task). Do not touch repoos.toml. Source: Nick, 2026-10-19.\n\nRemote end-to-end proof is still outstanding. On 2026-10-20, the runner probe succeeded and the configured Tailscale hosts reported no active or queued jobs. I attempted one direct TailscaleRunner browser capture for task 0854 at candidate SHA 2ce0b812305e74539f33547fcfdf2de2e3013698; it remained blocked before returning any capture result or artifacts and was stopped after more than two minutes. The configured runner uses a prebuilt repoos-ci image, so the Dockerfile WebKit installation in this branch has not yet been verified in that image. A human must rebuild/deploy the runner image from scripts/remote-runner/Dockerfile.ci, then hand off a UI-visible task with browserCaptureMode set to runner-only and verify the returned PNGs, shots.json, and UI verification record; record the local Playwright/WebKit process count immediately before and during that handoff and confirm it does not increase.
+Start with the design doc and a small spike: reuse validate.sh, the bundle upload and the artifacts channel from remote validation, and the existing shot planner (src/core/shot-plan.ts, src/server/shot*.ts). Depends on nothing but benefits from the preview-teardown fix (separate task). Do not touch repoos.toml. Source: Nick, 2026-10-19.\n\nRemote end-to-end proof is still outstanding. On 2026-10-20, the runner probe succeeded. The first direct TailscaleRunner browser capture attempt for task 0854 at candidate SHA 2ce0b812305e74539f33547fcfdf2de2e3013698 returned no capture result or artifacts after more than two minutes. After the scoped check passed and the runner slot became free, I retried once at candidate SHA 7c59a6b3e35d15f8acac44e35720d348490d9077. That attempt waited while bee was running task 0861 and still returned no capture result/artifacts after 2m40s, so I stopped it; neither attempt is proof of remote capture. The configured runner uses a prebuilt repoos-ci image, so the Dockerfile WebKit installation in this branch has not yet been verified in that image. A human must rebuild/deploy the runner image from scripts/remote-runner/Dockerfile.ci, then hand off a UI-visible task with browserCaptureMode set to runner-only and verify the returned PNGs, shots.json, and UI verification record; record the local Playwright/WebKit process count immediately before and during that handoff and confirm it does not increase.
 
 ## Shots
 ```json
@@ -100,3 +100,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T09:08:47Z · message_queued at 2026-10-20T09:08:47.062Z
 - 2026-10-20T09:14:21Z · body
 - 2026-10-20T09:18:01Z · body
+- 2026-10-20T09:22:21Z · body: Notes for AI (added 1, removed 1)
