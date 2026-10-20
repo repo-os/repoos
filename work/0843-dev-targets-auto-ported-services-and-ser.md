@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T04:51:32Z"
+updated_at: "2026-10-20T05:17:30Z"
 review_passes: 10
 review_rounds: 2
 dev_error_count: 1
@@ -173,3 +173,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T04:46:55Z · status review→active
 - 2026-10-20T04:47:04Z · needs_input
 - 2026-10-20T04:51:32Z · body
+- 2026-10-20T05:17:30Z · message_queued at 2026-10-20T05:17:30.337Z
