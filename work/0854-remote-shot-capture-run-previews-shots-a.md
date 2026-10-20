@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: c901144ecd9535bba7464aede335bb76abcc67d2
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
@@ -12,8 +14,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
 updated_at: "2026-10-20T07:27:44Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on thinkpad — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 238826f5072be220a6a7a5fe1ac19aa5ffb346a4
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -84,3 +84,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T07:20:43Z · status active→review
 - 2026-10-20T07:20:43Z · note: handoff requested (cli)
 - 2026-10-20T07:27:44Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on thinkpad — fix it in the feature branch and re-run the gate
+
