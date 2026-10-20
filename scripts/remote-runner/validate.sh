@@ -163,6 +163,7 @@ docker run --rm \
   -e BUN_INSTALL_CACHE_DIR=/bun-cache \
   -e BUN_TMPDIR=/tmp \
   -e HOME=/repo \
+  -e REPOOS_ROOT=/repo \
   -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
   -w /repo \
   --user "$(id -u):$(id -g)" \

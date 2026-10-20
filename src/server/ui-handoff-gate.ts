@@ -55,6 +55,8 @@ import {
   captureCommandEntries,
   captureEntryPage,
   planAutoCapture,
+  reserveBrowserCapture,
+  releaseBrowserCapture,
   type CommandCaptureEvidence,
   type ShotCaptureResult,
 } from "./shot-capture.js";
@@ -619,47 +621,57 @@ export async function runUiHandoffGate(
     config.remoteValidation?.browserCaptureMode &&
     config.remoteValidation.browserCaptureMode !== "local"
   ) {
-    const sourceWorktree =
-      (task.branch ? worktreePathForBranch(config.root, task.branch) : null) ?? config.root;
-    const head = await runGit(sourceWorktree, ["rev-parse", "HEAD"], 10_000);
-    const request =
-      task.branch && head.status === 0
-        ? {
-            taskId: task.id,
-            worktreePath: sourceWorktree,
-            branch: task.branch,
-            candidateSha: head.stdout.trim(),
-            operation: "verify" as const,
-          }
-        : null;
+    if (!reserveBrowserCapture(task.id)) {
+      return {
+        ok: false,
+        detail: "ui verification failed: a browser capture is already in flight for this task",
+      };
+    }
     try {
-      return await runBrowserCaptureWithPolicy({
-        config,
-        request: request ?? {
-          taskId: task.id,
-          worktreePath: config.root,
-          branch: task.branch ?? "",
-          candidateSha: "",
-          operation: "verify",
-        },
-        transport: request ? deps.remoteTransport : undefined,
-        local: () =>
-          runUiHandoffGate(
-            {
-              ...config,
-              remoteValidation: { ...config.remoteValidation, browserCaptureMode: "local" },
-            },
-            task,
-            previews,
-            log,
-            { ...deps, remoteTransport: undefined },
-          ),
-        note: (message) => log(task.id, "warn", `ui verification: ${message}`),
-        useArtifacts: async (artifacts) => importRemoteVerification(config, task, artifacts, log),
-      });
-    } catch (err) {
-      const detail = err instanceof Error ? err.message : String(err);
-      return { ok: false, detail: `ui verification failed: ${detail}` };
+      const sourceWorktree =
+        (task.branch ? worktreePathForBranch(config.root, task.branch) : null) ?? config.root;
+      const head = await runGit(sourceWorktree, ["rev-parse", "HEAD"], 10_000);
+      const request =
+        task.branch && head.status === 0
+          ? {
+              taskId: task.id,
+              worktreePath: sourceWorktree,
+              branch: task.branch,
+              candidateSha: head.stdout.trim(),
+              operation: "verify" as const,
+            }
+          : null;
+      try {
+        return await runBrowserCaptureWithPolicy({
+          config,
+          request: request ?? {
+            taskId: task.id,
+            worktreePath: config.root,
+            branch: task.branch ?? "",
+            candidateSha: "",
+            operation: "verify",
+          },
+          transport: request ? deps.remoteTransport : undefined,
+          local: () =>
+            runUiHandoffGate(
+              {
+                ...config,
+                remoteValidation: { ...config.remoteValidation, browserCaptureMode: "local" },
+              },
+              task,
+              previews,
+              log,
+              { ...deps, remoteTransport: undefined },
+            ),
+          note: (message) => log(task.id, "warn", `ui verification: ${message}`),
+          useArtifacts: async (artifacts) => importRemoteVerification(config, task, artifacts, log),
+        });
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err);
+        return { ok: false, detail: `ui verification failed: ${detail}` };
+      }
+    } finally {
+      releaseBrowserCapture(task.id);
     }
   }
 
@@ -1104,7 +1116,7 @@ export async function runUiHandoffGate(
   };
 }
 
-async function importRemoteVerification(
+export async function importRemoteVerification(
   config: RepoOSConfig,
   task: Task,
   artifacts: BrowserEvidenceArtifacts,
@@ -1114,9 +1126,6 @@ async function importRemoteVerification(
   const result = artifacts.results.verification as UiHandoffGateResult | undefined;
   if (!result || typeof result.ok !== "boolean" || typeof result.detail !== "string") {
     throw new Error("runner result omitted the UI verification outcome");
-  }
-  if (artifacts.files.some((file) => file.name === "shots/shots.json")) {
-    importShotArtifacts(config, taskId, artifacts.files);
   }
   const evidence = artifacts.files.find((file) => file.name === "verification.json");
   if (!evidence) {
@@ -1129,8 +1138,20 @@ async function importRemoteVerification(
   } catch {
     throw new Error("runner returned a malformed UI verification record");
   }
-  if (!evidenceJson || typeof evidenceJson !== "object") {
+  if (
+    !evidenceJson ||
+    typeof evidenceJson !== "object" ||
+    typeof (evidenceJson as UiHandoffGateEvidence).at !== "string" ||
+    !Array.isArray((evidenceJson as UiHandoffGateEvidence).issues) ||
+    !Array.isArray((evidenceJson as UiHandoffGateEvidence).blankShots) ||
+    !(evidenceJson as UiHandoffGateEvidence).blankShots.every((shot) => typeof shot === "string") ||
+    !Number.isInteger((evidenceJson as UiHandoffGateEvidence).captures) ||
+    (evidenceJson as UiHandoffGateEvidence).captures < 0
+  ) {
     throw new Error("runner returned an invalid UI verification record");
+  }
+  if (artifacts.files.some((file) => file.name === "shots/shots.json")) {
+    importShotArtifacts(config, taskId, artifacts.files);
   }
   const path = evidenceFile(config, taskId);
   mkdirSync(join(path, ".."), { recursive: true });

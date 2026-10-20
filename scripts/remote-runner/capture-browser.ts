@@ -1,13 +1,12 @@
 import { cpSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { createRepoOS } from "../../src/core/repoos.js";
-import { worktreesDir } from "../../src/core/config.js";
+import { worktreePathForBranch } from "../../src/core/git.js";
 import type { LogLevel } from "../../src/core/logger.js";
 import { captureDeclaredShot, runAutoShotCapture } from "../../src/server/shot-capture.js";
 import { PreviewManager } from "../../src/server/preview.js";
 import { runUiHandoffGate } from "../../src/server/ui-handoff-gate.js";
 import { shotsDir } from "../../src/server/shots.js";
-import { runGit } from "../../src/core/git.js";
 
 const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
 
@@ -33,9 +32,8 @@ async function captureBrowserEvidenceImpl(
     throw new Error("task branch contains an unsafe path");
   }
 
-  const linked = join(worktreesDir(root), task.branch);
-  const linkedCheck = await runGit(linked, ["rev-parse", "--show-toplevel"], 10_000);
-  if (linkedCheck.status !== 0) {
+  const linked = worktreePathForBranch(root, task.branch);
+  if (!linked) {
     throw new Error(`runner worktree for ${task.branch} is missing`);
   }
 
@@ -181,7 +179,7 @@ if (import.meta.main) {
     }
   }
   if (process.exitCode !== 3)
-    captureBrowserEvidence(process.cwd(), taskId ?? "", mode, dir, entry)
+    captureBrowserEvidence(process.env.REPOOS_ROOT || process.cwd(), taskId ?? "", mode, dir, entry)
       .then((result) => {
         console.log(`[browser-capture] ${result.detail}`);
         if (!result.ok) process.exitCode = 2;

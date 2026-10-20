@@ -130,6 +130,17 @@ export async function captureEntryPage(
 /** In-flight captures, so duplicate review transitions never double-run. */
 const inFlight = new Set<string>();
 
+/** Shared task-level reservation for local and runner browser evidence jobs. */
+export function reserveBrowserCapture(taskId: string): boolean {
+  if (inFlight.has(taskId)) return false;
+  inFlight.add(taskId);
+  return true;
+}
+
+export function releaseBrowserCapture(taskId: string): void {
+  inFlight.delete(taskId);
+}
+
 /**
  * The tested tree identity for a task (#0734): the short HEAD sha of its
  * worktree (resolved from the branch; the root when no worktree is linked).
@@ -557,18 +568,17 @@ export async function runAutoShotCapture(
         /* the log line already recorded it */
       }
     }
-    inFlight.delete(task.id);
+    releaseBrowserCapture(task.id);
     return { status, detail: message, ...(count !== undefined ? { count } : {}) };
   };
 
-  if (inFlight.has(task.id)) {
+  if (!reserveBrowserCapture(task.id)) {
     return { status: "skipped", detail: "shots: skipped — a capture is already in flight" };
   }
   if (
     config.remoteValidation?.browserCaptureMode &&
     config.remoteValidation.browserCaptureMode !== "local"
   ) {
-    inFlight.add(task.id);
     try {
       const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
       const head = worktree ? await runGit(worktree, ["rev-parse", "HEAD"], 10_000) : null;
@@ -593,7 +603,7 @@ export async function runAutoShotCapture(
         },
         transport: request ? remoteTransport : undefined,
         local: async () => {
-          inFlight.delete(task.id);
+          releaseBrowserCapture(task.id);
           const localConfig = {
             ...config,
             remoteValidation: { ...config.remoteValidation, browserCaptureMode: "local" as const },
@@ -607,11 +617,9 @@ export async function runAutoShotCapture(
       const detail = err instanceof Error ? err.message : String(err);
       return finish("failed", detail);
     } finally {
-      inFlight.delete(task.id);
+      releaseBrowserCapture(task.id);
     }
   }
-
-  inFlight.add(task.id);
 
   const plan = planAutoCapture(config, task);
   if ("reason" in plan) {
@@ -823,7 +831,7 @@ export async function runAutoShotCapture(
       captured,
     );
   } finally {
-    inFlight.delete(task.id);
+    releaseBrowserCapture(task.id);
     await context?.close().catch(() => {});
     await browser?.close().catch(() => {});
     // The capture owns the preview it started: previews are on-demand only
@@ -946,10 +954,9 @@ export async function captureDeclaredShot(
   remoteTransport?: BrowserEvidenceTransport,
   onFallback?: (message: string) => void,
 ): Promise<DeclaredShotCapture> {
-  if (inFlight.has(task.id)) {
+  if (!reserveBrowserCapture(task.id)) {
     return { error: "a capture is already in flight for this task", busy: true };
   }
-  inFlight.add(task.id);
   try {
     return await captureDeclaredShotImpl(
       config,
@@ -960,7 +967,7 @@ export async function captureDeclaredShot(
       onFallback,
     );
   } finally {
-    inFlight.delete(task.id);
+    releaseBrowserCapture(task.id);
   }
 }
 

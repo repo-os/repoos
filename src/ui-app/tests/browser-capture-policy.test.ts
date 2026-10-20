@@ -110,6 +110,37 @@ describe("browser capture runner policy", () => {
     expect(note).toHaveBeenCalledWith(expect.stringContaining("falling back to local capture"));
   });
 
+  it.each(["runner-available", "runner-only"] as const)(
+    "treats an infrastructure error result as fallback in %s mode",
+    async (mode) => {
+      const local = vi.fn(async () => "local");
+      const note = vi.fn();
+      const run = runBrowserCaptureWithPolicy({
+        config: config(mode),
+        request,
+        transport: {
+          capture: async () =>
+            artifacts({
+              ok: false,
+              detail: "preview failed",
+              results: { error: "preview failed" },
+            }),
+        },
+        local,
+        useArtifacts: vi.fn(),
+        note,
+      });
+      if (mode === "runner-only") {
+        await expect(run).rejects.toThrow("preview failed");
+        expect(local).not.toHaveBeenCalled();
+      } else {
+        await expect(run).resolves.toBe("local");
+        expect(local).toHaveBeenCalledOnce();
+        expect(note).toHaveBeenCalledWith(expect.stringContaining("preview failed"));
+      }
+    },
+  );
+
   it("keeps declared-shot failures as capture failures without local fallback", async () => {
     const local = vi.fn(async () => "local");
     const useArtifacts = vi.fn(async (result) => {
