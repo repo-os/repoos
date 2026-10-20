@@ -202,7 +202,7 @@ export async function effectiveHandoffTreeStatus(
   diffRoot: string | null | undefined,
   evidence: Pick<UiHandoffGateEvidence, "sourceIdentity"> | null | undefined,
   currentHead: string | null | undefined,
-  config: RepoOSConfig,
+  config: RepoOSConfig = {} as RepoOSConfig,
 ): Promise<HandoffTreeStatus> {
   const status = handoffTreeStatus(evidence, currentHead);
   if (status === "unknown") return status;
