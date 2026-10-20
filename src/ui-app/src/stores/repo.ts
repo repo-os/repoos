@@ -3059,6 +3059,15 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   /**
+   * Seed landing pre-checks for one task without a request. Used by the
+   * shot-preview fixture (#0867): the capture board's fake task has no server
+   * record, so `/api/tasks/9999/landable` cannot answer.
+   */
+  function seedLandable(id: string, result: LandableResult): void {
+    landable.value = { ...landable.value, [id]: result };
+  }
+
+  /**
    * Seed a pending worktree-handoff conflict without a real 409. Used by the
    * shot-preview fixture (#0810): the modal only opens from a failed Move to
    * done, which a capture cannot trigger.
@@ -4188,6 +4197,7 @@ export const useRepoStore = defineStore("repo", () => {
     loadDiffStats,
     diffStatsFor,
     seedDiffStats,
+    seedLandable,
     seedWorktreeHandoffConflict,
     seedShotEvidence,
     taskUsage,
