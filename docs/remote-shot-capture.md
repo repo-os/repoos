@@ -7,7 +7,12 @@ used by the UI (Liberation and Noto Color Emoji). The browser is installed under
 `PLAYWRIGHT_BROWSERS_PATH`, and made readable to the non-root container user.
 The runner checks out the exact task commit, builds the UI,
 starts an auth-less preview process in its isolated container, and executes the
-existing shot planner and capture/gate code against that preview.
+existing shot planner and capture/gate code against that preview. Because the
+capture runs as the host uid, every path it writes must be writable: the runner
+creates a linked worktree for the task branch at `worktreesDir("/repo")` =
+`/repo-worktrees` and bind-mounts a host directory there (`validate.sh`'s
+`WORKTREES`), with `HOME`/`TMPDIR` pointed at writable mounts and the bun cache
+volume chowned to the same uid.
 
 The request contains only the committed git bundle, task id, expected commit,
 capture mode, and the ordinary task/shot-plan data needed to reproduce the

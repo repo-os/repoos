@@ -25,6 +25,13 @@ RUN git config --system user.email "ci@repoos.org" \
  && git config --system user.name "RepoOS CI" \
  && git config --system init.defaultBranch main
 
+# Browser capture creates a linked git worktree at /repo-worktrees (the sibling
+# `worktreesDir("/repo")` path), outside the /repo mount. validate.sh
+# bind-mounts a host dir there; this world-writable directory is a fallback for
+# a run without that mount, so a non-root capture user (the container runs as
+# the host uid:gid) can still create the worktree and its node_modules (#0854).
+RUN mkdir -m 1777 /repo-worktrees
+
 WORKDIR /repo
 # Make binaries installed by `bun install` (e.g. repoos itself) available
 # to subprocesses spawned during `bun run test`, which don't always inherit
