@@ -615,4 +615,38 @@ describe("AgentRunner crash handling (#0869)", () => {
       fx.restorePath();
     }
   });
+
+  it("lifts the crash guard on the resumed turn's first output, so its own review request is honored", async () => {
+    const fx = runnerFixture(CRASH_DELAYED_SCRIPT);
+    try {
+      const crashes: unknown[] = [];
+      const runner = new AgentRunner(fx.config, () => {}, {
+        stallTimeoutMs: 10_000,
+        onEngineerCrash: (_taskId, info) => crashes.push(info),
+      });
+      runner.start(fx.task, "feat/0869-crash", fx.agent, { cwd: fx.root });
+      await waitFor(() => crashes.length === 1, "crash callback");
+      expect(runner.suppressesHandoffAfterCrash("0869")).toBe(true);
+
+      const task = parseTask({
+        content: readFileSync(fx.taskPath, "utf8"),
+        absPath: fx.taskPath,
+        root: fx.root,
+        defaultStatus: fx.config.defaultStatus,
+        defaultAssignee: fx.config.defaultAssignee,
+      });
+      // A crash-recovery relaunch keeps the guard through the spawn so the
+      // crashed turn's stale status write is still rejected...
+      expect(
+        runner.start(task, "feat/0869-crash", fx.agent, {
+          cwd: fx.root,
+          fromCrashRecovery: true,
+        }).ok,
+      ).toBe(true);
+      // ...but its first real output means the task belongs to the new turn.
+      await waitFor(() => !runner.suppressesHandoffAfterCrash("0869"), "guard lifted on output");
+    } finally {
+      fx.restorePath();
+    }
+  });
 });
