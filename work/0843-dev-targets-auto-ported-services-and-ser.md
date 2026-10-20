@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'service env', tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'target env', tests/dev-targets.test.ts > DevTargetManager with services (#0843) > boots the service first, then the target, and exposes both states on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: d0b5afdaad04f082f788b0337261b3967e9893c9
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
@@ -14,8 +16,6 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
 updated_at: "2026-10-20T11:15:43Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'service env', tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'target env', tests/dev-targets.test.ts > DevTargetManager with services (#0843) > boots the service first, then the target, and exposes both states on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 32da7ef6ac6aceaa9a76587d2e0bcc567e9ce4b3
 review_passes: 20
 last_check_failure: "repoos check at 2026-10-20T10:20:49.854Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 886d9960 to 9241cb9c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -284,3 +284,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T11:08:27Z · note: handoff requested (cli)
 - 2026-10-20T11:09:28Z · needs_input
 - 2026-10-20T11:15:43Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'service env', tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'target env', tests/dev-targets.test.ts > DevTargetManager with services (#0843) > boots the service first, then the target, and exposes both states on bee — fix it in the feature branch and re-run the gate
+
