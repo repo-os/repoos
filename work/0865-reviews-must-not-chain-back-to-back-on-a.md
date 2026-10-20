@@ -2,7 +2,7 @@
 id: "0865"
 title: Reviews must not chain back to back on a task with open findings; queued messages must be delivered between passes
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/reviews-must-not-chain-back-to-back-on-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T11:55:25Z"
-updated_at: "2026-10-20T17:33:16Z"
+updated_at: "2026-10-20T18:02:59Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -75,3 +75,4 @@ Not gated: `ReviewManager.runCheckpointDelta` (post-handoff checkpoint delta rev
 - 2026-10-20T17:31:13Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-20T17:32:37Z · note: review pass 1: needs some work
 - 2026-10-20T17:32:37Z · status review→active
+- 2026-10-20T18:02:59Z · status active→review
