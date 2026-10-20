@@ -6,13 +6,13 @@ status: active
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/reviews-must-not-chain-back-to-back-on-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T11:55:25Z"
-updated_at: "2026-10-20T17:26:17Z"
+updated_at: "2026-10-20T17:26:24Z"
 ---
 ## Problem
 When a review ends "needs some work" and no engineer is running, another review starts again within minutes. Observed 2026-10-20 on #0861: passes 2-9 ran 2-3 minutes apart, then roughly 14 minutes each, with no engineer working in between, for about 45 minutes, all failing on the same finding. While a review runs, `repoos message` is refused ("review in progress - wait for it to finish"), so the fix instruction could not reach the engineer. When a message IS accepted mid-turn it only queues and is delivered at the end of the engineer's turn, so engineers hand off right before reading it. Seen on #0854 (pass 8 reviewed work from before the fix message was read) and #0860 (codex crashed after the message, then a handoff was auto-requested on the unmerged branch). Result: dozens of wasted review passes, stale-work reviews, and fixes that arrive a full cycle late.
@@ -68,3 +68,4 @@ Not gated: `ReviewManager.runCheckpointDelta` (post-handoff checkpoint delta rev
 - 2026-10-20T17:16:38Z · message_delivered: 1 message(s)
 - 2026-10-20T17:23:12Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > 'Review again' starts a fresh review run that replaces the report on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-20T17:23:13Z · note: handoff requested (cli)
+- 2026-10-20T17:26:24Z · assigned_to
