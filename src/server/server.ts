@@ -177,6 +177,8 @@ import {
   resolveRepoGuide,
   runPrompt,
 } from "./agents.js";
+import { relaunchEngineerOnActiveTask } from "./engineer-launch.js";
+import { PHANTOM_RATE_LIMITED_NOTE, PHANTOM_RESTARTED_NOTE } from "./phantom-runner.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { runAreaMigrationPass } from "./area-migration.js";
 import { runTaskBodyMigrationPass } from "./task-body-migration.js";
@@ -1842,6 +1844,35 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         if (!task) return;
         const updated = patchTaskFile(config, task.absPath, { note });
         index.applyFileChange(updated.absPath, { guarded: true });
+      },
+      onPhantomRunner: (taskId, outcome) => {
+        const task = index.getTask(taskId);
+        const note =
+          outcome === "rate-limited" ? PHANTOM_RATE_LIMITED_NOTE : PHANTOM_RESTARTED_NOTE;
+        logger.task(taskId, "warn", note);
+        if (task) {
+          try {
+            const updated = patchTaskFile(config, task.absPath, { note });
+            index.applyFileChange(updated.absPath, { guarded: true });
+          } catch (err) {
+            logger.task(taskId, "warn", "phantom runner activity note failed", {
+              error: (err as Error).message,
+            });
+          }
+        }
+        // Automatic heal only. An explicit Start launches the turn itself.
+        if (outcome !== "restart") return;
+        const current = index.getTask(taskId);
+        if (!current || current.status !== "active" || current.isArchived) return;
+        void relaunchEngineerOnActiveTask(
+          { config, index, runner, logger },
+          current,
+          "The server restarted this engineer because its runner entry had no live process.",
+        ).then((result) => {
+          if (!result.ok) {
+            logger.task(taskId, "warn", "phantom runner restart failed", { reason: result.reason });
+          }
+        });
       },
       onHandoff: async (request) => {
         let reachedFinalization = false;
