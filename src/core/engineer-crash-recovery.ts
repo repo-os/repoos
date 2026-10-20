@@ -189,8 +189,12 @@ export function failoverBlock(
   }
   const auto = parseFailoverMarker(task.extra?.[ENGINEER_FAILOVER_KEY]);
   const markerMatchesPair = !!auto && auto.cli === pair.cli && auto.model === pair.model;
+  // Compare the persisted marker to the raw model pin: a `default` destination
+  // is a valid automatic choice, and normalizing it away for override
+  // detection would misreport RepoOS's own switch as a human override.
+  const rawModel = nonEmpty(task.modelOverride);
   const overridesMatchMarker =
-    !!auto && (override.cli ?? "") === auto.cli && (override.model ?? "") === auto.model;
+    !!auto && (override.cli ?? "") === auto.cli && (rawModel ?? "") === auto.model;
   if (markerMatchesPair && overridesMatchMarker) {
     return { kind: "already-failed-over", detail: `${pair.cli} + ${pair.model}` };
   }
