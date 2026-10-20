@@ -2,7 +2,7 @@
 id: "0886"
 title: "Close-out: task shows as inbox between the merge and 'set status done'; stamp done atomically and ignore engineer writes while closing"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: human
@@ -79,4 +79,4 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T21:07:40Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > returns 409 + needsCommit against a dirty main and never enqueues, tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > surfaces an uncommitted repoos.toml instead of silently committing it (#0819), tests/done-guard.test.ts > move-to-done dirty-main guard (#0211) > does not block close-out when the only dirty files on main are shot captures (#0713) on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-20T21:07:41Z · note: handoff requested (cli)
 - 2026-10-20T21:11:08Z · assigned_to
-- 2026-10-20T21:16:19Z · note: shots: skipped — the diff (17 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-20T21:16:19Z · status active→review
