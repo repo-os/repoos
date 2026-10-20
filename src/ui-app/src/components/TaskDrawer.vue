@@ -2423,7 +2423,13 @@ const awaitingFreshReview = computed(
 );
 
 /** Read-only landing pre-checks (#0867), shown next to Move to done. */
-const landable = computed(() => (ui.active ? repo.landableFor(ui.active.id) : undefined));
+const landable = computed(() => {
+  const result = ui.active ? repo.landableFor(ui.active.id) : undefined;
+  // Tolerate a malformed stored result (older server, test double, stale
+  // fixture): the checklist is advisory and must never break the drawer.
+  if (!result || !Array.isArray(result.checks) || !result.summary) return undefined;
+  return result;
+});
 
 /** The first failing check, used as the Move to done button's explanation. */
 const landableFailureTitle = computed(() => {

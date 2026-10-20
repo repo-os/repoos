@@ -98,6 +98,7 @@ import {
 } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { gatherLandable } from "../landable.js";
+import { REVIEW_RUN_TRIGGERS } from "../review-automation.js";
 import { checkGenericStatusPatch } from "../task-transitions.js";
 import { readFileSync, existsSync, statSync, unlinkSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -2785,9 +2786,17 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         });
       }
       if (reviews.isRunning(id)) {
-        return json(res, 409, {
-          error: `Task #${id} has a review in progress — wait for it to finish`,
-        });
+        reviews.cancel(id);
+        const interrupted = patchTaskFile(
+          config,
+          existing.absPath,
+          {
+            note: "message interrupts in-flight review — delivering to engineer first",
+          },
+          { onStatusChange: onServerStatusChange },
+        );
+        index.applyFileChange(interrupted.absPath);
+        existing = index.getTask(id) ?? interrupted;
       }
       const closeOutJob = jobCoordinator.getJob(id);
       if (closeOutJob && closeOutJob.phase !== "done" && closeOutJob.phase !== "failed") {
@@ -3316,7 +3325,7 @@ export const reviewAgain: RouteHandler = async (ctx, req, res, params) => {
       throw err;
     }
   }
-  void reviews.run(task);
+  void reviews.run(task, { trigger: REVIEW_RUN_TRIGGERS.EXPLICIT_AGAIN });
   return json(res, 200, { ok: true, task });
 };
 
