@@ -111,10 +111,11 @@ structured error is returned to the caller rather than thrown. Declared target
 misses preserve the local handoff failure; automatic misses remain warnings. A
 partial runner run imports every shot it did produce and reports the failure, so
 earlier evidence is never discarded. The setting defaults to `local` until a
-runner image and artifact round trip have passed a real end-to-end proof. The
-remote path covers the automatic handoff capture and UI verification; manual
-`repoos shot` / `repoos verify` and the interactive Preview remain local (CLI
-offload is a separate follow-up).
+runner image and artifact round trip have passed a real end-to-end proof.
+**Scope:** only the automatic handoff capture and UI verification move to a
+runner. Manual `repoos shot` / `repoos verify` and the interactive Preview
+always run locally on the control plane; offloading the CLI is tracked
+separately as #0874.
 
 The `scripts/remote-runner/capture-browser.ts` worker is the runner-side entry
 point. It reuses `runAutoShotCapture` and `runUiHandoffGate` rather than

@@ -2886,7 +2886,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         { value: "runner-only", label: "Runner only" },
       ],
       description:
-        "Choose where task screenshots and UI verification run. Runner modes require remote validation and a runner with Playwright and WebKit; runner when available falls back locally if no capable runner is ready.",
+        "Choose where the automatic handoff screenshots and UI verification run. Runner modes require remote validation and a runner with Playwright and WebKit; runner when available falls back locally if no capable runner is ready. Manual `repoos shot` / `repoos verify` and the interactive Preview always stay local.",
     },
     {
       key: "remoteValidation.offloadBrowserSteps",
