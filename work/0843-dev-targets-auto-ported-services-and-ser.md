@@ -3,9 +3,6 @@ id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — A service crash during a successful target health probe can return failure while leaving the target process running.
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T04:26:25Z"
+updated_at: "2026-10-20T04:26:28Z"
 review_passes: 8
 review_rounds: 2
 dev_error_count: 1
@@ -167,3 +164,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T20:04:33Z · needs_input
 - 2026-10-19T20:04:33Z · needs_input
 - 2026-10-20T04:26:25Z · status review→active
+- 2026-10-20T04:26:28Z · needs_input
