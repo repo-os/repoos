@@ -54,7 +54,7 @@ import {
   PORT_IN_USE,
   type DevFailure,
 } from "../core/dev-failure.js";
-import { servicePortToken, expandServiceRefs } from "../core/dev-targets.js";
+import { canonicalServiceToken, expandServiceRefs } from "../core/dev-targets.js";
 
 /** The four states a dev target can be in. */
 export type DevTargetStatus = "running" | "stopped" | "starting" | "failed";
@@ -584,7 +584,7 @@ export class DevTargetManager {
     // than silently disambiguating it (#0843 review).
     const seenTokens = new Map<string, string>();
     for (const def of resolved.defs) {
-      const token = servicePortToken(def.name) || "service";
+      const token = canonicalServiceToken(def.name);
       const clash = seenTokens.get(token);
       if (clash) {
         return fail(
@@ -598,7 +598,7 @@ export class DevTargetManager {
     const servicePorts = new Map<string, number>();
     const allocatedPorts = new Set<number>();
     for (const def of resolved.defs) {
-      const token = servicePortToken(def.name) || "service";
+      const token = canonicalServiceToken(def.name);
       this.setServiceStates(t.name, [
         ...(this.states.get(t.name)?.services ?? []).filter((service) => service.name !== def.name),
         { name: def.name, token, status: "starting", log: [] },
@@ -645,7 +645,7 @@ export class DevTargetManager {
       if (superseded()) return this.abortSupersededStart(t);
       // The token names the service's port in every sibling's placeholders,
       // sanitized identically to `[[preview.services]]`.
-      const token = servicePortToken(def.name) || "service";
+      const token = canonicalServiceToken(def.name);
       const servicePort = servicePorts.get(def.name)!;
 
       /** Record `def` as failed — with the reason — before failing the target. */
@@ -1388,7 +1388,7 @@ export class DevTargetManager {
           state.services?.find((s) => s.name === name) ??
           ({
             name,
-            token: servicePortToken(def?.name ?? name) || "service",
+            token: canonicalServiceToken(def?.name ?? name),
             status: "stopped" as const,
             log: [],
           } as DevServiceState);

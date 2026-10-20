@@ -1614,6 +1614,154 @@ describe("devTargetServiceErrors", () => {
       ]),
     ).toEqual([]);
   });
+
+  // #0843 review round 23 — validation and expansion must share ONE
+  // placeholder grammar/canonicalization. Each accepted spelling is exercised
+  // through every surface that substitutes service refs, then through
+  // expansion; rejected spellings must produce a config error rather than a
+  // half-expanded command.
+  const refSurfaces: {
+    name: string;
+    target?: (ref: string) => Partial<DevTargetConfig>;
+    service?: (ref: string) => Partial<DevServiceConfig>;
+  }[] = [
+    { name: "target command", target: (ref) => ({ command: `run ${ref}` }) },
+    { name: "target cwd", target: (ref) => ({ cwd: ref }) },
+    { name: "target url", target: (ref) => ({ url: `http://localhost:${ref}` }) },
+    {
+      name: "target healthCheck.url",
+      target: (ref) => ({ healthCheck: { url: `http://localhost:${ref}/health` } }),
+    },
+    { name: "target env", target: (ref) => ({ env: { REF: ref } }) },
+    { name: "service command", service: (ref) => ({ command: `run ${ref}` }) },
+    { name: "service cwd", service: (ref) => ({ cwd: ref }) },
+    {
+      name: "service healthCheck.url",
+      service: (ref) => ({ healthCheck: { url: `http://localhost:${ref}/health` } }),
+    },
+    { name: "service env", service: (ref) => ({ env: { REF: ref } }) },
+  ];
+
+  const acceptedRefs = [
+    { label: "canonical", service: "api", ref: "{api.port}", expected: "4100" },
+    { label: "uppercase token", service: "api", ref: "{API.port}", expected: "4100" },
+    { label: "uppercase kind", service: "api", ref: "{api.PORT}", expected: "4100" },
+    { label: "whitespace", service: "api", ref: "{  api . port  }", expected: "4100" },
+    { label: "hyphenated name", service: "api-v1", ref: "{api-v1.port}", expected: "4100" },
+    { label: "underscored name", service: "api-v1", ref: "{API_V1.port}", expected: "4100" },
+    { label: "dotted name", service: "api.v1", ref: "{api.v1.port}", expected: "4100" },
+    { label: "dot-normalized name", service: "api.v1", ref: "{api_v1.port}", expected: "4100" },
+    {
+      label: "url kind",
+      service: "api",
+      ref: "{API.url}",
+      expected: "http://127.0.0.1:4100",
+    },
+    {
+      label: "repeated reference",
+      service: "api",
+      ref: "{api.port}:{API.port}",
+      expected: "4100:4100",
+    },
+    { label: "surrounded by text", service: "api", ref: "a{api.port}b", expected: "a4100b" },
+  ];
+
+  for (const row of acceptedRefs) {
+    it(`accepts and fully expands ${row.label} on every surface`, () => {
+      for (const surface of refSurfaces) {
+        const target: DevTargetConfig = {
+          name: "web",
+          kind: "server",
+          command: "true",
+          url: "http://localhost",
+          services: [row.service],
+          ...surface.target?.(row.ref),
+        };
+        const service: DevServiceConfig = {
+          name: row.service,
+          command: "true",
+          ...surface.service?.(row.ref),
+        };
+        expect(devTargetServiceErrors([target], [service]), surface.name).toEqual([]);
+      }
+      const expanded = expandServiceRefs(row.ref, 5000, { [row.service]: 4100 });
+      expect(expanded).toBe(row.expected);
+      expect(expanded).not.toMatch(/\{[^}]*\.(?:port|url)\}/i);
+    });
+  }
+
+  it("accepts forward, backward and self references after canonicalization", () => {
+    const target: DevTargetConfig = {
+      name: "web",
+      kind: "server",
+      command: "run {PROVIDER.port}",
+      env: { API: "{provider.url}" },
+      url: "http://localhost:{provider.port}",
+      healthCheck: { url: "http://localhost:{provider.port}/health" },
+      services: ["consumer"],
+    };
+    const services: DevServiceConfig[] = [
+      {
+        name: "consumer",
+        command: "run {api-v1.port}",
+        cwd: "dir-{provider.port}",
+        dependsOn: ["provider", "api-v1"],
+        env: { SELF: "{CONSUMER.port}", FORWARD: "{provider.port}" },
+        healthCheck: { url: "http://localhost:{provider.port}/health" },
+      },
+      { name: "provider", command: "run {consumer.port}" },
+      { name: "api-v1", command: "run {provider.port}" },
+    ];
+    expect(devTargetServiceErrors([target], services)).toEqual([]);
+
+    const tokens = { consumer: 4000, provider: 4100, api_v1: 4200 };
+    expect(expandServiceRefs(target.command, 5000, tokens)).toBe("run 4100");
+    expect(expandServiceRefs(target.env!.API!, 5000, tokens)).toBe("http://127.0.0.1:4100");
+    expect(expandServiceRefs(services[0]!.command, 4000, tokens)).toBe("run 4200");
+    expect(expandServiceRefs(services[0]!.cwd!, 4000, tokens)).toBe("dir-4100");
+    expect(expandServiceRefs(services[0]!.env!.SELF!, 4000, tokens)).toBe("4000");
+    expect(expandServiceRefs(services[0]!.env!.FORWARD!, 4000, tokens)).toBe("4100");
+    expect(expandServiceRefs(services[0]!.healthCheck!.url!, 4000, tokens)).toBe(
+      "http://localhost:4100/health",
+    );
+  });
+
+  const rejectedRefs = [
+    {
+      label: "unknown service",
+      ref: "{ghost.port}",
+      message: 'references unknown service placeholder "ghost"',
+    },
+    { label: "doubled braces", ref: "{{api.port}}", message: "doubled braces are not supported" },
+    { label: "escaped braces", ref: "\\{api.port\\}", message: "escaped service placeholders" },
+    { label: "misspelled kind", ref: "{api.portx}", message: "malformed service placeholder" },
+    { label: "unclosed reference", ref: "{api.port", message: "unclosed service placeholder" },
+  ];
+
+  for (const row of rejectedRefs) {
+    it(`rejects ${row.label} on every surface`, () => {
+      for (const surface of refSurfaces) {
+        const target: DevTargetConfig = {
+          name: "web",
+          kind: "server",
+          command: "true",
+          url: "http://localhost",
+          services: ["api"],
+          ...surface.target?.(row.ref),
+        };
+        const service: DevServiceConfig = {
+          name: "api",
+          command: "true",
+          ...surface.service?.(row.ref),
+        };
+        const errors = devTargetServiceErrors([target], [service]);
+        expect(
+          errors.some((message) => message.includes(row.message)),
+          surface.name,
+        ).toBe(true);
+      }
+    });
+  }
 });
 
 describe("loadConfig dev services wiring", () => {
