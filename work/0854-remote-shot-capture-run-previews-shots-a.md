@@ -14,10 +14,9 @@ area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
-cli_override: claude code
-model_override: haiku
+model_override: default
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T11:21:45Z"
+updated_at: "2026-10-20T11:21:55Z"
 review_passes: 13
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -201,3 +200,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T11:20:20Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a2c7d06dc) during finalization (#0734)
 - 2026-10-20T11:21:42Z · cli_override, model_override
 - 2026-10-20T11:21:45Z · model_override
+- 2026-10-20T11:21:55Z · cli_override, model_override
