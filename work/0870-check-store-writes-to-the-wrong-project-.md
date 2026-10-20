@@ -12,7 +12,7 @@ branch: feat/check-store-writes-to-the-wrong-project-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:26Z"
-updated_at: "2026-10-20T23:11:36Z"
+updated_at: "2026-10-20T23:12:10Z"
 last_close_out_gate_ms: 97697
 last_close_out_gate_at: "2026-10-20T23:11:36.647Z"
 review_passes: 2
@@ -70,4 +70,4 @@ Evidence: the SQLite file's rows (check_runs) and worktree column named a lighti
 - 2026-10-20T22:57:54Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-20T22:59:31Z · note: review pass 2: good to go
 - 2026-10-20T23:11:36Z · close-out gate completed in 98s
-
+- 2026-10-20T23:12:10Z · status done→done, release:success
