@@ -123,6 +123,17 @@ for repair/retry. See `docs/close-out-pipeline.md` and
 `repoos mv <id> done` is **not** this pipeline: it only changes task metadata.
 Never use it as a substitute for landing a branch through Move to done.
 
+**Check landability before approving or closing out.** Run
+`repoos landable <id>` (the same checklist is in the task drawer next to
+**Move to done**; `--json` gives a stable object). It is read-only and exits
+non-zero unless every landing pre-check passes: the latest review verdict is
+`good to go` on the current pass, the review lock sha equals the worktree HEAD
+(a missing lock is only a warning), the worktree is clean, the branch merges
+with main (only the task's own `work/<id>-*.md` may conflict), the diff touches
+no `repoos.toml` and no other task's `work/inputs/stories` files, and main has
+no blocking dirty files. A reviewer must not report "good to go" while it
+fails; fix the named check first. See `docs/close-out-pipeline.md`.
+
 **Never close out human-gated work as if the human part were done.** A task
 carrying `needs_input_reason: needs-human-step` has acceptance criteria that
 need a real device, account, credentials or third-party sign-up. Before

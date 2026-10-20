@@ -186,6 +186,26 @@ export interface Task {
   attachmentCloud?: Record<string, "pending" | "available">;
 }
 
+/** One landing pre-check (#0867), mirrored from src/core/landable.ts. */
+export interface LandableCheck {
+  id: string;
+  label: string;
+  status: "pass" | "warn" | "fail";
+  detail: string;
+  nextStep?: string;
+}
+
+/** Read-only landing pre-check result shown next to Move to done (#0867). */
+export interface LandableResult {
+  taskId: string;
+  branch: string | null;
+  headSha: string | null;
+  lockSha: string | null;
+  landable: boolean;
+  checks: LandableCheck[];
+  summary: { pass: number; warn: number; fail: number };
+}
+
 /** Result of the automatic engineer notice after a requirements edit (#0817). */
 export interface RequirementsNotice {
   sent: boolean;

@@ -1053,6 +1053,77 @@ export async function cmdStats(args: string[]): Promise<number> {
   }
 }
 
+export interface LandableCheckLike {
+  id: string;
+  label: string;
+  status: "pass" | "warn" | "fail";
+  detail: string;
+  nextStep?: string;
+}
+
+export interface LandableResultLike {
+  taskId: string;
+  branch: string | null;
+  headSha: string | null;
+  lockSha: string | null;
+  landable: boolean;
+  checks: LandableCheckLike[];
+  summary: { pass: number; warn: number; fail: number };
+}
+
+function landableIcon(status: LandableCheckLike["status"]): string {
+  if (status === "pass") return c.green("✓");
+  if (status === "warn") return c.yellow("!");
+  return c.red("✗");
+}
+
+/**
+ * `repoos landable <id>` (#0867): print the read-only landing pre-checks and
+ * exit 0 only when every check passes. Never edits, commits or moves status.
+ */
+export async function cmdLandable(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const id = rest[0];
+  if (!id) {
+    printErr("Usage: repoos landable <id> [--json] [--port N]");
+    return 1;
+  }
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const result = (await api.requestOk(
+      "GET",
+      `/api/tasks/${id}/landable`,
+    )) as unknown as LandableResultLike;
+    if (opts.json) printJson(result);
+    else {
+      const verdict = result.landable
+        ? c.green(`#${id} is landable`)
+        : c.red(`#${id} is not landable yet`);
+      console.log(`  ${verdict}`);
+      for (const check of result.checks) {
+        console.log(`    ${landableIcon(check.status)} ${c.bold(check.label)} — ${check.detail}`);
+        if (check.nextStep) console.log(c.dim(`        next: ${check.nextStep}`));
+      }
+      const { pass, warn, fail } = result.summary;
+      const parts = [
+        `${pass} passed`,
+        `${warn} warning${warn === 1 ? "" : "s"}`,
+        `${fail} failing`,
+      ];
+      console.log(c.dim(`  ${parts.join(" · ")}`));
+    }
+    return result.landable ? 0 : 1;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
 /** Shared server-down check for tests. */
 export async function controlApiServerDownMessage(port: number): Promise<string> {
   const { baseUrl } = resolveControlPlaneBase({ port });
