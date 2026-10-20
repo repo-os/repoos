@@ -3,15 +3,16 @@ id: "0887"
 title: "Human: run the agent-discoverability trial with an unfamiliar coding agent and record it"
 type: chore
 status: inbox
+hold: true
 priority: p2
 area: [docs, landing]
 story: Agent-discoverable RepoOS
 depends_on: ["0884"]
-assigned_to: ""
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T18:58:47Z"
-updated_at: "2026-10-20T18:58:47Z"
+updated_at: "2026-10-20T18:58:55Z"
 ---
 ## Problem
 Story #0011 (Agent-discoverable RepoOS) needs evidence that a coding agent with no prior RepoOS context can follow the public path (landing and docs llms.txt, the agent guide, the portable skill). That requires a real run with an agent installed on a person's machine, in a disposable Git repository, which an unattended engineer cannot honestly do. Split out of #0884 so the code and build-check work can land without it.
@@ -30,3 +31,4 @@ Human task: do not start it. It depends on #0884 landing (the build checks) and 
 ## Activity
 
 - 2026-10-20T18:58:47Z · created · njachowski@gmail.com
+- 2026-10-20T18:58:55Z · held, assigned_to
