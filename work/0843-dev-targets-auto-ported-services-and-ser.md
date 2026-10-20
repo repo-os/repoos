@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T13:02:56Z"
+updated_at: "2026-10-20T13:05:32Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 3a1a8c45 to 96d84739) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 3a1a8c456c221f73fd307dcbce3f299c529e9eb1
 review_passes: 22
@@ -321,3 +321,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T12:52:47Z · note: handoff requested (ui-review)
 - 2026-10-20T13:01:15Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 3a1a8c45 to 96d84739) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-10-20T13:02:56Z · body
+- 2026-10-20T13:05:32Z · note: handoff requested (ui-review)
