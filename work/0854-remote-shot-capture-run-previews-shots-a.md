@@ -1,9 +1,8 @@
 ---
-handoff_signal_retry_count: 2
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -12,7 +11,8 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T04:39:01Z"
+updated_at: "2026-10-20T04:45:07Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 Tests already run on Tailscale runners (docs/remote-validation.md), but everything browser-related still runs on the control-plane laptop: the per-task preview (`bun run build` with vue-tsc + vite, then `repoos serve`), Playwright/WebKit captures of declared and automatic shots, the handoff UI verification, `repoos shot` and `repoos verify`. With several engineers handing off at once this is the dominant local load (dozens of WebKit processes, repeated full UI builds, 20+ GB of memory pressure on 2026-10-18/19). `remoteValidation.offloadBrowserSteps` (#0836, default off) only moves the smoke and rendered-contrast gate steps, not shots or UI verification.
@@ -39,4 +39,5 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T04:26:50Z · cli_override, model_override
 - 2026-10-20T04:26:54Z · status ready→active, branch
 - 2026-10-20T04:39:01Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
-
+- 2026-10-20T04:45:07Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-20T04:45:07Z · note: handoff requested (cli)
