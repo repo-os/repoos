@@ -2,7 +2,7 @@
 id: "0886"
 title: "Close-out: task shows as inbox between the merge and 'set status done'; stamp done atomically and ignore engineer writes while closing"
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 assigned_to: human
@@ -11,7 +11,7 @@ branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
-updated_at: "2026-10-20T21:20:44Z"
+updated_at: "2026-10-20T21:23:33Z"
 review_passes: 1
 dev_error_count: 1
 ---
@@ -81,4 +81,4 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T21:16:19Z · status active→review
 - 2026-10-20T21:16:20Z · note: shots: skipped — the diff (17 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-20T21:17:18Z · note: review pass 1: good to go
-
+- 2026-10-20T21:23:33Z · status review→active
