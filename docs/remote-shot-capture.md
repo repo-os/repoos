@@ -32,8 +32,9 @@ Fixtures and step vocabulary are sent as data and interpreted by the same
 `shot-plan`, fixture resolver, and page choreography code used locally.
 Preview-only servers disable login and seed fixtures in memory. The remote path
 covers the automatic handoff capture and UI verification only: manual
-`repoos shot` / `repoos verify` stay local (offloading the CLI is a separate
-follow-up), and the interactive Preview button remains on the control plane.
+`repoos shot` / `repoos verify` stay local (offloading the CLI is tracked
+separately as #0874), and the interactive Preview button remains on the control
+plane.
 Missing browser capability or runner infrastructure failure falls back to local
 capture in `runner when available` mode with a visible note. `runner only` fails
 with an actionable reason instead of running local work, and a runner failure in
