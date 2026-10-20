@@ -272,3 +272,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T10:42:43Z · message_delivered: 1 message(s)
 - 2026-10-20T10:52:41Z · agent exited with an error (codex) · by one target must map to distinct placeholder tokens: two names that
 - 2026-10-20T10:52:42Z · status active→review
+- 2026-10-20T10:52:42Z · note: handoff requested (cli)
