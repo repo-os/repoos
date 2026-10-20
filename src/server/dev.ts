@@ -277,19 +277,36 @@ export class DevTargetManager {
   private resolveServices(t: DevTargetConfig): {
     defs: DevServiceConfig[];
     unresolved: string[];
+    cycles: string[];
   } {
     const defs: DevServiceConfig[] = [];
     const unresolved: string[] = [];
+    const cycles: string[] = [];
     const declared = this.serviceDefs();
-    for (const name of t.services ?? []) {
-      const def = declared.find((s) => s.name === name);
+    const byName = new Map(declared.map((service) => [service.name, service]));
+    const included = new Set<string>();
+    const visiting: string[] = [];
+    const visit = (name: string): void => {
+      const cycleStart = visiting.indexOf(name);
+      if (cycleStart >= 0) {
+        cycles.push([...visiting.slice(cycleStart), name].join(" -> "));
+        return;
+      }
+      if (included.has(name)) return;
+      const def = byName.get(name);
       if (!def) {
         unresolved.push(name);
-        continue;
+        return;
       }
+      visiting.push(name);
+      for (const dependency of def.dependsOn ?? []) visit(dependency);
+      visiting.pop();
+      if (included.has(name)) return;
+      included.add(name);
       defs.push(def);
-    }
-    return { defs, unresolved };
+    };
+    for (const name of t.services ?? []) visit(name);
+    return { defs, unresolved: [...new Set(unresolved)], cycles: [...new Set(cycles)] };
   }
 
   /** Every target with its current state, for status/list. */
@@ -540,6 +557,7 @@ export class DevTargetManager {
       this.appendLog(t.name, `[repoos] ${message}`);
       return { ok: false, error: message, target: this.view(t) };
     };
+    if (!isDirectory(cwd)) return fail(`target cwd "${cwd}" does not exist or is not a directory`);
 
     // #0843: companion services boot FIRST, each on its own port, so the main
     // command's `{api.port}` substitution names a live API by the time it runs.
@@ -553,12 +571,12 @@ export class DevTargetManager {
           "declare each with a [[dev.services]] block in repoos.toml",
       );
     }
+    if (resolved.cycles.length) {
+      return fail(`dev service dependency cycle: ${resolved.cycles.join("; ")}`);
+    }
 
-    /**
-     * Placeholder tokens for the reserved service ports, in boot order —
-     * registered as soon as a port is reserved, so a later service (and the
-     * main command) can reference an earlier one by `{<token>.port}`.
-     */
+    /** Allocate all ports first so forward and backward service references
+     * resolve consistently, independent of service start order. */
     const tokens: Record<string, number> = {};
     // Reject placeholder collisions BEFORE booting anything: two distinct names
     // that normalize to the same token (`api-v1` and `api_v1`) make the
@@ -577,11 +595,58 @@ export class DevTargetManager {
       seenTokens.set(token, def.name);
     }
 
+    const servicePorts = new Map<string, number>();
+    const allocatedPorts = new Set<number>();
+    for (const def of resolved.defs) {
+      const token = servicePortToken(def.name) || "service";
+      this.setServiceStates(t.name, [
+        ...(this.states.get(t.name)?.services ?? []).filter((service) => service.name !== def.name),
+        { name: def.name, token, status: "starting", log: [] },
+      ]);
+      let servicePort: number;
+      try {
+        if (def.autoPort === false) {
+          if (def.port === undefined) {
+            const message = `service "${def.name}" has auto-pick off but no port is set`;
+            this.patchServiceState(t.name, def.name, { status: "failed", error: message });
+            return fail(message);
+          }
+          servicePort = await reservePort(def.port, { fixed: true });
+        } else {
+          servicePort = await reservePort(def.port);
+          while (allocatedPorts.has(servicePort)) servicePort = await reservePort();
+        }
+      } catch (err) {
+        const message =
+          def.autoPort === false
+            ? `service "${def.name}" port ${def.port} is already in use`
+            : `could not reserve a port for service "${def.name}": ${(err as Error).message}`;
+        this.patchServiceState(t.name, def.name, { status: "failed", error: message });
+        return fail(message);
+      }
+      if (allocatedPorts.has(servicePort)) {
+        const message = `service "${def.name}" uses port ${servicePort}, already reserved by another companion service`;
+        this.patchServiceState(t.name, def.name, { status: "failed", error: message });
+        return fail(message);
+      }
+      allocatedPorts.add(servicePort);
+      servicePorts.set(def.name, servicePort);
+      tokens[token] = servicePort;
+      this.patchServiceState(t.name, def.name, { port: servicePort });
+      if (superseded()) return this.abortSupersededStart(t);
+    }
+
+    const targetCwd = t.cwd ? resolveWithin(cwd, expandServiceRefs(t.cwd, undefined, tokens)) : cwd;
+    if (!targetCwd) return fail(`target cwd "${t.cwd}" escapes the project root`);
+    if (!isDirectory(targetCwd))
+      return fail(`target cwd "${t.cwd ?? "."}" does not exist or is not a directory`);
+
     for (const def of resolved.defs) {
       if (superseded()) return this.abortSupersededStart(t);
       // The token names the service's port in every sibling's placeholders,
       // sanitized identically to `[[preview.services]]`.
       const token = servicePortToken(def.name) || "service";
+      const servicePort = servicePorts.get(def.name)!;
 
       // Register the service BEFORE any fallible step (port reservation, cwd
       // resolution, spawn), so a startup failure is recorded against THIS
@@ -597,36 +662,18 @@ export class DevTargetManager {
         return fail(message);
       };
 
-      let servicePort: number;
-      // #0802 handling mirrored per service: auto-pick (the default) prefers
-      // the configured `port` when it is free and falls back to an
-      // OS-assigned one; auto-pick off pins the port, and an occupied one
-      // fails with a message naming the service instead of silently moving.
-      if (def.autoPort === false) {
-        if (def.port === undefined) {
-          return failService(`service "${def.name}" has auto-pick off but no port is set`);
-        }
-        try {
-          servicePort = await reservePort(def.port, { fixed: true });
-        } catch {
-          return failService(`service "${def.name}" port ${def.port} is already in use`);
-        }
-      } else {
-        try {
-          servicePort = await reservePort(def.port);
-        } catch (err) {
-          return failService(
-            `could not reserve a port for service "${def.name}": ${(err as Error).message}`,
-          );
-        }
-      }
-      tokens[token] = servicePort;
-      this.patchServiceState(t.name, def.name, { port: servicePort });
       if (superseded()) return this.abortSupersededStart(t);
 
-      const serviceCwd = def.cwd ? resolveWithin(cwd, def.cwd) : cwd;
+      const serviceCwd = def.cwd
+        ? resolveWithin(cwd, expandServiceRefs(def.cwd, servicePort, tokens))
+        : cwd;
       if (!serviceCwd) {
         return failService(`service "${def.name}" cwd "${def.cwd}" escapes the project root`);
+      }
+      if (!isDirectory(serviceCwd)) {
+        return failService(
+          `service "${def.name}" cwd "${def.cwd ?? "."}" does not exist or is not a directory`,
+        );
       }
       // Snapshot the health file BEFORE the service spawns, so a stale marker
       // left by a previous run cannot satisfy the readiness gate (#0843 review).
@@ -637,7 +684,7 @@ export class DevTargetManager {
       // RepoOS-owned values are applied after user env so the process cannot
       // bind a different port or falsify the advertised service tokens.
       const env: Record<string, string> = {
-        ...(def.env ?? {}),
+        ...expandEnvRefs(def.env ?? {}, servicePort, tokens),
         PORT: String(servicePort),
         HOST: DEV_HOST,
         ...tokenEnv(tokens),
@@ -656,8 +703,34 @@ export class DevTargetManager {
       } catch (err) {
         return failService(`could not launch service "${def.name}": ${(err as Error).message}`);
       }
+      let spawnError: Error | undefined;
+      let earlyExit: { code: number | null; signal: NodeJS.Signals | null } | undefined;
+      let registered = false;
+      child.on("error", (err) => {
+        spawnError = err;
+        this.appendServiceLog(t.name, def.name, `[repoos] process error: ${err.message}`);
+        if (registered) {
+          void this.stopStack(t.name, {
+            reason: `service "${def.name}" failed: ${err.message}`,
+            failedService: def.name,
+          });
+        }
+      });
+      child.on("exit", (code, signal) => {
+        earlyExit = { code, signal };
+        if (!registered) return;
+        const runs = this.serviceRuns.get(t.name) ?? [];
+        if (!runs.some((run) => run.child === child)) return;
+        const current = this.states.get(t.name);
+        if (this.stackTeardowns.has(t.name) || current?.status === "stopped") return;
+        const reason = `service "${def.name}" exited${code !== null ? ` with code ${code}` : ""}${signal ? ` (${signal})` : ""}`;
+        void this.stopStack(t.name, { reason, failedService: def.name });
+        this.appendLog(t.name, `[repoos] ${reason}`);
+      });
       if (!child.pid) {
-        return failService(`could not launch service "${def.name}" (no pid)`);
+        return failService(
+          `could not launch service "${def.name}"${spawnError ? `: ${spawnError.message}` : " (no pid)"}`,
+        );
       }
 
       this.patchServiceState(t.name, def.name, { status: "starting", pid: child.pid });
@@ -666,26 +739,15 @@ export class DevTargetManager {
         { child, processGroup, longLived: true },
       ]);
       this.pipeService(child, t.name, def.name);
+      registered = true;
+      if (spawnError)
+        return failService(`could not launch service "${def.name}": ${spawnError.message}`);
+      if (earlyExit || child.exitCode !== null || child.signalCode !== null)
+        return failService(`service "${def.name}" exited before readiness`);
 
       // A service that exits on its own before its target stops has failed —
       // while the target is RUNNING that degradation is named visibly; while
       // it is STARTING the readiness gate below reports the precise reason.
-      child.on("error", (err) => {
-        this.appendServiceLog(t.name, def.name, `[repoos] process error: ${err.message}`);
-      });
-      child.on("exit", (code, signal) => {
-        const runs = this.serviceRuns.get(t.name) ?? [];
-        const idx = runs.findIndex((r) => r.child === child);
-        if (idx === -1) return; // superseded, or a deliberate stop cleaned up
-        const current = this.states.get(t.name);
-        if (this.stackTeardowns.has(t.name) || current?.status === "stopped") return;
-        const reason = `service "${def.name}" exited${
-          code !== null ? ` with code ${code}` : ""
-        }${signal ? ` (${signal})` : ""}`;
-        void this.stopStack(t.name, { reason, failedService: def.name });
-        this.appendLog(t.name, `[repoos] ${reason}`);
-      });
-
       const ready = await this.waitForServiceReady(
         def,
         child,
@@ -770,13 +832,17 @@ export class DevTargetManager {
     let child: ChildProcess;
     try {
       child = spawn(command, {
-        cwd,
+        cwd: targetCwd,
         shell: true,
         detached: processGroup,
         stdio: ["ignore", "pipe", "pipe"],
         // #0843: every companion service's port is also reachable by env var,
         // the way `[[preview.services]]` passes `REPOOS_PREVIEW_*` to a target.
-        env: { ...process.env, ...(Object.keys(tokens).length ? tokenEnv(tokens) : {}) },
+        env: {
+          ...process.env,
+          ...expandEnvRefs(t.env ?? {}, resolvedPort, tokens),
+          ...(Object.keys(tokens).length ? tokenEnv(tokens) : {}),
+        },
       });
     } catch (err) {
       // A failed start tears the companion services down with it (#0843
@@ -786,9 +852,37 @@ export class DevTargetManager {
       return { ok: false, error: this.states.get(t.name)?.error, target: this.view(t) };
     }
 
+    let spawnError: Error | undefined;
+    child.on("error", (err) => {
+      spawnError = err;
+      this.appendLog(t.name, `[repoos] process error: ${err.message}`);
+      if (this.running.get(t.name)?.child === child && !this.stackTeardowns.has(t.name)) {
+        void this.stopStack(t.name, { reason: err.message });
+      }
+    });
+    child.on("exit", (code, signal) => {
+      const entry = this.running.get(t.name);
+      if (!entry || entry.child !== child) return;
+      const current = this.states.get(t.name);
+      if (this.stackTeardowns.has(t.name) || current?.status === "stopped") return;
+      const ok = code === 0;
+      if (!entry.longLived && ok) {
+        this.appendLog(t.name, "[repoos] build finished (exit 0)");
+        void this.stopStack(t.name, { completed: true });
+      } else {
+        const reason = entry.longLived
+          ? `process exited${code !== null ? ` with code ${code}` : ""}${signal ? ` (${signal})` : ""}`
+          : `exited with code ${code ?? "?"}${signal ? ` (${signal})` : ""}`;
+        void this.stopStack(t.name, { reason });
+        this.appendLog(t.name, `[repoos] ${reason}`);
+      }
+    });
+
     const pid = child.pid;
     if (!pid) {
-      await fail(`could not launch "${t.name}" (no pid)`);
+      await fail(
+        `could not launch "${t.name}"${spawnError ? `: ${spawnError.message}` : " (no pid)"}`,
+      );
       return { ok: false, error: this.states.get(t.name)?.error, target: this.view(t) };
     }
 
@@ -803,36 +897,6 @@ export class DevTargetManager {
     });
 
     this.pipe(child, t.name);
-
-    // A target that exits on its own is observed here: an `artifact` that
-    // exits 0 has succeeded; a long-lived `server`/`process` (or a non-zero
-    // exit) has failed — unless we are the ones stopping it, in which case
-    // `stopping` is set and the exit is expected.
-    child.on("error", (err) => {
-      this.appendLog(t.name, `[repoos] process error: ${err.message}`);
-      if (this.running.get(t.name)?.child === child && !this.stackTeardowns.has(t.name)) {
-        void this.stopStack(t.name, { reason: err.message });
-      }
-    });
-    child.on("exit", (code, signal) => {
-      const entry = this.running.get(t.name);
-      if (!entry || entry.child !== child) return; // superseded or already handled
-      const current = this.states.get(t.name);
-      if (this.stackTeardowns.has(t.name) || current?.status === "stopped") return;
-      const ok = code === 0;
-      if (!entry.longLived && ok) {
-        this.appendLog(t.name, "[repoos] build finished (exit 0)");
-        void this.stopStack(t.name, { completed: true });
-      } else {
-        const reason = entry.longLived
-          ? `process exited${code !== null ? ` with code ${code}` : ""}${
-              signal ? ` (${signal})` : ""
-            }`
-          : `exited with code ${code ?? "?"}${signal ? ` (${signal})` : ""}`;
-        void this.stopStack(t.name, { reason });
-        this.appendLog(t.name, `[repoos] ${reason}`);
-      }
-    });
 
     // An `artifact` target's terminal state is its exit; report success/failure
     // once it has, so the API reflects the build result rather than "starting".
@@ -1559,6 +1623,26 @@ function tokenEnv(tokens: Record<string, number>): Record<string, string> {
     env[`REPOOS_DEV_${upper}_URL`] = `http://${DEV_HOST}:${port}`;
   }
   return env;
+}
+
+/** Substitute service placeholders in process environment values. */
+function expandEnvRefs(
+  env: Record<string, string>,
+  port: number | undefined,
+  tokens: Record<string, number>,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(env).map(([key, value]) => [key, expandServiceRefs(value, port, tokens)]),
+  );
+}
+
+/** Check that a configured process cwd exists and is a directory. */
+function isDirectory(path: string): boolean {
+  try {
+    return statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
 }
 
 /**

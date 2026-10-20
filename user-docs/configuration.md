@@ -1789,13 +1789,15 @@ label = "Divot bar"
 | --- | --- | --- | --- |
 | `dev.targets[].name` | string | yes | Stable identity, unique within the project. The API and CLI address a target by this name. |
 | `dev.targets[].kind` | `server` \| `artifact` \| `process` | yes | `server` is a long-lived process with a URL; `artifact` is a build that produces a file and exits; `process` is a long-lived foreground process with no URL and no build artifact (a native app, a daemon). |
-| `dev.targets[].command` | string | yes | Shell command run in the project's **root checkout** (never a task worktree). May contain `{port}` (see below). |
+| `dev.targets[].command` | string | yes | Shell command run in the project's checkout (never a task worktree). May contain `{port}` and service port tokens. |
+| `dev.targets[].cwd` | string | no | Repo-relative working directory. Service port tokens are substituted before resolving it; a missing directory fails Start clearly. |
+| `dev.targets[].env` | table | no | Extra target environment variables. Service port tokens are substituted in values before launch. |
 | `dev.targets[].url` | string | for `server` | The server's URL, e.g. `http://localhost:5173`. May contain `{port}`. A `process` never has one. |
 | `dev.targets[].port` | number | no | The port used for `{port}` (#0802). With auto-pick on it is the preferred port — used when free — otherwise a free one is chosen; with auto-pick off it is the fixed port. |
 | `dev.targets[].autoPort` | boolean | no | Auto-pick a free port for `{port}` (#0802). Default `true`; set `false` to pin the target to `port` and let a clash fail with the summary. |
 | `dev.targets[].artifactPath` | string | for `artifact` | Repo-relative path of the build output. |
 | `dev.targets[].label` | string | no | Human label shown in the UI; defaults to `name`. |
-| `dev.targets[].services` | array of strings | no | Names of `[[dev.services]]` rows (#0843) booted before this target, in order, each on its own port. The target's `command`, `url` and `healthCheck.url` reference one as `{name.port}` / `{name.url}`. Unknown or repeated names are validation errors. |
+| `dev.targets[].services` | array of strings | no | Names of `[[dev.services]]` rows (#0843) booted before this target, in order, each on its own port. The target's `command`, `env`, `cwd`, `url` and `healthCheck.url` reference one as `{name.port}` / `{name.url}`. Unknown or repeated names are validation errors. |
 | `dev.targets[].healthCheck.url` | string | no | URL polled until it answers before a `server` target is reported running. Defaults to `url`; may contain `{port}` and `{name.port}`. |
 | `dev.targets[].healthCheck.file` | string | no | Repo-relative file that must exist before the target is reported running. |
 
@@ -1845,18 +1847,23 @@ command = "bun run dev -- --port {port} --api-port {api.port}"
 url = "http://localhost:{port}"
 ```
 
-On **Start**, every listed service boots BEFORE the target, each on its own
-port, and is health-gated: a service whose health check (or, with none
+On **Start**, RepoOS allocates ports for every selected service before
+starting any process, so forward, backward and self references resolve. Each
+service then boots before the target and is health-gated: a service whose health check (or, with none
 declared, a short alive-settle) does not pass fails the start with the
 service's name in the reason, and everything started so far is torn down — the
 target otherwise starts fine and then proxies to a dead API. Each service's
-port is substituted into the target's `command`, `url` and `healthCheck.url` as
+port is substituted into the target's `command`, `env` values, `cwd`, `url` and `healthCheck.url` as
 `{<name>.port}` / `{<name>.url}` (name lowercased, non-alphanumerics collapsed
 to `_`), passed as `PORT` and `REPOOS_DEV_<NAME>_PORT` / `REPOOS_DEV_<NAME>_URL`
 to the service, and passed as the same `REPOOS_DEV_*` variables to the main
-command. Inside a service's own `command` and `healthCheck.url`, `{port}` (and
-`PORT`) is the service's own port. Services boot in the order listed, so a
-service may reference a sibling declared before it. Service names referenced by
+command. Tokens in service `command`, `env` values, `cwd` and `healthCheck.url`
+are substituted too. Inside a service's own `command` and `healthCheck.url`,
+`{port}` (and `PORT`) is the service's own port. `dependsOn` starts dependencies
+before dependents and includes them in the target's service stack; unknown
+dependencies and actual dependency cycles are configuration errors. A service
+may reference a sibling declared later in TOML because all selected ports are
+assigned first. Service names referenced by
 one target must map to distinct placeholder tokens: two names that normalize to
 the same `{<token>.port}` (for example `api-v1` and `api_v1`) are a config
 error, not silently disambiguated, so a documented token can never resolve to
@@ -1865,13 +1872,14 @@ the wrong service.
 | Key | Type | Required | Description |
 | --- | --- | --- | --- |
 | `dev.services[].name` | string | yes | Label used to reference the service from a target's `services` list and in diagnostics. |
-| `dev.services[].command` | string | yes | Command that boots the service. Its own `{port}`/`PORT` is the port RepoOS assigns it. |
+| `dev.services[].command` | string | yes | Command that boots the service. Its own `{port}`/`PORT` is the port RepoOS assigns it; any selected service's `{name.port}` / `{name.url}` is substituted. |
 | `dev.services[].cwd` | string | repo root | Repo-relative subdirectory to run the command in. |
+| `dev.services[].dependsOn` | array of strings | no | Services that start first; their ports are available to this service and they are included in the target's stack. Unknown names and dependency cycles are errors. |
 | `dev.services[].port` | number | no | The service's preferred/fixed port, handled exactly like a target's `port` (#0802). |
 | `dev.services[].autoPort` | boolean | no | Auto-pick a free port; default `true`. With `false` the `port` is required and fixed — an occupied one fails with a message naming the service (and `autoPort = false` with no `port` is rejected as a config error, not only at Start). |
-| `dev.services[].healthCheck.url` | string | no | URL polled (with ports substituted) until it answers before the service counts as ready. |
+| `dev.services[].healthCheck.url` | string | no | URL polled (with own and companion service ports substituted) until it answers before the service counts as ready. |
 | `dev.services[].healthCheck.file` | string | no | Repo-relative file (resolved against the service's `cwd`) that must exist AND be newer than when the service started — a stale marker left by a previous run does not count as ready (#0843 review). |
-| `dev.services[].env` | table | no | Extra environment variables for the service's process, e.g. `env = { LOG_LEVEL = "debug" }`. |
+| `dev.services[].env` | table | no | Extra environment variables for the service's process; values support `{name.port}` / `{name.url}`, e.g. `env = { LOG_LEVEL = "debug", API_URL = "{api.url}" }`. |
 
 Stopping or restarting the target stops its services with it, and a start
 that fails at the target — its command cannot launch, or its readiness check
@@ -1897,6 +1905,10 @@ or failed service also tears down the stack.
 > table no Settings row can express. Edit them in `repoos.toml`; a target's
 > `services` name list can also be edited in the Dev targets card
 > (Settings → Advanced) and round-trips through it.
+>
+> The optional `cwd` and `env` fields on `[[dev.targets]]` are advanced
+> TOML-only fields; the Settings card continues to edit the target's common
+> name, command, URL and service list.
 
 When a target fails, the Dev page shows a plain-language summary above its
 output — what failed, the most likely cause, and how to fix it. A port already

@@ -856,8 +856,12 @@ export interface DevTargetConfig {
   name: string;
   /** `server` (has a URL), `artifact` (build output) or `process` (no URL). */
   kind: DevTargetKind;
-  /** Shell command run in the project's root checkout. Required. */
+  /** Shell command run in the project's checkout. Required. */
   command: string;
+  /** Optional repo-relative working directory; defaults to the repo root. */
+  cwd?: string;
+  /** Extra environment variables for the target process. */
+  env?: Record<string, string>;
   /** `server` target's URL, e.g. `http://localhost:5173`. `process` never has one. */
   url?: string;
   /**
@@ -919,6 +923,8 @@ export interface DevServiceConfig {
   command: string;
   /** Optional subdirectory of the repo root to run the command in. */
   cwd?: string;
+  /** Services that must start before this one; dependencies are included automatically. */
+  dependsOn?: string[];
   /**
    * The port used for the service's own `{port}` placeholder. With auto-pick
    * on (the default) it is the PREFERRED port — used when free, a free

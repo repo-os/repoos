@@ -3196,7 +3196,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "as opposed to task previews, which RepoOS manages for a task's worktree. Only commands " +
         "declared here can be started; edit them under Advanced → Dev targets. Each target auto-picks " +
         "a free port by default; turn that off per target to pin a fixed port. A target's `services` " +
-        "list names [[dev.services]] rows booted before it, on their own ports.",
+        "list names [[dev.services]] rows booted before it, on their own ports. Service tokens can " +
+        "appear in commands, environment values, cwd, URLs and health checks; all listed ports are " +
+        "allocated first so forward references work.",
     },
     {
       // Companion processes for a full-stack dev target (#0843). Deliberately
@@ -3215,7 +3217,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description:
         "Companion processes a [[dev.targets]] row boots BEFORE its own command (#0843), each on its " +
         "own auto-picked port — a full-stack target's API behind its web dev server. Declared in " +
-        "repoos.toml as [[dev.services]] tables (name, command, cwd, port, autoPort, healthCheck, env); " +
+        "repoos.toml as [[dev.services]] tables (name, command, cwd, dependsOn, port, autoPort, healthCheck, env); " +
         'edit them there. A target references one with `services = ["api"]` and substitutes its port ' +
         "with `{api.port}` / `{api.url}` in command, url and healthCheck.url.",
     },

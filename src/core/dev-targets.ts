@@ -102,6 +102,38 @@ export function parseDevTargets(parsed: Record<string, unknown>): {
       continue;
     }
     const target: DevTargetConfig = { name, kind: kindRaw, command };
+    const cwd = typeof r.cwd === "string" ? r.cwd.trim() : "";
+    if (cwd) target.cwd = cwd;
+    if (r.env !== undefined) {
+      let env: Record<string, string> | undefined;
+      if (typeof r.env === "string") {
+        const parsedEnv = parseTomlInlineStringTable(r.env);
+        if (!parsedEnv?.ok) {
+          errors.push(`[dev.targets] ${name}: env must be a table of string values`);
+          continue;
+        }
+        env = parsedEnv.value;
+      } else if (typeof r.env === "object" && r.env !== null && !Array.isArray(r.env)) {
+        env = Object.fromEntries(
+          Object.entries(r.env as Record<string, unknown>).filter(
+            (entry): entry is [string, string] => typeof entry[1] === "string",
+          ),
+        );
+      }
+      if (!env) {
+        errors.push(`[dev.targets] ${name}: env must be a table of string values`);
+        continue;
+      }
+      target.env = env;
+    }
+    const targetDottedEnv = Object.fromEntries(
+      Object.entries(r)
+        .filter(([key, value]) => key.startsWith("env.") && typeof value === "string")
+        .map(([key, value]) => [key.slice("env.".length).trim(), (value as string).trim()])
+        .filter(([key]) => Boolean(key)),
+    );
+    if (Object.keys(targetDottedEnv).length)
+      target.env = { ...(target.env ?? {}), ...targetDottedEnv };
 
     const url = typeof r.url === "string" ? r.url.trim() : "";
     const artifactPath = typeof r.artifactPath === "string" ? r.artifactPath.trim() : "";
@@ -308,6 +340,8 @@ export function parseDevServices(parsed: Record<string, unknown>): {
 
     const cwd = typeof r.cwd === "string" ? r.cwd.trim() : "";
     if (cwd) service.cwd = cwd;
+    const dependsOn = stringList(r.dependsOn ?? r.depends_on);
+    if (dependsOn.length) service.dependsOn = dependsOn;
 
     // Same per-service port handling as a target's (#0802): auto-pick defaults
     // on (the configured `port` is only a preference); auto-pick off pins it.
@@ -438,6 +472,52 @@ export function devTargetServiceErrors(
 ): string[] {
   const errors: string[] = [];
   const known = new Set((services ?? []).map((s) => s.name));
+  const serviceByName = new Map((services ?? []).map((service) => [service.name, service]));
+  const serviceNamesByToken = new Map<string, string[]>();
+  for (const service of services ?? []) {
+    const token = servicePortToken(service.name);
+    serviceNamesByToken.set(token, [...(serviceNamesByToken.get(token) ?? []), service.name]);
+    for (const dependency of service.dependsOn ?? []) {
+      if (!known.has(dependency)) {
+        errors.push(
+          `[dev.services] ${service.name}: dependsOn references unknown service "${dependency}"`,
+        );
+      }
+    }
+  }
+
+  // Detect actual cycles in the declared dependency graph, independently of
+  // TOML row order or the target's service list order.
+  const visited = new Set<string>();
+  const visiting: string[] = [];
+  const reportedCycles = new Set<string>();
+  const visit = (name: string): void => {
+    const cycleStart = visiting.indexOf(name);
+    if (cycleStart >= 0) {
+      const cycle = [...visiting.slice(cycleStart), name];
+      const key = [...new Set(cycle.slice(0, -1))].sort().join("|");
+      if (!reportedCycles.has(key)) {
+        reportedCycles.add(key);
+        errors.push(`[dev.services] dependency cycle: ${cycle.join(" -> ")}`);
+      }
+      return;
+    }
+    if (visited.has(name)) return;
+    const service = serviceByName.get(name);
+    if (!service) return;
+    visiting.push(name);
+    for (const dependency of service.dependsOn ?? []) if (known.has(dependency)) visit(dependency);
+    visiting.pop();
+    visited.add(name);
+  };
+  for (const service of services ?? []) visit(service.name);
+
+  const refsIn = (text: string | undefined): string[] => {
+    if (!text) return [];
+    return [...text.matchAll(/\{([a-zA-Z0-9_-]+)\.(?:port|url)\}/g)].map((match) => match[1]!);
+  };
+  const envRefs = (env: Record<string, string> | undefined): string[] =>
+    Object.values(env ?? {}).flatMap((value) => refsIn(value));
   for (const t of targets) {
     const listed = new Set<string>();
     const tokenNames = new Map<string, string>();
@@ -466,6 +546,46 @@ export function devTargetServiceErrors(
         continue;
       }
       tokenNames.set(token, name);
+    }
+
+    // Dependencies are implicitly part of the started service set, so refs in
+    // their fields can resolve. A self-reference is valid and resolves to the
+    // service's own allocated port.
+    const available = new Set<string>();
+    const include = (name: string): void => {
+      if (available.has(name)) return;
+      const service = serviceByName.get(name);
+      if (!service) return;
+      available.add(name);
+      for (const dependency of service.dependsOn ?? []) include(dependency);
+    };
+    for (const name of listed) include(name);
+    const validateRefs = (owner: string, refs: string[], allowSelf?: string): void => {
+      for (const token of refs) {
+        const matches = serviceNamesByToken.get(servicePortToken(token)) ?? [];
+        const valid = matches.find((name) => name === allowSelf || available.has(name));
+        if (valid) continue;
+        const knownService = matches[0];
+        errors.push(
+          knownService
+            ? `[${owner}]: references service "${knownService}" outside the target's services/dependencies`
+            : `[${owner}]: references unknown service placeholder "${token}"`,
+        );
+      }
+    };
+    validateRefs(
+      `dev.targets ${t.name}`,
+      [t.command, t.cwd, t.url, t.healthCheck?.url, ...envRefs(t.env)].flatMap(refsIn),
+    );
+    for (const name of available) {
+      const service = serviceByName.get(name)!;
+      validateRefs(
+        `dev.services ${name}`,
+        [service.command, service.cwd, service.healthCheck?.url, ...envRefs(service.env)].flatMap(
+          refsIn,
+        ),
+        name,
+      );
     }
   }
   return errors;

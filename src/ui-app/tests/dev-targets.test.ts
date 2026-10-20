@@ -16,7 +16,11 @@ import { join } from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RepoOSConfig, DevTargetConfig, DevServiceConfig } from "../../core/types";
 import { loadConfig, parseDevTargets } from "../../core/config";
-import { devTargetServiceErrors, parseDevServices } from "../../core/dev-targets";
+import {
+  devTargetServiceErrors,
+  expandServiceRefs,
+  parseDevServices,
+} from "../../core/dev-targets";
 import { PORT_IN_USE } from "../../core/dev-failure";
 import { DevTargetManager, DEV_LOG_MAX_LINES } from "../../server/dev";
 import type { RouteContext } from "../../server/routes/types";
@@ -1429,6 +1433,77 @@ describe("devTargetServiceErrors", () => {
     ).toEqual([]);
   });
 
+  it.each([
+    { owner: "service command", service: { command: "run {ghost.port}" }, target: {} },
+    { owner: "service env", service: { env: { API: "{ghost.url}" } }, target: {} },
+    {
+      owner: "service health URL",
+      service: { healthCheck: { url: "http://localhost:{ghost.port}/health" } },
+      target: {},
+    },
+    { owner: "target command", service: {}, target: { command: "run {ghost.port}" } },
+    { owner: "target env", service: {}, target: { env: { API: "{ghost.url}" } } },
+    {
+      owner: "target health URL",
+      service: {},
+      target: { healthCheck: { url: "http://localhost:{ghost.port}/health" } },
+    },
+  ])("rejects unknown placeholders in $owner", ({ service, target: targetFields }) => {
+    const targetConfig = {
+      name: "web",
+      kind: "server" as const,
+      command: "x",
+      services: ["api"],
+      ...targetFields,
+    };
+    const serviceConfig = { name: "api", command: "x", ...service } as DevServiceConfig;
+    const errors = devTargetServiceErrors([targetConfig], [serviceConfig]);
+    expect(
+      errors.some((message) => message.includes('references unknown service placeholder "ghost"')),
+    ).toBe(true);
+  });
+
+  it("allows forward, backward and self port references after reserving every listed port", () => {
+    const targetConfig = {
+      name: "web",
+      kind: "server" as const,
+      command: "run {api.port}",
+      env: { API_URL: "{api.url}" },
+      healthCheck: { url: "http://localhost:{worker.port}/health" },
+      services: ["api", "worker"],
+    };
+    const services: DevServiceConfig[] = [
+      {
+        name: "api",
+        command: "run {worker.port}",
+        env: { SELF: "{api.port}" },
+        healthCheck: { url: "http://localhost:{worker.port}/health" },
+      },
+      {
+        name: "worker",
+        command: "run {api.port}",
+        env: { SELF: "{worker.url}" },
+      },
+    ];
+    expect(devTargetServiceErrors([targetConfig], services)).toEqual([]);
+    expect(
+      expandServiceRefs("{api.port}|{worker.url}", undefined, { api: 4100, worker: 4200 }),
+    ).toBe("4100|http://127.0.0.1:4200");
+  });
+
+  it("rejects unknown service dependencies and true dependency cycles", () => {
+    const targets = [{ name: "web", kind: "server" as const, command: "x", services: ["api"] }];
+    expect(
+      devTargetServiceErrors(targets, [{ name: "api", command: "x", dependsOn: ["missing"] }]),
+    ).toContain('[dev.services] api: dependsOn references unknown service "missing"');
+    expect(
+      devTargetServiceErrors(targets, [
+        { name: "api", command: "x", dependsOn: ["worker"] },
+        { name: "worker", command: "x", dependsOn: ["api"] },
+      ]),
+    ).toContain("[dev.services] dependency cycle: api -> worker -> api");
+  });
+
   // #0843 review — two distinct names can normalize to the SAME placeholder
   // token; that is a config error, never a silent undocumented suffix.
   it("rejects two service names that normalize to the same token", () => {
@@ -1589,6 +1664,57 @@ describe("loadConfig dev services wiring", () => {
 });
 
 describe("DevTargetManager with services (#0843)", () => {
+  it.each([
+    {
+      label: "missing service cwd",
+      service: {
+        name: "api",
+        command: "bun -e 'setInterval(()=>{},60000)'",
+        cwd: "missing-service-dir",
+      },
+      target: { name: "app", kind: "process" as const, command: "true", services: ["api"] },
+      failedService: true,
+    },
+    {
+      label: "missing target cwd",
+      service: undefined,
+      target: { name: "app", kind: "process" as const, command: "true", cwd: "missing-target-dir" },
+      failedService: false,
+    },
+    {
+      label: "non-executable service command",
+      service: { name: "api", command: "./repoos-no-such-executable" },
+      target: { name: "app", kind: "process" as const, command: "true", services: ["api"] },
+      failedService: true,
+    },
+  ])("reports $label as a failed start without an unhandled spawn error", async (testCase) => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-spawn-errors-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: testCase.service ? [testCase.service] : [],
+          targets: [testCase.target],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      expect(mgr.get("app")?.status).toBe("failed");
+      if (testCase.failedService) {
+        expect(mgr.get("app")?.services?.[0]?.status).toBe("failed");
+      }
+      expect(mgr.get("app")?.pid).toBeUndefined();
+      expect(mgr.get("app")?.services?.every((service) => service.pid === undefined) ?? true).toBe(
+        true,
+      );
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   const stackLifecycleCases = [
     ...(["target", "service-a", "service-b"] as const).flatMap((member) =>
       (["starting", "after-ready"] as const).flatMap((phase) =>
@@ -1801,6 +1927,59 @@ describe("DevTargetManager with services (#0843)", () => {
         }
       }
       expect(JSON.parse(proofData ?? "{}")).toEqual({ first: "api", status: 200 });
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    { direction: "forward", consumer: "api", dependency: "db", declarations: ["api", "db"] },
+    { direction: "backward", consumer: "db", dependency: "api", declarations: ["api", "db"] },
+    { direction: "self", consumer: "api", dependency: "api", declarations: ["api"] },
+  ])("substitutes $direction service refs in command, env, health URL and target", async (row) => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-service-ref-directions-"));
+    const serviceOutput = join(dir, "service-ref.txt");
+    const targetOutput = join(dir, "target-ref.txt");
+    const consumerCommand = [
+      `bun -e "const fs=require('node:fs');const h=require('node:http');`,
+      `fs.writeFileSync('${serviceOutput}','{${row.dependency}.port}|'+process.env.REF_URL+'|'+process.env.SELF_PORT);`,
+      `h.createServer((_q,s)=>s.end('ok')).listen(Number(process.env.PORT),'127.0.0.1');setTimeout(()=>{},60000)"`,
+    ].join("");
+    const providerCommand =
+      "bun -e \"const h=require('node:http');h.createServer((_q,s)=>s.end('ok')).listen(Number(process.env.PORT),'127.0.0.1');setTimeout(()=>{},60000)\"";
+    const defs: DevServiceConfig[] = row.declarations.map((name) => {
+      if (name !== row.consumer) return { name, command: providerCommand };
+      return {
+        name,
+        command: consumerCommand,
+        ...(row.consumer !== row.dependency ? { dependsOn: [row.dependency] } : {}),
+        env: { REF_URL: `{${row.dependency}.url}`, SELF_PORT: `{${row.consumer}.port}` },
+        healthCheck: { url: `http://127.0.0.1:{${row.dependency}.port}/health` },
+      };
+    });
+    const targetConfig = {
+      name: "app",
+      kind: "process" as const,
+      services: [row.consumer],
+      command: `bun -e "require('node:fs').writeFileSync('${targetOutput}','{${row.consumer}.port}|'+process.env.TARGET_PORT);setTimeout(()=>{},60000)"`,
+      env: { TARGET_PORT: `{${row.consumer}.port}` },
+    };
+    const mgr = new DevTargetManager(baseConfig({ services: defs, targets: [targetConfig] }, dir));
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok, result.error).toBe(true);
+      const view = mgr.get("app");
+      const consumer = view?.services?.find((service) => service.name === row.consumer);
+      const dependency = view?.services?.find((service) => service.name === row.dependency);
+      expect(typeof consumer?.port).toBe("number");
+      expect(typeof dependency?.port).toBe("number");
+      const depPort = dependency!.port!;
+      const ownPort = consumer!.port!;
+      expect(readFileSync(serviceOutput, "utf8")).toBe(
+        `${depPort}|http://127.0.0.1:${depPort}|${ownPort}`,
+      );
+      expect(readFileSync(targetOutput, "utf8")).toBe(`${ownPort}|${ownPort}`);
     } finally {
       await mgr.stopAll();
       rmSync(dir, { recursive: true, force: true });
