@@ -1,6 +1,4 @@
 ---
-check_retry_count: 2
-last_check_failure: "repoos check at 2026-10-20T07:15:20.788Z: repoos check failed: rendered-contrast — $ bun scripts/ui-contrast-audit.mjs"
 id: "0861"
 title: "P0: bookkeeping-only commits must not make handoff evidence stale or block a good review"
 type: bug
@@ -13,7 +11,9 @@ branch: feat/p0-bookkeeping-only-commits-must-not-mak
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:47:38Z"
-updated_at: "2026-10-20T07:06:06Z"
+updated_at: "2026-10-20T07:18:08Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-20T07:15:20.788Z: repoos check failed: rendered-contrast — $ bun scripts/ui-contrast-audit.mjs"
 dev_error_count: 1
 ---
 ## Problem
@@ -41,10 +41,10 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 ```json
 [
 {
-  "label": "Changes tab with bookkeeping-current handoff evidence",
-  "target": "default",
-  "route": "/",
-  "state": "drawer:shotEvidence"
+"label": "Changes tab with bookkeeping-current handoff evidence",
+"target": "default",
+"route": "/",
+"state": "drawer:shotEvidence"
 }
 ]
 ```
@@ -67,4 +67,4 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 - 2026-10-20T06:56:38Z · message_delivered: 2 message(s)
 - 2026-10-20T07:03:28Z · body
 - 2026-10-20T07:06:06Z · body
-
+- 2026-10-20T07:18:08Z · body
