@@ -218,7 +218,7 @@ describe("portable RepoOS Agent Skill", () => {
     const page = readFileSync(join(repoRoot, "user-docs", "agent-skill.md"), "utf8");
     const meta = frontmatter(page);
     expect(meta.title).toBe("RepoOS Agent Skill");
-    expect(meta.description).toContain(AGENT_SKILL_URL);
+    expect(meta.description).toContain(`[repo-os/repoos agent/skill](${AGENT_SKILL_URL})`);
     expect(page).toContain(AGENT_SKILL_RAW_URL);
     expect(page).toContain("references/");
   });
