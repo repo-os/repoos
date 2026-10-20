@@ -21,8 +21,14 @@ or **Delete**. Clicking a bell note opens this tab. Snooze for an hour, tomorrow
 at 09:00 local time, one day (24 hours), or a custom date/time. Editing the fire
 time reopens a completed reminder. Nothing starts agents or changes settings.
 
-Notes survive restarts in human-readable `reminders/<id>.md` files. They are
-repo-wide, not private per-user notes, and are not automatically committed.
+Notes survive restarts in human-readable `<remindersDir>/<id>.md` files —
+`reminders/<id>.md` by default, or `<namespace>/reminders/` in a `repoos/`
+project (the directory is configurable with `remindersDir`; see
+[Configuration](/configuration)). They are repo-wide, not private per-user
+notes. RepoOS does not commit each edit immediately, but close-out may
+checkpoint reminder changes as server-written bookkeeping, so a dirty reminder
+no longer blocks Move to done. Add and commit them explicitly if you want shared
+Git history outside that process.
 
 ```bash
 repoos reminder add --text "Check Cursor credit" --at 2026-10-22T09:00:00+08:00 --link agent:cursor
