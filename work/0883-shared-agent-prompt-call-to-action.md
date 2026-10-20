@@ -53,16 +53,16 @@ Out of scope: provider logos, a public MCP server, and changes to install comman
 ```json
 [
 {
-  "label": "Landing hero: agent prompt call to action beside the install box",
-  "target": "Landing page",
-  "route": "/",
-  "highlight": ".agent-cta"
+"label": "Landing hero: agent prompt call to action beside the install box",
+"target": "Landing page",
+"route": "/",
+"highlight": ".agent-cta"
 },
 {
-  "label": "Docs homepage: agent prompt call to action under Try it now",
-  "target": "Docs site",
-  "route": "/",
-  "highlight": ".agent-cta"
+"label": "Docs homepage: agent prompt call to action under Try it now",
+"target": "Docs site",
+"route": "/",
+"highlight": ".agent-cta"
 }
 ]
 ```
