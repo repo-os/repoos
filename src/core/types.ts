@@ -858,8 +858,12 @@ export interface DevTargetConfig {
   name: string;
   /** `server` (has a URL), `artifact` (build output) or `process` (no URL). */
   kind: DevTargetKind;
-  /** Shell command run in the project's root checkout. Required. */
+  /** Shell command run in the project's checkout. Required. */
   command: string;
+  /** Optional repo-relative working directory; defaults to the repo root. */
+  cwd?: string;
+  /** Extra environment variables for the target process. */
+  env?: Record<string, string>;
   /** `server` target's URL, e.g. `http://localhost:5173`. `process` never has one. */
   url?: string;
   /**
@@ -883,10 +887,63 @@ export interface DevTargetConfig {
   /** Human label shown in the UI; defaults to `name`. Optional. */
   label?: string;
   /**
+   * Names of `[[dev.services]]` rows (#0843) booted BEFORE this target's main
+   * command, each on its own port. The target's `command`, `url` and
+   * `healthCheck.url` can reference a service's port by placeholder
+   * (`{<name>.port}` / `{<name>.url}`). An unknown or repeated name is a
+   * config validation error, never a silent skip.
+   */
+  services?: string[];
+  /**
    * Optional readiness check applied after start. Not used for a `process` —
    * a process is healthy while its process is alive.
    */
   healthCheck?: DevHealthCheck;
+}
+
+/**
+ * One companion process a dev target boots before its main command (#0843) —
+ * the `[[dev.targets]]` counterpart of `[[preview.services]]` (#0681): a
+ * full-stack target's API, booted on its own (auto-picked) port so the main
+ * command can proxy to it without either port being pinned in config.
+ *
+ * Declared as a top-level repeatable `[[dev.services]]` table in
+ * `repoos.toml`, and referenced by name from a target's `services` list —
+ * the flat TOML parser handles one level of array-of-tables, so a service
+ * must be a sibling of `[[dev.targets]]` rather than nested inside it.
+ */
+export interface DevServiceConfig {
+  /** Label used to reference the service from a target, and in diagnostics. */
+  name: string;
+  /**
+   * Shell command that boots the service. Its `{port}` is the SERVICE's own
+   * port (the same one `PORT` names), and every configured service's port/URL
+   * is also reachable by placeholder (`{<name>.port}` / `{<name>.url}`, name
+   * lowercased with non-alphanumerics collapsed to `_`) and by environment
+   * variable (`REPOOS_DEV_<NAME>_PORT` / `REPOOS_DEV_<NAME>_URL`).
+   */
+  command: string;
+  /** Optional subdirectory of the repo root to run the command in. */
+  cwd?: string;
+  /** Services that must start before this one; dependencies are included automatically. */
+  dependsOn?: string[];
+  /**
+   * The port used for the service's own `{port}` placeholder. With auto-pick
+   * on (the default) it is the PREFERRED port — used when free, a free
+   * OS-assigned one otherwise. With auto-pick off it is the FIXED port: an
+   * occupied port fails the start with a message naming the service.
+   */
+  port?: number;
+  /** Whether RepoOS chooses the port for the service. Default `true`. */
+  autoPort?: boolean;
+  /**
+   * Optional readiness check applied after start. With none, the service is
+   * ready when it is still alive a moment later — the same settle a `process`
+   * target gets.
+   */
+  healthCheck?: DevHealthCheck;
+  /** Extra environment variables set for the service's process. */
+  env?: Record<string, string>;
 }
 
 /**
@@ -903,6 +960,11 @@ export interface DevConfig {
   inspector?: DevInspectorConfig;
   /** User-declared runnable dev targets (#0747). */
   targets?: DevTargetConfig[];
+  /**
+   * Companion processes a target can boot on their own ports (#0843), the
+   * `[[dev.targets]]` counterpart of `[[preview.services]]` (#0681).
+   */
+  services?: DevServiceConfig[];
   /** Failure-summary options (#0775). */
   failureSummary?: DevFailureSummaryConfig;
 }
@@ -1751,6 +1813,19 @@ export interface WatchdogConfig {
    * `needsInput`. Default true.
    */
   autoTransition?: boolean;
+  /**
+   * How long a runner row may have no live engineer process and no live child
+   * before it is cleared and the same agent is restarted (#0863). Default 2
+   * minutes. Minimum 15 seconds; smaller values are ignored.
+   */
+  phantomDetectMs?: number;
+  /**
+   * Automatic phantom restarts allowed per task inside `phantomHealWindowMs`.
+   * Default 3. An explicit Start still clears a dead row.
+   */
+  phantomHealMax?: number;
+  /** Window for `phantomHealMax`. Default 1 hour. */
+  phantomHealWindowMs?: number;
 }
 
 /** Browser console / overflow gate at engineer handoff for UI work (#0680). */

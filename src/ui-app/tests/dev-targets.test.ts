@@ -7,14 +7,21 @@
  * the server, and no request body can ever supply a command.
  */
 import { describe, expect, it } from "vitest";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
+import { createServer as createHttpServer } from "node:http";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { RepoOSConfig, DevTargetConfig } from "../../core/types";
-import { loadConfig, parseDevTargets } from "../../core/config";
+import type { RepoOSConfig, DevTargetConfig, DevServiceConfig } from "../../core/types";
+import { loadConfig, parseDevTargets, parseFlatToml, SUPPORTED_TOML_KEYS } from "../../core/config";
+import { isKnownConfigKey } from "../../core/doctor";
+import {
+  devTargetServiceErrors,
+  expandServiceRefs,
+  parseDevServices,
+} from "../../core/dev-targets";
 import { PORT_IN_USE } from "../../core/dev-failure";
 import { DevTargetManager, DEV_LOG_MAX_LINES } from "../../server/dev";
 import type { RouteContext } from "../../server/routes/types";
@@ -86,6 +93,14 @@ async function freePort(): Promise<number> {
   await held.close();
   return held.port;
 }
+
+/**
+ * A process-heavy supervisor test: spawns real children, waits for readiness
+ * and teardown, so it needs more than vitest's default 5s under machine load.
+ */
+const itSlow = (name: string, fn: () => Promise<void>): void => {
+  it(name, fn, 15_000);
+};
 
 /**
  * A genuinely foreign process holding a port RepoOS did not start — a helper
@@ -617,9 +632,14 @@ describe("DevTargetManager lifecycle", () => {
     const mgr = new DevTargetManager(baseConfig({ targets: [target({ command: cmd })] }, dir));
     try {
       await mgr.start("web");
-      // Give the child a moment to flush its output.
-      await new Promise((r) => setTimeout(r, 1200));
-      const log = mgr.get("web")?.log ?? [];
+      // Wait for the child to start producing output; a fixed delay is flaky
+      // when the process is queued under host load.
+      const outputDeadline = Date.now() + 5000;
+      let log = mgr.get("web")?.log ?? [];
+      while (log.length === 0 && Date.now() < outputDeadline) {
+        await new Promise((r) => setTimeout(r, 50));
+        log = mgr.get("web")?.log ?? [];
+      }
       expect(log.length).toBeLessThanOrEqual(DEV_LOG_MAX_LINES);
       expect(log.length).toBeGreaterThan(0);
       // The cap is a full last-run log, not a 6-line tail (#0775).
@@ -1164,6 +1184,2366 @@ describe("dev target routes", () => {
       await restartDevTarget(makeCtx(mgr), req, res, { param1: "web" });
       expect(fake.status).toBe(200);
       expect(fake.payload.target.status).toBe("running");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---- [[dev.services]] (#0843): companion processes booted on their own ports ----
+
+/** A long-lived fake API the manager boots as a companion service. */
+function apiService(over: Partial<DevServiceConfig> = {}): DevServiceConfig {
+  return {
+    name: "api",
+    command:
+      "bun -e \"const h=require('node:http');h.createServer((q,s)=>s.end('ok')).listen(Number(process.env.PORT),'127.0.0.1');setTimeout(()=>{},60000)\"",
+    healthCheck: { url: "http://localhost:{port}/api/health" },
+    ...over,
+  };
+}
+
+/** A long-lived fake web target that boots after its services. */
+function webTarget(over: Partial<DevTargetConfig> = {}): DevTargetConfig {
+  return {
+    name: "app",
+    kind: "server",
+    services: ["api"],
+    command: `bun -e "setTimeout(()=>{},60000)"`,
+    url: "http://localhost:{api.port}",
+    ...over,
+  };
+}
+
+describe("parseDevServices", () => {
+  it("parses a valid service with every optional field", () => {
+    const { services, errors } = parseDevServices({
+      "dev.services": [
+        {
+          name: "api",
+          command: "bun --watch src/server/index.ts",
+          cwd: "server",
+          port: "4100",
+          autoPort: false,
+          healthCheck: { url: "http://x/health" },
+          env: { FOO: "bar" },
+        },
+      ],
+    });
+    expect(errors).toEqual([]);
+    expect(services[0]).toMatchObject({
+      name: "api",
+      command: "bun --watch src/server/index.ts",
+      cwd: "server",
+      port: 4100,
+      autoPort: false,
+      healthCheck: { url: "http://x/health" },
+      env: { FOO: "bar" },
+    });
+  });
+
+  it("returns nothing when there is no dev.services section", () => {
+    expect(parseDevServices({})).toEqual({ services: [], errors: [] });
+  });
+
+  it("rejects a missing name, a missing command, and duplicates", () => {
+    expect(parseDevServices({ "dev.services": [{ command: "x" }] }).errors[0]).toContain(
+      "missing a name",
+    );
+    expect(parseDevServices({ "dev.services": [{ name: "api" }] }).errors[0]).toContain(
+      "a command is required",
+    );
+    const dup = parseDevServices({
+      "dev.services": [
+        { name: "api", command: "x" },
+        { name: "api", command: "y" },
+      ],
+    });
+    expect(dup.errors[0]).toContain('duplicate service name "api"');
+    expect(dup.services).toHaveLength(1);
+  });
+
+  it("rejects an out-of-range port and a non-boolean autoPort", () => {
+    expect(
+      parseDevServices({ "dev.services": [{ name: "api", command: "x", port: "99999" }] })
+        .errors[0],
+    ).toContain("port must be a whole number between 1 and 65535");
+    expect(
+      parseDevServices({ "dev.services": [{ name: "api", command: "x", autoPort: "yes" }] })
+        .errors[0],
+    ).toContain("autoPort must be true or false");
+  });
+
+  it("parses healthCheck in the same three shapes a target's takes", () => {
+    const obj = parseDevServices({
+      "dev.services": [{ name: "api", command: "x", healthCheck: { url: "http://x/health" } }],
+    });
+    expect(obj.errors).toEqual([]);
+    expect(obj.services[0].healthCheck).toEqual({ url: "http://x/health" });
+    const inline = parseDevServices({
+      "dev.services": [
+        {
+          name: "api",
+          command: "x",
+          healthCheck: '{ url = "http://localhost:{port}/api/health" }',
+        },
+      ],
+    });
+    expect(inline.errors).toEqual([]);
+    // The flat TOML parser leaves the inline table as a string; the documented
+    // `{ url = ... }` syntax must work through it.
+    expect(inline.services[0].healthCheck).toEqual({
+      url: "http://localhost:{port}/api/health",
+    });
+    const dotted = parseDevServices({
+      "dev.services": [{ name: "api", command: "x", "healthCheck.file": "ready.txt" }],
+    });
+    expect(dotted.errors).toEqual([]);
+    expect(dotted.services[0].healthCheck).toEqual({ file: "ready.txt" });
+    expect(
+      parseDevServices({ "dev.services": [{ name: "api", command: "x", healthCheck: {} }] })
+        .errors[0],
+    ).toContain("healthCheck needs a url or a file");
+  });
+
+  it("rejects auto-pick off without a port at CONFIG time (review round 1)", () => {
+    const { errors } = parseDevServices({
+      "dev.services": [
+        { name: "api", command: "bun --watch src/server/index.ts", autoPort: false },
+      ],
+    });
+    // The exact same message the live start would produce (dev.ts), now upfront.
+    expect(errors[0]).toContain("auto-pick is off but no port is set");
+  });
+
+  it("parses env from an object, the inline-table string, or dotted env.KEY keys", () => {
+    const obj = parseDevServices({
+      "dev.services": [{ name: "api", command: "x", env: { FOO: "bar" } }],
+    });
+    expect(obj.services[0].env).toEqual({ FOO: "bar" });
+    const inline = parseDevServices({
+      "dev.services": [{ name: "api", command: "x", env: '{ FOO = "bar", BAZ = "qux" }' }],
+    });
+    expect(inline.errors).toEqual([]);
+    expect(inline.services[0].env).toEqual({ FOO: "bar", BAZ: "qux" });
+    const dotted = parseDevServices({
+      "dev.services": [{ name: "api", command: "x", "env.FOO": "bar" }],
+    });
+    expect(dotted.errors).toEqual([]);
+    expect(dotted.services[0].env).toEqual({ FOO: "bar" });
+    expect(
+      parseDevServices({ "dev.services": [{ name: "api", command: "x", env: "{ }" }] }).errors[0],
+    ).toContain("env must be a table");
+  });
+
+  it.each([
+    {
+      name: "escaped quote",
+      raw: String.raw`{ MESSAGE = "say \"hi\"" }`,
+      expected: 'say "hi"',
+    },
+    {
+      name: "escaped backslash",
+      raw: String.raw`{ MESSAGE = "C:\\tmp" }`,
+      expected: "C:\\tmp",
+    },
+    {
+      name: "newline and tab escapes",
+      raw: String.raw`{ MESSAGE = "line\n\t\rend" }`,
+      expected: "line\n\t\rend",
+    },
+    {
+      name: "unicode escape",
+      raw: String.raw`{ MESSAGE = "\u263A" }`,
+      expected: "☺",
+    },
+    {
+      name: "single-quoted literal",
+      raw: String.raw`{ MESSAGE = 'like this' }`,
+      expected: "like this",
+    },
+    { name: "hash inside value", raw: String.raw`{ MESSAGE = "a#b" }`, expected: "a#b" },
+    { name: "comma inside value", raw: String.raw`{ MESSAGE = "a,b" }`, expected: "a,b" },
+    { name: "closing brace inside value", raw: String.raw`{ MESSAGE = "a}b" }`, expected: "a}b" },
+    { name: "empty value", raw: String.raw`{ MESSAGE = "" }`, expected: "" },
+    {
+      name: "unterminated string",
+      raw: String.raw`{ MESSAGE = "unfinished }`,
+      error: 'unterminated string value for key "MESSAGE"',
+    },
+  ])("parses TOML env string: $name", ({ raw, expected, error }) => {
+    const parsed = parseDevServices({
+      "dev.services": [{ name: "api", command: "x", env: raw }],
+    });
+    if (error) {
+      expect(parsed.errors).toEqual([`[dev.services] api: env ${error}`]);
+      expect(parsed.services).toEqual([]);
+      return;
+    }
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.services[0]?.env).toEqual({ MESSAGE: expected });
+  });
+});
+
+/**
+ * The config contract is shared by `repoos doctor` (unknown-key warnings), the
+ * Settings search overlay and the docs-drift test. Every leaf the dev parser
+ * reads has to be registered there, or a valid `[[dev.targets]]` /
+ * `[[dev.services]]` config is reported as unrecognized.
+ */
+describe("dev config key registration", () => {
+  it("registers every dev.targets/dev.services key the parser reads", () => {
+    const parsedKeys = [
+      "dev.targets.name",
+      "dev.targets.kind",
+      "dev.targets.command",
+      "dev.targets.cwd",
+      "dev.targets.env",
+      "dev.targets.url",
+      "dev.targets.artifactPath",
+      "dev.targets.label",
+      "dev.targets.services",
+      "dev.targets.autoPort",
+      "dev.targets.port",
+      "dev.targets.healthCheck.url",
+      "dev.targets.healthCheck.file",
+      "dev.services.name",
+      "dev.services.command",
+      "dev.services.cwd",
+      "dev.services.dependsOn",
+      "dev.services.port",
+      "dev.services.autoPort",
+      "dev.services.healthCheck.url",
+      "dev.services.healthCheck.file",
+      "dev.services.env",
+    ];
+    expect(parsedKeys.filter((key) => !SUPPORTED_TOML_KEYS.includes(key))).toEqual([]);
+
+    // Dotted env keys and table headers are covered by prefix matching, the
+    // same way the doctor and the Settings resolver accept unknown children of
+    // a supported table.
+    const derivedKeys = [
+      ...parsedKeys,
+      "dev.targets.env.API_URL",
+      "dev.services.env.API_URL",
+      "dev.targets.healthCheck",
+      "dev.services.healthCheck",
+    ];
+    expect(derivedKeys.filter((key) => !isKnownConfigKey(key))).toEqual([]);
+
+    // The real doctor path flattens repoos.toml and checks each top-level key;
+    // a config using all these fields must not produce an unknown-key warning.
+    const flat = parseFlatToml(
+      [
+        "[[dev.services]]",
+        'name = "api"',
+        'command = "bun --watch src/server/index.ts"',
+        'cwd = "server"',
+        'dependsOn = ["db"]',
+        "port = 4100",
+        "autoPort = false",
+        'healthCheck = { url = "http://localhost:{port}/health", file = "ready" }',
+        'env = { API_URL = "{api.url}" }',
+        "",
+        "[[dev.targets]]",
+        'name = "app"',
+        'kind = "server"',
+        'command = "bun run dev -- --port {port} --api-port {api.port}"',
+        'cwd = "web"',
+        'env = { API_URL = "{api.url}" }',
+        'url = "http://localhost:{port}"',
+        'label = "App"',
+        'services = ["api"]',
+        'healthCheck = { url = "http://localhost:{port}/health" }',
+        "",
+      ].join("\n"),
+    );
+    expect(Object.keys(flat).filter((key) => !isKnownConfigKey(key))).toEqual([]);
+  });
+});
+
+describe("devTargetServiceErrors", () => {
+  const targets = [
+    {
+      name: "web",
+      kind: "server" as const,
+      command: "x",
+      url: "http://x",
+      services: ["api", "api", "db"],
+    },
+    { name: "solo", kind: "server" as const, command: "x", url: "http://x", services: [] },
+  ];
+
+  it("rejects unknown and repeated service names", () => {
+    const errors = devTargetServiceErrors(targets, [{ name: "api", command: "x" }]);
+    expect(errors).toEqual([
+      '[dev.targets] web: service "api" is listed more than once',
+      '[dev.targets] web: references unknown service "db" — declare it as a [[dev.services]] block in repoos.toml',
+    ]);
+  });
+
+  it("passes a clean reference list", () => {
+    const clean = [
+      {
+        name: "web",
+        kind: "server" as const,
+        command: "x",
+        url: "http://x",
+        services: ["api", "db"],
+      },
+    ];
+    expect(
+      devTargetServiceErrors(clean, [
+        { name: "api", command: "x" },
+        { name: "db", command: "y" },
+      ]),
+    ).toEqual([]);
+    // A target with no `services` list passes with or without declarations.
+    expect(
+      devTargetServiceErrors(
+        [clean[0]!, { name: "solo", kind: "server", command: "x" }],
+        [
+          { name: "api", command: "x" },
+          { name: "db", command: "y" },
+        ],
+      ),
+    ).toEqual([]);
+  });
+
+  it.each([
+    { owner: "service command", service: { command: "run {ghost.port}" }, target: {} },
+    { owner: "service env", service: { env: { API: "{ghost.url}" } }, target: {} },
+    {
+      owner: "service health URL",
+      service: { healthCheck: { url: "http://localhost:{ghost.port}/health" } },
+      target: {},
+    },
+    { owner: "target command", service: {}, target: { command: "run {ghost.port}" } },
+    { owner: "target env", service: {}, target: { env: { API: "{ghost.url}" } } },
+    {
+      owner: "target health URL",
+      service: {},
+      target: { healthCheck: { url: "http://localhost:{ghost.port}/health" } },
+    },
+  ])("rejects unknown placeholders in $owner", ({ owner, service, target: targetFields }) => {
+    const targetConfig = {
+      name: "web",
+      kind: "server" as const,
+      command: "x",
+      services: ["api"],
+      ...targetFields,
+    };
+    const serviceConfig = { name: "api", command: "x", ...service } as DevServiceConfig;
+    const errors = devTargetServiceErrors([targetConfig], [serviceConfig]);
+    // Env values may be credentials: their diagnostics name the key and never the
+    // value (#0843 review round 27); every other field names the placeholder.
+    const isEnv = owner.endsWith("env");
+    expect(
+      errors.some((message) =>
+        isEnv
+          ? message.includes("references an unknown service placeholder (value not shown)")
+          : message.includes('references unknown service placeholder "ghost"'),
+      ),
+    ).toBe(true);
+    if (isEnv) expect(errors.join("\n")).not.toContain("ghost");
+  });
+
+  it("allows forward, backward and self port references after reserving every listed port", () => {
+    const targetConfig = {
+      name: "web",
+      kind: "server" as const,
+      command: "run {api.port}",
+      env: { API_URL: "{api.url}" },
+      healthCheck: { url: "http://localhost:{worker.port}/health" },
+      services: ["api", "worker"],
+    };
+    const services: DevServiceConfig[] = [
+      {
+        name: "api",
+        command: "run {worker.port}",
+        env: { SELF: "{api.port}" },
+        healthCheck: { url: "http://localhost:{worker.port}/health" },
+      },
+      {
+        name: "worker",
+        command: "run {api.port}",
+        env: { SELF: "{worker.url}" },
+      },
+    ];
+    expect(devTargetServiceErrors([targetConfig], services)).toEqual([]);
+    expect(
+      expandServiceRefs("{api.port}|{worker.url}", undefined, { api: 4100, worker: 4200 }),
+    ).toBe("4100|http://127.0.0.1:4200");
+  });
+
+  it("rejects unknown service dependencies and true dependency cycles", () => {
+    const targets = [{ name: "web", kind: "server" as const, command: "x", services: ["api"] }];
+    expect(
+      devTargetServiceErrors(targets, [{ name: "api", command: "x", dependsOn: ["missing"] }]),
+    ).toContain('[dev.services] api: dependsOn references unknown service "missing"');
+    expect(
+      devTargetServiceErrors(targets, [
+        { name: "api", command: "x", dependsOn: ["worker"] },
+        { name: "worker", command: "x", dependsOn: ["api"] },
+      ]),
+    ).toContain("[dev.services] dependency cycle: api -> worker -> api");
+  });
+
+  // #0843 review — two distinct names can normalize to the SAME placeholder
+  // token; that is a config error, never a silent undocumented suffix.
+  it("rejects two service names that normalize to the same token", () => {
+    const colliding = [
+      {
+        name: "web",
+        kind: "server" as const,
+        command: "x",
+        url: "http://x",
+        services: ["api-v1", "api_v1"],
+      },
+    ];
+    const errors = devTargetServiceErrors(colliding, [
+      { name: "api-v1", command: "x" },
+      { name: "api_v1", command: "y" },
+    ]);
+    expect(errors).toEqual([
+      '[dev.targets] web: services "api-v1" and "api_v1" both map to the placeholder "{api_v1.port}" — rename one so each has a distinct token',
+    ]);
+    // A collision across two DIFFERENT targets' service lists is not an error:
+    // each target's placeholders are scoped to the services it lists.
+    const separateTargets = [
+      { name: "a", kind: "server" as const, command: "x", url: "http://x", services: ["api-v1"] },
+      { name: "b", kind: "server" as const, command: "x", url: "http://x", services: ["api_v1"] },
+    ];
+    expect(
+      devTargetServiceErrors(separateTargets, [
+        { name: "api-v1", command: "x" },
+        { name: "api_v1", command: "y" },
+      ]),
+    ).toEqual([]);
+  });
+
+  // #0843 review round 27 — env values may be credentials and diagnostics reach
+  // the browser, so no env-value text (or fragment) may appear in any message,
+  // for target AND service env, across every kind of placeholder problem.
+  it.each([
+    ["doubled braces", "SECRETVALUE-{{api.port}}-tail"],
+    ["escaped braces", "SECRETVALUE-\\{api.port\\}-tail"],
+    ["misspelled kind", "SECRETVALUE-{api.portx}-tail"],
+    ["unclosed reference", "SECRETVALUE-{api.port-tail"],
+    ["unknown service", "SECRETVALUE-{nope.port}-tail"],
+    ["service outside the set", "SECRETVALUE-{other.port}-tail"],
+  ])("never echoes env value text in a diagnostic: %s", (_n, value) => {
+    const services = [
+      { name: "api", command: "x", env: { SVC_KEY: value } },
+      { name: "other", command: "x" },
+    ];
+    const targets = [
+      {
+        name: "web",
+        kind: "server" as const,
+        command: "x",
+        url: "http://x",
+        services: ["api"],
+        env: { TARGET_KEY: value },
+      },
+    ];
+    const errors = devTargetServiceErrors(targets, services);
+    expect(errors.length).toBeGreaterThan(0);
+    const all = errors.join("\n");
+    expect(all).not.toContain("SECRETVALUE");
+    expect(all).not.toContain("-tail");
+    expect(all).toContain("TARGET_KEY");
+    expect(all).toContain("SVC_KEY");
+  });
+
+  // #0843 review round 25 — the collision check covers the FULL resolved set
+  // (listed services plus transitive dependsOn), the same set Start boots.
+  it.each([
+    ["direct dependency", [{ name: "app", command: "x", dependsOn: ["api-v1", "api_v1"] }]],
+    [
+      "transitive dependency",
+      [
+        { name: "app", command: "x", dependsOn: ["mid"] },
+        { name: "mid", command: "x", dependsOn: ["api-v1", "api_v1"] },
+      ],
+    ],
+    [
+      "listed service vs a dependency of another",
+      [
+        { name: "app", command: "x", dependsOn: ["api-v1"] },
+        { name: "api_v1", command: "x" },
+      ],
+    ],
+  ])("rejects a token collision through dependencies: %s", (_n, extra) => {
+    const services = [
+      ...extra,
+      { name: "api-v1", command: "x" },
+      { name: "api_v1", command: "x" },
+    ].filter((s, i, all) => all.findIndex((o) => o.name === s.name) === i);
+    const listed = _n.startsWith("listed") ? ["app", "api_v1"] : ["app"];
+    const errors = devTargetServiceErrors(
+      [{ name: "web", kind: "server" as const, command: "x", url: "http://x", services: listed }],
+      services,
+    );
+    expect(errors.some((e) => e.includes("both map to the placeholder"))).toBe(true);
+  });
+
+  // #0843 review round 23 — validation and expansion must share ONE
+  // placeholder grammar/canonicalization. Each accepted spelling is exercised
+  // through every surface that substitutes service refs, then through
+  // expansion; rejected spellings must produce a config error rather than a
+  // half-expanded command.
+  const refSurfaces: {
+    name: string;
+    target?: (ref: string) => Partial<DevTargetConfig>;
+    service?: (ref: string) => Partial<DevServiceConfig>;
+  }[] = [
+    { name: "target command", target: (ref) => ({ command: `run ${ref}` }) },
+    { name: "target cwd", target: (ref) => ({ cwd: ref }) },
+    { name: "target url", target: (ref) => ({ url: `http://localhost:${ref}` }) },
+    {
+      name: "target healthCheck.url",
+      target: (ref) => ({ healthCheck: { url: `http://localhost:${ref}/health` } }),
+    },
+    { name: "target env", target: (ref) => ({ env: { REF: ref } }) },
+    { name: "service command", service: (ref) => ({ command: `run ${ref}` }) },
+    { name: "service cwd", service: (ref) => ({ cwd: ref }) },
+    {
+      name: "service healthCheck.url",
+      service: (ref) => ({ healthCheck: { url: `http://localhost:${ref}/health` } }),
+    },
+    { name: "service env", service: (ref) => ({ env: { REF: ref } }) },
+  ];
+
+  const acceptedRefs = [
+    { label: "canonical", service: "api", ref: "{api.port}", expected: "4100" },
+    { label: "uppercase token", service: "api", ref: "{API.port}", expected: "4100" },
+    { label: "uppercase kind", service: "api", ref: "{api.PORT}", expected: "4100" },
+    { label: "whitespace", service: "api", ref: "{  api . port  }", expected: "4100" },
+    { label: "hyphenated name", service: "api-v1", ref: "{api-v1.port}", expected: "4100" },
+    { label: "underscored name", service: "api-v1", ref: "{API_V1.port}", expected: "4100" },
+    { label: "dotted name", service: "api.v1", ref: "{api.v1.port}", expected: "4100" },
+    { label: "dot-normalized name", service: "api.v1", ref: "{api_v1.port}", expected: "4100" },
+    {
+      label: "url kind",
+      service: "api",
+      ref: "{API.url}",
+      expected: "http://127.0.0.1:4100",
+    },
+    {
+      label: "repeated reference",
+      service: "api",
+      ref: "{api.port}:{API.port}",
+      expected: "4100:4100",
+    },
+    { label: "surrounded by text", service: "api", ref: "a{api.port}b", expected: "a4100b" },
+  ];
+
+  for (const row of acceptedRefs) {
+    it(`accepts and fully expands ${row.label} on every surface`, () => {
+      for (const surface of refSurfaces) {
+        const target: DevTargetConfig = {
+          name: "web",
+          kind: "server",
+          command: "true",
+          url: "http://localhost",
+          services: [row.service],
+          ...surface.target?.(row.ref),
+        };
+        const service: DevServiceConfig = {
+          name: row.service,
+          command: "true",
+          ...surface.service?.(row.ref),
+        };
+        expect(devTargetServiceErrors([target], [service]), surface.name).toEqual([]);
+      }
+      const expanded = expandServiceRefs(row.ref, 5000, { [row.service]: 4100 });
+      expect(expanded).toBe(row.expected);
+      expect(expanded).not.toMatch(/\{[^}]*\.(?:port|url)\}/i);
+    });
+  }
+
+  it("accepts forward, backward and self references after canonicalization", () => {
+    const target: DevTargetConfig = {
+      name: "web",
+      kind: "server",
+      command: "run {PROVIDER.port}",
+      env: { API: "{provider.url}" },
+      url: "http://localhost:{provider.port}",
+      healthCheck: { url: "http://localhost:{provider.port}/health" },
+      services: ["consumer"],
+    };
+    const services: DevServiceConfig[] = [
+      {
+        name: "consumer",
+        command: "run {api-v1.port}",
+        cwd: "dir-{provider.port}",
+        dependsOn: ["provider", "api-v1"],
+        env: { SELF: "{CONSUMER.port}", FORWARD: "{provider.port}" },
+        healthCheck: { url: "http://localhost:{provider.port}/health" },
+      },
+      { name: "provider", command: "run {consumer.port}" },
+      { name: "api-v1", command: "run {provider.port}" },
+    ];
+    expect(devTargetServiceErrors([target], services)).toEqual([]);
+
+    const tokens = { consumer: 4000, provider: 4100, api_v1: 4200 };
+    expect(expandServiceRefs(target.command, 5000, tokens)).toBe("run 4100");
+    expect(expandServiceRefs(target.env!.API!, 5000, tokens)).toBe("http://127.0.0.1:4100");
+    expect(expandServiceRefs(services[0]!.command, 4000, tokens)).toBe("run 4200");
+    expect(expandServiceRefs(services[0]!.cwd!, 4000, tokens)).toBe("dir-4100");
+    expect(expandServiceRefs(services[0]!.env!.SELF!, 4000, tokens)).toBe("4000");
+    expect(expandServiceRefs(services[0]!.env!.FORWARD!, 4000, tokens)).toBe("4100");
+    expect(expandServiceRefs(services[0]!.healthCheck!.url!, 4000, tokens)).toBe(
+      "http://localhost:4100/health",
+    );
+  });
+
+  const rejectedRefs = [
+    {
+      label: "unknown service",
+      ref: "{ghost.port}",
+      message: 'references unknown service placeholder "ghost"',
+    },
+    { label: "doubled braces", ref: "{{api.port}}", message: "doubled braces are not supported" },
+    { label: "escaped braces", ref: "\\{api.port\\}", message: "escaped service placeholders" },
+    { label: "misspelled kind", ref: "{api.portx}", message: "malformed service placeholder" },
+    { label: "unclosed reference", ref: "{api.port", message: "unclosed service placeholder" },
+    { label: "stray closing brace", ref: "api.port}", message: "malformed service placeholder" },
+  ];
+
+  for (const row of rejectedRefs) {
+    it(`rejects ${row.label} on every surface`, () => {
+      for (const surface of refSurfaces) {
+        const target: DevTargetConfig = {
+          name: "web",
+          kind: "server",
+          command: "true",
+          url: "http://localhost",
+          services: ["api"],
+          ...surface.target?.(row.ref),
+        };
+        const service: DevServiceConfig = {
+          name: "api",
+          command: "true",
+          ...surface.service?.(row.ref),
+        };
+        const errors = devTargetServiceErrors([target], [service]);
+        if (surface.name.endsWith("env")) {
+          // Env values never appear in a diagnostic (#0843 review round 27).
+          expect(errors.length, surface.name).toBeGreaterThan(0);
+          expect(errors.join("\n"), surface.name).toContain("(value not shown)");
+          expect(errors.join("\n"), surface.name).not.toContain(row.ref);
+          continue;
+        }
+        expect(
+          errors.some((message) => message.includes(row.message)),
+          surface.name,
+        ).toBe(true);
+      }
+    });
+  }
+});
+
+describe("loadConfig dev services wiring", () => {
+  it.each([
+    {
+      label: "an unrelated malformed target does not hide an unknown service",
+      targets: [
+        "[[dev.targets]]",
+        'name = "app"',
+        'kind = "server"',
+        'command = "bun run dev"',
+        'url = "http://localhost:5173"',
+        'services = ["missing"]',
+        "",
+        "[[dev.targets]]",
+        'name = "broken"',
+        'kind = "invalid"',
+        'command = "ignored"',
+      ],
+      services: [],
+      expected: [
+        '[dev.targets] broken: kind must be "server", "artifact" or "process" (got "invalid")',
+        '[dev.targets] app: references unknown service "missing" — declare it as a [[dev.services]] block in repoos.toml',
+      ],
+    },
+    {
+      label: "a malformed service row does not hide an unknown service",
+      targets: [
+        "[[dev.targets]]",
+        'name = "app"',
+        'kind = "server"',
+        'command = "bun run dev"',
+        'url = "http://localhost:5173"',
+        'services = ["missing"]',
+      ],
+      services: ["[[dev.services]]", 'name = "broken"'],
+      expected: [
+        "[dev.services] broken: a command is required",
+        '[dev.targets] app: references unknown service "missing" — declare it as a [[dev.services]] block in repoos.toml',
+      ],
+    },
+    {
+      label: "valid target and service rows have no errors",
+      targets: [
+        "[[dev.targets]]",
+        'name = "app"',
+        'kind = "server"',
+        'command = "bun run dev"',
+        'url = "http://localhost:5173"',
+        'services = ["api"]',
+      ],
+      services: ["[[dev.services]]", 'name = "api"', 'command = "bun run api"'],
+      expected: [],
+    },
+  ])("validates parsed rows independently: $label", ({ targets, services, expected }) => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svc-independent-errors-"));
+    try {
+      writeFileSync(join(dir, "repoos.toml"), [...services, "", ...targets, ""].join("\n"));
+      const cfg = loadConfig(dir);
+      for (const message of expected) expect(cfg.devTargetErrors).toContain(message);
+      if (expected.length === 0) expect(cfg.devTargetErrors).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("parses [[dev.services]] and a referencing target", () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svc-"));
+    try {
+      writeFileSync(
+        join(dir, "repoos.toml"),
+        [
+          "[[dev.services]]",
+          'name = "api"',
+          'command = "bun --watch src/server/index.ts"',
+          'healthCheck = { url = "http://localhost:{port}/api/health" }',
+          "",
+          "[[dev.targets]]",
+          'name = "app"',
+          'kind = "server"',
+          'services = ["api"]',
+          'command = "bun run dev -- --port {port} --api-port {api.port}"',
+          'url = "http://localhost:{port}"',
+          "",
+        ].join("\n"),
+      );
+      const cfg = loadConfig(dir);
+      expect(cfg.dev?.services).toHaveLength(1);
+      expect(cfg.dev?.services?.[0]).toMatchObject({ name: "api" });
+      expect(cfg.dev?.targets?.[0].services).toEqual(["api"]);
+      expect(cfg.devTargetErrors).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("records an unknown service reference as a config error", () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcerr-"));
+    try {
+      writeFileSync(
+        join(dir, "repoos.toml"),
+        [
+          "[[dev.services]]",
+          'name = "api"',
+          'command = "bun --watch src/server/index.ts"',
+          "",
+          "[[dev.targets]]",
+          'name = "app"',
+          'kind = "server"',
+          'services = ["api", "nope"]',
+          'command = "bun run dev"',
+          'url = "http://localhost:5173"',
+          "",
+        ].join("\n"),
+      );
+      const cfg = loadConfig(dir);
+      // Both targets parse, and the unknown reference is surfaced loudly.
+      expect(cfg.dev?.targets).toHaveLength(1);
+      expect(cfg.devTargetErrors).toEqual([
+        '[dev.targets] app: references unknown service "nope" — declare it as a [[dev.services]] block in repoos.toml',
+      ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("DevTargetManager with services (#0843)", () => {
+  it.each([
+    {
+      label: "missing service cwd",
+      service: {
+        name: "api",
+        command: "bun -e 'setInterval(()=>{},60000)'",
+        cwd: "missing-service-dir",
+      },
+      target: { name: "app", kind: "process" as const, command: "true", services: ["api"] },
+      failedService: true,
+    },
+    {
+      label: "missing target cwd",
+      service: undefined,
+      target: { name: "app", kind: "process" as const, command: "true", cwd: "missing-target-dir" },
+      failedService: false,
+    },
+    {
+      label: "non-executable service command",
+      service: { name: "api", command: "./repoos-no-such-executable" },
+      target: { name: "app", kind: "process" as const, command: "true", services: ["api"] },
+      failedService: true,
+    },
+  ])("reports $label as a failed start without an unhandled spawn error", async (testCase) => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-spawn-errors-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: testCase.service ? [testCase.service] : [],
+          targets: [testCase.target],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      expect(mgr.get("app")?.status).toBe("failed");
+      if (testCase.failedService) {
+        expect(mgr.get("app")?.services?.[0]?.status).toBe("failed");
+      }
+      expect(mgr.get("app")?.pid).toBeUndefined();
+      expect(mgr.get("app")?.services?.every((service) => service.pid === undefined) ?? true).toBe(
+        true,
+      );
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review round 26 — a companion service's output lives in its own log,
+  // so a service that dies on a bind error must still give its target the
+  // port-conflict summary, on the start path and the runtime path alike.
+  it.each([
+    {
+      label: "names the port in its output",
+      script:
+        "console.error('Error: listen EADDRINUSE: address already in use 127.0.0.1:4123'); process.exit(1)",
+      expectPort: 4123,
+    },
+    {
+      label: "names no port in its output",
+      script: "console.error('bind: Address already in use'); process.exit(1)",
+      expectPort: undefined,
+    },
+  ])("summarizes a service port clash on its target when the service $label", async (c) => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svc-clash-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [{ name: "api", command: `bun -e "${c.script}"` }],
+          targets: [{ name: "app", kind: "process" as const, command: "true", services: ["api"] }],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      const view = mgr.get("app");
+      expect(view?.status).toBe("failed");
+      expect(view?.failure?.kind).toBe("port-in-use");
+      const servicePort = view?.services?.[0]?.port;
+      expect(view?.failure?.port).toBe(c.expectPort ?? servicePort);
+      expect(view?.failure?.port).toBeDefined();
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  const stackLifecycleCases = [
+    ...(["target", "service-a", "service-b"] as const).flatMap((member) =>
+      (["starting", "after-ready"] as const).flatMap((phase) =>
+        (["crash", "stop", "restart"] as const).map((action) => ({
+          member,
+          phase,
+          action,
+        })),
+      ),
+    ),
+  ];
+  for (const { member, phase, action } of stackLifecycleCases) {
+    itSlow(`tears down the whole stack when ${member} ${action}s during ${phase}`, async () => {
+      const dir = mkdtempSync(join(tmpdir(), "repoos-dev-stack-matrix-"));
+      const readyFile = join(dir, "target-ready");
+      if (phase === "after-ready") writeFileSync(readyFile, "ready");
+      const service = (name: string): DevServiceConfig => ({
+        name,
+        command: `bun -e "setTimeout(()=>{},60000)"`,
+      });
+      const mgr = new DevTargetManager(
+        baseConfig(
+          {
+            services: [service("service-a"), service("service-b")],
+            targets: [
+              webTarget({
+                services: ["service-a", "service-b"],
+                command: `bun -e "setTimeout(()=>{},60000)"`,
+                url: undefined,
+                healthCheck: { file: "target-ready" },
+              }),
+            ],
+          },
+          dir,
+        ),
+      );
+      let start: Promise<unknown> | undefined;
+      try {
+        start = mgr.start("app");
+        const deadline = Date.now() + 6000;
+        while (Date.now() < deadline) {
+          const view = mgr.get("app");
+          const allPidsPresent =
+            typeof view?.pid === "number" &&
+            view.services?.length === 2 &&
+            view.services.every((row) => typeof row.pid === "number");
+          if (allPidsPresent && (phase === "after-ready" ? view?.status === "running" : true))
+            break;
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        const before = mgr.get("app");
+        const pids = [before?.pid, ...(before?.services ?? []).map((row) => row.pid)].filter(
+          (pid): pid is number => typeof pid === "number",
+        );
+        expect(pids).toHaveLength(3);
+
+        if (action === "crash") {
+          const pid =
+            member === "target"
+              ? before?.pid
+              : before?.services?.[member === "service-a" ? 0 : 1]?.pid;
+          expect(typeof pid).toBe("number");
+          try {
+            process.kill(process.platform === "win32" ? pid! : -pid!, "SIGKILL");
+          } catch {
+            // The startup readiness loop may have observed an early exit.
+          }
+        } else if (action === "stop") {
+          await mgr.stop("app");
+        } else {
+          writeFileSync(readyFile, "ready");
+          const restarted = await mgr.restart("app");
+          expect(restarted.ok).toBe(true);
+          const restartedPids = [
+            restarted.target?.pid,
+            ...(restarted.target?.services ?? []).map((row) => row.pid),
+          ].filter((pid): pid is number => typeof pid === "number");
+          expect(restartedPids).toHaveLength(3);
+          expect(restarted.target?.status).toBe("running");
+          for (const pid of pids) expect(await waitForDead(pid)).toBe(true);
+          await mgr.stop("app");
+          for (const pid of restartedPids) expect(await waitForDead(pid)).toBe(true);
+        }
+        await start.catch(() => {});
+        const deadlineAfter = Date.now() + 6000;
+        while (Date.now() < deadlineAfter && pids.some(isAlive)) {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        for (const pid of pids) expect(await waitForDead(pid)).toBe(true);
+        const final = mgr.get("app");
+        expect(final?.pid).toBeUndefined();
+        expect(final?.services?.every((row) => row.pid === undefined)).toBe(true);
+        expect(final?.status).toBe(action === "crash" ? "failed" : "stopped");
+      } finally {
+        await mgr.stopAll();
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  }
+
+  const reloadStopCases = [
+    { kind: "server" as const, services: false, action: "stop" as const },
+    { kind: "server" as const, services: false, action: "restart" as const },
+    { kind: "server" as const, services: true, action: "stop" as const },
+    { kind: "server" as const, services: true, action: "restart" as const },
+    { kind: "process" as const, services: false, action: "stop" as const },
+    { kind: "process" as const, services: false, action: "restart" as const },
+    { kind: "process" as const, services: true, action: "stop" as const },
+    { kind: "process" as const, services: true, action: "restart" as const },
+  ];
+  for (const { kind, services, action } of reloadStopCases) {
+    itSlow(
+      `${action} reaps adopted ${kind} target and companion processes (services=${services})`,
+      async () => {
+        const dir = mkdtempSync(join(tmpdir(), "repoos-dev-reload-stop-"));
+        const defs = services ? [apiService({ healthCheck: undefined })] : [];
+        const childPidFile = join(dir, "child.pid");
+        const t = webTarget({
+          kind,
+          url: undefined,
+          services: services ? ["api"] : undefined,
+          command: `bun -e "const fs=require('node:fs');const c=require('node:child_process').spawn(process.execPath,['-e','setTimeout(()=>{},60000)']);fs.writeFileSync('${childPidFile}',String(c.pid));setTimeout(()=>{},60000)"`,
+        });
+        const cfg = baseConfig({ services: defs, targets: [t] }, dir);
+        const original = new DevTargetManager(cfg);
+        let reloaded: DevTargetManager | undefined;
+        try {
+          expect((await original.start("app")).ok).toBe(true);
+          const oldTargetPid = original.get("app")?.pid;
+          const oldServicePid = original.get("app")?.services?.[0]?.pid;
+          const childDeadline = Date.now() + 5000;
+          while (Date.now() < childDeadline && !existsSync(childPidFile)) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+          const childPid = Number(readFileSync(childPidFile, "utf8"));
+          expect(typeof oldTargetPid).toBe("number");
+          if (services) expect(typeof oldServicePid).toBe("number");
+
+          // Model the replacement server adopting the persisted target and service
+          // PIDs, with no ChildProcess handles in the new manager.
+          reloaded = new DevTargetManager(cfg);
+          reloaded.cleanupOrphans(true);
+          expect(reloaded.get("app")?.status).toBe("running");
+          const result = await reloaded[action]("app");
+          expect(result.ok).toBe(true);
+
+          expect(await waitForDead(oldTargetPid!)).toBe(true);
+          expect(await waitForDead(childPid)).toBe(true);
+          if (oldServicePid) expect(await waitForDead(oldServicePid)).toBe(true);
+          if (action === "stop") {
+            expect(reloaded.get("app")?.status).toBe("stopped");
+            expect(reloaded.get("app")?.pid).toBeUndefined();
+          } else {
+            const newTargetPid = reloaded.get("app")?.pid;
+            expect(typeof newTargetPid).toBe("number");
+            expect(newTargetPid).not.toBe(oldTargetPid);
+            if (services) {
+              expect(reloaded.get("app")?.services?.every((s) => s.pid !== oldServicePid)).toBe(
+                true,
+              );
+            }
+            await reloaded.stop("app");
+            expect(await waitForDead(newTargetPid!)).toBe(true);
+          }
+        } finally {
+          await reloaded?.stopAll();
+          await original.stopAll();
+          rmSync(dir, { recursive: true, force: true });
+        }
+      },
+    );
+  }
+
+  it("boots the service first, then the target, and exposes both states", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcorder-"));
+    // The target command only records success if the API answers its health
+    // check before the target's own command runs — the boot-order proof.
+    const proof = join(dir, "boot-order.json");
+    const ordered = webTarget({
+      command: [
+        "bun -e \"const h=require('node:http');const f=require('node:fs');",
+        `h.get('http://127.0.0.1:' + process.env.REPOOS_DEV_API_PORT + '/api/health', (r) => f.writeFileSync('${proof}', JSON.stringify({first:'api', status:r.statusCode})));`,
+        'setTimeout(()=>{},60000)"',
+      ].join(""),
+    });
+    const mgr = new DevTargetManager(
+      baseConfig({ services: [apiService()], targets: [ordered] }, dir),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(true);
+      const view = mgr.get("app");
+      expect(view?.status).toBe("running");
+      const svc = view?.services?.[0];
+      expect(svc).toMatchObject({ name: "api", status: "running" });
+      expect(typeof svc?.port).toBe("number");
+      expect(typeof svc?.pid).toBe("number");
+      // `{api.port}` in the target's url resolves to the service's real port.
+      expect(view?.url).toBe(`http://localhost:${svc?.port}`);
+      // The service genuinely answered before the target command ran: poll for
+      // the proof file the target command writes after its own GET succeeds.
+      const deadline = Date.now() + 5000;
+      let proofData: string | null = null;
+      while (Date.now() < deadline) {
+        try {
+          proofData = readFileSync(proof, "utf8");
+          break;
+        } catch {
+          await new Promise((r) => setTimeout(r, 50));
+        }
+      }
+      expect(JSON.parse(proofData ?? "{}")).toEqual({ first: "api", status: 200 });
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    { direction: "forward", consumer: "api", dependency: "db", declarations: ["api", "db"] },
+    { direction: "backward", consumer: "db", dependency: "api", declarations: ["api", "db"] },
+    { direction: "self", consumer: "api", dependency: "api", declarations: ["api"] },
+  ])("substitutes $direction service refs in command, env, health URL and target", async (row) => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-service-ref-directions-"));
+    const serviceOutput = join(dir, "service-ref.txt");
+    const targetOutput = join(dir, "target-ref.txt");
+    const consumerCommand = [
+      `bun -e "const fs=require('node:fs');const h=require('node:http');`,
+      `fs.writeFileSync('${serviceOutput}','{${row.dependency}.port}|'+process.env.REF_URL+'|'+process.env.SELF_PORT);`,
+      `h.createServer((_q,s)=>s.end('ok')).listen(Number(process.env.PORT),'127.0.0.1');setTimeout(()=>{},60000)"`,
+    ].join("");
+    const providerCommand =
+      "bun -e \"const h=require('node:http');h.createServer((_q,s)=>s.end('ok')).listen(Number(process.env.PORT),'127.0.0.1');setTimeout(()=>{},60000)\"";
+    const defs: DevServiceConfig[] = row.declarations.map((name) => {
+      if (name !== row.consumer) return { name, command: providerCommand };
+      return {
+        name,
+        command: consumerCommand,
+        ...(row.consumer !== row.dependency ? { dependsOn: [row.dependency] } : {}),
+        env: { REF_URL: `{${row.dependency}.url}`, SELF_PORT: `{${row.consumer}.port}` },
+        healthCheck: { url: `http://127.0.0.1:{${row.dependency}.port}/health` },
+      };
+    });
+    const targetConfig = {
+      name: "app",
+      kind: "process" as const,
+      services: [row.consumer],
+      command: `bun -e "require('node:fs').writeFileSync('${targetOutput}','{${row.consumer}.port}|'+process.env.TARGET_PORT);setTimeout(()=>{},60000)"`,
+      env: { TARGET_PORT: `{${row.consumer}.port}` },
+    };
+    const mgr = new DevTargetManager(baseConfig({ services: defs, targets: [targetConfig] }, dir));
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok, result.error).toBe(true);
+      const view = mgr.get("app");
+      const consumer = view?.services?.find((service) => service.name === row.consumer);
+      const dependency = view?.services?.find((service) => service.name === row.dependency);
+      expect(typeof consumer?.port).toBe("number");
+      expect(typeof dependency?.port).toBe("number");
+      const depPort = dependency!.port!;
+      const ownPort = consumer!.port!;
+      const expectedService = `${depPort}|http://127.0.0.1:${depPort}|${ownPort}`;
+      const expectedTarget = `${ownPort}|${ownPort}`;
+      // Readiness only proves each process is alive; the commands write these
+      // files just after start, so poll instead of assuming they already ran.
+      const deadline = Date.now() + 5000;
+      let serviceText = "";
+      let targetText = "";
+      while (Date.now() < deadline) {
+        try {
+          serviceText = readFileSync(serviceOutput, "utf8");
+          targetText = readFileSync(targetOutput, "utf8");
+          if (serviceText === expectedService && targetText === expectedTarget) break;
+        } catch {
+          /* files not written yet */
+        }
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      expect(serviceText).toBe(expectedService);
+      expect(targetText).toBe(expectedTarget);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  itSlow(
+    "does not accept a stranger's successful response after the service exits during its probe",
+    async () => {
+      const dir = mkdtempSync(join(tmpdir(), "repoos-dev-stranger-probe-"));
+      const targetMarker = join(dir, "target-started");
+      const stranger = createHttpServer((_req, res) => {
+        setTimeout(() => {
+          res.writeHead(200, { "content-type": "text/plain" });
+          res.end("stranger");
+        }, 250);
+      });
+      await new Promise<void>((resolve) => stranger.listen(0, "127.0.0.1", resolve));
+      const strangerPort = (stranger.address() as { port: number }).port;
+      const service: DevServiceConfig = {
+        name: "api",
+        command: `bun -e "setTimeout(()=>process.exit(0),75);setInterval(()=>{},60000)"`,
+        healthCheck: { url: `http://127.0.0.1:${strangerPort}/health` },
+      };
+      const mgr = new DevTargetManager(
+        baseConfig(
+          {
+            services: [service],
+            targets: [
+              webTarget({
+                command: `bun -e "require('node:fs').writeFileSync('${targetMarker}','started');setInterval(()=>{},60000)"`,
+              }),
+            ],
+          },
+          dir,
+        ),
+      );
+      try {
+        const starting = mgr.start("app");
+        const serviceDeadline = Date.now() + 2000;
+        let servicePid: number | undefined;
+        while (Date.now() < serviceDeadline && servicePid === undefined) {
+          servicePid = mgr.get("app")?.services?.[0]?.pid;
+          if (servicePid === undefined) await new Promise((r) => setTimeout(r, 10));
+        }
+        expect(typeof servicePid).toBe("number");
+        const result = await starting;
+        expect(result.ok).toBe(false);
+        expect(result.error).toContain('service "api"');
+        expect(existsSync(targetMarker)).toBe(false);
+        expect(mgr.get("app")?.status).toBe("failed");
+        expect(mgr.get("app")?.pid).toBeUndefined();
+        expect(mgr.get("app")?.services?.[0]?.pid).toBeUndefined();
+        expect(await waitForDead(servicePid!)).toBe(true);
+      } finally {
+        await mgr.stopAll();
+        await new Promise<void>((resolve) => stranger.close(() => resolve()));
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.each([
+    { count: 2, expected: ["target", "service-b", "service-a"] },
+    { count: 3, expected: ["target", "service-c", "service-b", "service-a"] },
+  ])(
+    "stops target before services in reverse dependency order ($count services)",
+    async ({ count, expected }) => {
+      const dir = mkdtempSync(join(tmpdir(), "repoos-dev-teardown-order-"));
+      const events = join(dir, "stopped.log");
+      const readyPath = (name: string): string => join(dir, `${name}.ready`);
+      const commandFor = (name: string): string => {
+        // Record that the SIGTERM handler is installed before the test stops
+        // the stack: readiness only proves the process is alive, and a loaded
+        // machine can otherwise reach stop() before Bun has registered it.
+        const script = `const fs=require('node:fs');process.on('SIGTERM',()=>{fs.appendFileSync(${JSON.stringify(events)},${JSON.stringify(`${name}\n`)});process.exit(0)});fs.writeFileSync(${JSON.stringify(readyPath(name))},'ready');setInterval(()=>{},60000)`;
+        return `bun -e '${script.replaceAll("'", "'\\''")}'`;
+      };
+      const defs: DevServiceConfig[] = Array.from({ length: count }, (_, i) => {
+        const name = `service-${String.fromCharCode(97 + i)}`;
+        const previous = i > 0 ? `service_${String.fromCharCode(96 + i)}` : undefined;
+        const dependency = previous
+          ? `;const dependencyPort=${JSON.stringify(`{${previous}.port}`)}`
+          : "";
+        return {
+          name,
+          command: previous
+            ? commandFor(name).replace("setInterval", `${dependency};setInterval`)
+            : commandFor(name),
+        };
+      });
+      const services = defs.map((service) => service.name);
+      const mgr = new DevTargetManager(
+        baseConfig(
+          {
+            services: defs,
+            targets: [webTarget({ services, url: undefined, command: commandFor("target") })],
+          },
+          dir,
+        ),
+      );
+      try {
+        expect((await mgr.start("app")).ok).toBe(true);
+        const ready = ["target", ...services];
+        const readyDeadline = Date.now() + 5000;
+        while (Date.now() < readyDeadline && !ready.every((name) => existsSync(readyPath(name)))) {
+          await new Promise((r) => setTimeout(r, 20));
+        }
+        expect(ready.filter((name) => !existsSync(readyPath(name)))).toEqual([]);
+        await mgr.stop("app");
+        // Wait for the whole teardown, not just the file's first line: the
+        // processes are signalled target-first, but a busy machine can delay
+        // the target's SIGTERM handler past the services' writes. The order
+        // assertion is only meaningful once every process has recorded.
+        const deadline = Date.now() + 2000;
+        while (Date.now() < deadline) {
+          try {
+            if (readFileSync(events, "utf8").trim().split("\n").length >= expected.length) break;
+          } catch {
+            /* file not created yet */
+          }
+          await new Promise((r) => setTimeout(r, 20));
+        }
+        expect(readFileSync(events, "utf8").trim().split("\n")).toEqual(expected);
+        expect(mgr.get("app")?.pid).toBeUndefined();
+        expect(mgr.get("app")?.services?.every((service) => service.pid === undefined)).toBe(true);
+      } finally {
+        await mgr.stopAll();
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it("fails the target when a service never becomes ready, naming the service", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcfail-"));
+    const mgr = new DevTargetManager(
+      baseConfig({ services: [apiService({ command: "exit 3" })], targets: [webTarget()] }, dir),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('service "api"');
+      const view = mgr.get("app");
+      expect(view?.status).toBe("failed");
+      expect(view?.error).toContain('service "api"');
+      // The service records its own failed state — its exit ran before the
+      // readiness gate noticed — so nothing is left recorded as live.
+      expect(view?.services?.[0].status).toBe("failed");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses a target referencing a service no [[dev.services]] block declares", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcmis-"));
+    const mgr = new DevTargetManager(baseConfig({ targets: [webTarget()] }, dir));
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('unknown dev service(s) "api"');
+      expect(mgr.get("app")?.status).toBe("failed");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("stops the services with the target", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcstop-"));
+    const mgr = new DevTargetManager(
+      baseConfig({ services: [apiService()], targets: [webTarget()] }, dir),
+    );
+    try {
+      await mgr.start("app");
+      const svcPid = mgr.get("app")?.services?.[0].pid;
+      expect(typeof svcPid).toBe("number");
+      const targetPid = mgr.get("app")?.pid;
+      const stop = await mgr.stop("app");
+      expect(stop.ok).toBe(true);
+      const view = mgr.get("app");
+      expect(view?.status).toBe("stopped");
+      expect(view?.services?.[0].status).toBe("stopped");
+      // Both processes are actually gone.
+      expect(await waitForDead(targetPid!)).toBe(true);
+      expect(await waitForDead(svcPid!)).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("restarts the target and its services together", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcrestart-"));
+    const mgr = new DevTargetManager(
+      baseConfig({ services: [apiService()], targets: [webTarget()] }, dir),
+    );
+    try {
+      await mgr.start("app");
+      const firstServicePid = mgr.get("app")?.services?.[0].pid;
+      const restart = await mgr.restart("app");
+      expect(restart.ok).toBe(true);
+      const view = mgr.get("app");
+      expect(view?.status).toBe("running");
+      expect(view?.services?.[0].status).toBe("running");
+      expect(view?.services?.[0].pid).not.toBe(firstServicePid);
+      // The first service process is gone.
+      expect(await waitForDead(firstServicePid!)).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps the service's own {port} and PORT env consistent", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcenv-"));
+    const memo = join(dir, "env.json");
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              command: `bun -e "const f=require('node:fs');f.writeFileSync('${memo}', JSON.stringify({port:Number(process.env.PORT), foo:process.env.FOO}));setTimeout(()=>{},60000)"`,
+              env: { FOO: "bar" },
+              // No HTTP services in this fixture: ready = alive-after-settle.
+              healthCheck: undefined,
+            }),
+          ],
+          // A process target is running as soon as it is alive — no probe, so
+          // the test doesn't wait on a URL nothing serves in this fixture.
+          targets: [webTarget({ kind: "process", url: undefined })],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(true);
+      const svc = mgr.get("app")?.services?.[0];
+      const recorded = JSON.parse(readFileSync(memo, "utf8"));
+      // PORT (and therefore `{port}`) is the same reserved port the state carries.
+      expect(recorded).toEqual({ port: svc?.port, foo: "bar" });
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps assigned service ports and RepoOS service tokens reserved over env", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcenv-owned-"));
+    const memo = join(dir, "env.json");
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              command: `bun -e "const f=require('node:fs');f.writeFileSync('${memo}',JSON.stringify({port:process.env.PORT,host:process.env.HOST,tokenPort:process.env.REPOOS_DEV_API_PORT,tokenUrl:process.env.REPOOS_DEV_API_URL}));setTimeout(()=>{},60000)"`,
+              healthCheck: undefined,
+              env: {
+                PORT: "1",
+                HOST: "0.0.0.0",
+                REPOOS_DEV_API_PORT: "2",
+                REPOOS_DEV_API_URL: "http://invalid/",
+              },
+            }),
+          ],
+          targets: [webTarget({ kind: "process", url: undefined })],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(true);
+      const service = mgr.get("app")?.services?.[0];
+      const recorded = JSON.parse(readFileSync(memo, "utf8"));
+      expect(recorded).toEqual({
+        port: String(service?.port),
+        host: "127.0.0.1",
+        tokenPort: String(service?.port),
+        tokenUrl: `http://127.0.0.1:${service?.port}`,
+      });
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  itSlow("waits for automatic crash teardown before starting a replacement stack", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-pending-teardown-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              command: 'bun -e "setTimeout(()=>process.exit(1),1800)"',
+              healthCheck: undefined,
+            }),
+          ],
+          targets: [webTarget({ kind: "process", url: undefined })],
+        },
+        dir,
+      ),
+    );
+    try {
+      const initial = await mgr.start("app");
+      expect(initial.ok).toBe(true);
+      const oldTargetPid = initial.target?.pid;
+      expect(typeof oldTargetPid).toBe("number");
+
+      const deadline = Date.now() + 6000;
+      while (Date.now() < deadline && mgr.get("app")?.status !== "failed") {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      expect(mgr.get("app")?.status).toBe("failed");
+      const replacement = await mgr.start("app");
+      expect(replacement.ok).toBe(true);
+      expect(replacement.target?.status).toBe("running");
+      expect(replacement.target?.pid).not.toBe(oldTargetPid);
+      expect(await waitForDead(oldTargetPid!)).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("marks the target failed, naming the service, when a running service crashes", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svccrash-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              command: 'bun -e "setTimeout(()=>process.exit(1),1200)"',
+              healthCheck: undefined,
+            }),
+          ],
+          // A process target is "running" as soon as it is alive — no probe,
+          // so the timeline is deterministic: service alive at the 500ms
+          // settle, target running at ~1s, service exits at 1.2s and the
+          // crash must degrade the target naming the service.
+          targets: [webTarget({ kind: "process", url: undefined })],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(true);
+      // Wait for the service to exit and the crash to degrade the target.
+      const deadline = Date.now() + 6000;
+      let seen: { status?: string; error?: string } = {};
+      while (Date.now() < deadline) {
+        seen = { status: mgr.get("app")?.status, error: mgr.get("app")?.error };
+        if (seen.status === "failed") break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      expect(seen.status).toBe("failed");
+      expect(seen.error).toContain('service "api"');
+      expect(mgr.get("app")?.services?.[0].status).toBe("failed");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("pinned service port: used when free, refused when taken, named in the error", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcpin-"));
+    const free = await freePort();
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [apiService({ autoPort: false, port: free })],
+          targets: [webTarget()],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(true);
+      expect(mgr.get("app")?.services?.[0].port).toBe(free);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+    // Now hold the same port and expect a refusal that names the service.
+    const held = await holdPort();
+    try {
+      const takenPort = held.port;
+      const mgr2 = new DevTargetManager(
+        baseConfig(
+          {
+            services: [apiService({ autoPort: false, port: takenPort })],
+            targets: [webTarget()],
+          },
+          dir,
+        ),
+      );
+      try {
+        const result = await mgr2.start("app");
+        expect(result.ok).toBe(false);
+        expect(result.error).toContain(`service "api" port ${takenPort} is already in use`);
+      } finally {
+        await mgr2.stopAll();
+      }
+    } finally {
+      await held.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // Review round 1 — a start that fails AT THE TARGET tears the companion
+  // services down with it: the target owns their lifecycle, so a half-booted
+  // stack never outlives the failed start.
+  it("stops already-booted services when the target's readiness check fails", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svclaunch-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [apiService()],
+          // A process target whose command exits immediately: readiness
+          // (alive-settle) fails, the target fails, and the services — already
+          // running — are stopped with the failed start.
+          targets: [webTarget({ kind: "process", url: undefined, command: "exit 7" })],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      expect(mgr.get("app")?.status).toBe("failed");
+      const view = mgr.get("app");
+      expect(view?.status).toBe("failed");
+      expect(view?.services?.[0].status).toBe("stopped");
+      const svcPid = view?.services?.[0].pid;
+      // The service process is actually gone.
+      expect(await waitForDead(svcPid!)).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // Review round 1 — after a reload handover an adopted service has no
+  // process handle; the same lazy PID-liveness check that guards adopted
+  // targets guards their services, so a crash degrades the target visibly.
+  it("marks an adopted service's crash after reload on the target", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcreload-"));
+    const mgr1 = new DevTargetManager(
+      baseConfig(
+        {
+          services: [apiService()],
+          targets: [webTarget()],
+        },
+        dir,
+      ),
+    );
+    try {
+      const started = await mgr1.start("app");
+      expect(started.ok).toBe(true);
+      const svcPid = mgr1.get("app")?.services?.[0].pid;
+      const targetPid = mgr1.get("app")?.pid;
+      expect(typeof svcPid).toBe("number");
+      expect(typeof targetPid).toBe("number");
+      // The registration file persists every state change; a reload handover
+      // is a NEW manager over the same root re-adopting the recorded PIDs.
+      const mgr2 = new DevTargetManager(
+        baseConfig({ services: [apiService()], targets: [webTarget()] }, dir),
+      );
+      mgr2.cleanupOrphans(/* isReload */ true);
+      expect(mgr2.get("app")?.status).toBe("running");
+      expect(mgr2.get("app")?.services?.[0].status).toBe("running");
+
+      // The service now crashes with no live handle watching it.
+      let verifiedDead = await waitForDead(svcPid!);
+      if (!verifiedDead) process.kill(svcPid!, "SIGKILL");
+      verifiedDead = await waitForDead(svcPid!);
+      expect(verifiedDead).toBe(true);
+
+      // The next lazy view discovers the death: the service is failed, and
+      // the target is degraded naming it.
+      const deadline = Date.now() + 5000;
+      let status: string | undefined;
+      let error: string | undefined;
+      while (Date.now() < deadline) {
+        const view = mgr2.get("app");
+        status = view?.status;
+        error = view?.error;
+        if (status === "failed") break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      expect(status).toBe("failed");
+      expect(error).toContain('service "api"');
+      expect(mgr2.get("app")?.services?.[0].status).toBe("failed");
+
+      // The failed state survives a server reload. Reconciliation must reap
+      // the still-live target instead of skipping it because it is no longer
+      // marked running; otherwise restart can launch a duplicate stack.
+      const mgr3 = new DevTargetManager(
+        baseConfig({ services: [apiService()], targets: [webTarget()] }, dir),
+      );
+      mgr3.cleanupOrphans(/* isReload */ true);
+      expect(await waitForDead(targetPid!)).toBe(true);
+      await mgr2.stopAll();
+    } finally {
+      await mgr1.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // Review round 2 — a service can exit AFTER its readiness gate passed but
+  // BEFORE the target finished starting: the exit handler degrades the target,
+  // and the start must not plow on (or come back as success with a dead API).
+  it("reports a service exit that lands between its gate and the target's readiness", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcrace-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              // Healthy at its 500ms alive-settle; gone shortly after, while
+              // the target's own gate is still polling a URL nothing serves.
+              command: 'bun -e "setTimeout(()=>process.exit(3),1000)"',
+              healthCheck: undefined,
+            }),
+          ],
+          // A server target with a `{own-port}` url: its readiness poll runs
+          // long after the service has exited, so the degraded mark set by the
+          // service's exit handler would otherwise be wiped by the target's
+          // own `starting` write or answered with a late generic timeout.
+          targets: [
+            webTarget({
+              url: "http://localhost:{port}",
+              command: 'bun -e "setTimeout(()=>{},60000)"',
+            }),
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      // The reason is the service's crash, surfaced promptly (well inside the
+      // target's 30s readiness window), not a generic "did not answer".
+      expect(result.error).toContain('service "api"');
+      expect(mgr.get("app")?.error).toContain('service "api"');
+      expect(mgr.get("app")?.services?.[0].status).toBe("failed");
+      // Teardown clears process ownership after stopping the failed stack.
+      expect(mgr.get("app")?.pid).toBeUndefined();
+      expect(mgr.get("app")?.services?.[0].pid).toBeUndefined();
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  itSlow(
+    "stops the full stack when a service exits during a successful target health probe",
+    async () => {
+      const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcproberace-"));
+      const proof = join(dir, "target-answered-health.json");
+      const mgr = new DevTargetManager(
+        baseConfig(
+          {
+            services: [
+              apiService({
+                // The API answers its startup health check, then exits after
+                // the target begins its health request but before its response.
+                command: `bun -e "const h=require('node:http');const f=require('node:fs');h.createServer((q,s)=>s.end('ok')).listen(Number(process.env.PORT),'127.0.0.1');setInterval(()=>{if(f.existsSync('${proof}'))process.exit(3)},10)"`,
+              }),
+            ],
+            targets: [
+              webTarget({
+                url: "http://127.0.0.1:{port}/health",
+                command: `bun -e "const h=require('node:http');const f=require('node:fs');h.createServer((q,s)=>{f.writeFileSync('${proof}','answered');setTimeout(()=>s.end('ok'),500)}).listen({port},'127.0.0.1');setTimeout(()=>{},60000)"`,
+              }),
+            ],
+          },
+          dir,
+        ),
+      );
+      try {
+        const result = await mgr.start("app");
+        expect(existsSync(proof)).toBe(true);
+        expect(result.ok).toBe(false);
+        expect(result.error).toContain('service "api"');
+        const view = mgr.get("app");
+        expect(view?.status).toBe("failed");
+        expect(view?.services?.[0].status).toBe("failed");
+        expect(view?.pid).toBeUndefined();
+        expect(view?.services?.[0].pid).toBeUndefined();
+      } finally {
+        await mgr.stopAll();
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  );
+
+  // Review round 3 — when a sibling's exit aborts a later service's readiness
+  // gate, the target's failure reason must stay the DEAD sibling's (it names
+  // the service that died), not the gate's generic abort notice.
+  it("keeps the dead sibling's name in the summary when its exit aborts a later service's gate", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcsibling-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              // Healthy within its first poll, gone shortly after — while the
+              // worker's gate is still polling a URL nothing serves.
+              command:
+                "bun -e \"const h=require('node:http');h.createServer((q,s)=>s.end('ok')).listen(Number(process.env.PORT),'127.0.0.1');setTimeout(()=>process.exit(3),800)\"",
+            }),
+            {
+              name: "worker",
+              command: 'bun -e "setTimeout(()=>{},60000)"',
+              healthCheck: { url: "http://localhost:{port}/never" },
+            },
+          ],
+          targets: [webTarget({ services: ["api", "worker"] })],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      // The reason names the service that died, with its exit code — not the
+      // worker whose gate merely noticed.
+      expect(result.error).toContain('service "api"');
+      expect(result.error).toContain("exited with code 3");
+      expect(result.error).not.toContain('service "worker"');
+      const view = mgr.get("app");
+      expect(view?.status).toBe("failed");
+      expect(view?.error).toContain('service "api"');
+      expect(view?.services?.find((s) => s.name === "api")?.status).toBe("failed");
+      // The aborted worker did not keep running: a failed start tears every
+      // companion down, whatever already-booted.
+      expect(
+        await waitForDead(mgr.get("app")?.services?.find((s) => s.name === "worker")?.pid!),
+      ).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // Review round 2 — on reload, a service whose target died still gets reaped,
+  // so a companion process cannot outlive the stack it belongs to; and a
+  // service already dead at adoption degrades the target NOW, not later.
+  it("reaps a dead target's live service on reload, and reports a dead service at adoption", async () => {
+    // Case A — dead target, live service: on reload the service is reaped.
+    const dirA = mkdtempSync(join(tmpdir(), "repoos-dev-svcreap-"));
+    const mgrA = new DevTargetManager(
+      baseConfig({ services: [apiService()], targets: [webTarget()] }, dirA),
+    );
+    try {
+      const started = await mgrA.start("app");
+      expect(started.ok).toBe(true);
+      const targetPid = mgrA.get("app")?.pid!;
+      const svcPid = mgrA.get("app")?.services?.[0].pid!;
+      expect(typeof targetPid).toBe("number");
+      expect(typeof svcPid).toBe("number");
+
+      process.kill(targetPid, "SIGKILL");
+      expect(await waitForDead(targetPid)).toBe(true);
+      const reaper = new DevTargetManager(
+        baseConfig({ services: [apiService()], targets: [webTarget()] }, dirA),
+      );
+      reaper.cleanupOrphans(/* isReload */ true);
+      // The companion process did not outlive its dead target.
+      expect(await waitForDead(svcPid)).toBe(true);
+      // Its row no longer claims "running" under the dead target — the reap
+      // settles the state, not just the process (#0843 review round 3). The
+      // target itself reads "failed" (the live first manager watched it die)
+      // or "stopped" (the exit event had not landed yet); never "running".
+      const reapView = reaper.get("app");
+      expect(reapView?.status).not.toBe("running");
+      expect(reapView?.services?.[0].status).toBe("stopped");
+      await reaper.stopAll();
+    } finally {
+      await mgrA.stopAll();
+      rmSync(dirA, { recursive: true, force: true });
+    }
+
+    // Case B — live target, dead service: adoption ITSELF marks the service
+    // failed and degrades the target naming it; no later poll is needed.
+    const dirB = mkdtempSync(join(tmpdir(), "repoos-dev-svcreadb-"));
+    const mgrB = new DevTargetManager(
+      baseConfig({ services: [apiService()], targets: [webTarget()] }, dirB),
+    );
+    try {
+      const started = await mgrB.start("app");
+      expect(started.ok).toBe(true);
+      const svcPid = mgrB.get("app")?.services?.[0].pid!;
+      process.kill(svcPid, "SIGKILL");
+      expect(await waitForDead(svcPid)).toBe(true);
+
+      const adopted = new DevTargetManager(
+        baseConfig({ services: [apiService()], targets: [webTarget()] }, dirB),
+      );
+      adopted.cleanupOrphans(/* isReload */ true);
+      const view = adopted.get("app");
+      expect(view?.status).toBe("failed");
+      expect(view?.error).toContain('service "api"');
+      expect(view?.services?.[0].status).toBe("failed");
+      await adopted.stopAll();
+    } finally {
+      await mgrB.stopAll();
+      rmSync(dirB, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review — a target's own crash must not leave its companion services
+  // running: they would otherwise hold ports (and resources) until a later
+  // stop or a server shutdown.
+  itSlow("stops the companion services when the target itself crashes", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svctargetcrash-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [apiService({ healthCheck: undefined })],
+          // A process target is running as soon as it is alive, then crashes
+          // well after the start has settled, so this exercises the RUNNING
+          // exit handler, not the readiness gate.
+          targets: [
+            webTarget({
+              kind: "process",
+              url: undefined,
+              command: 'bun -e "setTimeout(()=>process.exit(1),3000)"',
+            }),
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const started = await mgr.start("app");
+      expect(started.ok).toBe(true);
+      expect(mgr.get("app")?.status).toBe("running");
+      const svcPid = mgr.get("app")?.services?.[0].pid;
+      expect(typeof svcPid).toBe("number");
+
+      // Wait for the target to crash.
+      const deadline = Date.now() + 8000;
+      while (Date.now() < deadline && mgr.get("app")?.status !== "failed") {
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      expect(mgr.get("app")?.status).toBe("failed");
+      // The companion process is genuinely gone and its row settles to
+      // stopped once the asynchronous teardown completes.
+      expect(await waitForDead(svcPid!)).toBe(true);
+      const settleDeadline = Date.now() + 4000;
+      while (Date.now() < settleDeadline && mgr.get("app")?.services?.[0].status !== "stopped") {
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      expect(mgr.get("app")?.services?.[0].status).toBe("stopped");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review — a Stop that lands while an in-flight start is still booting
+  // must cancel it: the start may not launch the stack after Stop returned.
+  itSlow("cancels an in-flight start when stopped before it launches anything", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcstoprace-"));
+    const targetMarker = join(dir, "target-launched.txt");
+    const serviceMarker = join(dir, "service-launched.txt");
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              command: `bun -e "require('node:fs').writeFileSync('${serviceMarker}','yes');setTimeout(()=>{},60000)"`,
+              healthCheck: undefined,
+            }),
+          ],
+          targets: [
+            webTarget({
+              kind: "process",
+              url: undefined,
+              command: `bun -e "require('node:fs').writeFileSync('${targetMarker}','yes');setTimeout(()=>{},60000)"`,
+            }),
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      // Start and Stop in the same tick: the stop lands while `doStart` is
+      // still at its first await, before any service port is even reserved.
+      const startPromise = mgr.start("app");
+      const stopResult = await mgr.stop("app");
+      const startResult = await startPromise;
+      expect(stopResult.ok).toBe(true);
+      expect(startResult.ok).toBe(true);
+      const view = mgr.get("app");
+      expect(view?.status).toBe("stopped");
+      expect(view?.services?.[0].status).toBe("stopped");
+      // Nothing was ever launched: neither marker exists, and no PID is held.
+      expect(existsSync(serviceMarker)).toBe(false);
+      expect(existsSync(targetMarker)).toBe(false);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review — two services that normalize to the same placeholder token
+  // must fail the start loudly rather than resolve `{api_v1.port}` to whichever
+  // happened to boot last.
+  itSlow("refuses to start when two services collide on the placeholder token", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svctokenclash-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            {
+              name: "api-v1",
+              command: 'bun -e "setTimeout(()=>{},60000)"',
+              healthCheck: undefined,
+            },
+            {
+              name: "api_v1",
+              command: 'bun -e "setTimeout(()=>{},60000)"',
+              healthCheck: undefined,
+            },
+          ],
+          targets: [webTarget({ services: ["api-v1", "api_v1"] })],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("both map to the placeholder");
+      expect(result.error).toContain("{api_v1.port}");
+      expect(mgr.get("app")?.status).toBe("failed");
+      expect((mgr.get("app")?.services ?? []).every((s) => s.status === "stopped")).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review — a health file that already exists from a previous run must
+  // not satisfy the service gate. Readiness requires a file NEWER than the
+  // pre-spawn snapshot, so the target cannot start against an unready service.
+  itSlow("does not accept a stale health file left by a previous run", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcstale-"));
+    const readiness = join(dir, "ready.txt");
+    const memo = join(dir, "what-target-saw.txt");
+    // A marker from an earlier run, older than this start.
+    writeFileSync(readiness, "stale");
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            {
+              name: "api",
+              command: `bun -e "const f=require('node:fs');setTimeout(()=>f.writeFileSync('${readiness}','fresh'),800);setTimeout(()=>{},60000)"`,
+              healthCheck: { file: "ready.txt" },
+            },
+          ],
+          targets: [
+            // The target records what the readiness file held when it finally
+            // ran: "stale" means the gate raced ahead of the fresh marker.
+            webTarget({
+              kind: "process",
+              url: undefined,
+              command: `bun -e "const f=require('node:fs');f.writeFileSync('${memo}', f.readFileSync('${readiness}','utf8'));setTimeout(()=>{},60000)"`,
+            }),
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(true);
+      // Wait for the target process to run and record what it saw; bun's own
+      // startup can lag the readiness settle under load.
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline && !existsSync(memo)) {
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      expect(readFileSync(memo, "utf8")).toBe("fresh");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review — a Start arriving while Stop is terminating the target must
+  // wait, not claim a new generation and launch mid-stop; Stop's outcome is
+  // settled before the Start runs.
+  itSlow("serializes a Start that arrives while Stop is still terminating", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-stopstart-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          targets: [
+            webTarget({
+              kind: "process",
+              url: undefined,
+              services: undefined,
+              command: 'bun -e "setTimeout(()=>{},60000)"',
+            }),
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const started = await mgr.start("app");
+      expect(started.ok).toBe(true);
+      const firstPid = mgr.get("app")?.pid;
+      expect(typeof firstPid).toBe("number");
+
+      const stopPromise = mgr.stop("app");
+      // Let stop reach its SIGTERM grace wait, then race a Start in.
+      await new Promise((r) => setTimeout(r, 100));
+      const startPromise = mgr.start("app");
+
+      const stopResult = await stopPromise;
+      // Stop's result reflects a stopped target — the racing Start waited.
+      expect(stopResult.ok).toBe(true);
+      expect(stopResult.target?.status).toBe("stopped");
+
+      const startResult = await startPromise;
+      expect(startResult.ok).toBe(true);
+      const view = mgr.get("app");
+      expect(view?.status).toBe("running");
+      expect(view?.pid).not.toBe(firstPid);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review — a service crash during an artifact build must not be erased
+  // by the build's successful exit: the stack is still failed.
+  itSlow("reports an artifact target failed when a service crashed during the build", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-artifactcrash-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              // Alive at its 500ms settle, then crashes while the artifact runs.
+              command: 'bun -e "setTimeout(()=>process.exit(1),1200)"',
+              healthCheck: undefined,
+            }),
+          ],
+          targets: [
+            {
+              name: "app",
+              kind: "artifact",
+              services: ["api"],
+              // Exits 0 well AFTER the service crash above.
+              command: 'bun -e "setTimeout(()=>{},2500)"',
+              artifactPath: "dist/out.txt",
+            },
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('service "api"');
+      const view = mgr.get("app");
+      expect(view?.status).toBe("failed");
+      expect(view?.services?.[0].status).toBe("failed");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  itSlow("stops companion services when an artifact build succeeds", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-artifact-service-stop-"));
+    const servicePidFile = join(dir, "service.pid");
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [
+            apiService({
+              command: `bun -e "const f=require('node:fs');f.writeFileSync('${servicePidFile}',String(process.pid));setTimeout(()=>{},60000)"`,
+              healthCheck: { file: "service.pid" },
+            }),
+          ],
+          targets: [
+            {
+              name: "build",
+              kind: "artifact",
+              services: ["api"],
+              command: "true",
+              artifactPath: "dist/out.txt",
+            },
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("build");
+      const servicePid = Number(readFileSync(servicePidFile, "utf8"));
+      expect(result.ok).toBe(true);
+      expect(typeof servicePid).toBe("number");
+      expect(await waitForDead(servicePid!)).toBe(true);
+      expect(mgr.get("build")?.services?.[0]).toMatchObject({ status: "stopped" });
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review — a service that fails before it can spawn (port reservation,
+  // cwd, launch) must surface as a failed sub-row with its reason, not as an
+  // unexplained "stopped".
+  itSlow("records a service whose port reservation failed as failed, with the reason", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcportrow-"));
+    const held = await holdPort();
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [apiService({ autoPort: false, port: held.port })],
+          targets: [webTarget()],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      const svc = mgr.get("app")?.services?.[0];
+      expect(svc?.status).toBe("failed");
+      expect(svc?.error).toContain(`service "api" port ${held.port} is already in use`);
+      expect(mgr.get("app")?.status).toBe("failed");
+    } finally {
+      await mgr.stopAll();
+      await held.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  itSlow("records a service with an escaping cwd as failed, with the reason", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svccwd-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [apiService({ cwd: "../outside", healthCheck: undefined })],
+          targets: [webTarget()],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("app");
+      expect(result.ok).toBe(false);
+      const svc = mgr.get("app")?.services?.[0];
+      expect(svc?.status).toBe("failed");
+      expect(svc?.error).toContain("escapes the project root");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // #0843 review — the port-conflict Stop action must stop the WHOLE stack that
+  // owns the port. A listener held by a companion service resolves to its
+  // target, and stopping it tears the target and its services down.
+  itSlow("stop-holder stops the target stack that owns a service-held port", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-stopholder-"));
+    const heldPort = await freePort();
+    // Seed a failed `web` whose port clash names `heldPort`.
+    mkdirSync(join(dir, ".repoos"), { recursive: true });
+    writeFileSync(
+      join(dir, ".repoos", "dev-targets.json"),
+      JSON.stringify({
+        mainPid: 999999,
+        targets: {
+          web: {
+            name: "web",
+            status: "failed",
+            error: "process exited with code 1",
+            log: [`Error: listen EADDRINUSE: address already in use :::${heldPort}`],
+          },
+        },
+      }),
+    );
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          services: [apiService({ autoPort: false, port: heldPort, healthCheck: undefined })],
+          targets: [
+            webTarget({
+              name: "holder",
+              kind: "process",
+              url: undefined,
+              command: 'bun -e "setTimeout(()=>{},60000)"',
+            }),
+            webTarget({
+              name: "web",
+              kind: "process",
+              url: undefined,
+              services: undefined,
+              command: 'bun -e "setTimeout(()=>{},60000)"',
+            }),
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const started = await mgr.start("holder");
+      expect(started.ok).toBe(true);
+      const targetPid = mgr.get("holder")?.pid;
+      const svcPid = mgr.get("holder")?.services?.[0].pid;
+      expect(typeof targetPid).toBe("number");
+      expect(typeof svcPid).toBe("number");
+      // Resolve the holder to the SERVICE's PID without depending on lsof/ss:
+      // the ownership mapping (service PID -> target) is what is under test.
+      (
+        mgr as unknown as {
+          lookupPortHolder: (port: number) => Promise<{ pid: number; command: string } | null>;
+        }
+      ).lookupPortHolder = async () => ({ pid: svcPid!, command: "api" });
+
+      const detailed = await mgr.getDetailed("web");
+      expect(detailed?.failure?.canStopHolder).toBe(true);
+      expect(detailed?.failure?.holder?.target).toBe("holder");
+      expect(detailed?.failure?.holder?.pid).toBe(svcPid);
+
+      const stopped = await mgr.stopHolder("web");
+      expect(stopped.ok).toBe(true);
+      expect(mgr.get("holder")?.status).toBe("stopped");
+      expect(mgr.get("holder")?.services?.[0].status).toBe("stopped");
+      expect(await waitForDead(targetPid!)).toBe(true);
+      expect(await waitForDead(svcPid!)).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("dev target services API shape (#0843)", () => {
+  const req = {} as IncomingMessage;
+  function makeRes(): { res: ServerResponse; fake: { status: number; payload: any } } {
+    const fake = { status: 0, payload: undefined as any };
+    const res = {
+      setHeader() {},
+      writeHead(code: number) {
+        fake.status = code;
+      },
+      end(p: string) {
+        fake.payload = JSON.parse(p);
+      },
+    };
+    return { res: res as unknown as ServerResponse, fake };
+  }
+  function makeCtx(mgr: DevTargetManager): RouteContext {
+    return { devTargets: mgr } as unknown as RouteContext;
+  }
+
+  it("includes services and their state in GET /api/dev/targets", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcapi-"));
+    const mgr = new DevTargetManager(
+      baseConfig({ services: [apiService()], targets: [webTarget()] }, dir),
+    );
+    try {
+      const first = makeRes();
+      await getDevTargets(makeCtx(mgr), req, first.res, {});
+      expect(first.fake.status).toBe(200);
+      const view = first.fake.payload.targets[0];
+      expect(view.services).toHaveLength(1);
+      expect(view.services[0]).toMatchObject({
+        name: "api",
+        status: "stopped",
+        token: "api",
+      });
+      expect(typeof view.services[0].command).toBe("string");
+      // No readiness url is advertised before the service ever resolved a port.
+      expect(view.services[0].url).toBeUndefined();
+      // After a start the real port is in the row; after a stop the state flips.
+      const started = makeRes();
+      await startDevTarget(makeCtx(mgr), req, started.res, { param1: "app" });
+      expect(started.fake.payload.target.services[0].status).toBe("running");
+      expect(typeof started.fake.payload.target.services[0].port).toBe("number");
+      const stopped = makeRes();
+      await stopDevTarget(makeCtx(mgr), req, stopped.res, { param1: "app" });
+      expect(stopped.fake.payload.target.services[0].status).toBe("stopped");
     } finally {
       await mgr.stopAll();
       rmSync(dir, { recursive: true, force: true });

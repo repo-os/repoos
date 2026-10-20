@@ -79,7 +79,7 @@ export function detectPortConflict(log: readonly string[]): number | null {
 }
 
 /** Whether any captured line shows a port collision, even without a number. */
-function hasPortInUseLine(log: readonly string[]): boolean {
+export function hasPortInUseLine(log: readonly string[]): boolean {
   return log.some((line) => matchPortInUse(line) !== null);
 }
 

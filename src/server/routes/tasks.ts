@@ -2169,6 +2169,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         .join("; ");
       return json(res, 409, { ok: false, error: reason, reason, blockedBy: blockers });
     }
+    runner.releasePhantomForStart?.(id);
     if (runner.isRunning(id)) {
       return json(res, 400, { error: `Task #${id} is already running` });
     }
