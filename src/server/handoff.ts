@@ -1185,7 +1185,10 @@ export function scheduleHandoffSignalRetry(
       "",
       "Check your last output and the current state of your worktree. If the work is actually complete and `repoos check` passes: emit the signal line correctly this time. If it is NOT complete: finish it, verify `repoos check` passes, then emit the signal.",
     ].join("\n");
-    const sent = runner.send(task.id, message, engineer, { skipBoardDivergence: true });
+    const sent = runner.send(task.id, message, engineer, {
+      skipBoardDivergence: true,
+      fromCrashRecovery: true,
+    });
     persistAttempt();
     if (!sent.ok) return; // capped; the watchdog's next scan surfaces it normally
     runner.system(
