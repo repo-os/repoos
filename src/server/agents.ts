@@ -7909,6 +7909,10 @@ export class AgentRunner {
   releasePhantomRunner(taskId: string): boolean {
     const entry = this.entries.get(taskId);
     if (!entry || entry.review) return false;
+    // A human pause and an in-flight handoff own the row; Start must not
+    // treat either as a phantom (#0863, same exclusions as the stall sweep).
+    if (this.pausedTasks.has(taskId)) return false;
+    if (entry.handoffRequested || this.handoffsInFlight.has(taskId)) return false;
     if (this.phantomGroupAlive(entry)) return false;
     this.discardPhantom(taskId, entry, PHANTOM_RESTARTED_NOTE);
     return true;
@@ -7926,7 +7930,12 @@ export class AgentRunner {
    * an explicit {@link releasePhantomRunner} is not.
    */
   private considerPhantom(taskId: string, entry: Entry): boolean {
-    if (entry.review || entry.handoffRequested) {
+    if (
+      entry.review ||
+      entry.handoffRequested ||
+      this.handoffsInFlight.has(taskId) ||
+      this.pausedTasks.has(taskId)
+    ) {
       this.phantomDeadSince.delete(taskId);
       return false;
     }
