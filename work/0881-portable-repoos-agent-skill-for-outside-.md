@@ -59,3 +59,4 @@ The portable skill lives at `agent/skill/`. Public URL: https://github.com/repo-
 - 2026-10-20T20:33:24Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-20T20:33:24Z · message_delivered: 1 message(s)
 - 2026-10-20T20:41:59Z · status active→review
+- 2026-10-20T20:41:59Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (9b1ae2bc5) during finalization (#0734)
