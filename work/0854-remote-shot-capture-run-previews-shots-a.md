@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T06:55:04Z"
+updated_at: "2026-10-20T06:55:20Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
