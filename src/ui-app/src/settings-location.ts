@@ -123,7 +123,8 @@ export function generalSectionForKey(key: string): string {
     key.startsWith("autoEngineering.") ||
     key.startsWith("approval.") ||
     key.startsWith("uiVerification.") ||
-    key.startsWith("reviewVerification.")
+    key.startsWith("reviewVerification.") ||
+    key.startsWith("review.")
   ) {
     return "automation";
   }
@@ -322,6 +323,8 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
     "guard negative test review clamp needs some work check step rejection block disable turn off",
   "reviewVerification.testGlobs":
     "guard test file globs swift python go non-javascript negative test evidence path match",
+  "review.humanFlagAfterPasses":
+    "repeated review classes passes human attention flag loop escalating needs some work rounds",
   "shot.targets":
     "capture targets native macos ios android desktop screenshot command offscreen render simctl adb screencapture evidence image non-web",
   "budget.allowlist":
