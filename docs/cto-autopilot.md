@@ -34,6 +34,14 @@ Conditions already enforced before #0727:
   (worktree HEAD must equal the handoff lock SHA)
 - `ui-without-visual-evidence` — UI areas need successful handoff screenshots
 
+`repoos landable <id>` (#0867) exposes the same `gatherApprovalPreflight` result
+read-only for any task, whether or not approval is enabled. It adds the finer
+classification the policy leaves implicit: conflicts restricted to the task's
+own `work/<id>-*.md`, foreign `work/inputs/stories` paths in the diff, and which
+dirty files on main block (`repoos.toml`, `reminders/`, `schedules/`, unknown).
+A branch the policy would not auto-land therefore cannot be reported landable by
+the command or the drawer.
+
 Added by #0727:
 
 - `blocked-paths` — the branch diff touches a machinery path (default list:
