@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-20T20:53:39Z"
-review_passes: 1
+last_close_out_gate_ms: 150830
+last_close_out_gate_at: "2026-10-20T21:09:37.000Z"
 id: "0880"
 title: "Docs llms.txt index, full dump, and raw Markdown"
 type: feature
@@ -15,6 +15,8 @@ branch: feat/docs-llms-txt-index-full-dump-and-raw-ma
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:01:19Z"
+updated_at: "2026-10-20T21:09:36Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -72,4 +74,5 @@ Kept `vitepress-plugin-llms` (devDependency of `user-docs/`) rather than hand-wr
 - 2026-10-20T20:52:45Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (fe90dd0eb) during finalization (#0734)
 - 2026-10-20T20:52:46Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (fe90dd0eb) during finalization (#0734)
 - 2026-10-20T20:53:39Z · note: review pass 1: good to go
+- 2026-10-20T21:09:36Z · close-out gate completed in 151s
 
