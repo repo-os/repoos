@@ -2,6 +2,7 @@ import { cpSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync }
 import { basename, join, resolve } from "node:path";
 import { createRepoOS } from "../../src/core/repoos.js";
 import { worktreesDir } from "../../src/core/config.js";
+import type { LogLevel } from "../../src/core/logger.js";
 import { captureDeclaredShot, runAutoShotCapture } from "../../src/server/shot-capture.js";
 import { PreviewManager } from "../../src/server/preview.js";
 import { runUiHandoffGate } from "../../src/server/ui-handoff-gate.js";
@@ -11,13 +12,14 @@ import { runGit } from "../../src/core/git.js";
 const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
 
 /** Run existing RepoOS capture code in an isolated runner checkout. */
-export async function captureBrowserEvidence(
+async function captureBrowserEvidenceImpl(
   root: string,
   taskId: string,
   mode: "shots" | "verify" | "both" | "single-shot",
   outputDir: string,
   entry?: import("../../src/core/shot-plan.js").CaptureEntry & { route: string },
 ): Promise<{ ok: boolean; detail: string }> {
+  process.env.PLAYWRIGHT_BROWSERS_PATH = "/ms-playwright";
   const repoos = createRepoOS(root);
   const config = repoos.config;
   const captureConfig = {
@@ -39,7 +41,7 @@ export async function captureBrowserEvidence(
 
   mkdirSync(outputDir, { recursive: true });
   const previews = new PreviewManager(captureConfig, () => {});
-  const log = (_id: string, _level: "info" | "warn" | "error", _message: string): void => {};
+  const log = (_id: string, _level: LogLevel, _message: string): void => {};
   let ok = true;
   const results: Record<string, unknown> = {};
   try {
@@ -125,6 +127,42 @@ export async function captureBrowserEvidence(
     };
   } finally {
     await previews.stop(taskId, "remote browser evidence capture complete");
+  }
+}
+
+/** Always leave a machine-readable result, including setup/build failures. */
+export async function captureBrowserEvidence(
+  root: string,
+  taskId: string,
+  mode: "shots" | "verify" | "both" | "single-shot",
+  outputDir: string,
+  entry?: import("../../src/core/shot-plan.js").CaptureEntry & { route: string },
+): Promise<{ ok: boolean; detail: string }> {
+  try {
+    return await captureBrowserEvidenceImpl(root, taskId, mode, outputDir, entry);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    mkdirSync(outputDir, { recursive: true });
+    const browserUnavailable =
+      /playwright|webkit|browser executable|executable doesn.t exist|not installed/i.test(detail);
+    writeFileSync(
+      join(outputDir, "result.json"),
+      JSON.stringify(
+        {
+          version: 1,
+          taskId,
+          ok: false,
+          detail,
+          results: { error: detail },
+          files: [],
+          bytes: 0,
+          ...(browserUnavailable ? { browserUnavailable: true } : {}),
+        },
+        null,
+        2,
+      ),
+    );
+    return { ok: false, detail };
   }
 }
 

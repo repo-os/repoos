@@ -2143,6 +2143,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         {
           config,
           previews,
+          remoteTransport: remoteBrowserEvidenceTransport(config, remoteValidator),
           rootLock,
           closingOut: () => closeOutLock.closingOut(),
           log: (id, level, message) => {
@@ -2159,6 +2160,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         {
           config,
           previews,
+          remoteTransport: remoteBrowserEvidenceTransport(config, remoteValidator),
           rootLock,
           closingOut: () => closeOutLock.closingOut(),
           log: (id, level, message) => {

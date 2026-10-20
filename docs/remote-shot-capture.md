@@ -3,7 +3,7 @@
 Remote browser evidence uses the configured validation runner and its existing
 SSH bundle transport. A runner image must provide Bun, the repository's
 development dependencies, Playwright, its WebKit browser, and the system fonts
-used by the UI. The browser is installed under `/ms-playwright`, exported as
+used by the UI (Liberation and Noto Color Emoji). The browser is installed under `/ms-playwright`, exported as
 `PLAYWRIGHT_BROWSERS_PATH`, and made readable to the non-root container user.
 The runner checks out the exact task commit, builds the UI,
 starts an auth-less preview process in its isolated container, and executes the
