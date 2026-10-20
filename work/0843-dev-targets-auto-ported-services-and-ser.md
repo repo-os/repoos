@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "by one target must map to distinct placeholder tokens: two names that"
+debug_tldr: Service placeholder substitution leaves allocated ports undefined — fix service startup state and rerun the dev-target tests.
+debug_tldr_at: "2026-10-20T10:52:59Z"
+debug_tldr_key: "dev-error|by one target must map to distinct placeholder tokens: two names that"
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -16,7 +19,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T10:52:43Z"
+updated_at: "2026-10-20T10:52:59Z"
 review_passes: 20
 last_check_failure: "repoos check at 2026-10-20T10:20:49.854Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 886d9960 to 9241cb9c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
