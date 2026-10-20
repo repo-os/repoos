@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-20T18:04:29Z"
-review_passes: 2
 id: "0865"
 title: Reviews must not chain back to back on a task with open findings; queued messages must be delivered between passes
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -14,7 +12,9 @@ branch: feat/reviews-must-not-chain-back-to-back-on-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T11:55:25Z"
-review_rounds: 1
+updated_at: "2026-10-20T18:04:29Z"
+review_rounds: 2
+review_passes: 2
 ---
 ## Problem
 When a review ends "needs some work" and no engineer is running, another review starts again within minutes. Observed 2026-10-20 on #0861: passes 2-9 ran 2-3 minutes apart, then roughly 14 minutes each, with no engineer working in between, for about 45 minutes, all failing on the same finding. While a review runs, `repoos message` is refused ("review in progress - wait for it to finish"), so the fix instruction could not reach the engineer. When a message IS accepted mid-turn it only queues and is delivered at the end of the engineer's turn, so engineers hand off right before reading it. Seen on #0854 (pass 8 reviewed work from before the fix message was read) and #0860 (codex crashed after the message, then a handoff was auto-requested on the unmerged branch). Result: dozens of wasted review passes, stale-work reviews, and fixes that arrive a full cycle late.
@@ -80,4 +80,4 @@ Not gated: `ReviewManager.runCheckpointDelta` (post-handoff checkpoint delta rev
 - 2026-10-20T18:02:59Z · status active→review
 - 2026-10-20T18:03:00Z · note: shots: skipped — the diff (14 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-20T18:04:29Z · note: review pass 2: needs some work
-
+- 2026-10-20T18:04:29Z · status review→active
