@@ -12,14 +12,13 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T16:02:55Z"
-updated_at: "2026-10-20T18:59:05Z"
+updated_at: "2026-10-20T18:59:09Z"
 ---
 ## Problem
 The agent files in this story are generated or shared across two sites. Nothing in the existing `landing-build` and `user-docs-build` steps fails the build when `llms.txt` is missing, when an install command drifts from the published commands, or when the landing page and the docs homepage embed different prompt text.
 
 ## Desired UX
 
-`cd landing && bun run build` fails with a message that names the missing or inconsistent file when `landing/dist/llms.txt` is absent, when its install lines differ from the published six commands, or when the landing call to action is not the shared prompt. `cd user-docs && bun run build` fails the same way for `llms.txt`, `llms-full.txt`, raw-Markdown links that shadow HTML routes, and a docs homepage prompt that differs from `agent/starter-prompt.md`. Internal links in the new files resolve. A written trial, run in a disposable Git repository, records whether an agent with no prior RepoOS context could follow the public path.
 
 ## Acceptance criteria
 
@@ -42,3 +41,4 @@ The trial is a written record on this task, not a new public page and not a chan
 
 - 2026-10-20T16:02:55Z · created · njachowski@gmail.com
 - 2026-10-20T18:59:05Z · body: Problem (added 1, removed 1)
+- 2026-10-20T18:59:09Z · body: Desired UX (removed 1)
