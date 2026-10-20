@@ -227,3 +227,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T12:16:13Z · status review→active
 - 2026-10-20T12:16:13Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T12:27:23Z · message_queued at 2026-10-20T12:27:23.598Z
+- 2026-10-20T12:27:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
