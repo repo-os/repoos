@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T04:26:10Z"
+updated_at: "2026-10-20T04:26:12Z"
 ---
 ## Problem
 (1) Close-out blocks on reminder files. Move to done refuses to publish when a reminder file is dirty on main: 'main has 1 uncommitted file at publish time, so the merge would abort: reminders/37fba592-....md'. Reminders (#0851) are server-written, repo-native files like tasks, inputs and stories, but the close-out only knows work/, inputs/ and stories/ as routine server-written churn (bookkeepingDirs / bookkeepingKeepOursPrefixes in src/server/integration-orchestrator.ts ~line 334; isNonCodePublishDrift; the dirty-main guard in docs/close-out-pipeline.md). Every time a reminder is created, snoozed or marked done while a close-out runs, an unrelated landing is blocked and needs a manual 'Commit & continue'. Scheduled-task definitions (schedules/, #0093) are stamped by the server (last_run_at, last_occurrence_key) and have the same problem.
@@ -17,11 +17,9 @@ updated_at: "2026-10-20T04:26:10Z"
 (2) These directories ignore the repoos/ layout. 'repoos init' with the repoos/ namespace writes workDir, docsDir, skillsDir, storiesDir and inputsDir under repoos/ (src/commands/init.ts repoosToml()), but schedulesDir defaults to 'schedules' (src/core/config.ts ~204) and is not set by the template, and reminders is hard-coded as join(config.root, 'reminders') in src/core/reminders.ts with no config key at all. So a repoos/ project gets root-level schedules/ and reminders/ outside its namespace (the same leak field report #0703 fixed for stories/).
 
 ## Desired UX
-A dirty or advancing `reminders/` (and `schedules/`) tree never blocks or restarts a close-out:
-- At publish, a dirty file under these dirs is treated as routine server-written churn, auto-checkpointed (committed on main by RepoOS) like dirty `work/` `inputs/` `stories/` files, not as unrelated dirty code.
-- A conflict in these dirs resolves to main's copy (`autoResolveOurs`), and main advancing only by commits in these dirs counts as non-code drift (no candidate resync).
-- The directory names come from config (`remindersDir`, `schedulesDir`) the same way `workDir`, `inputsDir` and `storiesDir` do, so non-default locations work.
-- Real source files that are dirty on main still block, exactly as today (fail closed).
+A. A dirty or advancing reminders/ (and schedules/) tree never blocks or restarts a close-out: at publish a dirty file under these dirs is treated as routine server-written churn and auto-checkpointed like dirty work/ inputs/ stories/ files; a conflict in them resolves to main's copy (autoResolveOurs); main advancing only by commits in them counts as non-code drift (no candidate resync). Real dirty source files still block, exactly as today (fail closed).
+
+B. Both directories are configurable and follow the layout: add a remindersDir setting (default 'reminders', with a Settings UI control and getConfigSchema entry per the repo rule) and make src/core/reminders.ts read it instead of the hard-coded path; the close-out bookkeeping dirs come from config (remindersDir, schedulesDir) the way workDir/inputsDir/storiesDir do; the repoos/ template in 'repoos init' also writes schedulesDir = '<ns>/schedules' and remindersDir = '<ns>/reminders' with the other namespaced dirs. Existing projects keep their current paths (no silent move); document how to relocate by setting the keys and moving the files.
 
 ## Acceptance criteria
 - Tests: a dirty `reminders/<id>.md` (modified and untracked) on main at publish does not abort the merge and is checkpointed; the same for `schedules/*.md`; a dirty source file still aborts with the existing message.
@@ -37,3 +35,4 @@ Extend `bookkeepingDirs` and its callers rather than adding a parallel list, and
 - 2026-10-20T04:20:16Z · created · njachowski@gmail.com
 - 2026-10-20T04:26:08Z · title
 - 2026-10-20T04:26:10Z · body: Problem (added 2, removed 1)
+- 2026-10-20T04:26:12Z · body: Desired UX (added 2, removed 5)
