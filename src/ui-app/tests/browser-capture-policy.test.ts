@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { RepoOSConfig } from "../../core/types.js";
 import {
   BrowserEvidenceUnavailableError,
+  recordBrowserCaptureActivity,
   runBrowserCaptureWithPolicy,
   validateBrowserEvidenceArtifacts,
   type BrowserEvidenceArtifacts,
@@ -37,6 +38,30 @@ function artifacts(overrides: Partial<BrowserEvidenceArtifacts> = {}): BrowserEv
 }
 
 describe("browser capture runner policy", () => {
+  it("records remote success and failure in task activity and the task note", () => {
+    const log = vi.fn();
+    const addTaskNote = vi.fn();
+    recordBrowserCaptureActivity("0854", true, "shots: captured 2 screenshots", log, addTaskNote);
+    recordBrowserCaptureActivity(
+      "0854",
+      false,
+      "ui verification failed: missing target",
+      log,
+      addTaskNote,
+    );
+    expect(log).toHaveBeenNthCalledWith(1, "0854", "info", "shots: captured 2 screenshots");
+    expect(log).toHaveBeenNthCalledWith(
+      2,
+      "0854",
+      "error",
+      "ui verification failed: missing target",
+    );
+    expect(addTaskNote.mock.calls.map(([message]) => message)).toEqual([
+      "shots: captured 2 screenshots",
+      "ui verification failed: missing target",
+    ]);
+  });
+
   it("uses the runner and imports returned artifacts", async () => {
     const capture = vi.fn(async () => artifacts());
     const useArtifacts = vi.fn(async (result) => result.detail);

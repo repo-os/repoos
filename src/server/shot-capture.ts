@@ -51,6 +51,7 @@ import { computeTaskShotContext } from "./shot-context.js";
 import { importShotArtifacts, localShotStore, shotsDir, type ShotStore } from "./shots.js";
 import { patchTaskFile } from "./write.js";
 import {
+  recordBrowserCaptureActivity,
   runBrowserCaptureWithPolicy,
   type BrowserEvidenceArtifacts,
   type BrowserEvidenceTransport,
@@ -598,7 +599,7 @@ export async function runAutoShotCapture(
           return runAutoShotCapture(localConfig, task, previews, log);
         },
         note: (message) => log(task.id, "warn", `shots: ${message}`),
-        useArtifacts: async (artifacts) => importRemoteShots(config, task, artifacts),
+        useArtifacts: async (artifacts) => importRemoteShots(config, task, artifacts, log),
       });
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
@@ -834,13 +835,28 @@ async function importRemoteShots(
   config: RepoOSConfig,
   task: Task,
   artifacts: BrowserEvidenceArtifacts,
+  log: TaskLog,
 ): Promise<ShotCaptureResult> {
   const remoteResult = artifacts.results.shots as ShotCaptureResult | undefined;
   if (!remoteResult || !["captured", "skipped", "failed"].includes(remoteResult.status)) {
     throw new Error("runner result omitted the shot capture outcome");
   }
-  if (!artifacts.ok || remoteResult.status !== "captured") return remoteResult;
-  importShotArtifacts(config, task.id, artifacts.files);
+  if (artifacts.ok && remoteResult.status === "captured") {
+    importShotArtifacts(config, task.id, artifacts.files);
+  }
+  const message =
+    remoteResult.status === "captured"
+      ? `shots: ${remoteResult.detail}`
+      : `shots: ${remoteResult.status} — ${remoteResult.detail}`;
+  recordBrowserCaptureActivity(
+    task.id,
+    remoteResult.status === "captured",
+    message,
+    log,
+    (note) => {
+      patchTaskFile(config, task.absPath, { note });
+    },
+  );
   return remoteResult;
 }
 

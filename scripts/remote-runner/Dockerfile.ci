@@ -2,9 +2,8 @@
 # Built once and baked into the Hetzner snapshot (see build-snapshot.md); the
 # runner never rebuilds it at job time.
 #
-# Scope (MVP): `bun install` + `bun run build` + `bun run test` only. The
-# Playwright/webkit UI smoke test stays on the LOCAL gate — add
-# `RUN bunx playwright install --with-deps webkit` here when it moves remote.
+# Browser capture runs on this image, so install the matching Playwright
+# WebKit build and its OS dependencies as part of the runner snapshot.
 FROM oven/bun:1-debian
 
 RUN apt-get update \
@@ -13,6 +12,8 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends nodejs \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
+
+RUN bunx playwright install --with-deps webkit
 
 # Write git identity and defaults into /etc/gitconfig so they apply for any uid
 # (the container runs as the non-root 'bun' user from the base image).

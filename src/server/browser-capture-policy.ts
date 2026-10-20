@@ -5,6 +5,23 @@ import type { RemoteValidator } from "./remote-validation.js";
 
 export type BrowserCaptureMode = "local" | "runner-available" | "runner-only";
 export type BrowserEvidenceOperation = "shots" | "verify" | "both" | "single-shot";
+export type BrowserCaptureActivityLevel = "info" | "warn" | "error";
+
+/** Record a completed remote capture in the same task activity surfaces as a local run. */
+export function recordBrowserCaptureActivity(
+  taskId: string,
+  success: boolean,
+  message: string,
+  log: (taskId: string, level: BrowserCaptureActivityLevel, message: string) => void,
+  addTaskNote: (message: string) => void,
+): void {
+  log(taskId, success ? "info" : "error", message);
+  try {
+    addTaskNote(message.slice(0, 500));
+  } catch {
+    // The task log remains available if the durable task note cannot be written.
+  }
+}
 
 export interface BrowserEvidenceRequest {
   taskId: string;
