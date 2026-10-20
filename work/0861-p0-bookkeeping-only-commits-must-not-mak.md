@@ -11,7 +11,7 @@ branch: feat/p0-bookkeeping-only-commits-must-not-mak
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:47:38Z"
-updated_at: "2026-10-20T08:15:26Z"
+updated_at: "2026-10-20T08:16:19Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-20T07:15:20.788Z: repoos check failed: rendered-contrast — $ bun scripts/ui-contrast-audit.mjs"
 dev_error_count: 1
@@ -41,10 +41,10 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 ```json
 [
 {
-"label": "Changes tab with bookkeeping-current handoff evidence",
-"target": "default",
-"route": "/",
-"state": "drawer:shotEvidence"
+  "label": "Changes tab with bookkeeping-current handoff evidence",
+  "target": "default",
+  "route": "/",
+  "state": "drawer:shotEvidence"
 }
 ]
 ```
@@ -77,3 +77,4 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 - 2026-10-20T07:43:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-20T07:46:38Z · body
 - 2026-10-20T08:15:26Z · body
+- 2026-10-20T08:16:19Z · body
