@@ -48,6 +48,14 @@ export interface StoryGroup<T extends StoryTaskLike = StoryTaskLike> {
   complete: boolean;
   /** ISO timestamp of the most recent member activity, or null when unknown. */
   lastActivity: string | null;
+  /**
+   * ISO timestamp of the story definition's own last change (#0885), when the
+   * group came from a registered `stories/*.md` file. A story with no tasks has
+   * no `lastActivity`, so ordering by "most recently updated" uses the newer of
+   * this and `lastActivity` — otherwise a freshly created or edited story sinks
+   * to the bottom of the list.
+   */
+  definitionUpdatedAt?: string | null;
 }
 
 /**
@@ -220,10 +228,30 @@ function storyNumberValue(number: string | null | undefined): number {
   return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
 }
 
+/** Newest of the given ISO timestamps, ignoring empty/undefined values. */
+export function newestTimestamp(...values: Array<string | null | undefined>): string {
+  let newest = "";
+  for (const value of values) {
+    if (value && value > newest) newest = value;
+  }
+  return newest;
+}
+
+/**
+ * The timestamp "most recently updated" orders on (#0885): the story's own
+ * last change (created/edited definition) or the most recent member-task
+ * activity, whichever is newer. A registered story with no tasks has no
+ * `lastActivity`, so without the definition timestamp it would sort last.
+ */
+function storyRecency(group: StoryGroup): string {
+  return newestTimestamp(group.definitionUpdatedAt, group.lastActivity);
+}
+
 /**
  * Sort merged story groups for the Stories page list (#0536). Purely client-side
- * over already-derived roll-ups — uses `lastActivity` for recency and the
- * registered story `number` for numeric ordering (tag-only stories last).
+ * over already-derived roll-ups — uses `lastActivity` and the story's own
+ * modification time (#0885) for recency, and the registered story `number` for
+ * numeric ordering (tag-only stories last).
  */
 export function sortStoryGroupsForPage<G extends StoryGroup<StoryTaskLike>>(
   groups: G[],
@@ -235,8 +263,8 @@ export function sortStoryGroupsForPage<G extends StoryGroup<StoryTaskLike>>(
   switch (order) {
     case "recent":
       return copy.sort((a, b) => {
-        const at = a.lastActivity ?? "";
-        const bt = b.lastActivity ?? "";
+        const at = storyRecency(a);
+        const bt = storyRecency(b);
         if (!at) return bt ? 1 : 0;
         if (!bt) return -1;
         const cmp = bt.localeCompare(at);
@@ -269,14 +297,15 @@ export function sortStoryGroupsForPage<G extends StoryGroup<StoryTaskLike>>(
 /**
  * Sort stories for display: attention-needed/active work first, then by most
  * recent activity (nulls last), then by name for a stable tie-break. Completed
- * stories sink to the bottom.
+ * stories sink to the bottom. Recency includes the definition's own last change
+ * (#0885), so a newly created story with no tasks still rises to the top.
  */
 export function sortStories<T extends StoryTaskLike>(groups: StoryGroup<T>[]): StoryGroup<T>[] {
   return [...groups].sort((a, b) => {
     const rank = storyRank(a) - storyRank(b);
     if (rank !== 0) return rank;
-    const at = a.lastActivity ?? "";
-    const bt = b.lastActivity ?? "";
+    const at = storyRecency(a);
+    const bt = storyRecency(b);
     if (at !== bt) return at < bt ? 1 : -1;
     return a.name.localeCompare(b.name);
   });
