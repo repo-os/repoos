@@ -47,3 +47,4 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 - 2026-10-20T05:53:43Z · body
 - 2026-10-20T05:57:42Z · body
 - 2026-10-20T06:17:09Z · message_queued at 2026-10-20T06:17:09.557Z
+- 2026-10-20T06:17:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
