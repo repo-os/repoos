@@ -12,12 +12,13 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T16:02:55Z"
-updated_at: "2026-10-20T18:59:45Z"
+updated_at: "2026-10-20T18:59:49Z"
 ---
 ## Problem
 The agent files in this story are generated or shared across two sites. Nothing in the existing `landing-build` and `user-docs-build` steps fails the build when `llms.txt` is missing, when an install command drifts from the published commands, or when the landing page and the docs homepage embed different prompt text.
 
 ## Desired UX
+`cd landing && bun run build` fails with a message that names the missing or inconsistent file when `landing/dist/llms.txt` is absent, when its install lines differ from the published six commands, or when the landing call to action is not the shared prompt. `cd user-docs && bun run build` fails the same way for `llms.txt`, `llms-full.txt`, raw-Markdown links that shadow HTML routes, and a docs homepage prompt that differs from `agent/starter-prompt.md`. Internal links in the new files resolve.
 
 ## Acceptance criteria
 
@@ -32,3 +33,4 @@ The agent files in this story are generated or shared across two sites. Nothing 
 - 2026-10-20T18:59:13Z · body: Acceptance criteria (removed 6)
 - 2026-10-20T18:59:17Z · body: Notes for AI (removed 3)
 - 2026-10-20T18:59:45Z · body
+- 2026-10-20T18:59:49Z · body: Desired UX (added 1)
