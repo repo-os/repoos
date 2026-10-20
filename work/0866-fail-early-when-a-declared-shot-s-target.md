@@ -11,7 +11,7 @@ branch: feat/fail-early-when-a-declared-shot-s-target
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T11:55:38Z"
-updated_at: "2026-10-20T21:37:41Z"
+updated_at: "2026-10-20T21:41:30Z"
 ---
 ## Problem
 A declared shot that resolves to the wrong preview target produces a capture of the wrong screen, and the failure shows up far from the cause. Observed 2026-10-20: #0860's Settings shot resolved to the Docs site target (console error "'text/html' is not a valid JavaScript MIME type", highlight matched nothing, handoff failed UI verification), and #0861's `drawer:shotEvidence` shot was captured on the Docs site / the board instead of a task drawer, so the reviewer reported an evidence gap on pass after pass. Each cost several rounds because the engineer only learns about it from a later review, and weaker models do not self-correct from the message.
@@ -38,3 +38,4 @@ See the shot declaration and capture code in src/server/shot-capture.ts, `planAu
 - 2026-10-20T21:10:24Z · status ready→active, branch
 - 2026-10-20T21:29:49Z · message_queued at 2026-10-20T21:29:49.457Z
 - 2026-10-20T21:37:41Z · body
+- 2026-10-20T21:41:30Z · body
