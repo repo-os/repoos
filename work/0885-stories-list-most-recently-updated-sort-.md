@@ -2,14 +2,14 @@
 id: "0885"
 title: "Stories list: \"most recently updated\" sort puts a just-created story at the bottom"
 type: bug
-status: inbox
+status: ready
 priority: p3
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T16:03:09Z"
-updated_at: "2026-10-20T16:03:09Z"
+updated_at: "2026-10-20T23:17:55Z"
 ---
 ## Problem
 On the Stories page, ordering by "most recently updated" does not put the newest or most recently edited story first. Story #0011 ("Agent-discoverable RepoOS"), created and edited minutes earlier, appeared at the bottom of the list. The owner's guess is that the list sorts by the story number as a string, so "0011" or "11" lands next to "1" instead of above "9". It may instead be sorting by `created_at` ascending, by file name, or by a field that story edits never touch (stories keep `created_at` in frontmatter and may have no `updated_at`).
@@ -31,3 +31,4 @@ On the Stories page, ordering by "most recently updated" does not put the newest
 ## Activity
 
 - 2026-10-20T16:03:09Z · created · njachowski@gmail.com
+- 2026-10-20T23:17:55Z · status inbox→ready
