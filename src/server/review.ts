@@ -175,6 +175,26 @@ const REPORT_CHARS = 20_000;
  */
 export const REVIEW_SESSION_ID_PREFIX = "review:";
 
+/** Default completed passes before the repeated-class summary and human flag (#0872). */
+export const DEFAULT_REVIEW_HUMAN_FLAG_PASSES = 5;
+
+/** Completed review passes already recorded on the task, before this run. */
+export function reviewPassesSoFar(task: Pick<Task, "extra">): number {
+  const raw = task.extra?.review_passes;
+  return typeof raw === "number" && Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+}
+
+/**
+ * Completed passes a task may accumulate before the next report must summarise
+ * the repeated bug classes and the task is flagged for a human (#0872).
+ */
+export function reviewHumanFlagThreshold(config: Pick<RepoOSConfig, "review">): number {
+  const raw = config.review?.humanFlagAfterPasses;
+  return typeof raw === "number" && Number.isFinite(raw) && raw >= 1
+    ? Math.floor(raw)
+    : DEFAULT_REVIEW_HUMAN_FLAG_PASSES;
+}
+
 const now = (): string => new Date().toISOString();
 
 /**
@@ -344,6 +364,10 @@ export function reviewMission(
   const spec = task.body.trim().slice(0, SPEC_CHARS);
   const role = agent.instructions?.trim();
   const storyContext = buildStoryContext(task, config);
+  const priorPasses = reviewPassesSoFar(task);
+  const repeatedClassThreshold = reviewHumanFlagThreshold(config);
+  const repeatedClasses = priorPasses >= repeatedClassThreshold;
+  const earlierReportsDir = join(config.root, config.cacheDir || ".repoos", "reviews", task.id);
   const parts: string[] = [];
   if (role) parts.push(role, "");
   parts.push(
@@ -439,6 +463,39 @@ export function reviewMission(
     "  `work/` for signs the same problem was already solved elsewhere, requirements",
     "  shifted, or the task's premise no longer holds. A diff can be flawless and the",
     "  task still not worth merging as scoped — say so; don't just grade the code.",
+    "",
+    "## Earlier passes and the whole bug class",
+    "",
+    `- Earlier review reports live in \`${earlierReportsDir}\` (newest numbered pass`,
+    "  first). Read the newest ones before judging this pass, verify each finding",
+    "  was actually fixed, and never re-report a fixed item as new.",
+    "- Report the WHOLE CLASS of every bug in this one report. Name its class",
+    "  (lifecycle/teardown ordering, unhandled spawn errors, config-key",
+    "  registration, import/export path rewriting, fallback handling, and the",
+    "  like), then grep the diff and the files it touches for every other",
+    "  instance — sibling paths, callers, config/schema/docs/test registrations,",
+    "  both sides of a fallback — and list them all under ## Bugs. Never hold an",
+    "  instance back for a later pass.",
+    "- Separate code defects from evidence-only gaps: when the code is sound but a",
+    "  capture is wrong or stale, use `EVIDENCE-GAP-ONLY` / `STALE-EVIDENCE-ONLY`",
+    "  and check that each declared shot's target and route can really render its",
+    "  declared state (a drawer route or state fixture on the wrong target is an",
+    "  evidence gap, not a code bug).",
+    "- Before `good to go`, confirm the branch still merges cleanly with its base:",
+    `  \`git merge-tree --write-tree ${baseBranch} HEAD\`. A source conflict is`,
+    "  `needs some work` even when the code is fine; name the conflicting files.",
+    ...(repeatedClasses
+      ? [
+          "",
+          "## Repeated review classes (required on this pass)",
+          "",
+          `This is pass ${priorPasses + 1}; the previous ${priorPasses} passes all needed work.`,
+          "Open the report with one short paragraph BEFORE `## Verdict` beginning",
+          "`Repeated review classes:` — list the classes earlier passes kept finding,",
+          "say whether each is now fixed, and state that a human should look at the",
+          "recurring pattern. Keep the section list below otherwise unchanged.",
+        ]
+      : []),
     "",
     "## Hard boundaries",
     "",
@@ -1031,10 +1088,7 @@ export class ReviewManager {
    * launch still lands on a deterministic id rather than a cold session.
    */
   private reviewerSessionId(task: Task): string {
-    const raw = task.extra?.review_passes;
-    const passes =
-      typeof raw === "number" && Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
-    return `${deterministicSessionId(task.id, "reviewer")}-${passes + 1}`;
+    return `${deterministicSessionId(task.id, "reviewer")}-${reviewPassesSoFar(task) + 1}`;
   }
 
   /**
@@ -1355,6 +1409,17 @@ export class ReviewManager {
           `[repoos] could not clear stale needs_input for #${task.id}: ${(err as Error).message}`,
         );
       }
+    }
+
+    // Repeated review classes (#0872). Once a task has accumulated its
+    // configured number of completed passes, the reviewer was told to open the
+    // next report with a summary of the recurring bug classes; flag the task
+    // for a human too. This is deliberately distinct from the auto-bounce
+    // `review-rounds-exhausted` backstop: it counts every completed pass
+    // (manual "Review again" included) rather than auto-bounces, and it fires
+    // earlier so a human can decide before the loop burns another pass.
+    if (state === "ok" && verdict && verdict !== "good to go" && !checkpointDelta) {
+      this.flagRepeatedReviewClasses(task);
     }
 
     // Auto-bounce if review is ok and verdict is not "good to go"
@@ -1798,6 +1863,63 @@ export class ReviewManager {
     if (!ids.has(taskId)) return;
     ids.delete(taskId);
     this.writeCancelled(ids);
+  }
+
+  /**
+   * Flag a task for a human once it has exceeded its review-pass budget
+   * (#0872). The reviewer's next report already carries the repeated-class
+   * summary; this makes the same signal visible on the board. Distinct from
+   * `review-rounds-exhausted`, which counts only auto-bounces and is capped.
+   */
+  private flagRepeatedReviewClasses(task: Task): void {
+    const threshold = reviewHumanFlagThreshold(this.config);
+    const priorPasses = reviewPassesSoFar(task);
+    if (priorPasses < threshold) return;
+    // Re-read the file rather than trusting the pre-run snapshot: this review
+    // may already have cleared a stale flag above, and a different (e.g. CTO)
+    // flag must survive. Re-flagging our own reason refreshes the pass count.
+    let current = task;
+    try {
+      current = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+    } catch {
+      /* fall back to the snapshot — best-effort flag, never fails the review */
+    }
+    if (current.needsInput) {
+      if (
+        current.needsInputReason !== "review-human-attention" &&
+        !needsInputClearsOnSuccessfulReview(current)
+      ) {
+        return;
+      }
+    }
+    const detail =
+      `Review pass ${priorPasses + 1} still found issues (human flag after ${threshold} passes). ` +
+      "The reviewer was asked to summarise the repeated bug classes — read the newest report and " +
+      "decide whether to keep iterating or rescope.";
+    try {
+      patchTaskFile(this.config, current.absPath, {
+        needsInput: true,
+        needsInputReason: "review-human-attention",
+        needsInputDetail: detail,
+      });
+      this.emit({
+        type: "task.corrected",
+        id: current.id,
+        path: current.path,
+        note: `Review pass ${priorPasses + 1}: repeated classes flagged for a human after ${threshold} passes.`,
+        at: now(),
+      });
+    } catch (err) {
+      console.error(
+        `[repoos] could not flag repeated review classes for #${task.id}: ${(err as Error).message}`,
+      );
+    }
   }
 
   /**
