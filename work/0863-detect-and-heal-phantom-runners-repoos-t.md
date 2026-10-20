@@ -1,10 +1,8 @@
 ---
-last_close_out_gate_ms: 165840
-last_close_out_gate_at: "2026-10-20T17:08:29.609Z"
 id: "0863"
 title: "Detect and heal phantom runners: RepoOS thinks an engineer is running when no process exists"
 type: bug
-status: review
+status: inbox
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -14,7 +12,9 @@ branch: feat/detect-and-heal-phantom-runners-repoos-t
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-20T07:42:32Z"
-updated_at: "2026-10-20T17:08:29Z"
+updated_at: "2026-10-20T17:08:41Z"
+last_close_out_gate_ms: 165840
+last_close_out_gate_at: "2026-10-20T17:08:29.609Z"
 review_passes: 1
 ---
 ## Problem
@@ -74,4 +74,5 @@ Look at the runner registry (`runner.isRunning`), the watchdog, and the CTO `res
 - 2026-10-20T17:02:28Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (aa4f33ba5) during finalization (#0734)
 - 2026-10-20T17:03:58Z · note: review pass 1: good to go
 - 2026-10-20T17:08:29Z · close-out gate completed in 166s
-
+- 2026-10-20T17:08:41Z · note: handoff requested (cli)
+- 2026-10-20T17:08:41Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
