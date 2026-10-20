@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-20T05:48:23.981Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0860"
 title: "Close-out and layout: reminders/ and schedules/ are server-written bookkeeping, and follow the repoos/ layout"
 type: bug
@@ -48,3 +50,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T04:46:00Z · message_queued at 2026-10-20T04:46:00.799Z
 - 2026-10-20T04:46:00Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-20T05:34:14Z · message_delivered: 1 message(s)
+
