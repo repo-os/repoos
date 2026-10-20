@@ -11,7 +11,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T07:00:32Z"
+updated_at: "2026-10-20T07:03:51Z"
 handoff_signal_retry_count: 1
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-20T06:20:53.646Z: repoos check failed: ◆ Check plan"
@@ -35,6 +35,18 @@ B. Both directories are configurable and follow the layout: add a remindersDir s
 
 ## Notes for AI
 Extend bookkeepingDirs and its callers rather than adding a parallel list, and check every place that enumerates the three bookkeeping dirs (grep workDir/inputsDir/storiesDir in src/server and src/core). Keep the allowlist semantic and fail-closed (AGENTS.md 'Integration conflicts'). The default for remindersDir stays 'reminders' so existing behaviour is identical. Related: #0851 (reminders), #0093 (schedules), #0703 (the repoos/ layout leak). Do not touch repoos.toml itself. Source: Nick, 2026-10-20.
+
+## Shots
+```json
+[
+{
+  "label": "Settings with configurable reminders directory",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": "[data-config-key=\"remindersDir\"]"
+}
+]
+```
 
 ## Activity
 
@@ -60,3 +72,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T06:54:45Z · status active→ready
 - 2026-10-20T06:54:52Z · status ready→active
 - 2026-10-20T07:00:32Z · body
+- 2026-10-20T07:03:51Z · body
