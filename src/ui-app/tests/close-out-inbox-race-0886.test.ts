@@ -155,9 +155,16 @@ x
     expect(hasUnresolvedConflictMarkers(`---\n${marker}\n---\n`)).toBe(true);
   });
 
-  it("does not flag ordinary frontmatter or a markdown rule", () => {
+  it("does not flag ordinary frontmatter, a markdown rule, or fenced prose", () => {
     expect(hasUnresolvedConflictMarkers("---\nstatus: review\n---\n")).toBe(false);
     expect(hasUnresolvedConflictMarkers("---\nstatus: review\n---\n\n---\n")).toBe(false);
+    // A task may document a conflict in its body; that must never block a
+    // legitimate task edit.
+    expect(
+      hasUnresolvedConflictMarkers(
+        "---\nstatus: review\n---\n\n```\n<<<<<<< HEAD\n=======\n>>>>>>> x\n```\n",
+      ),
+    ).toBe(false);
   });
 });
 
@@ -170,7 +177,10 @@ describe("task writers refuse a file with unresolved conflict markers (#0886)", 
     const { root, clean } = makeRepo();
     try {
       const absPath = writeTask(root, "review");
-      const conflicted = `${readFileSync(absPath, "utf8")}\n<<<<<<< HEAD\nx\n=======\ny\n>>>>>>> branch\n`;
+      const conflicted = readFileSync(absPath, "utf8").replace(
+        "status: review\n",
+        "<<<<<<< HEAD\nstatus: review\n=======\nstatus: review\n>>>>>>> feat/inbox-race\n",
+      );
       writeFileSync(absPath, conflicted);
 
       expect(() =>
@@ -187,7 +197,10 @@ describe("task writers refuse a file with unresolved conflict markers (#0886)", 
     const { root, clean } = makeRepo();
     try {
       const absPath = writeTask(root, "review");
-      const conflicted = `${readFileSync(absPath, "utf8")}<<<<<<< HEAD\nstatus: review\n=======\nstatus: review\n>>>>>>> branch\n`;
+      const conflicted = readFileSync(absPath, "utf8").replace(
+        "status: review\n",
+        "<<<<<<< HEAD\nstatus: review\n=======\nstatus: review\n>>>>>>> feat/inbox-race\n",
+      );
       writeFileSync(absPath, conflicted);
       const repoos = createRepoOS(root);
       expect(() => repoos.updateStatus(TASK_ID, "review")).toThrow(

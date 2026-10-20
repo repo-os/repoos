@@ -33,9 +33,20 @@ export const FM_DELIM = "---";
  */
 const CONFLICT_MARKER_RE = /^(?:<{7}|={7}|>{7}|\|{7})(?: .*)?$/m;
 
-/** True when `content` still carries unresolved git conflict markers. */
+/**
+ * True when the document's FRONTMATTER still carries unresolved git conflict
+ * markers. Only the frontmatter matters: markers there are what make a parsed
+ * `status:` disappear and a rewrite commit the default; a fenced code block in
+ * the body is legitimate prose and must never block an edit.
+ */
 export function hasUnresolvedConflictMarkers(content: string): boolean {
-  return CONFLICT_MARKER_RE.test(content.replace(/\r\n/g, "\n"));
+  const lines = content.replace(/\r\n/g, "\n").split("\n");
+  if (lines[0]?.trim() !== FM_DELIM) return false;
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].trim() === FM_DELIM) return false;
+    if (CONFLICT_MARKER_RE.test(lines[i].trim())) return true;
+  }
+  return false;
 }
 
 /**

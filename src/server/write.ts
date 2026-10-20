@@ -692,11 +692,13 @@ export function markTaskReleased(
     task.mergedCommit ??
     null;
   if (task.status === "done") {
-    // The publish stamp (#0886) already wrote status + the release marker into
-    // the merge commit, so this is normally a no-op. Still backfill two things
-    // for the other paths that can mark a task done (a legacy write, or a
-    // retry after the feature branch was deleted): the merged-commit proof
-    // (#0711), and the `release:success` marker when only the status landed.
+    // The publish stamp (#0886) already wrote `status: done` into the merge
+    // commit, but deliberately left the release marker for this step — the
+    // post-merge install/rebuild must succeed before a release is recorded.
+    // Still backfill two things for the other paths that can mark a task done
+    // (a legacy write, or a retry after the feature branch was deleted): the
+    // merged-commit proof (#0711), and the `release:success` marker when only
+    // the status landed.
     let changed = false;
     if (!task.mergedCommit && resolvedMergedCommit) {
       task.mergedCommit = resolvedMergedCommit;
