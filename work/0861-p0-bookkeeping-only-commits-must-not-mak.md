@@ -11,7 +11,7 @@ branch: feat/p0-bookkeeping-only-commits-must-not-mak
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:47:38Z"
-updated_at: "2026-10-20T09:08:46Z"
+updated_at: "2026-10-20T09:09:03Z"
 review_passes: 11
 last_check_failure: "repoos check at 2026-10-20T07:15:20.788Z: repoos check failed: rendered-contrast — $ bun scripts/ui-contrast-audit.mjs"
 dev_error_count: 1
@@ -44,7 +44,6 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
   "label": "Changes tab with bookkeeping-current handoff evidence",
   "target": "default",
   "route": "/work?task=9999&tab=changes",
-  "highlight": "[data-test-id=\"task-drawer\"]",
   "state": "drawer:shotEvidence"
 }
 ]
@@ -97,3 +96,4 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 - 2026-10-20T09:07:34Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T09:07:35Z · message_delivered: 1 message(s)
 - 2026-10-20T09:08:46Z · body
+- 2026-10-20T09:09:03Z · body
