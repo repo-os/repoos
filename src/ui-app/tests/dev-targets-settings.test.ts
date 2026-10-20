@@ -305,6 +305,67 @@ url = "http://localhost:5173"
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  // #0843 — a target's companion-service name list round-trips through the
+  // PATCH and is validated against the declared [[dev.services]] rows.
+  it("writes a target's services list and rejects one naming an undeclared service", async () => {
+    // The round-trip needs a declared [[dev.services]] row to validate against.
+    const root = repo(
+      ["[[dev.services]]", 'name = "api"', 'command = "bun --watch src/server/index.ts"', ""].join(
+        "\n",
+      ),
+    );
+    try {
+      const res = await patch(root, { devTargets: [{ ...WEB, services: ["api"] }] });
+      expect(res.status).toBe(200);
+      const text = readFileSync(join(root, "repoos.toml"), "utf8");
+      expect(text).toContain('services = ["api"]');
+      const cfg = loadConfig(root);
+      expect(cfg.dev?.targets?.[0].services).toEqual(["api"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+    // With no [[dev.services]] block, "api" resolves nowhere: a 400.
+    const res2 = await patch(root, { devTargets: [{ ...WEB, services: ["api"] }] });
+    expect(res2.status).toBe(400);
+    expect(String(res2.payload.error)).toContain('unknown service "api"');
+  });
+
+  it("is a no-op when a services-holding list already matches disk", async () => {
+    const root = repo(
+      [
+        "[[dev.services]]",
+        'name = "api"',
+        'command = "bun --watch src/server/index.ts"',
+        "",
+        "[[dev.targets]]",
+        'name = "web"',
+        'kind = "server"',
+        'services = ["api"]',
+        'command = "bun run dev"',
+        'url = "http://localhost:5173"',
+        "",
+      ].join("\n"),
+    );
+    try {
+      const before = readFileSync(join(root, "repoos.toml"), "utf8");
+      const res = await patch(root, {
+        devTargets: [
+          {
+            name: "web",
+            kind: "server",
+            command: "bun run dev",
+            url: "http://localhost:5173",
+            services: ["api"],
+          },
+        ],
+      });
+      expect(res.status).toBe(200);
+      expect(readFileSync(join(root, "repoos.toml"), "utf8")).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("Settings control client-side validation (#0749)", () => {
@@ -316,6 +377,8 @@ describe("Settings control client-side validation (#0749)", () => {
       url: "http://localhost:5173",
       label: "Web app",
       healthCheck: { url: "http://localhost:5173/health" },
+      // #0843: the companion-service name list survives a Settings edit.
+      services: ["api", "db"],
     };
     const draft = draftFromTarget(row);
     expect(draft).toEqual({
@@ -329,12 +392,18 @@ describe("Settings control client-side validation (#0749)", () => {
       healthCheckFile: "",
       autoPort: true,
       port: "",
+      services: "api, db",
+      // The on-disk identity the server restores TOML-only fields by (#0843).
+      sourceName: "web",
     });
     expect(targetFromDraft(draft)).toMatchObject({
       name: "web",
       url: "http://localhost:5173",
       healthCheckUrl: "http://localhost:5173/health",
+      services: ["api", "db"],
     });
+    // Whitespace and a trailing comma never leak into the wire row.
+    expect(targetFromDraft({ ...draft, services: " api , db, " }).services).toEqual(["api", "db"]);
   });
 
   it("uses the parser's own message for a bad row (no second copy of the rules)", () => {
@@ -429,5 +498,131 @@ describe("Settings control client-side validation (#0749)", () => {
     };
     const errors = devTargetsErrors([a, { ...a }]);
     expect(errors.some((e) => e.includes("Target 2") && e.includes("duplicate name"))).toBe(true);
+  });
+});
+
+describe("Settings saves keep TOML-only target fields without exposing them (#0843 rounds 24-25)", () => {
+  const toml = [
+    "[[dev.targets]]",
+    'name = "web"',
+    'kind = "server"',
+    'command = "bun run dev"',
+    'url = "http://localhost:5173"',
+    'cwd = "app"',
+    'env = { NODE_ENV = "development", API_KEY = "s3cret-value" }',
+    "",
+    "[[dev.targets]]",
+    'name = "docs"',
+    'kind = "server"',
+    'command = "bun run docs"',
+    'url = "http://localhost:5174"',
+    "",
+    "[[dev.services]]",
+    'name = "api"',
+    'command = "bun run api"',
+    'env = { DB_PASSWORD = "hunter2" }',
+    "",
+  ].join("\n");
+
+  /** What the browser would hold: the redacted payload, as drafts. */
+  function browserDrafts(root: string) {
+    const safe = safeConfigForBrowser(loadConfig(root) as never) as {
+      devTargets: Parameters<typeof draftFromTarget>[0][];
+    };
+    return safe.devTargets.map((t) => draftFromTarget(t));
+  }
+
+  // One edit per way the Settings form can rewrite the list.
+  const edits: [string, (rows: Record<string, unknown>[]) => Record<string, unknown>[]][] = [
+    ["edit a field", (rows) => rows.map((r) => (r.name === "web" ? { ...r, label: "Web" } : r))],
+    ["reorder", (rows) => [...rows].reverse()],
+    ["rename", (rows) => rows.map((r) => (r.name === "web" ? { ...r, name: "site" } : r))],
+    ["remove a sibling", (rows) => rows.filter((r) => r.name === "web")],
+  ];
+
+  it("never sends env values (targets or services) to the browser", () => {
+    const root = repo(toml);
+    try {
+      const safe = JSON.stringify(safeConfigForBrowser(loadConfig(root) as never));
+      expect(safe).not.toContain("s3cret-value");
+      expect(safe).not.toContain("hunter2");
+      expect(safe).not.toContain("DB_PASSWORD");
+      expect(safe).toContain("bun run api");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each(edits)(
+    "keeps cwd and env from disk through a browser round-trip: %s",
+    async (_n, edit) => {
+      const root = repo(toml);
+      try {
+        const wire = edit(browserDrafts(root).map((d) => targetFromDraft(d)));
+        const { status } = await patch(root, { devTargets: wire });
+        expect(status).toBe(200);
+        const web = loadConfig(root).dev!.targets!.find(
+          (t) => t.name === "web" || t.name === "site",
+        )!;
+        expect(web.cwd).toBe("app");
+        expect(web.env).toEqual({ NODE_ENV: "development", API_KEY: "s3cret-value" });
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it("ignores env/cwd a browser tries to supply", async () => {
+    const root = repo(toml);
+    try {
+      const wire = browserDrafts(root).map((d) => ({
+        ...targetFromDraft(d),
+        cwd: "evil",
+        env: { INJECTED: "1" },
+      }));
+      await patch(root, { devTargets: wire.map((w) => ({ ...w, label: "x" })) });
+      const web = loadConfig(root).dev!.targets![0]!;
+      expect(web.cwd).toBe("app");
+      expect(web.env).not.toHaveProperty("INJECTED");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("an older client that omits sourceName inherits from the same-named target", async () => {
+    const root = repo(toml);
+    try {
+      const { status } = await patch(root, {
+        devTargets: [
+          {
+            name: "web",
+            kind: "server",
+            command: "bun run dev",
+            url: "http://localhost:5173",
+            label: "Web",
+          },
+        ],
+      });
+      expect(status).toBe(200);
+      const web = loadConfig(root).dev!.targets![0]!;
+      expect(web.cwd).toBe("app");
+      expect(web.env).toEqual({ NODE_ENV: "development", API_KEY: "s3cret-value" });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("an unchanged list is still a no-op that does not rewrite the file", async () => {
+    const root = repo(toml);
+    try {
+      const before = readFileSync(join(root, "repoos.toml"), "utf8");
+      const { status } = await patch(root, {
+        devTargets: browserDrafts(root).map((d) => targetFromDraft(d)),
+      });
+      expect(status).toBe(200);
+      expect(readFileSync(join(root, "repoos.toml"), "utf8")).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

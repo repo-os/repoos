@@ -1758,6 +1758,28 @@ export interface DevFailureView {
 }
 
 /**
+ * One companion service of a dev target (#0843) — booted before the target's
+ * main command on its own port. Mirrors `src/server/dev.ts`.
+ */
+export interface DevTargetService {
+  name: string;
+  /** Sanitized placeholder token, as used in `{<token>.port}` (#0843). */
+  token?: string;
+  status: DevTargetStatus;
+  /** Failure reason, present only while `status` is `failed`. */
+  error?: string;
+  pid?: number;
+  /** The port the service was given at the last start. */
+  port?: number;
+  /** The service's readiness URL (healthCheck.url with ports substituted). */
+  url?: string;
+  /** The service's command with its own port substituted. */
+  command?: string;
+  /** Last output lines of the service's process, newest last. */
+  log: string[];
+}
+
+/**
  * One declared dev target with its live state, from `GET /api/dev/targets`.
  * `kind` decides what the page shows: a `server` gets an open-URL link, an
  * `artifact` gets its output path, a `process` (a native app / non-URL process)
@@ -1783,6 +1805,8 @@ export interface DevTargetView {
   port?: number;
   /** `artifact` targets only — the repo-relative output path. */
   artifactPath?: string;
+  /** Companion services booted with this target, when it declares any (#0843). */
+  services?: DevTargetService[];
   /** Plain-language failure summary, present only for a failed target (#0775). */
   failure?: DevFailureView;
 }
