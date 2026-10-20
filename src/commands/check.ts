@@ -64,13 +64,12 @@ import { formatFixCommand } from "../core/check-format.js";
 import { writeCheckRun } from "../core/check-results-store.js";
 import { extractFailedTests } from "../core/check-failure-summary.js";
 import {
-  envToRunContext,
   resolveCheckRunAttribution,
+  resolveCheckStoreRoot,
   getCheckStore,
   localMachineName,
   type CheckRunPhase,
 } from "../core/check-store.js";
-import { mainCheckoutRoot } from "../core/git.js";
 import { Logger } from "../core/logger.js";
 import {
   boardRootForEngineerRemote,
@@ -1994,17 +1993,25 @@ export async function runCheckPlan(
 export async function cmdCheck(argv: string[] = []): Promise<void> {
   const opts = parseCheckArgs(argv);
   const repoRoot = findRepoRoot();
-  // Where this run's history row(s) go (#0564 review): the MAIN checkout's
-  // `.repoos/checks.db`, the one store the running server reads. A standalone
-  // `repoos check` inside a task worktree used to write to the worktree's own
-  // file, so an agent's self-check never appeared in Checks → Runs. An
-  // explicit REPOOS_CHECK_STORE_ROOT (server-spawned paths) already points at
-  // the main root and wins. Deliberately a local value, NOT a process.env
-  // write: an exported env var reaches every child this command spawns —
-  // including the test suite, whose own check-store fixtures would then
-  // record into this repo's live store instead of their own tmp ones.
+  // Where this run's history row(s) go (#0564 review, #0870): the project that
+  // owns THIS worktree, resolved through any linked worktree. A standalone
+  // `repoos check` inside a task worktree must write to the main checkout's
+  // `.repoos/checks.db`, the one store the running server reads — and never to
+  // another project's checkout just because the process inherited a
+  // REPOOS_CHECK_STORE_ROOT/REPOOS_TASK_ID from it. Deliberately a local value,
+  // NOT a process.env write: an exported env var reaches every child this
+  // command spawns — including the test suite, whose own check-store fixtures
+  // would then record into this repo's live store instead of their own tmp ones.
   const checkStoreRoot = resolveCheckStoreRoot(repoRoot);
   const cfg = loadConfig(repoRoot);
+  // One validated attribution for the WHOLE run (#0870): the history rows, the
+  // failed-first preflight, and the remote dispatch all use this instead of
+  // reading REPOOS_TASK_ID directly, so an inherited id from another project
+  // can neither label this project's row nor commit a WIP checkpoint for that
+  // other project's task. Resolve it against the EXECUTION worktree (`repoRoot`),
+  // not `checkStoreRoot`: the branch that names the task is checked out here,
+  // while the main checkout is usually still on `main`.
+  const runContext = resolveCheckRunAttribution(process.env, repoRoot, cfg.workDir);
   const markers = detectRepoMarkers(repoRoot);
   const plan = resolveCheckPlan({
     check: cfg.check,
@@ -2123,6 +2130,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     recordRunHistoryRow({
       root: checkStoreRoot,
       cacheDir: cfg.cacheDir,
+      attribution: runContext,
       scope: changedRef ? `changed:${changedRef}` : "full",
       startedAt: startedAt.toISOString(),
       durationMs: 0,
@@ -2152,8 +2160,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   if (runRemoteGate) {
     const uncommitted = await uncommittedFilesBlockingRemoteGate(repoRoot, cfg);
     if (uncommitted.length > 0) {
-      if (isManagedEngineerCheck(process.env)) {
-        const taskId = process.env.REPOOS_TASK_ID!.trim();
+      if (isManagedEngineerCheck(process.env) && runContext.taskId) {
+        const taskId = runContext.taskId;
         const wipErr = await commitWipCheckpointForRemoteGate(repoRoot, cfg, taskId);
         if (wipErr) {
           runRemoteGate = false;
@@ -2214,8 +2222,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   };
   if (runRemoteGate) {
     heading("Remote validation");
-    const managed = isManagedEngineerCheck(process.env);
-    const taskId = process.env.REPOOS_TASK_ID?.trim() || "pre-review";
+    const managed = isManagedEngineerCheck(process.env) && runContext.taskId !== null;
+    const taskId = runContext.taskId || "pre-review";
     const remoteStartedAt = new Date();
     let remoteOutput = "";
     const prevStoreRoot = process.env.REPOOS_CHECK_STORE_ROOT;
@@ -2282,6 +2290,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
             recordRunHistoryRow({
               root: checkStoreRoot,
               cacheDir: cfg.cacheDir,
+              attribution: runContext,
               scope: "full",
               startedAt: new Date().toISOString(),
               durationMs: 0,
@@ -2296,7 +2305,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         }
         if (remoteValidator) {
           try {
-            const { phase: runPhase } = envToRunContext(process.env);
+            const { phase: runPhase } = runContext;
             const gate = await runRemotePreReviewGate({
               config: cfg,
               remoteValidator,
@@ -2341,8 +2350,10 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   const runStartedAt = new Date();
   // Failed-first ordering (#0655): only interactive/CLI and pre-review runs
   // reorder. Close-out and release always run the full suite from a clean
-  // slate, and the remote close-out gate never reaches this point.
-  const preflightContext = envToRunContext(process.env);
+  // slate, and the remote close-out gate never reaches this point. Attribution
+  // is validated against THIS project so an inherited foreign task id cannot
+  // pick another project's failed-test list (#0870).
+  const preflightContext = runContext;
   const previousFailedTests = previousFailedTestsForRun({
     root: checkStoreRoot,
     cacheDir: cfg.cacheDir,
@@ -2391,6 +2402,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     recordRunHistoryRow({
       root: checkStoreRoot,
       cacheDir: cfg.cacheDir,
+      attribution: runContext,
       scope: changedRef ? `changed:${changedRef}` : "full",
       startedAt: runStartedAt.toISOString(),
       durationMs: finishedAt.getTime() - runStartedAt.getTime(),
@@ -2498,6 +2510,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   recordRunHistoryRow({
     root: checkStoreRoot,
     cacheDir: cfg.cacheDir,
+    attribution: runContext,
     scope: changedRef ? `changed:${changedRef}` : "full",
     worktree: repoRoot,
     startedAt: runStartedAt.toISOString(),
@@ -2529,16 +2542,6 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   });
 
   process.exit(gatingFailures.length > 0 ? 1 : 0);
-}
-
-/**
- * Where a standalone run's check-run history rows belong (#0564 review): an
- * explicit `REPOOS_CHECK_STORE_ROOT` (server-spawned paths) wins; otherwise
- * the MAIN checkout, resolved through any linked worktree. Fail-soft.
- */
-function resolveCheckStoreRoot(repoRoot: string): string {
-  const envRoot = process.env.REPOOS_CHECK_STORE_ROOT?.trim();
-  return envRoot || mainCheckoutRoot(repoRoot);
 }
 
 /**
@@ -2578,6 +2581,7 @@ export function previousFailedTestsForRun(opts: {
 function recordRunHistoryRow(row: {
   root: string;
   cacheDir: string;
+  attribution: { taskId: string | null; phase: CheckRunPhase };
   scope: string;
   worktree?: string;
   startedAt: string;
@@ -2590,7 +2594,7 @@ function recordRunHistoryRow(row: {
   isolationNote?: string | null;
 }): void {
   try {
-    const { taskId, phase } = resolveCheckRunAttribution(process.env, row.root);
+    const { taskId, phase } = row.attribution;
     getCheckStore(row.root, row.cacheDir).record({
       taskId,
       phase,

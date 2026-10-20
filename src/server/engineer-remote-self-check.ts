@@ -12,9 +12,9 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import type { CheckRunRow } from "../core/check-store.js";
-import { getCheckStore } from "../core/check-store.js";
+import { getCheckStore, resolveCheckStoreRoot } from "../core/check-store.js";
 import { loadConfig } from "../core/config.js";
-import { mainCheckoutRoot, runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
+import { runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
 import { REPOOS_TOML_REL } from "../core/repoos-toml-branch-guard.js";
 import { patchTaskFile } from "./write.js";
 import type { RepoOSConfig } from "../core/types.js";
@@ -35,8 +35,10 @@ export function engineerSelfCheckRemoteEnabled(config: RepoOSConfig): boolean {
 
 /** Board root for runner state / check history — never the task worktree alone. */
 export function boardRootForEngineerRemote(worktreeRoot: string): string {
-  const envRoot = process.env.REPOOS_CHECK_STORE_ROOT?.trim();
-  return envRoot || mainCheckoutRoot(worktreeRoot);
+  // #0870: derive from the worktree's own project; an inherited
+  // REPOOS_CHECK_STORE_ROOT naming another checkout is ignored (with a
+  // warning) inside resolveCheckStoreRoot rather than redirecting runner state.
+  return resolveCheckStoreRoot(worktreeRoot, process.env);
 }
 
 /** Board task file path for a numeric task id (fail-soft → undefined). */
