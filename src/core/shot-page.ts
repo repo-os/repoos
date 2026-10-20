@@ -388,10 +388,18 @@ export async function probeShotPage(page: ShotDriverPage): Promise<ShotPageProbe
  */
 export function shotStateProblem(
   entry: { state?: string; route: string; target?: string },
-  probe: ShotPageProbe,
+  probe: ShotPageProbe | null,
 ): string | undefined {
   if (!entry.state) return undefined;
   const target = entry.target ? `target "${entry.target}"` : "the captured target";
+  if (!probe) {
+    // #0866 review round 2: a driver that cannot probe cannot verify the
+    // fixture either — report that instead of silently passing the frame.
+    return (
+      `state "${entry.state}" could not be verified on ${target} — the page did not ` +
+      `expose the fixture marker at ${entry.route}`
+    );
+  }
   if (probe.appliedState !== entry.state) {
     return (
       `state "${entry.state}" did not render on ${target} — the page at ${entry.route} ` +
@@ -419,7 +427,7 @@ export function shotStateProblem(
  * rather than a mystery console error.
  */
 const MODULE_MIME_ERROR_RE =
-  /(is not a valid (?:JavaScript|module) MIME type|MIME type of ["']?text\/html|Expected a JavaScript module script|Failed to load module script)/i;
+  /(is not a valid (?:JavaScript|module) MIME type|MIME type of ["']?text\/html|non-JavaScript MIME type|Expected a JavaScript module script|Failed to load module script|Unexpected token ["']?<|blocked due to (?:a )?MIME type|Refused to execute script)/i;
 
 export function shotRouteNotServedProblem(
   entry: { route: string; target?: string },
@@ -502,7 +510,7 @@ export async function captureShotPage(
   // screenshot, so a wrong target is reported as a failed shot, not a pass.
   if (onStateMiss || onRouteNotServed) {
     const probe = await probeShotPage(page);
-    if (probe && onStateMiss) {
+    if (onStateMiss) {
       const problem = shotStateProblem(entry, probe);
       if (problem) onStateMiss(problem, entry.route);
     }
