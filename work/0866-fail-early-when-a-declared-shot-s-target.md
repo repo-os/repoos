@@ -1,0 +1,33 @@
+---
+id: "0866"
+title: Fail early when a declared shot's target cannot render its state or route
+type: bug
+status: inbox
+priority: p2
+area: server
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-20T11:55:38Z"
+updated_at: "2026-10-20T11:55:38Z"
+---
+## Problem
+A declared shot that resolves to the wrong preview target produces a capture of the wrong screen, and the failure shows up far from the cause. Observed 2026-10-20: #0860's Settings shot resolved to the Docs site target (console error "'text/html' is not a valid JavaScript MIME type", highlight matched nothing, handoff failed UI verification), and #0861's `drawer:shotEvidence` shot was captured on the Docs site / the board instead of a task drawer, so the reviewer reported an evidence gap on pass after pass. Each cost several rounds because the engineer only learns about it from a later review, and weaker models do not self-correct from the message.
+
+## Desired UX
+When shots are declared, declaring is validated against the resolved target before any capture: the target must be able to serve the route, and a `state` fixture must be one the target supports. A mismatch fails at declaration/handoff time with a message naming the shot, the resolved target, why it cannot work (e.g. "state drawer:shotEvidence needs the app target; this shot resolved to Docs site") and what to set (`target` and a drawer route such as /work?task=9999&tab=changes). A captured PNG that is the wrong screen (a state fixture that never rendered, e.g. a board when a drawer was declared) is reported as a failed shot, not as a pass.
+
+## Acceptance criteria
+- Declaring a `state` fixture on a target that does not support it is rejected with the message above.
+- A route that returns the target's 404/HTML shell for a module (the vitepress MIME error) is detected and reported as "route not served by this target".
+- A declared state or highlight that did not render fails the shot with the target name in the message.
+- The default target for a declared shot is the app target when its route or state is an app route/fixture, not the first configured target.
+- Tests for: wrong target + app state, route not served, state not rendered, correct declaration still passes.
+- Docs updated (AGENTS.md shot hygiene paragraph if its wording changes).
+
+## Notes for AI
+See the shot declaration and capture code in src/server/shot-capture.ts, `planAutoCapture`, the state fixtures (`closeOut:active`, `card:doneError`, `board:withReviewTask`, `drawer:shotEvidence`) and the #0830 shot-hygiene rules in AGENTS.md. Related: #0819 precedent for opening a drawer by route. Do not weaken the existing failing-declared-miss behavior; this adds earlier and clearer detection.
+
+## Activity
+
+- 2026-10-20T11:55:38Z · created · njachowski@gmail.com
