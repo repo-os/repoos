@@ -20,14 +20,15 @@ It scaffolds four things and touches nothing else:
 A fresh install defaults to the namespaced `repoos/` layout. The config it writes
 sets `workDir = "repoos/work"`, `docsDir = "repoos/docs"`, and the matching
 `skillsDir`, `storiesDir`, `inputsDir`, `schedulesDir`, `remindersDir`, and
-`cacheDir` under `repoos/`. `repoos init --layout /` puts work and docs at the
-repository root instead; `--layout <namespace>` picks another subdirectory. The
-interactive flow can choose this too.
+`cacheDir` under `repoos/`. In an interactive run you can choose the repository
+root or another namespace instead; in the new-project flow the `--layout` flag
+picks it. Root-layout projects keep `work/` and `docs/` next to `AGENTS.md` and
+`repoos.toml`.
 
 `repoos init` is idempotent: it skips files that already exist, so re-running it
 is safe. It also adds the derived cache, local `.env` files, `node_modules/`,
-and task/input attachment directories to `.gitignore`. It seeds `inbox` starter
-tasks as suggestions, not work that auto-runs.
+and task/input attachment directories to `.gitignore`. It seeds an `inbox`
+starter task as a suggestion, not work that auto-runs.
 
 ## Start the board
 
