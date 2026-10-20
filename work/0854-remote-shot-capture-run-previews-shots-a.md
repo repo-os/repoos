@@ -52,3 +52,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T05:48:54Z · note: Review round 1 requested implementation fixes; resuming work in the existing task worktree.
 - 2026-10-20T05:49:17Z · message_delivered: 1 message(s)
 - 2026-10-20T05:50:06Z · status active→review
+- 2026-10-20T05:50:06Z · note: handoff requested (cli)
