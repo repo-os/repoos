@@ -224,4 +224,45 @@ describe("decision-model start gate (#0804)", () => {
       fx.clean();
     }
   });
+
+  it("refuses a human-step task before healing a phantom, and heals once the gate allows the start", async () => {
+    const release = vi.fn();
+    let running = true;
+    const fx = makeFixture();
+    fx.ctx.runner = {
+      isRunning: () => running,
+      releasePhantomRunner: (id: string) => {
+        release(id);
+        running = false;
+        return true;
+      },
+      stop: vi.fn(() => ({ stopped: true })),
+    } as any;
+
+    vi.mocked(runHumanStepDecisionCheck).mockResolvedValue({
+      outcome: "human",
+      detail: "Decision model (91%): this needs a real account.",
+      decision: { needsHumanStep: true, probability: 0.91, reason: "account", explanation: "" },
+    });
+    try {
+      const refused = makeRes();
+      await taskAction(fx.ctx, makeReq(), refused.res, { param1: "0804", param2: "start" });
+      expect(refused.fake.status).toBe(409);
+      expect(refused.fake.payload.reason).toBe("needs-human-step");
+      expect(release).not.toHaveBeenCalled();
+      expect(fx.read().status).toBe("ready");
+
+      vi.mocked(runHumanStepDecisionCheck).mockResolvedValue({
+        outcome: "agent",
+        detail: "Decision model (4%): an AI agent can do this task.",
+        decision: { needsHumanStep: false, probability: 0.04, reason: "none", explanation: "" },
+      });
+      const started = makeRes();
+      await taskAction(fx.ctx, makeReq(), started.res, { param1: "0804", param2: "start" });
+      expect(release).toHaveBeenCalledWith("0804");
+      expect(fx.read().status).toBe("active");
+    } finally {
+      fx.clean();
+    }
+  });
 });

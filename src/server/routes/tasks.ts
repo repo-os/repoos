@@ -2169,10 +2169,6 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         .join("; ");
       return json(res, 409, { ok: false, error: reason, reason, blockedBy: blockers });
     }
-    runner.releasePhantomForStart?.(id);
-    if (runner.isRunning(id)) {
-      return json(res, 400, { error: `Task #${id} is already running` });
-    }
     // #0804: an optional decision-model check runs before a ready task moves to
     // active. It only blocks a start in automatic routing mode; off, shadow,
     // unavailable and failed all fall through to the keyword check below, so a
@@ -2217,6 +2213,15 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       } else if (check.outcome === "agent") {
         humanStepOverride = "agent";
       }
+    }
+    // Phantom heal sits after the refusal gates above (#0804 human-step, deps,
+    // archive). A dead registry entry is cleared so Start proceeds; a live
+    // process still gets the same "already running" refusal (#0863).
+    if (typeof runner.releasePhantomRunner === "function") {
+      runner.releasePhantomRunner(id);
+    }
+    if (runner.isRunning(id)) {
+      return json(res, 400, { error: `Task #${id} is already running` });
     }
     const baseEngineer = resolveAgentForTask(config, existing);
     if (!baseEngineer) {
