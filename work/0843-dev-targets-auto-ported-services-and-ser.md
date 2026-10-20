@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T09:33:44Z"
+updated_at: "2026-10-20T09:35:56Z"
 review_passes: 16
 last_check_failure: "repoos check at 2026-10-20T06:48:16.394Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
@@ -233,3 +233,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T09:31:19Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T09:31:20Z · message_queued at 2026-10-20T09:31:20.475Z
 - 2026-10-20T09:33:44Z · handoff failed · remote validation failed: test failure: tests/dev-targets.test.ts > DevTargetManager with services (#0843) > marks an adopted service's crash after reload on the target on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-20T09:35:56Z · message_delivered: 1 message(s)
