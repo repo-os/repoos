@@ -11,7 +11,7 @@ branch: feat/fail-early-when-a-declared-shot-s-target
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T11:55:38Z"
-updated_at: "2026-10-20T23:14:18Z"
+updated_at: "2026-10-20T23:15:28Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-20T21:59:05.771Z: repoos check failed: ◆ Check plan"
 ---
@@ -63,3 +63,4 @@ See the shot declaration and capture code in src/server/shot-capture.ts, `planAu
 - 2026-10-20T23:09:07Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (7793441f0) during finalization (#0734)
 - 2026-10-20T23:09:08Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (7793441f0) during finalization (#0734)
 - 2026-10-20T23:14:18Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-10-20T23:15:28Z · note: review pass 2: needs some work
