@@ -1092,8 +1092,7 @@ export class DevTargetManager {
     const isFailure = Boolean(outcome.reason);
     const services = (previous?.services ?? []).map((service) => {
       const failed =
-        isFailure &&
-        (service.name === outcome.failedService || service.status === "failed");
+        isFailure && (service.name === outcome.failedService || service.status === "failed");
       return {
         ...service,
         status: failed ? ("failed" as const) : ("stopped" as const),
