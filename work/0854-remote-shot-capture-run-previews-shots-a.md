@@ -3,6 +3,9 @@ id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — runner-mode evidence import corrupts shot names/URLs and `repoos shot` still runs locally, so the \"no difference to rev…"
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -150,3 +153,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T10:43:45Z · status active→review
 - 2026-10-20T10:47:34Z · note: review pass 9: needs some work
 - 2026-10-20T10:49:49Z · note: review pass 10: needs some work
+- 2026-10-20T10:49:49Z · needs_input
