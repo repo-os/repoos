@@ -621,12 +621,14 @@ export function patchTaskFile(
  * Deliberately does NOT commit: the orchestrator has its own staging/amend
  * step, and this file is the one path in the merge commit that may differ from
  * both parents. Returns null when the file is missing or still conflicted.
+ * `changed` is false when the file already carried the final stamp, so the
+ * caller never rewrites a commit for a no-op.
  */
 export function stampTaskDoneOnPublish(
   config: RepoOSConfig,
   absPath: string,
   mergedCommit?: string | null,
-): Task | null {
+): { task: Task; changed: boolean } | null {
   if (!existsSync(absPath)) return null;
   const content = readFileSync(absPath, "utf8");
   if (hasUnresolvedConflictMarkers(content)) return null;
@@ -641,8 +643,9 @@ export function stampTaskDoneOnPublish(
     if (!task.mergedCommit && mergedCommit) {
       task.mergedCommit = mergedCommit;
       writeFileSync(absPath, serializeTask(task));
+      return { task, changed: true };
     }
-    return task;
+    return { task, changed: false };
   }
   task.status = "done";
   task.mergedCommit = mergedCommit ?? task.mergedCommit;
@@ -653,7 +656,40 @@ export function stampTaskDoneOnPublish(
   task.needsInput = false;
   task.needsInputReason = undefined;
   writeFileSync(absPath, serializeTask(task));
-  return task;
+  return { task, changed: true };
+}
+
+/**
+ * Undo {@link stampTaskDoneOnPublish} after the publish merged but a later step
+ * failed (#0886): the merge cannot be undone, but the task must not read `done`
+ * without its `release:success` marker, or the failure path would treat the job
+ * as "already done" and stop offering a retry.
+ *
+ * Only touches a `done` task that has no release marker. A task that was already
+ * released (marker present), is still `review`, or whose file is missing or
+ * mid-merge is left exactly as it is. Never throws — callers are already on a
+ * failure path.
+ */
+export function revertPublishDoneStamp(config: RepoOSConfig, absPath: string): Task | null {
+  try {
+    if (!existsSync(absPath)) return null;
+    const content = readFileSync(absPath, "utf8");
+    if (hasUnresolvedConflictMarkers(content)) return null;
+    const task = parseTask({
+      content,
+      absPath,
+      root: config.root,
+      defaultStatus: config.defaultStatus,
+      defaultAssignee: config.defaultAssignee,
+    });
+    if (task.status !== "done" || releasedAtFromActivity(task.body)) return null;
+    return patchTaskFile(config, absPath, {
+      status: "review",
+      note: "close-out post-merge step failed — restored review status for retry (#0886)",
+    });
+  } catch {
+    return null;
+  }
 }
 
 /**

@@ -24,7 +24,8 @@ import { ensureWorktree } from "../../core/git.js";
 import { hasUnresolvedConflictMarkers, parseDocument } from "../../core/frontmatter.js";
 import { parseTask, releasedAtFromActivity } from "../../core/task.js";
 import { createRepoOS } from "../../core/repoos.js";
-import { patchTaskFile, markTaskReleased } from "../../server/write.js";
+import { patchTaskFile, markTaskReleased, revertPublishDoneStamp } from "../../server/write.js";
+import { resolveTaskFileByTakingMain } from "../../server/conflict-resolution.js";
 import { handoffRequestPath, writeHandoffRequest } from "../../server/handoff-request.js";
 import { finalizeReviewHandoff } from "../../server/handoff.js";
 import { cmdMv } from "../../commands/tasks.js";
@@ -172,6 +173,57 @@ x
 // ---------------------------------------------------------------------------
 // 2. No writer may re-serialize a mid-merge task file.
 // ---------------------------------------------------------------------------
+
+describe("conflict resolution of the closing task's own file never yields inbox (#0886)", () => {
+  it("takes main's status from a real task-file conflict, then stamps done", () => {
+    const mainSide = taskContent("review");
+    // The shape git produces for the #0886 race: the frontmatter is conflicted,
+    // `status:` is OUTSIDE the conflict (both sides agree), activity differs.
+    const merged = mainSide
+      .replace(
+        "priority: p1",
+        `priority: p1\n<<<<<<< HEAD\nupdated_at: "2026-10-21T18:31:11Z"\n=======\nupdated_at: "2026-10-21T18:02:59Z"\n>>>>>>> feat/inbox-race`,
+      )
+      .replace("- base", "- main log");
+
+    const resolved = resolveTaskFileByTakingMain(merged);
+    expect(resolved.ok).toBe(true);
+    if (!resolved.ok) return;
+    expect(resolved.content).not.toContain("<<<<<<<");
+    expect(resolved.content).not.toContain("=======");
+
+    const parsed = parseTask({
+      content: resolved.content,
+      absPath: `/tmp/${TASK_ID}-x.md`,
+      root: "/tmp",
+      defaultStatus: "inbox",
+      defaultAssignee: "unassigned",
+    });
+    expect(parsed.status).toBe("review");
+  });
+
+  it.each([
+    ["status after the conflict region", "review", "review"],
+    ["status repeated on both sides", "review", "review"],
+    ["main already stamped done", "done", "done"],
+  ])("%s reads %s, never the inbox default", (_label, mainStatus, expected) => {
+    const merged = taskContent(mainStatus).replace(
+      "priority: p1",
+      `priority: p1\n<<<<<<< HEAD\nupdated_at: "2026-10-21T18:31:11Z"\n=======\nupdated_at: "2026-10-21T18:02:59Z"\n>>>>>>> feat/inbox-race`,
+    );
+    const resolved = resolveTaskFileByTakingMain(merged);
+    expect(resolved.ok).toBe(true);
+    if (!resolved.ok) return;
+    const parsed = parseTask({
+      content: resolved.content,
+      absPath: `/tmp/${TASK_ID}-x.md`,
+      root: "/tmp",
+      defaultStatus: "inbox",
+      defaultAssignee: "unassigned",
+    });
+    expect(parsed.status).toBe(expected);
+  });
+});
 
 describe("task writers refuse a file with unresolved conflict markers (#0886)", () => {
   it("patchTaskFile throws and leaves the file byte-for-byte unchanged", () => {
@@ -371,6 +423,54 @@ describe("the publish commit stamps status done atomically (#0886)", () => {
       expect(released.status).toBe("done");
       expect(released.mergedCommit).toBe("abc123");
       expect(releasedAtFromActivity(released.body)).toBeTruthy();
+    } finally {
+      clean();
+    }
+  });
+
+  it.each([
+    {
+      label: "a stamped done task without a release marker goes back to review",
+      status: "done",
+      activity: "- base",
+      expected: "review",
+      reverted: true,
+    },
+    {
+      label: "an already-released done task is left alone",
+      status: "done",
+      activity: "- 2026-10-21T17:11:26Z · status review→done, release:success",
+      expected: "done",
+      reverted: false,
+    },
+    {
+      label: "a task still in review is left alone",
+      status: "review",
+      activity: "- base",
+      expected: "review",
+      reverted: false,
+    },
+  ])("$label", ({ status, activity, expected, reverted }) => {
+    const { root, clean } = makeRepo("repoos-0886-revert-");
+    try {
+      const absPath = writeTask(root, status, activity);
+      const result = revertPublishDoneStamp(configFor(root), absPath);
+      expect(parseAt(root, absPath).status).toBe(expected);
+      if (reverted) {
+        expect(result?.status).toBe("review");
+        expect(result?.body).toMatch(/restored review status for retry/);
+      } else {
+        expect(result).toBeNull();
+      }
+    } finally {
+      clean();
+    }
+  });
+
+  it("a missing file is a no-op, not a crash", () => {
+    const { root, clean } = makeRepo("repoos-0886-revert-missing-");
+    try {
+      expect(revertPublishDoneStamp(configFor(root), join(root, "work", "nope.md"))).toBeNull();
     } finally {
       clean();
     }
