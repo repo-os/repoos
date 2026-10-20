@@ -86,8 +86,9 @@ Bounds, deliberately (ADR 0008: no unbounded fallback chain):
 - A **clean turn** clears the crash count, so an occasional crash over days
   never triggers a switch. The automatic switch stays in place as the task's
   pair (a later crash series is surfaced rather than chained).
-- A `dev-error` flag set by a crash clears when engineering resumes (the next
-  successful turn), instead of lingering as a stale needs-input banner.
+- A `dev-error` flag set by a crash clears on the next successful (clean) turn,
+  instead of lingering as a stale needs-input banner. Merely *starting* a turn
+  preserves it, so an unrelated needs_input reason survives a start (#0613).
 
 Both values are live Settings controls on **Settings → Automation** and are
 documented in [`user-docs/configuration.md`](../user-docs/configuration.md).
