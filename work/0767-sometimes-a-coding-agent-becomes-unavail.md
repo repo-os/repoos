@@ -2,14 +2,21 @@
 id: "0767"
 title: Define centralized coding agent recovery
 type: spec
-status: inbox
+status: done
 priority: p2
 area: [agent, web]
+merged_commit: bc4a461977c95114ddd8b60a2bc5924be128d707
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/define-centralized-coding-agent-recovery
+cli_override: github copilot
+model_override: default
 created_at: "2026-10-13T12:38:26Z"
-updated_at: "2026-10-13T12:38:48Z"
+updated_at: "2026-10-20T05:54:20Z"
+last_close_out_gate_ms: 3146
+last_close_out_gate_at: "2026-10-20T05:54:12.087Z"
+review_passes: 2
+review_rounds: 1
 ---
 ## Problem
 
@@ -42,3 +49,17 @@ Sometimes a coding agent becomes unavailable (e.g. you ran out of usage credits 
 
 - 2026-10-13T12:38:26Z · created · hello@repoos.org
 - 2026-10-13T12:38:48Z · status draft→inbox, title, area, type, body
+- 2026-10-20T04:27:02Z · status inbox→ready
+- 2026-10-20T04:27:05Z · cli_override, model_override
+- 2026-10-20T04:27:09Z · status ready→active, branch
+- 2026-10-20T04:30:06Z · body
+- 2026-10-20T04:38:56Z · status active→review
+- 2026-10-20T04:38:56Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-20T04:39:44Z · note: review pass 1: needs some work
+- 2026-10-20T04:39:45Z · status review→active
+- 2026-10-20T04:42:01Z · body
+- 2026-10-20T04:49:20Z · status active→review
+- 2026-10-20T04:49:22Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-20T04:49:59Z · note: review pass 2: good to go
+- 2026-10-20T05:54:12Z · close-out gate completed in 3s
+- 2026-10-20T05:54:20Z · status review→done, release:success
