@@ -2141,6 +2141,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         .join("; ");
       return json(res, 409, { ok: false, error: reason, reason, blockedBy: blockers });
     }
+    // A phantom entry (no live process or child) is cleared so Start proceeds
+    // instead of refusing with "already running" (#0863).
+    runner.releasePhantomRunner(id);
     if (runner.isRunning(id)) {
       return json(res, 400, { error: `Task #${id} is already running` });
     }

@@ -89,6 +89,14 @@ import {
   type RecordedEngineerPid,
 } from "./orphan-engineers.js";
 import {
+  classifyPhantom,
+  DEFAULT_PHANTOM_DETECT_MS,
+  PHANTOM_RATE_LIMITED_NOTE,
+  PHANTOM_RESTARTED_NOTE,
+  recentPhantomHeals,
+  runnerGroupAlive,
+} from "./phantom-runner.js";
+import {
   recoverTruncatedJson,
   TRUNCATION_NOTICE_PREFIX,
   type TruncatedPayload,
@@ -5131,6 +5139,10 @@ export class AgentRunner {
   private readonly messageTimeoutMs = 60 * 60 * 1000;
   /** Ids already flagged overdue, so the warning is recorded once (#0821). */
   private readonly messageOverdueFlagged = new Set<string>();
+  /** When a runner entry was first observed with no live process group (#0863). */
+  private readonly phantomDeadSince = new Map<string, number>();
+  /** Automatic phantom-heal timestamps per task, for the hourly rate limit. */
+  private readonly phantomHeals = new Map<string, number[]>();
   private readonly emit: (e: AgentEvent) => void;
   private readonly logger?: Logger;
   private readonly sessionsDir: string;
@@ -5943,6 +5955,7 @@ export class AgentRunner {
     this.checkExpiredMessages();
     const cwd = opts.cwd ?? this.config.root;
     this.tryAdoptRecordedOrphanForTask(task.id, cwd);
+    this.releasePhantomRunner(task.id);
     if (
       this.entries.has(task.id) ||
       this.handoffsInFlight.has(task.id) ||
@@ -7889,12 +7902,86 @@ export class AgentRunner {
   }
 
   /**
+   * Drop a runner entry whose process group is already gone so `start` does
+   * not refuse with "already running" (#0863). A live engineer or child is
+   * left untouched. Does not itself relaunch — the caller starts the turn.
+   */
+  releasePhantomRunner(taskId: string): boolean {
+    const entry = this.entries.get(taskId);
+    if (!entry || entry.review) return false;
+    if (this.phantomGroupAlive(entry)) return false;
+    this.discardPhantom(taskId, entry, PHANTOM_RESTARTED_NOTE);
+    return true;
+  }
+
+  /** True when the engineer PID or any child in its process group is alive. */
+  private phantomGroupAlive(entry: Entry): boolean {
+    const leader = entry.processGroupLeader ?? entry.proc?.pid ?? entry.adoptedPid;
+    return runnerGroupAlive(leader, livePidsInRecordedGroup);
+  }
+
+  /**
+   * Stall-timer half of phantom detection. Returns true when the entry was
+   * removed (the caller must not keep inspecting it). Restarts are rate limited;
+   * an explicit {@link releasePhantomRunner} is not.
+   */
+  private considerPhantom(taskId: string, entry: Entry): boolean {
+    if (entry.review || entry.handoffRequested) {
+      this.phantomDeadSince.delete(taskId);
+      return false;
+    }
+    if (this.phantomGroupAlive(entry)) {
+      this.phantomDeadSince.delete(taskId);
+      return false;
+    }
+    const nowMs = Date.now();
+    const since = this.phantomDeadSince.get(taskId) ?? nowMs;
+    if (!this.phantomDeadSince.has(taskId)) this.phantomDeadSince.set(taskId, since);
+    const detectMs = this.config.watchdog?.phantomDetectMs ?? DEFAULT_PHANTOM_DETECT_MS;
+    const stamps = this.phantomHeals.get(taskId) ?? [];
+    const kind = classifyPhantom({
+      hasEntry: true,
+      groupAlive: false,
+      deadSinceMs: since,
+      nowMs,
+      detectMs,
+      healTimestampsMs: stamps,
+    });
+    if (kind === "watching" || kind === "live") return false;
+    if (kind === "rate-limited") {
+      this.discardPhantom(taskId, entry, PHANTOM_RATE_LIMITED_NOTE);
+      return true;
+    }
+    this.phantomHeals.set(taskId, [...recentPhantomHeals(stamps, nowMs), nowMs]);
+    const branch = entry.branch;
+    const workdir = entry.workdir;
+    this.discardPhantom(taskId, entry, PHANTOM_RESTARTED_NOTE);
+    const task = this.getTask?.(taskId);
+    const agent = task ? resolveAgentForTask(this.config, task) : undefined;
+    if (task && agent && branch) {
+      queueMicrotask(() => {
+        this.start(task, branch, agent, { cwd: workdir });
+      });
+    }
+    return true;
+  }
+
+  /** Clear a dead runner entry and record it on the activity log and Debug tab. */
+  private discardPhantom(taskId: string, entry: Entry, note: string): void {
+    this.phantomDeadSince.delete(taskId);
+    entry.intentionalStop = true;
+    this.cleanup(taskId, false, null);
+    this.recordTaskActivity(taskId, note);
+    this.logger?.agent(taskId, "warn", note);
+  }
+
+  /**
    * Periodic sweep (every `stallCheckIntervalMs`) over currently-running turns:
    * raises the stall flag the moment silence crosses the threshold. Recovery
    * (new output, or the turn exiting) is handled inline where it happens, so
    * this only ever needs to turn the warning ON, never off.
-   * Also polls adopted entries (0214) for PID liveness: if the adopted PID
-   * died, clean up the entry so the task doesn't read as running forever.
+   * Also notices a phantom entry (no live process or child, #0863) and, after
+   * the detect window, clears it and restarts the same agent.
    */
   private checkStalls(): void {
     for (const [taskId, entry] of this.entries) {
@@ -7905,15 +7992,7 @@ export class AgentRunner {
       // `::repoos-handoff-ready::` signal. `cleanup()` re-checks, which is what
       // closes the race with a turn that ends in the same tick.
       this.adoptHandoffRequestFile(taskId, entry);
-      if (entry.adoptedPid) {
-        try {
-          process.kill(entry.adoptedPid, 0);
-        } catch {
-          // PID died during adoption — clean up
-          this.cleanup(taskId, false, null);
-          continue;
-        }
-      }
+      if (this.considerPhantom(taskId, entry)) continue;
       const session = this.sessions.get(taskId);
       if (!session) continue;
       const wallNow = Date.now();

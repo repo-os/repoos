@@ -1749,6 +1749,12 @@ export interface WatchdogConfig {
    * `needsInput`. Default true.
    */
   autoTransition?: boolean;
+  /**
+   * How long a runner entry may have no live engineer process and no live
+   * child before it is cleared and the same agent restarted (#0863).
+   * Default 3 minutes. Minimum 15 seconds.
+   */
+  phantomDetectMs?: number;
 }
 
 /** Browser console / overflow gate at engineer handoff for UI work (#0680). */

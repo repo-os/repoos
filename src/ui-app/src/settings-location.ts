@@ -114,6 +114,7 @@ export function generalSectionForKey(key: string): string {
   if (key === "shot.maxAutoShots") return "screenshots";
   if (
     key === "ctoSkipHealthy" ||
+    key.startsWith("watchdog.") ||
     key === "cto.actions" ||
     key === "automation.paused" ||
     key === "autoEngineeringMode" ||
