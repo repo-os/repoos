@@ -66,3 +66,4 @@ Kept `vitepress-plugin-llms` (devDependency of `user-docs/`) rather than hand-wr
 - 2026-10-20T20:42:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-20T20:42:33Z · body
 - 2026-10-20T20:43:38Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-20T20:43:38Z · message_delivered: 1 message(s)
