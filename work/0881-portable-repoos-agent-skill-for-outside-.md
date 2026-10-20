@@ -2,7 +2,7 @@
 id: "0881"
 title: Portable RepoOS Agent Skill for outside agents
 type: feature
-status: active
+status: review
 paths: [agent/skill, landing, user-docs]
 priority: p2
 area: docs
@@ -14,7 +14,7 @@ branch: feat/portable-repoos-agent-skill-for-outside-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:01:54Z"
-updated_at: "2026-10-20T20:33:24Z"
+updated_at: "2026-10-20T20:41:59Z"
 ---
 ## Problem
 
@@ -58,3 +58,4 @@ The portable skill lives at `agent/skill/`. Public URL: https://github.com/repo-
 - 2026-10-20T20:31:59Z · body
 - 2026-10-20T20:33:24Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-20T20:33:24Z · message_delivered: 1 message(s)
+- 2026-10-20T20:41:59Z · status active→review
