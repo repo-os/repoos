@@ -18,16 +18,18 @@
  */
 
 import { createRequire } from "node:module";
-import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { hostname } from "node:os";
 import { join } from "node:path";
-import { currentBranch } from "./git.js";
+import { currentBranch, mainCheckoutRoot } from "./git.js";
 
 let Database: any;
 let sqliteAvailable = false;
 let sqliteLoadAttempted = false;
 let warnedSqliteUnavailable = false;
 let warnedRecordFailed = false;
+let warnedForeignStoreRoot = false;
+let warnedForeignAttribution = false;
 // RepoOS is ESM, so the CommonJS global `require` is not available. Create a
 // local resolver for optional runtime builtins instead (same as db.ts).
 const runtimeRequire = createRequire(import.meta.url);
@@ -393,6 +395,57 @@ export function getCheckStore(repoRoot: string, cacheDir = ".repoos"): CheckStor
 export function resetCheckStore(): void {
   instances.clear();
   warnedRecordFailed = false;
+  warnedForeignStoreRoot = false;
+  warnedForeignAttribution = false;
+}
+
+/**
+ * Absolute project root that owns `root`: the main checkout of the git
+ * project containing it. A linked worktree resolves to its main checkout, so
+ * every worktree of one project shares one check history. Realpathed because
+ * git reports resolved paths while `tmpdir()`-style inputs may not (macOS
+ * `/var` → `/private/var`). Fail-soft: outside git, `root` itself.
+ */
+function projectRoot(root: string): string {
+  const main = mainCheckoutRoot(root);
+  try {
+    return realpathSync(main);
+  } catch {
+    return main;
+  }
+}
+
+/** True when both paths belong to the same git project (#0870). */
+export function sameCheckProject(a: string, b: string): boolean {
+  return projectRoot(a) === projectRoot(b);
+}
+
+/**
+ * The project whose `.repoos/checks.db` owns this run's history (#0870).
+ *
+ * The root is ALWAYS derived from the project that contains `repoRoot` (the
+ * worktree the check actually ran in) — never from cwd or an inherited
+ * `REPOOS_CHECK_STORE_ROOT`. That variable is a routing hint the server sets
+ * to its own board root; honouring it blindly let a check running in one
+ * project's worktree write into another project's checkout, because the
+ * worktree's relative `cacheDir` (e.g. `repoos/.repoos`) was then joined onto
+ * the foreign root. A same-project hint is harmless and normalises to the main
+ * checkout; a foreign one is ignored with one clear warning per process.
+ */
+export function resolveCheckStoreRoot(
+  repoRoot: string,
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  const own = projectRoot(repoRoot);
+  const envRoot = env.REPOOS_CHECK_STORE_ROOT?.trim();
+  if (envRoot && !sameCheckProject(envRoot, repoRoot) && !warnedForeignStoreRoot) {
+    warnedForeignStoreRoot = true;
+    console.error(
+      `[repoos] ignoring REPOOS_CHECK_STORE_ROOT=${envRoot}: it belongs to a different project. ` +
+        `Check history for this run stays in ${own}.`,
+    );
+  }
+  return own;
 }
 
 function frontmatterScalar(fm: string, key: string): string | null {
@@ -453,14 +506,57 @@ export function envToRunContext(env: NodeJS.ProcessEnv): {
   return { taskId: callerTaskId, phase };
 }
 
-/** Task + phase for a check-run row, including branch attribution in a task worktree (#0695). */
+/**
+ * True when this repo's work dir has a task file for `taskId`. Numeric ids are
+ * the only ones with a task file; pseudo ids such as "release" have none and
+ * are accepted as caller-supplied attribution.
+ */
+function taskIdBelongsToProject(root: string, taskId: string, workDir: string): boolean {
+  if (!/^\d+$/.test(taskId)) return true;
+  try {
+    return readdirSync(join(root, workDir)).some(
+      (name) => name.startsWith(`${taskId}-`) && name.endsWith(".md"),
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Task + phase for a check-run row, including branch attribution in a task
+ * worktree (#0695).
+ *
+ * Inherited attribution is trusted only when it belongs to THIS project
+ * (#0870): a `REPOOS_ROOT` naming another repo, or a task id with no task file
+ * in this project's work dir, is ignored with one clear warning. Cross-project
+ * servers share a machine and a `repoos` binary, so an exported
+ * `REPOOS_TASK_ID` used to attribute one project's run to another project's
+ * task.
+ */
 export function resolveCheckRunAttribution(
   env: NodeJS.ProcessEnv,
   repoRoot: string,
+  workDir = "work",
 ): { taskId: string | null; phase: CheckRunPhase } {
   const { taskId: callerTaskId, phase } = envToRunContext(env);
-  if (callerTaskId) return { taskId: callerTaskId, phase };
-  const branchTaskId = taskIdFromWorktreeBranch(repoRoot);
-  if (!branchTaskId) return { taskId: null, phase };
-  return { taskId: branchTaskId, phase: "cli" };
+  const branchTaskId = taskIdFromWorktreeBranch(repoRoot, workDir);
+  if (!callerTaskId) {
+    if (!branchTaskId) return { taskId: null, phase };
+    return { taskId: branchTaskId, phase: "cli" };
+  }
+  const envRoot = env.REPOOS_ROOT?.trim();
+  const foreignRoot = !!envRoot && !sameCheckProject(envRoot, repoRoot);
+  if (foreignRoot || !taskIdBelongsToProject(repoRoot, callerTaskId, workDir)) {
+    if (!warnedForeignAttribution) {
+      warnedForeignAttribution = true;
+      const where = envRoot ? ` (REPOOS_ROOT=${envRoot})` : "";
+      console.error(
+        `[repoos] ignoring inherited check attribution ${callerTaskId}${where}: ` +
+          `it does not belong to this project (${repoRoot}).`,
+      );
+    }
+    if (!branchTaskId) return { taskId: null, phase };
+    return { taskId: branchTaskId, phase: "cli" };
+  }
+  return { taskId: callerTaskId, phase };
 }

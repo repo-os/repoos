@@ -5,10 +5,11 @@
  * `.repoos/checks.db` attributed to the machine that ran it.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { execFileSync } from "node:child_process";
 import { rmSync } from "node:fs";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import type { RepoOSConfig } from "../../core/types.js";
 import {
   PREREQ_OK_TOKEN,
@@ -34,6 +35,27 @@ function tmpRoot(): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-runobs-"));
   dirs.push(root);
   return root;
+}
+
+/**
+ * A real git project plus a linked worktree, for the store-root rule (#0870):
+ * history from a worktree belongs to the project's main checkout.
+ */
+function projectWithWorktree(): { main: string; worktree: string } {
+  const main = tmpRoot();
+  const git = (args: string[], cwd = main): void => {
+    execFileSync("git", args, { cwd, stdio: "ignore" });
+  };
+  git(["init", "-q", "-b", "main"]);
+  git(["config", "user.email", "t@example.com"]);
+  git(["config", "user.name", "T"]);
+  writeFileSync(join(main, "f.txt"), "x");
+  git(["add", "."]);
+  git(["commit", "-qm", "init"]);
+  const worktree = join(main, "..", `${basename(main)}-wt`);
+  dirs.push(worktree);
+  git(["worktree", "add", "-q", worktree, "-b", "side"]);
+  return { main, worktree };
 }
 
 const tick = (ms = 10): Promise<void> => new Promise((r) => setTimeout(r, ms));
@@ -417,12 +439,12 @@ describe("remote run history rows (#0564)", () => {
     });
   });
 
-  it("writes to REPOOS_CHECK_STORE_ROOT when set (0564 review)", async () => {
-    // A standalone `repoos check` in a task worktree resolves the env to the
-    // MAIN checkout before dispatching, so the row lands in the history the
-    // server reads — not the worktree's own store.
-    const root = tmpRoot();
-    const mainRoot = tmpRoot();
+  it("writes to the project's main checkout from a linked worktree (0564 review, #0870)", async () => {
+    // A standalone `repoos check` in a task worktree resolves to the MAIN
+    // checkout of its own project before dispatching, so the row lands in the
+    // history the server reads — not the worktree's own store. An inherited
+    // REPOOS_CHECK_STORE_ROOT may only name a root in that same project.
+    const { main: mainRoot, worktree: root } = projectWithWorktree();
     process.env.REPOOS_CHECK_STORE_ROOT = mainRoot;
     try {
       const config = {
