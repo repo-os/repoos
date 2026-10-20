@@ -2,7 +2,7 @@
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T08:28:41Z"
+updated_at: "2026-10-20T08:28:42Z"
 review_passes: 13
 last_check_failure: "repoos check at 2026-10-20T06:48:16.394Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
@@ -209,3 +209,5 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T08:28:09Z · note: review pass 14: needs some work
 - 2026-10-20T08:28:09Z · needs_input
 - 2026-10-20T08:28:41Z · needs_input
+- 2026-10-20T08:28:42Z · status review→active
+- 2026-10-20T08:28:42Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
