@@ -573,17 +573,19 @@ export function devTargetServiceErrors(
         );
       }
     };
-    validateRefs(
-      `dev.targets ${t.name}`,
-      [t.command, t.cwd, t.url, t.healthCheck?.url, ...envRefs(t.env)].flatMap(refsIn),
-    );
+    const targetRefs = [
+      ...[t.command, t.cwd, t.url, t.healthCheck?.url].flatMap(refsIn),
+      ...envRefs(t.env),
+    ];
+    validateRefs(`dev.targets ${t.name}`, targetRefs);
     for (const name of available) {
       const service = serviceByName.get(name)!;
       validateRefs(
         `dev.services ${name}`,
-        [service.command, service.cwd, service.healthCheck?.url, ...envRefs(service.env)].flatMap(
-          refsIn,
-        ),
+        [
+          ...[service.command, service.cwd, service.healthCheck?.url].flatMap(refsIn),
+          ...envRefs(service.env),
+        ],
         name,
       );
     }
