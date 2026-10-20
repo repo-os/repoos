@@ -159,3 +159,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:51:57Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-20T11:51:59Z · message_queued at 2026-10-20T11:51:59.534Z
 - 2026-10-20T11:53:07Z · status active→review
+- 2026-10-20T11:53:07Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (e06744b42) during finalization (#0734)
