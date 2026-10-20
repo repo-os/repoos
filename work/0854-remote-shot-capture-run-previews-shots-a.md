@@ -3,6 +3,9 @@ id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: handoff finalization was interrupted (server reload) — restart work to hand off again
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -10,12 +13,12 @@ created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T13:22:39Z"
+updated_at: "2026-10-20T13:23:38Z"
 review_passes: 18
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 5
+dev_error_count: 6
 ---
 ## Problem
 Tests already run on Tailscale runners (docs/remote-validation.md), but everything browser-related still runs on the control-plane laptop: the per-task preview (`bun run build` with vue-tsc + vite, then `repoos serve`), Playwright/WebKit captures of declared and automatic shots, the handoff UI verification, `repoos shot` and `repoos verify`. With several engineers handing off at once this is the dominant local load (dozens of WebKit processes, repeated full UI builds, 20+ GB of memory pressure on 2026-10-18/19). `remoteValidation.offloadBrowserSteps` (#0836, default off) only moves the smoke and rendered-contrast gate steps, not shots or UI verification.
@@ -244,3 +247,5 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T13:16:02Z · message_delivered: 1 message(s)
 - 2026-10-20T13:21:26Z · body
 - 2026-10-20T13:22:39Z · note: handoff requested (ui-review)
+- 2026-10-20T13:22:46Z · agent exited with an error (opencode) · handoff finalization was interrupted (server reload) — restart work to hand off again
+- 2026-10-20T13:23:38Z · note: handoff requested (ui-review)
