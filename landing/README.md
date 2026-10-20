@@ -68,6 +68,12 @@ docs site. `vite dev` serves the same text at `/llms.txt`; `vite build` emits
 `dist/llms.txt` at the dist root so the Worker serves it. Edit the prompt file,
 not a copy in a Vue component.
 
+The hero's agent call to action (`src/components/AgentPromptCta.vue`) copies that
+same prompt. Its heading, sentence, button labels and guide link come from
+`../agent/cta.json`, imported together with the prompt through `../agent/cta.ts`
+— the docs homepage imports the same module, so neither site keeps its own copy
+of the call-to-action strings.
+
 ## Local development
 
 ```bash
