@@ -24,6 +24,13 @@ export const INSTALL_COMMANDS = [
   "mise use --global npm:@repo-os/repoos",
 ] as const;
 
+/** The one portable Agent Skill directory published for outside agents. */
+export const AGENT_SKILL_URL = "https://github.com/repo-os/repoos/tree/main/agent/skill";
+
+/** Raw `SKILL.md`, for agents that fetch a single file rather than a tree. */
+export const AGENT_SKILL_RAW_URL =
+  "https://raw.githubusercontent.com/repo-os/repoos/main/agent/skill/SKILL.md";
+
 export function readStarterPrompt(path = defaultStarterPromptPath()): string {
   try {
     return readFileSync(path, "utf8").trim();
@@ -71,6 +78,7 @@ repoos serve   # start the board; prints the local URL to open
 - [Getting started](https://docs.repoos.org/getting-started): Install RepoOS, initialize a repository, and open the board.
 - [CLI reference](https://docs.repoos.org/cli): Every command and flag, including tasks, stories, and worktrees.
 - [Using RepoOS with an AI coding agent](https://docs.repoos.org/ai-agents): Hand the setup to an agent, with permission guidance and the starter prompt.
+- [RepoOS Agent Skill](${AGENT_SKILL_URL}): The portable Agent Skills directory an outside agent can fetch — start at SKILL.md.
 - [GitHub repository](https://github.com/repo-os/repoos): Source, releases, and issues.
 
 ## Starter prompt
