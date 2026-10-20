@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "you want shared Git history. They are currently repo-wide, visible to"
+debug_tldr: "The agent hit its usage limit before resolving the #0861 merge conflict — resume with an available agent and follow the merge instructions."
+debug_tldr_at: "2026-10-20T11:08:53Z"
+debug_tldr_key: "dev-error|you want shared Git history. They are currently repo-wide, visible to"
 priority: p2
 area: server
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T11:08:33Z"
+updated_at: "2026-10-20T11:08:53Z"
 review_passes: 3
 review_rounds: 1
 handoff_signal_retry_count: 1
