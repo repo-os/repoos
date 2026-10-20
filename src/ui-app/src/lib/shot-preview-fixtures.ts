@@ -345,13 +345,15 @@ const SHOT_EVIDENCE_SHOTS: ShotMeta[] = [
   },
 ];
 
-/** Handoff verification for `drawer:shotEvidence`: a check with a warning + a clean match. */
+/** Handoff verification for `drawer:shotEvidence`: bookkeeping-only HEAD movement stays current. */
 const SHOT_EVIDENCE_VERIFICATION: UiHandoffVerificationEvidence = {
   at: "2026-01-01T00:00:00.000Z",
   issues: [],
   blankShots: [],
   captures: 2,
-  sourceIdentity: "fixture000",
+  // The capture predates the reviewed tree; only bookkeeping paths changed.
+  sourceIdentity: "fixture-old",
+  stale: false,
   captureDetails: [
     {
       target: "default",
