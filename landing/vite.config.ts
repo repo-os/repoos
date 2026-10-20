@@ -3,6 +3,7 @@ import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
 import { fileURLToPath } from "node:url";
 import { themeBootPlugin } from "./vite-plugin-theme-boot.js";
+import { llmsTxtPlugin } from "./vite-plugin-llms-txt.js";
 
 // repoos.org marketing app. Static pages plus a separate Worker for enquiries.
 // Independent of src/ui-app, with its own package and deployment pipeline.
@@ -12,6 +13,7 @@ export default defineConfig({
   root: appRoot,
   plugins: [
     themeBootPlugin(),
+    llmsTxtPlugin(),
     vue(),
     tailwindcss(),
     {

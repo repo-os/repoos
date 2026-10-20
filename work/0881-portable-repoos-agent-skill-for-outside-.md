@@ -2,7 +2,7 @@
 id: "0881"
 title: Portable RepoOS Agent Skill for outside agents
 type: feature
-status: inbox
+status: active
 paths: [agent/skill, landing, user-docs]
 priority: p2
 area: docs
@@ -10,9 +10,11 @@ story: Agent-discoverable RepoOS
 depends_on: ["0879"]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/portable-repoos-agent-skill-for-outside-
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:01:54Z"
-updated_at: "2026-10-20T16:01:54Z"
+updated_at: "2026-10-20T20:18:03Z"
 ---
 ## Problem
 
@@ -42,3 +44,7 @@ Do not add CLI features, a public MCP server, or provider-specific plugins. Inst
 ## Activity
 
 - 2026-10-20T16:01:54Z · created · njachowski@gmail.com
+- 2026-10-20T20:10:59Z · status inbox→ready
+- 2026-10-20T20:11:06Z · cli_override, model_override
+- 2026-10-20T20:11:07Z · status ready→active, branch
+- 2026-10-20T20:18:03Z · body
