@@ -305,7 +305,14 @@ describe("ui evidence preflight (#0734)", () => {
       area: "docs",
       body: bodyWithShots('[{"target":"default","route":"/","state":"drawer:shotEvidence"}]'),
     } as Task;
-    const entries = [{ target: "default", route: "/", label: "Changes tab" }];
+    const entries = [
+      {
+        target: "default",
+        route: "/",
+        label: "Changes tab",
+        provenance: { kind: "declared" as const, label: "Changes tab" },
+      },
+    ];
     const fingerprint = shotPlanFingerprint(entries);
     vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
       entries,
