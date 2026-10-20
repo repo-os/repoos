@@ -114,7 +114,13 @@ export default defineConfig({
     // undefined, which makes jsdom skip installing its own Storage. Without
     // this shim the suite passes under Node 24 and fails under Node 26 — and
     // the close-out gate runs under whichever Node is serving. See the file.
-    setupFiles: ["./tests/setup/web-storage.ts", "./tests/setup/check-env.ts"],
+    setupFiles: [
+      "./tests/setup/web-storage.ts",
+      "./tests/setup/check-env.ts",
+      // Isolate each test file under the run root that globalSetup exposes to
+      // workers. The setup file applies the per-file temp path before tests run.
+      "./tests/setup/tmp-isolation.ts",
+    ],
     // Runs once before the whole test run starts (not per test file) —
     // sweeps orphaned fake-agent processes a previous run's worker left
     // behind when it was torn down before its own try/finally could fire.

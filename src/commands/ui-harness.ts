@@ -10,7 +10,7 @@ import { findRepoRoot, loadConfig } from "../core/config.js";
 import { acquirePlaywrightSlot } from "../core/local-gates.js";
 
 export interface PreviewServer {
-  close: () => void;
+  close: () => Promise<void>;
   url: string;
 }
 
