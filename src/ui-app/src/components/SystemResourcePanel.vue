@@ -224,6 +224,10 @@ const serveMessage = computed(() => {
               >Available: {{ fmtBytes(machineAvail!) }}</span
             >
             <span>Load: {{ systemStats!.machine.loadavg.map((v) => v.toFixed(1)).join(" ") }}</span>
+            <span v-if="pressure">
+              Pressure: {{ pressure.level }} · swap {{ fmtRatio(pressure.swapUsedRatio) }} ·
+              compressor {{ fmtRatio(pressure.compressorRatio) }}
+            </span>
             <span v-if="serve" :class="{ 'serve-bad': serve.level !== 'ok' }">
               Serve: {{ serve.total
               }}<template v-if="serve.strays"> ({{ serve.strays }} stray)</template

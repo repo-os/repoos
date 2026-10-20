@@ -1105,7 +1105,7 @@ function printTopProcesses(title: string, rows: StatsTopProcess[]): void {
   for (const p of rows.slice(0, 8)) {
     const owner = p.owner === "repoos" ? c.cyan("repoos") : c.dim("other ");
     console.log(
-      `    ${String(p.pid).padStart(7)}  ${owner}  ${String(fmtRatio(p.cpuPercent / 100)).padStart(4)}  ${fmtStatBytes(p.memBytes).padStart(8)}  ${p.command}`,
+      `    ${String(p.pid).padStart(7)}  ${owner}  ${`${p.cpuPercent.toFixed(1)}%`.padStart(6)}  ${fmtStatBytes(p.memBytes).padStart(8)}  ${p.command}`,
     );
   }
 }
