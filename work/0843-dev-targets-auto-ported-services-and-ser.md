@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 495445
-last_close_out_gate_at: "2026-10-20T15:27:19.126Z"
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, web]
+merged_commit: 36662d045d56b904da2dbf1fc747eb2e41a23330
 assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-auto-ported-services-and-ser
@@ -15,7 +14,9 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-20T15:27:19Z"
+updated_at: "2026-10-20T15:28:11Z"
+last_close_out_gate_ms: 495445
+last_close_out_gate_at: "2026-10-20T15:27:19.126Z"
 review_passes: 27
 last_check_failure: "repoos check at 2026-10-20T10:20:49.854Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 886d9960 to 9241cb9c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -360,4 +361,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T15:18:21Z · note: review pass 28: good to go
 - 2026-10-20T15:18:21Z · needs_input
 - 2026-10-20T15:27:19Z · close-out gate completed in 495s
-
+- 2026-10-20T15:28:11Z · status review→done, release:success
