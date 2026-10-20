@@ -60,3 +60,4 @@ Look at the runner registry (`runner.isRunning`), the watchdog, and the CTO `res
 - 2026-10-20T15:37:11Z · watchdog: auto-surfaced stuck task · status active→ready · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-20T16:09:55Z · status ready→active
 - 2026-10-20T16:09:59Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-20T16:09:59Z · message_delivered: 1 message(s)
