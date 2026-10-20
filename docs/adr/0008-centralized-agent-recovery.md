@@ -62,8 +62,10 @@ any failed agent run.
 The inventory groups configured uses by coding-agent CLI and model and shows
 both the saved selection and its effective selection. Each group shows its use
 locations: role/custom-agent name, built-in-agent name, and task id plus role
-for persisted engineer, reviewer, and PM overrides. A `default` model remains
-an explicit CLI-default selection; do not pretend it names a specific model
+for persisted engineer, reviewer, and PM overrides. Include disabled
+assignments and overrides on inactive tasks, marked as inactive, so the user
+can see what will resume if they re-enable them. A `default` model remains an
+explicit CLI-default selection; do not pretend it names a specific model
 unless the run reports one. The inventory distinguishes durable assignments
 from recent actual routing decisions and does not count one-shot request
 selections as saved uses.
