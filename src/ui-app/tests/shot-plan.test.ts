@@ -60,9 +60,21 @@ function bodyWithShots(json: string): string {
   ].join("\n");
 }
 
-describe("resolveDeclaredTarget default alias", () => {
-  it("maps default to the sole path-resolved target at capture time", () => {
-    expect(resolveDeclaredTarget("default", ["web"])).toEqual({ target: "web" });
+describe("resolveDeclaredTarget", () => {
+  it("keeps an explicit default target on the main app when Docs is path-matched", () => {
+    expect(resolveDeclaredTarget("default", ["Docs site"])).toEqual({ target: "default" });
+    const shots = [
+      { target: "default", route: "/settings?tab=general", label: "Settings" },
+      { target: "Docs site", route: "/configuration", label: "Configuration" },
+    ];
+    const capture = buildCapturePlan(["Docs site"], shots, {
+      docsContentOnly: new Set(["Docs site"]),
+    });
+    expect(capture.entries.map(({ target, route }) => [target, route])).toEqual([
+      ["default", "/settings?tab=general"],
+      ["Docs site", "/configuration"],
+    ]);
+    expect(capture.errors).toEqual([]);
   });
 });
 

@@ -521,9 +521,10 @@ export function parseShotPlan(
 }
 
 /**
- * Decide whether a declared shot's `target` is capturable. Resolution order:
- * an omitted target → the default target when included, else the sole/first
- * resolved target; anything else must name a resolved target exactly.
+ * Decide which target a declared shot names. An omitted target follows the
+ * resolved set. An explicit `default` always means the main app target; it
+ * must not alias a sole Docs site (or other named target) merely because that
+ * target matched the task's changed paths.
  */
 export function resolveDeclaredTarget(
   declared: string | undefined,
@@ -540,11 +541,7 @@ export function resolveDeclaredTarget(
     };
   }
   if (declared === DEFAULT_FALLBACK_TARGET) {
-    if (targets.includes(DEFAULT_FALLBACK_TARGET)) return { target: DEFAULT_FALLBACK_TARGET };
-    // Path resolution names the sole preview target (e.g. `web`) while the
-    // declaration still says `default` — same alias `validateDeclaredShotTargets`
-    // accepts at write time (#0685).
-    if (targets.length === 1) return { target: targets[0] };
+    return { target: DEFAULT_FALLBACK_TARGET };
   }
   if (!targets.includes(declared)) {
     return {
