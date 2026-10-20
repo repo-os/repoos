@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "2026-10-20T10:43:35.849544Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 90846"
+debug_tldr: The Codex process exited before input was sent — restart the run and continue from the latest review feedback.
+debug_tldr_at: "2026-10-20T10:57:37Z"
+debug_tldr_key: "dev-error|2026-10-20T10:43:35.849544Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 90846"
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T10:57:19Z"
+updated_at: "2026-10-20T10:57:37Z"
 review_passes: 11
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
