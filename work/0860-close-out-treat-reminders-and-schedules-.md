@@ -11,7 +11,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T08:28:24Z"
+updated_at: "2026-10-20T08:37:37Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -46,12 +46,12 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 "route": "/settings?tab=general",
 "highlight": "[data-config-key=\"remindersDir\"]",
 "steps": [
-  {
-    "click": "#settings-tab-advanced"
-  },
-  {
-    "waitFor": "[data-config-key=\"remindersDir\"]"
-  }
+{
+  "click": "#settings-tab-advanced"
+},
+{
+  "waitFor": "[data-config-key=\"remindersDir\"]"
+}
 ]
 },
 {
@@ -112,3 +112,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T08:24:41Z · status review→active
 - 2026-10-20T08:25:47Z · body
 - 2026-10-20T08:28:24Z · body
+- 2026-10-20T08:37:37Z · note: shots: skipped — 14 shots already captured — an engineer-made capture pre-empts the automatic one
