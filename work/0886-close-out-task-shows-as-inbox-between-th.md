@@ -11,7 +11,7 @@ branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
-updated_at: "2026-10-20T21:07:41Z"
+updated_at: "2026-10-20T21:11:01Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 4888f355 to e1bf06da) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 4888f35575fbdbdcd27ee3ba9d0b8cdb33dd2646
 dev_error_count: 1
