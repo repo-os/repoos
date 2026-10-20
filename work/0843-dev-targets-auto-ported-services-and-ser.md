@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'service env', tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'target env', tests/dev-targets.test.ts > DevTargetManager with services (#0843) > boots the service first, then the target, and exposes both states on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 32da7ef6ac6aceaa9a76587d2e0bcc567e9ce4b3
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
@@ -272,3 +274,4 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-20T10:52:42Z · note: handoff requested (cli)
 - 2026-10-20T10:57:00Z · needs_input
 - 2026-10-20T10:59:59Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'service env', tests/dev-targets.test.ts > devTargetServiceErrors > rejects unknown placeholders in 'target env', tests/dev-targets.test.ts > DevTargetManager with services (#0843) > boots the service first, then the target, and exposes both states on bee — fix it in the feature branch and re-run the gate
+
