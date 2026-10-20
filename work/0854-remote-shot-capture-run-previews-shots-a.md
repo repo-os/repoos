@@ -1,18 +1,20 @@
 ---
-updated_at: "2026-10-20T16:04:28Z"
-review_passes: 19
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
 status: review
 priority: p2
 area: [server, core]
-assigned_to: human
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
+updated_at: "2026-10-20T16:02:51Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/toml-validate.test.ts > validateToml accepts > the repository's own repoos.toml on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: a69f5cbf1a167a4285061a9fd2e01132d83d6dd9
+review_passes: 18
 last_check_failure: "repoos check at 2026-10-20T09:53:53.364Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -254,17 +256,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T15:31:54Z · needs_input
 - 2026-10-20T15:32:10Z · status active→ready
 - 2026-10-20T15:32:16Z · status ready→active
-- 2026-10-20T15:35:10Z · body
-- 2026-10-20T15:36:12Z · note: handoff requested (ui-review)
-- 2026-10-20T15:36:25Z · assigned_to
-- 2026-10-20T15:44:19Z · body
-- 2026-10-20T15:44:57Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 0ecb3b49 to 6e5df49a) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-- 2026-10-20T15:45:08Z · note: handoff requested (ui-review)
-- 2026-10-20T15:53:30Z · body
-- 2026-10-20T15:53:32Z · body
-- 2026-10-20T15:53:38Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 6e5df49a to 5f847ccf) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-- 2026-10-20T15:53:50Z · note: handoff requested (ui-review)
-- 2026-10-20T16:02:52Z · status active→review
-- 2026-10-20T16:02:54Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (3c6588a3c) during finalization (#0734)
-- 2026-10-20T16:04:28Z · note: review pass 19: good to go
-
+- 2026-10-20T16:02:51Z · status active→review

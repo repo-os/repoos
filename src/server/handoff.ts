@@ -57,6 +57,7 @@ import {
   remoteOutcomeFromReuse,
 } from "./engineer-remote-self-check.js";
 import { DEFAULT_HOST_LOCK_WAIT_SECS, type RemoteValidator } from "./remote-validation.js";
+import { remoteBrowserEvidenceTransport } from "./browser-capture-policy.js";
 import {
   remotePreReviewEnabled,
   runRemotePreReviewGate,
@@ -653,8 +654,12 @@ async function runHandoffFinalization(
       const uiTask = { ...task };
       if (taskNeedsUiHandoffVerification(config, uiTask)) {
         onProgress?.("verify");
-        const ui = await runUiHandoffGate(config, uiTask, opts.previews, (id, level, message) =>
-          opts.onTaskLog?.(id, level, message),
+        const ui = await runUiHandoffGate(
+          config,
+          uiTask,
+          opts.previews,
+          (id, level, message) => opts.onTaskLog?.(id, level, message),
+          { remoteTransport: remoteBrowserEvidenceTransport(config, opts.remoteValidator) },
         );
         if (!ui.ok && !ui.skipped) {
           return fail("verify", ui.detail);

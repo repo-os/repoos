@@ -2,23 +2,35 @@
 # Built once and baked into the Hetzner snapshot (see build-snapshot.md); the
 # runner never rebuilds it at job time.
 #
-# Scope (MVP): `bun install` + `bun run build` + `bun run test` only. The
-# Playwright/webkit UI smoke test stays on the LOCAL gate — add
-# `RUN bunx playwright install --with-deps webkit` here when it moves remote.
+# Browser capture runs on this image, so install the matching Playwright
+# WebKit build and its OS dependencies as part of the runner snapshot.
 FROM oven/bun:1-debian
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git ca-certificates curl procps lsof zip unzip \
+ && apt-get install -y --no-install-recommends git ca-certificates curl procps lsof zip unzip fonts-liberation fonts-noto-color-emoji \
  && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
  && apt-get install -y --no-install-recommends nodejs \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
+
+# Keep this aligned with @playwright/test in bun.lock (1.63.0). The browser
+# cache is shared with the non-root capture user through this explicit path.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN bunx --package playwright@1.63.0 playwright install --with-deps webkit
+RUN chmod -R a+rX /ms-playwright
 
 # Write git identity and defaults into /etc/gitconfig so they apply for any uid
 # (the container runs as the non-root 'bun' user from the base image).
 RUN git config --system user.email "ci@repoos.org" \
  && git config --system user.name "RepoOS CI" \
  && git config --system init.defaultBranch main
+
+# Browser capture creates a linked git worktree at /repo-worktrees (the sibling
+# `worktreesDir("/repo")` path), outside the /repo mount. validate.sh
+# bind-mounts a host dir there; this world-writable directory is a fallback for
+# a run without that mount, so a non-root capture user (the container runs as
+# the host uid:gid) can still create the worktree and its node_modules (#0854).
+RUN mkdir -m 1777 /repo-worktrees
 
 WORKDIR /repo
 # Make binaries installed by `bun install` (e.g. repoos itself) available

@@ -56,13 +56,22 @@ import {
   captureCommandEntries,
   captureEntryPage,
   planAutoCapture,
+  reserveBrowserCapture,
+  releaseBrowserCapture,
   type CommandCaptureEvidence,
   type ShotCaptureResult,
 } from "./shot-capture.js";
 import type { PreviewManager } from "./preview.js";
-import { localShotStore, shotsDir, shotUrl, type ShotMeta } from "./shots.js";
+import { importShotArtifacts, localShotStore, shotsDir, shotUrl, type ShotMeta } from "./shots.js";
 import { withPreviewVerificationSlot } from "./preview-verification-slot.js";
 import { patchTaskFile } from "./write.js";
+import {
+  recordBrowserCaptureActivity,
+  runBrowserCaptureWithPolicy,
+  type BrowserEvidenceArtifacts,
+  type BrowserEvidenceTransport,
+} from "./browser-capture-policy.js";
+import { canonicalCaptureContext, type CanonicalCapturePlan } from "../core/remote-capture.js";
 
 const INSTALL_ADVICE = "Install: bun add -d @playwright/test && bunx playwright install webkit";
 const AUTO_SETTLE_MS = 900;
@@ -562,6 +571,13 @@ export interface UiHandoffGateDeps {
   /** Explicit evidence refresh: replace engineer captures and keep task Markdown untouched. */
   forceRefresh?: boolean;
   recordTaskNotes?: boolean;
+  /** Runner transport for the configured remote browser capture policy. */
+  remoteTransport?: BrowserEvidenceTransport;
+  /**
+   * The control plane's resolved plan. The runner passes it so it verifies the
+   * same entries the board would, instead of re-planning from the bundle (#0854).
+   */
+  canonicalPlan?: CanonicalCapturePlan;
 }
 
 /** A blocking issue from a required assertion that failed (#0734). */
@@ -606,9 +622,75 @@ export async function runUiHandoffGate(
     return { ok: true, skipped: true, detail: "ui verification not required for this task" };
   }
 
-  const plan = planAutoCapture(config, task, { forceRefresh: deps.forceRefresh });
+  // Resolve the plan against the canonical board body and live config ONCE, then
+  // hand it to the runner: the bundled branch can lag a `## Shots` edit and its
+  // detached checkout cannot re-diff changed paths, so a runner-planned
+  // verification could differ from — or skip — what local capture does (#0854).
+  const plan: CanonicalCapturePlan | { reason: string } =
+    deps.canonicalPlan ?? planAutoCapture(config, task, { forceRefresh: deps.forceRefresh });
   if ("reason" in plan) {
     return { ok: true, skipped: true, detail: plan.reason };
+  }
+
+  if (
+    config.remoteValidation?.browserCaptureMode &&
+    config.remoteValidation.browserCaptureMode !== "local"
+  ) {
+    if (!reserveBrowserCapture(task.id)) {
+      return {
+        ok: false,
+        detail: "ui verification failed: a browser capture is already in flight for this task",
+      };
+    }
+    try {
+      const canonical = canonicalCaptureContext(config, task, plan);
+      const sourceWorktree =
+        (task.branch ? worktreePathForBranch(config.root, task.branch) : null) ?? config.root;
+      const head = await runGit(sourceWorktree, ["rev-parse", "HEAD"], 10_000);
+      const request =
+        task.branch && head.status === 0
+          ? {
+              taskId: task.id,
+              worktreePath: sourceWorktree,
+              branch: task.branch,
+              candidateSha: head.stdout.trim(),
+              operation: "verify" as const,
+              canonical,
+            }
+          : null;
+      try {
+        return await runBrowserCaptureWithPolicy({
+          config,
+          request: request ?? {
+            taskId: task.id,
+            worktreePath: config.root,
+            branch: task.branch ?? "",
+            candidateSha: "",
+            operation: "verify",
+            canonical,
+          },
+          transport: request ? deps.remoteTransport : undefined,
+          local: () =>
+            runUiHandoffGate(
+              {
+                ...config,
+                remoteValidation: { ...config.remoteValidation, browserCaptureMode: "local" },
+              },
+              task,
+              previews,
+              log,
+              { ...deps, remoteTransport: undefined },
+            ),
+          note: (message) => log(task.id, "warn", `ui verification: ${message}`),
+          useArtifacts: async (artifacts) => importRemoteVerification(config, task, artifacts, log),
+        });
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err);
+        return { ok: false, detail: `ui verification failed: ${detail}` };
+      }
+    } finally {
+      releaseBrowserCapture(task.id);
+    }
   }
 
   const fixtureValidator = taskFixtureValidator(
@@ -1045,4 +1127,74 @@ export async function runUiHandoffGate(
     evidencePath: path,
     shotResult: { status: "captured", detail: shotDetail, count: captured },
   };
+}
+
+export async function importRemoteVerification(
+  config: RepoOSConfig,
+  task: Task,
+  artifacts: BrowserEvidenceArtifacts,
+  log: TaskLog,
+): Promise<UiHandoffGateResult> {
+  const taskId = task.id;
+  const result = artifacts.results.verification as UiHandoffGateResult | undefined;
+  if (!result || typeof result.ok !== "boolean" || typeof result.detail !== "string") {
+    throw new Error("runner result omitted the UI verification outcome");
+  }
+  // A PARTIAL/FAILED run keeps whatever shots it did produce, before validating
+  // the verification record: those PNGs are real evidence and must not be
+  // discarded (#0854, "never discard good output"). A run the runner called
+  // SUCCESSFUL validates its record FIRST — a malformed record is a runner
+  // failure and must never replace existing evidence (the policy then falls back
+  // locally); only after validation does it import.
+  let imported = 0;
+  let importProblem: string | undefined;
+  const hasShots = artifacts.files.some((file) => file.name === "shots/shots.json");
+  if (!result.ok && hasShots) {
+    try {
+      imported = importShotArtifacts(config, taskId, artifacts.files);
+    } catch (err) {
+      importProblem = err instanceof Error ? err.message : String(err);
+    }
+  }
+  const importSuffix = importProblem
+    ? ` (could not import runner shots: ${importProblem})`
+    : imported > 0 && !result.ok
+      ? ` (kept ${imported} earlier shot${imported === 1 ? "" : "s"} despite the failure)`
+      : "";
+  const evidence = artifacts.files.find((file) => file.name === "verification.json");
+  if (!evidence) {
+    if (result.skipped) {
+      return importSuffix ? { ...result, detail: `${result.detail}${importSuffix}` } : result;
+    }
+    throw new Error(`runner result omitted the UI verification record${importSuffix}`);
+  }
+  let evidenceJson: unknown;
+  try {
+    evidenceJson = JSON.parse(Buffer.from(evidence.data, "base64").toString("utf8"));
+  } catch {
+    throw new Error(`runner returned a malformed UI verification record${importSuffix}`);
+  }
+  if (
+    !evidenceJson ||
+    typeof evidenceJson !== "object" ||
+    typeof (evidenceJson as UiHandoffGateEvidence).at !== "string" ||
+    !Array.isArray((evidenceJson as UiHandoffGateEvidence).issues) ||
+    !Array.isArray((evidenceJson as UiHandoffGateEvidence).blankShots) ||
+    !(evidenceJson as UiHandoffGateEvidence).blankShots.every((shot) => typeof shot === "string") ||
+    !Number.isInteger((evidenceJson as UiHandoffGateEvidence).captures) ||
+    (evidenceJson as UiHandoffGateEvidence).captures < 0
+  ) {
+    throw new Error(`runner returned an invalid UI verification record${importSuffix}`);
+  }
+  if (result.ok && hasShots) {
+    importShotArtifacts(config, taskId, artifacts.files);
+  }
+  const path = evidenceFile(config, taskId);
+  mkdirSync(join(path, ".."), { recursive: true });
+  writeFileSync(path, JSON.stringify(evidenceJson, null, 2));
+  const note = `ui verification ${result.ok ? "passed" : "failed"}: ${result.detail}`;
+  recordBrowserCaptureActivity(task.id, result.ok, note, log, (taskNote) => {
+    patchTaskFile(config, task.absPath, { note: taskNote });
+  });
+  return { ...result, evidencePath: path };
 }

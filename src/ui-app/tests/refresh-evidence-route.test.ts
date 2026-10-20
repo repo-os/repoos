@@ -8,6 +8,7 @@ import {
   guardedForceRefreshCapture,
   postCaptureWorktreeGuard,
   automaticStaleEvidenceRefresh,
+  automaticEvidenceGapRepair,
   taskAction,
 } from "../../server/routes/tasks.js";
 import type { AutomaticStaleEvidenceRefreshDeps } from "../../server/routes/tasks.js";
@@ -506,6 +507,44 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
   function porcelainOf(root: string): string {
     return execSync(`git -C ${root} status --porcelain`, { encoding: "utf8" }).trim();
   }
+
+  it("passes remote transport through both automatic evidence refresh paths", async () => {
+    const transport = { capture: vi.fn() };
+    const optionsSeen: unknown[] = [];
+
+    for (const repair of [false, true]) {
+      const { root, shortHead, config, task } = commandRepo(RUN_COMMAND);
+      if (!repair) {
+        const evidenceDir = join(root, ".repoos/ui-verification");
+        mkdirSync(evidenceDir, { recursive: true });
+        writeFileSync(
+          join(evidenceDir, "0766.json"),
+          JSON.stringify({ issues: [], blankShots: [], captures: 1, sourceIdentity: "deadbeef" }),
+        );
+      }
+      const evidencePath = join(root, ".repoos/ui-verification/0766.json");
+      const gateSpy = vi
+        .spyOn(uiHandoffGate, "runUiHandoffGate")
+        .mockImplementation(async (...args) => {
+          optionsSeen.push(args[4]?.remoteTransport);
+          mkdirSync(join(root, ".repoos/ui-verification"), { recursive: true });
+          writeFileSync(
+            evidencePath,
+            JSON.stringify({ issues: [], blankShots: [], captures: 1, sourceIdentity: shortHead }),
+          );
+          return { ok: true, detail: "ok", evidencePath };
+        });
+      const deps = automaticDeps(root, task, {
+        config: { ...config, uiVerification: { enabled: true, autoRefreshStaleOnce: true } },
+        remoteTransport: transport,
+      });
+      if (repair) await automaticEvidenceGapRepair(deps, task);
+      else await automaticStaleEvidenceRefresh(deps, task);
+      gateSpy.mockRestore();
+    }
+
+    expect(optionsSeen).toEqual([transport, transport]);
+  });
 
   it("does not re-capture when only task bookkeeping moved HEAD", async () => {
     const { root, shortHead, config, task } = commandRepo(RUN_COMMAND);
