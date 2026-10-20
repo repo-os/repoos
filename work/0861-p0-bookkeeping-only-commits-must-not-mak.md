@@ -11,9 +11,10 @@ branch: feat/p0-bookkeeping-only-commits-must-not-mak
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:47:38Z"
-updated_at: "2026-10-20T09:24:57Z"
-review_passes: 13
-last_check_failure: "repoos check at 2026-10-20T07:15:20.788Z: repoos check failed: rendered-contrast — $ bun scripts/ui-contrast-audit.mjs"
+updated_at: "2026-10-20T09:24:56Z"
+review_passes: 1
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-20T06:56:38.269Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
 ## Problem
@@ -37,18 +38,6 @@ Evidence is stale only when something that can change what the shots show has ch
 ## Notes for AI
 Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (src/server/worktree-handoff-guard.ts and the integration orchestrator's `bookkeepingDirs`) rather than adding a parallel path list. Check src/server/review.ts (~2262-2300), src/server/shot-capture.ts (`headIdentity`, `reusableAutoCaptures`), src/server/ui-handoff-gate.ts and src/ui-app/src/lib/handoff-verification.ts. Keep it fail-closed. Related: #0766 (refresh evidence on demand), #0734, #0600 (work/*.md-only commits tolerated at close-out), #0860 (reminders/schedules as bookkeeping). Do not touch repoos.toml. Source: Nick, 2026-10-20 (#0843 pass 10).
 
-## Shots
-```json
-[
-{
-"label": "Changes tab with bookkeeping-current handoff evidence",
-"target": "default",
-"route": "/work?task=9999&tab=changes",
-"state": "drawer:shotEvidence"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-20T04:47:38Z · created · njachowski@gmail.com
@@ -65,40 +54,6 @@ Reuse whatever the close-out guard uses to recognise `work/*.md`-only commits (s
 - 2026-10-20T06:25:12Z · body
 - 2026-10-20T06:26:29Z · message_queued at 2026-10-20T06:26:29.923Z
 - 2026-10-20T06:56:38Z · message_delivered: 2 message(s)
-- 2026-10-20T07:03:28Z · body
-- 2026-10-20T07:06:06Z · body
-- 2026-10-20T07:18:08Z · body
-- 2026-10-20T07:23:49Z · status active→review
-- 2026-10-20T07:30:24Z · note: review pass 1: needs some work
-- 2026-10-20T07:32:16Z · status review→active
-- 2026-10-20T07:32:16Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
-- 2026-10-20T07:35:50Z · body
-- 2026-10-20T07:43:27Z · message_queued at 2026-10-20T07:43:27.404Z
-- 2026-10-20T07:43:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-20T07:46:38Z · body
-- 2026-10-20T08:15:26Z · body
-- 2026-10-20T08:16:19Z · body
-- 2026-10-20T08:16:43Z · status active→review
-- 2026-10-20T08:19:42Z · note: review pass 2: needs some work
-- 2026-10-20T08:21:24Z · note: review pass 3: needs some work
-- 2026-10-20T08:23:05Z · note: review pass 4: needs some work
-- 2026-10-20T08:26:12Z · note: review pass 5: needs some work
-- 2026-10-20T08:28:35Z · note: review pass 6: needs some work
-- 2026-10-20T08:38:08Z · note: review pass 7: needs some work
-- 2026-10-20T08:52:15Z · note: review pass 8: needs some work
-- 2026-10-20T08:56:21Z · note: review pass 9: needs some work
-- 2026-10-20T08:58:55Z · note: review pass 10: needs some work
-- 2026-10-20T09:02:45Z · message_overdue: still queued after 60m without being delivered
-- 2026-10-20T09:02:51Z · note: review pass 11: needs some work
-- 2026-10-20T09:03:19Z · needs_input
-- 2026-10-20T09:07:34Z · needs_input
-- 2026-10-20T09:07:34Z · status review→active
-- 2026-10-20T09:07:34Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
-- 2026-10-20T09:07:35Z · message_delivered: 1 message(s)
-- 2026-10-20T09:08:46Z · body
-- 2026-10-20T09:09:03Z · body
-- 2026-10-20T09:13:45Z · body
-- 2026-10-20T09:14:52Z · status active→review
-- 2026-10-20T09:17:38Z · note: review pass 12: needs some work
-- 2026-10-20T09:20:26Z · note: review pass 13: good to go
-
+- 2026-10-20T07:23:47Z · status active→review
+- 2026-10-20T09:03:18Z · note: review pass 1: good to go
+- 2026-10-20T09:24:56Z · note: review pass 2: good to go

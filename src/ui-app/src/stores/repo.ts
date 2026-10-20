@@ -3206,12 +3206,16 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
-  async function refreshEvidence(id: string): Promise<{ ok: boolean; error?: string }> {
+  async function refreshEvidence(
+    id: string,
+  ): Promise<{ ok: boolean; error?: string; refreshed?: boolean }> {
     try {
-      const r = await api<{ ok: boolean; error?: string; detail?: string }>(
-        `/api/tasks/${id}/verify`,
-        JSON_OPTS("POST", {}),
-      );
+      const r = await api<{
+        ok: boolean;
+        error?: string;
+        detail?: string;
+        refreshed?: boolean;
+      }>(`/api/tasks/${id}/verify`, JSON_OPTS("POST", {}));
       await Promise.all([loadShots(id), loadUiVerification(id)]);
       if (!r.ok) {
         return {
@@ -3219,7 +3223,7 @@ export const useRepoStore = defineStore("repo", () => {
           error: r.detail ?? r.error ?? "evidence refresh completed with verification issues",
         };
       }
-      return { ok: true };
+      return { ok: true, refreshed: r.refreshed !== false };
     } catch (err) {
       return { ok: false, error: (err as Error).message };
     }
