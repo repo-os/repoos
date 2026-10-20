@@ -258,15 +258,15 @@ process.exit(1);
     const t = {
       id: "crash",
       title: "Test",
-      type: "feature" as const,
-      status: "active" as const,
-      priority: "p2" as const,
+      type: "feature",
+      status: "active",
+      priority: "p2",
       area: "web",
       assignee: "ai",
       assignedTo: "ai",
       createdBy: "",
       branch: "feat/crash",
-      tags: [] as string[],
+      tags: [],
       needsInput: false,
       needsMerge: false,
       noSourceChange: false,
@@ -287,7 +287,7 @@ process.exit(1);
         worktreePath: null,
         dirty: false,
       },
-    };
+    } as import("../../core/types").Task;
 
     try {
       expect(runner.start(t, "feat/crash", engineerAgent, { cwd: bin }).ok).toBe(true);

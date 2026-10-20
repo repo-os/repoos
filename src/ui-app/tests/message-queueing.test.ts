@@ -433,7 +433,7 @@ describe("handoff deferral while messages are queued (#0865)", () => {
       expect(entry).toBeDefined();
       entry!.handoffRequested = true;
 
-      await waitFor(() => !runner.isRunning(id), "engineer turn to finish", 8000);
+      await waitFor(() => !runner.isRunning(id), 8000);
       const activity = readFileSync(absPath, "utf8");
       if (deferred) {
         expect(activity).toContain(
