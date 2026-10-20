@@ -60,3 +60,4 @@ See the shot declaration and capture code in src/server/shot-capture.ts, `planAu
 - 2026-10-20T23:00:34Z · status review→active
 - 2026-10-20T23:00:41Z · note: handoff requested (ui-review)
 - 2026-10-20T23:09:07Z · status active→review
+- 2026-10-20T23:09:07Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (7793441f0) during finalization (#0734)
