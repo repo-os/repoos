@@ -123,6 +123,13 @@ function spawns(fx: Fixture): SpawnRecord[] {
     .map((l) => JSON.parse(l) as SpawnRecord);
 }
 
+/** Fake-bin spawns for the automatic reviewer only (not engineer resume turns). */
+function reviewAgentSpawns(fx: Fixture): SpawnRecord[] {
+  return spawns(fx).filter((s) =>
+    s.args.some((a) => typeof a === "string" && a.includes("You are the REVIEW agent")),
+  );
+}
+
 /** Create a task with a real worktree on its branch, ready to land in review. */
 async function taskWithWorktree(
   server: ServerHandle,
@@ -635,6 +642,9 @@ ${printReport}`,
       "## Verdict",
       "good to go — the change is complete.",
       "",
+      "## Relevance",
+      "still relevant — the task is worth landing.",
+      "",
       "## Bugs",
       "- FIRST RUN MARKER",
       "",
@@ -648,6 +658,9 @@ ${printReport}`,
       "## Verdict",
       "needs some work — see Bugs.",
       "",
+      "## Relevance",
+      "still relevant — the task is worth landing.",
+      "",
       "## Bugs",
       "- SECOND RUN MARKER: the retry still fails.",
       "",
@@ -658,8 +671,20 @@ ${printReport}`,
       "- none found",
     ].join("\n");
     const fx = makeFixture(`
+const mission = process.argv.join(" ");
+const isReview = mission.includes("You are the REVIEW agent");
+if (!isReview) { process.stdout.write("engineer resumed\\n"); process.exit(0); }
 let n = 0;
-try { n = fs.readFileSync(process.env.REPOOS_FAKEBIN_LOG, "utf8").split("\\n").filter(Boolean).length; } catch (e) {}
+const log = process.env.REPOOS_FAKEBIN_LOG;
+try {
+  const lines = fs.readFileSync(log, "utf8").split("\\n").filter(Boolean);
+  n = lines.filter((line) => {
+    try {
+      const rec = JSON.parse(line);
+      return rec.args.some((a) => String(a).includes("You are the REVIEW agent"));
+    } catch { return false; }
+  }).length;
+} catch (e) {}
 if (n <= 1) process.stdout.write(${JSON.stringify(reportA)} + "\\n");
 else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
 `);
@@ -697,7 +722,7 @@ else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
         REVIEW_PASS_WAIT_MS,
       );
       await waitFor(
-        () => spawns(fx).filter((s) => s.args.includes("--auto")).length === 2,
+        () => reviewAgentSpawns(fx).length === 2,
         "two automatic review runs spawned",
         REVIEW_PASS_WAIT_MS,
       );
