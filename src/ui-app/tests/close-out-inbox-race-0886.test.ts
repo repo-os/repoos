@@ -25,10 +25,7 @@ import { hasUnresolvedConflictMarkers, parseDocument } from "../../core/frontmat
 import { parseTask, releasedAtFromActivity } from "../../core/task.js";
 import { createRepoOS } from "../../core/repoos.js";
 import { patchTaskFile, markTaskReleased } from "../../server/write.js";
-import {
-  handoffRequestPath,
-  writeHandoffRequest,
-} from "../../server/handoff-request.js";
+import { handoffRequestPath, writeHandoffRequest } from "../../server/handoff-request.js";
 import { finalizeReviewHandoff } from "../../server/handoff.js";
 import { cmdMv } from "../../commands/tasks.js";
 import { isTaskClosingOut, closingOutRefusal } from "../../server/close-out-lock.js";
