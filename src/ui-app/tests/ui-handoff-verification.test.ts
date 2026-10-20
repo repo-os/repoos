@@ -1023,6 +1023,7 @@ describe("effective handoff tree status — bookkeeping-only drift (#0766)", () 
       "repoos/tasks/0861.md",
       "repoos/inbox/.attachments/image.png",
       "repoos/stories/s.md",
+      "repoos/reminder-data/r.md",
       "repoos/schedules/daily.md",
     ]);
     const status = await effectiveHandoffTreeStatus(
@@ -1033,6 +1034,7 @@ describe("effective handoff tree status — bookkeeping-only drift (#0766)", () 
         workDir: "repoos/tasks",
         inputsDir: "repoos/inbox",
         storiesDir: "repoos/stories",
+        remindersDir: "repoos/reminder-data",
         schedulesDir: "repoos/schedules",
       } as RepoOSConfig,
     );

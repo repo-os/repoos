@@ -7,7 +7,10 @@ export async function isEvidenceCurrent(
   root: string | null | undefined,
   capturedSha: string | null | undefined,
   headSha: string | null | undefined,
-  config: Pick<RepoOSConfig, "workDir" | "inputsDir" | "storiesDir" | "schedulesDir">,
+  config: Pick<
+    RepoOSConfig,
+    "workDir" | "inputsDir" | "storiesDir" | "remindersDir" | "schedulesDir"
+  >,
 ): Promise<boolean> {
   const captured = capturedSha?.trim();
   const head = headSha?.trim();
@@ -24,7 +27,7 @@ export async function isEvidenceCurrent(
     dirs.workDir,
     dirs.inputsDir,
     dirs.storiesDir,
-    "reminders",
+    config.remindersDir || "reminders",
     config.schedulesDir || "schedules",
     ".repoos",
   ]
