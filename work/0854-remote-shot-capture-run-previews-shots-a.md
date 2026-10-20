@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
@@ -37,3 +38,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T04:26:47Z · status inbox→ready
 - 2026-10-20T04:26:50Z · cli_override, model_override
 - 2026-10-20T04:26:54Z · status ready→active, branch
+
