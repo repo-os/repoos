@@ -11,6 +11,12 @@ import {
 } from "../cli/repoos-api.js";
 import { effectiveEngineerFromApi } from "../cli/effective-from-api.js";
 import { HANDOFF_DEADLINE_MS } from "../server/handoff.js";
+import {
+  agentModelAllowRows,
+  pauseAllowlistEntry,
+  resumeAllowlistEntry,
+  pairPauseInfo,
+} from "../core/budget-allowlist.js";
 import type { RepoOSConfig } from "../core/types.js";
 
 interface CommonOpts {
@@ -58,8 +64,42 @@ function printBudgetAllowlist(config: RepoOSConfig): void {
     );
     return;
   }
-  console.log(c.dim("  Budget allowlist for agent drivers — allowed agent + model pairs:"));
-  for (const row of rows) console.log(`  · ${row.cli} + ${row.models.join(", ")}`);
+  console.log(
+    c.dim("  Budget allowlist for agent drivers — allowed agent + model pairs (paused shown):"),
+  );
+  const now = Date.now();
+  for (const row of rows) {
+    if (row.paused) {
+      const info = pairPauseInfo(rows, row.cli, row.models[0] ?? "", now);
+      if (!info.paused) {
+        // `pausedUntil` has passed — the row is already selectable again.
+        console.log(`  · ${row.cli} + ${row.models.join(", ")}`);
+        continue;
+      }
+      const detail = [info.reason, info.until ? `until ${info.until}` : ""]
+        .filter(Boolean)
+        .join(", ");
+      console.log(
+        `  · ${row.cli} + ${row.models.join(", ")} ${c.yellow("(paused agent)")}${detail ? c.dim(` — ${detail}`) : ""}`,
+      );
+      continue;
+    }
+    for (const model of row.models) {
+      const info = pairPauseInfo(rows, row.cli, model, now);
+      const detail = [info.reason, info.until ? `until ${info.until}` : ""]
+        .filter(Boolean)
+        .join(", ");
+      const suffix = info.paused
+        ? ` ${c.yellow("(paused)")}${detail ? c.dim(` — ${detail}`) : ""}`
+        : "";
+      console.log(`  · ${row.cli} + ${model}${suffix}`);
+    }
+  }
+  console.log(
+    c.dim(
+      "  Paused pairs are never selected. Resume with: repoos agents resume <agent> [--model <model>]",
+    ),
+  );
 }
 
 function printErr(message: string): void {
@@ -844,6 +884,14 @@ export async function cmdRunners(args: string[]): Promise<number> {
 }
 
 export async function cmdAgentsRunning(args: string[]): Promise<number> {
+  if (args.includes("--help") || args.includes("-h")) {
+    console.log(c.cyan("Usage:") + " repoos agents [list] [--json] [--port N]");
+    console.log(c.cyan("       ") + ` ${AGENTS_PAUSE_USAGE}`);
+    return 0;
+  }
+  if (args[0] === "pause" || args[0] === "resume") {
+    return cmdAgentsPauseResume(args[0], args.slice(1));
+  }
   const { opts, error } = parseCommonFlags(args);
   if (error) {
     printErr(error);
@@ -862,6 +910,72 @@ export async function cmdAgentsRunning(args: string[]): Promise<number> {
           console.log(`  #${a.taskId ?? "?"} · ${a.role ?? "agent"}`);
         }
       }
+    }
+    return 0;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
+const AGENTS_PAUSE_USAGE =
+  'Usage: repoos agents pause|resume <agent> [--model <model>] [--until <date>] [--reason "..."] [--json] [--port N]';
+
+/**
+ * `repoos agents pause|resume` (#0850): pause an allowlist agent or one model
+ * without removing the row, or resume it. Writes through PATCH /api/config so
+ * the running server (and its Budget Controls tab) sees the change live.
+ */
+async function cmdAgentsPauseResume(mode: "pause" | "resume", args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  let model: string | undefined;
+  let until: string | undefined;
+  let reason: string | undefined;
+  let agent = "";
+  for (let i = 0; i < rest.length; i++) {
+    const a = rest[i]!;
+    if (a === "--help" || a === "-h") {
+      console.log(c.cyan("Usage:") + ` ${AGENTS_PAUSE_USAGE}`);
+      return 0;
+    }
+    if (a === "--model") model = rest[++i];
+    else if (a === "--until") until = rest[++i];
+    else if (a === "--reason") reason = rest[++i];
+    else if (!a.startsWith("-") && !agent) agent = a;
+  }
+  if (!agent) {
+    printErr(AGENTS_PAUSE_USAGE);
+    return 1;
+  }
+  if (mode === "resume" && until) {
+    printErr("--until is only meaningful with `pause`");
+    return 1;
+  }
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const configData = await api.requestOk("GET", "/api/config");
+    const rows = agentModelAllowRows(
+      (configData.config as Record<string, unknown> | undefined)?.["budget.allowlist"],
+    );
+    const result =
+      mode === "pause"
+        ? pauseAllowlistEntry(rows, { cli: agent, model, until, reason })
+        : resumeAllowlistEntry(rows, { cli: agent, model });
+    if ("error" in result) {
+      printErr(result.error);
+      return 1;
+    }
+    await api.requestOk("PATCH", "/api/config", { "budget.allowlist": result.rows });
+    if (opts.json) {
+      printJson({ ok: true, action: mode, agent, model: model ?? null, rows: result.rows });
+    } else {
+      const target = model ? `${agent} + ${model}` : `${agent} (all models)`;
+      console.log(c.green("  ✓ ") + c.dim(`${mode === "pause" ? "paused" : "resumed"} ${target}`));
     }
     return 0;
   } catch (e) {

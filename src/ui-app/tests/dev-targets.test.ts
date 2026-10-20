@@ -1864,6 +1864,51 @@ describe("DevTargetManager with services (#0843)", () => {
     }
   });
 
+  itSlow(
+    "stops the full stack when a service exits during a successful target health probe",
+    async () => {
+      const dir = mkdtempSync(join(tmpdir(), "repoos-dev-svcproberace-"));
+      const proof = join(dir, "target-answered-health.json");
+      const mgr = new DevTargetManager(
+        baseConfig(
+          {
+            services: [
+              apiService({
+                // The API answers its startup health check, then exits while the
+                // target's deliberately slow health response is in flight.
+                command:
+                  "bun -e \"const h=require('node:http');h.createServer((q,s)=>s.end('ok')).listen(Number(process.env.PORT),'127.0.0.1');setTimeout(()=>process.exit(3),1200)\"",
+              }),
+            ],
+            targets: [
+              webTarget({
+                url: "http://localhost:{port}/health",
+                command: `bun -e "const h=require('node:http');const f=require('node:fs');h.createServer((q,s)=>setTimeout(()=>{f.writeFileSync('${proof}','answered');s.end('ok')},1800)).listen({port},'127.0.0.1');setTimeout(()=>{},60000)"`,
+              }),
+            ],
+          },
+          dir,
+        ),
+      );
+      try {
+        const result = await mgr.start("app");
+        expect(existsSync(proof)).toBe(true);
+        expect(result.ok).toBe(false);
+        expect(result.error).toContain('service "api"');
+        const view = mgr.get("app");
+        expect(view?.status).toBe("failed");
+        expect(view?.services?.[0].status).toBe("failed");
+        expect(typeof view?.pid).toBe("number");
+        expect(typeof view?.services?.[0].pid).toBe("number");
+        expect(await waitForDead(view!.pid!)).toBe(true);
+        expect(await waitForDead(view!.services![0]!.pid!)).toBe(true);
+      } finally {
+        await mgr.stopAll();
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  );
+
   // Review round 3 — when a sibling's exit aborts a later service's readiness
   // gate, the target's failure reason must stay the DEAD sibling's (it names
   // the service that died), not the gate's generic abort notice.

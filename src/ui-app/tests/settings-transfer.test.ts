@@ -100,6 +100,33 @@ describe("parseSettingsExport round-trip", () => {
     expect(result.parsed.data).toEqual(FULL);
   });
 
+  it("round-trips paused allowlist rows, including per-model pauses (#0850)", () => {
+    const data: SettingsExportData = {
+      budgetAllowlist: [
+        {
+          cli: "cursor",
+          models: ["composer-2.5"],
+          paused: true,
+          pausedUntil: "2026-10-22T09:00:00.000Z",
+          pausedReason: "Cursor credits exhausted",
+        },
+        {
+          cli: "opencode",
+          models: ["big pickle", "deepseek v4"],
+          pausedModels: [
+            { model: "big pickle", pausedReason: "rate limited" },
+            { model: "deepseek v4", pausedUntil: "2026-10-23T09:00:00.000Z" },
+          ],
+        },
+      ],
+    };
+    const result = parseSettingsExport(serializeSettingsExport(data, META));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.parsed.warnings).toEqual([]);
+    expect(result.parsed.data.budgetAllowlist).toEqual(data.budgetAllowlist);
+  });
+
   it("round-trips empty sections as present-but-empty", () => {
     const toml = serializeSettingsExport(
       { budgetAllowlist: [], remoteValidation: {}, starredThemes: [] },
@@ -221,6 +248,30 @@ describe("sanitizers", () => {
         "nope",
       ]),
     ).toEqual([{ cli: "opencode", models: ["a"] }]);
+  });
+
+  it("keeps valid pause fields and drops malformed ones (#0850)", () => {
+    expect(
+      sanitizeBudgetAllowlist([
+        {
+          cli: "cursor",
+          models: ["composer-2.5"],
+          paused: true,
+          pausedUntil: "2026-10-22T09:00:00Z",
+          pausedReason: "credits",
+          pausedModels: ["composer-2.5", { model: "" }, { model: "x", pausedReason: "r" }],
+        },
+      ]),
+    ).toEqual([
+      {
+        cli: "cursor",
+        models: ["composer-2.5"],
+        paused: true,
+        pausedUntil: "2026-10-22T09:00:00Z",
+        pausedReason: "credits",
+        pausedModels: [{ model: "composer-2.5" }, { model: "x", pausedReason: "r" }],
+      },
+    ]);
   });
 
   it("keeps favorite timestamps only when they are valid", () => {

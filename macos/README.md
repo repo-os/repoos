@@ -12,7 +12,13 @@ calls `GET /api/health` with a 10-second timeout, and only then persists the
 entry. Adding takes only an address; the Hub derives the sidebar name from the
 server's reported repository name (falling back to its address), and the
 server's name, group, icon, color, and pin state remain editable from its
-sidebar context menu. The main content area loads the selected server's RepoOS web UI in an
+sidebar context menu. The window has no visible titlebar or toolbar row: the
+native red/yellow/green window controls stay in their standard upper-left
+position while the sidebar runs to the top edge and hosts the
+back/forward/reload controls plus the sidebar toggle, with Settings in its
+footer (#0855, #0857). When the native sidebar is collapsed, a slim chevron tab
+flush against the window's left edge brings it back. The main content area loads
+the selected server's RepoOS web UI in an
 isolated `WKWebView` (per-server data store, no native JavaScript bridge), with
 native back/forward/reload and a **⌘K quick switcher** for servers, recents, and
 pinned task contexts. Authorized servers can expose compact **attention summaries**

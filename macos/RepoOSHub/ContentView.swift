@@ -2,20 +2,42 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var appState: HubAppState
+    @AppStorage(HubSidebarVisibility.collapsedDefaultsKey) private var isSidebarCollapsed = false
+
+    /// The split view drives its own visibility, but the persisted flag is the
+    /// source of truth so collapsing the sidebar survives a relaunch (#0855).
+    private var columnVisibility: Binding<NavigationSplitViewVisibility> {
+        Binding(
+            get: { HubSidebarVisibility.visibility(isCollapsed: isSidebarCollapsed) },
+            set: { isSidebarCollapsed = HubSidebarVisibility.isCollapsed($0) }
+        )
+    }
 
     var body: some View {
-        NavigationSplitView {
-            ServerSidebarView()
+        NavigationSplitView(columnVisibility: columnVisibility) {
+            ServerSidebarView(columnVisibility: columnVisibility)
         } detail: {
             WorkspaceDetailView()
-                .toolbar { HubWorkspaceToolbar() }
         }
-        // The system may otherwise keep a dark titlebar material even when
-        // the Hub shell is set to Light. Render the window toolbar explicitly
-        // from the selected shell appearance instead.
-        .toolbarBackground(toolbarBackground, for: .windowToolbar)
-        .toolbarBackground(.visible, for: .windowToolbar)
-        .toolbarColorScheme(appState.hubGlobalPreferences.appearance.colorScheme, for: .windowToolbar)
+        // The reveal tab lives on the split view, not the detail column, so it
+        // sits flush against the window's left edge when the sidebar collapses
+        // instead of inheriting the detail column's leading inset (#0857).
+        .overlay(alignment: .topLeading) {
+            if isSidebarCollapsed {
+                HubSidebarRevealTab {
+                    isSidebarCollapsed = false
+                }
+                .padding(.top, 8)
+            }
+        }
+        // The Hub has no visible titlebar or toolbar row: the sidebar runs to
+        // the window's top edge and the workspace fills the reclaimed space.
+        // The titlebar stays transparent and button-only so the native
+        // traffic lights remain visible over the sidebar (#0855, #0857).
+        // Never use `.toolbar(.hidden, for: .windowToolbar)` here: SwiftUI
+        // hides the whole titlebar container with it, taking the native
+        // traffic lights with it. The AppKit configurator hides only the
+        // toolbar row.
         // NavigationSplitView leaves a narrow native frame around the sidebar
         // and its bottom inset. Keep that exposed frame on the same surface.
         .background {
@@ -69,10 +91,6 @@ struct ContentView: View {
                     .environmentObject(appState)
             }
         }
-    }
-
-    private var toolbarBackground: Color {
-        shellBackground
     }
 
     private var shellBackground: Color {

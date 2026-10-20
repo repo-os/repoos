@@ -147,6 +147,15 @@ import {
 } from "../core/remote-hosts.js";
 import { runBuiltInAgent, isDueForScheduledRun, builtInAgentLabel } from "./built-in-agents.js";
 import { runScheduleTick } from "./schedule-runner.js";
+import { runReminderTick, shouldRunReminderAutomation } from "./reminder-tick.js";
+import {
+  getReminders,
+  postReminder,
+  patchReminder,
+  postReminderDone,
+  postReminderSnooze,
+  removeReminder,
+} from "./routes/reminders.js";
 import { shouldRunScheduledTaskAutomation } from "./schedule-automation.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { AutoEngineeringOrchestrator } from "./auto-engineering.js";
@@ -207,7 +216,7 @@ import {
   shouldParkForIdenticalHandoffFailures,
   shouldSkipHandoffValidationForUnchangedTree,
 } from "./handoff-failure-loop.js";
-import { PreviewManager, probePreview } from "./preview.js";
+import { PreviewManager, probePreview, type PreviewReconcileOptions } from "./preview.js";
 import { DevTargetManager } from "./dev.js";
 import { ConfigWatcher } from "./config-watch.js";
 import { runAutoShotCapture } from "./shot-capture.js";
@@ -1725,8 +1734,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Read-only preview servers for review/active tasks. Orphans from a crashed
   // previous main server are reaped at boot; this instance starts with none.
   // Declared before the runner so its preview-request handler can close over it.
-  const previews = new PreviewManager(config, emitEvent);
-  previews.cleanupOrphans();
+  const previews = new PreviewManager(config, emitEvent, (id, level, message) =>
+    logger.task(id, level, message),
+  );
 
   // User-declared dev targets (#0747). Runs in the project's root checkout,
   // survives the browser closing, and is stopped only when asked or on
@@ -2501,8 +2511,72 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Any status change that leaves active/review must stop the task's preview
   // (done/ready/paused). Previews never outlive the state they preview.
   const stopPreviewIfLeft = (task: Task, _prev: Status, next: Status): void => {
-    if (next !== "active" && next !== "review") void previews.stop(task.id);
+    if (next !== "active" && next !== "review") void previews.stop(task.id, `task ${next}`);
   };
+
+  /**
+   * Which tasks may hold a preview right now (#0853): active or review, and
+   * not archived. Every preview lifecycle decision — boot adoption, the
+   * periodic safety sweep, and archive — uses this one definition.
+   */
+  const previewReconcileOptions = (): PreviewReconcileOptions => {
+    const tasks = index.getTasks();
+    const live = new Set<string>();
+    const statuses = new Map<string, Status>();
+    const archived = new Set<string>();
+    for (const t of tasks) {
+      statuses.set(t.id, t.status);
+      if (t.isArchived) archived.add(t.id);
+      if (!t.isArchived && (t.status === "active" || t.status === "review")) live.add(t.id);
+    }
+    return { liveTaskIds: live, taskStatuses: statuses, archivedTaskIds: archived };
+  };
+
+  // Safety net for a missed event (a direct file edit, race, or a preview that
+  // finished booting after its task left active/review). The status hook and
+  // archive route stop previews immediately; this guarantees the rule within
+  // a short window even when neither fires.
+  const previewReconcile = { inFlight: false };
+  const reconcilePreviews = (): void => {
+    if (previewReconcile.inFlight) return;
+    previewReconcile.inFlight = true;
+    void previews
+      .reconcile(previewReconcileOptions())
+      .catch((err: unknown) => {
+        logger.system("warn", "preview reconcile failed", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      })
+      .finally(() => {
+        previewReconcile.inFlight = false;
+      });
+  };
+  let previewSweepTimer: ReturnType<typeof setInterval> | undefined;
+
+  // Adopt-or-stop previews recorded by a previous server (#0853). Deferred
+  // until the index can say which tasks are still active/review: a preview for
+  // a finished/archived task is stopped, a live task's preview is adopted so
+  // the cap and teardown rules keep applying across reloads.
+  const adoptOrStopPreviews = (): void => {
+    const opts = previewReconcileOptions();
+    void previews
+      .cleanupOrphans(opts)
+      .catch((err: unknown) => {
+        logger.system("warn", "preview boot cleanup failed", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      })
+      .finally(() => {
+        reconcilePreviews();
+        // Start the periodic safety sweep only after the index exists, so it
+        // can never mistake "not loaded yet" for "task finished".
+        if (!previewSweepTimer) {
+          previewSweepTimer = setInterval(reconcilePreviews, 30_000);
+          previewSweepTimer.unref?.();
+        }
+      });
+  };
+  void indexReady.then(adoptOrStopPreviews, adoptOrStopPreviews).catch(() => {});
 
   // A task that leaves `active` must also release its agent process (0087) —
   // by ANY route: agent self-transition, API PATCH, pause, or a direct file
@@ -2560,6 +2634,23 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       reviews.cancel(task.id);
     }
   };
+
+  let reminderTimer: ReturnType<typeof setInterval> | undefined;
+  if (shouldRunReminderAutomation(config, process.env, requestedPort)) {
+    const tick = (): void => {
+      try {
+        runReminderTick(repoos.config, emitEvent, process.env, requestedPort);
+      } catch (error) {
+        logger.system(
+          "warn",
+          `Reminder tick failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    };
+    reminderTimer = setInterval(tick, 30_000);
+    reminderTimer.unref?.();
+    tick();
+  }
 
   const scheduleAutoStart = {
     config: repoos.config,
@@ -2968,6 +3059,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/docs/freeform", createFreeformDoc);
   router.register("GET", "/api/inputs", getInputs);
   router.register("POST", "/api/inputs", postInput);
+  router.register("GET", "/api/reminders", getReminders);
+  router.register("POST", "/api/reminders", postReminder);
+  router.register("PATCH", /^\/api\/reminders\/([^/]+)$/, patchReminder);
+  router.register("DELETE", /^\/api\/reminders\/([^/]+)$/, removeReminder);
+  router.register("POST", /^\/api\/reminders\/([^/]+)\/done$/, postReminderDone);
+  router.register("POST", /^\/api\/reminders\/([^/]+)\/snooze$/, postReminderSnooze);
   router.register("GET", "/api/schedules", getSchedules);
   router.register("POST", "/api/schedules", postSchedule);
   router.register("POST", "/api/schedules/preview", postSchedulePreview);
@@ -3980,6 +4077,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         clearInterval(systemSampleTimer);
         if (reapTimer) clearInterval(reapTimer);
         clearInterval(builtInTimer);
+        if (reminderTimer) clearInterval(reminderTimer);
         clearInterval(worktreeSweepTimer);
         clearTimeout(initialWorktreeSweep);
         ctoMonitor.stop();
@@ -4046,6 +4144,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           clearInterval(worktreeSweepTimer);
           clearTimeout(initialWorktreeSweep);
           clearInterval(builtInTimer);
+          if (reminderTimer) clearInterval(reminderTimer);
           ctoMonitor.stop();
           runner.dispose();
           // Stop the Telegram polling transport (if armed) with the rest of
@@ -4090,7 +4189,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             // server that launched it.
             freeformRuns.cancelAll();
           }
-          await previews.stopAll();
+          // Previews (#0853): the replacement server adopts live-task previews
+          // from `previews.json` and stops ones for finished tasks. On a reload
+          // handover leave them running for that adoption — cancel only starts
+          // still booting here so they cannot spawn an unrecorded child. A real
+          // shutdown still tears every preview down.
+          if (previewSweepTimer) clearInterval(previewSweepTimer);
+          if (reload?.isReloading ?? false) previews.cancelInflight();
+          else await previews.stopAll();
           // Dev targets are long-lived user processes (#0747): they survive an
           // internal build-handover reload (the replacement re-adopts them by
           // PID) and are torn down only on a real shutdown.

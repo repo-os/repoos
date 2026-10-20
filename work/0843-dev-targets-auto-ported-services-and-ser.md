@@ -2,15 +2,21 @@
 id: "0843"
 title: "Dev targets: auto-ported services and {service.port} substitution"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-auto-ported-services-and-ser
-model_override: opencode-go/glm-5.3-flash
+cli_override: codex
+model_override: gpt-6-luna
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-19T20:00:40Z"
+updated_at: "2026-10-20T04:26:28Z"
+review_passes: 8
+review_rounds: 2
+dev_error_count: 1
 ---
 ## Problem
 `[[dev.targets]]` supports a single `{port}` for one process, so a full-stack dev target (an API plus a frontend that proxies to it) must pin the API to a fixed port. In the lightingai project the Bun API is pinned to 3001 because the Vite proxy needs to know it, so two copies of the stack, or anything else on 3001, collide. `[[preview.targets]]` already solves this with `[[preview.services]]` and `{api.port}` (#0681), but dev targets have no equivalent. Suggested by the owner (2026-10-19): frontends can already be dynamic, the API should be able to be too.
@@ -43,6 +49,19 @@ On the Dev page the target shows its services as sub-rows with their own status,
 ## Notes for AI
 RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/config.ts`, the dev process manager (grep `dev/targets` in `src/server/routes`), `src/ui-app/src/views/DevView.vue`, and how `[[preview.services]]` (#0681) substitutes `{api.port}`. Keep the zero-runtime-dependency rule. Related bug filed separately: TOML `'''` multi-line literal strings are mis-parsed (stray quotes on the Dev page); do not depend on it.
 
+## Shots
+```json
+[
+{
+"label": "Dev target with running companion service",
+"target": "default",
+"route": "/dev",
+"highlight": "[data-test-id=\"dev-services\"]",
+"state": "dev:running"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-19T05:12:47Z · created · njachowski@gmail.com
@@ -50,14 +69,99 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-19T09:41:50Z · model_override
 - 2026-10-19T09:41:53Z · model_override
 - 2026-10-19T09:41:55Z · status ready→active, branch
+- 2026-10-19T09:53:59Z · message_queued at 2026-10-19T09:53:59.706Z
+- 2026-10-19T09:53:59Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-19T11:34:09Z · body
+- 2026-10-19T11:35:47Z · body
+- 2026-10-19T11:37:34Z · body
+- 2026-10-19T11:38:26Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-19T11:39:41Z · body
 - 2026-10-19T11:47:16Z · status active→review
+- 2026-10-19T11:47:28Z · note: review pass 1: failed — no usable report
+- 2026-10-19T11:47:28Z · needs_input
+- 2026-10-19T12:19:11Z · review_cli_override, review_model_override
+- 2026-10-19T12:19:14Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-10-19T12:21:29Z · note: review pass 2: needs some work
+- 2026-10-19T12:21:29Z · message_delivered: 1 message(s)
+- 2026-10-19T12:21:29Z · status review→active
+- 2026-10-19T12:27:58Z · message_queued at 2026-10-19T12:27:58.029Z
+- 2026-10-19T12:27:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-19T12:29:50Z · body
+- 2026-10-19T12:31:36Z · body
+- 2026-10-19T12:39:41Z · status active→review
+- 2026-10-19T12:39:41Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (5a6c6ddae) during finalization (#0734)
+- 2026-10-19T12:39:42Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (5a6c6ddae) during finalization (#0734)
+- 2026-10-19T12:41:58Z · note: review pass 3: needs some work
+- 2026-10-19T12:41:59Z · message_delivered: 1 message(s)
+- 2026-10-19T12:41:59Z · status review→active
+- 2026-10-19T12:51:41Z · body
+- 2026-10-19T12:53:36Z · body
+- 2026-10-19T13:00:56Z · handoff failed · remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate
+- 2026-10-19T13:06:28Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-19T13:06:28Z · note: handoff requested (cli)
+- 2026-10-19T13:12:37Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate
+- 2026-10-19T13:17:59Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate
+- 2026-10-19T13:24:54Z · body
+- 2026-10-19T13:26:23Z · body
+- 2026-10-19T13:30:05Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate. The task stays active — fix the failure and ask again.
+- 2026-10-19T13:30:05Z · status active→review
+- 2026-10-19T13:30:05Z · note: handoff requested (cli)
+- 2026-10-19T13:53:28Z · body
+- 2026-10-19T14:01:20Z · body
+- 2026-10-19T14:27:08Z · body
+- 2026-10-19T14:29:35Z · body
+- 2026-10-19T14:30:27Z · status active→review
+- 2026-10-19T14:32:58Z · note: review pass 4: needs some work
+- 2026-10-19T17:20:55Z · cli_override, model_override
+- 2026-10-19T17:21:01Z · model_override
+- 2026-10-19T17:21:05Z · needs_input (dev-error) dismissed by hello@repoos.org
 - 2026-10-19T17:21:37Z · status review→active
-- 2026-10-19T17:37:41Z · status active→review
-- 2026-10-19T18:30:16Z · status review→active
+- 2026-10-19T17:21:37Z · note: Bugs src/server/dev.ts:953-978 — stop() does not cancel an in-flight doStart(). If Stop arrives while the first service port is being reserved, there is no target or service process to kill; startup then continues and launches the stack after Stop returned. src/server/dev.ts:744-756 — When the target process crashes, its exit handler marks the target failed but leaves its companion services running. The service can keep consuming resources and holding its port until a later Stop/restart or server shutdown. src/server/dev.ts:520-525 — Distinct service names can normalize to the same placeholder token (for example, api-v1 and api_v1). The implementation silently adds order-dependent suffixes, so the documented {<name>.port} reference can resolve to the wrong service or require an undocumented token.
+- 2026-10-19T17:27:04Z · body
+- 2026-10-19T17:27:55Z · body
+- 2026-10-19T17:29:03Z · body
+- 2026-10-19T17:37:42Z · status active→review
+- 2026-10-19T17:41:03Z · note: review pass 5: needs some work
+- 2026-10-19T17:41:03Z · needs_input
+- 2026-10-19T18:25:17Z · body
+- 2026-10-19T18:27:00Z · body
+- 2026-10-19T18:30:14Z · status review→active
+- 2026-10-19T18:36:01Z · message_queued at 2026-10-19T18:36:01.728Z
+- 2026-10-19T18:36:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-19T18:40:07Z · body
+- 2026-10-19T18:41:00Z · body
+- 2026-10-19T18:48:44Z · body
 - 2026-10-19T18:53:01Z · status active→review
+- 2026-10-19T18:55:31Z · note: review pass 6: needs some work
+- 2026-10-19T18:55:32Z · needs_input
+- 2026-10-19T18:55:32Z · needs_input
 - 2026-10-19T18:59:35Z · status review→active
-- 2026-10-19T19:14:30Z · status active→review
+- 2026-10-19T18:59:38Z · message_delivered: 1 message(s)
+- 2026-10-19T19:04:19Z · body
+- 2026-10-19T19:05:50Z · body
+- 2026-10-19T19:06:34Z · body
+- 2026-10-19T19:09:12Z · body
+- 2026-10-19T19:14:31Z · status active→review
+- 2026-10-19T19:16:29Z · note: review pass 7: needs some work
+- 2026-10-19T19:16:29Z · needs_input
+- 2026-10-19T19:16:30Z · needs_input
 - 2026-10-19T19:17:33Z · status review→active
+- 2026-10-19T19:21:23Z · body
+- 2026-10-19T19:23:03Z · body
+- 2026-10-19T19:23:57Z · body
 - 2026-10-19T19:32:55Z · status active→review
+- 2026-10-19T19:34:36Z · note: review pass 8: needs some work
+- 2026-10-19T19:34:36Z · needs_input
+- 2026-10-19T19:34:36Z · needs_input
+- 2026-10-19T19:46:59Z · cli_override, model_override
+- 2026-10-19T19:47:00Z · model_override
 - 2026-10-19T19:47:24Z · status review→active
-- 2026-10-19T20:00:40Z · status active→review
+- 2026-10-19T19:48:47Z · body
+- 2026-10-19T19:51:37Z · body
+- 2026-10-19T19:53:02Z · body
+- 2026-10-19T20:00:41Z · status active→review
+- 2026-10-19T20:04:32Z · note: review pass 9: needs some work
+- 2026-10-19T20:04:33Z · needs_input
+- 2026-10-19T20:04:33Z · needs_input
+- 2026-10-20T04:26:25Z · status review→active
+- 2026-10-20T04:26:28Z · needs_input

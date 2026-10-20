@@ -12,7 +12,7 @@ branch: feat/running-server-registry-repoos-serve-reg
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:59:37Z"
-updated_at: "2026-10-19T07:49:32Z"
+updated_at: "2026-10-20T04:26:29Z"
 last_close_out_gate_ms: 298612
 last_close_out_gate_at: "2026-10-19T07:48:47.981Z"
 review_passes: 3
@@ -74,3 +74,10 @@ Look at src/server/server.ts (listen callback and shutdown hooks), src/core/runt
 - 2026-10-19T07:39:23Z · note: review pass 3: good to go
 - 2026-10-19T07:48:47Z · close-out gate completed in 299s
 - 2026-10-19T07:49:32Z · status review→done, release:success
+- 2026-10-19T09:41:58Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-19T13:55:07Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-19T14:51:12Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-19T15:43:30Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-19T16:19:54Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-19T19:46:47Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-20T04:26:29Z · message_overdue: still queued after 60m without being delivered

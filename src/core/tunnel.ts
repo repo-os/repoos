@@ -12,7 +12,12 @@
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { stripTomlComment, unquoteTomlString } from "./toml-line.js";
+import {
+  findTomlMultiLineClose,
+  stripTomlComment,
+  tomlContinuationLines,
+  unquoteTomlString,
+} from "./toml-line.js";
 
 /** A single published app: hostname → local service, guarded by an email allowlist. */
 export interface TunnelApp {
@@ -83,8 +88,16 @@ function parseTomlValue(s: string): unknown {
 export function parseToml(text: string): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   let section: string[] = [];
-  for (const rawLine of text.replace(/\r\n/g, "\n").split("\n")) {
-    const line = stripTomlComment(rawLine).trim();
+  const rawLines = text.replace(/\r\n/g, "\n").split("\n");
+  let idx = 0;
+
+  while (idx < rawLines.length) {
+    const rawLine = rawLines[idx]!;
+    idx++;
+    // Comment-stripped but untrimmed: a multi-line string's opening line keeps
+    // significant trailing whitespace.
+    const stripped = stripTomlComment(rawLine);
+    const line = stripped.trim();
     if (!line) continue;
     const arrSec = line.match(/^\[\[([^\]]+)\]\]$/);
     if (arrSec) {
@@ -96,18 +109,36 @@ export function parseToml(text: string): Record<string, unknown> {
       section = sec[1].split(".");
       continue;
     }
-    const kv = line.match(/^([A-Za-z0-9_.-]+)\s*=\s*(.+)$/);
-    if (!kv) continue;
-    const path = [...section, kv[1]];
+    const kvMatch = stripped.match(/^\s*([A-Za-z0-9_.-]+)\s*=\s*(.*)$/);
+    if (!kvMatch) continue;
+    const path = [...section, kvMatch[1]!];
+
+    let value: unknown;
+    const multiStart = kvMatch[2]!.trimStart();
+    if (multiStart.startsWith("'''") || multiStart.startsWith('"""')) {
+      const delimiter = multiStart.startsWith("'''") ? "'''" : '"""';
+      let raw = multiStart;
+      let close = findTomlMultiLineClose(raw, 3, delimiter);
+      while (close === -1 && idx < rawLines.length) {
+        raw += "\n" + rawLines[idx];
+        idx++;
+        close = findTomlMultiLineClose(raw, 3, delimiter);
+      }
+      const inner = close === -1 ? raw.slice(3) : raw.slice(3, close);
+      value = unquoteTomlString(delimiter + inner + delimiter);
+    } else {
+      value = parseTomlValue(kvMatch[2]!.trim());
+    }
+
     let node = out;
     for (let i = 0; i < path.length - 1; i++) {
-      const key = path[i];
+      const key = path[i]!;
       const cur = (node[key] ?? {}) as Record<string, unknown>;
       if (typeof cur !== "object" || cur === null) break;
       node[key] = cur;
       node = cur;
     }
-    node[path[path.length - 1]] = parseTomlValue(kv[2].trim());
+    node[path[path.length - 1]!] = value;
   }
   return out;
 }
@@ -168,6 +199,9 @@ export function serializeTunnelSection(cfg: TunnelConfig): string {
  */
 export function upsertTunnelSection(text: string, cfg: TunnelConfig): string {
   const lines = text.replace(/\r\n/g, "\n").split("\n");
+  // A header-shaped line inside a `'''`/`"""` string is content, not a
+  // section boundary; skip those when choosing what to replace.
+  const continuation = tomlContinuationLines(lines);
   const isTunnelHeader = (s: string) =>
     s === "[tunnel]" || s.startsWith("[tunnel.") || s.startsWith("[tunnel[");
 
@@ -175,11 +209,11 @@ export function upsertTunnelSection(text: string, cfg: TunnelConfig): string {
   let i = 0;
   let replaced = false;
   while (i < lines.length) {
-    const stripped = stripTomlComment(lines[i]).trim();
+    const stripped = continuation[i] ? "" : stripTomlComment(lines[i]!).trim();
     if (!replaced && isTunnelHeader(stripped)) {
       i++;
       while (i < lines.length) {
-        const s = stripTomlComment(lines[i]).trim();
+        const s = continuation[i] ? "" : stripTomlComment(lines[i]!).trim();
         const isHeader = /^\[\[?[^\]]+\]\]?$/.test(s);
         if (isHeader && !isTunnelHeader(s)) break;
         i++;
@@ -197,12 +231,24 @@ export function upsertTunnelSection(text: string, cfg: TunnelConfig): string {
     if (kept.length && kept[kept.length - 1].trim() !== "") kept.push("");
     kept.push(serializeTunnelSection(cfg));
   }
-  return (
-    kept
-      .join("\n")
-      .replace(/\n{3,}/g, "\n\n")
-      .trimEnd() + "\n"
-  );
+  // Collapse a run of 2+ blank lines introduced around the replaced block to
+  // one — but never a blank line that is content inside a `'''`/`"""` string.
+  // The old global `\n{3,}` replace did exactly that: it rewrote string content.
+  const finalScan = tomlContinuationLines(kept);
+  const collapsed: string[] = [];
+  let k = 0;
+  while (k < kept.length) {
+    if (!finalScan[k] && kept[k]!.trim() === "") {
+      let j = k;
+      while (j < kept.length && !finalScan[j] && kept[j]!.trim() === "") j++;
+      collapsed.push("");
+      k = j;
+    } else {
+      collapsed.push(kept[k]!);
+      k++;
+    }
+  }
+  return collapsed.join("\n").trimEnd() + "\n";
 }
 
 /** Read the `[tunnel]` state out of this repo's repoos.toml. */

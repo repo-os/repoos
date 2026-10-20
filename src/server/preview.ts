@@ -75,6 +75,13 @@ export interface PreviewInfo {
    * the main URL. Absent for a single-process preview.
    */
   services?: { name: string; port: number }[];
+  /**
+   * The child is spawned but has not answered its readiness probe yet
+   * (#0853). Recorded + persisted immediately so a server reload during the
+   * (expensive) build can neither lose track of it nor spawn a second one.
+   * Not surfaced as a running preview until it becomes ready.
+   */
+  starting?: boolean;
 }
 
 export interface PreviewResult {
@@ -99,6 +106,38 @@ export interface PreviewProbe {
   ok: boolean;
   detail?: string;
   error?: string;
+}
+
+/**
+ * Task state used to decide whether a recorded preview may keep running
+ * (#0853). A preview is only valid while its task is active or in review and
+ * not archived; everything else must be torn down.
+ */
+export interface PreviewReconcileOptions {
+  /** Task ids allowed to hold a preview right now (active/review, not archived). */
+  liveTaskIds?: ReadonlySet<string>;
+  /** Current status per task, for the human-readable teardown reason. */
+  taskStatuses?: ReadonlyMap<string, Status>;
+  /** Tasks that are shelved; their previews stop even if status looks live. */
+  archivedTaskIds?: ReadonlySet<string>;
+}
+
+/** Human reason used in the teardown log line. */
+function stopReason(taskId: string, opts: PreviewReconcileOptions = {}): string {
+  if (opts.archivedTaskIds?.has(taskId)) return "task archived";
+  const status = opts.taskStatuses?.get(taskId);
+  return status ? `task ${status}` : "task finished";
+}
+
+/** Cheap liveness probe for a recorded PID. */
+function pidAlive(pid: number): boolean {
+  if (!Number.isFinite(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Registry persisted between main-server runs (for orphan cleanup at boot). */
@@ -593,29 +632,54 @@ export class PreviewManager {
   private readonly file: string;
   private readonly config: RepoOSConfig;
   private readonly emit: (e: RepoEvent) => void;
+  /** Task activity sink (#0853) — teardown/eviction leaves an audit line. */
+  private readonly logTask?: (taskId: string, level: "info", message: string) => void;
   /** Last stderr lines from a still-booting preview, for diagnostics. */
   private bootErrors = new Map<string, string>();
   /** Starts still in flight per task, so concurrent calls never double-spawn. */
   private inflight = new Map<string, Promise<PreviewResult>>();
   /** The target each in-flight start was asked for (undefined = unpicked). */
   private inflightTargets = new Map<string, string | undefined>();
+  /** Previews adopted from a previous server (#0853): no ChildProcess handle. */
+  private adopted = new Set<string>();
+  /** In-flight starts a stop/reload asked to abort before they register. */
+  private cancelled = new Set<string>();
+  /** Serializes capacity decisions so two concurrent starts can't both win. */
+  private capacityLock: Promise<void> = Promise.resolve();
+  /** The manager is shutting down; no new child may spawn. */
+  private shuttingDown = false;
 
-  constructor(config: RepoOSConfig, emit: (e: RepoEvent) => void) {
+  constructor(
+    config: RepoOSConfig,
+    emit: (e: RepoEvent) => void,
+    logTask?: (taskId: string, level: "info", message: string) => void,
+  ) {
     this.config = config;
     this.emit = emit;
+    this.logTask = logTask;
     this.file = join(config.root, config.cacheDir, "previews.json");
   }
 
   /**
-   * PIDs of preview servers this manager started. Used by the serve-process
-   * census (#0216) so a legitimate preview is never counted as a stray.
+   * PIDs of preview servers this manager started (including starts still
+   * booting). Used by the serve-process census (#0216) so a legitimate preview
+   * is never counted as a stray.
    */
   knownPids(): number[] {
     return [...this.registry.values()].map((i) => i.pid).filter((p) => p > 0);
   }
 
   get(taskId: string): PreviewInfo | null {
-    return this.registry.get(taskId) ?? null;
+    const info = this.registry.get(taskId);
+    if (!info) return null;
+    // A start still booting is not a usable preview (its URL may not answer).
+    if (info.starting) return null;
+    // Adopted entries have no exit handler; a dead PID is the only truth.
+    if (this.adopted.has(taskId) && !pidAlive(info.pid)) {
+      this.drop(taskId);
+      return null;
+    }
+    return info;
   }
 
   /**
@@ -625,7 +689,10 @@ export class PreviewManager {
    * asks.
    */
   runningPreviews(): { taskId: string; info: PreviewInfo }[] {
-    return [...this.registry.entries()].map(([taskId, info]) => ({ taskId, info }));
+    this.pruneAdopted();
+    return [...this.registry.entries()]
+      .filter(([, info]) => !info.starting)
+      .map(([taskId, info]) => ({ taskId, info }));
   }
 
   /**
@@ -665,14 +732,24 @@ export class PreviewManager {
     if (!task.id) {
       return { ok: false, error: "A task id is required to start a preview" };
     }
+    // A fresh request supersedes any earlier stop request for this task.
+    this.cancelled.delete(task.id);
     if (!PREVIEW_STATES.includes(task.status)) {
       return {
         ok: false,
         error: `Only active or review tasks can be previewed (#${task.id} is ${task.status})`,
       };
     }
+    if (task.isArchived) {
+      return { ok: false, error: `Archived tasks do not support previews (#${task.id})` };
+    }
     const existing = this.registry.get(task.id);
-    if (existing) {
+    // A provisional entry for a start that is no longer in flight is stale
+    // (the server restarted mid-spawn): tear it down rather than spawn a
+    // second child for the same task.
+    if (existing?.starting && !this.inflight.has(task.id)) {
+      await this.stop(task.id, "stale start");
+    } else if (existing && !existing.starting) {
       // A request for a DIFFERENT target while one runs is not the idempotent
       // repeat it looks like: returning the running preview would hand back a
       // target the caller didn't ask for. Make the mismatch explicit (#0379).
@@ -747,6 +824,7 @@ export class PreviewManager {
     p.finally(() => {
       this.inflight.delete(task.id);
       this.inflightTargets.delete(task.id);
+      this.cancelled.delete(task.id);
     }).catch(() => {
       /* handled by caller */
     });
@@ -800,17 +878,19 @@ export class PreviewManager {
     // manual shot capture (#0627) must never evict a preview a human is
     // viewing, and doing the check HERE (not in the caller beforehand) closes
     // the race where another preview starts between the two. In-flight starts
-    // count too: a preview is only registered after port reservation, spawn
-    // and readiness, so the registry alone would let concurrent starts for
-    // different tasks all pass and exceed the cap (review round 2).
-    if (opts.noEvict) {
-      const holder = previewCapacityHolder(
-        [...this.registry.keys()],
-        [...this.inflight.keys()],
-        task.id,
-        MAX_PREVIEWS,
-      );
-      if (holder) {
+    // count too (#0853): a preview is only usable after readiness, so the
+    // registry alone would let concurrent starts for different tasks all pass
+    // and exceed the cap. The capacity decision is serialized so two starts
+    // arriving together cannot each evict the other and leave nothing running.
+    const capacityRefusal = await this.withCapacityLock(async (): Promise<PreviewResult | null> => {
+      if (opts.noEvict) {
+        const holder = previewCapacityHolder(
+          [...this.registry.keys()],
+          [...this.inflight.keys()],
+          task.id,
+          MAX_PREVIEWS,
+        );
+        if (!holder) return null;
         return {
           ok: false,
           busy: true,
@@ -819,8 +899,16 @@ export class PreviewManager {
             "stop it (or wait for it to be evicted), then retry",
         };
       }
-    } else {
       await this.evictIfAtCapacity(task.id);
+      return null;
+    });
+    if (capacityRefusal) return capacityRefusal;
+    // A stop/eviction/reload may have given this start the boot while it was
+    // waiting for the capacity lock.
+    if (this.cancelled.has(task.id) || this.shuttingDown) {
+      this.cancelled.delete(task.id);
+      this.logLifecycle("start-skipped", task.id, "cancelled before spawning");
+      return { ok: false, error: `preview start for #${task.id} was cancelled` };
     }
 
     // A service name the target references but no `[[preview.services]]` block
@@ -871,46 +959,70 @@ export class PreviewManager {
     }
     const { pid, servicePids, resolvedServices, processGroup } = spawned;
 
+    // Record + persist the child BEFORE waiting for readiness (#0853). The
+    // project's preview command may spend minutes building, and a server
+    // reload/stop in that window must still be able to find and tear down this
+    // process instead of orphaning it. A `starting` entry is not surfaced as
+    // a running preview (`get`/`runningPreviews` filter it).
+    const allPids = [pid, ...servicePids];
+    const partial: PreviewInfo = {
+      port,
+      url: `http://${HOST}:${port}`,
+      startedAt: now(),
+      pid,
+      readyPath: target.readyPath,
+      label: target.label,
+      starting: true,
+      ...(spawned.command ? { command: spawned.command } : {}),
+      ...(processGroup ? { processGroup: true } : {}),
+      ...(servicePids.length ? { pids: allPids } : {}),
+      ...(resolvedServices.length ? { services: resolvedServices } : {}),
+    };
+    this.registry.set(task.id, partial);
+    this.persist();
+    const abortStart = async (why: string): Promise<PreviewResult> => {
+      await this.killMany(allPids, processGroup);
+      this.drop(task.id, pid);
+      this.logLifecycle("start-failed", task.id, why);
+      return { ok: false, error: why };
+    };
+
     // A service that never becomes ready is reported by name and the whole
     // preview is torn down — the main command would otherwise start, proxy to a
     // dead API, and fail with an opaque error.
-    const allPids = [pid, ...servicePids];
     for (const { service, port: servicePort } of servicePorts) {
       const serviceUrl = `http://${HOST}:${servicePort}`;
       if (!(await waitForReady(serviceUrl, service.readyPath, service.readyTimeoutMs))) {
-        void this.killMany(allPids, processGroup);
         const diag = this.bootErrors.get(task.id);
         this.bootErrors.delete(task.id);
-        const error =
+        return abortStart(
           `preview service "${service.name}" for #${task.id} did not become ready` +
-          `${diag ? ` — ${diag}` : ""}`;
-        this.logLifecycle("start-failed", task.id, error);
-        return { ok: false, error };
+            `${diag ? ` — ${diag}` : ""}`,
+        );
       }
     }
 
     const url = `http://${HOST}:${port}`;
     if (!(await waitForReady(url, target.readyPath, target.readyTimeoutMs))) {
-      void this.killMany(allPids, processGroup);
       const diag = this.bootErrors.get(task.id);
       this.bootErrors.delete(task.id);
-      const error = `preview server for #${task.id} did not become ready${diag ? ` — ${diag}` : ""}`;
-      this.logLifecycle("start-failed", task.id, error);
-      return { ok: false, error };
+      return abortStart(
+        `preview server for #${task.id} did not become ready${diag ? ` — ${diag}` : ""}`,
+      );
+    }
+
+    // A stop that arrived while the child was building/starting must win: the
+    // task may have left active/review, or a newer preview may have taken the
+    // slot. Kill what we spawned instead of registering a preview nobody owns.
+    if (this.cancelled.has(task.id) || this.shuttingDown) {
+      this.cancelled.delete(task.id);
+      return abortStart(`preview start for #${task.id} was cancelled`);
     }
 
     const info: PreviewInfo = {
-      port,
-      url,
-      startedAt: now(),
-      pid,
-      readyPath: target.readyPath,
-      label: target.label,
-      ...(spawned.command ? { command: spawned.command } : {}),
-      ...(processGroup ? { processGroup: true } : {}),
+      ...partial,
+      starting: undefined,
       ...(overrides.length ? { overrides } : {}),
-      ...(servicePids.length ? { pids: allPids } : {}),
-      ...(resolvedServices.length ? { services: resolvedServices } : {}),
     };
     this.registry.set(task.id, info);
     this.persist();
@@ -940,41 +1052,64 @@ export class PreviewManager {
     };
   }
 
-  /** Stop a task's preview. Idempotent: stopping nothing is a no-op success. */
-  async stop(taskId: string): Promise<void> {
+  /**
+   * Stop a task's preview. Idempotent: stopping nothing is a no-op success.
+   * A start still in flight for the same task is cancelled too, so a status
+   * transition (or a newer preview taking the slot) can never leave a child
+   * that finished booting after the stop.
+   */
+  async stop(taskId: string, reason?: string): Promise<void> {
+    if (this.inflight.has(taskId)) this.cancelled.add(taskId);
     const info = this.registry.get(taskId);
     if (!info) return;
     this.registry.delete(taskId);
-    this.persist();
-    this.logLifecycle(
-      "stopped",
-      taskId,
-      `target=${info.label ?? "?"} url=${info.url} pid=${info.pid}`,
-    );
+    this.adopted.delete(taskId);
+    this.persistOrDrop();
+    this.logStop(taskId, reason, info);
     this.emit({ type: "preview", id: taskId, preview: null, at: now() });
     await this.killMany(info.pids?.length ? info.pids : [info.pid], info.processGroup ?? false);
   }
 
-  /** Stop every preview — used on main-server shutdown. */
+  /** Stop every preview — used on a real main-server shutdown. */
   async stopAll(): Promise<void> {
+    this.shuttingDown = true;
+    for (const taskId of this.inflight.keys()) this.cancelled.add(taskId);
     const entries = [...this.registry.entries()];
     this.registry.clear();
+    this.adopted.clear();
     try {
       unlinkSync(this.file);
     } catch {
       /* nothing persisted */
     }
-    for (const [, info] of entries) {
+    for (const [taskId, info] of entries) {
+      this.logStop(taskId, "server shutdown", info);
       await this.killMany(info.pids?.length ? info.pids : [info.pid], info.processGroup ?? false);
     }
   }
 
   /**
-   * Boot-time cleanup: kill any preview servers a previous (crashed) main
-   * server recorded and left running, then drop the registry file. Skipped in
-   * preview children (they serve the worktree, never the main registry).
+   * A reload handover must not kill previews (the replacement adopts them,
+   * #0853), but a start still building here must not spawn a child the
+   * replacement has no record of. Cancel those; their provisional record (if
+   * they already spawned) is left in `previews.json` for the replacement.
    */
-  cleanupOrphans(): void {
+  cancelInflight(): void {
+    for (const taskId of this.inflight.keys()) this.cancelled.add(taskId);
+  }
+
+  /**
+   * Boot/reload reconciliation of the durable registry (#0853):
+   * - previews whose task is still active/review are ADOPTED in place, so the
+   *   one-preview cap and the status-teardown hook keep applying to them;
+   * - previews for finished/archived/missing tasks are STOPPED;
+   * - more than one survivor is trimmed back to `MAX_PREVIEWS`.
+   *
+   * Only recorded PIDs / process groups are signalled — never a process name.
+   * An entry whose main PID no longer matches its recorded command is dropped,
+   * never killed (the PID may have been reused).
+   */
+  async cleanupOrphans(opts: PreviewReconcileOptions = {}): Promise<void> {
     if (process.env[CHILD_ENV] === "1") return;
     if (!existsSync(this.file)) return;
     let payload: RegistryFile | null = null;
@@ -983,45 +1118,151 @@ export class PreviewManager {
     } catch {
       /* corrupt registry — drop it */
     }
-    if (payload) {
-      for (const info of Object.values(payload.previews ?? {})) {
-        // Only reap the group when the main process is confirmed to be one of
-        // ours; otherwise signalling a reused PID's group could hit unrelated
-        // processes. Companion PIDs are only signalled behind that check.
-        if (!isPreviewProcess(info)) continue;
-        for (const pid of info.pids?.length ? info.pids : [info.pid]) {
-          void this.kill(pid, info.processGroup ?? false);
+    for (const [taskId, info] of Object.entries(payload?.previews ?? {})) {
+      if (!isPreviewProcess(info)) continue; // already gone, or PID reused
+      if (!opts.liveTaskIds?.has(taskId)) {
+        await this.stopRecorded(taskId, info, stopReason(taskId, opts));
+        continue;
+      }
+      // A provisional entry survived the reload: adopt it only if the child
+      // actually answers now. Otherwise it is a dead start, not a preview.
+      if (info.starting) {
+        const ready = await waitForReady(info.url, info.readyPath ?? DEFAULT_READY_PATH, 2_000);
+        if (!ready) {
+          await this.stopRecorded(taskId, info, stopReason(taskId, opts));
+          continue;
         }
       }
+      this.registry.set(taskId, { ...info, starting: undefined });
+      this.adopted.add(taskId);
+      this.logLifecycle("adopted", taskId, `pid=${info.pid} port=${info.port}`);
     }
-    try {
-      unlinkSync(this.file);
-    } catch {
-      /* ignore */
+    await this.enforceCap("boot cleanup");
+    this.persistOrDrop();
+  }
+
+  /**
+   * Reconcile live previews against the tasks that may hold one (#0853). Used
+   * on every status change and periodically as a safety net: a preview whose
+   * task is done/archived/ready (or vanished) is stopped within the sweep.
+   * Live-task previews are untouched.
+   */
+  async reconcile(opts: PreviewReconcileOptions = {}): Promise<{ stopped: string[] }> {
+    this.pruneAdopted();
+    const stopped: string[] = [];
+    for (const taskId of [...this.registry.keys()]) {
+      if (opts.liveTaskIds?.has(taskId)) continue;
+      const reason = stopReason(taskId, opts);
+      await this.stop(taskId, reason);
+      stopped.push(taskId);
     }
+    return { stopped };
   }
 
   // ---- internals ----
 
+  /** Run a capacity decision under a mutex (concurrent starts must not race). */
+  private async withCapacityLock<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.capacityLock.then(fn, fn);
+    this.capacityLock = run.then(
+      () => {},
+      () => {},
+    );
+    return run;
+  }
+
   /**
-   * Enforce the concurrent cap (#0198): when at `MAX_PREVIEWS` and the task
-   * being started isn't already running, terminate the OLDEST running preview
-   * (FIFO) before a new one spawns. Logs the eviction with task id + timestamp.
+   * Enforce the concurrent cap (#0198/#0853): when a new preview starts,
+   * terminate the OLDEST holder — a registered preview or a start still in
+   * flight — so at most `MAX_PREVIEWS` ever run. In-flight starts count,
+   * otherwise two concurrent starts for different tasks both pass and exceed
+   * the cap. Logs the eviction with task id + timestamp.
    */
   private async evictIfAtCapacity(startingTaskId: string): Promise<void> {
-    if (this.registry.size < MAX_PREVIEWS) return;
-    if (this.registry.has(startingTaskId)) return;
-    const oldest = [...this.registry.entries()].sort((a, b) =>
-      a[1].startedAt < b[1].startedAt ? -1 : a[1].startedAt > b[1].startedAt ? 1 : 0,
-    )[0];
-    if (!oldest) return;
-    const [taskId, info] = oldest;
-    this.logLifecycle(
-      "evicted",
-      taskId,
-      `terminated to keep concurrent previews at ${MAX_PREVIEWS} (oldest running; started ${info.startedAt})`,
-    );
-    await this.stop(taskId);
+    const holders: { id: string; at: string }[] = [];
+    for (const [id, info] of this.registry) {
+      if (id !== startingTaskId) holders.push({ id, at: info.startedAt });
+    }
+    for (const id of this.inflight.keys()) {
+      if (id !== startingTaskId && !this.registry.has(id)) holders.push({ id, at: "" });
+    }
+    const excess = holders.length - (MAX_PREVIEWS - 1);
+    if (excess <= 0) return;
+    // Oldest first: registered previews carry their start time; in-flight
+    // starts (no time yet) sort ahead of them.
+    holders.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+    for (const holder of holders.slice(0, excess)) {
+      this.logLifecycle(
+        "evicted",
+        holder.id,
+        `terminated to keep concurrent previews at ${MAX_PREVIEWS}`,
+      );
+      await this.stop(holder.id, `evicted to keep concurrent previews at ${MAX_PREVIEWS}`);
+    }
+  }
+
+  /** Trim adopted/live entries down to `MAX_PREVIEWS`, oldest first. */
+  private async enforceCap(reason: string): Promise<void> {
+    const excess = this.registry.size - MAX_PREVIEWS;
+    if (excess <= 0) return;
+    const oldest = [...this.registry.entries()]
+      .sort((a, b) => (a[1].startedAt < b[1].startedAt ? -1 : 1))
+      .slice(0, excess);
+    for (const [taskId] of oldest) await this.stop(taskId, reason);
+  }
+
+  /** Stop a preview read from the persisted registry (not yet adopted). */
+  private async stopRecorded(taskId: string, info: PreviewInfo, reason: string): Promise<void> {
+    this.logStop(taskId, reason, info);
+    await this.killMany(info.pids?.length ? info.pids : [info.pid], info.processGroup ?? false);
+  }
+
+  /** Remove a registry entry and persist the result. */
+  private drop(taskId: string, expectedPid?: number): void {
+    const info = this.registry.get(taskId);
+    if (!info) return;
+    if (expectedPid !== undefined && info.pid !== expectedPid) return;
+    this.registry.delete(taskId);
+    this.adopted.delete(taskId);
+    this.persistOrDrop();
+  }
+
+  /** Drop adopted previews whose recorded main process has died. */
+  private pruneAdopted(): void {
+    let changed = false;
+    for (const taskId of [...this.adopted]) {
+      const info = this.registry.get(taskId);
+      if (!info) {
+        this.adopted.delete(taskId);
+        continue;
+      }
+      if (!pidAlive(info.pid)) {
+        // The main process is gone; tear down any companion services the
+        // recorded preview owned, exactly as the live exit handler does.
+        if (info.pids?.length) void this.killMany(info.pids, info.processGroup ?? false);
+        this.registry.delete(taskId);
+        this.adopted.delete(taskId);
+        this.logLifecycle("exited", taskId, `preview process ${info.pid} is gone`);
+        this.emit({ type: "preview", id: taskId, preview: null, at: now() });
+        changed = true;
+      }
+    }
+    if (changed) this.persistOrDrop();
+  }
+
+  /** The log line reviewers look for: `preview for #id stopped (task done)`. */
+  private logStop(taskId: string, reason: string | undefined, info: PreviewInfo): void {
+    const detail = `pid=${info.pid} port=${info.port}`;
+    if (process.env[CHILD_ENV] !== "1") {
+      console.error(
+        `[preview] ${now()} preview for #${taskId} stopped${reason ? ` (${reason})` : ""} — ${detail}`,
+      );
+      this.logTask?.(
+        taskId,
+        "info",
+        `preview for #${taskId} stopped${reason ? ` (${reason})` : ""} — ${detail}`,
+      );
+    }
   }
 
   /** Best-effort lifecycle log — task id and an ISO-8601 timestamp (#0198). */
@@ -1166,7 +1407,8 @@ export class PreviewManager {
         // drop the entry, so a dead preview never leaves an orphan API behind.
         if (info.pids?.length) void this.killMany(info.pids, info.processGroup ?? false);
         this.registry.delete(taskId);
-        this.persist();
+        this.adopted.delete(taskId);
+        this.persistOrDrop();
         this.logLifecycle("exited", taskId, `preview process ${pid} exited on its own`);
         this.emit({ type: "preview", id: taskId, preview: null, at: now() });
       }
@@ -1223,6 +1465,19 @@ export class PreviewManager {
       writeFileSync(this.file, JSON.stringify(payload, null, 2));
     } catch {
       /* persistence is best-effort */
+    }
+  }
+
+  /** Persist, or remove the registry file once nothing is tracked. */
+  private persistOrDrop(): void {
+    if (this.registry.size > 0) {
+      this.persist();
+      return;
+    }
+    try {
+      unlinkSync(this.file);
+    } catch {
+      /* already absent */
     }
   }
 }
