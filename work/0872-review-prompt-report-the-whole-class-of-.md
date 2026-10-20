@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 517431
-last_close_out_gate_at: "2026-10-20T17:20:23.395Z"
 id: "0872"
 title: "Default agent prompts for every project: reviewer, engineer, PM and CTO learnings"
 type: chore
-status: review
+status: done
 priority: p1
 area: server
+merged_commit: 94987252a672f407943e2f59ce1108de0aeaf928
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/default-agent-prompts-for-every-project-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:43Z"
-updated_at: "2026-10-20T17:20:23Z"
+updated_at: "2026-10-20T17:21:03Z"
+last_close_out_gate_ms: 517431
+last_close_out_gate_at: "2026-10-20T17:20:23.395Z"
 review_passes: 1
 ---
 ## Problem
@@ -79,4 +80,4 @@ Wording sources, all in this repo's repoos.toml as edited on 2026-10-20: the rev
 - 2026-10-20T17:03:56Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (94987252a) during finalization (#0734)
 - 2026-10-20T17:05:13Z · note: review pass 1: good to go
 - 2026-10-20T17:20:23Z · close-out gate completed in 517s
-
+- 2026-10-20T17:21:03Z · status review→done, release:success
