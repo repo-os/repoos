@@ -1,19 +1,17 @@
 ---
-updated_at: "2026-10-20T22:59:32Z"
-review_passes: 2
 id: "0870"
 title: Check store writes to the wrong project root (LightingAI wrote repoos/.repoos/checks.db into the RepoOS checkout)
 type: bug
 status: review
 priority: p2
 area: core
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/check-store-writes-to-the-wrong-project-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:26Z"
-review_rounds: 1
+updated_at: "2026-10-20T22:40:58Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-20T21:46:23.850Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-20T21:47:02.554Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -53,17 +51,4 @@ Evidence: the SQLite file's rows (check_runs) and worktree column named a lighti
 - 2026-10-20T22:17:58Z · body
 - 2026-10-20T22:21:35Z · needs_input
 - 2026-10-20T22:21:44Z · assigned_to
-- 2026-10-20T22:32:43Z · assigned_to
-- 2026-10-20T22:32:44Z · note: handoff requested (ui-review)
-- 2026-10-20T22:40:59Z · status active→review
-- 2026-10-20T22:41:00Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-10-20T22:42:14Z · note: review pass 1: needs some work
-- 2026-10-20T22:42:15Z · status review→active
-- 2026-10-20T22:45:12Z · assigned_to
-- 2026-10-20T22:48:56Z · body
-- 2026-10-20T22:49:25Z · assigned_to
-- 2026-10-20T22:49:48Z · note: handoff requested (ui-review)
-- 2026-10-20T22:57:53Z · status active→review
-- 2026-10-20T22:57:54Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-10-20T22:59:31Z · note: review pass 2: good to go
-
+- 2026-10-20T22:40:58Z · status active→review
