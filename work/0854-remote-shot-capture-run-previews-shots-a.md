@@ -3,6 +3,9 @@ id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — remote capture is not proven to work: the runner image still omits Playwright/WebKit, so the remote path can only fall …"
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -92,3 +95,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T08:57:19Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (2ce0b8123) during finalization (#0734)
 - 2026-10-20T08:57:19Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (2ce0b8123) during finalization (#0734)
 - 2026-10-20T08:59:05Z · note: review pass 3: needs some work
+- 2026-10-20T08:59:05Z · needs_input
