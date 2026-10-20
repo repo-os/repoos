@@ -74,6 +74,11 @@ export interface LandableFacts {
     state: string | null;
     verdict: ReviewVerdict | null;
     blockingBugs: boolean;
+    /**
+     * False when the report predates the latest `…→review` handoff (it reviewed
+     * an older commit). Defaults to current when omitted.
+     */
+    current?: boolean;
   };
   /** null when there is no worktree or its status could not be read. */
   worktreeDirty: string[] | null;
@@ -97,6 +102,28 @@ function shortSha(sha: string | null): string {
 function quoteList(paths: string[], limit = 4): string {
   if (paths.length <= limit) return paths.join(", ");
   return `${paths.slice(0, limit).join(", ")} (+${paths.length - limit} more)`;
+}
+
+/** Latest `…→review` handoff timestamp recorded in the task's Activity log. */
+export function latestReviewHandoffAt(body: string): number | null {
+  let latest: number | null = null;
+  for (const m of body.matchAll(/^- ([^\s]+) · status [^\s]+→review\s*$/gm)) {
+    const time = Date.parse(m[1]!);
+    if (Number.isFinite(time)) latest = latest === null ? time : Math.max(latest, time);
+  }
+  return latest;
+}
+
+/**
+ * True when a stored review report predates the latest `…→review` handoff — the
+ * report reviewed an older commit. The same rule the drawer uses for "Awaiting
+ * a new review": an older verdict must never count as the current pass.
+ */
+export function reviewPredatesLatestHandoff(body: string, reportAt: string): boolean {
+  const reportTime = Date.parse(reportAt);
+  if (!Number.isFinite(reportTime)) return false;
+  const latest = latestReviewHandoffAt(body);
+  return latest !== null && latest > reportTime;
 }
 
 /** True for a conflict path that is this task's own markdown file. */
@@ -169,6 +196,15 @@ export function evaluateReviewVerdictCheck(review: LandableFacts["review"]): Lan
       status: "fail",
       detail: "the latest review pass has no verdict",
       nextStep: "Run a fresh review: repoos review again <id>",
+    };
+  }
+  if (review.current === false) {
+    return {
+      id: "review-verdict",
+      label,
+      status: "fail",
+      detail: "the review report predates the latest handoff",
+      nextStep: "Run a fresh review of the current commit: repoos review again <id>",
     };
   }
   if (review.blockingBugs) {

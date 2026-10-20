@@ -139,6 +139,9 @@ export async function gatherApprovalPreflight(
   if (worktree) {
     const head = await runGit(worktree, ["rev-parse", "HEAD"], 4_000);
     if (head.status === 0 && head.stdout.trim()) headSha = head.stdout.trim();
+    // A lock that names an older sha is the same drift the review-lock check
+    // reports (#0867): the branch moved after handoff, so never auto-approve it.
+    if (lockSha && headSha && lockSha !== headSha) handoffDrift = true;
     try {
       worktreeDirty = await uncommittedWorkFiles(worktree, workFileFilter(config));
       if (worktreeDirty.length > 0) handoffDrift = true;
