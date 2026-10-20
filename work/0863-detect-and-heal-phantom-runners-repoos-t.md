@@ -2,7 +2,7 @@
 id: "0863"
 title: "Detect and heal phantom runners: RepoOS thinks an engineer is running when no process exists"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/detect-and-heal-phantom-runners-repoos-t
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-20T07:42:32Z"
-updated_at: "2026-10-20T16:43:40Z"
+updated_at: "2026-10-20T17:02:26Z"
 ---
 ## Problem
 Sometimes RepoOS's in-memory runner table says a task's engineer is running while no OS process exists (a "phantom runner"). Symptoms seen repeatedly on 2026-10-19/20 (#0861, #0843, #0854, #0860): `repoos start <id>` answers "Task #<id> is already running"; the task sits `active` with no commits or events for 10+ minutes; the watchdog and CTO `restart-stalled-agent` do nothing because they only act when the runner looks dead; `repoos pause` then `start --fresh` often still fails. The only reliable repair so far is `repoos mv <id> ready` then `repoos start <id>`, done by a human or driver. Each occurrence costs 10-30 minutes of idle time.
@@ -66,3 +66,4 @@ Look at the runner registry (`runner.isRunning`), the watchdog, and the CTO `res
 - 2026-10-20T16:34:23Z · body
 - 2026-10-20T16:36:29Z · body
 - 2026-10-20T16:43:40Z · handoff failed · remote validation failed: test failure: tests/toml-validate.test.ts > validateToml accepts > the repository's own repoos.toml on bee — fix it in the feature branch and re-run the gate
+- 2026-10-20T17:02:26Z · status active→review
