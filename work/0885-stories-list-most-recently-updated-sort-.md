@@ -11,7 +11,7 @@ branch: feat/stories-list-most-recently-updated-sort-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:03:09Z"
-updated_at: "2026-10-20T23:55:35Z"
+updated_at: "2026-10-20T23:56:29Z"
 ---
 ## Problem
 On the Stories page, ordering by "most recently updated" does not put the newest or most recently edited story first. Story #0011 ("Agent-discoverable RepoOS"), created and edited minutes earlier, appeared at the bottom of the list. The owner's guess is that the list sorts by the story number as a string, so "0011" or "11" lands next to "1" instead of above "9". It may instead be sorting by `created_at` ascending, by file name, or by a field that story edits never touch (stories keep `created_at` in frontmatter and may have no `updated_at`).
@@ -59,3 +59,4 @@ On the Stories page, ordering by "most recently updated" does not put the newest
 - 2026-10-20T23:43:59Z · body
 - 2026-10-20T23:55:35Z · status active→review
 - 2026-10-20T23:55:35Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (1bf040f44) during finalization (#0734)
+- 2026-10-20T23:56:29Z · note: review pass 1: good to go
