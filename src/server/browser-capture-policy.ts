@@ -197,6 +197,8 @@ export async function runBrowserCaptureWithPolicy<T>(
       const artifacts = await transport.capture(options.request);
       if (artifacts.browserUnavailable) {
         failure = new BrowserEvidenceUnavailableError(artifacts.detail, true);
+      } else if (!artifacts.ok && typeof artifacts.results.error === "string") {
+        failure = new Error(artifacts.results.error);
       } else {
         returnedArtifacts = artifacts;
       }
