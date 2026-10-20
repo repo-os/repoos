@@ -6,13 +6,13 @@ status: active
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/reviews-must-not-chain-back-to-back-on-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T11:55:25Z"
-updated_at: "2026-10-20T18:17:40Z"
+updated_at: "2026-10-20T18:17:51Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -85,3 +85,4 @@ Not gated: `ReviewManager.runCheckpointDelta` (post-handoff checkpoint delta rev
 - 2026-10-20T18:11:12Z · body
 - 2026-10-20T18:17:14Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > 'Review again' starts a fresh review run that replaces the report on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-20T18:17:15Z · note: handoff requested (cli)
+- 2026-10-20T18:17:51Z · assigned_to
