@@ -10,8 +10,10 @@ story: Agent-discoverable RepoOS
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:01:19Z"
-updated_at: "2026-10-20T20:10:29Z"
+updated_at: "2026-10-20T20:10:36Z"
 ---
 ## Problem
 
@@ -43,3 +45,4 @@ Out of scope: the portable skill, `user-docs/ai-agents.md`, the copy-prompt butt
 
 - 2026-10-20T16:01:19Z · created · njachowski@gmail.com
 - 2026-10-20T20:10:29Z · status inbox→ready
+- 2026-10-20T20:10:36Z · cli_override, model_override
