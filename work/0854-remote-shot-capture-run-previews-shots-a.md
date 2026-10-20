@@ -82,3 +82,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T07:16:16Z · body
 - 2026-10-20T07:20:31Z · body
 - 2026-10-20T07:20:43Z · status active→review
+- 2026-10-20T07:20:43Z · note: handoff requested (cli)
