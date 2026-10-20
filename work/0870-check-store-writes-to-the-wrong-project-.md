@@ -2,16 +2,16 @@
 id: "0870"
 title: Check store writes to the wrong project root (LightingAI wrote repoos/.repoos/checks.db into the RepoOS checkout)
 type: bug
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/check-store-writes-to-the-wrong-project-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:26Z"
-updated_at: "2026-10-20T21:34:59Z"
+updated_at: "2026-10-20T21:35:00Z"
 ---
 ## Problem
 On 2026-10-20 an untracked folder repoos/.repoos/checks.db(+shm,+wal) appeared in the RepoOS main checkout and blocked two green tasks from landing (Move to done: "main has 3 uncommitted files"). It held four pre-review check runs (task_id 0861, scope changed:main, machine air) whose worktree was a LightingAI worktree. LightingAI uses the nested layout (workDir repoos/work, cache repoos/.repoos). The likely cause is a check run for the LightingAI project that used LightingAI's relative cache dir against this repo's root (getCheckStore(repoRoot, cacheDir) in src/core/check-store.ts), not confirmed. A task_id from this project also leaked into those rows. Separately, the root .gitignore ignores `.repoos/*` only at the repo root, so a nested `.repoos/` shows up as untracked.
@@ -33,3 +33,4 @@ Evidence: the SQLite file's rows (check_runs) and worktree column named a lighti
 - 2026-10-20T12:06:26Z · created · njachowski@gmail.com
 - 2026-10-20T21:34:53Z · status inbox→ready
 - 2026-10-20T21:34:59Z · cli_override, model_override
+- 2026-10-20T21:35:00Z · status ready→active, branch
