@@ -15,7 +15,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RepoOSConfig, DevTargetConfig, DevServiceConfig } from "../../core/types";
-import { loadConfig, parseDevTargets } from "../../core/config";
+import { loadConfig, parseDevTargets, parseFlatToml, SUPPORTED_TOML_KEYS } from "../../core/config";
+import { isKnownConfigKey } from "../../core/doctor";
 import {
   devTargetServiceErrors,
   expandServiceRefs,
@@ -1382,6 +1383,83 @@ describe("parseDevServices", () => {
     }
     expect(parsed.errors).toEqual([]);
     expect(parsed.services[0]?.env).toEqual({ MESSAGE: expected });
+  });
+});
+
+/**
+ * The config contract is shared by `repoos doctor` (unknown-key warnings), the
+ * Settings search overlay and the docs-drift test. Every leaf the dev parser
+ * reads has to be registered there, or a valid `[[dev.targets]]` /
+ * `[[dev.services]]` config is reported as unrecognized.
+ */
+describe("dev config key registration", () => {
+  it("registers every dev.targets/dev.services key the parser reads", () => {
+    const parsedKeys = [
+      "dev.targets.name",
+      "dev.targets.kind",
+      "dev.targets.command",
+      "dev.targets.cwd",
+      "dev.targets.env",
+      "dev.targets.url",
+      "dev.targets.artifactPath",
+      "dev.targets.label",
+      "dev.targets.services",
+      "dev.targets.autoPort",
+      "dev.targets.port",
+      "dev.targets.healthCheck.url",
+      "dev.targets.healthCheck.file",
+      "dev.services.name",
+      "dev.services.command",
+      "dev.services.cwd",
+      "dev.services.dependsOn",
+      "dev.services.port",
+      "dev.services.autoPort",
+      "dev.services.healthCheck.url",
+      "dev.services.healthCheck.file",
+      "dev.services.env",
+    ];
+    expect(parsedKeys.filter((key) => !SUPPORTED_TOML_KEYS.includes(key))).toEqual([]);
+
+    // Dotted env keys and table headers are covered by prefix matching, the
+    // same way the doctor and the Settings resolver accept unknown children of
+    // a supported table.
+    const derivedKeys = [
+      ...parsedKeys,
+      "dev.targets.env.API_URL",
+      "dev.services.env.API_URL",
+      "dev.targets.healthCheck",
+      "dev.services.healthCheck",
+    ];
+    expect(derivedKeys.filter((key) => !isKnownConfigKey(key))).toEqual([]);
+
+    // The real doctor path flattens repoos.toml and checks each top-level key;
+    // a config using all these fields must not produce an unknown-key warning.
+    const flat = parseFlatToml(
+      [
+        "[[dev.services]]",
+        'name = "api"',
+        'command = "bun --watch src/server/index.ts"',
+        'cwd = "server"',
+        'dependsOn = ["db"]',
+        "port = 4100",
+        "autoPort = false",
+        'healthCheck = { url = "http://localhost:{port}/health", file = "ready" }',
+        'env = { API_URL = "{api.url}" }',
+        "",
+        "[[dev.targets]]",
+        'name = "app"',
+        'kind = "server"',
+        'command = "bun run dev -- --port {port} --api-port {api.port}"',
+        'cwd = "web"',
+        'env = { API_URL = "{api.url}" }',
+        'url = "http://localhost:{port}"',
+        'label = "App"',
+        'services = ["api"]',
+        'healthCheck = { url = "http://localhost:{port}/health" }',
+        "",
+      ].join("\n"),
+    );
+    expect(Object.keys(flat).filter((key) => !isKnownConfigKey(key))).toEqual([]);
   });
 });
 

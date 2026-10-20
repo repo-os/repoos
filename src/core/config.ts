@@ -3193,7 +3193,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       default: [],
       description:
         "The things you run yourself while developing — a local HMR web server, a debug build, a native app process — " +
-        "as opposed to task previews, which RepoOS manages for a task's worktree. Only commands " +
+        "as opposed to task previews, which RepoOS manages for a task's worktree. Each row carries a command, " +
+        "optional cwd and env, a url and a healthCheck. Only commands " +
         "declared here can be started; edit them under Advanced → Dev targets. Each target auto-picks " +
         "a free port by default; turn that off per target to pin a fixed port. A target's `services` " +
         "list names [[dev.services]] rows booted before it, on their own ports. Service tokens can " +
@@ -3504,6 +3505,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "dev.targets.name",
   "dev.targets.kind",
   "dev.targets.command",
+  "dev.targets.cwd",
+  "dev.targets.env",
   "dev.targets.url",
   "dev.targets.artifactPath",
   "dev.targets.label",
@@ -3518,6 +3521,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "dev.services.name",
   "dev.services.command",
   "dev.services.cwd",
+  "dev.services.dependsOn",
   "dev.services.port",
   "dev.services.autoPort",
   "dev.services.healthCheck.url",
