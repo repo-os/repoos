@@ -2,7 +2,7 @@
 id: "0860"
 title: "Close-out and layout: reminders/ and schedules/ are server-written bookkeeping, and follow the repoos/ layout"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "you want shared Git history. They are currently repo-wide, visible to"
@@ -14,7 +14,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-20T11:13:38Z"
+updated_at: "2026-10-20T11:13:39Z"
 review_passes: 5
 review_rounds: 1
 handoff_signal_retry_count: 1
