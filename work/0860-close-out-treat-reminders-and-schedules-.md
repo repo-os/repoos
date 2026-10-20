@@ -1,13 +1,8 @@
 ---
-updated_at: "2026-10-20T11:40:47Z"
-review_passes: 7
 id: "0860"
 title: "Close-out and layout: reminders/ and schedules/ are server-written bookkeeping, and follow the repoos/ layout"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — user-facing reminder docs still contradict the new path and checkpoint behavior.
 priority: p2
 area: server
 assigned_to: ai
@@ -16,6 +11,8 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T04:20:16Z"
+updated_at: "2026-10-20T11:42:26Z"
+review_passes: 7
 review_rounds: 2
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-10-20T06:20:53.646Z: repoos check failed: ◆ Check plan"
@@ -150,4 +147,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-20T11:33:43Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (36c63078d) during finalization (#0734)
 - 2026-10-20T11:40:47Z · note: review pass 7: needs some work
 - 2026-10-20T11:40:47Z · needs_input
-
+- 2026-10-20T11:42:26Z · needs_input
