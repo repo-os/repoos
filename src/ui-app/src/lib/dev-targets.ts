@@ -10,7 +10,7 @@
  * `healthCheckFile` (the config PATCH route understands these), which keeps the
  * row a flat object the form can bind to without nested reactive surgery.
  */
-import { parseDevTargets } from "../../../core/dev-targets.js";
+import { DEV_TARGET_PASSTHROUGH_FIELDS, parseDevTargets } from "../../../core/dev-targets.js";
 
 /** One target as the Settings form holds it (health check flattened). */
 export interface DevTargetDraft {
@@ -32,6 +32,9 @@ export interface DevTargetDraft {
    * this list only references them by name.
    */
   services: string;
+  /** TOML-only fields the form never edits; carried so a save keeps them. */
+  cwd?: string;
+  env?: Record<string, string>;
 }
 
 /** A target as `safeConfigForBrowser` serializes it (`dev.targets`). */
@@ -49,6 +52,18 @@ export interface DevTargetPayload {
   port?: number;
   /** Companion `[[dev.services]]` names, booted before the target (#0843). */
   services?: string[];
+  /** TOML-only; round-tripped untouched through the form (#0843). */
+  cwd?: string;
+  env?: Record<string, string>;
+}
+
+/** Copy the TOML-only passthrough fields (set ones only) between row shapes. */
+function passthrough(src: { cwd?: string; env?: Record<string, string> }): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const field of DEV_TARGET_PASSTHROUGH_FIELDS) {
+    if (src[field] !== undefined) out[field] = src[field];
+  }
+  return out;
 }
 
 /** A blank draft for the "Add target" dialog. */
@@ -82,6 +97,7 @@ export function draftFromTarget(t: DevTargetPayload): DevTargetDraft {
     autoPort: t.autoPort !== false,
     port: t.port !== undefined ? String(t.port) : "",
     services: (t.services ?? []).join(", "),
+    ...passthrough(t),
   };
 }
 
@@ -108,6 +124,7 @@ export function targetFromDraft(d: DevTargetDraft): Record<string, unknown> {
     autoPort: d.autoPort,
     port: d.port.trim(),
     ...(services.length ? { services } : {}),
+    ...passthrough(d),
   };
 }
 
@@ -128,6 +145,7 @@ function parseRowFromDraft(d: DevTargetDraft): Record<string, unknown> {
     artifactPath: d.artifactPath,
     label: d.label,
     autoPort: d.autoPort,
+    ...passthrough(d),
   };
   if (d.port.trim()) row.port = d.port.trim();
   if (services.length) row.services = services;

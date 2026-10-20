@@ -21,7 +21,7 @@ import {
 import { effectiveAreaVocabulary } from "../../core/areas.js";
 import { effectiveAreaNames, unresolvedAreaReport } from "../../core/areas.js";
 import { normalizeStringList } from "../../core/config.js";
-import { devTargetServiceErrors } from "../../core/dev-targets.js";
+import { DEV_TARGET_PASSTHROUGH_FIELDS, devTargetServiceErrors } from "../../core/dev-targets.js";
 import { normalizeAllowlistRows } from "../../core/budget-allowlist.js";
 import {
   MAX_ROUTING_TIMEOUT_MS,
@@ -349,6 +349,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     // Rebuild each submitted row into the shape `parseDevTargets` understands:
     // the health check is flattened to its dotted keys (the flat TOML parser's
     // own form) so validation and serialization share one representation.
+    const onDiskTargets = loadConfig(config.root).dev?.targets ?? [];
     const rawRows = (body.devTargets as unknown[]).map((entry) => {
       const r = (entry ?? {}) as Record<string, unknown>;
       const row: Record<string, unknown> = {
@@ -359,6 +360,18 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         artifactPath: r.artifactPath,
         label: r.label,
       };
+      // #0843 review round 24: fields the Settings form does not edit (`cwd`,
+      // `env`: TOML-only) must survive a save. A row that carries them keeps
+      // them; a row that omits the key entirely (an older client) inherits the
+      // same-named target's value from disk, so a save never strips them.
+      const sameName = onDiskTargets.find(
+        (t) => typeof r.name === "string" && t.name === r.name.trim(),
+      );
+      for (const field of DEV_TARGET_PASSTHROUGH_FIELDS) {
+        const submitted = r[field];
+        if (submitted !== undefined) row[field] = submitted;
+        else if (sameName?.[field] !== undefined) row[field] = sameName[field];
+      }
       if (typeof r.autoPort === "boolean") row.autoPort = r.autoPort;
       if (r.port !== undefined && r.port !== "") row.port = r.port;
       // #0843: the companion-service name list round-trips like any other
@@ -396,6 +409,9 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       if (t.url) row.url = t.url;
       if (t.artifactPath) row.artifactPath = t.artifactPath;
       if (t.label) row.label = t.label;
+      for (const field of DEV_TARGET_PASSTHROUGH_FIELDS) {
+        if (t[field] !== undefined) row[field] = t[field];
+      }
       // #0843: write the companion-service name list when set, so an edited
       // target keeps its services and one without them gains no line.
       if (t.services?.length) row.services = t.services;
@@ -412,8 +428,10 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     // on every save, so a list that already matches disk must not rewrite the
     // file. Compare the normalized name/kind/command/url/artifactPath/label/
     // health fields, order included (order is meaningful — the form can reorder).
-    const onDisk = loadConfig(config.root).dev?.targets ?? [];
+    const onDisk = onDiskTargets;
     const norm = (t: (typeof onDisk)[number]) => ({
+      cwd: t.cwd ?? "",
+      env: JSON.stringify(Object.entries(t.env ?? {}).sort(([a], [b]) => a.localeCompare(b))),
       name: t.name,
       kind: t.kind,
       command: t.command,

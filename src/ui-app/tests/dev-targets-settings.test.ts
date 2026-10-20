@@ -498,3 +498,94 @@ describe("Settings control client-side validation (#0749)", () => {
     expect(errors.some((e) => e.includes("Target 2") && e.includes("duplicate name"))).toBe(true);
   });
 });
+
+describe("Settings saves keep TOML-only target fields (#0843 review round 24)", () => {
+  const toml = [
+    "[[dev.targets]]",
+    'name = "web"',
+    'kind = "server"',
+    'command = "bun run dev"',
+    'url = "http://localhost:5173"',
+    'cwd = "app"',
+    'env = { NODE_ENV = "development", API_URL = "http://x" }',
+    "",
+    "[[dev.targets]]",
+    'name = "docs"',
+    'kind = "server"',
+    'command = "bun run docs"',
+    'url = "http://localhost:5174"',
+    "",
+  ].join("\n");
+
+  // One edit per way the Settings form can rewrite the list.
+  const edits: [string, (rows: Record<string, unknown>[]) => Record<string, unknown>[]][] = [
+    ["edit a field", (rows) => rows.map((r) => (r.name === "web" ? { ...r, label: "Web" } : r))],
+    ["reorder", (rows) => [...rows].reverse()],
+    ["rename", (rows) => rows.map((r) => (r.name === "web" ? { ...r, name: "site" } : r))],
+    ["remove a sibling", (rows) => rows.filter((r) => r.name === "web")],
+  ];
+
+  it.each(edits)("round-trips cwd and env through the client helpers: %s", async (_n, edit) => {
+    const root = repo(toml);
+    try {
+      const drafts = loadConfig(root).dev!.targets!.map((t) => draftFromTarget(t));
+      const wire = edit(drafts.map((d) => targetFromDraft(d)));
+      const { status } = await patch(root, { devTargets: wire });
+      expect(status).toBe(200);
+      const after = loadConfig(root).dev!.targets!;
+      const web = after.find((t) => t.name === "web" || t.name === "site")!;
+      expect(web.cwd).toBe("app");
+      expect(web.env).toEqual({ NODE_ENV: "development", API_URL: "http://x" });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("an older client that omits cwd/env inherits them from the same-named target on disk", async () => {
+    const root = repo(toml);
+    try {
+      const { status } = await patch(root, {
+        devTargets: [
+          {
+            name: "web",
+            kind: "server",
+            command: "bun run dev",
+            url: "http://localhost:5173",
+            label: "Web",
+          },
+        ],
+      });
+      expect(status).toBe(200);
+      const web = loadConfig(root).dev!.targets![0]!;
+      expect(web.cwd).toBe("app");
+      expect(web.env).toEqual({ NODE_ENV: "development", API_URL: "http://x" });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("an unchanged list (including cwd/env) is still a no-op that does not rewrite the file", async () => {
+    const root = repo(toml);
+    try {
+      const before = readFileSync(join(root, "repoos.toml"), "utf8");
+      const drafts = loadConfig(root).dev!.targets!.map((t) => draftFromTarget(t));
+      const { status } = await patch(root, { devTargets: drafts.map((d) => targetFromDraft(d)) });
+      expect(status).toBe(200);
+      expect(readFileSync(join(root, "repoos.toml"), "utf8")).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("a changed cwd/env is a real change and is written", async () => {
+    const root = repo(toml);
+    try {
+      const drafts = loadConfig(root).dev!.targets!.map((t) => draftFromTarget(t));
+      drafts[0]!.cwd = "other";
+      await patch(root, { devTargets: drafts.map((d) => targetFromDraft(d)) });
+      expect(loadConfig(root).dev!.targets![0]!.cwd).toBe("other");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
