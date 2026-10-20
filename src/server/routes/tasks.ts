@@ -180,6 +180,7 @@ import {
   verifyWorktreeHandoffIntegrity,
   writeWorktreeReviewLock,
 } from "../worktree-handoff-guard.js";
+import { closingOutRefusal, isTaskClosingOut } from "../close-out-lock.js";
 import {
   isPostHandoffCheckpointRecoveryActive,
   startPostHandoffCheckpointRecovery,
@@ -929,6 +930,13 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     delete body.depends_on;
   }
   const prevStatus = existing.status;
+  // #0886: Move to done owns the task file from enqueue to merge/release. Any
+  // PATCH in that window would re-serialize a file the merge is still using —
+  // exactly the write that used to commit `status: inbox`. Refuse and write
+  // nothing; the task settles on its own.
+  if (isTaskClosingOut(config.root, config.cacheDir, existing.id)) {
+    return json(res, 409, { error: closingOutRefusal(existing.id) });
+  }
   if (body.status === "done" && prevStatus !== "done") {
     if (reviews.isRunning(existing.id)) {
       return json(res, 409, {
