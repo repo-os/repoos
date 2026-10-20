@@ -14,7 +14,7 @@ branch: feat/agent-getting-started-guide-at-ai-agents
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:17Z"
-updated_at: "2026-10-20T21:20:07Z"
+updated_at: "2026-10-20T21:21:28Z"
 ---
 ## Problem
 
@@ -41,6 +41,18 @@ Story: Agent-discoverable RepoOS, slice 4. Area `docs`. Depends on the prompt fi
 
 Declare a docs-site shot if you want review to open the new page: target the docs preview, route `/ai-agents`.
 
+## Shots
+```json
+[
+{
+  "label": "New ai-agents guide with the canonical starter prompt, linked from the Getting started sidebar",
+  "target": "Docs site",
+  "route": "/ai-agents",
+  "highlight": "main"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-20T16:02:17Z · created · njachowski@gmail.com
@@ -48,3 +60,4 @@ Declare a docs-site shot if you want review to open the new page: target the doc
 - 2026-10-20T21:10:00Z · cli_override, model_override
 - 2026-10-20T21:10:01Z · status ready→active, branch
 - 2026-10-20T21:20:07Z · body
+- 2026-10-20T21:21:28Z · body
