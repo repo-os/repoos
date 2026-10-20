@@ -350,6 +350,8 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     enabled: true,
     maxLoadPerCpu: 4,
     minAvailableMemRatio: 0.08,
+    maxSwapUsedRatio: 0.5,
+    maxCompressorRatio: 0.35,
   },
   // Attachment storage (#0659): local gitignored `.attachments/` directories by
   // default; opt-in cloud providers must be configured before they take effect.
@@ -2027,6 +2029,19 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof pgMem === "number" && Number.isFinite(pgMem) && pgMem >= 0 && pgMem <= 1) {
       cfg.pressureGuard = { ...cfg.pressureGuard, minAvailableMemRatio: pgMem };
     }
+    const pgSwap = parsed["pressureGuard.maxSwapUsedRatio"];
+    if (typeof pgSwap === "number" && Number.isFinite(pgSwap) && pgSwap > 0 && pgSwap <= 1) {
+      cfg.pressureGuard = { ...cfg.pressureGuard, maxSwapUsedRatio: pgSwap };
+    }
+    const pgCompressor = parsed["pressureGuard.maxCompressorRatio"];
+    if (
+      typeof pgCompressor === "number" &&
+      Number.isFinite(pgCompressor) &&
+      pgCompressor > 0 &&
+      pgCompressor <= 1
+    ) {
+      cfg.pressureGuard = { ...cfg.pressureGuard, maxCompressorRatio: pgCompressor };
+    }
 
     // [closeOut] section — wall-clock budget for one Move-to-done attempt
     // (#0573). Invalid/negative values are clamped back to the default with a
@@ -2994,7 +3009,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: true,
       description:
-        "When load or memory pressure is high, delay new local checks and engineer starts until the machine has headroom instead of piling on.",
+        "When memory pressure (swap use, compressor size, reclaimable memory) or load is high, delay new local checks, browser steps and engineer starts until the machine has headroom instead of piling on.",
     },
     {
       key: "pressureGuard.maxLoadPerCpu",
@@ -3004,7 +3019,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: 4,
       description:
-        "Block new checks and starts when the 1-minute load average divided by CPU count exceeds this value. Default 4.",
+        "Block new work when the 1-minute load average per CPU exceeds this value and memory readings are unavailable; when memory stats are available it is surfaced as a warning only. Default 4.",
     },
     {
       key: "pressureGuard.minAvailableMemRatio",
@@ -3014,7 +3029,27 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: 0.08,
       description:
-        "Block new checks and engineer starts when reclaimable memory falls below this fraction of total RAM. Default 0.08 (8%).",
+        "Block new checks, browser steps and engineer starts when reclaimable memory falls below this fraction of total RAM. Default 0.08 (8%).",
+    },
+    {
+      key: "pressureGuard.maxSwapUsedRatio",
+      label: "Pressure guard: max swap used",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 0.5,
+      description:
+        "Block new work when swap in use exceeds this fraction of total swap. This is the primary signal on macOS, where a thrashing machine shows full swap while CPU sits idle. Default 0.5 (50%).",
+    },
+    {
+      key: "pressureGuard.maxCompressorRatio",
+      label: "Pressure guard: max memory compressor",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 0.35,
+      description:
+        "Block new work when the macOS memory compressor holds more than this fraction of total RAM. Default 0.35 (35%).",
     },
     {
       key: "localChecks.queueTimeoutMs",
@@ -3653,6 +3688,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "pressureGuard.enabled",
   "pressureGuard.maxLoadPerCpu",
   "pressureGuard.minAvailableMemRatio",
+  "pressureGuard.maxSwapUsedRatio",
+  "pressureGuard.maxCompressorRatio",
   "watchdog.enabled",
   "watchdog.stalenessMs",
   "watchdog.autoTransition",

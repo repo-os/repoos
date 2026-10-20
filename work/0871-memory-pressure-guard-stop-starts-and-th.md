@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1254629
-last_close_out_gate_at: "2026-10-20T23:52:01.204Z"
 id: "0871"
 title: "Memory-pressure guard: stop starts and throttle by swap and compressor use, not load average"
 type: feature
-status: review
+status: done
 priority: p2
 area: server
+merged_commit: 0f734ebb53e4667e3e993f346356ea7736a2180b
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/memory-pressure-guard-stop-starts-and-th
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:35Z"
 updated_at: "2026-10-20T23:52:01Z"
+last_close_out_gate_ms: 1254629
+last_close_out_gate_at: "2026-10-20T23:52:01.204Z"
 review_passes: 1
 ---
 ## Problem

@@ -62,6 +62,8 @@ export const health: RouteHandler = (ctx, req, res) => {
     // thin (missing startedAt) — the lockfile stays the primary source.
     serverStartedAt: new Date(Date.now() - process.uptime() * 1000).toISOString(),
     isPreviewBuild: process.env.REPOOS_PREVIEW_CHILD === "1",
+    /** Live engineer turns (#0871). Registry entries carry the same count. */
+    activeEngineers: ctx.runner.running().length,
     copyInspectorAvailable: copyInspectorApiEnabled(ctx.config.root),
     canaryCounter: readCanaryCounter(ctx.config.root, ctx.config.cacheDir),
     canaryPath: canaryRelPath(ctx.config.cacheDir),
@@ -153,6 +155,7 @@ export const getSystem: RouteHandler = (ctx, _req, res) => {
     cacheDir: join(config.root, config.cacheDir),
     runningAgents: runner.running(),
     root: config.root,
+    config,
   });
   return json(res, 200, stats);
 };
