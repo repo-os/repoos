@@ -703,8 +703,14 @@ const TAIL_MAX_CHARS = 800;
  * normal, common path is the index lookup, which is far cheaper than a
  * directory scan. Task ids are unique by filename convention (`<id>-*.md`).
  */
-function findTaskFileById(root: string, workDir: string, taskId: string): string | null {
-  const dir = join(root, workDir);
+function findTaskFileById(
+  root: string,
+  workDir: string | undefined,
+  taskId: string,
+): string | null {
+  // Every other caller defaults an unset workDir to "work"; do the same here so
+  // a config without the key does not throw inside a failure path (#0886).
+  const dir = join(root, workDir ?? "work");
   let entries: string[];
   try {
     entries = readdirSync(dir);
