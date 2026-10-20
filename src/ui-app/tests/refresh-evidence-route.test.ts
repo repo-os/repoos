@@ -125,6 +125,42 @@ function blockGitHeadLookup(): { release: () => void; restore: () => void } {
 }
 
 describe("POST /api/tasks/:id/verify guards", () => {
+  it("tells the reviewer earlier evidence stayed current after bookkeeping-only commits", async () => {
+    const root = gitRoot();
+    writeFileSync(join(root, ".gitignore"), ".repoos/\nwork/.attachments/\n");
+    execSync(`git -C ${root} add .gitignore && git -C ${root} commit -q -m ignore`, {
+      stdio: "ignore",
+    });
+    const capturedHead = execSync(`git -C ${root} rev-parse --short HEAD`, {
+      encoding: "utf8",
+    }).trim();
+    const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+    const task = makeTask(root, "review");
+    const evidenceDir = join(root, ".repoos/ui-verification");
+    mkdirSync(evidenceDir, { recursive: true });
+    writeFileSync(
+      join(evidenceDir, `${task.id}.json`),
+      JSON.stringify({
+        at: new Date().toISOString(),
+        issues: [],
+        blankShots: [],
+        captures: 1,
+        sourceIdentity: capturedHead,
+      }),
+    );
+    writeFileSync(join(root, "work/0861.md"), "docs(0861): update task\n");
+    execSync(
+      `git -C ${root} add work/0861.md && git -C ${root} commit -q -m 'docs(0861): update task'`,
+      {
+        stdio: "ignore",
+      },
+    );
+
+    const summary = await new ReviewManager(config, () => {}).uiVerificationSummary(task);
+    expect(summary).toContain("only RepoOS bookkeeping changed");
+    expect(summary).not.toContain("STALE —");
+  });
+
   it("refuses tasks outside review", async () => {
     const root = gitRoot();
     const res = response();
@@ -312,6 +348,50 @@ describe("POST /api/tasks/:id/verify guards", () => {
 });
 
 describe("automatic stale-evidence refresh serialization (#0772)", () => {
+  it("stands down when only task bookkeeping moved HEAD", async () => {
+    const root = gitRoot();
+    writeFileSync(join(root, ".gitignore"), ".repoos/\nwork/.attachments/\n");
+    execSync(`git -C ${root} add .gitignore && git -C ${root} commit -q -m ignore`, {
+      stdio: "ignore",
+    });
+    const shortHead = execSync(`git -C ${root} rev-parse --short HEAD`, {
+      encoding: "utf8",
+    }).trim();
+    const config = {
+      root,
+      workDir: "work",
+      cacheDir: ".repoos",
+      uiVerification: { enabled: true },
+    } as RepoOSConfig;
+    const task = makeTask(root, "review");
+    const evidenceDir = join(root, ".repoos/ui-verification");
+    mkdirSync(evidenceDir, { recursive: true });
+    writeFileSync(
+      join(evidenceDir, `${task.id}.json`),
+      JSON.stringify({
+        at: new Date().toISOString(),
+        issues: [],
+        blankShots: [],
+        captures: 1,
+        sourceIdentity: shortHead,
+      }),
+    );
+    writeFileSync(join(root, "work/other-task.md"), "activity\n");
+    execSync("git add work/other-task.md && git commit -q -m 'docs(0862): update task'", {
+      cwd: root,
+      stdio: "ignore",
+    });
+    const capture = vi.spyOn(uiHandoffGate, "runUiHandoffGate");
+    const refreshed = await automaticStaleEvidenceRefresh(
+      automaticDeps(root, task, {
+        config: { ...config, uiVerification: { enabled: true, autoRefreshStaleOnce: true } },
+      }),
+      task,
+    );
+    expect(refreshed).toBe(false);
+    expect(capture).not.toHaveBeenCalled();
+  });
+
   it("reserves the refresh lock before its first await and blocks a review start", async () => {
     const root = gitRoot();
     const task = makeTask(root, "review");
@@ -426,6 +506,37 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
   function porcelainOf(root: string): string {
     return execSync(`git -C ${root} status --porcelain`, { encoding: "utf8" }).trim();
   }
+
+  it("does not re-capture when only task bookkeeping moved HEAD", async () => {
+    const { root, shortHead, config, task } = commandRepo(RUN_COMMAND);
+    const evidenceDir = join(root, ".repoos/ui-verification");
+    mkdirSync(evidenceDir, { recursive: true });
+    writeFileSync(
+      join(evidenceDir, `${task.id}.json`),
+      JSON.stringify({
+        at: new Date().toISOString(),
+        issues: [],
+        blankShots: [],
+        captures: 1,
+        sourceIdentity: shortHead,
+      }),
+    );
+    writeFileSync(join(root, "work/other-task.md"), "activity\n");
+    execSync("git add work/other-task.md && git commit -q -m 'docs(0862): update task'", {
+      cwd: root,
+      stdio: "ignore",
+    });
+    const capture = vi.spyOn(uiHandoffGate, "runUiHandoffGate");
+    const res = response();
+    await refreshTaskEvidence(context(task, root, { config }), {} as never, res as never, {
+      param1: task.id,
+    });
+    expect(res.result()).toMatchObject({
+      status: 200,
+      body: { ok: true, refreshed: false, detail: expect.stringContaining("already current") },
+    });
+    expect(capture).not.toHaveBeenCalled();
+  });
 
   it("links inherited .env into the detached command worktree when inheritEnv is enabled", async () => {
     const root = gitRoot();

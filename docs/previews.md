@@ -222,6 +222,13 @@ is the same (`declared: <label>` / `auto: matched <glob>`), duplicate collapsing
 and the plan-fingerprint/tree stale-capture checks work identically, and
 `repoos shot --target "macOS app"` runs the command from the CLI too.
 
+Capture freshness compares the captured commit with the reviewed HEAD. A diff
+containing only RepoOS bookkeeping paths (`workDir`, `inputsDir`, `storiesDir`,
+`schedulesDir`, reminders, `.repoos`, and attachment trees) leaves the capture
+current and reusable. Any other changed path, including source, tests, docs, or
+configuration, makes it stale. If Git cannot classify the diff, RepoOS treats
+the capture as stale.
+
 **Choosing which images a command capture produces (#0769).** A command's
 `outputGlob` may match a whole fixed snapshot set — the bar and every popover —
 so an automatic capture attaches dozens of images and the one that shows the
