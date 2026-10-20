@@ -2,7 +2,7 @@
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -53,4 +53,4 @@ Start with the design doc and a small spike: reuse `validate.sh`, the bundle upl
 - 2026-10-20T05:49:17Z · message_delivered: 1 message(s)
 - 2026-10-20T05:50:06Z · status active→review
 - 2026-10-20T05:50:06Z · note: handoff requested (cli)
-- 2026-10-20T05:57:03Z · note: shots: skipped — the diff (2 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-20T05:57:03Z · status active→review
