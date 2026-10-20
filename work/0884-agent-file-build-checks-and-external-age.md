@@ -2,17 +2,23 @@
 id: "0884"
 title: Agent-file build checks and drift checks
 type: feature
-status: inbox
+status: done
 paths: [landing, user-docs, agent]
 priority: p2
 area: [landing, docs]
 story: Agent-discoverable RepoOS
 depends_on: ["0880", "0881", "0883"]
+merged_commit: d534e70ab1025b0bc4d80fdef47cde6d06290ef0
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/agent-file-build-checks-and-drift-checks
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:02:55Z"
-updated_at: "2026-10-20T19:00:13Z"
+updated_at: "2026-10-20T23:16:40Z"
+last_close_out_gate_ms: 242534
+last_close_out_gate_at: "2026-10-20T23:16:40.525Z"
+review_passes: 1
 ---
 ## Problem
 The agent files in this story are generated or shared across two sites. Nothing in the existing `landing-build` and `user-docs-build` steps fails the build when `llms.txt` is missing, when an install command drifts from the published commands, or when the landing page and the docs homepage embed different prompt text.
@@ -49,3 +55,19 @@ Scope split (2026-10-21, driver): the written trial with an unfamiliar coding ag
 - 2026-10-20T18:59:57Z · body: Notes for AI (added 4)
 - 2026-10-20T19:00:09Z · body: Notes for AI (added 1, removed 1)
 - 2026-10-20T19:00:13Z · title
+- 2026-10-20T22:12:23Z · status inbox→ready
+- 2026-10-20T22:12:27Z · cli_override, model_override
+- 2026-10-20T22:12:29Z · status ready→active, branch
+- 2026-10-20T22:19:18Z · body
+- 2026-10-20T22:27:14Z · message_queued at 2026-10-20T22:27:14.851Z
+- 2026-10-20T22:27:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-20T22:41:59Z · body
+- 2026-10-20T22:45:00Z · body
+- 2026-10-20T22:51:03Z · body
+- 2026-10-20T22:53:02Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-20T22:53:03Z · message_delivered: 1 message(s)
+- 2026-10-20T23:02:15Z · status active→review
+- 2026-10-20T23:02:16Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (d534e70ab) during finalization (#0734)
+- 2026-10-20T23:03:29Z · note: review pass 1: good to go
+- 2026-10-20T23:16:40Z · close-out gate completed in 243s
+
