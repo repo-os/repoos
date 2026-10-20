@@ -11,7 +11,7 @@ branch: feat/close-out-task-shows-as-inbox-between-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T17:18:03Z"
-updated_at: "2026-10-20T20:33:50Z"
+updated_at: "2026-10-20T20:41:44Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -68,3 +68,4 @@ Evidence (2026-10-21): this reproduces on EVERY landing, not just #0863. For #08
 - 2026-10-20T20:19:01Z · assigned_to
 - 2026-10-20T20:33:48Z · assigned_to
 - 2026-10-20T20:33:50Z · note: handoff requested (ui-review)
+- 2026-10-20T20:41:44Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/moot-failure-reconcile.test.ts > moot close-out failure reconciliation (#0289) > drops a failed close-out job whose task is already done instead of leaving a failed record on thinkpad — fix it in the feature branch and re-run the gate
