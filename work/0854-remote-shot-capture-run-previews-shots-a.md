@@ -2,7 +2,7 @@
 id: "0854"
 title: "Remote shot capture: run previews, shots and UI verification on a runner instead of the laptop"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/remote-shot-capture-run-previews-shots-a
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-19T14:24:21Z"
-updated_at: "2026-10-20T15:32:16Z"
+updated_at: "2026-10-20T16:02:51Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/toml-validate.test.ts > validateToml accepts > the repository's own repoos.toml on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: a69f5cbf1a167a4285061a9fd2e01132d83d6dd9
 review_passes: 18
@@ -256,3 +256,4 @@ Start with the design doc and a small spike: reuse validate.sh, the bundle uploa
 - 2026-10-20T15:31:54Z · needs_input
 - 2026-10-20T15:32:10Z · status active→ready
 - 2026-10-20T15:32:16Z · status ready→active
+- 2026-10-20T16:02:51Z · status active→review
