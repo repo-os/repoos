@@ -87,3 +87,4 @@ Look at the watchdog, the CTO restart-stalled-agent action, the handoff request 
 - 2026-10-20T19:59:05Z · note: handoff requested (ui-review)
 - 2026-10-20T20:01:36Z · body
 - 2026-10-20T20:07:49Z · status active→review
+- 2026-10-20T20:07:49Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (0dcd71137) during finalization (#0734)
