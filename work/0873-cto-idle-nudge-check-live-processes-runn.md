@@ -13,9 +13,9 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T12:23:49Z"
 updated_at: "2026-10-21T03:08:36Z"
-review_passes: 2
 last_close_out_gate_ms: 105173
 last_close_out_gate_at: "2026-10-21T01:50:32.952Z"
+review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -97,12 +97,4 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T02:29:24Z · status active→ready
 - 2026-10-21T02:29:32Z · status ready→active
 - 2026-10-21T02:37:20Z · body
-- 2026-10-21T02:46:03Z · body
-- 2026-10-21T02:56:58Z · assigned_to
-- 2026-10-21T02:57:08Z · assigned_to
-- 2026-10-21T02:59:01Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-- 2026-10-21T02:59:15Z · note: handoff requested (ui-review)
-- 2026-10-21T03:02:37Z · status active→review
-- 2026-10-21T03:03:42Z · note: review pass 2: good to go
-
-
+- 2026-10-21T03:08:36Z · status active→review
