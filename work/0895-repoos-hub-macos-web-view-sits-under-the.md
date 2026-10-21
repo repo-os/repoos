@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T08:37:10Z"
-updated_at: "2026-10-21T08:37:36Z"
+updated_at: "2026-10-21T08:37:37Z"
 ---
 ## Problem
 Two layout problems in the native macOS app (RepoOS Hub), both visible in the new Window layout modes:
@@ -31,6 +31,11 @@ Two layout problems in the native macOS app (RepoOS Hub), both visible in the ne
 ## Notes for AI
 Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode from #0875, plus the sidebar view). The title bar looks like a full-size content view, so the web view needs a top inset (safe-area or `contentLayoutGuide`) equal to the tab-strip height. The three reporter screenshots are attached to this task: 1.png shows the tab strip with the collapse button over the first tab, 2.png shows the top of the web UI cut off in a windowed layout, 3.png shows sidebar mode with the collapse button in both rows.
 
+## Screenshots
+
+![Tabs mode: the sidebar collapse button is drawn over the RepoOS tab](/api/tasks/0895/attachments/att_3acc8c47-27c9-4b61-8d96-3042886db432.png)
+
 ## Activity
 
 - 2026-10-21T08:37:10Z · created · njachowski@gmail.com
+- 2026-10-21T08:37:37Z · screenshots
