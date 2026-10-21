@@ -12,7 +12,7 @@ branch: feat/offload-repoos-shot-to-a-runner
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:27:49Z"
-updated_at: "2026-10-21T11:13:12Z"
+updated_at: "2026-10-21T11:37:23Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T09:07:49.677Z: repoos check failed: ◆ Check plan"
 dev_error_count: 1
@@ -55,3 +55,4 @@ Not required for #0854's acceptance criteria. #0864 (rebuild the runner image an
 - 2026-10-21T10:53:32Z · message_queued at 2026-10-21T10:53:32.258Z
 - 2026-10-21T10:53:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-21T11:13:12Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-21T11:37:23Z · body
