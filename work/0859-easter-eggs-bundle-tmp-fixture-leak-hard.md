@@ -12,13 +12,13 @@ branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T04:50:42Z"
+updated_at: "2026-10-21T04:51:26Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:13.053Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:08:06.822Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:09:05.450Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 
-- [ ] **E1 · Server teardown survives a browser-close failure** (core) — in the UI smoke and contrast harnesses, close the server in its own `finally` so a throwing `context.close()`/`browser.close()` cannot skip it. Source: #0858 review, 2026-10-20.
+- [x] **E1 · Server teardown survives a browser-close failure** (core) — in the UI smoke and contrast harnesses, close the server in its own `finally` so a throwing `context.close()`/`browser.close()` cannot skip it. Source: #0858 review, 2026-10-20.
 - [ ] **E2 · Worker-kill reaches nested fixtures deeper than 4 levels** (core) — `killSpawnedLogs` recurses only four levels, so a deeper fixture's child process survives a worker kill. Source: #0858 review.
 - [ ] **E3 · Test the smoke/contrast "0 new dirs in the real tmpdir" behaviour** (core) — that half of #0858's fix was only hand-verified. Source: #0858 review.
 - [ ] **E4 · RepoOS Hub opens at its minimum size instead of filling the screen** (macos) — RepoOSHubApp.swift WindowGroup sets only a min frame (880x520) and no default size, so a fresh window opens near that minimum, centered. Give the window a default size that fills the visible screen (use .defaultSize/.windowResizability or size the NSWindow to screen.visibleFrame on first creation, like a browser), keep it resizable, and let macOS frame restore win once the user resizes it.. Source: Nick, 2026-10-20: Hub always opens about 25% of the screen, centered; wants it to open large like a browser..
@@ -148,3 +148,5 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T04:44:16Z · body
 - 2026-10-21T04:48:42Z · body
 - 2026-10-21T04:50:42Z · body
+- 2026-10-21T04:51:26Z · body: Items (added 1, removed 1)
+- 2026-10-21T04:51:26Z · note: bundle done E1
