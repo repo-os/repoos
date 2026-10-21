@@ -52,8 +52,8 @@ function relConfig(root: string): RepoOSConfig {
  *
  * The pressure guard is off because this test is about the WIP-checkpoint
  * decision, not local scheduling; left at its default the guard holds the
- * check on a loaded machine until `pressureGuard` relief, which never comes
- * inside a test.
+ * check on a loaded machine until pressure eases, which never happens inside
+ * a test.
  */
 function remoteWipFixture(): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-wip-fail-"));
