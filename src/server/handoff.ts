@@ -602,6 +602,7 @@ async function runHandoffFinalization(
           worktreePath: workdir,
           taskId: task.id,
           phase: "pre-review",
+          kind: "handoff",
           onChunk: checkHandle?.chunk,
           deadlineAt: handoffDeadlineAt,
         });

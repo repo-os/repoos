@@ -796,6 +796,7 @@ export async function cutNewRelease(
       worktreePath: config.root,
       taskId: "release",
       phase: "release",
+      kind: "release",
       onChunk: (chunk) => onProgress?.("checking", chunk),
     });
     if (remoteGateOutcome.kind === "fail") {

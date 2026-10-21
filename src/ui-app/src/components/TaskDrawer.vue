@@ -358,6 +358,47 @@ const lastCheckRun = computed(() => {
   return runs.filter((r) => !r.running).at(-1) ?? null;
 });
 
+/** Live remote run/queue detail for this task (#0897). */
+const remoteActivity = computed(() => {
+  const id = ui.active?.id;
+  return id ? (repo.taskRemoteActivity[id] ?? null) : null;
+});
+
+function remotePhaseText(ms: number | null | undefined): string {
+  return ms == null ? "" : formatDuration(ms);
+}
+
+/**
+ * What the remote runner is doing for this task, in one line: phase + elapsed
+ * and (when queued) the position and jobs holding the slots ahead (#0897).
+ */
+const remoteActivityText = computed(() => {
+  const activity = remoteActivity.value;
+  if (!activity) return "";
+  if (activity.run) {
+    const run = activity.run;
+    const elapsed = formatDuration(Math.max(0, checkNow.value - Date.parse(run.startedAt)));
+    const phases = (run.phases ?? [])
+      .map((p) => {
+        const ms =
+          p.durationMs ?? (p.endedAt ? Date.parse(p.endedAt) - Date.parse(p.startedAt) : null);
+        return `${p.phase === "queued" ? "queued for slot" : p.phase} ${remotePhaseText(ms)}`.trim();
+      })
+      .join(" · ");
+    return `Remote ${run.kind} on ${run.host} · ${run.stage ?? "running"} ${elapsed}${phases ? ` (${phases})` : ""}`;
+  }
+  if (activity.queue) {
+    const q = activity.queue;
+    const ahead = q.blockers.length
+      ? q.blockers
+          .map((b) => `#${b.taskId} ${b.kind} on ${b.host} (${formatDuration(b.elapsedMs)})`)
+          .join(", ")
+      : "no runner slot holder visible";
+    return `Queued for a runner${q.host ? ` on ${q.host}` : ""} · position ${q.position}, waiting ${formatDuration(q.waitedMs)} — ahead: ${ahead}`;
+  }
+  return "";
+});
+
 /**
  * Newest durable row for this task that carries the gate's FINAL verdict.
  * A remote row is one half of a gate; prefer the local half, which completes
@@ -388,13 +429,24 @@ function stopCheckLoops(): void {
 function startCheckLoops(taskId: string): void {
   stopCheckLoops();
   void refreshCheckRows(taskId);
+  void repo.refreshTaskChecks(taskId);
   checkNow.value = Date.now();
   checkTick = setInterval(() => (checkNow.value = Date.now()), 1000);
-  checkRowsTimer = setInterval(() => void refreshCheckRows(taskId), CHECK_ROWS_POLL_MS);
+  checkRowsTimer = setInterval(() => {
+    void refreshCheckRows(taskId);
+    // Remote phase + pool queue position for the drawer (#0897) — refreshed
+    // with the same cadence so a queued validation shows a live wait time.
+    void repo.refreshTaskChecks(taskId);
+  }, CHECK_ROWS_POLL_MS);
 }
 
 watch(
-  () => [ui.active?.id, activeCheckRun.value?.id, lastCheckRun.value?.finishedAt],
+  () => [
+    ui.active?.id,
+    ui.active?.status,
+    activeCheckRun.value?.id,
+    lastCheckRun.value?.finishedAt,
+  ],
   ([taskId]) => {
     if (!taskId) {
       stopCheckLoops();
@@ -409,7 +461,10 @@ watch(
     if ((repo.taskChecks[taskId as string] ?? []).length === 0) {
       void repo.refreshTaskChecks(taskId as string);
     }
-    if (activeCheckRun.value) {
+    // A task in `review` may be in a close-out whose remote gate is queued or
+    // running (#0897) even though no local TaskCheckRun exists yet; polling
+    // keeps its phase and queue position live in the drawer.
+    if (activeCheckRun.value || ui.active?.status === "review") {
       startCheckLoops(taskId as string);
     } else {
       // Not running: hydrate once so the done-state fallback can read the
@@ -1509,8 +1564,23 @@ const pipelineStage = computed(() => {
  */
 const pipelineStageLabel = computed(() => {
   const stage = pipelineStage.value;
-  if (stage === "resolve-conflict") return "resolving integration conflict";
-  return stage;
+  const active = repo.integration?.active;
+  const queued = repo.integration?.queueDetail?.find((q) => q.taskId === ui.active?.id);
+  if (!stage && queued) {
+    const waited = Number.isFinite(Date.parse(queued.enqueuedAt))
+      ? Math.max(0, checkNow.value - Date.parse(queued.enqueuedAt))
+      : queued.waitedMs;
+    const ahead = queued.blockerTaskId
+      ? ` — ahead: #${queued.blockerTaskId} ${queued.blockerPhase ?? ""}`.trimEnd()
+      : "";
+    return `queued #${queued.position} · ${formatDuration(waited)}${ahead}`;
+  }
+  const base = stage === "resolve-conflict" ? "resolving integration conflict" : stage;
+  if (!base) return base;
+  const startedAt = active?.phaseStartedAt ?? null;
+  if (!startedAt) return base;
+  const elapsed = Math.max(0, checkNow.value - Date.parse(startedAt));
+  return `${base} · ${formatDuration(elapsed)}`;
 });
 
 /** Last successful merge-gate duration on this task (#0679), for close-out tuning. */
@@ -4393,6 +4463,12 @@ watch(
           </div>
         </div>
         <div v-else class="drawer-quickbar">
+          <!-- #0897: the remote runner is queued or running for this task —
+               name the phase, host, elapsed time and any job ahead of it. -->
+          <div v-if="remoteActivityText" class="ff-notice drawer-remote-activity" role="status">
+            <ActivityIndicator />
+            <span>{{ remoteActivityText }}</span>
+          </div>
           <!-- #0507: the handoff finalization is in flight. The task is still
                `active` on purpose, so without this it would read as "nothing
                happened" for the whole length of the check. -->

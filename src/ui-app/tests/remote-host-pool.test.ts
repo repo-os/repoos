@@ -1920,6 +1920,109 @@ describe("host lock observability and dispatch (#0705)", () => {
   });
 });
 
+describe("queue detail: position, kind and blockers (#0897)", () => {
+  it("reports a queued job's position, kind and the running jobs ahead of it", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
+    const first = f.runner.validate(opts("0897-a", { kind: "close-out" }));
+    const second = f.runner.validate(opts("0897-b", { kind: "handoff" }));
+    await tick();
+    const third = f.runner.validate(opts("0897-c", { kind: "shot" }));
+    await tick();
+
+    const queued = f.runner.queueStatus();
+    expect(queued).toHaveLength(1);
+    expect(queued[0]).toMatchObject({
+      taskId: "0897-c",
+      kind: "shot",
+      position: 3,
+      ahead: 2,
+    });
+    expect(queued[0]!.host).toBeTruthy();
+    expect(
+      queued[0]!.blockers.map((b) => [b.taskId, b.kind]).sort((a, b) => a[0]!.localeCompare(b[0]!)),
+    ).toEqual([
+      ["0897-a", "close-out"],
+      ["0897-b", "handoff"],
+    ]);
+    expect(queued[0]!.waitedMs).toBeGreaterThanOrEqual(0);
+
+    // The same detail is attributed to the one host dispatch would use next,
+    // and running jobs carry their kind for the Runners tab.
+    const status = f.runner.hostStatus()!;
+    const withQueue = status.filter((h) => (h.queuedRuns ?? []).length > 0);
+    expect(withQueue).toHaveLength(1);
+    expect(withQueue[0]!.queuedRuns![0]!.taskId).toBe("0897-c");
+    expect(
+      status
+        .flatMap((h) => h.activeRuns ?? [])
+        .map((r) => r.kind)
+        .sort(),
+    ).toEqual(["close-out", "handoff"]);
+
+    f.release();
+    await tick();
+    f.release();
+    await tick();
+    f.release();
+    await Promise.all([first, second, third]);
+  });
+
+  it("does not count a waiter that needs a different host in the position", async () => {
+    const f = poolFixture({
+      hosts: [
+        { host: "linux1", os: "linux" },
+        { host: "mac1", os: "macos" },
+      ],
+    });
+    const linuxBusy = f.runner.validate(opts("0897-linux", { capabilities: ["linux"] }));
+    const macBusy = f.runner.validate(opts("0897-mac", { capabilities: ["macos"] }));
+    await tick();
+    const macQueued = f.runner.validate(
+      opts("0897-mac-queued", { capabilities: ["macos"], kind: "review" }),
+    );
+    await tick();
+
+    const queued = f.runner.queueStatus();
+    expect(queued).toHaveLength(1);
+    expect(queued[0]).toMatchObject({ taskId: "0897-mac-queued", position: 2, ahead: 1 });
+    expect(queued[0]!.blockers.map((b) => [b.taskId, b.host])).toEqual([["0897-mac", "mac1"]]);
+
+    f.release("linux1");
+    await tick();
+    f.release("mac1");
+    await tick();
+    f.release("mac1");
+    await Promise.all([linuxBusy, macBusy, macQueued]);
+  });
+
+  it("records per-stage timings and the job kind for an in-flight run", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    const job = f.runner.validate(opts("0897-phases", { kind: "self-check" }));
+    for (let i = 0; i < 50 && f.pending().length === 0; i++) await tick(5);
+    expect(f.pending()).toEqual(["a"]);
+
+    const run = f.runner.hostStatus()![0]!.activeRuns![0]!;
+    expect(run.taskId).toBe("0897-phases");
+    expect(run.kind).toBe("self-check");
+    expect(run.stage).toBe("run");
+    const phases = run.phases?.map((p) => p.phase) ?? [];
+    // The queue wait is only recorded when the slot was not free instantly.
+    expect(["queued", "bundle"]).toContain(phases[0]);
+    expect(phases).toContain("upload");
+    expect(phases.slice(-2)).toEqual(["queue", "run"]);
+    expect(run.phases![0]!.endedAt).toBeTruthy();
+    expect(run.phases!.at(-1)!.endedAt).toBeUndefined();
+    expect(run.elapsedMs).toBeGreaterThanOrEqual(0);
+
+    const activity = f.runner.taskActivity("0897-phases");
+    expect(activity?.run).toMatchObject({ kind: "self-check", host: "a", stage: "run" });
+    expect(activity?.queue).toBeNull();
+
+    f.release("a");
+    await job;
+  });
+});
+
 describe("host-side lock (server + standalone CLI share one limit)", () => {
   it("serialises two independent processes on a one-slot host", async () => {
     const root = tmpRoot();

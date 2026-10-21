@@ -947,6 +947,55 @@ export interface CheckRunRow {
 }
 
 /** One host's live state from `GET /api/remote-validation/status` (#0521/#0564). */
+export type RemoteRunKind =
+  | "handoff"
+  | "close-out"
+  | "self-check"
+  | "review"
+  | "shot"
+  | "release"
+  | "checks";
+
+export interface RemoteRunPhaseTiming {
+  phase: string;
+  startedAt: string;
+  endedAt?: string;
+  durationMs?: number;
+}
+
+export interface RemoteQueueBlocker {
+  taskId: string;
+  kind: RemoteRunKind;
+  host: string;
+  startedAt: string;
+  elapsedMs: number;
+}
+
+export interface RemoteQueuedRunInfo {
+  taskId: string;
+  kind: RemoteRunKind;
+  host: string;
+  position: number;
+  ahead: number;
+  since: string;
+  waitedMs: number;
+  blockers: RemoteQueueBlocker[];
+}
+
+/** Live remote run + queue detail for one task (#0897). */
+export interface RemoteTaskActivity {
+  run: {
+    taskId: string;
+    host: string;
+    kind: RemoteRunKind;
+    startedAt: string;
+    elapsedMs: number;
+    stage: string | null;
+    phases: RemoteRunPhaseTiming[];
+  } | null;
+  queue: RemoteQueuedRunInfo | null;
+}
+
 export interface RemoteHostStatusView {
   host: string;
   user: string;
@@ -965,6 +1014,14 @@ export interface RemoteHostStatusView {
     phase?: string;
     label?: string;
     source?: "server" | "host-lock";
+    /** What the job belongs to — handoff/close-out/self-check/… (#0897). */
+    kind?: RemoteRunKind;
+    /** Current stage (`bundle`, `upload`, `queue`, `run`). */
+    stage?: string | null;
+    /** Live elapsed ms, including the queue wait before a slot was leased. */
+    elapsedMs?: number;
+    /** Per-phase timings recorded as the run advanced (#0897). */
+    phases?: RemoteRunPhaseTiming[];
     /** #0720: this run exceeds its kind median while still running. */
     slow?: boolean;
     /** #0720: best-guess cause, e.g. "bundle upload …". */
@@ -975,6 +1032,8 @@ export interface RemoteHostStatusView {
     hung?: boolean;
   }[];
   queuedTasks?: string[];
+  /** Queued runs attributed to this host, with position + blockers (#0897). */
+  queuedRuns?: RemoteQueuedRunInfo[];
   /** Recent hung runs on this host (#0729). */
   hungRuns?: { taskId: string; at: string; detail?: string }[];
   hostLock?: {
@@ -1232,11 +1291,29 @@ export interface IntegrationPipelineSnapshot {
      * time (#0782). Null/absent when the job has no finer-grained progress.
      */
     detail?: string | null;
+    /** Close-out phase (`queued`/`syncing`/`validating`/…) (#0897). */
+    phase?: string;
+    /** When the current phase began (ISO) (#0897). */
+    phaseStartedAt?: string | null;
+    /** Elapsed time in the current phase at snapshot time (#0897). */
+    phaseElapsedMs?: number | null;
+    /** Time spent in every phase so far, oldest first (#0897). */
+    phaseTimings?: { phase: string; startedAt: string; endedAt?: string; durationMs?: number }[];
   } | null;
   /** Task ids queued behind the active job, in FIFO order. */
   queue: string[];
   /** Enqueue time (ISO) for each id in `queue`, for stale close-out UI (#0741). */
   queueEnqueuedAt?: Record<string, string>;
+  /** Position, wait and the active blocker for each queued close-out (#0897). */
+  queueDetail?: {
+    taskId: string;
+    position: number;
+    enqueuedAt: string;
+    waitedMs: number;
+    blockerTaskId: string | null;
+    blockerPhase: string | null;
+    blockerElapsedMs: number | null;
+  }[];
   /** The repo's resolved check plan (`repoos.toml`), for data-driven tooltips (#0458). */
   checkPlan?: CheckPlanInfo;
   at: string;

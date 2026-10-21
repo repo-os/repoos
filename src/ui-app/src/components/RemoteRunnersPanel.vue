@@ -5,7 +5,11 @@ import { api } from "../api";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
 import Button from "./ui/button.vue";
-import type { RemoteHostStatusView, RemoteValidationStatusView } from "../types";
+import type {
+  RemoteHostStatusView,
+  RemoteQueuedRunInfo,
+  RemoteValidationStatusView,
+} from "../types";
 
 /**
  * The Remote runners tab (#0564): each configured host with its health, the
@@ -150,6 +154,50 @@ function runLabel(r: NonNullable<RemoteHostStatusView["activeRuns"]>[number]): s
   return r.taskId;
 }
 
+const KIND_LABELS: Record<string, string> = {
+  handoff: "handoff check",
+  "close-out": "close-out",
+  "self-check": "self-check",
+  review: "review",
+  shot: "screenshots",
+  release: "release",
+  checks: "check",
+};
+
+function kindLabel(kind: string | undefined): string {
+  return KIND_LABELS[kind ?? "checks"] ?? kind ?? "check";
+}
+
+const STAGE_LABELS: Record<string, string> = {
+  bundle: "bundling",
+  upload: "uploading",
+  queue: "waiting for host slot",
+  run: "build + tests",
+};
+
+function stageLabel(stage: string | null | undefined): string {
+  if (!stage) return "";
+  return STAGE_LABELS[stage] ?? stage;
+}
+
+/** One-line phase breakdown for an in-flight run (#0897). */
+function phaseSummary(r: NonNullable<RemoteHostStatusView["activeRuns"]>[number]): string {
+  const parts = (r.phases ?? []).map((p) => {
+    const label = p.phase === "queued" ? "queued for slot" : stageLabel(p.phase);
+    const ms = p.durationMs ?? (p.endedAt ? Date.parse(p.endedAt) - Date.parse(p.startedAt) : null);
+    return `${label} ${fmtDuration(ms)}`;
+  });
+  return parts.join(" · ");
+}
+
+/** The jobs holding the slots a queued validation needs (#0897). */
+function blockerText(q: RemoteQueuedRunInfo): string {
+  if (!q.blockers.length) return "no slot holder visible yet";
+  return q.blockers
+    .map((b) => `#${b.taskId} ${kindLabel(b.kind)} on ${b.host} (${fmtDuration(b.elapsedMs)})`)
+    .join(", ");
+}
+
 function fmtAgo(iso: string): string {
   const t = Date.parse(iso);
   if (!Number.isFinite(t)) return "";
@@ -263,8 +311,10 @@ function fmtAgo(iso: string): string {
                 :class="{ 'rr-hung': r.hung }"
               >
                 <span class="mono">{{ runLabel(r) }}</span>
-                <span v-if="r.phase" class="rr-dim"> · {{ r.phase }}</span>
+                <span class="rr-kind">{{ kindLabel(r.kind) }}</span>
+                <span v-if="r.stage" class="rr-dim"> · {{ stageLabel(r.stage) }}</span>
                 · {{ elapsedSince(r.startedAt) }}
+                <span v-if="r.phases?.length" class="rr-phases"> ({{ phaseSummary(r) }}) </span>
                 <span
                   v-if="r.slow"
                   class="rr-slow-badge"
@@ -298,7 +348,21 @@ function fmtAgo(iso: string): string {
           <dt>Queue</dt>
           <dd class="rr-wrap">
             <template v-if="h.queued > 0 || (h.lockWaiters ?? []).length">
-              <template v-if="(h.lockWaiters ?? []).length">
+              <template v-if="(h.queuedRuns ?? []).length">
+                <span
+                  v-for="q in h.queuedRuns"
+                  :key="`${q.taskId}-${q.position}`"
+                  class="rr-queued-run"
+                >
+                  <span class="mono">{{ /^\d+$/.test(q.taskId) ? `#${q.taskId}` : q.taskId }}</span>
+                  <span class="rr-kind">{{ kindLabel(q.kind) }}</span>
+                  <span class="rr-dim"> · position {{ q.position }}</span>
+                  <span v-if="q.host" class="rr-dim"> on {{ q.host }}</span>
+                  · {{ fmtDuration(q.waitedMs) }} waiting
+                  <span class="rr-blockers">ahead: {{ blockerText(q) }}</span>
+                </span>
+              </template>
+              <template v-else-if="(h.lockWaiters ?? []).length">
                 <span
                   v-for="w in h.lockWaiters"
                   :key="`${w.taskId}-${w.queuePosition ?? 0}`"
@@ -598,6 +662,34 @@ function fmtAgo(iso: string): string {
 }
 .rr-dim {
   color: var(--txt-dim);
+}
+.rr-kind {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--txt-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.rr-phases {
+  color: var(--txt-faint);
+  font-size: 11.5px;
+}
+.rr-queued-run {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 4px;
+  width: 100%;
+  font-size: 12.5px;
+}
+.rr-blockers {
+  width: 100%;
+  color: var(--txt-faint);
+  font-size: 11.5px;
+  padding-left: 2px;
 }
 .rr-ok {
   color: var(--green);
