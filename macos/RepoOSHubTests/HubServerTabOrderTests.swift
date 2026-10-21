@@ -82,6 +82,27 @@ final class HubServerTabOrderTests: XCTestCase {
         XCTAssertEqual(movedRight, [a.id, c.id, b.id])
     }
 
+    func testSelectionAfterHideClearsWhenTheStripIsEmpty() {
+        let kept = UUID()
+        let hidden = UUID()
+        let cases: [(selected: UUID?, hidden: UUID, remaining: [UUID], expected: UUID?)] = [
+            (hidden, hidden, [kept], kept),
+            (hidden, hidden, [], nil),
+            (kept, hidden, [kept], kept),
+            (nil, hidden, [], nil),
+        ]
+        for sample in cases {
+            XCTAssertEqual(
+                HubServerTabOrder.selectionAfterHide(
+                    selected: sample.selected,
+                    hiddenID: sample.hidden,
+                    remainingVisible: sample.remaining
+                ),
+                sample.expected
+            )
+        }
+    }
+
     func testAdjacentTabWraps() {
         let ids = [UUID(), UUID(), UUID()]
         XCTAssertEqual(HubServerTabOrder.adjacent(visible: ids, selected: ids[2], forward: true), ids[0])

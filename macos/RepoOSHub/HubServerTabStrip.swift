@@ -360,30 +360,41 @@ private struct HubTrafficLightInsetReader: NSViewRepresentable {
 final class TrafficLightInsetView: NSView {
     var onChange: ((CGFloat) -> Void)?
 
+    deinit {
+        stopObservingWindow()
+    }
+
+    override func viewWillMove(toWindow newWindow: NSWindow?) {
+        super.viewWillMove(toWindow: newWindow)
+        stopObservingWindow()
+    }
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        NotificationCenter.default.removeObserver(self)
-        if let window {
-            NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(publish),
-                name: NSWindow.didResizeNotification,
-                object: window
-            )
-            NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(publish),
-                name: NSWindow.didEnterFullScreenNotification,
-                object: window
-            )
-            NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(publish),
-                name: NSWindow.didExitFullScreenNotification,
-                object: window
-            )
-        }
+        guard let window else { return }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(publish),
+            name: NSWindow.didResizeNotification,
+            object: window
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(publish),
+            name: NSWindow.didEnterFullScreenNotification,
+            object: window
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(publish),
+            name: NSWindow.didExitFullScreenNotification,
+            object: window
+        )
         publish()
+    }
+
+    private func stopObservingWindow() {
+        NotificationCenter.default.removeObserver(self)
     }
 
     @objc func publish() {
