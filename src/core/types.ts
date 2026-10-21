@@ -1223,6 +1223,13 @@ export interface RemoteValidationConfig {
    */
   retryOtherHosts?: boolean;
   /**
+   * Read each runner's memory pressure before leasing it and skip hosts over
+   * the `pressureGuard` thresholds (#0901). Default true. Uses the Linux VM's
+   * numbers for Docker-on-macOS hosts, not the Mac's swap. When every eligible
+   * host is pressured the run queues with a visible reason instead of failing.
+   */
+  healthCheck?: boolean;
+  /**
    * Run engineer `repoos check` build + tests on the remote runner (via the
    * board's provider) instead of on the laptop. Default true when `enabled`.
    * Handoff reuses a green pass at the same HEAD (#0694).

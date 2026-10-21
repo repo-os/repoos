@@ -223,11 +223,16 @@ export function collectAiAgentsFailures(options: AiAgentsCheckOptions = {}): str
   }
 
   const expectedPrompt = normalize(prompt);
+  // Identify the block by the canonical prompt's own first line, not a second
+  // hard-coded heading. A prompt rewrite left this check's literal sentinel
+  // behind and failed the docs build; the canonical file is the source of
+  // truth, so derive the sentinel from it.
+  const promptStart = expectedPrompt.split("\n")[0]!.trim();
 
   // Rendered page: find the highlighted code block that holds the prompt.
   const promptBlock = [...html.matchAll(/<pre\b[^>]*>([\s\S]*?)<\/pre>/gi)]
     .map((match) => normalize(decodeHtmlEntities(match[1].replace(/<[^>]+>/g, ""))))
-    .find((block) => block.includes("# Set up RepoOS in this repository"));
+    .find((block) => promptStart !== "" && block.includes(promptStart));
   if (promptBlock === undefined) {
     fail("built /ai-agents page has no code block containing the starter prompt");
   } else if (promptBlock !== expectedPrompt) {
@@ -238,7 +243,7 @@ export function collectAiAgentsFailures(options: AiAgentsCheckOptions = {}): str
   // /ai-agents.md get the prompt too, not an unresolved include directive.
   const rawPromptBlock = [...rawMarkdown.matchAll(/^```[^\n]*\n([\s\S]*?)^```\s*$/gm)]
     .map((match) => normalize(match[1]))
-    .find((block) => block.includes("# Set up RepoOS in this repository"));
+    .find((block) => promptStart !== "" && block.includes(promptStart));
   if (rawPromptBlock === undefined) {
     fail("raw /ai-agents.md has no code block containing the starter prompt");
   } else if (rawPromptBlock !== expectedPrompt) {

@@ -95,6 +95,7 @@ import { extname, join, dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import type { MemoryPressureProbe } from "../core/memory-pressure.js";
+import { runnerHealthCheckEnabled } from "../core/resource-limits.js";
 import { STATUSES } from "../core/types.js";
 import { readBuildMeta } from "../core/build.js";
 import { injectBuildHashIntoUiIndex } from "../core/ui-index.js";
@@ -3417,6 +3418,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     remoteValidator?.refreshHostLocks?.();
     if (new URL(req.url ?? "/", "http://localhost").searchParams.has("includeStats")) {
       remoteValidator?.refreshHostStats?.();
+      // The Runners tab polls with includeStats=1 (#0901): sample pressure on
+      // the same cadence so a thrashing host is visible without a run failing.
+      remoteValidator?.refreshHostPressure?.();
     }
     // Per-host pool state (#0521): live from the runner when it exists
     // (`applyConfig` keeps this list in sync with Settings saves). Otherwise
@@ -3468,6 +3472,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       tailscaleUser: rv.tailscaleUser ?? "root",
       containerImage: rv.containerImage ?? "repoos-ci",
       maxConcurrent: rv.maxConcurrent ?? 1,
+      pressureCheck: runnerHealthCheckEnabled(config),
       hosts,
       activeServer,
     });
@@ -3475,6 +3480,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/remote-validation/test", async (_ctx, _req, res) => {
     const rv = config.remoteValidation ?? {};
     const provider = rv.provider ?? "hetzner";
+    // A manual probe is the "re-check" action the pressure banner names.
+    remoteValidator?.refreshHostPressure?.({ force: true });
     try {
       let output = "";
       if (provider === "tailscale") {

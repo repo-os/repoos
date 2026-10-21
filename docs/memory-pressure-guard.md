@@ -65,10 +65,18 @@ deduction; preview children and ephemeral test harnesses do not.
 `repoos servers` shows each entry's engineer count, and `repoos servers --json`
 includes `activeEngineers`.
 
+## Remote runners (#0901)
+
+The same thresholds guard remote dispatch. Before leasing a host, the runner
+samples its memory pressure (`remoteValidation.healthCheck`, default on) and
+skips a host over the limit; if every host is pressured the run queues with the
+reason and the OS-specific fix instead of failing the branch's tests. Docker on
+macOS reads the Linux VM's `/proc/meminfo` in a probe container, never the Mac's
+swap. See `docs/remote-validation.md` (Runner memory health).
+
 ## Visibility
 
 `GET /api/system` and the 5s `system.stats` SSE event carry:
-
 - `pressure` — the full snapshot (level, reasons, warnings, swap/compressor
   ratios, source).
 - `topProcesses` — `byCpu` and `byMemory` lists across the whole machine, each

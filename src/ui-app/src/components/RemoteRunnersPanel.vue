@@ -68,6 +68,32 @@ onUnmounted(() => {
 
 const hosts = computed(() => status.value?.hosts ?? []);
 const totalQueued = computed(() => hosts.value.reduce((n, h) => n + (h.queued ?? 0), 0));
+const pressuredHosts = computed(() =>
+  status.value?.pressureCheck === false
+    ? []
+    : hosts.value.filter((h) => h.pressure?.state === "pressured"),
+);
+const pressureCheckEnabled = computed(() => status.value?.pressureCheck !== false);
+
+/** "swap 73%, 4% memory available" — the numbers the banner must name. */
+function pressureNumbers(h: RemoteHostStatusView): string {
+  const parts: string[] = [];
+  if (h.pressure?.swapUsedRatio != null) {
+    parts.push(`swap ${Math.round(h.pressure.swapUsedRatio * 100)}% used`);
+  }
+  if (h.pressure?.availableMemRatio != null) {
+    parts.push(`${Math.round(h.pressure.availableMemRatio * 100)}% memory available`);
+  }
+  return parts.join(", ");
+}
+
+function pressureLimit(h: RemoteHostStatusView): string {
+  const t = h.pressureThresholds;
+  if (!t) return "";
+  return `limits: swap ${Math.round(t.maxSwapUsedRatio * 100)}%, memory ${Math.round(
+    t.minAvailableMemRatio * 100,
+  )}%`;
+}
 
 async function moveHost(index: number, offset: -1 | 1): Promise<void> {
   const current = hosts.value;
@@ -195,6 +221,33 @@ function fmtAgo(iso: string): string {
     <p v-if="orderMessage" class="rr-order-message" role="status">{{ orderMessage }}</p>
     <p v-if="error" class="rr-err">{{ error }}</p>
 
+    <!-- #0901: a pressured runner is not a silent skip. Name the host, its
+         numbers, the exact OS fix, and the re-check command. -->
+    <section v-if="pressuredHosts.length" class="rr-pressure-banner" role="alert">
+      <div class="rr-pressure-head">
+        <strong>Runner memory pressure</strong>
+        <span class="rr-pressure-count"
+          >{{ pressuredHosts.length }} of {{ hosts.length }} host{{
+            hosts.length === 1 ? "" : "s"
+          }}
+          over the limit</span
+        >
+      </div>
+      <div v-for="h in pressuredHosts" :key="`pressure-${h.host}`" class="rr-pressure-host">
+        <span class="mono rr-pressure-name">{{ h.user }}@{{ h.host }}</span>
+        <span v-if="pressureNumbers(h)" class="rr-pressure-numbers">{{ pressureNumbers(h) }}</span>
+        <span class="rr-pressure-reason">{{ h.pressure?.reason }}</span>
+        <span class="rr-pressure-fix"><strong>Fix:</strong> {{ h.pressure?.fix }}</span>
+        <span class="rr-pressure-recheck"
+          >Re-check: <code>{{ h.pressure?.recheckCommand ?? "repoos runners --probe" }}</code></span
+        >
+      </div>
+      <p v-if="pressuredHosts.length === hosts.length" class="rr-pressure-all">
+        Every eligible host is pressured, so new gates queue here with this reason instead of
+        failing a branch's tests on a thrashing machine.
+      </p>
+    </section>
+
     <div v-if="status && !status.enabled" class="rr-empty">
       Remote validation is disabled. Enable it under
       <router-link to="/settings?tab=toml">Settings</router-link> to see runner hosts here.
@@ -222,6 +275,12 @@ function fmtAgo(iso: string): string {
         <span class="rr-health" :class="health(h).cls"
           >{{ health(h).cls === "ok" ? "●" : health(h).cls === "bad" ? "✕" : "○" }}
           {{ health(h).label }}</span
+        >
+        <span
+          v-if="h.pressure?.state === 'pressured'"
+          class="rr-pressure-badge"
+          data-test-id="runner-pressure-badge"
+          >memory pressure</span
         >
         <span class="rr-limits"
           >{{ h.inFlight }}/{{ h.maxConcurrent }} in flight<template v-if="h.queued">
@@ -342,6 +401,22 @@ function fmtAgo(iso: string): string {
           </dd>
         </div>
         <div>
+          <dt>Memory health</dt>
+          <dd class="rr-wrap">
+            <template v-if="!pressureCheckEnabled">
+              <span class="rr-dim">check disabled in Settings</span>
+            </template>
+            <template v-else-if="h.pressure">
+              <span :class="h.pressure.state === 'pressured' ? 'rr-bad' : 'rr-ok'">
+                {{ h.pressure.state }}</span
+              >
+              <span v-if="pressureNumbers(h)" class="rr-dim"> · {{ pressureNumbers(h) }}</span>
+              <span v-if="pressureLimit(h)" class="rr-dim">· {{ pressureLimit(h) }}</span>
+            </template>
+            <span v-else class="rr-dim">not sampled yet</span>
+          </dd>
+        </div>
+        <div>
           <dt>Last completed</dt>
           <dd class="rr-wrap">
             <template v-if="h.lastRun">
@@ -453,6 +528,79 @@ function fmtAgo(iso: string): string {
 .rr-err {
   color: var(--red);
   font-size: 13px;
+}
+/* #0901: loud, specific, and actionable — a runner under memory pressure is
+   why a gate would otherwise fail with someone else's test names. */
+.rr-pressure-banner {
+  border: 1px solid var(--red);
+  border-left: 4px solid var(--red);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rr-pressure-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.rr-pressure-head strong {
+  color: var(--red);
+  font-size: 13.5px;
+}
+.rr-pressure-count {
+  color: var(--txt-dim);
+  font-size: 12px;
+}
+.rr-pressure-host {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.rr-pressure-name {
+  font-weight: 650;
+  color: var(--txt);
+}
+.rr-pressure-numbers {
+  color: var(--red);
+  font-variant-numeric: tabular-nums;
+}
+.rr-pressure-reason,
+.rr-pressure-fix {
+  flex-basis: 100%;
+  color: var(--txt-dim);
+}
+.rr-pressure-fix strong {
+  color: var(--txt);
+}
+.rr-pressure-recheck {
+  flex-basis: 100%;
+  color: var(--txt-dim);
+}
+.rr-pressure-recheck code {
+  color: var(--txt);
+}
+.rr-pressure-all {
+  margin: 0;
+  color: var(--txt);
+  font-size: 12.5px;
+}
+.rr-pressure-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
 }
 .rr-empty {
   color: var(--txt-dim);
