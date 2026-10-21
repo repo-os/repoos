@@ -3,9 +3,6 @@ id: "0892"
 title: "RepoOS Hub (macOS): add Copy URL to the server menu, and fix the server color bar not applying or persisting"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: macos
 assigned_to: ai
@@ -119,3 +116,4 @@ Swift tests run: `ServerActionsMenuModelTests`, `RepoAccentColorPreferenceTests`
 - 2026-10-21T08:50:25Z · body
 - 2026-10-21T08:51:36Z · handoff_deferred: 3 queued message(s) must be read before review
 - 2026-10-21T08:51:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-21T08:51:36Z · needs_input
