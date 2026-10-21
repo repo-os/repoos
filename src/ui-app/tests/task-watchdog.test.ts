@@ -35,9 +35,14 @@ import {
   suggestNextStep,
   classifyDeadAgentReason,
   autoTransitionTarget,
+  handoffSinceLastCommit,
 } from "../../server/task-watchdog";
 import { parseTask } from "../../core/task";
 import { createRepoOS } from "../../core/repoos";
+import {
+  ENGINEER_STALL_RESUME_LOG_KEY,
+  serializeEngineerStallResumeLog,
+} from "../../core/engineer-crash-recovery";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
 import type { ReviewReport } from "../../server/review";
 import { waitFor } from "./helpers";
@@ -627,22 +632,28 @@ Stuck twice.
     }
   }, 15_000);
 
-  it("surfaces to review only after both automatic retries are exhausted (#0271 follow-up)", async () => {
+  it("after the legacy signal retries are exhausted, a clean exit is auto-resumed by the watchdog (#0888)", async () => {
     const fx = makeGitFx(10_000, { committedWork: true });
     oldPath = process.env.PATH ?? "";
     process.env.PATH = `${fx.bin}:${oldPath}`;
     process.env.REPOOS_WATCHDOG_LOG = fx.log;
+    const launches: string[] = [];
     try {
       const index = new LiveIndex(fx.config);
       index.refreshAll();
       runner = new AgentRunner(fx.config, () => {});
-      const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+      const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, {
+        launch: async (_deps, _task, instruction) => {
+          launches.push(instruction);
+          return { ok: true as const };
+        },
+      });
 
       // Original turn: exits without handoff.
       expect(runner.start(parseTaskAt(fx), "feat/x", engineer, { cwd: fx.root }).ok).toBe(true);
       await waitFor(() => !runner!.isRunning("0001"), "turn 1 exits without handoff");
       await new Promise((r) => setTimeout(r, 1200));
-      await watchdog.checkNow(); // schedules retry 1
+      await watchdog.checkNow(); // schedules legacy retry 1
 
       await waitFor(() => spawns(fx).length === 2, "retry 1 spawns", 6000);
       await waitFor(
@@ -650,22 +661,27 @@ Stuck twice.
         "turn 2 (retry 1) exits without handoff — same fake binary, same behavior",
       );
       await new Promise((r) => setTimeout(r, 1200));
-      await watchdog.checkNow(); // schedules retry 2 (cap: 2)
+      await watchdog.checkNow(); // schedules legacy retry 2 (cap: 2)
 
       await waitFor(() => spawns(fx).length === 3, "retry 2 spawns", 6000);
       expect(readFileSync(fx.taskPath, "utf8")).toContain("handoff_signal_retry_count: 2");
       await waitFor(() => !runner!.isRunning("0001"), "turn 3 (retry 2) exits without handoff");
       await new Promise((r) => setTimeout(r, 1200));
-      await watchdog.checkNow(); // cap reached — falls through to normal surfacing
+      // The legacy budget is spent; #0888's bounded resume takes over instead
+      // of surfacing the task for a human.
+      await watchdog.checkNow();
+      await waitFor(() => launches.length === 1, "watchdog resumes the stalled clean exit");
+      expect(launches[0]).toContain("ended cleanly without requesting a handoff");
 
       const body = readFileSync(fx.taskPath, "utf8");
       const task = parseTaskAt(fx);
-      expect(task.status).toBe("review");
+      expect(task.status).toBe("active");
       expect(task.needsInput).toBe(false);
-      expect(body).toContain("watchdog: auto-surfaced stuck task");
-      expect(body).toContain("status active→review");
-      expect(body).toContain("exited without emitting the handoff signal");
-      expect(spawns(fx)).toHaveLength(3); // the original turn + exactly 2 retries, never a 3rd
+      expect(body).toContain(
+        "watchdog: auto-resumed engineer after a clean exit without a handoff",
+      );
+      expect(body).toContain("engineer_stall_resume_log:");
+      expect(spawns(fx)).toHaveLength(3); // the original turn + exactly 2 legacy retries
     } finally {
       fx.clean();
     }
@@ -1006,6 +1022,239 @@ Stuck twice.
 
     expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog:");
     expect(parseTaskAt(fx).status).toBe("review");
+    fx.clean();
+  });
+
+  it("resumes a clean exit without a handoff through the shared engineer launch (#0888)", async () => {
+    const fx = makeFx(10_000);
+    // A clean turn ended without a handoff 10s after the task went active.
+    writeFileSync(
+      fx.taskPath,
+      readFileSync(fx.taskPath, "utf8") +
+        `- ${new Date(Date.now() - 9000).toISOString()} · engineer turn ended without a handoff: the turn exited cleanly and did not request review\n`,
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const launches: string[] = [];
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, {
+      launch: async (_deps, _task, instruction) => {
+        launches.push(instruction);
+        return { ok: true as const };
+      },
+    });
+
+    await watchdog.checkNow();
+    await waitFor(() => launches.length === 1, "watchdog resumes the clean exit");
+
+    expect(launches[0]).toContain("ended cleanly without requesting a handoff");
+    const body = readFileSync(fx.taskPath, "utf8");
+    expect(body).toContain("watchdog: auto-resumed engineer after a clean exit without a handoff");
+    expect(body).toContain("engineer_stall_resume_log:");
+    expect(parseTaskAt(fx).status).toBe("active");
+    expect(parseTaskAt(fx).needsInput).toBe(false);
+    fx.clean();
+  });
+
+  it("always resumes a deferred handoff so the queued message is read (#0888)", async () => {
+    const fx = makeFx(10_000);
+    writeFileSync(
+      fx.taskPath,
+      readFileSync(fx.taskPath, "utf8") +
+        `- ${new Date(Date.now() - 9000).toISOString()} · handoff_deferred: 2 queued message(s) must be read before review\n`,
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const launches: string[] = [];
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, {
+      launch: async (_deps, _task, instruction) => {
+        launches.push(instruction);
+        return { ok: true as const };
+      },
+    });
+
+    await watchdog.checkNow();
+    await waitFor(() => launches.length === 1, "watchdog resumes the deferred handoff");
+
+    expect(launches[0]).toContain("message(s) were still queued");
+    expect(readFileSync(fx.taskPath, "utf8")).toContain(
+      "watchdog: auto-resumed engineer to read a deferred handoff message",
+    );
+    fx.clean();
+  });
+
+  it("surfaces needs_input after the clean-exit resume cap instead of looping (#0888)", async () => {
+    const fx = makeFx(10_000);
+    const now = Date.now();
+    const seeded = serializeEngineerStallResumeLog([
+      { at: new Date(now - 60_000).toISOString(), reason: "clean-exit-without-handoff" },
+      { at: new Date(now - 120_000).toISOString(), reason: "clean-exit-without-handoff" },
+      { at: new Date(now - 180_000).toISOString(), reason: "clean-exit-without-handoff" },
+    ]);
+    writeFileSync(
+      fx.taskPath,
+      readFileSync(fx.taskPath, "utf8")
+        .replace(
+          "branch: feat/x\n",
+          `branch: feat/x\n${ENGINEER_STALL_RESUME_LOG_KEY}: '${seeded}'\n`,
+        )
+        .trimEnd() +
+        `\n- ${new Date(now - 9000).toISOString()} · engineer turn ended without a handoff\n`,
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    let launched = 0;
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, {
+      launch: async () => {
+        launched++;
+        return { ok: true as const };
+      },
+    });
+
+    await watchdog.checkNow();
+    await waitFor(() => parseTaskAt(fx).needsInput, "watchdog surfaces at the resume cap");
+
+    const task = parseTaskAt(fx);
+    expect(task.status).toBe("active");
+    expect(task.needsInputReason).toBe("watchdog-stuck");
+    expect(launched).toBe(0);
+    expect(readFileSync(fx.taskPath, "utf8")).toContain("watchdog: escalated to needs_input");
+    fx.clean();
+  });
+
+  it("never resumes a human-assigned task, even with a clean-exit marker (#0888)", async () => {
+    const fx = makeFx(10_000);
+    writeFileSync(
+      fx.taskPath,
+      readFileSync(fx.taskPath, "utf8").replace("assigned_to: ai", "assigned_to: human").trimEnd() +
+        `\n- ${new Date(Date.now() - 9000).toISOString()} · engineer turn ended without a handoff\n`,
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const launches: string[] = [];
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, {
+      launch: async (_deps, _task, instruction) => {
+        launches.push(instruction);
+        return { ok: true as const };
+      },
+    });
+
+    await watchdog.checkNow();
+
+    expect(launches).toHaveLength(0);
+    expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog: auto-resumed");
+    fx.clean();
+  });
+
+  it("never resumes a task whose latest turn a person stopped (#0888)", async () => {
+    const fx = makeFx(10_000);
+    // A session exists, so the dead-session classifier alone would call this a
+    // clean exit; the durable stop marker is what must veto the resume.
+    writeFileSync(
+      fx.taskPath,
+      readFileSync(fx.taskPath, "utf8") +
+        `- ${new Date(Date.now() - 12000).toISOString()} · engineer turn ended without a handoff\n` +
+        `- ${new Date(Date.now() - 9000).toISOString()} · engineer stopped by request\n`,
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    const fakeRunner = {
+      isRunning: () => false,
+      releasePhantomForStart: () => false,
+      isPaused: () => false,
+      isHandoffInFlight: () => false,
+      hasPendingHandoff: () => false,
+      output: () => "a session exists",
+      dispose: () => {},
+    } as unknown as AgentRunner;
+    const launches: string[] = [];
+    const watchdog = new TaskWatchdog(fx.config, index, fakeRunner, 1000, {
+      launch: async (_deps, _task, instruction) => {
+        launches.push(instruction);
+        return { ok: true as const };
+      },
+    });
+
+    await watchdog.checkNow();
+
+    expect(launches).toHaveLength(0);
+    const body = readFileSync(fx.taskPath, "utf8");
+    expect(body).not.toContain("watchdog: auto-resumed");
+    expect(body).not.toContain("engineer_stall_resume_log:");
+    fx.clean();
+  });
+
+  it("clears a phantom runner registry entry instead of treating it as a live turn (#0863/#0888)", async () => {
+    const fx = makeFx(10_000);
+    writeFileSync(
+      fx.taskPath,
+      readFileSync(fx.taskPath, "utf8") +
+        `- ${new Date(Date.now() - 9000).toISOString()} · engineer turn ended without a handoff\n`,
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    let phantomCleared = 0;
+    let running = true;
+    const fakeRunner = {
+      isRunning: () => running,
+      releasePhantomForStart: () => {
+        phantomCleared++;
+        running = false;
+        return true;
+      },
+      isPaused: () => false,
+      isHandoffInFlight: () => false,
+      hasPendingHandoff: () => false,
+      output: () => null,
+      dispose: () => {},
+    } as unknown as AgentRunner;
+    const launches: string[] = [];
+    const watchdog = new TaskWatchdog(fx.config, index, fakeRunner, 1000, {
+      launch: async (_deps, _task, instruction) => {
+        launches.push(instruction);
+        return { ok: true as const };
+      },
+    });
+
+    await watchdog.checkNow();
+    await waitFor(() => launches.length === 1, "phantom no longer masks the stall");
+
+    expect(phantomCleared).toBe(1);
+    expect(launches[0]).toContain("ended cleanly");
+    fx.clean();
+  });
+
+  it("does not count a review from an earlier episode as a handoff since the last commit (#0888)", async () => {
+    const fx = makeFx(10_000);
+    // ready→active, then active→review, then bounced review→active. The only
+    // review transition predates the CURRENT active episode, so it is not a
+    // handoff of the work this episode is doing.
+    writeFileSync(
+      fx.taskPath,
+      `---
+id: "0001"
+title: "Bounced review"
+type: feature
+status: active
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/x
+---
+## Problem
+Findings to address.
+
+## Activity
+
+- 2026-10-21T11:00:00Z · status ready→active
+- 2026-10-21T11:10:00Z · status active→review
+- 2026-10-21T11:20:00Z · status review→active
+`,
+    );
+    expect(handoffSinceLastCommit(fx.config, parseTaskAt(fx))).toBe(false);
     fx.clean();
   });
 });

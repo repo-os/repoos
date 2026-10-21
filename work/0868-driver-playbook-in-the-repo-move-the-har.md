@@ -1,18 +1,21 @@
 ---
-updated_at: "2026-10-21T00:45:42Z"
-review_passes: 1
 id: "0868"
 title: "Driver notes: append the 2026-10-19/20 driving lessons to docs/driver-notes.md (and point drivers at repoos driver brief)"
 type: chore
-status: review
+status: done
 priority: p2
 area: docs
+merged_commit: a861d9ebb27821cce2364f998b0a65cce5ff8cb0
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/driver-notes-append-the-2026-10-19-20-dr
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:07Z"
+updated_at: "2026-10-21T00:57:45Z"
+last_close_out_gate_ms: 1257
+last_close_out_gate_at: "2026-10-21T00:57:33.016Z"
+review_passes: 1
 ---
 ## Problem
 AGENTS.md says durable project knowledge belongs in the repo, but the lessons from driving RepoOS on 2026-10-19/20 live only in a scratch handoff file under /private/tmp, which disappears with the session. A new driver has to relearn them: reviews and messages race (a message queues and the engineer hands off before reading it); how to repair a phantom runner (`repoos mv <id> ready` then `repoos start <id>`); review whack-a-mole (give one message naming the class); a crashed engineer needs --needs-input false, a model switch and full context; the machine thrashes mostly because of non-RepoOS processes; run landing pre-checks separately from `repoos done`; ask before deleting unknown untracked files on main.
@@ -43,4 +46,5 @@ Read docs/driver-notes.md (the format and the 2026-10-07 entry) and docs/cto-aut
 - 2026-10-21T00:45:04Z · status active→review
 - 2026-10-21T00:45:05Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-21T00:45:42Z · note: review pass 1: good to go
-
+- 2026-10-21T00:57:33Z · close-out gate completed in 1s
+- 2026-10-21T00:57:45Z · status done→done, release:success
