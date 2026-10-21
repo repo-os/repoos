@@ -187,7 +187,7 @@ export function createTelegramAgentChatHandler(
     const chatId = msg.chatId;
 
     const replyOptions =
-      msg.messageThreadId !== null ? { messageThreadId: msg.messageThreadId } : undefined;
+      msg.messageThreadId != null ? { messageThreadId: msg.messageThreadId } : undefined;
     const respond = async (text: string): Promise<void> => {
       try {
         await options.reply(chatId, text, replyOptions);

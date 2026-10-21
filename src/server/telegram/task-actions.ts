@@ -470,7 +470,7 @@ export function createTelegramTaskActionsHandler(
       nonce: createTelegramActionNonce(),
       ownerTelegramUserId: actor.telegramUserId,
       chatId: message.chatId,
-      messageThreadId: message.messageThreadId,
+      messageThreadId: message.messageThreadId ?? null,
       fields: inferred.draft,
       attachments,
       awaitingField: null,

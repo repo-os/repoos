@@ -402,7 +402,7 @@ export function createTelegramCommandHandler(deps: TelegramCommandDeps): Telegra
       await enqueue(message.chatId, async () => {
         await deps.send(message.chatId, clampMessage(text), {
           replyToMessageId: message.messageId,
-          ...(message.messageThreadId !== null ? { messageThreadId: message.messageThreadId } : {}),
+          ...(message.messageThreadId != null ? { messageThreadId: message.messageThreadId } : {}),
         });
       });
       return;
@@ -413,7 +413,7 @@ export function createTelegramCommandHandler(deps: TelegramCommandDeps): Telegra
     await enqueue(message.chatId, async () => {
       await deps.send(message.chatId, clampMessage(text), {
         replyToMessageId: message.messageId,
-        ...(message.messageThreadId !== null ? { messageThreadId: message.messageThreadId } : {}),
+        ...(message.messageThreadId != null ? { messageThreadId: message.messageThreadId } : {}),
       });
     });
   };
