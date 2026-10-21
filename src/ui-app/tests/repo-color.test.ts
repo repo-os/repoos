@@ -61,6 +61,11 @@ describe("repo color preference", () => {
     expect(readRepoColor("lightingai")).toBeNull();
   });
 
+  it("accepts a bare legacy cookie", () => {
+    document.cookie = `${REPO_COLOR_COOKIE}=%23ffffba; Path=/`;
+    expect(readRepoColor("lightingai")).toBe("#FFFFBA");
+  });
+
   it("writes an explicit clear marker when Default is chosen", () => {
     writeRepoColor("lightingai", "#FFFFBA");
     writeRepoColor("lightingai", null);

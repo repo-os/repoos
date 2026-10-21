@@ -95,7 +95,8 @@ export function readRepoColor(repoName: string): string | null {
   const rawCookie = readCookie(REPO_COLOR_COOKIE);
   if (rawCookie !== null) {
     const parsed = parseRepoColorCookie(rawCookie);
-    if (parsed && parsed.repoName.toLowerCase() === repoName.toLowerCase()) {
+    // Accept a bare color as the pre-repo-scoped legacy format.
+    if (parsed && (parsed.repoName === "" || parsed.repoName.toLowerCase() === repoName.toLowerCase())) {
       return parsed.color;
     }
   }
