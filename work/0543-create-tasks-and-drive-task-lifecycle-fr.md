@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-21T14:16:01Z"
-review_passes: 1
 id: "0543"
 title: Create tasks and drive task lifecycle from Telegram
 type: feature
@@ -14,6 +12,7 @@ branch: feat/create-tasks-and-drive-task-lifecycle-fr
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-27T07:33:58Z"
+updated_at: "2026-10-21T14:14:32Z"
 ---
 ## Problem
 
@@ -112,17 +111,4 @@ A `member` can still read, be notified, and answer a permitted needs-input quest
 - 2026-10-05T15:52:35Z · body
 - 2026-10-21T13:34:09Z · cli_override, model_override
 - 2026-10-21T13:34:11Z · status ready→active, branch
-- 2026-10-21T13:40:31Z · message_queued at 2026-10-21T13:40:31.425Z
-- 2026-10-21T13:40:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-21T13:40:32Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-21T13:52:50Z · body
-- 2026-10-21T13:54:50Z · body
-- 2026-10-21T14:02:02Z · body
-- 2026-10-21T14:04:07Z · body
-- 2026-10-21T14:05:03Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-21T14:05:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-21T14:05:03Z · message_delivered: 1 message(s)
-- 2026-10-21T14:14:33Z · status active→review
-- 2026-10-21T14:14:33Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-21T14:16:01Z · note: review pass 1: good to go
-
+- 2026-10-21T14:14:32Z · status active→review

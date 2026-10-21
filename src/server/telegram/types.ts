@@ -83,6 +83,12 @@ export interface TelegramMessage {
   command: string | null;
   /** Slash-command arguments split on whitespace. */
   commandArgs: string[];
+  /**
+   * Forum topic (`message_thread_id`) when the message arrived in one.
+   * Routing only — authorization stays per chat (ADR 0007). Null/absent in
+   * private chats and plain groups, which must not require topic config.
+   */
+  messageThreadId?: number | null;
 }
 
 /** The update kinds the adapter recognizes. */
@@ -101,6 +107,13 @@ export interface TelegramCallbackQuery {
   fromUsername: string | null;
   /** The inline keyboard payload the bot attached when sending. */
   data: string | null;
+  /** Chat the button message lives in (null when Telegram omitted it). */
+  chatId: number | null;
+  chatType: TelegramChatType | null;
+  /** Id of the message carrying the keyboard, when present. */
+  messageId: number | null;
+  /** Forum topic to answer in, mirroring the button message (#0543). */
+  messageThreadId: number | null;
 }
 
 /**
@@ -164,6 +177,8 @@ export interface TelegramSendOptions {
   disableNotification?: boolean;
   /** Send as a (direct) reply to this message in the same chat. */
   replyToMessageId?: number;
+  /** Forum topic to post into (`message_thread_id`), when the update had one. */
+  messageThreadId?: number;
   /**
    * Inline keyboard / reply markup raw JSON, passed through to Telegram —
    * the shape is Telegram's (`InlineKeyboardMarkup`, …), and #0537 will use it

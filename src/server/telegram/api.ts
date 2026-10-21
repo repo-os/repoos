@@ -298,6 +298,7 @@ export class TelegramApiClient {
     parseMode?: "HTML" | "MarkdownV2";
     disableNotification?: boolean;
     replyToMessageId?: number;
+    messageThreadId?: number;
     replyMarkup?: unknown;
   }): Promise<TelegramSentMessage> {
     const params: Record<string, unknown> = {
@@ -308,10 +309,82 @@ export class TelegramApiClient {
     if (input.disableNotification !== undefined)
       params.disable_notification = input.disableNotification;
     if (input.replyToMessageId !== undefined) params.reply_to_message_id = input.replyToMessageId;
+    if (input.messageThreadId !== undefined) params.message_thread_id = input.messageThreadId;
     if (input.replyMarkup !== undefined) params.reply_markup = input.replyMarkup;
     const result = await this.call<Record<string, unknown>>("sendMessage", params);
     const messageId = typeof result?.message_id === "number" ? result.message_id : null;
     return { messageId, chatId: input.chatId };
+  }
+
+  /** Stop the inline-button spinner. Best-effort: a late answer is not an action. */
+  async answerCallbackQuery(input: {
+    callbackQueryId: string;
+    text?: string;
+    showAlert?: boolean;
+  }): Promise<boolean> {
+    return this.call("answerCallbackQuery", {
+      callback_query_id: input.callbackQueryId,
+      ...(input.text ? { text: input.text } : {}),
+      ...(input.showAlert ? { show_alert: true } : {}),
+    });
+  }
+
+  // ── Files (#0543 attachments) ────────────────────────────────────────────
+
+  async getFile(fileId: string): Promise<{
+    file_id: string;
+    file_path?: string;
+    file_size?: number;
+  }> {
+    return this.call("getFile", { file_id: fileId });
+  }
+
+  /**
+   * Download a file Telegram holds for a `file_id`. The bytes are fetched
+   * through the token-bearing files endpoint (never logged); callers validate
+   * the content themselves — Telegram's `file_path`/extension is a hint only.
+   */
+  async downloadFile(
+    fileId: string,
+    options?: { maxBytes?: number },
+  ): Promise<{ data: Buffer; filePath: string | null }> {
+    const info = await this.getFile(fileId);
+    const filePath = typeof info?.file_path === "string" && info.file_path ? info.file_path : null;
+    if (!filePath) {
+      throw new TelegramApiError(400, this.redact(`Telegram file ${fileId} has no file_path`));
+    }
+    let response: Response;
+    try {
+      response = await this.fetcher(`${this.baseUrl}/file/bot${this.token}/${filePath}`, {
+        method: "GET",
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : String(e);
+      throw new TelegramNetworkError(this.redact(`Telegram file download failed (${raw})`));
+    }
+    if (!response.ok) {
+      throw new TelegramApiError(
+        response.status,
+        this.redact(`Telegram file download failed (HTTP ${response.status})`),
+      );
+    }
+    const declared = Number(response.headers.get("content-length"));
+    const maxBytes = options?.maxBytes;
+    if (maxBytes && Number.isFinite(declared) && declared > maxBytes) {
+      throw new TelegramApiError(
+        413,
+        `Telegram file is too large (${declared} bytes; max ${maxBytes})`,
+      );
+    }
+    const data = Buffer.from(await response.arrayBuffer());
+    if (maxBytes && data.length > maxBytes) {
+      throw new TelegramApiError(
+        413,
+        `Telegram file is too large (${data.length} bytes; max ${maxBytes})`,
+      );
+    }
+    return { data, filePath };
   }
 }
 

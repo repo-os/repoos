@@ -348,6 +348,7 @@ describe("update normalization", () => {
       date: 1700000000,
       command: "start",
       commandArgs: ["hello", "world"],
+      messageThreadId: null,
     });
   });
 
@@ -418,6 +419,10 @@ describe("update normalization", () => {
       fromUserId: 777,
       fromUsername: "nick",
       data: "task:start:0531",
+      chatId: null,
+      chatType: null,
+      messageId: null,
+      messageThreadId: null,
     });
     expect(update?.message).toBeUndefined();
   });
@@ -501,6 +506,10 @@ describe("BYO connect and encrypted storage", () => {
         description: "Send a follow-up to a task's agent — /msg <id> <message>",
       },
       { command: "new", description: "Start a fresh guide conversation" },
+      {
+        command: "newtask",
+        description: "Draft a task from prose — you review it before anything is created",
+      },
     ]);
     // The description names this repository.
     const description = String(

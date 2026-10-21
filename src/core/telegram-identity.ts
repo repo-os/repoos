@@ -30,6 +30,18 @@ export const TELEGRAM_AUDIT = {
   agentFollowUp: "telegram_agent_follow_up",
   /** A Telegram follow-up was refused by role or never reached an agent (#0542). */
   agentFollowUpRefused: "telegram_agent_follow_up_refused",
+  /** A task was created from a Telegram preview (#0543). */
+  taskCreated: "telegram_task_created",
+  /** A task creation was refused (role, rate limit, validation, storage). */
+  taskCreateRefused: "telegram_task_create_refused",
+  /** A lifecycle action (start/pause/resume/review/done) was performed (#0543). */
+  taskAction: "telegram_task_action",
+  /** A lifecycle action was refused by role, rate limit, or task state (#0543). */
+  taskActionRefused: "telegram_task_action_refused",
+  /** An inline-button press passed live authorization and reached a handler. */
+  callbackReceived: "telegram_callback_received",
+  /** An inline payload was rejected as forged, expired, or replayed (#0543). */
+  callbackRejected: "telegram_callback_rejected",
 } as const;
 
 /** Telegram Bot API start-parameter limit. Hex nonce is 32 chars. */

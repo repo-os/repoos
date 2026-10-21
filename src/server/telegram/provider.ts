@@ -97,6 +97,10 @@ export const DEFAULT_BOT_COMMANDS = [
   { command: "help", description: "What this RepoOS bot can do" },
   { command: "msg", description: "Send a follow-up to a task's agent — /msg <id> <message>" },
   { command: "new", description: "Start a fresh guide conversation" },
+  {
+    command: "newtask",
+    description: "Draft a task from prose — you review it before anything is created",
+  },
 ];
 
 export class LocalTelegramProvider implements TelegramProvider {
@@ -635,6 +639,9 @@ export class LocalTelegramProvider implements TelegramProvider {
         ...(options?.replyToMessageId !== undefined
           ? { replyToMessageId: options.replyToMessageId }
           : {}),
+        ...(options?.messageThreadId !== undefined
+          ? { messageThreadId: options.messageThreadId }
+          : {}),
         ...(options?.replyMarkup !== undefined ? { replyMarkup: options.replyMarkup } : {}),
       });
     } catch (e) {
@@ -642,6 +649,25 @@ export class LocalTelegramProvider implements TelegramProvider {
       this.lastError = e instanceof Error ? e.message : String(e);
       throw e;
     }
+  }
+
+  /** Download one Telegram file's bytes (attachments, #0543). */
+  async downloadFile(
+    fileId: string,
+    options?: { maxBytes?: number },
+  ): Promise<{ data: Buffer; filePath: string | null }> {
+    if (typeof fileId !== "string" || !fileId.trim()) {
+      throw new TelegramValidationError("fileId is required");
+    }
+    const { api } = this.activeClient();
+    return api.downloadFile(fileId, options);
+  }
+
+  /** Stop the inline-button spinner after a callback, best-effort. */
+  async answerCallback(id: string, text?: string): Promise<void> {
+    if (!id) return;
+    const { api } = this.activeClient();
+    await api.answerCallbackQuery({ callbackQueryId: id, ...(text ? { text } : {}) });
   }
 
   // ── Update intake ─────────────────────────────────────────────────────────
