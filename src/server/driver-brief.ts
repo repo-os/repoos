@@ -245,6 +245,12 @@ function hostHealth(remoteValidator: RemoteValidator | undefined): BriefHostHeal
     })),
     hungRuns: (h.hungRuns ?? []).slice(0, 5),
     loadAverage: h.serverStats?.loadAverage ?? null,
+    pressureState: h.pressure?.state,
+    pressureReason: h.pressure?.reason ?? null,
+    pressureFix: h.pressure?.fix ?? null,
+    pressureRecheck: h.pressure?.recheckCommand ?? null,
+    swapUsedRatio: h.pressure?.swapUsedRatio ?? null,
+    availableMemRatio: h.pressure?.availableMemRatio ?? null,
   }));
 }
 

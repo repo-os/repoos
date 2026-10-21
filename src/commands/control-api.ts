@@ -862,10 +862,13 @@ export async function cmdRunners(args: string[]): Promise<number> {
   const api = new RepoOsApi({ port: opts.port });
   try {
     await ensureServer(api);
-    const status = await api.requestOk("GET", "/api/remote-validation/status");
+    let status = await api.requestOk("GET", "/api/remote-validation/status");
     let test: ApiJson | undefined;
     if (probe) {
       test = await api.requestOk("POST", "/api/remote-validation/test", {});
+      // The probe is async on the server; re-read so the printed host states
+      // include the fresh memory-pressure samples (#0901).
+      status = await api.requestOk("GET", "/api/remote-validation/status");
     }
     const out = probe ? { status, test } : status;
     if (opts.json) printJson(out);
@@ -899,6 +902,13 @@ export async function cmdRunners(args: string[]): Promise<number> {
             waitedMs: number;
             blockers?: Array<{ taskId: string; kind: string; host: string; elapsedMs: number }>;
           }>;
+          /** Runner memory health from the probe (#0901). */
+          pressure?: {
+            state?: string;
+            reason?: string | null;
+            fix?: string | null;
+            recheckCommand?: string | null;
+          };
         }>;
       };
       console.log(c.dim("  remote validation:"), rv.enabled ? "on" : "off");
@@ -907,14 +917,27 @@ export async function cmdRunners(args: string[]): Promise<number> {
       }
       // Same run + queue detail the Runners tab shows (#0897): which host is
       // busy with what, and why a validation is waiting instead of running.
+      // Host state carries the memory-pressure banner from #0901 too.
       const now = Date.now();
       for (const h of rv.hosts ?? []) {
-        const state = h.healthy
-          ? c.green("healthy")
-          : h.probed
-            ? c.red("unhealthy")
-            : c.dim("unprobed");
-        console.log(`  ${h.host} ${state} ${c.dim(`(${h.inFlight}/${h.maxConcurrent} running)`)}`);
+        const pressure = h.pressure;
+        const memory =
+          pressure?.state === "pressured"
+            ? c.red(" · MEMORY PRESSURE")
+            : pressure?.state === "healthy"
+              ? c.green(" · memory healthy")
+              : "";
+        const state = h.healthy ? "ready" : h.probed ? "unavailable" : "unprobed";
+        console.log(
+          `  ${h.host} ${state}${memory} ${c.dim(`(${h.inFlight}/${h.maxConcurrent} running)`)}`,
+        );
+        if (pressure?.state === "pressured") {
+          if (pressure.reason) console.log(c.yellow(`    ${pressure.reason}`));
+          if (pressure.fix) console.log(c.yellow(`    fix: ${pressure.fix}`));
+          console.log(
+            c.dim(`    re-check: ${pressure.recheckCommand ?? "repoos runners --probe"}`),
+          );
+        }
         for (const r of h.activeRuns ?? []) {
           const elapsed = r.elapsedMs ?? Math.max(0, now - Date.parse(r.startedAt));
           const phases = (r.phases ?? [])

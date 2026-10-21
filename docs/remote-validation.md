@@ -35,6 +35,43 @@ controls:
   as a fallback when memory readings are unavailable. See
   `docs/memory-pressure-guard.md`.
 
+## Runner memory health (#0901)
+
+A remote host can be the one under pressure. On 2026-10-21 a tailnet host sat
+at 73% swap, the pressure guard inside its gate containers held spawns, and the
+branch's tests failed remotely with nothing on the task or in the UI explaining
+why; the fix (`sudo swapoff -a && sudo swapon -a`) was found by hand. The
+close-out then fell back to local and re-ran the whole gate on the laptop.
+
+Before leasing a host, `remoteValidation.healthCheck` (default `true`) reads
+that host's pressure and compares it with the same `pressureGuard` thresholds
+local work uses. The sample is cached briefly (30s) and refreshed by the Runners
+tab, `repoos runners --probe`, and each lease.
+
+- **Linux / Docker on Linux** — `/proc/meminfo` on the host. Native Linux
+  containers see the host's swap, so this is exactly what the gate sees.
+- **Docker on macOS (Colima, Docker Desktop)** — `/proc/meminfo` **inside a
+  probe container**, because containers there see the Linux VM's memory, not
+  macOS swap. The banner's fix therefore clears swap in the VM (for Colima,
+  `colima ssh -- sudo swapoff -a && colima ssh -- sudo swapon -a`), not on the
+  Mac.
+- **Native macOS** — `vm.swapusage`, `vm_stat` and `hw.memsize` on the host,
+  because the gate runs there directly. The fix is to quit memory-heavy apps or
+  reboot.
+
+A pressured host is skipped, not marked unhealthy: it rejoins the pool as soon
+as swap drains. If every eligible host is pressured the run **queues** with a
+visible reason instead of starting tests on a thrashing machine. A run that
+fails while its host is pressured is re-classified as transient infra, retried
+on another healthy host when `retryOtherHosts` is on, and never reported as a
+branch test failure.
+
+Visibility: the Runners tab shows a red banner naming the host, swap/free-memory
+numbers, the OS-specific fix and `repoos runners --probe`; the task's remote
+validation events (and engineer self-check activity) carry the same notice;
+`repoos driver brief --json` lists `pressuredHosts` and the human fix.
+
+
 Queue markers live under `.repoos/queue-markers/`; stuck waiters time out with an
 actionable message (raise limits or free a stuck process).
 

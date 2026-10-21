@@ -205,6 +205,18 @@ export async function runEngineerRemoteSelfCheckGate(params: {
       onChunk: params.onChunk,
     });
     await remoteValidator.dispose().catch(() => {});
+    // #0901: a host skipped (or a failure excused) for memory pressure is a
+    // fact the engineer's task activity must carry, even when another host
+    // passed the gate. Include the exact human fix, not just a host name.
+    if (gate.kind !== "skip" && gate.notices?.length && params.taskAbsPath) {
+      for (const notice of gate.notices) {
+        await appendEngineerSelfCheckActivity(
+          boardCfg,
+          params.taskAbsPath,
+          `runner health · ${notice.message}`,
+        );
+      }
+    }
     if (gate.kind === "local-only" && gate.skipTests && params.taskAbsPath) {
       const headRes = await runGit(params.worktreePath, ["rev-parse", "HEAD"], 10_000);
       const candidateSha = headRes.status === 0 ? headRes.stdout.trim() : "";
