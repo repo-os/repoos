@@ -19,7 +19,6 @@ updated_at: "2026-10-21T03:04:59Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-21T02:52:56.581Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
