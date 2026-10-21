@@ -12,7 +12,7 @@ branch: feat/offload-repoos-shot-to-a-runner
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T12:27:49Z"
-updated_at: "2026-10-21T12:51:33Z"
+updated_at: "2026-10-21T12:52:30Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-21T09:07:49.677Z: repoos check failed: ◆ Check plan"
 dev_error_count: 5
