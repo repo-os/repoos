@@ -6,7 +6,7 @@ status: active
 hold: true
 priority: p3
 area: [web, core]
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-screenshot-dropzone-l
 cli_override: cursor
@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T19:27:09Z"
+updated_at: "2026-10-21T19:27:12Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -212,3 +212,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:18:03Z · needs_input
 - 2026-10-21T19:27:05Z · status review→active
 - 2026-10-21T19:27:09Z · needs_input
+- 2026-10-21T19:27:12Z · assigned_to
