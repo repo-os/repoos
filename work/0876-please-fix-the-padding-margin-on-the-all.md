@@ -13,7 +13,9 @@ model_override: opencode-go/deepseek-v4.1-flash
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T01:14:30Z"
+updated_at: "2026-10-21T01:15:24Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -59,6 +61,44 @@ Please fix the padding/margin on the allowlist pause modal
 
 ![Screenshot-2026-10-20-at-19.23.43](/api/tasks/0876/attachments/att_f1edaa4b-9022-4891-8685-d79f1b68b283.png)
 
+## Shots
+```json
+[
+{
+"label": "Pause dialog, light theme — padded fields and action row",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": ".budget-pause-dialog",
+"steps": [
+{
+"click": "[data-testid='budget-row-li-opencode'] [data-testid='budget-pause-agent']"
+},
+{
+"waitMs": 500
+}
+],
+"state": "budget:paused",
+"theme": "light"
+},
+{
+"label": "Pause dialog, dark theme — padded fields and action row",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": ".budget-pause-dialog",
+"steps": [
+{
+"click": "[data-testid='budget-row-li-opencode'] [data-testid='budget-pause-agent']"
+},
+{
+"waitMs": 500
+}
+],
+"state": "budget:paused",
+"theme": "dark"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-20T13:45:00Z · created · hello@repoos.org
@@ -67,6 +107,14 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T00:58:01Z · status inbox→ready
 - 2026-10-21T00:58:06Z · cli_override, model_override
 - 2026-10-21T00:58:08Z · status ready→active, branch
-- 2026-10-21T01:14:23Z · status active→review
-- 2026-10-21T01:14:23Z · note: handoff requested (cli)
-- 2026-10-21T01:14:30Z · handoff failed · task-file handoff failed at commit · task #0876 has no registered worktree for branch feat/fix-padding-and-margin-on-allowlist-paus
+- 2026-10-21T01:00:27Z · body
+- 2026-10-21T01:02:05Z · body
+- 2026-10-21T01:02:27Z · note: click [data-testid='budget-pause-agent']: click: Error: strict mode violation: locator('[data-testid=\'budget-pause-agent\']') resolved to 2 elements: on /agents?tab=budget-controls
+- 2026-10-21T01:02:27Z · note: highlight .budget-pause-dialog matched nothing on /agents?tab=budget-controls
+- 2026-10-21T01:02:34Z · note: click [data-testid='budget-pause-agent']: click: Error: strict mode violation: locator('[data-testid=\'budget-pause-agent\']') resolved to 2 elements: on /agents?tab=budget-controls
+- 2026-10-21T01:02:35Z · note: highlight .budget-pause-dialog matched nothing on /agents?tab=budget-controls
+- 2026-10-21T01:02:44Z · body
+- 2026-10-21T01:14:24Z · status active→review
+- 2026-10-21T01:14:25Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-21T01:15:23Z · note: review pass 1: needs some work
+- 2026-10-21T01:15:24Z · status review→active
