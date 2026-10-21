@@ -37,14 +37,6 @@ Two problems in the native macOS app (RepoOS Hub) server sidebar:
 ## Notes for AI
 Native code is under macos/RepoOSHub (server list/sidebar view and its context menu). The web UI's color picker is the "lightingai" header chip popover; find where it saves (search the ui-app for the color swatch component and its storage key) and how the Hub embeds the page (WKWebView storage and any message bridge). The two reporter screenshots are in ## Screenshots: the server context menu (no Copy URL), and the yellow lightingai color popover with the sidebar bar unchanged. Verify on a real Hub build using the iOS/macOS tooling available, not only unit tests.
 
-## Screenshots
-
-![Server context menu has no Copy URL item](/api/tasks/0892/attachments/att_e67ecc24-cacd-4c71-bf34-9f75393d2d75.png)
-![lightingai color popover is yellow; sidebar bar is not](/api/tasks/0892/attachments/att_464c834d-dcfe-41db-831d-829b5eebf38f.png)
-![After relaunch: lightingai's header chip and sidebar bar are both the chosen yellow, while pn (purple) and Private (pink) keep their bars](/api/tasks/0892/attachments/att_c5c05988-9b84-4f6d-8f76-b9cf822e86ea.png)
-![After: the Hub sidebar shows a yellow bar on the lightingai row; pn and Private bars are unchanged](/api/tasks/0892/attachments/att_c519394b-b0ab-4f23-8e8b-620b2f01fcae.png)
-![After: the server context menu includes Copy URL between Pin server and Edit server](/api/tasks/0892/attachments/att_365c5ac8-5770-4d47-b505-20b5fc561701.png)
-
 ## Implementation notes
 **Root cause.** The web UI saved the repo color only in `localStorage` (`repoos.repoColor.<repo>`). The Hub read it by evaluating JavaScript in the embedded `WKWebView`, and only on navigation finish / server switch, so a color picked in the page never reached the sidebar live. `localStorage` was also a weak cross-context source: the Hub kept its own isolated per-server data store, and the read could pick any repo's key.
 
@@ -54,6 +46,14 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 
 **Verified live.** Real Hub build from this worktree, branch UI served in its embedded web view against a running server: picking yellow showed the sidebar bar immediately; the header chip and bar matched; the color survived an app relaunch; **Default** cleared it; pn (purple) and Private (pink) kept their bars. The context menu showed **Copy URL** in place. See the after screenshots above.
 
+## Screenshots
+
+![Server context menu has no Copy URL item](/api/tasks/0892/attachments/att_e67ecc24-cacd-4c71-bf34-9f75393d2d75.png)
+![lightingai color popover is yellow; sidebar bar is not](/api/tasks/0892/attachments/att_464c834d-dcfe-41db-831d-829b5eebf38f.png)
+![After relaunch: lightingai's header chip and sidebar bar are both the chosen yellow, while pn (purple) and Private (pink) keep their bars](/api/tasks/0892/attachments/att_c5c05988-9b84-4f6d-8f76-b9cf822e86ea.png)
+![After: the Hub sidebar shows a yellow bar on the lightingai row; pn and Private bars are unchanged](/api/tasks/0892/attachments/att_c519394b-b0ab-4f23-8e8b-620b2f01fcae.png)
+![After: the server context menu includes Copy URL between Pin server and Edit server](/api/tasks/0892/attachments/att_365c5ac8-5770-4d47-b505-20b5fc561701.png)
+![Before: lightingai has no sidebar bar; pn and Private keep their purple/pink bars](/api/tasks/0892/attachments/att_abc53aa0-642a-4b2d-ac77-065b81d4cd80.png)
 
 ## Activity
 
@@ -91,3 +91,4 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 - 2026-10-21T08:40:29Z · body: Implementation notes (added)
 - 2026-10-21T08:40:30Z · message_queued at 2026-10-21T08:40:30.746Z
 - 2026-10-21T08:42:35Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-21T08:45:36Z · screenshots
