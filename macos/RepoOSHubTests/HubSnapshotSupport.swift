@@ -1,6 +1,5 @@
 import AppKit
 import SwiftUI
-import XCTest
 
 /// Offscreen PNG rendering for the Hub's layout snapshots (#0893).
 ///
