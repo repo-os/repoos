@@ -12,7 +12,7 @@ branch: feat/offload-repoos-shot-to-a-runner
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:27:49Z"
-updated_at: "2026-10-21T08:56:00Z"
+updated_at: "2026-10-21T08:57:06Z"
 dev_error_count: 1
 ---
 ## Problem
