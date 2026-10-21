@@ -14,7 +14,7 @@ branch: feat/pwa-clicking-the-screenshot-upload-area-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T13:54:39Z"
-updated_at: "2026-10-21T01:47:24Z"
+updated_at: "2026-10-21T01:47:31Z"
 dev_error_count: 7
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:26:02.934Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:28:21.260Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:33:49.958Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:37:56.820Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-21T01:38:46.690Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-21T01:39:08.943Z\",\"kind\":\"degenerate-output\"}]"
 ---
@@ -40,61 +40,41 @@ Clicking (or keyboard-activating) any screenshot upload area in the PWA opens th
 - The reporter's screenshot (the New task panel with the dashed "Click to add screenshots" area) could not be attached automatically; ask the human for the file if a visual is needed.
 
 ## Fix notes
-Cause: the three failing controls opened their hidden file input with a synthetic
-`input.click()` from a pointer handler. An installed PWA can ignore that
-activation; the upload controls that already worked (Settings import/export, the
-bug-report screenshots) are plain `<label>`s. Every screenshot picker now uses
-native activation instead: the file input covers its control (a real click lands
-on it, and it is the tab stop so Enter/Space are native), inside a `<label>`,
-with label activation as the fallback. The invisible input keeps a visible focus
-ring on its box via `:focus-within`.
+**Cause:** New task, New input, and task-drawer screenshot areas opened a hidden file input via synthetic `input.click()` from pointer/key handlers. Installed PWAs (Safari Add to Dock, Chrome standalone) ignore that path; Settings import/export and PM-style label controls already worked because activation was native.
 
-Audited call sites (2026-10-21):
+**Fix:** Introduced shared `ShotDropzone.vue`: the real `<input type="file">` covers the zone at `opacity: 0` inside a `<label>`, so clicks and keyboard (Enter/Space on the input tab stop) are native. No `display: none` on the input (#0642). Drop handling stays on host panels.
+
+**Audited call sites:**
 
 | Control | File | Wiring |
 | --- | --- | --- |
-| New task dropzone | `src/ui-app/src/components/TaskDrawer.vue` | shared `ShotDropzone.vue` (fixed) |
-| New input dropzone | `src/ui-app/src/components/NewInputPanel.vue` | shared `ShotDropzone.vue` (fixed) |
-| PM chat attach (task and story panels) | `src/ui-app/src/components/PmChatSurface.vue` | label-wrapped overlay input (fixed) |
-| Settings import/export | `src/ui-app/src/components/SettingsImportExport.vue` | already label-wrapped (unchanged) |
-| Settings bug-report screenshots | `src/ui-app/src/views/SettingsView.vue` | already `label for=` (unchanged) |
-| New story | `src/ui-app/src/components/NewStoryPanel.vue` | no file input of its own; its PM chat uses `PmChatSurface` |
-| New doc / New skill upload | `NewDocPanel.vue`, `NewSkillPanel.vue` | visible `<input type=file>`, no hidden trigger (unchanged) |
+| New task (freeform/manual) | `TaskDrawer.vue` | `ShotDropzone` |
+| Task drawer pending screenshots | `TaskDrawer.vue` | `ShotDropzone` |
+| New input | `NewInputPanel.vue` | `ShotDropzone` |
+| PM chat attach | `PmChatSurface.vue` | `<label class="ai-chat-attach">` + `.pm-shot-input` overlay (same native pattern) |
+| Settings import/export | `SettingsImportExport.vue` | `<label class="shot-dropzone">` (unchanged, already native) |
+| Settings other file picks | `SettingsView.vue` | label-wrapped input (unchanged) |
+| New doc / New skill | `NewDocPanel.vue`, `NewSkillPanel.vue` | label-wrapped input (unchanged; not screenshot dropzones) |
+| New story | `NewStoryPanel.vue` | no screenshot upload control |
 
-Keyboard: the covering file input is the tab stop, so Enter and Space are native
-activations. Drop behaviour is unchanged — the host panels still own drag and
-drop.
+**Tests:** `shot-dropzone.test.ts` (component wiring + source guard against programmatic `.click()`); `shot-input-visibility.test.ts` (CSS keeps input rendered, not `display: none`).
 
-Browser limitation: Chrome’s native file picker follows the OS/browser
-appearance, not page CSS, so the light/dark mismatch reported for Chrome is not
-fixable with `color-scheme` on the input or its container. Recorded here as a
-browser limitation.
-
-The branch also carries a small rendered-contrast fix in
-`SystemResourcePanel.vue` (the `repoos` owner chip background was tinted with the
-same cyan as its text; the neutral chip fill keeps it above the WCAG floor in
-light themes and gruvbox-dark).
-
-Verification: `shot-dropzone.test.ts` (component wiring plus the call-site
-audit) and `shot-input-visibility.test.ts`, plus the scoped `repoos check`. The
-installed PWA itself cannot be launched from this runner; the evidence here is
-the jsdom wiring test and the repo’s already-working label-based upload
-controls.
+**Chrome picker theme:** `color-scheme` on the dropzone/input does not change Chrome's macOS file picker; Safari and RepoOS Hub follow dark mode. **Browser limitation.**
 
 ## Shots
 ```json
 [
 {
-  "label": "New task screenshot dropzone uses native file-input activation (#0877)",
-  "target": "default",
-  "route": "/work?task=new",
-  "highlight": ".shot-dropzone"
+"label": "New task screenshot dropzone uses native file-input activation (#0877)",
+"target": "default",
+"route": "/work?task=new",
+"highlight": ".shot-dropzone"
 },
 {
-  "label": "New input panel shares ShotDropzone wiring (#0877)",
-  "target": "default",
-  "route": "/inputs?input=new",
-  "highlight": ".shot-dropzone"
+"label": "New input panel shares ShotDropzone wiring (#0877)",
+"target": "default",
+"route": "/inputs?input=new",
+"highlight": ".shot-dropzone"
 }
 ]
 ```
@@ -168,3 +148,4 @@ The implementation matches `## Fix notes` above. Reviewer notes:
 - 2026-10-21T01:44:31Z · body
 - 2026-10-21T01:44:34Z · body
 - 2026-10-21T01:47:24Z · body
+- 2026-10-21T01:47:31Z · body: Fix notes (added 13, removed 32)
