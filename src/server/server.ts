@@ -3373,6 +3373,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     return json(res, 200, {
       ok: true,
       runs: taskChecks.getRuns(params.param1),
+      // Live remote phase + pool queue position for the drawer (#0897).
+      remote: remoteValidator?.taskActivity?.(params.param1) ?? null,
     });
   });
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);

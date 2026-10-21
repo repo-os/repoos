@@ -21,6 +21,7 @@ import {
   readShotPreviewFixtureFromLocation,
   seedShotPreviewDebugLogs,
   shotFixturePinnedIntegration,
+  shotFixturePinnedTaskRemoteActivity,
   shotPreviewSkipsTaskLogsFetch,
 } from "../lib/shot-preview-fixtures";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
@@ -37,6 +38,7 @@ import type {
   Health,
   IntegrationPipelineSnapshot,
   LandableResult,
+  RemoteTaskActivity,
   RemoteValidationEvent,
   RepoEvent,
   RepoIndex,
@@ -844,6 +846,8 @@ export const useRepoStore = defineStore("repo", () => {
   /** Per-task `repoos check` history (Debug tab, 0310): handoff-finalize +
    *  MTD merge-gate runs, fed by SSE + hydrated via API when the tab opens. */
   const taskChecks = ref<Record<string, TaskCheckRun[]>>({});
+  /** Live remote run/queue detail per task (#0897), hydrated with the checks. */
+  const taskRemoteActivity = ref<Record<string, RemoteTaskActivity | null>>({});
   /** Per-task log entries (Debug tab, 0310), hydrated via API when the tab opens. */
   const taskLogs = ref<Record<string, TaskLogEntry[]>>({});
   /** Per-task structured remote-validation events (#0568 Debug tab): which host
@@ -2025,11 +2029,24 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Hydrate a task's check history (Debug tab, 0310) — picks up runs already
    *  recorded, including one currently in progress, rather than waiting for
-   *  the next SSE event. */
-  async function refreshTaskChecks(taskId: string): Promise<void> {
+   *  the next SSE event.
+   *
+   *  `remoteOnly` refreshes just the live remote run/queue detail (#0897): the
+   *  drawer polls it every few seconds while a gate is in flight, and replacing
+   *  `taskChecks` from that poll would overwrite the in-memory SSE run with a
+   *  server copy that may not include it yet (#0897 review). */
+  async function refreshTaskChecks(taskId: string, opts?: { remoteOnly?: boolean }): Promise<void> {
     try {
-      const r = await api<{ ok: boolean; runs: TaskCheckRun[] }>(`/api/tasks/${taskId}/checks`);
-      taskChecks.value[taskId] = r.runs;
+      const r = await api<{
+        ok: boolean;
+        runs: TaskCheckRun[];
+        remote?: RemoteTaskActivity | null;
+      }>(`/api/tasks/${taskId}/checks`);
+      if (!opts?.remoteOnly) taskChecks.value[taskId] = r.runs;
+      // A drawer shot fixture pins its remote detail; a preview board's real
+      // 404/empty response must not wipe the seeded state (#0897).
+      taskRemoteActivity.value[taskId] =
+        shotFixturePinnedTaskRemoteActivity(taskId) ?? r.remote ?? null;
     } catch {
       /* non-fatal — the Debug tab falls back to whatever SSE has delivered */
     }
@@ -4111,6 +4128,7 @@ export const useRepoStore = defineStore("repo", () => {
     startTestRun,
     startRemoteTestRun,
     taskChecks,
+    taskRemoteActivity,
     refreshTaskChecks,
     taskLogs,
     refreshTaskLogs,

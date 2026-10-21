@@ -83,6 +83,7 @@ export function remoteBrowserEvidenceTransport(
         worktreePath: request.worktreePath,
         candidateSha: request.candidateSha,
         phase: "pre-review",
+        kind: "shot",
         browserCapture: {
           taskId: request.taskId,
           branch: request.branch,

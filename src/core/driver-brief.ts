@@ -70,6 +70,15 @@ export interface BriefHostHealth {
   queued: number;
   maxConcurrent: number;
   detail: string | null;
+  /** In-flight jobs on this host, with kind and elapsed time (#0897). */
+  activeRuns?: {
+    taskId: string;
+    kind: string;
+    stage: string | null;
+    elapsedMs: number;
+  }[];
+  /** Queued validations attributed to this host, FIFO (#0897). */
+  queuedRuns?: BriefQueuedValidation[];
   /** Runs killed as hung on this host, most recent first. */
   hungRuns: { taskId: string; at: string; detail?: string }[];
   loadAverage: number[] | null;
@@ -90,6 +99,27 @@ export interface BriefPressuredHost {
   recheckCommand: string;
   swapUsedRatio: number | null;
   availableMemRatio: number | null;
+}
+
+/** A validation waiting for a host slot, with what is blocking it (#0897). */
+export interface BriefQueuedValidation {
+  taskId: string;
+  kind: string;
+  host: string;
+  position: number;
+  ahead: number;
+  waitedMs: number;
+  /** The in-flight job(s) currently holding a slot it needs. */
+  blockers: { taskId: string; kind: string; host: string; elapsedMs: number }[];
+}
+
+/**
+ * A validation that has waited more than two minutes (#0897), with the job
+ * blocking it — the driver brief's answer to "is this slow or queued?".
+ */
+export interface BriefBlockedValidation extends BriefQueuedValidation {
+  /** The oldest in-flight blocker, or null when the wait is a host recovery. */
+  blocking: { taskId: string; kind: string; host: string; elapsedMs: number } | null;
 }
 
 export interface BriefSlowRun {
@@ -153,6 +183,8 @@ export interface DriverBrief {
   failedCloseOuts: BriefCloseOutJob[];
   recentCloseOutOutcomes: { taskId: string; outcome: string; at: string; reason: string }[];
   hosts: BriefHostHealth[];
+  /** Validations queued longer than two minutes, with their blocker (#0897). */
+  blockedValidations: BriefBlockedValidation[];
   /** Hosts currently over the memory-pressure thresholds (#0901). */
   pressuredHosts: BriefPressuredHost[];
   runs: BriefRunSummary;
@@ -186,6 +218,8 @@ export interface DriverBriefInput {
   closeOutJobs: BriefCloseOutJob[];
   closeOutOutcomes: { taskId: string; outcome: string; at: string; reason: string }[];
   hosts: BriefHostHealth[];
+  /** Validations queued longer than the warning threshold (#0897). */
+  blockedValidations?: BriefBlockedValidation[];
   recentRuns: {
     total: number;
     hung: number;
@@ -392,6 +426,7 @@ export function buildDriverBrief(input: DriverBriefInput): DriverBrief {
     failedCloseOuts,
     recentCloseOutOutcomes: input.closeOutOutcomes,
     hosts: input.hosts,
+    blockedValidations: input.blockedValidations ?? [],
     pressuredHosts: input.hosts
       .filter((h) => h.pressureState === "pressured")
       .map((h) => ({

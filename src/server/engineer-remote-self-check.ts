@@ -200,6 +200,7 @@ export async function runEngineerRemoteSelfCheckGate(params: {
       worktreePath: params.worktreePath,
       taskId: params.taskId,
       phase: "pre-review",
+      kind: "self-check",
       changedRef: params.changedRef,
       onChunk: params.onChunk,
     });

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useRepoStore } from "../stores/repo";
 import { INTEGRATION_STAGES } from "../types";
+import { formatDuration } from "../lib/time";
 
 /**
  * Inline close-out pipeline summary (#0738): active task, stage, and FIFO queue.
@@ -17,6 +18,7 @@ const snapshot = computed(() => integration.value ?? null);
 const idle = computed(() => snapshot.value === null || snapshot.value.empty);
 const active = computed(() => snapshot.value?.active ?? null);
 const queue = computed(() => snapshot.value?.queue ?? []);
+const queueDetail = computed(() => snapshot.value?.queueDetail ?? []);
 const showQueue = computed(() => queue.value.length > 0 && !active.value?.failed);
 
 const stageIndex = computed(() => {
@@ -24,6 +26,39 @@ const stageIndex = computed(() => {
   if (!s) return -1;
   return INTEGRATION_STAGES.indexOf(s);
 });
+
+/** Tick once a second so the current phase's elapsed time stays live (#0897). */
+const now = ref(Date.now());
+let ticker: ReturnType<typeof setInterval> | undefined;
+onMounted(() => {
+  ticker = setInterval(() => (now.value = Date.now()), 1000);
+});
+onUnmounted(() => {
+  if (ticker) clearInterval(ticker);
+});
+
+const phaseElapsed = computed(() => {
+  const startedAt = active.value?.phaseStartedAt;
+  if (!startedAt) return active.value?.phaseElapsedMs ?? null;
+  const t = Date.parse(startedAt);
+  return Number.isFinite(t) ? Math.max(0, now.value - t) : (active.value?.phaseElapsedMs ?? null);
+});
+
+const phaseBreakdown = computed(() => {
+  const parts = (active.value?.phaseTimings ?? []).map((p) => {
+    const ms =
+      p.durationMs ??
+      (p.endedAt
+        ? Date.parse(p.endedAt) - Date.parse(p.startedAt)
+        : Math.max(0, now.value - Date.parse(p.startedAt)));
+    return `${p.phase} ${formatDuration(ms)}`;
+  });
+  return parts.join(" · ");
+});
+
+function queueWait(ms: number): string {
+  return formatDuration(Math.max(0, ms));
+}
 </script>
 
 <template>
@@ -42,9 +77,18 @@ const stageIndex = computed(() => {
       <p class="ips-active">
         <span class="ips-active-label">
           <template v-if="active.failed">#{{ active.taskId }} failed</template>
-          <template v-else>#{{ active.taskId }} · {{ active.stage ?? "…" }}</template>
+          <template v-else>
+            #{{ active.taskId }} · {{ active.stage ?? "…" }}
+            <template v-if="active.phase">
+              · {{ active.phase
+              }}<template v-if="phaseElapsed != null">
+                ({{ formatDuration(phaseElapsed) }})</template
+              >
+            </template>
+          </template>
         </span>
         <span v-if="active.failed && active.error" class="ips-err">{{ active.error }}</span>
+        <span v-else-if="phaseBreakdown" class="ips-phases">{{ phaseBreakdown }}</span>
       </p>
       <ol v-if="!active.failed" class="ips-stages" aria-label="Integration stages">
         <li
@@ -64,7 +108,13 @@ const stageIndex = computed(() => {
 
     <div v-if="showQueue" class="ips-queue">
       <span class="ips-queue-label">Queued behind</span>
-      <span v-for="q in queue" :key="q" class="ips-chip">#{{ q }}</span>
+      <span v-for="q in queueDetail" :key="q.taskId" class="ips-chip">
+        #{{ q.taskId }} · pos {{ q.position }} · {{ queueWait(q.waitedMs)
+        }}<template v-if="q.blockerTaskId">
+          · ahead: #{{ q.blockerTaskId }} {{ q.blockerPhase }}</template
+        >
+      </span>
+      <span v-for="q in queueDetail.length ? [] : queue" :key="q" class="ips-chip">#{{ q }}</span>
     </div>
   </section>
 </template>
@@ -121,6 +171,13 @@ const stageIndex = computed(() => {
 .ips-active-label {
   font-weight: 700;
   color: var(--txt);
+  font-variant-numeric: tabular-nums;
+}
+.ips-phases {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--txt-dim);
   font-variant-numeric: tabular-nums;
 }
 .ips-err {
