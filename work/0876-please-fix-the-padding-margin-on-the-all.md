@@ -2,7 +2,7 @@
 id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-20T13:45:38Z"
+updated_at: "2026-10-21T00:58:01Z"
 ---
 ## Problem
 
@@ -62,3 +62,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-20T13:45:00Z · created · hello@repoos.org
 - 2026-10-20T13:45:06Z · screenshots
 - 2026-10-20T13:45:38Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added); Related (added)
+- 2026-10-21T00:58:01Z · status inbox→ready
