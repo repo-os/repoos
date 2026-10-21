@@ -11,6 +11,7 @@ import {
 } from "../cli/repoos-api.js";
 import { effectiveEngineerFromApi } from "../cli/effective-from-api.js";
 import { HANDOFF_DEADLINE_MS } from "../server/handoff.js";
+import { fmtDuration } from "./driver.js";
 import {
   agentModelAllowRows,
   pauseAllowlistEntry,
@@ -869,12 +870,85 @@ export async function cmdRunners(args: string[]): Promise<number> {
     const out = probe ? { status, test } : status;
     if (opts.json) printJson(out);
     else {
-      console.log(
-        c.dim("  remote validation:"),
-        (status as { enabled?: boolean }).enabled ? "on" : "off",
-      );
+      const rv = status as unknown as {
+        enabled?: boolean;
+        hosts?: Array<{
+          host: string;
+          healthy: boolean;
+          probed: boolean;
+          inFlight: number;
+          maxConcurrent: number;
+          activeRuns?: Array<{
+            taskId: string;
+            kind?: string;
+            stage?: string | null;
+            startedAt: string;
+            elapsedMs?: number;
+            phases?: Array<{
+              phase: string;
+              startedAt: string;
+              endedAt?: string;
+              durationMs?: number;
+            }>;
+          }>;
+          queuedRuns?: Array<{
+            taskId: string;
+            kind: string;
+            host: string;
+            position: number;
+            waitedMs: number;
+            blockers?: Array<{ taskId: string; kind: string; host: string; elapsedMs: number }>;
+          }>;
+        }>;
+      };
+      console.log(c.dim("  remote validation:"), rv.enabled ? "on" : "off");
       if (probe && test) {
         console.log(c.dim("  probe:"), (test as { ok?: boolean }).ok ? "ok" : "failed");
+      }
+      // Same run + queue detail the Runners tab shows (#0897): which host is
+      // busy with what, and why a validation is waiting instead of running.
+      const now = Date.now();
+      for (const h of rv.hosts ?? []) {
+        const state = h.healthy
+          ? c.green("healthy")
+          : h.probed
+            ? c.red("unhealthy")
+            : c.dim("unprobed");
+        console.log(
+          `  ${h.host} ${state} ${c.dim(`(${h.inFlight}/${h.maxConcurrent} running)`)}`,
+        );
+        for (const r of h.activeRuns ?? []) {
+          const elapsed = r.elapsedMs ?? Math.max(0, now - Date.parse(r.startedAt));
+          const phases = (r.phases ?? [])
+            .map((p) => {
+              const ms =
+                p.durationMs ??
+                (p.endedAt ? Date.parse(p.endedAt) - Date.parse(p.startedAt) : null);
+              return `${p.phase} ${ms == null ? "…" : fmtDuration(ms)}`;
+            })
+            .join(" · ");
+          console.log(
+            c.dim(
+              `    running #${r.taskId} ${r.kind ?? "checks"}${r.stage ? ` · ${r.stage}` : ""} · ${fmtDuration(elapsed)}`,
+            ) + (phases ? c.dim(` (${phases})`) : ""),
+          );
+        }
+        for (const q of h.queuedRuns ?? []) {
+          console.log(
+            c.yellow(
+              `    queued #${q.taskId} ${q.kind} on ${q.host || h.host} — position ${q.position}, waiting ${fmtDuration(q.waitedMs)}`,
+            ),
+          );
+          if (q.blockers?.length) {
+            console.log(
+              c.dim(
+                `      ahead: ${q.blockers
+                  .map((b) => `#${b.taskId} ${b.kind} on ${b.host} (${fmtDuration(b.elapsedMs)})`)
+                  .join(", ")}`,
+              ),
+            );
+          }
+        }
       }
     }
     return 0;

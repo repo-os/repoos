@@ -598,7 +598,9 @@ instead of an opaque "validating".
 `repoos driver brief --json` gains `blockedValidations`: any queued validation
 that has waited **more than two minutes**, with `blocking` set to the oldest
 job ahead of it. The human brief prints the same rows under **Blocked
-validations (queued >2m)**. Close-out jobs also record `phaseStartedAt` and
+validations (queued >2m)**, and `repoos runners` prints each host's running
+jobs (kind, stage, elapsed, per-phase breakdown) and its queue with positions
+and the jobs ahead. Close-out jobs also record `phaseStartedAt` and
 `phaseTimings` (queued → syncing → validating → publishing → cleanup), which
 the pipeline snapshot and the drawer's "Integrating… (validating · 6m 12s)"
 label use.
