@@ -43,6 +43,7 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 ![lightingai color popover is yellow; sidebar bar is not](/api/tasks/0892/attachments/att_464c834d-dcfe-41db-831d-829b5eebf38f.png)
 ![After relaunch: lightingai's header chip and sidebar bar are both the chosen yellow, while pn (purple) and Private (pink) keep their bars](/api/tasks/0892/attachments/att_c5c05988-9b84-4f6d-8f76-b9cf822e86ea.png)
 ![After: the Hub sidebar shows a yellow bar on the lightingai row; pn and Private bars are unchanged](/api/tasks/0892/attachments/att_c519394b-b0ab-4f23-8e8b-620b2f01fcae.png)
+![After: the server context menu includes Copy URL between Pin server and Edit server](/api/tasks/0892/attachments/att_365c5ac8-5770-4d47-b505-20b5fc561701.png)
 
 ## Activity
 
@@ -76,3 +77,4 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 - 2026-10-21T08:36:42Z · body
 - 2026-10-21T08:39:29Z · screenshots
 - 2026-10-21T08:39:56Z · screenshots
+- 2026-10-21T08:40:01Z · screenshots
