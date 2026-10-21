@@ -16,6 +16,7 @@ import {
 } from "../core/browser-offload.js";
 import { runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
 import type { RemoteValidator, UploadProgressInfo } from "./remote-validation.js";
+import type { RunnerHealthNotice } from "../core/runner-health.js";
 
 /** Set on a spawned `repoos check` when a parent already ran the remote gate (#0520). */
 export const REPOOS_REMOTE_VALIDATION_DONE = "REPOOS_REMOTE_VALIDATION_DONE";
@@ -184,8 +185,8 @@ export function remoteJobCapabilities(config: RepoOSConfig): string[] {
 
 export type RemotePreReviewOutcome =
   | { kind: "skip" }
-  | { kind: "local-only"; skipTests: boolean; detail?: string }
-  | { kind: "fail"; detail: string; retryable: boolean };
+  | { kind: "local-only"; skipTests: boolean; detail?: string; notices?: RunnerHealthNotice[] }
+  | { kind: "fail"; detail: string; retryable: boolean; notices?: RunnerHealthNotice[] };
 
 export async function runRemotePreReviewGate(params: {
   config: RepoOSConfig;
@@ -256,7 +257,11 @@ export async function runRemotePreReviewGate(params: {
     ...(params.onUploadComplete ? { onUploadComplete: params.onUploadComplete } : {}),
   });
   if (remote.ok) {
-    return { kind: "local-only", skipTests: true };
+    return {
+      kind: "local-only",
+      skipTests: true,
+      ...(remote.runnerNotices?.length ? { notices: remote.runnerNotices } : {}),
+    };
   }
   if (remote.transient && !rv.fallbackToLocal) {
     return {
@@ -265,6 +270,7 @@ export async function runRemotePreReviewGate(params: {
       detail:
         `${remote.detail ?? "remote validation unavailable"} — retry once the runner is available, or set ` +
         `remoteValidation.fallbackToLocal to run the full gate locally`,
+      ...(remote.runnerNotices?.length ? { notices: remote.runnerNotices } : {}),
     };
   }
   if (!remote.transient) {
@@ -280,11 +286,13 @@ export async function runRemotePreReviewGate(params: {
           `remoteValidation host configuration (docs/remote-validation.md) and re-run the gate`
         : `remote validation failed: ${remote.detail ?? "build or test suite failed on the runner"} — ` +
           `fix it in the feature branch and re-run the gate`,
+      ...(remote.runnerNotices?.length ? { notices: remote.runnerNotices } : {}),
     };
   }
   return {
     kind: "local-only",
     skipTests: false,
     detail: remote.detail,
+    ...(remote.runnerNotices?.length ? { notices: remote.runnerNotices } : {}),
   };
 }

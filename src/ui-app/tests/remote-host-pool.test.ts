@@ -67,6 +67,22 @@ import {
   checkEnvAfterRemoteGate,
   REPOOS_REMOTE_FALLBACK_DETAIL,
 } from "../../server/pre-review-remote-gate.js";
+import { HOST_HEALTH_PROBE_TOKEN, type HostPressureSample } from "../../core/runner-health.js";
+import { pressureThresholds } from "../../core/pressure-guard.js";
+
+/** Healthy probe transcript a fake host answers with unless a test overrides it. */
+const HEALTHY_HOST_PROBE = `${HOST_HEALTH_PROBE_TOKEN}
+__UNAME__
+Linux
+__MEMINFO__
+MemTotal:       16777216 kB
+MemAvailable:    8388608 kB
+SwapTotal:       4194304 kB
+SwapFree:        3670016 kB
+__SWAP__
+__VMSTAT__
+__MEMSIZE__
+`;
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -549,6 +565,11 @@ function poolFixture(opts: {
             output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
             timedOut: false,
           };
+        }
+        // Memory-health probe (#0901): answer healthy so this fixture's
+        // dispatch tests are not exercising a real host's pressure.
+        if (cmd.includes(HOST_HEALTH_PROBE_TOKEN)) {
+          return { code: 0, output: HEALTHY_HOST_PROBE, timedOut: false };
         }
         if (opts.timeoutRunOn?.includes(host.ip)) {
           (cmds[host.ip] ??= []).push(cmd);
@@ -1348,6 +1369,9 @@ describe("failover to another host (#0632)", () => {
         if (cmd.includes("__HOST_LOCK__")) {
           return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
         }
+        if (cmd.includes(HOST_HEALTH_PROBE_TOKEN)) {
+          return { code: 0, output: HEALTHY_HOST_PROBE, timedOut: false };
+        }
         // Never finishes — no validation run should reach a host here.
         return new Promise<RemoteExecResult>(() => {});
       }),
@@ -1526,6 +1550,9 @@ describe("pool LRU tie-break across idle hosts (#0890)", () => {
         }
         if (cmd.includes("__HOST_LOCK__")) {
           return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
+        }
+        if (cmd.includes(HOST_HEALTH_PROBE_TOKEN)) {
+          return { code: 0, output: HEALTHY_HOST_PROBE, timedOut: false };
         }
         return { code: 0, output: "ok", timedOut: false };
       }),
@@ -1797,7 +1824,10 @@ describe("outer SSH timeout covers the lock wait, not just the run (#0521 review
     await runner.validate(opts("0001"));
     // No deadline passed → the wait budget is DEFAULT_HOST_LOCK_WAIT_SECS.
     const runCall = runRemote.mock.calls.find(
-      (c) => !String(c[1]).includes(PREREQ_OK_TOKEN) && !String(c[1]).includes("__HOST_LOCK__"),
+      (c) =>
+        !String(c[1]).includes(PREREQ_OK_TOKEN) &&
+        !String(c[1]).includes("__HOST_LOCK__") &&
+        !String(c[1]).includes(HOST_HEALTH_PROBE_TOKEN),
     );
     expect(runCall?.[3]).toBe(remoteRunTimeoutMs + DEFAULT_HOST_LOCK_WAIT_SECS * 1000);
   });
@@ -3102,5 +3132,210 @@ describe("server-side container cleanup when a run is cancelled or times out (#0
     expect((await resultPromise).ok).toBe(true);
     for (let i = 0; i < 10; i++) await tick(5);
     expect(f.killed).toHaveLength(0);
+  });
+});
+
+// ── runner memory health (#0901) ──────────────────────────────────────────────
+
+describe("runner memory health dispatch (#0901)", () => {
+  const GB = 1024 ** 3;
+  const healthySample = (over: Partial<HostPressureSample> = {}): HostPressureSample => ({
+    source: "linux",
+    swapUsedBytes: 0.5 * GB,
+    swapTotalBytes: 4 * GB,
+    availableMemRatio: 0.5,
+    totalMemBytes: 16 * GB,
+    ...over,
+  });
+  const pressuredSample = (over: Partial<HostPressureSample> = {}): HostPressureSample =>
+    healthySample({
+      swapUsedBytes: 3 * GB,
+      availableMemRatio: 0.03,
+      ...over,
+    });
+
+  function healthPool(opts: {
+    hosts: Array<{ host: string; os?: string; runner?: "docker" | "native" }>;
+    samples: Record<string, HostPressureSample | null>;
+    cacheMs?: number;
+  }): {
+    pool: TailscaleHostPool;
+    probe: ReturnType<typeof vi.fn>;
+  } {
+    const exec: RemoteExecDeps = {
+      bundleRepo: vi.fn(async () => ({ ok: true })),
+      uploadFile: vi.fn(async () => ({ ok: true })),
+      downloadDir: vi.fn(async () => {}),
+      probeTcp: vi.fn(async () => true),
+      runRemote: vi.fn(async (_host, cmd): Promise<RemoteExecResult> => {
+        if (cmd.includes(PREREQ_OK_TOKEN)) {
+          return {
+            code: 0,
+            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+            timedOut: false,
+          };
+        }
+        if (cmd.includes("__HOST_LOCK__")) {
+          return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
+        }
+        return { code: 0, output: "ok", timedOut: false };
+      }),
+    };
+    const probe = vi.fn(async (host: { host: string }) => opts.samples[host.host] ?? null);
+    const pool = new TailscaleHostPool(
+      {
+        enabled: true,
+        provider: "tailscale",
+        tailscaleHosts: opts.hosts,
+        maxConcurrent: 1,
+      } as never,
+      {
+        exec,
+        healthRetryMs: 60_000,
+        pressureProbe: probe,
+        pressureCacheMs: opts.cacheMs ?? 60_000,
+        pressureOptions: () => ({ enabled: true, thresholds: pressureThresholds() }),
+      },
+    );
+    return { pool, probe };
+  }
+
+  async function lease(pool: TailscaleHostPool): Promise<string> {
+    const slot = await pool.acquire([]);
+    const host = slot.host.host;
+    slot.release();
+    return host;
+  }
+
+  it("leases a healthy host and exposes its pressure on status", async () => {
+    const { pool } = healthPool({
+      hosts: [{ host: "a" }, { host: "b" }],
+      samples: { a: healthySample(), b: healthySample() },
+    });
+    expect(await lease(pool)).toBe("a");
+    const status = pool.status();
+    expect(status.map((h) => h.pressure?.state)).toEqual(["healthy", "healthy"]);
+    expect(status[0]!.pressureCheckEnabled).toBe(true);
+    expect(status[0]!.pressure!.swapUsedRatio).toBeCloseTo(0.125, 3);
+  });
+
+  it("skips a pressured host and names the skip + fix to the caller", async () => {
+    const skipped: string[] = [];
+    const { pool } = healthPool({
+      hosts: [{ host: "thrash" }, { host: "ok" }],
+      samples: { thrash: pressuredSample(), ok: healthySample() },
+    });
+    const slot = await pool.acquire([], { onPressureSkip: (n) => skipped.push(n.message) });
+    expect(slot.host.host).toBe("ok");
+    slot.release();
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0]).toContain("thrash skipped");
+    expect(skipped[0]).toContain("swapoff -a");
+    expect(pool.status().find((h) => h.host === "thrash")!.pressure!.state).toBe("pressured");
+  });
+
+  it("evaluates a Colima VM sample against the VM's numbers, not macOS swap", async () => {
+    const { pool } = healthPool({
+      hosts: [
+        { host: "mac-docker", os: "macos" },
+        { host: "linux", os: "linux" },
+      ],
+      samples: {
+        "mac-docker": pressuredSample({ source: "macos-vm" }),
+        linux: healthySample(),
+      },
+    });
+    expect(await lease(pool)).toBe("linux");
+    const mac = pool.status().find((h) => h.host === "mac-docker")!;
+    expect(mac.pressure!.source).toBe("macos-vm");
+    expect(mac.pressure!.fix).toContain("Docker VM");
+  });
+
+  it("queues with a visible reason when every host is pressured, then dispatches once relieved", async () => {
+    const samples: Record<string, HostPressureSample | null> = {
+      a: pressuredSample(),
+      b: pressuredSample(),
+    };
+    const { pool } = healthPool({ hosts: [{ host: "a" }, { host: "b" }], samples, cacheMs: 10 });
+    const queued: Array<{ host: string; reason?: string }> = [];
+    const pending = pool.acquire([], { onQueue: (info) => queued.push(info) });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(pool.queuedCount).toBe(1);
+    expect(queued[0]!.reason).toContain("swapoff -a");
+    // Relief: the retry timer re-samples and hands the run to the recovered host.
+    samples.a = healthySample();
+    const slot = await Promise.race([
+      pending,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("pressure queue never recovered")), 1000),
+      ),
+    ]);
+    expect(["a", "b"]).toContain(slot.host.host);
+    slot.release();
+  });
+
+  it("treats a gate failure on a pressured host as infra and retries on another host (#0901)", async () => {
+    const root = tmpRoot();
+    const config = {
+      root,
+      workDir: "work",
+      docsDir: "docs",
+      skillsDir: "skills",
+      taskExtensions: [".md"],
+      defaultStatus: "inbox",
+      defaultAssignee: "ai",
+      cacheDir: ".repoos",
+      remoteValidation: {
+        enabled: true,
+        provider: "tailscale",
+        tailscaleHosts: [{ host: "a" }, { host: "b" }],
+        maxConcurrent: 1,
+        retryOtherHosts: true,
+      },
+    } as unknown as RepoOSConfig;
+    const ran: string[] = [];
+    const exec: RemoteExecDeps = {
+      bundleRepo: vi.fn(async () => ({ ok: true })),
+      uploadFile: vi.fn(async () => ({ ok: true })),
+      downloadDir: vi.fn(async () => {}),
+      probeTcp: vi.fn(async () => true),
+      runRemote: vi.fn(async (host, cmd): Promise<RemoteExecResult> => {
+        if (cmd.includes(PREREQ_OK_TOKEN)) {
+          return { code: 0, output: PREREQ_OK_TOKEN, timedOut: false };
+        }
+        if (cmd.includes("__HOST_LOCK__")) {
+          return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
+        }
+        ran.push(host.ip);
+        if (host.ip === "a") {
+          return { code: 1, output: "[validate] gate exit 1\n1 test failed\n", timedOut: false };
+        }
+        return { code: 0, output: "gate pass", timedOut: false };
+      }),
+    };
+    // `a` looks healthy at lease time; the post-failure sample shows pressure.
+    const samples: Record<string, HostPressureSample | null> = {
+      a: healthySample(),
+      b: healthySample(),
+    };
+    let aSamples = 0;
+    const runner = new TailscaleRunner(config, undefined, {
+      exec,
+      pressureCacheMs: 60_000,
+      pressureProbe: async (host) => {
+        if (host.host === "a") {
+          aSamples++;
+          return aSamples >= 2 ? pressuredSample() : samples.a!;
+        }
+        return samples[host.host] ?? null;
+      },
+    });
+    const summary = await runner.validate(opts("0901"));
+    expect(ran).toEqual(["a", "b"]);
+    expect(summary.ok).toBe(true);
+    expect(summary.transient).toBeUndefined();
+    expect(summary.runnerNotices).toHaveLength(1);
+    expect(summary.runnerNotices![0]).toMatchObject({ host: "a", action: "failed" });
+    expect(summary.runnerNotices![0]!.message).toContain("not counted as a branch test failure");
   });
 });

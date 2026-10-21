@@ -2,7 +2,7 @@
 id: "0899"
 title: "Easter eggs bundle: screenshot dropzone layout, CLI screenshot captions"
 type: bug
-status: review
+status: active
 hold: true
 priority: p3
 area: [web, core]
@@ -14,7 +14,9 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T18:36:07Z"
+updated_at: "2026-10-21T18:53:41Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Items
 - [ ] **E1 · Screenshot dropzone wraps to two lines** (web) — after #0877 made `ShotDropzone` a `<label>`, the global `.field label` rule leaks into it. Source: user report 2026-10-21.
@@ -63,16 +65,34 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 ```json
 [
 {
-"label": "New input screenshot dropzone single-row layout",
+"label": "New input dropzone light",
 "target": "default",
 "route": "/inputs?input=new",
-"highlight": ".shot-dropzone"
+"highlight": ".field .shot-dropzone",
+"theme": "light"
 },
 {
-"label": "New task screenshot dropzone single-row layout",
+"label": "New input dropzone dark narrow",
+"target": "default",
+"route": "/inputs?input=new",
+"highlight": ".field .shot-dropzone",
+"theme": "dark",
+"viewportWidth": 390
+},
+{
+"label": "New task dropzone light",
 "target": "default",
 "route": "/work?task=new",
-"highlight": ".shot-dropzone"
+"highlight": ".field .shot-dropzone",
+"theme": "light"
+},
+{
+"label": "New task dropzone dark narrow",
+"target": "default",
+"route": "/work?task=new",
+"highlight": ".field .shot-dropzone",
+"theme": "dark",
+"viewportWidth": 390
 }
 ]
 ```
@@ -138,3 +158,15 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T18:36:06Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
 - 2026-10-21T18:36:06Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (667edb3e2) during finalization (#0734)
 - 2026-10-21T18:36:07Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (667edb3e2) during finalization (#0734)
+- 2026-10-21T18:42:36Z · note: review pass 1: needs some work
+- 2026-10-21T18:42:37Z · status review→active
+- 2026-10-21T18:44:22Z · body
+- 2026-10-21T18:50:45Z · message_queued at 2026-10-21T18:50:45.531Z
+- 2026-10-21T18:50:45Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-21T18:50:52Z · body
+- 2026-10-21T18:50:52Z · body
+- 2026-10-21T18:51:19Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-21T18:53:02Z · body
+- 2026-10-21T18:53:02Z · body
+- 2026-10-21T18:53:41Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-21T18:53:41Z · message_delivered: 1 message(s)

@@ -1975,6 +1975,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof rvRetry === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, retryOtherHosts: rvRetry };
     }
+    const rvHealthCheck = parsed["remoteValidation.healthCheck"];
+    if (typeof rvHealthCheck === "boolean") {
+      cfg.remoteValidation = { ...cfg.remoteValidation, healthCheck: rvHealthCheck };
+    }
     const rvEngineer = parsed["remoteValidation.engineerSelfCheckRemote"];
     if (typeof rvEngineer === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, engineerSelfCheckRemote: rvEngineer };
@@ -3421,6 +3425,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "When a transient failure occurs on one tailscale host, retry the run on another healthy, free host before falling back to local. Default true when 2+ hosts are configured.",
     },
     {
+      key: "remoteValidation.healthCheck",
+      label: "Remote validation: skip runners under memory pressure",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: true,
+      description:
+        "Read each runner's swap and available memory before leasing it, using the same thresholds as the local pressure guard. A host over the limit is skipped; if every host is pressured the run queues with the reason and the exact fix instead of failing the branch's tests. Docker on macOS reads the Linux VM's numbers, not the Mac's swap.",
+    },
+    {
       key: "check.isolationRuns",
       label: "Isolation re-runs after a test failure",
       type: "number",
@@ -3969,6 +3983,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "remoteValidation.browserCaptureMode",
   "remoteValidation.localFallback",
   "remoteValidation.retryOtherHosts",
+  "remoteValidation.healthCheck",
   "remoteValidation.engineerSelfCheckRemote",
   "remoteValidation.useForReleases",
 ];
