@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-21T13:02:29Z"
-review_passes: 2
+last_close_out_gate_ms: 437151
+last_close_out_gate_at: "2026-10-21T13:10:11.680Z"
 id: "0874"
 title: Offload repoos shot to a runner
 type: feature
@@ -14,6 +14,8 @@ branch: feat/offload-repoos-shot-to-a-runner
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T12:27:49Z"
+updated_at: "2026-10-21T13:10:11Z"
+review_passes: 2
 last_check_failure: "repoos check at 2026-10-21T09:07:49.677Z: repoos check failed: ◆ Check plan"
 dev_error_count: 5
 ---
@@ -84,4 +86,5 @@ Not required for #0854's acceptance criteria. #0864 (rebuild the runner image an
 - 2026-10-21T13:01:38Z · status active→review
 - 2026-10-21T13:01:38Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-21T13:02:29Z · note: review pass 2: good to go
+- 2026-10-21T13:10:11Z · close-out gate completed in 437s
 
