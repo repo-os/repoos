@@ -2,7 +2,7 @@
 id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T03:51:48Z"
+updated_at: "2026-10-21T03:52:03Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T03:35:01.891Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
@@ -157,3 +157,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T03:32:33Z · assigned_to
 - 2026-10-21T03:38:30Z · body
 - 2026-10-21T03:51:48Z · status active→ready
+- 2026-10-21T03:52:03Z · status ready→active
