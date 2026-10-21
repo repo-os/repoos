@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T15:00:29Z"
+updated_at: "2026-10-21T15:02:05Z"
 ---
 ## Items
 - [ ] **E1 · Screenshot dropzone wraps to two lines** (web) — after #0877 made `ShotDropzone` a `<label>`, the global `.field label` rule leaks into it. Source: user report 2026-10-21.
@@ -68,15 +68,15 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 "route": "/",
 "highlight": ".field .shot-dropzone",
 "steps": [
-  {
-    "click": ".new-btn"
-  },
-  {
-    "waitFor": ".shot-dropzone"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": ".new-btn"
+},
+{
+  "waitFor": ".shot-dropzone"
+},
+{
+  "waitMs": 400
+}
 ]
 },
 {
@@ -85,15 +85,15 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 "route": "/inputs",
 "highlight": ".field .shot-dropzone",
 "steps": [
-  {
-    "click": ".new-btn"
-  },
-  {
-    "waitFor": ".shot-dropzone"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": ".new-btn"
+},
+{
+  "waitFor": ".shot-dropzone"
+},
+{
+  "waitMs": 400
+}
 ]
 }
 ]
@@ -123,3 +123,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T14:52:38Z · status ready→active, branch
 - 2026-10-21T14:55:46Z · body
 - 2026-10-21T15:00:29Z · body
+- 2026-10-21T15:02:05Z · body
