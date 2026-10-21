@@ -77,6 +77,7 @@ struct ServerWebView: NSViewRepresentable {
         context.coordinator.bindFindFocusTracking()
         context.coordinator.loadInitialPage()
         context.coordinator.observeHubCommands()
+        context.coordinator.observeAccentColorCookieStore(dataStore.httpCookieStore)
         // The Hub shell theme must never reach server content: pin the web
         // view to the system appearance (not the Hub override) so a page
         // honouring prefers-color-scheme follows the system, and the
@@ -102,8 +103,12 @@ struct ServerWebView: NSViewRepresentable {
         context.coordinator.syncNavigationState()
     }
 
+    static func dismantleNSView(_ nsView: HubServerWebContainerView, coordinator: Coordinator) {
+        coordinator.stopObservingAccentColor()
+    }
+
     @MainActor
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKHTTPCookieStoreObserver {
         var model: ServerWebViewModel
         var appState: HubAppState
         weak var webView: WKWebView?
@@ -111,6 +116,8 @@ struct ServerWebView: NSViewRepresentable {
         var loadedOriginKey: String?
         private var commandObservers: [NSObjectProtocol] = []
         private var systemAppearanceObserver: NSObjectProtocol?
+        private var accentColorCookieStore: WKHTTPCookieStore?
+        private var accentColorTimer: Timer?
 
         init(model: ServerWebViewModel, appState: HubAppState) {
             self.model = model
@@ -124,6 +131,8 @@ struct ServerWebView: NSViewRepresentable {
             if let systemAppearanceObserver {
                 DistributedNotificationCenter.default().removeObserver(systemAppearanceObserver)
             }
+            accentColorTimer?.invalidate()
+            accentColorCookieStore?.remove(self)
         }
 
         func bindFindFocusTracking() {
@@ -377,26 +386,74 @@ struct ServerWebView: NSViewRepresentable {
             syncNavigationState()
         }
 
-        /// Repo color is a visual preference stored by the RepoOS web UI in
-        /// this server's isolated local storage. Read only that public key when
-        /// a page finishes or the user leaves a server; no web-to-native bridge
-        /// or injected script is exposed to server content.
-        private func readRepositoryAccentColor() {
-            let script = """
-            (() => {
-                const prefix = 'repoos.repoColor.';
-                for (let index = 0; index < localStorage.length; index += 1) {
-                    const key = localStorage.key(index);
-                    if (key && key.startsWith(prefix)) return localStorage.getItem(key) || '';
-                }
-                return '';
-            })()
-            """
-            webView?.evaluateJavaScript(script) { [weak self] value, error in
-                guard let self, error == nil else { return }
-                let color = value as? String
+        /// Repo color is a visual preference the web UI mirrors into the
+        /// `repoos_repo_color` first-party cookie (src/ui-app/src/repo-color.ts).
+        /// Read only that named cookie from this server's isolated store —
+        /// never the session cookie — and observe it so a swatch picked in the
+        /// embedded page updates the sidebar bar immediately. No script or
+        /// message bridge is exposed to server content.
+        func observeAccentColorCookieStore(_ cookieStore: WKHTTPCookieStore) {
+            if let accentColorCookieStore {
+                accentColorCookieStore.remove(self)
+            }
+            accentColorCookieStore = cookieStore
+            cookieStore.add(self)
+            readRepositoryAccentColor()
+
+            // Cookie observation is the immediate path; this low-frequency
+            // poll covers a WebKit build that does not notify for a
+            // page-script cookie change. It reads the cookie store only for
+            // the active server, never page content.
+            accentColorTimer?.invalidate()
+            accentColorTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
                 Task { @MainActor in
-                    self.appState.updateWorkspaceAccentColor(color, for: self.model.serverID)
+                    guard let self, self.appState.selectedServerID == self.model.serverID else { return }
+                    self.readRepositoryAccentColor()
+                }
+            }
+        }
+
+        /// Release the cookie-store observer when SwiftUI tears this web view
+        /// down, so the coordinator and its timer do not outlive the page.
+        func stopObservingAccentColor() {
+            accentColorTimer?.invalidate()
+            accentColorTimer = nil
+            accentColorCookieStore?.remove(self)
+            accentColorCookieStore = nil
+        }
+
+        func cookiesDidChange(in cookieStore: WKHTTPCookieStore) {
+            guard cookieStore === accentColorCookieStore else { return }
+            readRepositoryAccentColor()
+        }
+
+        private func readRepositoryAccentColor() {
+            guard let cookieStore = accentColorCookieStore,
+                  let host = model.origin.host,
+                  !host.isEmpty
+            else { return }
+            let serverID = model.serverID
+            cookieStore.getAllCookies { [weak self] cookies in
+                let rawValue = cookies.first {
+                    $0.name == RepoAccentColorPreference.cookieName
+                        && RepoAccentColorPreference.cookieMatches(domain: $0.domain, host: host)
+                }?.value
+                Task { @MainActor in
+                    guard let self, let rawValue else { return }
+                    let repoName = self.appState.entries
+                        .first { $0.id == serverID }?
+                        .repositoryName
+                    switch RepoAccentColorPreference.parseCookieValue(
+                        rawValue,
+                        expectedRepoName: repoName
+                    ) {
+                    case .color(let hex):
+                        self.appState.updateWorkspaceAccentColor(hex, for: serverID)
+                    case .cleared:
+                        self.appState.updateWorkspaceAccentColor(nil, for: serverID)
+                    case .unsupported:
+                        break
+                    }
                 }
             }
         }

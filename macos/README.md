@@ -16,10 +16,14 @@ sidebar context menu. The window has no visible titlebar or toolbar row: the
 native red/yellow/green window controls stay in their standard upper-left
 position while the sidebar runs to the top edge and hosts the
 back/forward/reload controls plus the sidebar toggle, with Settings in its
-footer (#0855, #0857). A brand-new window opens at 90% of the screen's visible
-frame rather than at its 880x520 minimum, so it fills the screen like a
-browser; it stays resizable, and macOS frame restoration takes over once the
-user has sized it (#0859). When the native sidebar is collapsed, a slim chevron
+footer (#0855, #0857). A server row's context menu includes **Copy URL** (the
+saved origin, scheme and port included, for local and remote servers) and its
+left-edge color bar follows the repo color chosen in the embedded web UI. That
+per-browser preference is shared through the first-party `repoos_repo_color`
+cookie — no JavaScript bridge remains in the web view. A brand-new window opens
+at 90% of the screen's visible frame rather than at its 880x520 minimum, so it
+fills the screen like a browser; it stays resizable, and macOS frame restoration
+takes over once the user has sized it (#0859). When the native sidebar is collapsed, a slim chevron
 tab flush against the window's left edge brings it back. The main content area
 loads the selected server's RepoOS web UI in an
 isolated `WKWebView` (per-server data store, no native JavaScript bridge), with
