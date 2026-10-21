@@ -168,4 +168,35 @@ describe("cmdMv refuses to mark done a branch that isn't merged", () => {
       rmFixture(root);
     }
   });
+
+  it("refuses to reopen a done task whose branch is already merged (#0896)", async () => {
+    const { root, taskPath, clean } = makeRepoWithTask();
+    try {
+      git(root, ["checkout", "-q", "-b", "feat/test"]);
+      writeFileSync(join(root, "feature.txt"), "merged work\n");
+      git(root, ["add", "-A"]);
+      git(root, ["commit", "-q", "-m", "feature work"]);
+      git(root, ["checkout", "-q", "main"]);
+      git(root, ["merge", "-q", "--no-ff", "-m", "merge it", "feat/test"]);
+      await withCwd(root, () => {
+        cmdMv("0001", "done");
+      });
+      expect(readFileSync(taskPath, "utf8")).toMatch(/^status: done$/m);
+
+      process.exitCode = undefined;
+      await withCwd(root, () => {
+        cmdMv("0001", "ready");
+      });
+      expect(process.exitCode).toBe(1);
+      expect(readFileSync(taskPath, "utf8")).toMatch(/^status: done$/m);
+
+      process.exitCode = undefined;
+      await withCwd(root, () => {
+        cmdMv("0001", "ready", undefined, { force: true });
+      });
+      expect(readFileSync(taskPath, "utf8")).toMatch(/^status: ready$/m);
+    } finally {
+      clean();
+    }
+  }, 30_000);
 });

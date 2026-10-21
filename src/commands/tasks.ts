@@ -390,6 +390,37 @@ export function cmdMv(
         ),
       );
     }
+    // #0896: never reopen a task whose work already landed. A done task whose
+    // branch is merged into main is finished; moving it back (as a driver once did
+    // from a stale loop prompt, #0879) restarts engineers on shipped work.
+    if (status !== "done" && !opts.force) {
+      const doneTask = repoos.getTask(id);
+      if (doneTask?.status === "done" && doneTask.branch) {
+        const { root: doneRoot } = boardRoot();
+        const doneBranchExists =
+          spawnSync("git", ["show-ref", "--verify", "--quiet", `refs/heads/${doneTask.branch}`], {
+            cwd: doneRoot,
+            timeout: 4000,
+          }).status === 0;
+        const doneMain = doneBranchExists ? detectMainBranch(doneRoot) : null;
+        if (doneMain && isAncestor(doneRoot, doneTask.branch, doneMain)) {
+          console.error(
+            c.red(`  Refusing to reopen #${id} — `) +
+              c.dim(
+                `it is done and branch "${doneTask.branch}" is already merged into ${doneMain}.`,
+              ),
+          );
+          console.error(
+            c.dim(
+              `  Re-read the live state first (\`repoos list\`, \`git log ${doneMain} --grep ${id}\`). ` +
+                `If it truly needs more work, file a follow-up task; pass --force-not-merged to override.`,
+            ),
+          );
+          process.exitCode = 1;
+          return;
+        }
+      }
+    }
     if (status === "done" && !opts.force) {
       const existing = repoos.getTask(id);
       if (existing && existing.status !== "done" && existing.branch) {
