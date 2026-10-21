@@ -11,7 +11,7 @@ branch: feat/show-why-a-close-out-validation-is-waiti
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T12:39:47Z"
-updated_at: "2026-10-21T19:02:59Z"
+updated_at: "2026-10-21T19:03:41Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 3
@@ -156,3 +156,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T18:52:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-21T19:02:59Z · body
 - 2026-10-21T19:02:59Z · body
+- 2026-10-21T19:03:41Z · handoff_deferred: 1 queued message(s) must be read before review
