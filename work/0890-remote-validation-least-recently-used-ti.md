@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 155847
-last_close_out_gate_at: "2026-10-21T08:22:03.220Z"
 id: "0890"
 title: "Remote validation: least-recently-used tie-break across idle hosts"
 type: feature
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: 3c6765c382f3d93cb803d1132069f58d2eba5727
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remote-validation-least-recently-used-ti
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T02:18:32Z"
 updated_at: "2026-10-21T08:22:03Z"
+last_close_out_gate_ms: 155847
+last_close_out_gate_at: "2026-10-21T08:22:03.220Z"
 review_passes: 1
 ---
 ## Problem
