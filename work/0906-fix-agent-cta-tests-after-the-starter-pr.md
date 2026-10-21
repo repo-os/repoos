@@ -12,7 +12,7 @@ branch: feat/fix-agent-cta-tests-after-the-starter-pr
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T17:39:04Z"
-updated_at: "2026-10-21T17:59:10Z"
+updated_at: "2026-10-21T17:59:26Z"
 last_close_out_gate_ms: 131300
 last_close_out_gate_at: "2026-10-21T17:59:10.138Z"
 review_passes: 1
@@ -42,4 +42,4 @@ Two-line test fix. Verify the test passes before handing off, then run repoos ch
 - 2026-10-21T17:51:23Z · note: shots: skipped — the diff (2 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-21T17:52:05Z · note: review pass 1: good to go
 - 2026-10-21T17:59:10Z · close-out gate completed in 131s
-
+- 2026-10-21T17:59:26Z · status done→done, release:success
