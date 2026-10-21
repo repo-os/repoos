@@ -5,7 +5,7 @@ type: bug
 status: active
 priority: p2
 area: web
-assigned_to: human
+assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-padding-and-margin-on-allowlist-paus
 cli_override: cursor
@@ -13,7 +13,7 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T03:15:17Z"
+updated_at: "2026-10-21T03:32:33Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 2
@@ -152,3 +152,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T03:05:04Z · needs_input
 - 2026-10-21T03:07:44Z · body
 - 2026-10-21T03:15:10Z · assigned_to
+- 2026-10-21T03:32:33Z · assigned_to
