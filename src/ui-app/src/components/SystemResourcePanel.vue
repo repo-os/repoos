@@ -474,18 +474,14 @@ const serveMessage = computed(() => {
 
 .pressure-level {
   font-weight: 700;
-}
-
-.pressure-alert.warning .pressure-level {
-  color: var(--amber);
-}
-
-.pressure-alert.critical .pressure-level {
-  color: var(--red);
+  /* The tinted warning/critical background pushed the 12px severity label
+     below the WCAG floor in several themes (#0877 gate); the text names the
+     state, the border/background keep the colour cue. */
+  color: var(--txt);
 }
 
 .pressure-metric {
-  color: var(--txt-faint);
+  color: var(--txt-dim);
   font-variant-numeric: tabular-nums;
 }
 
