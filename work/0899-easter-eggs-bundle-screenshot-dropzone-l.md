@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T15:54:42Z"
+updated_at: "2026-10-21T15:59:37Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 4ffff8a8c3a575b4eb2eee506797f91ad72280cd
 ---
@@ -65,16 +65,16 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 ```json
 [
 {
-"label": "New input screenshot dropzone single-row layout",
-"target": "default",
-"route": "/inputs?input=new",
-"highlight": ".drawer-body .shot-dropzone"
+  "label": "New input screenshot dropzone single-row layout",
+  "target": "default",
+  "route": "/inputs?input=new",
+  "highlight": ".shot-dropzone"
 },
 {
-"label": "New task screenshot dropzone single-row layout",
-"target": "default",
-"route": "/work?task=new",
-"highlight": ".drawer-body .shot-dropzone"
+  "label": "New task screenshot dropzone single-row layout",
+  "target": "default",
+  "route": "/work?task=new",
+  "highlight": ".shot-dropzone"
 }
 ]
 ```
@@ -116,3 +116,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T15:47:19Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on bee — fix it in the feature branch and re-run the gate
 - 2026-10-21T15:52:43Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-21T15:54:42Z · body
+- 2026-10-21T15:59:37Z · body
