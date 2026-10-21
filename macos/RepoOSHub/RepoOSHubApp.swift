@@ -33,6 +33,12 @@ struct RepoOSHubApp: App {
                     appDelegate.setAppearanceOverride(newValue)
                 }
         }
+        // Structural hidden-title window style (#0878): SwiftUI can reset the
+        // AppKit `titleVisibility` override while it finalises the scene, which
+        // let the WindowGroup title draw over the web content again. The style
+        // hides only the title text/bar chrome; the native traffic lights, drag
+        // area, and `NSWindow.title` stay intact.
+        .windowStyle(.hiddenTitleBar)
         .commands {
             CommandGroup(replacing: .appSettings) {
                 Button("Settings…") {
@@ -159,40 +165,66 @@ final class HubAppDelegate: NSObject, NSApplicationDelegate {
 private struct HubWindowAppearanceConfigurator: NSViewRepresentable {
     let appearance: HubAppAppearance
 
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        configureWindow(from: view)
-        return view
+    func makeNSView(context: Context) -> HubWindowChromeView {
+        HubWindowChromeView(appearance: appearance)
     }
 
-    func updateNSView(_ view: NSView, context: Context) {
-        configureWindow(from: view)
+    func updateNSView(_ view: HubWindowChromeView, context: Context) {
+        view.hubAppearance = appearance
+    }
+}
+
+/// Applies the workspace chrome once AppKit actually attaches this view to its
+/// window.
+///
+/// `makeNSView` can run before SwiftUI has assigned the scene's NSWindow (and
+/// a one-shot `DispatchQueue.main.async` can still lose that race), which left
+/// the WindowGroup's "RepoOS" title visible over the web content (#0878).
+/// `viewDidMoveToWindow` is the first point where the window is guaranteed to
+/// exist, so the hidden-title chrome is applied there and re-applied whenever
+/// SwiftUI updates the appearance.
+final class HubWindowChromeView: NSView {
+    var hubAppearance: HubAppAppearance {
+        didSet { configureWindow() }
     }
 
-    private func configureWindow(from view: NSView) {
-        DispatchQueue.main.async {
-            guard let window = view.window else { return }
-            let appKitAppearance = appearance.appKitAppearance
-            window.appearance = appKitAppearance
-            configureHubWorkspaceWindowChrome(window)
-            window.isOpaque = true
-            window.backgroundColor = appearance.appKitWindowBackgroundColor
-            window.contentView?.wantsLayer = true
-            window.contentView?.layer?.backgroundColor = appearance.appKitWindowBackgroundColor.cgColor
+    init(appearance: HubAppAppearance) {
+        hubAppearance = appearance
+        super.init(frame: .zero)
+    }
 
-            var frameView = window.contentView?.superview
-            while let view = frameView {
-                view.appearance = appKitAppearance
-                view.wantsLayer = true
-                view.layer?.backgroundColor = appearance.appKitWindowBackgroundColor.cgColor
-                frameView = view.superview
-            }
-            applyNativeSurfaceBackgrounds(
-                in: window.contentView,
-                color: appearance.appKitWindowBackgroundColor,
-                appearance: appKitAppearance
-            )
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        configureWindow()
+    }
+
+    private func configureWindow() {
+        guard let window else { return }
+        let appKitAppearance = hubAppearance.appKitAppearance
+        window.appearance = appKitAppearance
+        configureHubWorkspaceWindowChrome(window)
+        window.isOpaque = true
+        window.backgroundColor = hubAppearance.appKitWindowBackgroundColor
+        window.contentView?.wantsLayer = true
+        window.contentView?.layer?.backgroundColor = hubAppearance.appKitWindowBackgroundColor.cgColor
+
+        var frameView = window.contentView?.superview
+        while let view = frameView {
+            view.appearance = appKitAppearance
+            view.wantsLayer = true
+            view.layer?.backgroundColor = hubAppearance.appKitWindowBackgroundColor.cgColor
+            frameView = view.superview
         }
+        applyNativeSurfaceBackgrounds(
+            in: window.contentView,
+            color: hubAppearance.appKitWindowBackgroundColor,
+            appearance: appKitAppearance
+        )
     }
 }
 
@@ -203,11 +235,19 @@ private struct HubWindowAppearanceConfigurator: NSViewRepresentable {
 /// the title text is hidden, the titlebar is transparent, and the content view
 /// extends underneath it. The sidebar toggle and navigation controls live in
 /// the sidebar instead of a toolbar.
+///
+/// This is the AppKit half of the fix; the scene also declares the structural
+/// `.windowStyle(.hiddenTitleBar)` because SwiftUI can reset `titleVisibility`
+/// while it finalises the window, which let the WindowGroup's "RepoOS" title
+/// reappear over the web content (#0878). The native traffic lights, the
+/// titlebar drag area, and `NSWindow.title` itself (used by accessibility,
+/// Mission Control, and the app switcher) all stay intact — only the drawing
+/// of the title is suppressed.
 func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
+    window.styleMask.insert(.fullSizeContentView)
     window.titleVisibility = .hidden
     window.titlebarAppearsTransparent = true
     window.titlebarSeparatorStyle = .none
-    window.styleMask.insert(.fullSizeContentView)
     window.toolbar?.isVisible = false
 
     // SwiftUI may hide the standard buttons when a scene's toolbar visibility
