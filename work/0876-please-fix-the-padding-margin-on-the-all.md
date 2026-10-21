@@ -2,9 +2,10 @@
 id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
-status: active
+status: done
 priority: p2
 area: web
+merged_commit: 1f3e9221fffe138957336b4b4ed3ba84ec4c7051
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-padding-and-margin-on-allowlist-paus
@@ -13,11 +14,12 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T03:38:30Z"
-check_retry_count: 1
+updated_at: "2026-10-21T04:49:42Z"
+last_close_out_gate_ms: 1040696
+last_close_out_gate_at: "2026-10-21T04:48:13.883Z"
+review_passes: 2
 last_check_failure: "repoos check at 2026-10-21T03:35:01.891Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
-review_passes: 1
 dev_error_count: 2
 ---
 ## Problem
@@ -156,3 +158,15 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T03:15:10Z · assigned_to
 - 2026-10-21T03:32:33Z · assigned_to
 - 2026-10-21T03:38:30Z · body
+- 2026-10-21T03:51:48Z · status active→ready
+- 2026-10-21T03:52:03Z · status ready→active
+- 2026-10-21T04:06:22Z · handoff failed · remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-21T04:07:54Z · note: handoff requested (ui-review)
+- 2026-10-21T04:08:24Z · note: handoff requested (ui-review)
+- 2026-10-21T04:14:14Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-21T04:14:14Z · note: handoff requested (cli)
+- 2026-10-21T04:27:26Z · status active→review
+- 2026-10-21T04:27:28Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-21T04:28:33Z · note: review pass 2: good to go
+- 2026-10-21T04:48:13Z · close-out gate completed in 1041s
+- 2026-10-21T04:49:42Z · status done→done, release:success
