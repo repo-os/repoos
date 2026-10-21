@@ -1162,8 +1162,6 @@ describe("ReviewManager adopted-turn completion (0288)", () => {
       defaultStatus: "inbox" as const,
       defaultAssignee: "unassigned" as const,
       cacheDir: ".repoos",
-      // Tests measure agent behaviour, not host pressure (#0891).
-      pressureGuard: { enabled: false },
       agents: [
         { name: "engineer", cli: "opencode", model: "default", enabled: true },
         { name: "reviewer", cli: "opencode", model: "default", enabled: true },
