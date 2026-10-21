@@ -1,0 +1,33 @@
+---
+id: "0908"
+title: "Human-assigned tasks need a real board pathway: move across columns to done without triggering AI, checks or review"
+type: feature
+status: inbox
+priority: p2
+area: [web, server, core]
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-21T19:22:55Z"
+updated_at: "2026-10-21T19:22:55Z"
+---
+## Problem
+Tasks assigned to a human (for example #0864 and #0907) have no usable path to done in the UI. The only visible 'hold' signal is the assigned-to-human marker, and a task can't be moved to Done without going through active and review, which start AI work, checks, handoff gates and reviewers that make no sense for a human-only task. The only way to close one today is the CLI: repoos update <id> --hold false and repoos mv <id> done. Human steps (rebuild an image, log CLIs in on runners, record a proof, run a trial) are a normal part of the work and need to be first-class on the board.
+
+## Desired UX
+A task assigned to a human flows through the same board columns as any other task, but it is inert: moving it between columns (inbox, ready, active, review, done) only changes its status. It never starts an engineer or reviewer, never runs checks, handoff or close-out gates, never creates a worktree, and is never picked up by dispatch or the CTO. Either the human or an AI driver can move it across the board. Moving to Done is a plain status change with an optional completion note, and the drawer shows a clear 'Human task: no AI will work on this' banner plus a Mark done action.
+
+## Acceptance criteria
+- assigned_to: human tasks can be dragged or moved through every column in the UI, and via repoos mv, with no AI, check, review, worktree or close-out side effects, proven by tests (no runner start, no handoff, no gate for a human task moving inbox to done).
+- Dispatch, auto-engineering, the CTO and Start/Review/Move-to-done buttons ignore or hide for human tasks; the drawer shows the inert banner and a Mark done action with a completion note.
+- Remove the need for a separate hold on human tasks, or make 'hold' and 'assigned to human' one clearly labelled concept in the UI (card badge, filter, tooltip).
+- The CLI repoos mv <id> done on a human task needs no --force-not-merged and writes a clear activity entry (who closed it and the note).
+- Existing human tasks (#0864, #0907, #0852, #0848, #0794, #0784) keep working; add a migration test if the frontmatter changes.
+- Docs: user-docs and AGENTS.md describe the human-task pathway and that AI agents may move them only when the human asked.
+
+## Notes for AI
+Do not start without the human. Related rule in AGENTS.md: needs-human-step tasks are split into held human tasks; make that flow first-class. Look at status transitions in src/core and src/server/routes/tasks.ts, the close-out guard in cmdMv (src/commands/tasks.ts), and the board column drag code in src/ui-app.
+
+## Activity
+
+- 2026-10-21T19:22:55Z · created · njachowski@gmail.com
