@@ -11,7 +11,7 @@ branch: feat/docs-site-use-the-landing-page-s-repoos-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-21T05:48:39Z"
+updated_at: "2026-10-21T05:57:03Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: b4ba240e4e2542c893664612107e735ae55d8d47
 last_check_failure: "repoos check at 2026-10-21T05:03:23.727Z: repoos check failed: vite v8.2.0 building client environment for production..."
@@ -121,4 +121,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T05:03:23Z · message_queued at 2026-10-21T05:03:23.474Z
 - 2026-10-21T05:39:59Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-21T05:48:39Z · note: handoff requested (ui-review)
-
+- 2026-10-21T05:57:03Z · note: shots: skipped — 28 shots already captured — an engineer-made capture pre-empts the automatic one
