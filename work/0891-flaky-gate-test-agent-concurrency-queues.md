@@ -76,3 +76,4 @@ After the fix, on the same machine: `agent-concurrency.test.ts` passed 50/50 seq
 - 2026-10-21T07:27:56Z · body
 - 2026-10-21T07:28:24Z · body
 - 2026-10-21T07:29:31Z · body: Verification (added)
+- 2026-10-21T07:29:31Z · message_queued at 2026-10-21T07:29:31.970Z
