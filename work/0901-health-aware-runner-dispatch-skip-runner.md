@@ -40,7 +40,7 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 "highlight": "[data-config-key=\"remoteValidation.healthCheck\"]",
 "steps": [
 {
-  "waitFor": "[data-config-key=\"remoteValidation.healthCheck\"]"
+"waitFor": "[data-config-key=\"remoteValidation.healthCheck\"]"
 }
 ]
 },
@@ -51,7 +51,7 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 "highlight": ".rr-panel",
 "steps": [
 {
-  "waitFor": ".rr-panel"
+"waitFor": ".rr-panel"
 }
 ]
 }
@@ -81,3 +81,4 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 - 2026-10-21T17:50:48Z · body
 - 2026-10-21T17:52:08Z · body
 - 2026-10-21T17:53:50Z · status active→review
+- 2026-10-21T17:53:50Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (872e58046) during finalization (#0734)
