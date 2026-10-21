@@ -26,13 +26,13 @@ export function unresolvedReviewFindingsBlock(config: RepoOSConfig, taskId: stri
     `The latest review ended with verdict **${verdict}**. Address these before re-handoff:`,
     "",
   ];
-  if (sections.bugs?.trim() && !/^none found$/i.test(sections.bugs.trim())) {
+  if (sections.bugs) {
     parts.push("### Bugs", "", sections.bugs.trim(), "");
   }
-  if (sections.edgeCases?.trim() && !/^none found$/i.test(sections.edgeCases.trim())) {
+  if (sections.edgeCases) {
     parts.push("### Edge cases", "", sections.edgeCases.trim(), "");
   }
-  if (sections.suggestions?.trim() && !/^none found$/i.test(sections.suggestions.trim())) {
+  if (sections.suggestions) {
     parts.push("### Suggestions", "", sections.suggestions.trim(), "");
   }
   if (parts.length <= 4) {
