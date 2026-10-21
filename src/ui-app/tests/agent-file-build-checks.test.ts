@@ -290,7 +290,7 @@ describe("docs agent-file build checks", () => {
   });
 
   it("compares the docs homepage prompt preview with the canonical file", () => {
-    const heading = "Building with an AI coding agent?";
+    const heading = "Building with an AI agent?";
     const html = `<h2>${heading}</h2><pre class="agent-cta-preview" aria-label="preview"><code>${promptPreview(
       prompt,
     )}</code></pre>`;
