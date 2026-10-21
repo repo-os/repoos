@@ -1,0 +1,31 @@
+---
+id: "0910"
+title: "Reviewer cannot confirm landability in its sandbox and returns 'needs some work' with no bugs: feed it the landing checklist"
+type: feature
+status: inbox
+priority: p1
+area: [server, core]
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-21T19:45:25Z"
+updated_at: "2026-10-21T19:45:25Z"
+---
+## Problem
+2026-10-22: #0899 got five review passes in a row (1-5) that all end 'needs some work' with 'Bugs: None found'. The only stated reason each time is that the reviewer could not confirm RepoOS landability or clean mergeability: its sandbox could not reach the RepoOS server (so repoos landable failed) and git merge-tree --write-tree failed to create a temporary file. The task's real pre-checks all passed (review lock, clean worktree, only its own work file conflicting, 9 files in scope). After enough rounds the task hit review-rounds-exhausted and flagged needs_input. A review that cannot run the landability commands should never turn into a negative verdict; it also burns review rounds and blocks the driver and the human from landing a correct task.
+
+## Desired UX
+The reviewer is given the landing checklist result up front (server-computed, the same data as repoos landable) and is told not to re-run it. If it still cannot confirm something environmental, that goes under a separate 'could not verify' note that does not change the verdict and does not count as a review round. A task with Bugs none and a green server-side checklist can get 'good to go'.
+
+## Acceptance criteria
+- The review prompt includes the server-computed landable checklist for the reviewed commit (review lock, clean worktree, merge result with main, scope, main clean) as facts, and instructs the reviewer to rely on it.
+- A new section or marker 'Could not verify (environment)' exists in the report format; reviewer failures to run commands (server unreachable, temp file errors, sandbox limits) go there and are excluded from the verdict and from the rounds counter.
+- review-rounds-exhausted is not raised by environment-only passes; add a test with a fake reviewer that reports only environment failures.
+- Parser and landable gate tests updated (src/core/review-report-sections.ts, src/core/landable.ts); docs/close-out-pipeline.md and docs/debugging-check-failures.md explain it.
+
+## Notes for AI
+Reproduce with .repoos/reviews/0899/1.md to 5.md. The reviewer for those passes was codex gpt-6-luna. Related: #0894 (Bugs 'None found.' parsing, landed).
+
+## Activity
+
+- 2026-10-21T19:45:25Z · created · njachowski@gmail.com
