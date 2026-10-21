@@ -117,3 +117,4 @@ Swift tests run: `ServerActionsMenuModelTests`, `RepoAccentColorPreferenceTests`
 - 2026-10-21T08:51:36Z · handoff_deferred: 3 queued message(s) must be read before review
 - 2026-10-21T08:51:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T08:51:36Z · needs_input
+- 2026-10-21T08:51:36Z · message_delivered: 3 message(s)
