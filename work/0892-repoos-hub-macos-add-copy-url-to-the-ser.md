@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T06:06:50Z"
+updated_at: "2026-10-21T06:07:16Z"
 ---
 ## Problem
 Two problems in the native macOS app (RepoOS Hub) server sidebar:
@@ -30,7 +30,7 @@ Two problems in the native macOS app (RepoOS Hub) server sidebar:
 - Screenshots of the sidebar before and after, attached to the task with `repoos update <id> --screenshot`.
 
 ## Notes for AI
-Native code is under macos/RepoOSHub (server list/sidebar view and its context menu). The web UI's color picker is the "lightingai" header chip popover; find where it saves (search the ui-app for the color swatch component and its storage key) and how the Hub embeds the page (WKWebView storage and any message bridge). The reporter's two screenshots (the context menu and the color popover with the unchanged sidebar) were pasted in chat and could not be attached automatically: ask for the files if the visuals are needed. Verify on a real Hub build using the iOS/macOS tooling available, not only unit tests.
+Native code is under macos/RepoOSHub (server list/sidebar view and its context menu). The web UI's color picker is the "lightingai" header chip popover; find where it saves (search the ui-app for the color swatch component and its storage key) and how the Hub embeds the page (WKWebView storage and any message bridge). The two reporter screenshots are in ## Screenshots: the server context menu (no Copy URL), and the yellow lightingai color popover with the sidebar bar unchanged. Verify on a real Hub build using the iOS/macOS tooling available, not only unit tests.
 
 ## Screenshots
 
@@ -42,3 +42,4 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 - 2026-10-21T05:57:31Z · created · njachowski@gmail.com
 - 2026-10-21T06:06:44Z · screenshots
 - 2026-10-21T06:06:50Z · screenshots
+- 2026-10-21T06:07:16Z · body: Notes for AI (added 1, removed 1)
