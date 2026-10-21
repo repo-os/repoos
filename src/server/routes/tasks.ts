@@ -127,10 +127,10 @@ import {
   appendDeclaredShot,
   parseShotEntry,
   removeDeclarationsForDeletedShot,
-  resolveDeclaredTarget,
+  resolveDeclaredShotTarget,
   taskFixtureValidator,
 } from "../../core/shot-plan.js";
-import { resolveShotTargets } from "../../core/shot-targets.js";
+import { appPreviewTargetName, resolveShotTargets } from "../../core/shot-targets.js";
 import { captureDeclaredShot } from "../shot-capture.js";
 import { remoteBrowserEvidenceTransport } from "../browser-capture-policy.js";
 import type { PreviewManager } from "../preview.js";
@@ -1756,7 +1756,12 @@ async function declareTaskShot(
         " — add a target with [[preview.paths]] matching this task's diff, or configure a default preview",
     });
   }
-  const resolved = resolveDeclaredTarget(entry.target, resolution.names);
+  const resolved = resolveDeclaredShotTarget(entry, resolution.names, {
+    ...(appPreviewTargetName(config.preview)
+      ? { appTarget: appPreviewTargetName(config.preview)! }
+      : {}),
+    commandTargets: new Set((config.shot?.targets ?? []).map((t) => t.name)),
+  });
   if (resolved.error || !resolved.target) {
     return json(res, 400, { error: resolved.error ?? "the target could not be resolved" });
   }

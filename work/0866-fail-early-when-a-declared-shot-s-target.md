@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 489195
-last_close_out_gate_at: "2026-10-21T00:29:09.082Z"
 id: "0866"
 title: Fail early when a declared shot's target cannot render its state or route
 type: bug
-status: review
+status: done
 priority: p2
 area: server
+merged_commit: 9bd80a7e8f03bb24c3acc0a7bc5fc0af736c1b26
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fail-early-when-a-declared-shot-s-target
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T11:55:38Z"
 updated_at: "2026-10-21T00:29:09Z"
+last_close_out_gate_ms: 489195
+last_close_out_gate_at: "2026-10-21T00:29:09.082Z"
 review_passes: 3
 review_rounds: 1
 last_check_failure: "repoos check at 2026-10-20T21:59:05.771Z: repoos check failed: ◆ Check plan"
