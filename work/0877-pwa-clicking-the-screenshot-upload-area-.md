@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T13:54:39Z"
-updated_at: "2026-10-21T00:56:53Z"
+updated_at: "2026-10-21T00:56:59Z"
 ---
 ## Problem
 In the installed PWA, every screenshot-upload area (for example "Click to add screenshots, or drop them anywhere on this panel" in the New task panel, Freeform tab) ignores a click: the file picker never opens. Dropping a file on the area works. The same click opens the picker correctly in the native macOS app (RepoOS Hub) and in the website in Chrome and Safari, so the bug is specific to the PWA (standalone display mode).
@@ -36,3 +38,4 @@ Clicking (or keyboard-activating) any screenshot upload area in the PWA opens th
 
 - 2026-10-20T13:54:39Z · created · njachowski@gmail.com
 - 2026-10-21T00:56:53Z · status inbox→ready
+- 2026-10-21T00:56:59Z · cli_override, model_override
