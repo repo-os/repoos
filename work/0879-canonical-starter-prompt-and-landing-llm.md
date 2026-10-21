@@ -14,10 +14,11 @@ branch: feat/canonical-starter-prompt-and-landing-llm
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:00:59Z"
-updated_at: "2026-10-21T10:41:24Z"
+updated_at: "2026-10-21T11:57:04Z"
 last_close_out_gate_ms: 83724
 last_close_out_gate_at: "2026-10-20T20:09:42.067Z"
 review_passes: 1
+dev_error_count: 1
 ---
 ## Problem
 
@@ -70,3 +71,5 @@ Out of scope: the docs-site `llms.txt` / `llms-full.txt`, the Agent Skill, `user
 - 2026-10-21T10:33:22Z · status done→ready
 - 2026-10-21T10:33:31Z · status ready→active
 - 2026-10-21T10:41:24Z · status active→done
+- 2026-10-21T10:54:15Z · agent exited with an error · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T11:57:04Z · needs_input
