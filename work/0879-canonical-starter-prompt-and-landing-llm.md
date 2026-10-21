@@ -2,7 +2,7 @@
 id: "0879"
 title: Canonical starter prompt and landing llms.txt
 type: feature
-status: done
+status: ready
 paths: [agent/starter-prompt.md, landing]
 priority: p2
 area: landing
@@ -14,7 +14,7 @@ branch: feat/canonical-starter-prompt-and-landing-llm
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:00:59Z"
-updated_at: "2026-10-20T20:10:12Z"
+updated_at: "2026-10-21T10:33:22Z"
 last_close_out_gate_ms: 83724
 last_close_out_gate_at: "2026-10-20T20:09:42.067Z"
 review_passes: 1
@@ -67,3 +67,4 @@ Out of scope: the docs-site `llms.txt` / `llms-full.txt`, the Agent Skill, `user
 - 2026-10-20T20:02:15Z · note: review pass 1: good to go
 - 2026-10-20T20:09:42Z · close-out gate completed in 84s
 - 2026-10-20T20:10:12Z · status review→done, release:success
+- 2026-10-21T10:33:22Z · status done→ready
