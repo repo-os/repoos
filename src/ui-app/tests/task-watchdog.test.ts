@@ -35,6 +35,7 @@ import {
   suggestNextStep,
   classifyDeadAgentReason,
   autoTransitionTarget,
+  handoffSinceLastCommit,
 } from "../../server/task-watchdog";
 import { parseTask } from "../../core/task";
 import { createRepoOS } from "../../core/repoos";
@@ -1148,6 +1149,44 @@ Stuck twice.
     fx.clean();
   });
 
+  it("never resumes a task whose latest turn a person stopped (#0888)", async () => {
+    const fx = makeFx(10_000);
+    // A session exists, so the dead-session classifier alone would call this a
+    // clean exit; the durable stop marker is what must veto the resume.
+    writeFileSync(
+      fx.taskPath,
+      readFileSync(fx.taskPath, "utf8") +
+        `- ${new Date(Date.now() - 12000).toISOString()} · engineer turn ended without a handoff\n` +
+        `- ${new Date(Date.now() - 9000).toISOString()} · engineer stopped by request\n`,
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    const fakeRunner = {
+      isRunning: () => false,
+      releasePhantomForStart: () => false,
+      isPaused: () => false,
+      isHandoffInFlight: () => false,
+      hasPendingHandoff: () => false,
+      output: () => "a session exists",
+      dispose: () => {},
+    } as unknown as AgentRunner;
+    const launches: string[] = [];
+    const watchdog = new TaskWatchdog(fx.config, index, fakeRunner, 1000, {
+      launch: async (_deps, _task, instruction) => {
+        launches.push(instruction);
+        return { ok: true as const };
+      },
+    });
+
+    await watchdog.checkNow();
+
+    expect(launches).toHaveLength(0);
+    const body = readFileSync(fx.taskPath, "utf8");
+    expect(body).not.toContain("watchdog: auto-resumed");
+    expect(body).not.toContain("engineer_stall_resume_log:");
+    fx.clean();
+  });
+
   it("clears a phantom runner registry entry instead of treating it as a live turn (#0863/#0888)", async () => {
     const fx = makeFx(10_000);
     writeFileSync(
@@ -1185,6 +1224,37 @@ Stuck twice.
 
     expect(phantomCleared).toBe(1);
     expect(launches[0]).toContain("ended cleanly");
+    fx.clean();
+  });
+
+  it("does not count a review from an earlier episode as a handoff since the last commit (#0888)", async () => {
+    const fx = makeFx(10_000);
+    // ready→active, then active→review, then bounced review→active. The only
+    // review transition predates the CURRENT active episode, so it is not a
+    // handoff of the work this episode is doing.
+    writeFileSync(
+      fx.taskPath,
+      `---
+id: "0001"
+title: "Bounced review"
+type: feature
+status: active
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/x
+---
+## Problem
+Findings to address.
+
+## Activity
+
+- 2026-10-21T11:00:00Z · status ready→active
+- 2026-10-21T11:10:00Z · status active→review
+- 2026-10-21T11:20:00Z · status review→active
+`,
+    );
+    expect(handoffSinceLastCommit(fx.config, parseTaskAt(fx))).toBe(false);
     fx.clean();
   });
 });

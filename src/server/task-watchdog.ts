@@ -645,7 +645,10 @@ export class TaskWatchdog {
     // A task assigned to a human is never resumed by either path.
     const assignedToHuman =
       current.assignee === "human" || current.assignedTo.trim().toLowerCase() === "human";
-    if (kind === "exited-without-handoff" && !assignedToHuman) {
+    // A deliberate stop is not a stall: never nudge or resume it, regardless of
+    // the legacy signal-retry budget (#0888).
+    const stoppedByPerson = readEngineerCleanExitSignal(current.body).stoppedByPerson;
+    if (kind === "exited-without-handoff" && !assignedToHuman && !stoppedByPerson) {
       if (readEngineerCleanExitSignal(current.body).deferred > 0) {
         if (this.handleStalledCleanExit(current)) return;
       }
@@ -657,7 +660,7 @@ export class TaskWatchdog {
         return;
       }
       if (this.handleStalledCleanExit(current)) return;
-    } else if (this.handleStalledCleanExit(current)) {
+    } else if (!stoppedByPerson && this.handleStalledCleanExit(current)) {
       return;
     }
     if (this.autoTransition) {
@@ -945,10 +948,16 @@ function lastStatusTransitionTime(body: string, status: string): number | null {
  * commit — a completed handoff means there is no unfinished turn to resume.
  * A missing branch, worktree or commit means "no evidence of a later handoff",
  * so the clean-exit signal stands on its own.
+ *
+ * Only a review transition inside the CURRENT `→active` episode counts. A
+ * review from an earlier episode was already bounced back to active (review
+ * findings are unfinished work), so it must not suppress this episode's resume.
  */
 export function handoffSinceLastCommit(config: RepoOSConfig, task: Task): boolean {
+  const activeAt = lastStatusTransitionTime(task.body, "active");
+  if (activeAt === null) return false;
   const handoffAt = lastStatusTransitionTime(task.body, "review");
-  if (handoffAt === null || !task.branch) return false;
+  if (handoffAt === null || handoffAt <= activeAt || !task.branch) return false;
   const workdir = worktreePathForBranch(config.root, task.branch);
   if (!workdir) return false;
   try {
