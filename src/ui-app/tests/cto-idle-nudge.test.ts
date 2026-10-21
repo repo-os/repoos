@@ -492,6 +492,15 @@ describe("CTO monitor idle nudge (#0873)", () => {
     expect(cto.recordIdleNudgeSkip).not.toHaveBeenCalled();
   });
 
+  it("does not nudge a task with no activity stamp", async () => {
+    const noStamp = task({ id: "0001", updated_at: null });
+    const { monitor, cto } = monitorFor({ tasks: [noStamp] });
+    await monitor.checkNow("timer");
+
+    expect(cto.sendTaskMessage).not.toHaveBeenCalled();
+    expect(cto.recordIdleNudgeSkip).not.toHaveBeenCalled();
+  });
+
   it("still halts entirely when automation.paused is true", async () => {
     const { monitor, cto } = monitorFor({ config: { automation: { paused: true } } });
     await monitor.checkNow("timer");
