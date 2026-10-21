@@ -19,7 +19,7 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T02:53:53Z"
+updated_at: "2026-10-21T02:55:12Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 2
@@ -69,36 +69,36 @@ Please fix the padding/margin on the allowlist pause modal
 ```json
 [
 {
-  "label": "Pause dialog spacing matches add-allowlist modal (light)",
-  "target": "default",
-  "route": "/agents?tab=budget-controls",
-  "highlight": "[data-testid=\"budget-pause-dialog\"]",
-  "steps": [
-    {
-      "click": "[data-testid=\"budget-row-li-opencode\"] [data-testid=\"budget-pause-agent\"]"
-    },
-    {
-      "waitMs": 400
-    }
-  ],
-  "state": "budget:paused",
-  "theme": "light"
+"label": "Pause dialog spacing matches add-allowlist modal (light)",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": "[data-testid=\"budget-pause-dialog\"]",
+"steps": [
+  {
+    "click": "[data-testid=\"budget-row-li-opencode\"] [data-testid=\"budget-pause-agent\"]"
+  },
+  {
+    "waitMs": 400
+  }
+],
+"state": "budget:paused",
+"theme": "light"
 },
 {
-  "label": "Pause dialog spacing (dark)",
-  "target": "default",
-  "route": "/agents?tab=budget-controls",
-  "highlight": "[data-testid=\"budget-pause-dialog\"]",
-  "steps": [
-    {
-      "click": "[data-testid=\"budget-row-li-opencode\"] [data-testid=\"budget-pause-agent\"]"
-    },
-    {
-      "waitMs": 400
-    }
-  ],
-  "state": "budget:paused",
-  "theme": "dark"
+"label": "Pause dialog spacing (dark)",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": "[data-testid=\"budget-pause-dialog\"]",
+"steps": [
+  {
+    "click": "[data-testid=\"budget-row-li-opencode\"] [data-testid=\"budget-pause-agent\"]"
+  },
+  {
+    "waitMs": 400
+  }
+],
+"state": "budget:paused",
+"theme": "dark"
 }
 ]
 ```
@@ -153,3 +153,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T02:52:56Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-10-21T02:53:15Z · body
 - 2026-10-21T02:53:53Z · body
+- 2026-10-21T02:55:12Z · body
