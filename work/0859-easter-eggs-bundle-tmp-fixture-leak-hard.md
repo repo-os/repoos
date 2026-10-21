@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: the agent process exited with an error — open the task to see the full output
+debug_tldr: "The engineer process died while starting the scoped check after remote validation passed—open the task transcript and restart the run to commit, check, and hand off."
+debug_tldr_at: "2026-10-21T04:07:43Z"
+debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p3
 area: [core, web]
 depends_on: ["0858"]
@@ -15,7 +18,7 @@ branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T04:07:13Z"
+updated_at: "2026-10-21T04:07:43Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:13.053Z\",\"kind\":\"dev-error\"}]"
 ---
