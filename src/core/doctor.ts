@@ -1243,6 +1243,75 @@ function checkStarterHygiene(root: string, config: RepoOSConfig): DoctorFinding 
 
 // ── Runtime prerequisites ───────────────────────────────────────────────────
 
+/**
+ * A dev/preview target whose own directory declares npm packages that are not
+ * installed (#0859 E5). The target's command cannot start without them: a fresh
+ * task worktree has no install, and an older install can predate a dependency
+ * added to package.json. Both look like `ERR_MODULE_NOT_FOUND` at launch.
+ */
+export interface TargetInstallProblem {
+  /** Every target that runs in this cwd. */
+  targets: string[];
+  /** Repo-relative cwd, or "." for the project root. */
+  cwd: string;
+  /** True when the whole node_modules tree is absent. */
+  nodeModulesMissing: boolean;
+  /** Declared packages with no node_modules/<name>/package.json; empty when the tree is absent. */
+  missingPackages: string[];
+}
+
+interface InstallTarget {
+  name: string;
+  cwd?: string;
+}
+
+/**
+ * Find launch targets whose cwd has a package.json with uninstalled
+ * dependencies. Read-only and filesystem-only, so `repoos doctor` can report
+ * the fix without running an install itself. Targets sharing a cwd are folded
+ * into one problem so the report does not repeat the same command.
+ */
+export function findTargetInstallProblems(
+  root: string,
+  targets: readonly InstallTarget[],
+): TargetInstallProblem[] {
+  const namesByCwd = new Map<string, string[]>();
+  for (const target of targets) {
+    const cwdAbs = resolve(root, target.cwd ?? ".");
+    if (!insideRepo(cwdAbs, root)) continue;
+    namesByCwd.set(cwdAbs, [...(namesByCwd.get(cwdAbs) ?? []), target.name]);
+  }
+
+  const problems: TargetInstallProblem[] = [];
+  for (const [cwdAbs, names] of namesByCwd) {
+    let pkg: { dependencies?: Record<string, unknown>; devDependencies?: Record<string, unknown> };
+    try {
+      pkg = JSON.parse(readFileSync(join(cwdAbs, "package.json"), "utf8")) as typeof pkg;
+    } catch {
+      continue; // no package.json (or unreadable) — nothing install-related to report
+    }
+    const declared = [
+      ...new Set([
+        ...Object.keys(pkg.dependencies ?? {}),
+        ...Object.keys(pkg.devDependencies ?? {}),
+      ]),
+    ];
+    if (declared.length === 0) continue;
+    const cwd = relative(root, cwdAbs) || ".";
+    if (!isDirectory(join(cwdAbs, "node_modules"))) {
+      problems.push({ targets: names, cwd, nodeModulesMissing: true, missingPackages: [] });
+      continue;
+    }
+    const missingPackages = declared.filter(
+      (name) => !existsSync(join(cwdAbs, "node_modules", name, "package.json")),
+    );
+    if (missingPackages.length > 0) {
+      problems.push({ targets: names, cwd, nodeModulesMissing: false, missingPackages });
+    }
+  }
+  return problems;
+}
+
 function checkRuntime(
   root: string,
   config: RepoOSConfig,
@@ -1360,6 +1429,46 @@ function checkRuntime(
             "No lockfile was found and neither `bun` nor `npm` resolves on PATH.",
             `install Bun (${installHint("bun")}) or Node.js/npm`,
           ),
+    );
+  }
+
+  // A target that runs `bun run dev` in a subdirectory needs that directory's
+  // own node_modules. A gitignored install nobody refreshes, or none in a fresh
+  // worktree, makes the target die with ERR_MODULE_NOT_FOUND (#0859 E5).
+  const installTargets = [...(config.dev?.targets ?? []), ...(config.preview?.targets ?? [])];
+  const installProblems = findTargetInstallProblems(root, installTargets);
+  if (installProblems.length > 0) {
+    const described = installProblems
+      .map((problem) => {
+        const who = problem.targets.join(", ");
+        return problem.nodeModulesMissing
+          ? `${who} (${problem.cwd}) has no node_modules`
+          : `${who} (${problem.cwd}) is missing ${problem.missingPackages.join(", ")}`;
+      })
+      .join("; ");
+    out.push(
+      finding(
+        "runtime.target-dependencies",
+        "runtime",
+        "warn",
+        "A dev or preview target is missing its installed dependencies",
+        `${described}. The target's command will fail with a module-not-found error until that directory is installed.`,
+        installProblems
+          .map((problem) =>
+            problem.cwd === "." ? "bun install" : `cd ${problem.cwd} && bun install`,
+          )
+          .join("; "),
+      ),
+    );
+  } else if (installTargets.length > 0) {
+    out.push(
+      finding(
+        "runtime.target-dependencies",
+        "runtime",
+        "pass",
+        "Target dependencies are installed",
+        "Every dev/preview target whose directory declares a package.json has its dependencies installed.",
+      ),
     );
   }
 

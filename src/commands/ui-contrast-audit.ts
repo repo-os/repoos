@@ -43,6 +43,8 @@ import {
   startPreviewServer,
   launchWebkit,
   isPlaywrightUnavailable,
+  teardownUiHarness,
+  combineHarnessErrors,
   type SmokeBrowser,
   type SmokeContext,
   type SmokePage,
@@ -743,7 +745,7 @@ A second column's worth of content so the board is not a single card.
 - 2026-09-02T00:00:00Z · created · human
 `;
 
-function makeAuditFixture(): string {
+export function makeAuditFixture(): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-contrast-"));
   mkdirSync(join(root, "work"), { recursive: true });
   // A declared dev target so the `/dev` screen (#0802) renders a real card —
@@ -1232,30 +1234,17 @@ async function runAudit(): Promise<{
     scopes: scopes.length,
   };
 
+  // The body failure (if any) is held here rather than thrown from the try, so
+  // the finally below can always run the full teardown and then combine both
+  // failures instead of one masking the other (#0859).
+  let primaryError: unknown;
   try {
     server = await startPreviewServer(fixture);
-  } catch (err) {
-    rmSync(fixture, { recursive: true, force: true });
-    throw err;
-  }
-  try {
     browser = await launchWebkit({
       repoRoot,
       onQueueLine: (line) => console.log(c.dim(`  ${line}`)),
     });
     context = await browser.newContext({ serviceWorkers: "block" });
-  } catch (err) {
-    try {
-      await server.close();
-    } catch (closeErr) {
-      console.warn("Contrast audit server cleanup also failed:", closeErr);
-    } finally {
-      rmSync(fixture, { recursive: true, force: true });
-    }
-    throw err;
-  }
-
-  try {
     const page = await context.newPage();
     const screens = makeScreens(server.url);
     for (const screen of screens) {
@@ -1301,17 +1290,25 @@ async function runAudit(): Promise<{
         absorbProbeResult(rows, stats, scope.name, screen.name, run.probe);
       }
     }
+  } catch (err) {
+    primaryError = err;
   } finally {
     try {
-      if (context) await context.close();
-      if (browser) await browser.close();
-      // Await teardown before deleting the root; dev-target state persistence
-      // can recreate `.repoos/`. See #0858.
-      await server.close();
-    } finally {
-      rmSync(fixture, { recursive: true, force: true });
+      await teardownUiHarness({
+        context,
+        browser,
+        server,
+        // Await every close BEFORE deleting the root: dev-target state
+        // persistence can recreate `.repoos/`, and a throwing browser close
+        // must not skip the server close. See #0858, #0859.
+        removeFixture: () => rmSync(fixture, { recursive: true, force: true }),
+      });
+    } catch (teardownErr) {
+      primaryError =
+        primaryError === undefined ? teardownErr : combineHarnessErrors(primaryError, teardownErr);
     }
   }
+  if (primaryError !== undefined) throw primaryError;
 
   return { rows, stats, warnings };
 }
