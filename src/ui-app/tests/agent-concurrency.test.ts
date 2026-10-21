@@ -143,18 +143,27 @@ function spawnOrder(fx: Fixture): string[] {
   return spawns(fx).map((spawn) => spawn.id);
 }
 
+/** PIDs already signalled this test, so cleanup never signals a recycled pid. */
+const released = new Set<number>();
+
 /** Release the fake turn for `id`, letting the runner drain the next one. */
 function release(fx: Fixture, id: string): void {
   const spawn = spawns(fx).find((s) => s.id === id);
   if (!spawn) throw new Error(`task ${id} has not spawned yet`);
-  process.kill(spawn.pid, "SIGTERM");
+  releasePid(spawn.pid);
+}
+
+function releasePid(pid: number): void {
+  if (released.has(pid)) return;
+  released.add(pid);
+  process.kill(pid, "SIGTERM");
 }
 
 /** Never leave a gated child behind if an assertion fails mid-test. */
 function releaseAll(fx: Fixture): void {
   for (const spawn of spawns(fx)) {
     try {
-      process.kill(spawn.pid, "SIGTERM");
+      releasePid(spawn.pid);
     } catch {
       /* already exited */
     }
@@ -162,6 +171,7 @@ function releaseAll(fx: Fixture): void {
 }
 
 afterEach(() => {
+  released.clear();
   delete process.env.REPOOS_FAKEBIN_LOG;
 });
 
