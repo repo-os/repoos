@@ -3,6 +3,9 @@ id: "0897"
 title: "Show why a close-out/validation is waiting: queue position, what runs ahead on each runner"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ Server finalization stopped at check: remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on mini — fix it in the feature branch and re-run the gate. The task stays active — fix the failure and ask again."
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -11,11 +14,11 @@ branch: feat/show-why-a-close-out-validation-is-waiti
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T12:39:47Z"
-updated_at: "2026-10-21T16:25:35Z"
+updated_at: "2026-10-21T16:25:38Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 42ac6a27980d8a4baafffffc03e470389ee9d5df
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T15:59:06.908Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T15:59:06.908Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T16:25:38.927Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 A close-out sat in 'validating' for ~18 min (2026-10-21, #0892) although its own gate only ran ~6 min on bee. Nothing shows where the other ~12 min went: waiting for a runner slot, a prior phase, or something else queued/running ahead of it on a runner (other handoff checks, reviews, other close-outs). Operators and drivers can't tell a slow gate from a queued one.
@@ -112,3 +115,5 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T16:15:56Z · message_delivered: 1 message(s)
 - 2026-10-21T16:21:35Z · body
 - 2026-10-21T16:25:35Z · note: stopped orphaned engineer pid 41277
+- 2026-10-21T16:25:38Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on mini — fix it in the feature branch and re-run the gate. The task stays active — fix the failure and ask again.
+- 2026-10-21T16:25:38Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · ✗ Server finalization stopped at check: remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created, tests/task-dr…
