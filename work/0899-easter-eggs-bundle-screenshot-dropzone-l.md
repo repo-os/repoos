@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T14:55:46Z"
+updated_at: "2026-10-21T15:00:29Z"
 ---
 ## Items
 - [ ] **E1 · Screenshot dropzone wraps to two lines** (web) — after #0877 made `ShotDropzone` a `<label>`, the global `.field label` rule leaks into it. Source: user report 2026-10-21.
@@ -41,11 +41,6 @@ Since #0877 the screenshot dropzone (`src/ui-app/src/components/ShotDropzone.vue
 ### Notes for AI
 Start from the `.shot-dropzone` block in `src/ui-app/src/style.css` (~line 6970) and `.field label` (~line 5655). Declare a `## Shots` for New input and New task. Source: user report 2026-10-21 with two screenshots.
 
-## Screenshots
-
-![1](/api/tasks/0899/attachments/att_6573b9c6-4601-44c5-a381-0a2e1a8b6e8c.png)
-![2](/api/tasks/0899/attachments/att_4a56fb0d-3858-4cd1-bc4c-be4ab34a6eb8.png)
-
 ## E2 · CLI captions for multiple screenshots
 ### Problem
 `repoos new` / `repoos update` reject `--caption` when more than one `--screenshot` is given (`screenshotFlagError` in `src/commands/tasks.ts`, tested in `src/ui-app/tests/cli-screenshots.test.ts`). A request with several images therefore lands with generic alt text (`![1]`, `![2]`) or needs one command per image, which duplicates attachments that are already stored. Found while filing this bundle with two screenshots (2026-10-21).
@@ -68,41 +63,46 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 ```json
 [
 {
-  "label": "New task: screenshot dropzone row layout",
-  "target": "default",
-  "route": "/",
-  "highlight": ".field .shot-dropzone",
-  "steps": [
-    {
-      "click": ".new-btn"
-    },
-    {
-      "waitFor": ".shot-dropzone"
-    },
-    {
-      "waitMs": 400
-    }
-  ]
+"label": "New task: screenshot dropzone row layout",
+"target": "default",
+"route": "/",
+"highlight": ".field .shot-dropzone",
+"steps": [
+  {
+    "click": ".new-btn"
+  },
+  {
+    "waitFor": ".shot-dropzone"
+  },
+  {
+    "waitMs": 400
+  }
+]
 },
 {
-  "label": "New input: screenshot dropzone row layout",
-  "target": "default",
-  "route": "/inputs",
-  "highlight": ".field .shot-dropzone",
-  "steps": [
-    {
-      "click": ".new-btn"
-    },
-    {
-      "waitFor": ".shot-dropzone"
-    },
-    {
-      "waitMs": 400
-    }
-  ]
+"label": "New input: screenshot dropzone row layout",
+"target": "default",
+"route": "/inputs",
+"highlight": ".field .shot-dropzone",
+"steps": [
+  {
+    "click": ".new-btn"
+  },
+  {
+    "waitFor": ".shot-dropzone"
+  },
+  {
+    "waitMs": 400
+  }
+]
 }
 ]
 ```
+
+## Screenshots
+
+![1](/api/tasks/0899/attachments/att_6573b9c6-4601-44c5-a381-0a2e1a8b6e8c.png)
+![2](/api/tasks/0899/attachments/att_4a56fb0d-3858-4cd1-bc4c-be4ab34a6eb8.png)
 
 ## Activity
 
@@ -122,3 +122,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T14:52:29Z · status inbox→ready
 - 2026-10-21T14:52:38Z · status ready→active, branch
 - 2026-10-21T14:55:46Z · body
+- 2026-10-21T15:00:29Z · body
