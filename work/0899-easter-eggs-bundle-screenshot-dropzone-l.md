@@ -10,13 +10,14 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T14:21:41Z"
+updated_at: "2026-10-21T14:21:50Z"
 ---
 ## Items
-
 - [ ] **E1 · Screenshot dropzone wraps to two lines** (web) — after #0877 made `ShotDropzone` a `<label>`, the global `.field label` rule leaks into it. Source: user report 2026-10-21.
+- [ ] **E2 · CLI captions for multiple screenshots** (cli) — pair repeated `--caption` flags with repeated `--screenshot` flags by position instead of rejecting them. Source: user report 2026-10-21.
 
 Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `--section`; never resend the whole body.
+
 
 ## E1 · Screenshot dropzone wraps to two lines
 
@@ -67,3 +68,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T13:43:45Z · needs_input
 - 2026-10-21T13:44:06Z · needs_input
 - 2026-10-21T14:21:41Z · body: E2 · CLI captions for multiple screenshots (added)
+- 2026-10-21T14:21:50Z · body: Items (added 1)
