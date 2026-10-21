@@ -11,7 +11,7 @@ branch: feat/engineer-turn-ends-cleanly-without-a-han
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T21:57:26Z"
-updated_at: "2026-10-21T00:39:08Z"
+updated_at: "2026-10-21T00:39:15Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T00:05:32.519Z\",\"kind\":\"dev-error\"}]"
 ---
