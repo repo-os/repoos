@@ -11,7 +11,7 @@ branch: feat/health-aware-runner-dispatch-skip-runner
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T14:21:05Z"
-updated_at: "2026-10-21T18:09:26Z"
+updated_at: "2026-10-21T18:28:07Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-21T17:50:23.032Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Settings: runner memory-health switch (target \"default\"): highlight #setting-remoteValidation.healthCheck matched nothing on /settings?section=remote-validation (http://127.0.0.1:64582/settings?section=remote-validation)"
 ---
@@ -87,3 +87,4 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 - 2026-10-21T17:54:52Z · note: review pass 1: good to go
 - 2026-10-21T18:05:12Z · status review→active
 - 2026-10-21T18:09:26Z · note: handoff requested (ui-review)
+- 2026-10-21T18:28:07Z · note: ui verification passed: 2 of 2 shots captured with clean console
