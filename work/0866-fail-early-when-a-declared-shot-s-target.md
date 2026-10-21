@@ -12,8 +12,6 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T11:55:38Z"
 updated_at: "2026-10-21T00:16:07Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 66bcc54b to e2117d96) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 66bcc54beaa4fe11f66a42ab867f710506e97898
 review_rounds: 1
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-20T21:59:05.771Z: repoos check failed: ◆ Check plan"
@@ -91,3 +89,4 @@ See the shot declaration and capture code in src/server/shot-capture.ts, `planAu
 - 2026-10-21T00:08:45Z · body
 - 2026-10-21T00:16:06Z · status active→review
 - 2026-10-21T00:16:07Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (9bd80a7e8) during finalization (#0734)
+
