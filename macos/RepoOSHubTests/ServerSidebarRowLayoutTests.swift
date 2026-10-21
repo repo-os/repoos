@@ -93,6 +93,12 @@ final class ServerActionsMenuModelTests: XCTestCase {
                 .flatMap(\.items)
                 .contains { $0.title == "Copy URL" }
         )
+
+        entry.originString = "   "
+        XCTAssertNil(entry.copyableOriginString)
+
+        entry.originString = "not a url"
+        XCTAssertNil(entry.copyableOriginString)
     }
 
     func testPinnedServerOffersUnpin() {
@@ -183,5 +189,35 @@ final class RepoAccentColorPreferenceTests: XCTestCase {
     func testMalformedValueIsIgnoredSoItCannotClearACachedColor() {
         XCTAssertEqual(RepoAccentColorPreference.parseCookieValue("lightingai%3Ayellow"), .unsupported)
         XCTAssertEqual(RepoAccentColorPreference.parseCookieValue("not-a-color"), .unsupported)
+    }
+
+    func testScopesThePreferenceToTheRepoThatChoseIt() {
+        XCTAssertEqual(
+            RepoAccentColorPreference.parseCookieValue(
+                "lightingai%3A%23ffffba",
+                expectedRepoName: "LightingAI"
+            ),
+            .color("#FFFFBA")
+        )
+        // A server that now serves a different repo must not inherit the color.
+        XCTAssertEqual(
+            RepoAccentColorPreference.parseCookieValue(
+                "lightingai%3A%23ffffba",
+                expectedRepoName: "repoos"
+            ),
+            .unsupported
+        )
+        // Before health reports a repo name, and for a legacy bare color, accept.
+        XCTAssertEqual(
+            RepoAccentColorPreference.parseCookieValue(
+                "lightingai%3A%23ffffba",
+                expectedRepoName: nil
+            ),
+            .color("#FFFFBA")
+        )
+        XCTAssertEqual(
+            RepoAccentColorPreference.parseCookieValue("#9E8FD0", expectedRepoName: "repoos"),
+            .color("#9E8FD0")
+        )
     }
 }

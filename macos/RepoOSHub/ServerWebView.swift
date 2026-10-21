@@ -423,7 +423,13 @@ struct ServerWebView: NSViewRepresentable {
                 }?.value
                 Task { @MainActor in
                     guard let self, let rawValue else { return }
-                    switch RepoAccentColorPreference.parseCookieValue(rawValue) {
+                    let repoName = self.appState.entries
+                        .first { $0.id == serverID }?
+                        .repositoryName
+                    switch RepoAccentColorPreference.parseCookieValue(
+                        rawValue,
+                        expectedRepoName: repoName
+                    ) {
                     case .color(let hex):
                         self.appState.updateWorkspaceAccentColor(hex, for: serverID)
                     case .cleared:
