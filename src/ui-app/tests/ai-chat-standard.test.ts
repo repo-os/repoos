@@ -667,7 +667,7 @@ describe("agent chat headers carry an inline agent+model chip (#0669)", () => {
     // The screenshot-upload button is the same square-ish outline control as
     // the text input and submit, not its own widget.
     const css = readFileSync(CSS_PATH, "utf8");
-    expect(ruleBody(css, ".ai-chat-compose button.ai-chat-attach")).toMatch(/border:\s*1px/);
+    expect(ruleBody(css, ".ai-chat-compose .ai-chat-attach")).toMatch(/border:\s*1px/);
     expect(css).not.toContain(".ai-chat-compose button.pm-attach");
   });
 
