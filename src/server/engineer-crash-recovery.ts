@@ -36,6 +36,7 @@ import {
   type EngineerTurnExitKind,
 } from "../core/engineer-crash-recovery.js";
 import type { Logger } from "../core/logger.js";
+import { stripNulBytes } from "../core/spawn-args.js";
 import { resolveAgentForTask, type AgentRunner, type EngineerCrashInfo } from "./agents.js";
 import { isTaskClosingOut } from "./close-out-lock.js";
 import { relaunchEngineerOnActiveTask, type EngineerLaunchResult } from "./engineer-launch.js";
@@ -98,7 +99,7 @@ function minutes(windowMs: number): string {
 }
 
 function condense(reason: string): string {
-  const oneLine = reason.replace(/\s+/g, " ").trim();
+  const oneLine = stripNulBytes(reason).replace(/\s+/g, " ").trim();
   return oneLine.length > 240 ? `${oneLine.slice(0, 237)}…` : oneLine || "no failure detail";
 }
 
@@ -168,6 +169,12 @@ export async function recoverEngineerAfterCrash(
     if (!pair) {
       return { action: "skipped", detail: "no engineer pair to recover" };
     }
+    // #0889: a crash detail can be binary — #0877's was a degenerate-output
+    // excerpt made of NULs. It is pasted into the relaunch prompt and the
+    // activity line, and one NUL in argv makes `spawn` throw, so strip it once
+    // here and name the change in the activity entry.
+    const reason = stripNulBytes(info.reason);
+    const nulNote = reason === info.reason ? "" : " · stripped NUL bytes from the crash detail";
 
     const now = opts.now ?? Date.now();
     const nowIso = new Date(now).toISOString();
@@ -220,8 +227,8 @@ export async function recoverEngineerAfterCrash(
     const launch = deps.launch ?? relaunchEngineerOnActiveTask;
     const instruction =
       plan.action === "failover"
-        ? failoverInstruction(plan, info.reason)
-        : resumeInstruction(plan, info.reason);
+        ? failoverInstruction(plan, reason)
+        : resumeInstruction(plan, reason);
 
     if (plan.action === "failover") {
       task.cliOverride = plan.to.cli;
@@ -233,13 +240,13 @@ export async function recoverEngineerAfterCrash(
       writeTask(
         config,
         task,
-        `engineer crash recovery: switched ${plan.from.cli} + ${plan.from.model} → ${plan.to.cli} + ${plan.to.model} after ${plan.crashes}/${plan.threshold} crashes in ${minutes(plan.windowMs)}m · ${condense(info.reason)}`,
+        `engineer crash recovery: switched ${plan.from.cli} + ${plan.from.model} → ${plan.to.cli} + ${plan.to.model} after ${plan.crashes}/${plan.threshold} crashes in ${minutes(plan.windowMs)}m · ${condense(reason)}${nulNote}`,
       );
     } else {
       writeTask(
         config,
         task,
-        `engineer crash recovery: resuming ${plan.pair.cli} + ${plan.pair.model} (${plan.crashes}/${plan.threshold} crashes in ${minutes(plan.windowMs)}m) · ${condense(info.reason)}`,
+        `engineer crash recovery: resuming ${plan.pair.cli} + ${plan.pair.model} (${plan.crashes}/${plan.threshold} crashes in ${minutes(plan.windowMs)}m) · ${condense(reason)}${nulNote}`,
       );
     }
     index.applyFileChange(task.absPath, { guarded: true });
@@ -254,15 +261,16 @@ export async function recoverEngineerAfterCrash(
       },
     );
     if (!result.ok) {
-      const detail = `crash recovery could not start the engineer: ${result.reason}`;
+      const failure = stripNulBytes(result.reason);
+      const detail = `crash recovery could not start the engineer: ${failure}`;
       const current = parseFresh(config, task);
       current.needsInput = true;
       current.needsInputReason = current.needsInputReason ?? "dev-error";
       current.needsInputDetail = `${detail}. The task stayed active with its worktree intact.`;
-      writeTask(config, current, `engineer crash recovery: start failed — ${result.reason}`);
+      writeTask(config, current, `engineer crash recovery: start failed — ${failure}${nulNote}`);
       index.applyFileChange(current.absPath, { guarded: true });
       logger.task(taskId, "warn", "engineer crash recovery could not start", {
-        reason: result.reason,
+        reason: failure,
       });
       return { action: "launch-failed", detail };
     }
