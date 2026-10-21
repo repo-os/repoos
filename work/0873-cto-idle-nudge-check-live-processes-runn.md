@@ -2,7 +2,7 @@
 id: "0873"
 title: "CTO idle nudge: check live processes, running gates and reviews, and machine pressure first; make the threshold configurable"
 type: feature
-status: review
+status: active
 priority: p2
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
