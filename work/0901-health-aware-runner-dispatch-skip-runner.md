@@ -2,14 +2,14 @@
 id: "0901"
 title: "Health-aware runner dispatch: skip runners under memory pressure and show it loudly with the fix"
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: [server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T14:21:05Z"
-updated_at: "2026-10-21T16:53:11Z"
+updated_at: "2026-10-21T16:53:21Z"
 ---
 ## Problem
 2026-10-21: thinkpad had 73% swap in use (3012/4095 MB); the memory-pressure guard inside the gate containers (native Linux containers see the host swap) held engineer spawns, so spawn-related tests failed remotely on that runner for #0894, #0895 (twice) and #0897, with fallbackToLocal silently re-running whole gates on the laptop. Nothing in the UI or on the tasks said a runner was unhealthy; the fix (sudo swapoff -a && sudo swapon -a, run by a human) was found by hand. Colima/Docker on macOS hosts is different: containers there see the Linux VM's memory, not macOS swap.
@@ -30,3 +30,4 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 ## Activity
 
 - 2026-10-21T14:21:05Z · created · njachowski@gmail.com
+- 2026-10-21T16:53:21Z · status inbox→ready
