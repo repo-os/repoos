@@ -65,3 +65,4 @@ With that row in place, a handoff that changes Hub sources runs the command, col
 - 2026-10-21T12:10:07Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-21T12:11:46Z · body
 - 2026-10-21T12:14:05Z · body: Human follow-up: repoos.toml shot target (added)
+- 2026-10-21T12:14:05Z · message_queued at 2026-10-21T12:14:05.537Z
