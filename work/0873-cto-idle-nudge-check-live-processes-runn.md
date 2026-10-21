@@ -12,9 +12,7 @@ branch: feat/cto-idle-nudge-check-live-processes-runn
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:23:49Z"
-updated_at: "2026-10-21T01:26:02Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 1a19f3f6 to 738f5844) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 1a19f3f6a2264a66c380797c6e3c09052184026b
+updated_at: "2026-10-21T01:25:24Z"
 ---
 ## Problem
 The CTO's automatic idle nudge (src/server/cto-monitor.ts, `nudgeIdleActiveTasks`) fires after 5 minutes without worktree activity (AUTOMATIC_NUDGE_IDLE_MS = 5 min, cooldown 60 min, both hard-coded constants) and decides only from recent worktree file activity. On 2026-10-20 it sent "completion reminder after 5m without worktree activity" to engineers that were not idle: they were running a long `repoos check`, a remote validation wait, a handoff gate or a headless browser step, or the whole machine was thrashing (load 90-500, swap full) so nothing could write files. The reminders queue as messages and are delivered at the end of a turn, so they add noise and sometimes arrive as the engineer's next instruction, and they hid the real cause (a starved machine, a phantom runner, a running review).
@@ -64,6 +62,5 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T00:34:30Z · body
 - 2026-10-21T00:38:09Z · body
 - 2026-10-21T01:02:06Z · handoff failed · remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate
-- 2026-10-21T01:20:08Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 1a19f3f6 to 738f5844) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-- 2026-10-21T01:26:02Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-21T01:26:02Z · note: handoff requested (cli)
+- 2026-10-21T01:25:24Z · message_queued at 2026-10-21T01:25:24.621Z
+- 2026-10-21T01:25:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
