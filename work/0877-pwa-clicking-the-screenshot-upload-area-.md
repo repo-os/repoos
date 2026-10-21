@@ -2,14 +2,14 @@
 id: "0877"
 title: "PWA: clicking the screenshot upload area does not open the file picker"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T13:54:39Z"
-updated_at: "2026-10-20T13:54:39Z"
+updated_at: "2026-10-21T00:56:53Z"
 ---
 ## Problem
 In the installed PWA, every screenshot-upload area (for example "Click to add screenshots, or drop them anywhere on this panel" in the New task panel, Freeform tab) ignores a click: the file picker never opens. Dropping a file on the area works. The same click opens the picker correctly in the native macOS app (RepoOS Hub) and in the website in Chrome and Safari, so the bug is specific to the PWA (standalone display mode).
@@ -35,3 +35,4 @@ Clicking (or keyboard-activating) any screenshot upload area in the PWA opens th
 ## Activity
 
 - 2026-10-20T13:54:39Z · created · njachowski@gmail.com
+- 2026-10-21T00:56:53Z · status inbox→ready
