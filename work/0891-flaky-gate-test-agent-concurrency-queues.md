@@ -17,7 +17,7 @@ branch: feat/flaky-gate-test-agent-concurrency-queues
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T04:07:35Z"
-updated_at: "2026-10-21T07:28:24Z"
+updated_at: "2026-10-21T07:29:31Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T06:03:26.061Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -36,6 +36,11 @@ The test is deterministic: it never depends on wall-clock or on how fast a spawn
 
 ## Notes for AI
 See AGENTS.md "Is a `repoos check` failure a flake or a real bug?" and docs/debugging-check-failures.md. The same-file failures are on the `bee`/`thinkpad` remote runners; the local pass means the difference is load/timing, not code.
+
+## Verification
+Reproduced on 2026-10-21 before the fix: main's `agent-concurrency.test.ts` run as 8 parallel copies under 10 busy-loop processes failed 8/8 runs — `AssertionError: expected true to be falsy` at `expect(r1.queued).toBeFalsy()` (the host pressure guard deferred the first start) and the sibling hit `Test timed out in 5000ms`. Cause: `AgentRunner.spawnOrQueue` consults `pressureReason(config)` before the slot cap, so a loaded runner queued the first start for `pressure`.
+
+After the fix, on the same machine: `agent-concurrency.test.ts` passed 50/50 sequential runs with 12 busy loops (strictest, default 5s per-test timeout); `agent-drivers.test.ts` passed 4/4 runs with 8 busy loops under the real `src/ui-app/vite.config.ts` (30s timeout, pool 2). Fake CLIs now hold the turn open until the test sends SIGTERM (explicit exit event), and no test in either file has an internal waitFor deadline shorter than the test timeout. `REPOOS_CHECK_CHANGED=main repoos check` passed on the final tree.
 
 ## Activity
 
@@ -70,3 +75,4 @@ See AGENTS.md "Is a `repoos check` failure a flake or a real bug?" and docs/debu
 - 2026-10-21T07:22:02Z · body
 - 2026-10-21T07:27:56Z · body
 - 2026-10-21T07:28:24Z · body
+- 2026-10-21T07:29:31Z · body: Verification (added)
