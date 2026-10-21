@@ -207,6 +207,7 @@ describe("decideIdleNudge (#0873)", () => {
   it("labels only known long-running work children", () => {
     const labels: Array<[string, string | null]> = [
       ["bun run repoos check --changed main", "repoos check"],
+      ["bun dist/cli/index.js check --changed main", "repoos check"],
       ["bunx vitest run src/server", "vitest"],
       ["bun scripts/run-tests.mjs", "vitest"],
       ["node .../playwright/cli.js smoke", "headless browser"],

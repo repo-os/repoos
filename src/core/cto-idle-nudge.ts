@@ -207,7 +207,12 @@ export function knownWorkProcessLabel(command: string | null | undefined): strin
   if (!command) return null;
   const cmd = command.trim();
   if (!cmd) return null;
-  if (/(?:^|[\s/])repoos(?:\.js)?\s+check(?:\s|$)/.test(cmd)) return "repoos check";
+  if (
+    /(?:^|[\s/])repoos(?:\.js)?\s+check(?:\s|$)/.test(cmd) ||
+    /(?:^|[\s/])dist\/cli\/index\.js\s+check(?:\s|$)/.test(cmd)
+  ) {
+    return "repoos check";
+  }
   if (/\bvitest\b/.test(cmd) || /\brun-tests\.mjs\b/.test(cmd)) return "vitest";
   if (/\bplaywright\b|\bheadless\b|\bchrome\b|\bchromium\b/i.test(cmd)) return "headless browser";
   if (/\bvalidate\.sh\b/.test(cmd)) return "remote validation";
