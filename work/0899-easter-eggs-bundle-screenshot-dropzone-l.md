@@ -162,3 +162,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T18:42:37Z · status review→active
 - 2026-10-21T18:44:22Z · body
 - 2026-10-21T18:50:45Z · message_queued at 2026-10-21T18:50:45.531Z
+- 2026-10-21T18:50:45Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
