@@ -95,8 +95,9 @@ async function runUISmokeTest(): Promise<void> {
   let context: SmokeContext | undefined;
   // The body failure (if any) is held here rather than thrown from the try, so
   // the finally below can always run the full teardown and then combine both
-  // failures instead of one masking the other (#0859).
-  let primaryError: unknown;
+  // failures instead of one masking the other (#0859). The wrapper object keeps
+  // a thrown `undefined`/`null` from looking like success.
+  let primaryError: { error: unknown } | undefined;
   try {
     server = await startPreviewServer(fixture);
     browser = await launchWebkit({
@@ -455,7 +456,7 @@ async function runUISmokeTest(): Promise<void> {
       throw new Error("Page errors (" + pageErrors.length + "): " + pageErrors.join("; "));
     }
   } catch (err) {
-    primaryError = err;
+    primaryError = { error: err };
   } finally {
     try {
       await teardownUiHarness({
@@ -468,11 +469,12 @@ async function runUISmokeTest(): Promise<void> {
         removeFixture: () => rmSync(fixture, { recursive: true, force: true }),
       });
     } catch (teardownErr) {
-      primaryError =
-        primaryError === undefined ? teardownErr : combineHarnessErrors(primaryError, teardownErr);
+      primaryError = primaryError
+        ? { error: combineHarnessErrors(primaryError.error, teardownErr) }
+        : { error: teardownErr };
     }
   }
-  if (primaryError !== undefined) throw primaryError;
+  if (primaryError) throw primaryError.error;
 }
 
 /**
