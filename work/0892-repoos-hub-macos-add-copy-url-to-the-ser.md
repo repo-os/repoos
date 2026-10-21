@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-add-copy-url-to-the-ser
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T08:40:29Z"
+updated_at: "2026-10-21T08:40:30Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:22:35.664Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -89,3 +89,4 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 - 2026-10-21T08:39:56Z · screenshots
 - 2026-10-21T08:40:01Z · screenshots
 - 2026-10-21T08:40:29Z · body: Implementation notes (added)
+- 2026-10-21T08:40:30Z · message_queued at 2026-10-21T08:40:30.746Z
