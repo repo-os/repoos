@@ -585,7 +585,9 @@ eligible host is unusable fails retryably with each host's reason.
 A long close-out is not necessarily a slow gate. Every remote run now carries
 its **kind** (`handoff`, `close-out`, `self-check`, `review`, `shot`, `release`,
 or `checks`) and records a timing per stage — **queued for a slot**, `bundle`,
-`upload`, waiting for the host-side lock, then `run` (build + tests). The pool
+`upload`, waiting for the host-side lock, then `build` and `tests` (the phase
+advances at each `repoos check` step heading; `run` covers the gap before the
+first heading). The pool
 status payload exposes that on `activeRuns[]` (`kind`, `stage`, `elapsedMs`,
 `phases[]`) and adds `queuedRuns[]`: each waiting job with its FIFO `position`,
 `waitedMs`, the host it will land on, and `blockers[]` naming the in-flight
