@@ -4426,6 +4426,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           canRun: () => !(reload?.isReloading ?? false),
           reviews,
           onDiagnosableFailure: (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
+          logger,
         },
       );
       if (watchdogConfig.enabled !== false) watchdog.start();
