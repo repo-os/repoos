@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-21T04:28:33Z"
-review_passes: 2
+last_close_out_gate_ms: 1040696
+last_close_out_gate_at: "2026-10-21T04:48:13.883Z"
 id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
@@ -15,6 +15,8 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
+updated_at: "2026-10-21T04:48:13Z"
+review_passes: 2
 last_check_failure: "repoos check at 2026-10-21T03:35:01.891Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
 dev_error_count: 2
@@ -165,4 +167,5 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T04:27:26Z · status active→review
 - 2026-10-21T04:27:28Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-21T04:28:33Z · note: review pass 2: good to go
+- 2026-10-21T04:48:13Z · close-out gate completed in 1041s
 
