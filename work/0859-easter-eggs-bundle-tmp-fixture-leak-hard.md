@@ -5,7 +5,7 @@ type: chore
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
+needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 debug_tldr: "The engineer process died while starting the scoped check after remote validation passed—open the task transcript and restart the run to commit, check, and hand off."
 debug_tldr_at: "2026-10-21T04:07:43Z"
 debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
@@ -18,9 +18,9 @@ branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T04:08:06Z"
-dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:13.053Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:08:06.822Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-10-21T04:09:05Z"
+dev_error_count: 3
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:13.053Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:08:06.822Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:09:05.450Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 
@@ -137,3 +137,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T04:07:13Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-21T04:07:13Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-21T04:08:06Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T04:09:05Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
