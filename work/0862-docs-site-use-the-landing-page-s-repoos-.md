@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: b4ba240e4e2542c893664612107e735ae55d8d47
 id: "0862"
 title: "Docs site: use the landing page's RepoOS logo (theme-aware, no extra border)"
 type: chore
@@ -119,3 +121,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T05:03:21Z · note: handoff requested (ui-review)
 - 2026-10-21T05:03:23Z · message_queued at 2026-10-21T05:03:23.474Z
 - 2026-10-21T05:39:59Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
+
