@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-21T03:35:01.891Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
@@ -153,3 +155,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T03:07:44Z · body
 - 2026-10-21T03:15:10Z · assigned_to
 - 2026-10-21T03:32:33Z · assigned_to
+
