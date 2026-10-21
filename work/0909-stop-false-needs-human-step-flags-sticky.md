@@ -1,0 +1,33 @@
+---
+id: "0909"
+title: "Stop false 'needs human step' flags: sticky overrides, model check before keywords, tagged criteria with auto-split"
+type: feature
+status: inbox
+priority: p2
+area: [core, server, web]
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-21T19:41:23Z"
+updated_at: "2026-10-21T19:41:23Z"
+---
+## Problem
+The 'needs-human-step' detector flags tasks by keyword (credentials, accounts, device, keys…). 2026-10-22: #0904 (design/implement remote engineer sessions, proven with fakes) was flagged because its criteria merely MENTION credentials; #0904, #0905, #0908 and others were flagged repeatedly and a driver cleared the flag three times, then reworded the task to dodge the scanner. Every edit re-scans and can re-flag, new tasks get flagged on creation, and a flagged task blocks AI dispatch until someone notices. It is brittle and wastes human and driver time.
+
+## Desired UX
+A task is flagged only when verifying its acceptance criteria truly requires a human action. A human or driver clearing the flag is remembered and not undone by later edits unless the criteria materially change. When a task genuinely mixes AI-doable and human-only work, RepoOS offers the split instead of just flagging.
+
+## Acceptance criteria
+- Sticky override: clearing needs_input (needs-human-step) records a fingerprint of the current acceptance criteria and who cleared it; rescans skip the flag while the fingerprint matches; a material change to the criteria re-evaluates. Tests: clear, edit unrelated section, edit body, change criteria.
+- Model check: when the keyword tripwire fires, ask the human-step model check (see model_routing.humanStepCheck in repoos.toml; read how it works first and report whether the keyword scan currently overrides it) whether verification REQUIRES a human, with the matched sentence quoted; the keyword match alone never sets the flag. Record the usage via recordOneShotSession. Tests with fake model answers (requires, merely mentions, ambiguous -> flag with reason).
+- Visible reason: the flag detail names the exact sentence and the model's one-line reason; the drawer shows it.
+- Tagged criteria: criteria lines may be prefixed [human] or [ai]; only [human] lines can require a human; untagged lines go through the model check. When a task has both tags, a one-click / CLI action (repoos split <id>) creates the held human task (assigned human, depends_on the AI task), moves the [human] lines there and leaves the AI task startable. Tests for the split, including dependency and hold.
+- Settings control for the model check and the sticky behaviour, per the Settings-control rule in AGENTS.md; docs updated (user-docs, AGENTS.md human-step paragraph).
+- Migration: existing flagged tasks keep working; no frontmatter breakage across work/*.md (parser test).
+
+## Notes for AI
+Order of work: sticky override first (smallest, fixes the loop), then the model check, then tags and split. Related: #0908 (human-task board pathway), #0907. Do not weaken the existing safety: a task whose criteria really need a device, account or sign-up must still be flagged.
+
+## Activity
+
+- 2026-10-21T19:41:23Z · created · njachowski@gmail.com
