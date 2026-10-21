@@ -702,7 +702,9 @@ async function resumeModel(cli: string, model: string): Promise<void> {
 .budget-pause-fields .budget-field-label {
   margin-bottom: 8px;
 }
+/* The flex gap spaces the error like the fields; the parent gutter keeps it
+   off the modal edges, so it needs no margin of its own. */
 .budget-pause-fields .ff-error {
-  margin: 12px 0 0;
+  margin: 0;
 }
 </style>
