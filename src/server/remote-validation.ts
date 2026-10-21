@@ -3861,9 +3861,7 @@ export class TailscaleHostPool {
   ): string {
     const healthy = this.hostsEligibleFor(capabilities, excludeHosts).filter((s) => s.healthy);
     if (healthy.length === 0) return "";
-    return (
-      healthy.sort((a, b) => this.compareHosts(a, b))[0]?.spec.host ?? ""
-    );
+    return healthy.sort((a, b) => this.compareHosts(a, b))[0]?.spec.host ?? "";
   }
 
   private notifyWaiterQueue(waiter: PoolWaiter): void {
