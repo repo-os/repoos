@@ -70,6 +70,20 @@ interface BriefView {
     queued: number;
     detail: string | null;
     hungRuns: { taskId: string; at: string }[];
+    pressureState?: "healthy" | "pressured" | "unknown";
+    pressureReason?: string | null;
+    pressureFix?: string | null;
+    pressureRecheck?: string | null;
+    swapUsedRatio?: number | null;
+    availableMemRatio?: number | null;
+  }[];
+  pressuredHosts?: {
+    host: string;
+    reason: string;
+    fix: string;
+    recheckCommand: string;
+    swapUsedRatio: number | null;
+    availableMemRatio: number | null;
   }[];
   runs: {
     recentRuns: number;
@@ -176,8 +190,23 @@ function renderBrief(brief: BriefView): void {
       : h.probed
         ? c.red("unhealthy")
         : c.dim("unprobed");
+    const pressure =
+      h.pressureState === "pressured"
+        ? c.red(
+            ` · MEMORY PRESSURE${
+              h.swapUsedRatio != null ? ` (swap ${Math.round(h.swapUsedRatio * 100)}%)` : ""
+            }`,
+          )
+        : "";
     const detail = h.detail ? c.dim(` — ${h.detail}`) : "";
-    line(`    ${h.host} ${state} ${c.dim(`(${h.inFlight}/${h.queued} running/queued)`)}${detail}`);
+    line(
+      `    ${h.host} ${state}${pressure} ${c.dim(`(${h.inFlight}/${h.queued} running/queued)`)}${detail}`,
+    );
+  }
+  for (const p of brief.pressuredHosts ?? []) {
+    line(c.red(`    pressure on ${p.host}: ${p.reason}`));
+    line(c.yellow(`      fix: ${p.fix}`));
+    line(c.dim(`      re-check: ${p.recheckCommand}`));
   }
   line(
     c.dim(

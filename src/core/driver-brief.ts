@@ -73,6 +73,23 @@ export interface BriefHostHealth {
   /** Runs killed as hung on this host, most recent first. */
   hungRuns: { taskId: string; at: string; detail?: string }[];
   loadAverage: number[] | null;
+  /** Runner memory health (#0901). */
+  pressureState?: "healthy" | "pressured" | "unknown";
+  pressureReason?: string | null;
+  pressureFix?: string | null;
+  pressureRecheck?: string | null;
+  swapUsedRatio?: number | null;
+  availableMemRatio?: number | null;
+}
+
+/** A host skipped because its memory is over the pressureGuard thresholds (#0901). */
+export interface BriefPressuredHost {
+  host: string;
+  reason: string;
+  fix: string;
+  recheckCommand: string;
+  swapUsedRatio: number | null;
+  availableMemRatio: number | null;
 }
 
 export interface BriefSlowRun {
@@ -136,6 +153,8 @@ export interface DriverBrief {
   failedCloseOuts: BriefCloseOutJob[];
   recentCloseOutOutcomes: { taskId: string; outcome: string; at: string; reason: string }[];
   hosts: BriefHostHealth[];
+  /** Hosts currently over the memory-pressure thresholds (#0901). */
+  pressuredHosts: BriefPressuredHost[];
   runs: BriefRunSummary;
   configChanges: BriefConfigChangeSet;
   rules: BriefRule[];
@@ -255,6 +274,21 @@ export function recommendActions(input: DriverBriefInput): BriefRecommendation[]
     });
   }
 
+  // A runner under memory pressure is infra a human must clear. Put it early
+  // so the driver cannot miss the host that is quietly eating every gate.
+  for (const h of input.hosts) {
+    if (h.pressureState !== "pressured") continue;
+    push({
+      id: `runner-pressure:${h.host}`,
+      owner: "human",
+      title: `Free memory on runner ${h.host}`,
+      detail: `${h.pressureReason ?? "the host is over its memory-pressure limits"}. Fix: ${
+        h.pressureFix ?? "free memory on the host"
+      }${h.pressureRecheck ? ` Re-check: ${h.pressureRecheck}` : ""}`,
+      taskId: null,
+    });
+  }
+
   // Failed close-outs: retry (CTO for env failures, otherwise a human).
   for (const job of input.closeOutJobs) {
     if (job.phase !== "failed") continue;
@@ -358,6 +392,16 @@ export function buildDriverBrief(input: DriverBriefInput): DriverBrief {
     failedCloseOuts,
     recentCloseOutOutcomes: input.closeOutOutcomes,
     hosts: input.hosts,
+    pressuredHosts: input.hosts
+      .filter((h) => h.pressureState === "pressured")
+      .map((h) => ({
+        host: h.host,
+        reason: h.pressureReason ?? "over the memory-pressure thresholds",
+        fix: h.pressureFix ?? "free memory on the runner",
+        recheckCommand: h.pressureRecheck ?? "repoos runners --probe",
+        swapUsedRatio: h.swapUsedRatio ?? null,
+        availableMemRatio: h.availableMemRatio ?? null,
+      })),
     runs: {
       recentRuns: input.recentRuns.total,
       hung: input.recentRuns.hung,
