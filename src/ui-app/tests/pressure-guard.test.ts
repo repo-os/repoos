@@ -138,6 +138,29 @@ describe("evaluatePressure", () => {
     expect(snapshot.reason).toMatch(/available memory is low/i);
   });
 
+  it("blocks at 73% swap / 40% compressor, then clears when the host recovers", () => {
+    const totalMemBytes = 16 * GB;
+    const swapTotalBytes = 4 * GB;
+    const blocked = evaluatePressure(
+      readings({
+        swapTotalBytes,
+        swapUsedBytes: Math.round(swapTotalBytes * 0.73),
+        compressorBytes: Math.round(totalMemBytes * 0.4),
+      }),
+      pressureThresholds(config()),
+    );
+    expect(blocked.level).toBe("critical");
+    expect(blocked.reasons.join(" ")).toMatch(/swap is nearly full/i);
+    expect(blocked.reasons.join(" ")).toMatch(/compressor/i);
+
+    const relieved = evaluatePressure(
+      readings({ swapUsedBytes: 0, compressorBytes: 0 }),
+      pressureThresholds(config()),
+    );
+    expect(relieved.level).toBe("normal");
+    expect(relieved.reason).toBeNull();
+  });
+
   it("treats high load as a warning when memory stats are available", () => {
     const snapshot = evaluatePressure(
       readings({ loadPerCpu: 99, swapUsedBytes: 0, compressorBytes: 0 }),

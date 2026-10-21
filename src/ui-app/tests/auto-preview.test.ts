@@ -97,7 +97,7 @@ branch: ${branch}
 
   writeFileSync(
     join(root, "repoos.toml"),
-    `[preview]\ncommand = ${JSON.stringify(`${process.execPath} preview-server.mjs`)}\n`,
+    `[pressureGuard]\nenabled = false\n[preview]\ncommand = ${JSON.stringify(`${process.execPath} preview-server.mjs`)}\n`,
   );
 
   const wtRoot = join(root, "..", `${basename(root)}-worktrees`);
