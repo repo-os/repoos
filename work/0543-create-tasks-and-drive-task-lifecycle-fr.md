@@ -119,3 +119,4 @@ A `member` can still read, be notified, and answer a permitted needs-input quest
 - 2026-10-21T14:02:02Z · body
 - 2026-10-21T14:04:07Z · body
 - 2026-10-21T14:05:03Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-21T14:05:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
