@@ -14,7 +14,7 @@ branch: feat/engineer-turn-ends-cleanly-without-a-han
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T21:57:26Z"
-updated_at: "2026-10-21T00:12:25Z"
+updated_at: "2026-10-21T00:15:56Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T00:05:32.519Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -51,3 +51,4 @@ Relevant code: src/server/agents.ts (`cleanup()`, `deliverQueuedMessages`, crash
 - 2026-10-21T00:05:38Z · body
 - 2026-10-21T00:08:06Z · body
 - 2026-10-21T00:12:25Z · body
+- 2026-10-21T00:15:56Z · body
