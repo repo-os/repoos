@@ -2,7 +2,7 @@
 id: "0899"
 title: "Easter eggs bundle: screenshot dropzone layout, CLI screenshot captions"
 type: bug
-status: active
+status: review
 hold: true
 priority: p3
 area: [web, core]
@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T19:27:12Z"
+updated_at: "2026-10-21T19:38:03Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -213,3 +213,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:27:05Z · status review→active
 - 2026-10-21T19:27:09Z · needs_input
 - 2026-10-21T19:27:12Z · assigned_to
+- 2026-10-21T19:38:03Z · status active→review
