@@ -11,7 +11,7 @@ branch: feat/repoos-hub-macos-add-copy-url-to-the-ser
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T12:08:23Z"
+updated_at: "2026-10-21T12:08:24Z"
 last_check_failure: "repoos check at 2026-10-21T11:18:00.093Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -139,3 +139,4 @@ Swift tests run: `ServerActionsMenuModelTests`, `RepoAccentColorPreferenceTests`
 - 2026-10-21T11:41:31Z · message_delivered: 1 message(s)
 - 2026-10-21T11:47:38Z · CTO nudge: held — handoff gate is running
 - 2026-10-21T12:08:23Z · status active→review
+- 2026-10-21T12:08:24Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (77986e5d4) during finalization (#0734)
