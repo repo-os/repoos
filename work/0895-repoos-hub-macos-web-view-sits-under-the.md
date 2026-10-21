@@ -11,7 +11,7 @@ branch: feat/repoos-hub-macos-web-view-sits-under-the
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T08:37:10Z"
-updated_at: "2026-10-21T13:40:28Z"
+updated_at: "2026-10-21T13:41:36Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -71,3 +71,4 @@ Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode fro
 - 2026-10-21T13:32:00Z · note: handoff requested (ui-review)
 - 2026-10-21T13:40:28Z · status active→review
 - 2026-10-21T13:40:28Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-21T13:41:36Z · note: review pass 1: needs some work
