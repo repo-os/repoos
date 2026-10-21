@@ -2,7 +2,7 @@
 id: "0875"
 title: Add compact Chrome-style server tabs to RepoOS Hub
 type: feature
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-20T13:31:37Z"
-updated_at: "2026-10-21T07:11:41Z"
+updated_at: "2026-10-21T07:22:04Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -389,3 +389,4 @@ Test both layouts, switching between them, narrow windows, many servers, and nat
 - 2026-10-21T07:07:44Z · status review→active
 - 2026-10-21T07:08:11Z · CTO nudge: held — engineer process is busy (headless browser)
 - 2026-10-21T07:11:41Z · body
+- 2026-10-21T07:22:04Z · status active→review
