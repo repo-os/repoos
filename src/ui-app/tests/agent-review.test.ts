@@ -64,6 +64,11 @@ ${body}
   git(root, ["config", "user.email", "t@example.com"]);
   git(root, ["config", "user.name", "Test"]);
   git(root, ["commit", "--allow-empty", "-m", "init"]);
+  // Spawn behaviour must not depend on the host's memory state (#0900): with
+  // the guard on (the default), a runner whose swap is over the limit queues
+  // the review/engineer turn for `pressure` and every wait here times out.
+  // The guard has its own suite; this one measures review finalization.
+  writeFileSync(join(root, "repoos.toml"), "[pressureGuard]\nenabled = false\n");
   const worktrees = join(dirname(root), `${basename(root)}-worktrees`);
   return {
     root,
@@ -397,6 +402,8 @@ describe("agent review before human sign-off (#0101)", () => {
     writeFileSync(
       join(fx.root, "repoos.toml"),
       [
+        "[pressureGuard]",
+        "enabled = false",
         "[[agents]]",
         'name = "engineer"',
         'cli = "opencode"',
