@@ -428,11 +428,15 @@ struct ServerWebView: NSViewRepresentable {
         }
 
         private func readRepositoryAccentColor() {
-            guard let cookieStore = accentColorCookieStore else { return }
+            guard let cookieStore = accentColorCookieStore,
+                  let host = model.origin.host,
+                  !host.isEmpty
+            else { return }
             let serverID = model.serverID
             cookieStore.getAllCookies { [weak self] cookies in
                 let rawValue = cookies.first {
                     $0.name == RepoAccentColorPreference.cookieName
+                        && RepoAccentColorPreference.cookieMatches(domain: $0.domain, host: host)
                 }?.value
                 Task { @MainActor in
                     guard let self, let rawValue else { return }

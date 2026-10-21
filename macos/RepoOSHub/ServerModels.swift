@@ -387,6 +387,15 @@ enum RepoAccentColorPreference {
         case unsupported
     }
 
+    /// A per-server data store can still hold a cookie for a host the entry no
+    /// longer points at (the server URL was edited). Only accept the current
+    /// origin's host so that stale preference cannot paint the row. Domain
+    /// cookies are stored with a leading dot.
+    static func cookieMatches(domain: String, host: String) -> Bool {
+        let normalized = domain.hasPrefix(".") ? String(domain.dropFirst()) : domain
+        return normalized.caseInsensitiveCompare(host) == .orderedSame
+    }
+
     static func parseCookieValue(
         _ rawValue: String,
         expectedRepoName: String? = nil
