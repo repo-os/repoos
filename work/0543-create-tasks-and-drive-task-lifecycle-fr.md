@@ -112,3 +112,4 @@ A `member` can still read, be notified, and answer a permitted needs-input quest
 - 2026-10-21T13:34:09Z · cli_override, model_override
 - 2026-10-21T13:34:11Z · status ready→active, branch
 - 2026-10-21T13:40:31Z · message_queued at 2026-10-21T13:40:31.425Z
+- 2026-10-21T13:40:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
