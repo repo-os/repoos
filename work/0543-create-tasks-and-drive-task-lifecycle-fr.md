@@ -122,3 +122,4 @@ A `member` can still read, be notified, and answer a permitted needs-input quest
 - 2026-10-21T14:05:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T14:05:03Z · message_delivered: 1 message(s)
 - 2026-10-21T14:14:33Z · status active→review
+- 2026-10-21T14:14:33Z · note: shots: skipped — Docs site skipped: no docs shot declared
