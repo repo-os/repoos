@@ -180,8 +180,9 @@ function fmtAgo(iso: string): string {
       <span class="rr-note">auto 3s · host locks 3s · server stats 15s</span>
     </div>
     <p v-if="hosts.length" class="rr-tie-note">
-      Jobs go to the host with the fewest active runs. Hosts with equal load are tried top to
-      bottom, so the first host gets the work when all are idle.
+      Jobs go to the host with the fewest active runs, then to the host that has run least
+      recently (LRU), so sequential checks rotate across the pool. Config order is the final
+      tie-break — before any host has run, the top host goes first.
     </p>
     <p v-if="status?.tailscaleHostPinsTop" class="rr-config-note">
       <code>remoteValidation.tailscaleHost</code> pins {{ status.tailscaleHost }} to the top. Remove
