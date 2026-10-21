@@ -381,7 +381,10 @@ const remoteActivityText = computed(() => {
     const phases = (run.phases ?? [])
       .map((p) => {
         const ms =
-          p.durationMs ?? (p.endedAt ? Date.parse(p.endedAt) - Date.parse(p.startedAt) : null);
+          p.durationMs ??
+          (p.endedAt
+            ? Date.parse(p.endedAt) - Date.parse(p.startedAt)
+            : Math.max(0, checkNow.value - Date.parse(p.startedAt)));
         return `${p.phase === "queued" ? "queued for slot" : p.phase} ${remotePhaseText(ms)}`.trim();
       })
       .join(" · ");
