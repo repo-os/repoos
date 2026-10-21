@@ -3,12 +3,6 @@ id: "0874"
 title: Offload repoos shot to a runner
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: Upstream request failed: Endpoint is unavailable."
-debug_tldr: The LLM provider endpoint was unavailable — retry the agent run or choose another allowlisted model in Budget Controls.
-debug_tldr_at: "2026-10-21T08:24:51Z"
-debug_tldr_key: "dev-error|error: Upstream request failed: Endpoint is unavailable."
 priority: p3
 area: [server, core]
 depends_on: ["0854"]
@@ -18,7 +12,7 @@ branch: feat/offload-repoos-shot-to-a-runner
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:27:49Z"
-updated_at: "2026-10-21T08:54:44Z"
+updated_at: "2026-10-21T08:56:00Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:24:31.668Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -52,3 +46,4 @@ Not required for #0854's acceptance criteria. #0864 (rebuild the runner image an
 - 2026-10-21T08:44:28Z · body
 - 2026-10-21T08:50:59Z · body
 - 2026-10-21T08:54:44Z · body
+- 2026-10-21T08:56:00Z · needs_input
