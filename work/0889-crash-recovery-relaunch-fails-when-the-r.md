@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: Upstream request failed: Endpoint is unavailable."
+debug_tldr: "The OpenCode upstream endpoint was unavailable, not the NUL-byte fix — confirm opencode serve is healthy and resume the engineer."
+debug_tldr_at: "2026-10-21T02:26:15Z"
+debug_tldr_key: "dev-error|error: Upstream request failed: Endpoint is unavailable."
 priority: p2
 area: server
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/crash-recovery-relaunch-fails-when-the-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T01:27:17Z"
-updated_at: "2026-10-21T02:25:58Z"
+updated_at: "2026-10-21T02:26:15Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:20:05.086Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:25:58.742Z\",\"kind\":\"dev-error\"}]"
 ---
