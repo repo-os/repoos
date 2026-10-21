@@ -2,7 +2,7 @@
 id: "0875"
 title: Add compact Chrome-style server tabs to RepoOS Hub
 type: feature
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-20T13:31:37Z"
-updated_at: "2026-10-21T06:08:57Z"
+updated_at: "2026-10-21T07:06:28Z"
 ---
 ## Problem
 
@@ -358,3 +358,4 @@ Test both layouts, switching between them, narrow windows, many servers, and nat
 - 2026-10-21T05:58:17Z · cli_override, model_override
 - 2026-10-21T05:58:19Z · model_override
 - 2026-10-21T06:08:57Z · status ready→active, branch
+- 2026-10-21T07:06:28Z · status active→review
