@@ -2,7 +2,7 @@
 id: "0543"
 title: Create tasks and drive task lifecycle from Telegram
 type: feature
-status: active
+status: review
 priority: p3
 area: server
 story: RepoOS Telegram Bot
@@ -121,4 +121,4 @@ A `member` can still read, be notified, and answer a permitted needs-input quest
 - 2026-10-21T14:05:03Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-21T14:05:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T14:05:03Z · message_delivered: 1 message(s)
-- 2026-10-21T14:14:33Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-21T14:14:33Z · status active→review
