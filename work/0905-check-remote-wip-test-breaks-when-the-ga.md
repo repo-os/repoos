@@ -5,11 +5,11 @@ type: feature
 status: inbox
 priority: p1
 area: [core, server]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T16:03:26Z"
-updated_at: "2026-10-21T16:03:26Z"
+updated_at: "2026-10-21T16:03:48Z"
 ---
 ## Problem
 2026-10-21: with remoteValidation.browserCaptureMode = runner-only, validate.sh passes REPOOS_OFFLOAD_BROWSER_STEPS=1 (and the REPOOS_BROWSER_CAPTURE_* variables) into the repoos-ci container. tests/check-remote-wip.test.ts ('managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created') does not clear them, so the managed check takes the 'uncommitted changes ... running the full local gate on the working tree instead' path and never prints 'could not commit a WIP checkpoint'. Result: every task's remote gate failed on this test from ~22:59 to ~23:37 (#0899, #0900, #0897 handoffs), blocking all shipping for about an hour. Reverting the capture policy to local made the gates pass again. The test passes in isolation in the runner container, so it only breaks when those env vars are set. This also blocks the #0864 end-to-end proof (needs runner-only).
