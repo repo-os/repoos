@@ -12,7 +12,7 @@ branch: feat/stories-list-most-recently-updated-sort-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:03:09Z"
-updated_at: "2026-10-21T00:04:51Z"
+updated_at: "2026-10-21T00:05:23Z"
 last_close_out_gate_ms: 473136
 last_close_out_gate_at: "2026-10-21T00:04:51.074Z"
 review_passes: 1
@@ -65,4 +65,4 @@ On the Stories page, ordering by "most recently updated" does not put the newest
 - 2026-10-20T23:55:35Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (1bf040f44) during finalization (#0734)
 - 2026-10-20T23:56:29Z · note: review pass 1: good to go
 - 2026-10-21T00:04:51Z · close-out gate completed in 473s
-
+- 2026-10-21T00:05:23Z · status done→done, release:success
