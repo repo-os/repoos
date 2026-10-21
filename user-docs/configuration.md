@@ -892,6 +892,20 @@ Runtime selection is controlled by environment variables, not `repoos.toml`:
 Bun binary). These are the supported public runtime overrides — see
 [Environment and secrets](/environment-and-secrets) for the full list.
 
+### Apple-signed git on macOS (automatic)
+
+On macOS, RepoOS puts a one-entry directory containing only a `git` symlink to
+Apple's `/usr/bin/git` first on `PATH` for itself and everything it spawns
+(engineers, `repoos check`, tests). Reason: an ad-hoc-signed `git` (Homebrew,
+mise and similar) is re-validated by macOS (`syspolicyd`/`trustd`) on every
+launch, and RepoOS and its test suites launch `git` hundreds of times per task.
+Measured on a MacBook Air, a 289-test git-heavy run took about 160 s with
+Homebrew `git` first and about 80 s with Apple's. It needs the Xcode Command
+Line Tools (`xcode-select --install`); without them nothing changes. Only `git`
+is redirected, so other Homebrew tools are untouched. Opt out with
+`REPOOS_PREFER_APPLE_GIT=0`. Enabling "Developer Tools" for your terminal in
+Privacy & Security did not help in the same measurement.
+
 ## Agents
 
 ```toml
