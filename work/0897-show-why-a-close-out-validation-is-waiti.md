@@ -11,7 +11,7 @@ branch: feat/show-why-a-close-out-validation-is-waiti
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T12:39:47Z"
-updated_at: "2026-10-21T18:50:42Z"
+updated_at: "2026-10-21T18:50:43Z"
 dev_error_count: 3
 ---
 ## Problem
@@ -147,4 +147,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T18:10:47Z · needs_input
 - 2026-10-21T18:35:37Z · body
 - 2026-10-21T18:50:42Z · status active→review
-
+- 2026-10-21T18:50:43Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
