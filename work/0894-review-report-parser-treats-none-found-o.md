@@ -2,7 +2,7 @@
 id: "0894"
 title: Review report parser treats 'None found.' (or any phrasing other than exact 'None found') in Bugs as blocking bugs
 type: bug
-status: active
+status: ready
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/review-report-parser-treats-none-found-o
 cli_override: github copilot
 model_override: default
 created_at: "2026-10-21T08:17:11Z"
-updated_at: "2026-10-21T09:15:22Z"
+updated_at: "2026-10-21T09:15:31Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:19:07.268Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:22:38.129Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -49,3 +49,4 @@ Consumers: src/server/landable.ts (line ~51), the review auto-bounce path in src
 - 2026-10-21T09:08:38Z · body
 - 2026-10-21T09:11:08Z · cli_override, model_override
 - 2026-10-21T09:15:22Z · needs_input
+- 2026-10-21T09:15:31Z · status active→ready
