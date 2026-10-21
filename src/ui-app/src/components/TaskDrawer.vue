@@ -13,7 +13,6 @@ import {
   ArrowRight,
   ArrowDown,
   RotateCcw,
-  ImagePlus,
   Info,
   Paperclip,
   FileText,
@@ -98,6 +97,7 @@ import UpdateRequirementsDialog from "./UpdateRequirementsDialog.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 import PendingAttachmentList from "./PendingAttachmentList.vue";
+import ShotDropzone from "./ShotDropzone.vue";
 import {
   attachmentUploadPhase,
   clearAttachmentUploadState,
@@ -903,7 +903,6 @@ async function retryPendingScreenshot(index: number): Promise<void> {
 }
 
 // ---- screenshot picking (file select + drag & drop, 0123) ----
-const shotInput = ref<HTMLInputElement | null>(null);
 /** Depth counter: dragenter/leave fire once per element boundary. */
 const dragDepth = ref(0);
 const pendingViewerOpen = ref(false);
@@ -1134,10 +1133,8 @@ async function confirmDeleteShot(): Promise<void> {
   else repo.pushToast("Shot deleted", "success");
 }
 
-function onShotFiles(e: Event): void {
-  const input = e.target as HTMLInputElement;
-  if (input.files) ui.addScreenshots(Array.from(input.files));
-  input.value = "";
+function addShotFiles(files: File[]): void {
+  ui.addScreenshots(files);
 }
 
 function onDragEnter(): void {
@@ -4012,30 +4009,11 @@ watch(
                 <Info class="size-3.5" />
               </button>
             </div>
-            <div
-              class="shot-dropzone"
-              :class="{ over: dragDepth > 0 }"
-              role="button"
-              tabindex="0"
-              @click="shotInput?.click()"
-              @keydown.enter="shotInput?.click()"
-            >
-              <ImagePlus class="size-4" />
-              <span>{{
-                ui.pendingScreenshots.length
-                  ? `Add more — ${ui.pendingScreenshots.length} screenshot${ui.pendingScreenshots.length === 1 ? "" : "s"} added`
-                  : "Click to add screenshots, or drop them anywhere on this panel"
-              }}</span>
-              <input
-                ref="shotInput"
-                type="file"
-                accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp"
-                multiple
-                class="shot-input"
-                @change="onShotFiles"
-                @click.stop
-              />
-            </div>
+            <ShotDropzone :over="dragDepth > 0" @files="addShotFiles">{{
+              ui.pendingScreenshots.length
+                ? `Add more — ${ui.pendingScreenshots.length} screenshot${ui.pendingScreenshots.length === 1 ? "" : "s"} added`
+                : "Click to add screenshots, or drop them anywhere on this panel"
+            }}</ShotDropzone>
             <PendingAttachmentList
               v-if="ui.pendingScreenshots.length"
               :items="ui.pendingScreenshots"
