@@ -2,7 +2,7 @@
 id: "0862"
 title: "Docs site: use the landing page's RepoOS logo (theme-aware, no extra border)"
 type: chore
-status: active
+status: review
 priority: p2
 area: [docs, landing]
 assigned_to: ai
@@ -121,4 +121,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T05:03:23Z · message_queued at 2026-10-21T05:03:23.474Z
 - 2026-10-21T05:39:59Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-21T05:48:39Z · note: handoff requested (ui-review)
-- 2026-10-21T05:57:03Z · note: shots: skipped — 28 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-21T05:57:03Z · status active→review
