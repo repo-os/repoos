@@ -474,19 +474,17 @@ const serveMessage = computed(() => {
 
 .pressure-level {
   font-weight: 700;
-}
-
-/* The alert's amber/red tint is the warning signal; accent-coloured text on
-   that same tint fell under the WCAG floor in several themes (rendered-contrast
-   audit, #0876). Primary text keeps the level and metrics readable while the
-   border/background carry the severity. */
-.pressure-alert.warning .pressure-level,
-.pressure-alert.critical .pressure-level {
+  /* The tinted warning/critical background pushed the 12px severity label
+     below the WCAG floor in several themes (#0877 gate); the text names the
+     state, the border/background keep the colour cue. */
   color: var(--txt);
 }
 
 .pressure-metric {
-  color: var(--txt);
+  /* --txt-dim alone sits at 4.29 (gruvbox-light) and 4.49 (gruvbox-dark) on
+     the amber wash; lean it toward the body token to clear the WCAG floor
+     (#0877 gate). */
+  color: color-mix(in srgb, var(--txt-dim) 60%, var(--txt));
   font-variant-numeric: tabular-nums;
 }
 
@@ -551,10 +549,11 @@ const serveMessage = computed(() => {
 }
 
 .top-owner.repoos {
-  /* 9px chip text: the cyan tint marks the owner, but cyan-on-cyan was below
-     the WCAG floor in light themes (rendered-contrast audit, #0876). */
-  color: var(--txt);
-  background: color-mix(in srgb, var(--cyan) 14%, transparent);
+  color: var(--cyan);
+  /* Keep the neutral chip fill used by the sibling owner badge: tinting the
+     background with the same --cyan the text uses pushed 9px labels below the
+     WCAG floor in every light theme and gruvbox-dark (#0877 gate). */
+  background: var(--chip-bg);
 }
 
 .top-owner.other {

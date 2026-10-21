@@ -3,6 +3,9 @@ id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
@@ -13,9 +16,11 @@ model_override: opencode-go/deepseek-v4.1-flash
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T01:52:27Z"
+updated_at: "2026-10-21T02:03:50Z"
 review_rounds: 1
 review_passes: 1
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:03:50.463Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -123,3 +128,5 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T01:33:53Z · body
 - 2026-10-21T01:51:06Z · body
 - 2026-10-21T01:52:27Z · body
+- 2026-10-21T02:03:50Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T02:03:50Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
