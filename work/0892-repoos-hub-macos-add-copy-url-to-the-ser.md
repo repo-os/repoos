@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-21T11:18:00.093Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0892"
 title: "RepoOS Hub (macOS): add Copy URL to the server menu, and fix the server color bar not applying or persisting"
 type: bug
@@ -128,3 +130,4 @@ Swift tests run: `ServerActionsMenuModelTests`, `RepoAccentColorPreferenceTests`
 - 2026-10-21T09:18:00Z · status active→ready
 - 2026-10-21T09:18:04Z · status ready→active
 - 2026-10-21T10:27:25Z · CTO nudge: held — machine under pressure (the memory compressor is holding 38% of RAM (9.2 GB of RAM) — holding new work until memory pressure eases)
+
