@@ -120,7 +120,7 @@ model_routing.humanStepCheck = true
 [[remoteValidation.tailscaleHosts]]
 host = "bee"
 user = "nick"
-maxConcurrent = 2
+maxConcurrent = 1
 [[remoteValidation.tailscaleHosts]]
 host = "thinkpad"
 user = "nick"
