@@ -58,6 +58,15 @@ export function pressureGuardEnabled(config: RepoOSConfig): boolean {
   return config.pressureGuard?.enabled !== false;
 }
 
+/**
+ * Whether remote runner dispatch reads host pressure before leasing (#0901).
+ * On by default; separate from the local guard so an operator can keep local
+ * pressure holding while a known-noisy runner pool still accepts jobs.
+ */
+export function runnerHealthCheckEnabled(config: RepoOSConfig): boolean {
+  return config.remoteValidation?.healthCheck !== false;
+}
+
 export function pressureMaxLoadPerCpu(config: RepoOSConfig): number {
   const raw = config.pressureGuard?.maxLoadPerCpu;
   if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) return raw;

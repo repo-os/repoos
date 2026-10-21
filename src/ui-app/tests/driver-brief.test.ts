@@ -276,3 +276,67 @@ describe("flattenConfig + diffConfigKeys", () => {
     expect(diffConfigKeys({ a: "1" }, { a: "1", b: "2" })).toEqual(["b"]);
   });
 });
+
+describe("pressured runner hosts (#0901)", () => {
+  const host = (over: Partial<DriverBriefInput["hosts"][number]>) =>
+    ({
+      host: "thinkpad",
+      healthy: true,
+      probed: true,
+      inFlight: 0,
+      queued: 0,
+      maxConcurrent: 1,
+      detail: null,
+      hungRuns: [],
+      loadAverage: null,
+      pressureState: "healthy" as const,
+      ...over,
+    }) satisfies DriverBriefInput["hosts"][number];
+
+  it("lists pressured hosts with the reason, fix and re-check command in --json", () => {
+    const brief = buildDriverBrief(
+      baseInput({
+        hosts: [
+          host({
+            pressureState: "pressured",
+            pressureReason: "swap is nearly full (3.0 GB of 4.0 GB swap, 75%)",
+            pressureFix: "run `sudo swapoff -a && sudo swapon -a` on the runner",
+            pressureRecheck: "repoos runners --probe",
+            swapUsedRatio: 0.75,
+            availableMemRatio: 0.03,
+          }),
+          host({ host: "mini" }),
+        ],
+      }),
+    );
+    expect(brief.pressuredHosts).toEqual([
+      {
+        host: "thinkpad",
+        reason: "swap is nearly full (3.0 GB of 4.0 GB swap, 75%)",
+        fix: "run `sudo swapoff -a && sudo swapon -a` on the runner",
+        recheckCommand: "repoos runners --probe",
+        swapUsedRatio: 0.75,
+        availableMemRatio: 0.03,
+      },
+    ]);
+  });
+
+  it("recommends the human fix for a pressured runner", () => {
+    const actions = recommendActions(
+      baseInput({
+        hosts: [
+          host({
+            pressureState: "pressured",
+            pressureReason: "swap is nearly full",
+            pressureFix: "run `sudo swapoff -a && sudo swapon -a`",
+            pressureRecheck: "repoos runners --probe",
+          }),
+        ],
+      }),
+    );
+    const action = actions.find((a) => a.id === "runner-pressure:thinkpad");
+    expect(action).toMatchObject({ owner: "human", taskId: null });
+    expect(action!.detail).toContain("swapoff -a");
+    expect(action!.detail).toContain("repoos runners --probe");
+  });
+});
