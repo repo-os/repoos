@@ -35,6 +35,7 @@ import {
 import {
   describeShotTargetPathMatches,
   describeTargetPathMatches,
+  appPreviewTargetName,
   formatTargetList,
   resolveShotTargets,
   shotTargetByName,
@@ -209,6 +210,8 @@ export interface CliShotPlanInput {
   glob?: string;
   /** Fixture validator for the task branch, to accept branch-specific fixtures (#0786). */
   fixtureValidator?: (id: string) => boolean;
+  /** The target that serves the main app, for state/app-route defaults (#0866). */
+  appTarget?: string;
 }
 
 /** The plan plus the visible notes `cmdShot` prints alongside it. */
@@ -250,6 +253,7 @@ export function buildCliShotPlan(input: CliShotPlanInput): CliShotPlan {
     matchedGlobs: input.matchedGlobs,
     docsContentOnly: input.docsContentOnly,
     ...(input.commandTargets ? { commandTargets: input.commandTargets } : {}),
+    ...(input.appTarget ? { appTarget: input.appTarget } : {}),
     route: input.route,
     selector: input.selector,
     ...(input.env ? { env: input.env } : {}),
@@ -543,6 +547,7 @@ export async function cmdShot(args: string[]): Promise<number> {
       if (match.contentOnly) docsContentOnly.add(match.target);
     }
     const commandTargets = new Set((worktreeConfig.shot?.targets ?? []).map((t) => t.name));
+    const appTarget = appPreviewTargetName(worktreeConfig.preview);
     // #0610: the requested route/selector is part of the plan, not a separate
     // candidate that lost to the fallback's `/`.
     const fixtureValidator = taskFixtureValidator(
@@ -564,6 +569,7 @@ export async function cmdShot(args: string[]): Promise<number> {
       matchedGlobs,
       docsContentOnly,
       commandTargets,
+      ...(appTarget ? { appTarget } : {}),
       ...(opts.env ? { env: opts.env } : {}),
       ...(opts.glob ? { glob: opts.glob } : {}),
       ...(fixtureValidator ? { fixtureValidator } : {}),
@@ -719,6 +725,16 @@ export async function cmdShot(args: string[]): Promise<number> {
                 c.yellow("  · ") +
                   `theme "${theme}" could not be applied on ${r} — capture went ahead`,
               );
+            },
+            // #0866: a state fixture that never rendered, or a target that
+            // served its HTML shell for the app, is the wrong screen.
+            onStateMiss: (message) => {
+              warnings.push(message);
+              console.error(c.yellow("  · ") + `${message} — capture went ahead`);
+            },
+            onRouteNotServed: (message) => {
+              warnings.push(message);
+              console.error(c.yellow("  · ") + `${message} — capture went ahead`);
             },
           },
         );

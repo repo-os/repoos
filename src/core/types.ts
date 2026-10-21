@@ -1093,14 +1093,21 @@ export interface PlaywrightLimitsConfig {
   queueTimeoutMs?: number;
 }
 
-/** Delay new checks and engineer starts when the host is overloaded (#0836). */
+/** Delay new checks and engineer starts when the host is overloaded (#0836, #0871). */
 export interface PressureGuardConfig {
-  /** Default true — waits instead of piling on when load or memory is high. */
+  /** Default true — waits instead of piling on when memory or load pressure is high. */
   enabled?: boolean;
-  /** 1-minute load average per CPU above this blocks new work. Default 4. */
+  /**
+   * Load average per CPU above this blocks new work only when swap/compressor
+   * readings are unavailable; otherwise it is advisory. Default 4.
+   */
   maxLoadPerCpu?: number;
   /** Block when available memory falls below this fraction of RAM. Default 0.08. */
   minAvailableMemRatio?: number;
+  /** Block when swap in use exceeds this fraction of total swap. Default 0.5. */
+  maxSwapUsedRatio?: number;
+  /** Block when the macOS memory compressor holds more than this fraction of RAM. Default 0.35. */
+  maxCompressorRatio?: number;
 }
 
 export interface RemoteValidationConfig {
@@ -2267,6 +2274,8 @@ export interface StoryDefinitionRecord {
   path: string;
   body: string;
   createdAt: string;
+  /** ISO last-modification time (frontmatter `updated_at`, else git/mtime) — #0885. */
+  updatedAt?: string;
   createdBy: string;
   /** True while the PM agent is fleshing this story out in the background. */
   pmWorking?: boolean;
