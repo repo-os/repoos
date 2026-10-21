@@ -3,12 +3,6 @@ id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
-debug_tldr: "The engineer hit the resume retry limit while stuck waiting on a full local check queue with no handoff progress—resume task #0876 after check slots free up."
-debug_tldr_at: "2026-10-21T02:53:32Z"
-debug_tldr_key: "dev-error|RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p2
 area: web
 assigned_to: ai
@@ -19,7 +13,7 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T02:55:12Z"
+updated_at: "2026-10-21T03:04:57Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 2
@@ -74,12 +68,12 @@ Please fix the padding/margin on the allowlist pause modal
 "route": "/agents?tab=budget-controls",
 "highlight": "[data-testid=\"budget-pause-dialog\"]",
 "steps": [
-  {
-    "click": "[data-testid=\"budget-row-li-opencode\"] [data-testid=\"budget-pause-agent\"]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": "[data-testid=\"budget-row-li-opencode\"] [data-testid=\"budget-pause-agent\"]"
+},
+{
+  "waitMs": 400
+}
 ],
 "state": "budget:paused",
 "theme": "light"
@@ -90,12 +84,12 @@ Please fix the padding/margin on the allowlist pause modal
 "route": "/agents?tab=budget-controls",
 "highlight": "[data-testid=\"budget-pause-dialog\"]",
 "steps": [
-  {
-    "click": "[data-testid=\"budget-row-li-opencode\"] [data-testid=\"budget-pause-agent\"]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": "[data-testid=\"budget-row-li-opencode\"] [data-testid=\"budget-pause-agent\"]"
+},
+{
+  "waitMs": 400
+}
 ],
 "state": "budget:paused",
 "theme": "dark"
@@ -154,3 +148,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T02:53:15Z · body
 - 2026-10-21T02:53:53Z · body
 - 2026-10-21T02:55:12Z · body
+- 2026-10-21T03:04:57Z · needs_input
