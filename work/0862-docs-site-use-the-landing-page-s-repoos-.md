@@ -15,7 +15,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/docs-site-use-the-landing-page-s-repoos-
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-21T04:07:43Z"
+updated_at: "2026-10-21T04:08:08Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:18.973Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -128,3 +128,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T04:07:14Z · note: stopped orphaned engineer pid 1217
 - 2026-10-21T04:07:18Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-21T04:07:18Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T04:08:08Z · note: stopped orphaned engineer pid 26284
