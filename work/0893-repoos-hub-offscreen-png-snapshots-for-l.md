@@ -2,14 +2,14 @@
 id: "0893"
 title: "RepoOS Hub: offscreen PNG snapshots for layout checks, with a shot target in repoos.toml"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T07:08:04Z"
-updated_at: "2026-10-21T07:08:04Z"
+updated_at: "2026-10-21T07:47:33Z"
 ---
 ## Problem
 RepoOS Hub (macos/RepoOSHub) has no way to capture images of its views for review. Divot already renders its popovers offscreen to PNG in tests and collects them as handoff evidence. Hub has no equivalent, so reviewers can't see Hub layout changes without running the app.
@@ -34,3 +34,4 @@ RepoOS Hub (macos/RepoOSHub) has no way to capture images of its views for revie
 ## Activity
 
 - 2026-10-21T07:08:04Z · created · njachowski@gmail.com
+- 2026-10-21T07:47:33Z · status inbox→ready
