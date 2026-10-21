@@ -1,17 +1,22 @@
 /**
- * Bounded engineer crash recovery (#0869).
+ * Bounded engineer recovery policy (#0869, #0888).
  *
- * A crash is not a handoff. When an engineer turn exits with an error, RepoOS
- * keeps the task `active` and resumes the engineer; only after a threshold of
- * crashes (or usage/auth failures) for the SAME agent+model inside a window
- * does it switch to the next unpaused budget-allowlist pair. The destination is
- * an explicit, recorded choice for this task — not an unbounded fallback chain
- * — and a human-set override is never replaced: when one is pinned the crash
- * is surfaced to the human instead.
+ * Two shapes share this module so they cannot drift into parallel mechanisms:
+ *
+ * - Crash recovery (#0869). A crash is not a handoff. When an engineer turn
+ *   exits with an error, RepoOS keeps the task `active` and resumes the
+ *   engineer; only after a threshold of crashes (or usage/auth failures) for
+ *   the SAME agent+model inside a window does it switch to the next unpaused
+ *   budget-allowlist pair. A human-set override is never replaced: when one is
+ *   pinned the crash is surfaced to the human instead.
+ * - Stalled clean exit (#0888). A turn that ends cleanly without ever
+ *   requesting a handoff leaves the task silently `active`. The watchdog
+ *   resumes it with the normal resume preamble, bounded by a per-task resume
+ *   window; at the cap it surfaces `needs_input` instead of looping.
  *
  * This module is pure and Node-free so the planning rules are table-testable:
  * `src/server/engineer-crash-recovery.ts` applies the plan (writes the task,
- * starts the engineer) and the runner only reports the crash.
+ * starts the engineer) and the runner only reports the turn's outcome.
  *
  * Fits ADR 0008 (centralized agent recovery): a destination is treated as a
  * deliberate selection for this task, failures are classified, and a paid
@@ -306,6 +311,281 @@ export function planEngineerCrashRecovery(input: EngineerCrashPlanInput): Engine
     to,
     crashes,
     threshold,
+    windowMs,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Stalled clean exit (#0888)
+// ---------------------------------------------------------------------------
+
+/**
+ * Automatic resumes for one task inside the resume window before the watchdog
+ * surfaces it for a human. Three is enough for a genuinely finished turn that
+ * missed its signal line, and small enough that a confused engineer cannot
+ * burn wall-clock overnight.
+ */
+export const DEFAULT_ENGINEER_STALL_RESUME_LIMIT = 3;
+
+/** Window the clean-exit resume count is measured in (30 minutes). */
+export const DEFAULT_ENGINEER_STALL_RESUME_WINDOW_MS = 30 * 60 * 1000;
+
+/** Never let a runaway task grow the frontmatter without bound. */
+const MAX_STALL_RESUME_RECORDS = 50;
+
+/** Extra key holding the bounded clean-exit resume history (JSON string). */
+export const ENGINEER_STALL_RESUME_LOG_KEY = "engineer_stall_resume_log";
+
+/** One automatic resume of a cleanly-ended turn. */
+export interface EngineerStallResumeRecord {
+  /** ISO timestamp of the resume. */
+  at: string;
+  /** Why the watchdog resumed: a clean exit or a deferred handoff. */
+  reason: "clean-exit-without-handoff" | "handoff-deferred";
+}
+
+/** Parse the persisted resume log, dropping malformed rows (fail-soft). */
+export function parseEngineerStallResumeLog(value: unknown): EngineerStallResumeRecord[] {
+  let raw: unknown = value;
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(raw)) return [];
+  const out: EngineerStallResumeRecord[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const row = entry as Record<string, unknown>;
+    const at = nonEmpty(row.at);
+    if (!at || parseIso(at) === null) continue;
+    out.push({
+      at,
+      reason: row.reason === "handoff-deferred" ? "handoff-deferred" : "clean-exit-without-handoff",
+    });
+  }
+  return out.slice(-MAX_STALL_RESUME_RECORDS);
+}
+
+/** Serialize the resume log for the task frontmatter. */
+export function serializeEngineerStallResumeLog(
+  records: readonly EngineerStallResumeRecord[],
+): string {
+  return JSON.stringify(records.slice(-MAX_STALL_RESUME_RECORDS));
+}
+
+/**
+ * Append one resume and prune records older than the window. Pruning at write
+ * time keeps the frontmatter bounded even across long-lived tasks.
+ */
+export function recordEngineerStallResume(
+  records: readonly EngineerStallResumeRecord[],
+  atIso: string,
+  reason: EngineerStallResumeRecord["reason"],
+  windowMs: number,
+): EngineerStallResumeRecord[] {
+  const at = parseIso(atIso) ?? Date.now();
+  const window = Number.isFinite(windowMs) ? Math.max(0, windowMs) : 0;
+  const cutoff = at - window;
+  const kept = records.filter((record) => (parseIso(record.at) ?? 0) >= cutoff);
+  kept.push({ at: new Date(at).toISOString(), reason });
+  return kept.slice(-MAX_STALL_RESUME_RECORDS);
+}
+
+/** Resumes inside the window ending at `nowIso`. */
+export function countEngineerStallResumes(
+  records: readonly EngineerStallResumeRecord[],
+  nowIso: string,
+  windowMs: number,
+): number {
+  const now = parseIso(nowIso) ?? Date.now();
+  const window = Number.isFinite(windowMs) ? Math.max(0, windowMs) : 0;
+  const cutoff = now - window;
+  return records.filter((record) => (parseIso(record.at) ?? 0) >= cutoff).length;
+}
+
+/**
+ * Activity-log phrase the runner writes the moment a clean engineer turn ends
+ * without a handoff. The watchdog scopes it to the current `→active` episode.
+ */
+export const ENGINEER_CLEAN_EXIT_ACTIVITY = "engineer turn ended without a handoff";
+
+/**
+ * Activity-log phrase the runner writes when a person (or the server acting on
+ * a person's request) deliberately stops a live turn. A stop is never a stall
+ * to resume: the human wanted it to end, so the watchdog must leave it alone.
+ */
+export const ENGINEER_STOPPED_ACTIVITY = "engineer stopped by request";
+
+/** Activity-log phrase the runner writes when it had to defer a handoff. */
+export const HANDOFF_DEFERRED_ACTIVITY_RE = /handoff_deferred:\s*(\d+)\s+queued message/;
+
+/** A persisted crash/interrupted-turn line for the same episode. */
+const CRASHED_ACTIVITY_RE = /(?:handoff failed · |agent exited with an error\b)/;
+
+/** The most recent `status …→active` transition line in an Activity log. */
+const ACTIVE_TRANSITION_RE = /^- (\d{4}-\d{2}-\d{2}T\S+) · status [a-z_]+→active\b/;
+
+export interface EngineerCleanExitSignal {
+  /** True when the last turn in this active episode ended cleanly without a handoff. */
+  clean: boolean;
+  /** How many queued messages a deferred handoff was waiting for (0 when none). */
+  deferred: number;
+  /** True when the last turn in this episode was deliberately stopped by a person. */
+  stoppedByPerson: boolean;
+}
+
+/**
+ * Read the durable clean-exit signal from a task's Activity log.
+ *
+ * Only the most recent relevant event in the current `→active` episode counts:
+ * the runner records `engineer turn ended without a handoff` on a clean turn
+ * that never requested review (including one whose handoff was deferred by a
+ * queued message), `agent exited with an error`/`handoff failed` on a crash,
+ * and `engineer stopped by request` when a person ended the turn. The last one
+ * wins, so a later clean exit after a crash is resumable again and a stop after
+ * a clean exit is never resumed. Scoping to the most recent `→active`
+ * transition keeps a resolved earlier episode from masking a fresh stall.
+ */
+export function readEngineerCleanExitSignal(body: string): EngineerCleanExitSignal {
+  const lines = body.split("\n");
+  const activityIndex = lines.findIndex((line) => line.trim() === "## Activity");
+  if (activityIndex === -1) return { clean: false, deferred: 0, stoppedByPerson: false };
+
+  for (let i = lines.length - 1; i > activityIndex; i--) {
+    const line = lines[i];
+    if (ACTIVE_TRANSITION_RE.test(line)) break;
+    if (line.includes(ENGINEER_STOPPED_ACTIVITY)) {
+      return { clean: false, deferred: 0, stoppedByPerson: true };
+    }
+    if (CRASHED_ACTIVITY_RE.test(line)) {
+      return { clean: false, deferred: 0, stoppedByPerson: false };
+    }
+    const deferredMatch = line.match(HANDOFF_DEFERRED_ACTIVITY_RE);
+    if (deferredMatch) {
+      // A deferred handoff is written at the end of a clean turn, so it is
+      // itself proof the turn ended cleanly (and tells us what to read).
+      return {
+        clean: true,
+        deferred: Number(deferredMatch[1]) || 1,
+        stoppedByPerson: false,
+      };
+    }
+    if (line.includes(ENGINEER_CLEAN_EXIT_ACTIVITY)) {
+      return { clean: true, deferred: 0, stoppedByPerson: false };
+    }
+  }
+  return { clean: false, deferred: 0, stoppedByPerson: false };
+}
+
+export type EngineerTurnExitKind = "clean" | "crash" | "unknown";
+
+export type EngineerStallPlan =
+  | {
+      action: "resume";
+      reason: EngineerStallResumeRecord["reason"];
+      queuedMessages: number;
+      resumes: number;
+      limit: number;
+      windowMs: number;
+    }
+  | {
+      action: "surface";
+      reason: "resume-limit";
+      resumes: number;
+      limit: number;
+      windowMs: number;
+    }
+  | { action: "skip"; reason: string };
+
+export interface EngineerStallPlanInput {
+  status: string;
+  isArchived?: boolean;
+  needsInput?: boolean;
+  /** The task is assigned to a human — never resume an AI turn for it. */
+  assignedToHuman?: boolean;
+  /** A person explicitly paused the task (`runner.isPaused`). */
+  paused?: boolean;
+  /** A person or the server deliberately stopped the turn. */
+  stoppedByPerson?: boolean;
+  /** A turn (or a queued spawn) is live. */
+  running?: boolean;
+  handoffInFlight?: boolean;
+  pendingHandoff?: boolean;
+  /** Move to done is running for this task. */
+  closingOut?: boolean;
+  /** The turn asked for its own handoff; the handoff owns the next step. */
+  handoffRequested?: boolean;
+  /** How the last engineer turn ended. Only a clean exit is ours to resume. */
+  exitKind: EngineerTurnExitKind;
+  /** The last handoff was deferred because a queued message had to be read. */
+  handoffDeferred?: boolean;
+  /** Queued messages the deferred handoff was waiting for. */
+  queuedMessages?: number;
+  /** A handoff completed since the branch's last commit — the work is done. */
+  handoffSinceLastCommit?: boolean;
+  resumes: readonly EngineerStallResumeRecord[];
+  now: number;
+  limit?: number;
+  windowMs?: number;
+}
+
+/**
+ * Decide whether a silently-ended `active` task should be resumed.
+ *
+ * Fail-closed on every human/ownership signal, and only for a clean exit:
+ * a crashed turn belongs to `planEngineerCrashRecovery`. Below the resume cap
+ * the same engineer is resumed with the normal resume preamble; at the cap the
+ * watchdog surfaces `needs_input` instead of nudging forever.
+ */
+export function planEngineerStallResume(input: EngineerStallPlanInput): EngineerStallPlan {
+  const limit = Number.isFinite(input.limit)
+    ? Math.max(1, Math.floor(input.limit as number))
+    : DEFAULT_ENGINEER_STALL_RESUME_LIMIT;
+  const windowMs = Number.isFinite(input.windowMs)
+    ? Math.max(MIN_ENGINEER_CRASH_FAILOVER_WINDOW_MS, input.windowMs as number)
+    : DEFAULT_ENGINEER_STALL_RESUME_WINDOW_MS;
+
+  if (input.status !== "active") return { action: "skip", reason: "task is not active" };
+  if (input.isArchived) return { action: "skip", reason: "task is archived" };
+  if (input.needsInput)
+    return { action: "skip", reason: "the task is already flagged for a human" };
+  if (input.assignedToHuman) return { action: "skip", reason: "the task is assigned to a human" };
+  if (input.paused) return { action: "skip", reason: "the engineer is paused" };
+  if (input.stoppedByPerson) return { action: "skip", reason: "a person stopped the engineer" };
+  if (input.running) return { action: "skip", reason: "a turn is already running" };
+  if (input.handoffInFlight || input.pendingHandoff) {
+    return { action: "skip", reason: "a handoff already owns the task" };
+  }
+  if (input.closingOut) return { action: "skip", reason: "the task is being closed out" };
+  if (input.handoffRequested)
+    return { action: "skip", reason: "the engineer requested its own handoff" };
+  if (input.exitKind !== "clean") {
+    return {
+      action: "skip",
+      reason:
+        input.exitKind === "crash"
+          ? "the last turn crashed — crash recovery owns it"
+          : "no clean-exit signal for the current turn",
+    };
+  }
+  if (input.handoffSinceLastCommit) {
+    return { action: "skip", reason: "the work was handed off since the last commit" };
+  }
+
+  const nowIso = new Date(input.now).toISOString();
+  const resumes = countEngineerStallResumes(input.resumes, nowIso, windowMs);
+  if (resumes >= limit) {
+    return { action: "surface", reason: "resume-limit", resumes, limit, windowMs };
+  }
+  return {
+    action: "resume",
+    reason: input.handoffDeferred ? "handoff-deferred" : "clean-exit-without-handoff",
+    queuedMessages: Math.max(0, input.queuedMessages ?? 0),
+    resumes,
+    limit,
     windowMs,
   };
 }
