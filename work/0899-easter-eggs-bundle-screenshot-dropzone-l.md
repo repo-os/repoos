@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T18:44:22Z"
+updated_at: "2026-10-21T18:44:56Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -65,34 +65,34 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 ```json
 [
 {
-  "label": "New input dropzone light",
-  "target": "default",
-  "route": "/inputs?input=new",
-  "highlight": ".field .shot-dropzone",
-  "theme": "light"
+"label": "New input dropzone light",
+"target": "default",
+"route": "/inputs?input=new",
+"highlight": ".field .shot-dropzone",
+"theme": "light"
 },
 {
-  "label": "New input dropzone dark narrow",
-  "target": "default",
-  "route": "/inputs?input=new",
-  "highlight": ".field .shot-dropzone",
-  "theme": "dark",
-  "viewportWidth": 390
+"label": "New input dropzone dark narrow",
+"target": "default",
+"route": "/inputs?input=new",
+"highlight": ".field .shot-dropzone",
+"theme": "dark",
+"viewportWidth": 390
 },
 {
-  "label": "New task dropzone light",
-  "target": "default",
-  "route": "/work?task=new",
-  "highlight": ".field .shot-dropzone",
-  "theme": "light"
+"label": "New task dropzone light",
+"target": "default",
+"route": "/work?task=new",
+"highlight": ".field .shot-dropzone",
+"theme": "light"
 },
 {
-  "label": "New task dropzone dark narrow",
-  "target": "default",
-  "route": "/work?task=new",
-  "highlight": ".field .shot-dropzone",
-  "theme": "dark",
-  "viewportWidth": 390
+"label": "New task dropzone dark narrow",
+"target": "default",
+"route": "/work?task=new",
+"highlight": ".field .shot-dropzone",
+"theme": "dark",
+"viewportWidth": 390
 }
 ]
 ```
