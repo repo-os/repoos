@@ -14,7 +14,7 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T04:48:13Z"
+updated_at: "2026-10-21T04:49:42Z"
 last_close_out_gate_ms: 1040696
 last_close_out_gate_at: "2026-10-21T04:48:13.883Z"
 review_passes: 2
@@ -169,4 +169,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T04:27:28Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-21T04:28:33Z · note: review pass 2: good to go
 - 2026-10-21T04:48:13Z · close-out gate completed in 1041s
-
+- 2026-10-21T04:49:42Z · status done→done, release:success
