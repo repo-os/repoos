@@ -11,7 +11,7 @@ branch: feat/repoos-hub-offscreen-png-snapshots-for-l
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T07:08:04Z"
-updated_at: "2026-10-21T11:59:32Z"
+updated_at: "2026-10-21T12:09:37Z"
 ---
 ## Problem
 RepoOS Hub (macos/RepoOSHub) has no way to capture images of its views for review. Divot already renders its popovers offscreen to PNG in tests and collects them as handoff evidence. Hub has no equivalent, so reviewers can't see Hub layout changes without running the app.
@@ -33,6 +33,9 @@ RepoOS Hub (macos/RepoOSHub) has no way to capture images of its views for revie
 - Hub sources are under macos/RepoOSHub; its tests are under macos/RepoOSHubTests.
 - Do not add a runtime dependency. Snapshot code belongs in the test target only.
 
+## Snapshot limitations
+Offscreen snapshots render the view's content into a bitmap — not how a real window sizes itself, its titlebar/toolbar/traffic-light chrome, safe areas, or full-screen geometry. They are the right evidence for content layout (sidebar rows, the summary popover, the Tabs-mode strip's own layout) and the wrong evidence for window-frame questions; use an XCUITest that presents the real window and attaches an XCTAttachment screenshot for those. The Hub suite never shows or orders a window front: the sidebar's AppKit-backed List uses a borderless offscreen host window only so its rows lay out. See docs/macos-hub-snapshots.md.
+
 ## Activity
 
 - 2026-10-21T07:08:04Z · created · njachowski@gmail.com
@@ -40,3 +43,4 @@ RepoOS Hub (macos/RepoOSHub) has no way to capture images of its views for revie
 - 2026-10-21T08:38:06Z · body: Desired UX (added 1, removed 1)
 - 2026-10-21T11:59:30Z · cli_override, model_override
 - 2026-10-21T11:59:32Z · status ready→active, branch
+- 2026-10-21T12:09:37Z · body: Snapshot limitations (added)
