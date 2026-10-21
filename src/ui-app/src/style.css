@@ -6986,6 +6986,14 @@
   border-color: var(--cyan);
   color: var(--txt);
 }
+/* The tab stop is the transparent file input covering the zone; paint its
+   focus ring on the visible box (the input's own outline is under opacity 0). */
+.shot-dropzone:focus-within {
+  border-color: var(--cyan);
+  color: var(--txt);
+  outline: 2px solid var(--cyan);
+  outline-offset: 1px;
+}
 .shot-dropzone.over {
   border-color: var(--cyan);
   background: var(--cyan-dim);
@@ -14431,7 +14439,8 @@
   color: var(--txt-dim);
 }
 
-.ai-chat-compose .ai-chat-attach:hover:not([aria-disabled="true"]) {
+.ai-chat-compose .ai-chat-attach:hover:not([aria-disabled="true"]),
+.ai-chat-compose .ai-chat-attach:focus-within:not([aria-disabled="true"]) {
   border-color: var(--cyan);
   color: var(--cyan);
 }
