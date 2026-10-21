@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-21T07:07:44Z"
+review_passes: 1
 id: "0875"
 title: Add compact Chrome-style server tabs to RepoOS Hub
 type: feature
@@ -13,7 +15,6 @@ model_override: grok-4.7-low
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-20T13:31:37Z"
-updated_at: "2026-10-21T07:07:43Z"
 ---
 ## Problem
 
@@ -384,3 +385,4 @@ Test both layouts, switching between them, narrow windows, many servers, and nat
 - 2026-10-21T07:06:28Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (8471a77e4) during finalization (#0734)
 - 2026-10-21T07:06:30Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (8471a77e4) during finalization (#0734)
 - 2026-10-21T07:07:43Z · note: review pass 1: needs some work
+
