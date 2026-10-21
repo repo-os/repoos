@@ -138,3 +138,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T18:27:09Z · note: handoff requested (ui-review)
 - 2026-10-21T18:36:06Z · status active→review
 - 2026-10-21T18:36:06Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
+- 2026-10-21T18:36:06Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (667edb3e2) during finalization (#0734)
