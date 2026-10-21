@@ -2,7 +2,7 @@
 id: "0874"
 title: Offload repoos shot to a runner
 type: feature
-status: review
+status: active
 priority: p3
 area: [server, core]
 depends_on: ["0854"]
