@@ -3,9 +3,6 @@ id: "0897"
 title: "Show why a close-out/validation is waiting: queue position, what runs ahead on each runner"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "✗ Server finalization stopped at check: remote validation failed: test failure: tests/agent-cta.test.ts > shared agent prompt call to action > uses the canonical starter prompt verbatim, tests/agent-cta.test.ts > shared agent prompt call to action > derives the compact preview from the opening of the prompt on thinkpad — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried."
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/show-why-a-close-out-validation-is-waiti
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T12:39:47Z"
-updated_at: "2026-10-21T18:09:46Z"
+updated_at: "2026-10-21T18:10:47Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 42ac6a27980d8a4baafffffc03e470389ee9d5df
 dev_error_count: 3
@@ -150,3 +147,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T18:07:24Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: remote validation failed: test failure: tests/agent-cta.test.ts > shared agent prompt call to action > uses the canonical starter prompt verbatim, tests/agent-cta.test.ts > shared agent prompt call to action > derives the compact preview from the opening of the prompt on thinkpad — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.
 - 2026-10-21T18:07:24Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ Server finalization stopped at check: remote validation failed: test failure: tests/agent-cta.test.ts > shared agent prompt call to action > uses the canonical starter prompt verbatim, tests/agent-cta.test.ts > shared agent prompt call…
 - 2026-10-21T18:09:46Z · body
+- 2026-10-21T18:10:47Z · needs_input
