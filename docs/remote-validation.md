@@ -115,10 +115,14 @@ misses preserve the local handoff failure; automatic misses remain warnings. A
 partial runner run imports every shot it did produce and reports the failure, so
 earlier evidence is never discarded. The setting defaults to `local` until a
 runner image and artifact round trip have passed a real end-to-end proof.
-**Scope:** only the automatic handoff capture and UI verification move to a
-runner. Manual `repoos shot` / `repoos verify` and the interactive Preview
-always run locally on the control plane; offloading the CLI is tracked
-separately as #0874.
+**Scope:** the automatic handoff capture, UI verification, and `repoos shot`'s
+web captures move to a runner. `repoos shot` posts each entry to the server's
+single-shot capture route and applies the same policy (runner preference,
+visible local fallback, structured `runner-only` failure); an arbitrary absolute
+URL or an explicit `--viewport`/`--wait`/`--full-page` stays local with a note
+because the single-shot path cannot reproduce it (`runner-only` reports the
+structured error instead). `repoos verify` refreshes through the server and uses
+the same policy. Only the interactive Preview button remains local by design.
 
 The `scripts/remote-runner/capture-browser.ts` worker is the runner-side entry
 point. It reuses `runAutoShotCapture` and `runUiHandoffGate` rather than
