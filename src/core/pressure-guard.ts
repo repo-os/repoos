@@ -253,6 +253,10 @@ export async function waitForPressureRelief(
     probe?: MemoryPressureProbe;
   } = {},
 ): Promise<void> {
+  // The switch means "do not hold new work", and this is a hold. Without this
+  // early return, `enabled = false` silently stopped nothing here: the wait
+  // loop read `pressureSnapshot`, which ignores the switch (#0905).
+  if (!pressureGuardEnabled(config)) return;
   const poll = Math.max(500, opts.pollMs ?? 2000);
   while (true) {
     const snapshot = pressureSnapshot(config, opts.probe);
