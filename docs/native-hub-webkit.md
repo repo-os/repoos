@@ -69,6 +69,37 @@ Server pages receive a stock `WKWebViewConfiguration`:
 `IsolatedServerWebViewFactory` and `PrivilegeBoundaryAudit` enforce the
 no-injection invariant at construction time; unit tests assert it on every build.
 
+### Repo color preference
+
+The repo-name pill in the web UI can be tinted with a per-browser color
+(`repoos.repoColor.<repoName>` in `localStorage`, #0257). The native sidebar
+shows the same color as a bar on the server row. Because the Hub has no
+web-to-native bridge, the two sides share a first-party cookie instead:
+
+- The web UI writes `repoos_repo_color` in the server's own origin
+  (`src/ui-app/src/repo-color.ts`). Its value is
+  `<repo-name>:<#RRGGBB>`; an empty color is an explicit **Default** choice.
+- The Hub reads only that named cookie from the server's isolated
+  `WKWebsiteDataStore` and observes cookie changes, so picking a swatch updates
+  the sidebar immediately and the choice survives reload and relaunch.
+- Legacy `localStorage` values are migrated into the cookie the next time the
+  web UI loads, so colors picked before this existed still reach the sidebar.
+
+The Hub never reads the server's session cookie and still injects no script or
+message handler. The native registry's `accentColorHex` is a display cache that
+is reconciled from this cookie.
+
+The old bridge read `localStorage` with a one-shot `evaluateJavaScript` on page
+finish or when leaving a server. A color picked while the page stayed open
+therefore never reached the sidebar, since nothing observed the write, and the
+registry's display cache was only refreshed by that one navigation-driven read.
+The cookie fixes both sides: `WKHTTPCookieStore` observers plus a low-frequency
+poll for the active server refresh the row as soon as the swatch is picked, and
+the cookie outlives a relaunch because it is stored in the per-server
+identifier-backed data store. The reader also ignores a cookie whose domain is
+not the entry's current host, so editing a server URL cannot inherit the
+previous origin's color.
+
 ## Navigation policy
 
 `ServerNavigationPolicy` (pure Swift, unit-tested) governs each navigation:
