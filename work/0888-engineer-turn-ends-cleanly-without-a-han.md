@@ -3,9 +3,6 @@ id: "0888"
 title: "Engineer turn ends cleanly without a handoff: resume it automatically instead of waiting for a CTO nudge"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p1
 area: server
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/engineer-turn-ends-cleanly-without-a-han
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T21:57:26Z"
-updated_at: "2026-10-21T00:16:24Z"
+updated_at: "2026-10-21T00:39:02Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T00:05:32.519Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -53,3 +50,4 @@ Relevant code: src/server/agents.ts (`cleanup()`, `deliverQueuedMessages`, crash
 - 2026-10-21T00:12:25Z · body
 - 2026-10-21T00:15:56Z · body
 - 2026-10-21T00:16:24Z · body
+- 2026-10-21T00:39:02Z · needs_input
