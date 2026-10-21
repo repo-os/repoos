@@ -49,7 +49,7 @@ export type TelegramAuthorizedHandler = (
   update: TelegramUpdate,
   actor: TelegramActor,
   meta?: TelegramAuthorizedMeta,
-) => void | Promise<void>;
+) => void | boolean | Promise<void | boolean>;
 
 export interface TelegramIntakeOptions {
   root: string;
@@ -276,13 +276,14 @@ export function createTelegramIntakeHandler(options: TelegramIntakeOptions): Tel
       }
     } else if (update.callbackQuery) {
       store.logAudit(
-        TELEGRAM_AUDIT.commandInvoked,
+        TELEGRAM_AUDIT.callbackReceived,
         actor.email,
         actor.email,
         JSON.stringify({
-          command: "callback_query",
           chatId,
-          data: update.callbackQuery.data,
+          chatType: update.callbackQuery.chatType,
+          // The payload itself is not recorded: it is a bearer token until it
+          // is consumed, and the handler's own audit names the action.
         }),
       );
     } else {

@@ -13,6 +13,7 @@
  */
 import type { RepoOSConfig } from "../../core/types.js";
 import { projectDisplayName } from "../../core/config.js";
+import { defaultTaskArea, effectiveAreaNames } from "../../core/areas.js";
 import { LocalTelegramProvider } from "./provider.js";
 import { TelegramCredentialStore } from "./store.js";
 import {
@@ -22,6 +23,7 @@ import {
 } from "./intake.js";
 import { createTelegramCommandHandler } from "./commands.js";
 import { createTelegramAgentChatHandler, type TelegramAgentChatOptions } from "./agent-chat.js";
+import { createTelegramTaskActionsHandler, type TelegramTaskActionOps } from "./task-actions.js";
 import type { Logger } from "../../core/logger.js";
 import type { LiveIndex } from "../live-index.js";
 import type { AgentRunner } from "../agents.js";
@@ -152,8 +154,8 @@ function agentChatOptions(
     index,
     runner,
     logger,
-    reply: async (chatId, text) => {
-      await getTelegramProvider(config).sendMessage(chatId, text);
+    reply: async (chatId, text, options) => {
+      await getTelegramProvider(config).sendMessage(chatId, text, options);
     },
   };
 }
@@ -167,6 +169,14 @@ function agentChatOptions(
  */
 export interface TelegramBootOptions extends Partial<TelegramCommandWiring> {
   onAuthorized?: TelegramAuthorizedHandler;
+  /**
+   * Repository write operations for `/newtask` and lifecycle buttons (#0543).
+   * Supplied by the server because they reuse the HTTP routes' orchestration
+   * (`repoos.createTask`, start/pause, review handoff, close-out) rather than
+   * forking it. Absent in adapter-only embeddings: reads and `/msg` keep
+   * working and `/newtask` honestly falls back to the unknown-command help.
+   */
+  taskActions?: { ops: TelegramTaskActionOps };
 }
 
 /**
@@ -186,7 +196,11 @@ export function chainedOnAuthorized(
   return async (update, actor, meta) => {
     for (const handler of chain) {
       try {
-        await handler(update, actor, meta);
+        // A handler that owns the update returns `true`; stop the chain so a
+        // plain-text answer to a creation Edit prompt never also starts a paid
+        // guide turn (#0543).
+        const consumed = await handler(update, actor, meta);
+        if (consumed === true) return;
       } catch (e) {
         console.error(
           `[telegram] authorized handler failed: ${e instanceof Error ? e.message : String(e)}`,
@@ -215,6 +229,13 @@ export async function bootstrapTelegramAtBoot(
 ): Promise<{ resumed: boolean; detail?: string }> {
   const provider = getTelegramProvider(config);
   let commandHandler: TelegramAuthorizedHandler | undefined;
+  const send = async (
+    chatId: number,
+    text: string,
+    sendOpts?: Parameters<LocalTelegramProvider["sendMessage"]>[2],
+  ): Promise<void> => {
+    await provider.sendMessage(chatId, text, sendOpts);
+  };
   if (options.index && options.runner && options.reviews) {
     // `/msg` shares the commands' single authorized-entry point: the command
     // handler dispatches to it before the unknown-command fallback, so reads
@@ -231,13 +252,36 @@ export async function bootstrapTelegramAtBoot(
       runner: options.runner,
       reviews: options.reviews,
       ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}),
-      send: async (chatId, text, sendOpts) => {
-        await provider.sendMessage(chatId, text, sendOpts);
-      },
+      send,
       ...(agentChat ? { agentChat } : {}),
+      ...(options.taskActions ? { taskActions: true } : {}),
     });
   }
-  const onAuthorized = chainedOnAuthorized(commandHandler, options.onAuthorized);
+  const areaVocabulary = effectiveAreaNames(config);
+  const taskActionsHandler = options.taskActions
+    ? createTelegramTaskActionsHandler({
+        config,
+        authSessionSecret: config.auth?.sessionSecret,
+        repositoryName: projectDisplayName(config.root),
+        areaVocabulary,
+        defaultArea: defaultTaskArea(areaVocabulary),
+        ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}),
+        index: options.index ?? {
+          getTask: () => null,
+        },
+        ops: options.taskActions.ops,
+        send,
+        answerCallback: async (id, text) => {
+          await provider.answerCallback(id, text);
+        },
+        logger: options.agentChat?.logger,
+      })
+    : undefined;
+  const onAuthorized = chainedOnAuthorized(
+    commandHandler,
+    taskActionsHandler,
+    options.onAuthorized,
+  );
   provider.onUpdate(
     createTelegramIntakeHandler(
       telegramIntakeOptionsFromConfig(config, {
