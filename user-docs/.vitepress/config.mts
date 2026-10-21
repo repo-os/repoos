@@ -73,7 +73,6 @@ export default defineConfig({
   },
   themeConfig: {
     siteTitle: "RepoOS",
-    logo: "/favicon.svg",
     nav: [
       { text: "Get started", link: "/getting-started" },
       { text: "Agents", link: "/agents" },
