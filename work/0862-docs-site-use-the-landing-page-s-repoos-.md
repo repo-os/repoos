@@ -17,7 +17,7 @@ branch: feat/docs-site-use-the-landing-page-s-repoos-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-21T04:13:34Z"
+updated_at: "2026-10-21T04:13:51Z"
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:18.973Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:08:12.298Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:09:06.817Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-21T04:10:13.967Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
@@ -47,65 +47,52 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 ```json
 [
 {
-"label": "Docs header logo — Gruvbox dark",
-"target": "Docs site",
-"route": "/?theme=gruvbox&appearance=dark",
-"highlight": ".VPNavBarTitle",
-"assert": [
-{
-"selector": ".docs-logo",
-"label": "Inline theme-aware logo in the docs header"
-}
-]
+  "label": "Docs header logo — Gruvbox dark",
+  "target": "Docs site",
+  "route": "/?theme=gruvbox&appearance=dark",
+  "highlight": ".VPNavBarTitle",
+  "assert": [
+    {
+      "selector": ".docs-logo",
+      "label": "Inline theme-aware logo in the docs header"
+    }
+  ]
 },
 {
-"label": "Docs header logo — Gruvbox light",
-"target": "Docs site",
-"route": "/?theme=gruvbox&appearance=light",
-"highlight": ".VPNavBarTitle",
-"assert": [
-{
-"selector": ".docs-logo",
-"label": "Inline theme-aware logo in the docs header"
-}
-]
+  "label": "Docs header logo — Gruvbox light",
+  "target": "Docs site",
+  "route": "/?theme=gruvbox&appearance=light",
+  "highlight": ".VPNavBarTitle",
+  "assert": [
+    {
+      "selector": ".docs-logo",
+      "label": "Inline theme-aware logo in the docs header"
+    }
+  ]
 },
 {
-"label": "Docs header logo on a doc page — Classic light",
-"target": "Docs site",
-"route": "/getting-started?theme=classic&appearance=light",
-"highlight": ".VPNavBarTitle",
-"assert": [
-{
-"selector": ".docs-logo",
-"label": "Inline theme-aware logo in the docs header"
-}
-]
+  "label": "Docs header logo on a doc page — Classic light",
+  "target": "Docs site",
+  "route": "/getting-started?theme=classic&appearance=light",
+  "highlight": ".VPNavBarTitle",
+  "assert": [
+    {
+      "selector": ".docs-logo",
+      "label": "Inline theme-aware logo in the docs header"
+    }
+  ]
 },
 {
-"label": "Docs header logo on a doc page — Classic dark",
-"target": "Docs site",
-"route": "/getting-started?theme=classic&appearance=dark",
-"highlight": ".VPNavBarTitle",
-"assert": [
-{
-"selector": ".docs-logo",
-"label": "Inline theme-aware logo in the docs header"
-}
-]
-},
-{
-"label": "Docs mobile header — Gruvbox dark",
-"target": "Docs site",
-"route": "/?theme=gruvbox&appearance=dark",
-"highlight": ".VPNavBarTitle",
-"assert": [
-{
-"selector": ".docs-logo",
-"label": "Inline theme-aware logo in the docs header"
-}
-],
-"viewportWidth": 390
+  "label": "Docs header logo on a doc page — Classic dark",
+  "target": "Docs site",
+  "route": "/getting-started?theme=classic&appearance=dark",
+  "highlight": ".VPNavBarTitle",
+  "assert": [
+    {
+      "selector": ".docs-logo",
+      "label": "Inline theme-aware logo in the docs header"
+    }
+  ]
 }
 ]
 ```
@@ -141,3 +128,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T04:09:06Z · engineer crash recovery: switched opencode + opencode-go/deepseek-v4.1-flash → opencode + opencode-go/glm-5.3-flash after 3/3 crashes in 30m · the agent process exited with an error — open the task to see the full output
 - 2026-10-21T04:10:13Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-21T04:13:34Z · screenshots
+- 2026-10-21T04:13:51Z · body
