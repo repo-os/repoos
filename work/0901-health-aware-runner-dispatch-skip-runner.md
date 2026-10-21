@@ -12,7 +12,6 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T14:21:05Z"
 updated_at: "2026-10-21T17:52:08Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T17:50:23.032Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Settings: runner memory-health switch (target \"default\"): highlight #setting-remoteValidation.healthCheck matched nothing on /settings?section=remote-validation (http://127.0.0.1:64582/settings?section=remote-validation)"
 ---
 ## Problem
@@ -81,3 +80,4 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 - 2026-10-21T17:50:40Z · body
 - 2026-10-21T17:50:48Z · body
 - 2026-10-21T17:52:08Z · body
+
