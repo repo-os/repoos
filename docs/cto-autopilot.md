@@ -169,8 +169,6 @@ minutes; minimums 30s and 1min). Invalid values fall back to the defaults.
 other automatic CTO action. The reminder text names the handoff command and
 says plainly that it does not move the task itself.
 
-
-
 Anything the policy cannot decide — a new failure shape, a disputed reviewer
 finding, a hotfix on `main`, config/host/release changes — stays manual and shows
 up in the **needs-a-decision digest** (`GET /api/decisions`, `repoos decisions`
