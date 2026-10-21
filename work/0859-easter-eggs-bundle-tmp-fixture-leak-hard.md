@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T04:59:28Z"
+updated_at: "2026-10-21T05:23:03Z"
 dev_error_count: 3
 ---
 ## Items
@@ -167,3 +167,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T04:52:06Z · message_delivered: 6 message(s)
 - 2026-10-21T04:58:56Z · body
 - 2026-10-21T04:59:28Z · body
+- 2026-10-21T05:23:03Z · message_queued at 2026-10-21T05:23:03.486Z
