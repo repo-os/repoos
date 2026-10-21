@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 279520
+last_close_out_gate_at: "2026-10-21T06:03:38.801Z"
 id: "0862"
 title: "Docs site: use the landing page's RepoOS logo (theme-aware, no extra border)"
 type: chore
@@ -11,7 +13,7 @@ branch: feat/docs-site-use-the-landing-page-s-repoos-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-21T06:03:28Z"
+updated_at: "2026-10-21T06:03:38Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-21T05:03:23.727Z: repoos check failed: vite v8.2.0 building client environment for production..."
 dev_error_count: 4
@@ -124,3 +126,5 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T05:57:04Z · note: shots: skipped — 28 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-21T05:58:44Z · note: review pass 1: good to go
 - 2026-10-21T06:03:28Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-21T06:03:38Z · close-out gate completed in 280s
+
