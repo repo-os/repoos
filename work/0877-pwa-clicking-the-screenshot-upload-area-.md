@@ -17,7 +17,7 @@ branch: feat/pwa-clicking-the-screenshot-upload-area-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T13:54:39Z"
-updated_at: "2026-10-21T01:25:05Z"
+updated_at: "2026-10-21T01:25:58Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:05:24.436Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -42,6 +42,39 @@ Clicking (or keyboard-activating) any screenshot upload area in the PWA opens th
 - Reproduce first, then fix. Component styles live in `src/ui-app/src/style.css` (`shot-dropzone`).
 - The reporter's screenshot (the New task panel with the dashed "Click to add screenshots" area) could not be attached automatically; ask the human for the file if a visual is needed.
 
+## Fix notes
+Cause: the three failing controls opened their hidden file input with a synthetic
+`input.click()` from a pointer handler. An installed PWA can ignore that
+activation; the upload controls that already worked (Settings import/export, the
+bug-report screenshots) are plain `<label>`s. Every screenshot picker now uses
+native activation instead: the input covers the dropzone (a real click lands on
+it) inside a label, with label activation as the fallback.
+
+Audited call sites (2026-10-21):
+
+| Control | File | Wiring |
+| --- | --- | --- |
+| New task dropzone | `src/ui-app/src/components/TaskDrawer.vue` | shared `ShotDropzone.vue` (fixed) |
+| New input dropzone | `src/ui-app/src/components/NewInputPanel.vue` | shared `ShotDropzone.vue` (fixed) |
+| PM chat attach (task and story panels) | `src/ui-app/src/components/PmChatSurface.vue` | label-wrapped input (fixed) |
+| Settings import/export | `src/ui-app/src/components/SettingsImportExport.vue` | already label-wrapped (unchanged) |
+| Settings bug-report screenshots | `src/ui-app/src/views/SettingsView.vue` | already `label for=` (unchanged) |
+| New story | `src/ui-app/src/components/NewStoryPanel.vue` | no file input of its own; its PM chat uses `PmChatSurface` |
+| New doc / New skill upload | `NewDocPanel.vue`, `NewSkillPanel.vue` | visible `<input type=file>`, no hidden trigger (unchanged) |
+
+Keyboard: Enter and Space on the dropzone/attach control open the picker.
+Drop behaviour is unchanged — the host panels still own drag and drop.
+
+Browser limitation: Chrome’s native file picker follows the OS/browser
+appearance, not page CSS, so the light/dark mismatch reported for Chrome is not
+fixable with `color-scheme` on the input or its container. Recorded here as a
+browser limitation.
+
+Verification: `shot-dropzone.test.ts` (component wiring plus the call-site
+audit) and `shot-input-visibility.test.ts`. The installed PWA itself cannot be
+launched from this runner; the evidence here is the jsdom wiring test and the
+repo’s already-working label-based upload controls.
+
 ## Activity
 
 - 2026-10-20T13:54:39Z · created · njachowski@gmail.com
@@ -57,3 +90,4 @@ Clicking (or keyboard-activating) any screenshot upload area in the PWA opens th
 - 2026-10-21T01:20:15Z · body
 - 2026-10-21T01:23:02Z · body
 - 2026-10-21T01:25:05Z · body
+- 2026-10-21T01:25:58Z · body: Fix notes (added)
