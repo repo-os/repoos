@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T15:19:34Z"
+updated_at: "2026-10-21T15:20:41Z"
 ---
 ## Items
 - [ ] **E1 · Screenshot dropzone wraps to two lines** (web) — after #0877 made `ShotDropzone` a `<label>`, the global `.field label` rule leaks into it. Source: user report 2026-10-21.
@@ -63,38 +63,16 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 ```json
 [
 {
-"label": "New task: screenshot dropzone row layout",
-"target": "default",
-"route": "/",
-"highlight": ".field .shot-dropzone",
-"steps": [
-{
-"click": ".new-btn"
+  "label": "New input screenshot dropzone single-row layout",
+  "target": "default",
+  "route": "/inputs?input=new",
+  "highlight": ".new-input-panel .shot-dropzone"
 },
 {
-"waitFor": ".shot-dropzone"
-},
-{
-"waitMs": 400
-}
-]
-},
-{
-"label": "New input: screenshot dropzone row layout",
-"target": "default",
-"route": "/inputs",
-"highlight": ".field .shot-dropzone",
-"steps": [
-{
-"click": ".new-btn"
-},
-{
-"waitFor": ".shot-dropzone"
-},
-{
-"waitMs": 400
-}
-]
+  "label": "New task screenshot dropzone single-row layout",
+  "target": "default",
+  "route": "/work?task=new",
+  "highlight": ".shot-dropzone"
 }
 ]
 ```
@@ -127,3 +105,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T15:12:03Z · handoff failed · remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-21T15:17:42Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-21T15:19:34Z · body
+- 2026-10-21T15:20:41Z · body
