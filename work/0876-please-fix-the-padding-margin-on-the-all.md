@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1040696
-last_close_out_gate_at: "2026-10-21T04:48:13.883Z"
 id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 1f3e9221fffe138957336b4b4ed3ba84ec4c7051
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-padding-and-margin-on-allowlist-paus
@@ -16,6 +15,8 @@ pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
 updated_at: "2026-10-21T04:48:13Z"
+last_close_out_gate_ms: 1040696
+last_close_out_gate_at: "2026-10-21T04:48:13.883Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-21T03:35:01.891Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
