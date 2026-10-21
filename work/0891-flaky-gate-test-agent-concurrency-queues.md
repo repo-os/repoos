@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 891655
-last_close_out_gate_at: "2026-10-21T08:18:36.908Z"
 id: "0891"
 title: "Flaky gate test: agent-concurrency 'queues starts beyond maxConcurrentAgents and drains' fails on remote runners"
 type: bug
-status: review
+status: done
 priority: p2
 area: server
+merged_commit: e52797612c8d77fc3a6ad8885a54573480de8af0
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/flaky-gate-test-agent-concurrency-queues
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T04:07:35Z"
 updated_at: "2026-10-21T08:18:36Z"
+last_close_out_gate_ms: 891655
+last_close_out_gate_at: "2026-10-21T08:18:36.908Z"
 review_passes: 1
 dev_error_count: 1
 ---
