@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T01:02:05Z"
+updated_at: "2026-10-21T01:02:27Z"
 ---
 ## Problem
 
@@ -63,36 +63,36 @@ Please fix the padding/margin on the allowlist pause modal
 ```json
 [
 {
-  "label": "Pause dialog, light theme — padded fields and action row",
-  "target": "default",
-  "route": "/agents?tab=budget-controls",
-  "highlight": ".budget-pause-dialog",
-  "steps": [
-    {
-      "click": "[data-testid='budget-pause-agent']"
-    },
-    {
-      "waitMs": 500
-    }
-  ],
-  "state": "budget:paused",
-  "theme": "light"
+"label": "Pause dialog, light theme — padded fields and action row",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": ".budget-pause-dialog",
+"steps": [
+  {
+    "click": "[data-testid='budget-pause-agent']"
+  },
+  {
+    "waitMs": 500
+  }
+],
+"state": "budget:paused",
+"theme": "light"
 },
 {
-  "label": "Pause dialog, dark theme — padded fields and action row",
-  "target": "default",
-  "route": "/agents?tab=budget-controls",
-  "highlight": ".budget-pause-dialog",
-  "steps": [
-    {
-      "click": "[data-testid='budget-pause-agent']"
-    },
-    {
-      "waitMs": 500
-    }
-  ],
-  "state": "budget:paused",
-  "theme": "dark"
+"label": "Pause dialog, dark theme — padded fields and action row",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": ".budget-pause-dialog",
+"steps": [
+  {
+    "click": "[data-testid='budget-pause-agent']"
+  },
+  {
+    "waitMs": 500
+  }
+],
+"state": "budget:paused",
+"theme": "dark"
 }
 ]
 ```
@@ -107,3 +107,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T00:58:08Z · status ready→active, branch
 - 2026-10-21T01:00:27Z · body
 - 2026-10-21T01:02:05Z · body
+- 2026-10-21T01:02:27Z · note: click [data-testid='budget-pause-agent']: click: Error: strict mode violation: locator('[data-testid=\'budget-pause-agent\']') resolved to 2 elements: on /agents?tab=budget-controls
