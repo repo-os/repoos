@@ -56,6 +56,7 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 ![Before: lightingai has no sidebar bar; pn and Private keep their purple/pink bars](/api/tasks/0892/attachments/att_abc53aa0-642a-4b2d-ac77-065b81d4cd80.png)
 ![After: choosing the yellow swatch in the header immediately turns the lightingai sidebar bar yellow](/api/tasks/0892/attachments/att_24aa9516-f7a1-4a8c-be50-3fa05051f5ed.png)
 ![Sidebar before: lightingai has no color bar; pn and Private keep their existing bars](/api/tasks/0892/attachments/att_011e1bb8-f09e-44d7-a54e-746a27d4f353.png)
+![Sidebar after: lightingai's yellow bar matches the yellow header chip (branch web UI on a local test origin)](/api/tasks/0892/attachments/att_66ea6fdb-70c7-41cd-b689-ba1ec1cd072e.png)
 
 ## Activity
 
@@ -97,3 +98,4 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 - 2026-10-21T08:45:40Z · body
 - 2026-10-21T08:45:41Z · screenshots
 - 2026-10-21T08:47:38Z · screenshots
+- 2026-10-21T08:47:54Z · screenshots
