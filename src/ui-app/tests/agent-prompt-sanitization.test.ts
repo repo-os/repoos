@@ -167,108 +167,112 @@ describe.sequential("agent CLI argv sanitizing (#0889)", () => {
     SOURCES.flatMap(({ source, make }) =>
       PATHS.map((path) => ({ source, make, path, marker: `MARK_${path}_0889` })),
     ),
-  )("keeps NULs out on $path with a NUL in a $source", async ({ source, make, path, marker }) => {
-    const fx = fixture();
-    const runner = new AgentRunner(fx.config, () => {}, {
-      stallTimeoutMs: 10_000,
-      getTask: () =>
-        parseTask({
-          content: readFileSync(fx.taskPath, "utf8"),
-          absPath: fx.taskPath,
-          root: fx.config.root,
-          defaultStatus: fx.config.defaultStatus,
-          defaultAssignee: fx.config.defaultAssignee,
-        }),
-    });
-    const branch = fx.task.branch ?? "feat/0889-nul";
-    const text = make(marker);
-    try {
-      if (path === "start") {
-        // The context pack is where a task body (and its Activity log) lands.
-        const started = runner.start(fx.task, branch, fx.agent, {
-          cwd: fx.root,
-          contextPack: `## Task Context Pack\n${text}`,
-          resumePreamble: text,
-        });
-        expect(started.ok).toBe(true);
-        await waitFor(() => recordedArgs(fx.argvLog).length === 1, "start spawn");
-        expectCleanArgs(fx.argvLog, marker);
-        // The prompt changed, so the task records one activity line.
-        expect(readFileSync(fx.taskPath, "utf8")).toContain("prompt sanitized");
-        expect(readFileSync(fx.taskPath, "utf8")).not.toContain(NUL);
-      }
+  )(
+    "keeps NULs out on $path with a NUL in a $source",
+    async ({ source, make, path, marker }) => {
+      const fx = fixture();
+      const runner = new AgentRunner(fx.config, () => {}, {
+        stallTimeoutMs: 10_000,
+        getTask: () =>
+          parseTask({
+            content: readFileSync(fx.taskPath, "utf8"),
+            absPath: fx.taskPath,
+            root: fx.config.root,
+            defaultStatus: fx.config.defaultStatus,
+            defaultAssignee: fx.config.defaultAssignee,
+          }),
+      });
+      const branch = fx.task.branch ?? "feat/0889-nul";
+      const text = make(marker);
+      try {
+        if (path === "start") {
+          // The context pack is where a task body (and its Activity log) lands.
+          const started = runner.start(fx.task, branch, fx.agent, {
+            cwd: fx.root,
+            contextPack: `## Task Context Pack\n${text}`,
+            resumePreamble: text,
+          });
+          expect(started.ok).toBe(true);
+          await waitFor(() => recordedArgs(fx.argvLog).length === 1, "start spawn");
+          expectCleanArgs(fx.argvLog, marker);
+          // The prompt changed, so the task records one activity line.
+          expect(readFileSync(fx.taskPath, "utf8")).toContain("prompt sanitized");
+          expect(readFileSync(fx.taskPath, "utf8")).not.toContain(NUL);
+        }
 
-      if (path === "resume") {
-        expect(runner.start(fx.task, branch, fx.agent, { cwd: fx.root }).ok).toBe(true);
-        await waitFor(() => recordedArgs(fx.argvLog).length === 1, "first spawn");
-        await waitFor(() => !runner["entries"].has(fx.task.id), "first turn to end");
-        const sent = runner.send(fx.task.id, text, fx.agent);
-        expect(sent.ok).toBe(true);
-        await waitFor(() => recordedArgs(fx.argvLog).length === 2, "resume spawn");
-        expectCleanArgs(fx.argvLog, marker);
-      }
+        if (path === "resume") {
+          expect(runner.start(fx.task, branch, fx.agent, { cwd: fx.root }).ok).toBe(true);
+          await waitFor(() => recordedArgs(fx.argvLog).length === 1, "first spawn");
+          await waitFor(() => !runner["entries"].has(fx.task.id), "first turn to end");
+          const sent = runner.send(fx.task.id, text, fx.agent);
+          expect(sent.ok).toBe(true);
+          await waitFor(() => recordedArgs(fx.argvLog).length === 2, "resume spawn");
+          expectCleanArgs(fx.argvLog, marker);
+        }
 
-      if (path === "message-delivery") {
-        expect(runner.start(fx.task, branch, fx.agent, { cwd: fx.root }).ok).toBe(true);
-        // Queue while the turn is live; the runner delivers it at turn end.
-        expect(runner.send(fx.task.id, text, fx.agent)).toMatchObject({
-          ok: true,
-          queued: true,
-        });
-        await waitFor(() => recordedArgs(fx.argvLog).length === 2, "delivery spawn");
-        expectCleanArgs(fx.argvLog, marker);
-      }
+        if (path === "message-delivery") {
+          expect(runner.start(fx.task, branch, fx.agent, { cwd: fx.root }).ok).toBe(true);
+          // Queue while the turn is live; the runner delivers it at turn end.
+          expect(runner.send(fx.task.id, text, fx.agent)).toMatchObject({
+            ok: true,
+            queued: true,
+          });
+          await waitFor(() => recordedArgs(fx.argvLog).length === 2, "delivery spawn");
+          expectCleanArgs(fx.argvLog, marker);
+        }
 
-      if (path === "recovery") {
-        const instructions: string[] = [];
-        const deps = {
-          config: fx.config,
-          index: {
-            getTask: () => fx.task,
-            applyFileChange: () => {},
-          } as unknown as LiveIndex,
-          runner: {
-            isRunning: () => false,
-            isHandoffInFlight: () => false,
-            hasPendingHandoff: () => false,
-            isPaused: () => false,
-          } as unknown as AgentRunner,
-          logger: { task: () => {} } as unknown as Logger,
-          launch: async (_deps: unknown, _task: unknown, instruction: string) => {
-            instructions.push(instruction);
-            return { ok: true as const };
-          },
-        };
-        const outcome = await recoverEngineerAfterCrash(
-          deps,
-          fx.task.id,
-          {
-            cli: "opencode",
-            model: "test-model",
-            kind: "degenerate-output",
-            reason: `Degenerate output loop detected. Excerpt: "${text}"`,
-          },
-          { now: Date.parse("2026-10-21T09:26:00Z") },
-        );
-        expect(outcome.action).toBe("resumed");
-        expect(instructions).toHaveLength(1);
-        expect(instructions[0]).not.toContain(NUL);
-        expect(instructions[0]).toContain(marker);
-        // The recovered turn spawns through the same sanitizing boundary.
-        const started = runner.start(fx.task, branch, fx.agent, {
-          cwd: fx.root,
-          resumePreamble: instructions[0],
-          fromCrashRecovery: true,
-        });
-        expect(started.ok).toBe(true);
-        await waitFor(() => recordedArgs(fx.argvLog).length === 1, "recovery spawn");
-        expectCleanArgs(fx.argvLog, marker);
-        expect(readFileSync(fx.taskPath, "utf8")).toContain(
-          "stripped NUL bytes from the crash detail",
-        );
+        if (path === "recovery") {
+          const instructions: string[] = [];
+          const deps = {
+            config: fx.config,
+            index: {
+              getTask: () => fx.task,
+              applyFileChange: () => {},
+            } as unknown as LiveIndex,
+            runner: {
+              isRunning: () => false,
+              isHandoffInFlight: () => false,
+              hasPendingHandoff: () => false,
+              isPaused: () => false,
+            } as unknown as AgentRunner,
+            logger: { task: () => {} } as unknown as Logger,
+            launch: async (_deps: unknown, _task: unknown, instruction: string) => {
+              instructions.push(instruction);
+              return { ok: true as const };
+            },
+          };
+          const outcome = await recoverEngineerAfterCrash(
+            deps,
+            fx.task.id,
+            {
+              cli: "opencode",
+              model: "test-model",
+              kind: "degenerate-output",
+              reason: `Degenerate output loop detected. Excerpt: "${text}"`,
+            },
+            { now: Date.parse("2026-10-21T09:26:00Z") },
+          );
+          expect(outcome.action).toBe("resumed");
+          expect(instructions).toHaveLength(1);
+          expect(instructions[0]).not.toContain(NUL);
+          expect(instructions[0]).toContain(marker);
+          // The recovered turn spawns through the same sanitizing boundary.
+          const started = runner.start(fx.task, branch, fx.agent, {
+            cwd: fx.root,
+            resumePreamble: instructions[0],
+            fromCrashRecovery: true,
+          });
+          expect(started.ok).toBe(true);
+          await waitFor(() => recordedArgs(fx.argvLog).length === 1, "recovery spawn");
+          expectCleanArgs(fx.argvLog, marker);
+          expect(readFileSync(fx.taskPath, "utf8")).toContain(
+            "stripped NUL bytes from the crash detail",
+          );
+        }
+      } finally {
+        runner.dispose();
       }
-    } finally {
-      runner.dispose();
-    }
-  }, 20_000);
+    },
+    20_000,
+  );
 });
