@@ -64,3 +64,4 @@ See AGENTS.md "Is a `repoos check` failure a flake or a real bug?" and docs/debu
 - 2026-10-21T07:08:36Z · body
 - 2026-10-21T07:11:09Z · body
 - 2026-10-21T07:18:12Z · message_queued at 2026-10-21T07:18:12.715Z
+- 2026-10-21T07:18:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
