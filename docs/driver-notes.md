@@ -142,3 +142,17 @@ land), re-read it live: `repoos list`, `repoos landable <id>`, and for "not
 started" claims `git log main --grep <id>` or the merge history. Handoff docs,
 loop prompts, compaction summaries and your own earlier output are hints, never
 facts. A task found done or already merged is never reopened; report it.
+
+## 2026-10-21 — macOS spent half of every git-heavy run re-validating ad-hoc-signed git
+
+Tests and gates on the laptop were ~2x slower than their CPU work explained.
+`syspolicyd` used +11 s of CPU during a 19 s, 6-test run (idle: +0.1 s) and
+`trustd` +3 s. Plain launches of `git`, `bun` or `/bin/echo` (300 each) cost
+~0, so the trigger is more specific than "unsigned binary". Putting Apple's
+`/usr/bin/git` ahead of Homebrew's on `PATH` took 289 tests from 166 s / 154 s
+to 73 s / 87 s. The "Developer Tools" exemption for the terminal made no
+difference. Fix: `preferAppleGit()` in `src/core/runtime.ts` (called from
+`src/cli/index.ts`), opt out with `REPOOS_PREFER_APPLE_GIT=0`. Diagnose with
+`log stream --predicate 'process == "syspolicyd"'` while a test runs; a flood of
+`SecTrustEvaluate`/`SecKeyVerifySignature` lines is the signature. The
+remaining +5 s `syspolicyd` per run is still unexplained (bun/node suspected).

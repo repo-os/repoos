@@ -2,15 +2,17 @@
 id: "0543"
 title: Create tasks and drive task lifecycle from Telegram
 type: feature
-status: ready
+status: active
 priority: p3
 area: server
 story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/create-tasks-and-drive-task-lifecycle-fr
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-27T07:33:58Z"
-updated_at: "2026-10-05T15:52:35Z"
+updated_at: "2026-10-21T13:40:32Z"
 ---
 ## Problem
 
@@ -107,3 +109,8 @@ A `member` can still read, be notified, and answer a permitted needs-input quest
 - 2026-10-05T11:15:32Z · needs_input
 - 2026-10-05T15:49:02Z · needs_input
 - 2026-10-05T15:52:35Z · body
+- 2026-10-21T13:34:09Z · cli_override, model_override
+- 2026-10-21T13:34:11Z · status ready→active, branch
+- 2026-10-21T13:40:31Z · message_queued at 2026-10-21T13:40:31.425Z
+- 2026-10-21T13:40:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-21T13:40:32Z · CTO nudge: held — an undelivered message is already queued

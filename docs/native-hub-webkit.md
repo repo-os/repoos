@@ -133,6 +133,13 @@ external links, pop-ups, and error mapping.
 `macos/RepoOSHubTests/IsolatedServerWebViewFactoryTests.swift` asserts that web
 view configurations ship with empty user scripts and a non-default data store.
 
+`macos/RepoOSHubTests/HubSnapshotTests.swift` renders the sidebar, the server
+summary popover, and the Tabs-mode top bar offscreen to PNGs when
+`HUB_SNAPSHOT_DIR` is set (the normal test run skips them). Run
+`macos/scripts/hub-snapshots.sh`; see
+[`macos-hub-snapshots.md`](macos-hub-snapshots.md) for the handoff target and
+the windowless-render limitations.
+
 ## Manual verification (privilege regression)
 
 On a development build with a local RepoOS server (HTTPS, or loopback HTTP such as `http://localhost:7171`):
