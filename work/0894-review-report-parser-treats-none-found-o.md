@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 88942
-last_close_out_gate_at: "2026-10-21T11:58:41.326Z"
 id: "0894"
 title: Review report parser treats 'None found.' (or any phrasing other than exact 'None found') in Bugs as blocking bugs
 type: bug
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: ece69340710d7d8feab315ebf7e11a89037d940d
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-report-parser-treats-none-found-o
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T08:17:11Z"
 updated_at: "2026-10-21T11:58:41Z"
+last_close_out_gate_ms: 88942
+last_close_out_gate_at: "2026-10-21T11:58:41.326Z"
 review_passes: 2
 dev_error_count: 2
 ---

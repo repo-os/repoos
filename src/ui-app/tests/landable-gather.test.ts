@@ -92,7 +92,7 @@ function taskFor(root: string): Task {
   } as Task;
 }
 
-function reportFor(): ReviewReport {
+function reportFor(markdown = "## Verdict\ngood to go — ship it.\n"): ReviewReport {
   return {
     id: TASK_ID,
     at: "2026-10-20T11:00:00Z",
@@ -101,9 +101,46 @@ function reportFor(): ReviewReport {
     model: "test",
     branch: BRANCH,
     state: "ok",
-    markdown: "## Verdict\ngood to go — ship it.\n",
+    markdown,
   };
 }
+
+// #0894 — the landable check must reach the same verdict as the parser.
+const EMPTY_BUGS_PHRASINGS = [
+  "",
+  "None",
+  "None found",
+  "None found.",
+  "**None found**",
+  "`None found`",
+  "- None found",
+  "* _None found._",
+  "None found — see edge cases",
+  "None found.\n\nThe parser looks fine to me.",
+  "  None found  ",
+  "none FOUND!",
+  "No bugs",
+  "No bugs found",
+  "No issues found",
+  "No issues found; see Edge cases.",
+  "N/A",
+  "N/A — nothing to report",
+  "Nothing found",
+  "Nothing to report.",
+  "-",
+];
+const FINDING_BUGS_PHRASINGS = [
+  "- Off-by-one in parser",
+  "1. Crash on empty input",
+  "1) Crash on empty input",
+  "**Bug:** crash on empty input",
+  "**Bug**: crash on empty input",
+  "- **Bug:** crash on empty input",
+  "None found.\n\n- Off-by-one in parser",
+  "**Bugs:** None found\n- Off-by-one in parser",
+  "- No bugs in the parser, but the CLI crashes",
+  "None\n- Crash on empty input",
+];
 
 function lockAt(root: string, wt: string): void {
   writeWorktreeReviewLock(root, ".repoos", TASK_ID, {
@@ -135,6 +172,52 @@ describe("gatherLandable", () => {
       clean();
     }
   });
+
+  it.each(EMPTY_BUGS_PHRASINGS)(
+    "does not report blocking bugs for a none-ish Bugs section %j (#0894)",
+    async (phrasing) => {
+      const { root, wt, clean } = makeRepo();
+      try {
+        writeFileSync(join(wt, "src", "feature.ts"), "export const feature = true;\n");
+        commitAll(wt, "feature");
+        lockAt(root, wt);
+
+        const result = await gatherLandable(
+          configFor(root),
+          taskFor(root),
+          reportFor(`## Verdict\ngood to go — ship it.\n\n## Bugs\n${phrasing}\n`),
+        );
+        expect(result.checks.find((c) => c.id === "review-verdict")?.status).toBe("pass");
+        expect(result.landable).toBe(true);
+      } finally {
+        clean();
+      }
+    },
+  );
+
+  it.each(FINDING_BUGS_PHRASINGS)(
+    "reports blocking bugs for a real Bugs finding %j (#0894)",
+    async (phrasing) => {
+      const { root, wt, clean } = makeRepo();
+      try {
+        writeFileSync(join(wt, "src", "feature.ts"), "export const feature = true;\n");
+        commitAll(wt, "feature");
+        lockAt(root, wt);
+
+        const result = await gatherLandable(
+          configFor(root),
+          taskFor(root),
+          reportFor(`## Verdict\ngood to go — ship it.\n\n## Bugs\n${phrasing}\n`),
+        );
+        const review = result.checks.find((c) => c.id === "review-verdict");
+        expect(review?.status).toBe("fail");
+        expect(review?.detail).toBe("the review still lists blocking bugs");
+        expect(result.landable).toBe(false);
+      } finally {
+        clean();
+      }
+    },
+  );
 
   it("names a real source conflict with main", async () => {
     const { root, wt, clean } = makeRepo();
