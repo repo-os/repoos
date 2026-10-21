@@ -11,6 +11,10 @@ import * as engineerRemote from "../../server/engineer-remote-self-check.js";
 import { commitWipCheckpointForRemoteGate } from "../../server/engineer-remote-self-check.js";
 import * as preReview from "../../server/pre-review-remote-gate.js";
 import type { RepoOSConfig } from "../../core/types.js";
+import {
+  VALIDATE_INJECTED_ENV_KEYS,
+  clearValidateInjectedEnv,
+} from "./setup/validate-injected-env.js";
 
 class ExitSignal extends Error {
   constructor(readonly code: number | undefined) {
@@ -40,6 +44,41 @@ function gitInit(root: string): void {
 
 function relConfig(root: string): RepoOSConfig {
   return { root, cacheDir: ".repoos", workDir: "work" } as RepoOSConfig;
+}
+
+/**
+ * Fixture for the managed WIP fallback: remote validation enabled, one noop
+ * step, and one uncommitted file so the CLI has to decide what to do about it.
+ *
+ * The pressure guard is off because this test is about the WIP-checkpoint
+ * decision, not local scheduling; left at its default the guard holds the
+ * check on a loaded machine until pressure eases, which never happens inside
+ * a test.
+ */
+function remoteWipFixture(): string {
+  const root = mkdtempSync(join(tmpdir(), "repoos-wip-fail-"));
+  cleanups.push(root);
+  gitInit(root);
+  writeFileSync(
+    join(root, "repoos.toml"),
+    [
+      'workDir = "work"',
+      "[remoteValidation]",
+      "enabled = true",
+      "provider = tailscale",
+      "engineerSelfCheckRemote = true",
+      "[pressureGuard]",
+      "enabled = false",
+      "[[check.steps]]",
+      'name = "noop"',
+      'command = "true"',
+      "",
+    ].join("\n"),
+  );
+  execFileSync("git", ["add", "repoos.toml"], { cwd: root, stdio: "ignore" });
+  execFileSync("git", ["commit", "-qm", "cfg"], { cwd: root, stdio: "ignore" });
+  writeFileSync(join(root, "dirty.txt"), "x\n");
+  return root;
 }
 
 describe("commitWipCheckpointForRemoteGate (#0695)", () => {
@@ -72,20 +111,24 @@ describe("managed engineer dirty-tree fallback (#0695)", () => {
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code: number | undefined) => {
       throw new ExitSignal(code);
     }) as never);
-    const saved = {
-      REPOOS_AGENT: process.env.REPOOS_AGENT,
-      REPOOS_TASK_ID: process.env.REPOOS_TASK_ID,
-      REPOOS_ROOT: process.env.REPOOS_ROOT,
-      REPOOS_CHECK_STORE_ROOT: process.env.REPOOS_CHECK_STORE_ROOT,
-      REPOOS_SKIP_TESTS: process.env.REPOOS_SKIP_TESTS,
-      REPOOS_REMOTE_VALIDATION_DONE: process.env.REPOOS_REMOTE_VALIDATION_DONE,
-    };
+    const saved = new Map<string, string | undefined>();
+    for (const key of [
+      ...VALIDATE_INJECTED_ENV_KEYS,
+      "REPOOS_AGENT",
+      "REPOOS_TASK_ID",
+      "REPOOS_CHECK_STORE_ROOT",
+      "REPOOS_SKIP_TESTS",
+      "REPOOS_REMOTE_VALIDATION_DONE",
+    ]) {
+      saved.set(key, process.env[key]);
+    }
+    // A runner exports REPOOS_ROOT and the browser-capture set for the project
+    // under test. Left set, the fixture's task id is foreign (#0870) and the
+    // managed WIP path is skipped, or the check offloads browser steps and
+    // never reaches the checkpoint warning (#0905).
+    clearValidateInjectedEnv();
     process.env.REPOOS_AGENT = "1";
     process.env.REPOOS_TASK_ID = "0695";
-    // A runner exports REPOOS_ROOT for the project under test. Left set, the
-    // fixture's task id is foreign (#0870) and the managed WIP path is skipped,
-    // so the assertion only fails on the remote host.
-    delete process.env.REPOOS_ROOT;
     delete process.env.REPOOS_CHECK_STORE_ROOT;
     delete process.env.REPOOS_SKIP_TESTS;
     delete process.env.REPOOS_REMOTE_VALIDATION_DONE;
@@ -99,7 +142,7 @@ describe("managed engineer dirty-tree fallback (#0695)", () => {
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
-      for (const [k, v] of Object.entries(saved)) {
+      for (const [k, v] of saved) {
         if (v === undefined) delete process.env[k];
         else process.env[k] = v;
       }
@@ -107,26 +150,7 @@ describe("managed engineer dirty-tree fallback (#0695)", () => {
   }
 
   it("warns and runs locally when a WIP checkpoint cannot be created", async () => {
-    const root = mkdtempSync(join(tmpdir(), "repoos-wip-fail-"));
-    cleanups.push(root);
-    gitInit(root);
-    writeFileSync(
-      join(root, "repoos.toml"),
-      [
-        'workDir = "work"',
-        "[remoteValidation]",
-        "enabled = true",
-        "provider = tailscale",
-        "engineerSelfCheckRemote = true",
-        "[[check.steps]]",
-        'name = "noop"',
-        'command = "true"',
-        "",
-      ].join("\n"),
-    );
-    execFileSync("git", ["add", "repoos.toml"], { cwd: root, stdio: "ignore" });
-    execFileSync("git", ["commit", "-qm", "cfg"], { cwd: root, stdio: "ignore" });
-    writeFileSync(join(root, "dirty.txt"), "x\n");
+    const root = remoteWipFixture();
     vi.spyOn(preReview, "shouldRunCliRemotePreReviewGate").mockReturnValue(true);
     vi.spyOn(engineerRemote, "commitWipCheckpointForRemoteGate").mockResolvedValue(
       "mock staging failure",
@@ -134,5 +158,35 @@ describe("managed engineer dirty-tree fallback (#0695)", () => {
     const { logs: out } = await runManagedCheck(root);
     expect(out).toMatch(/could not commit a WIP checkpoint/i);
     expect(out).toMatch(/full local gate/i);
+  });
+
+  it("is unaffected by the browser-capture env a remote runner injects (#0905)", async () => {
+    // Exactly what validate.sh passes into the repoos-ci container when
+    // browserCaptureMode is runner-only/offloaded.
+    const offloadEnv = {
+      REPOOS_OFFLOAD_BROWSER_STEPS: "1",
+      REPOOS_BROWSER_CAPTURE_MODE: "shots",
+      REPOOS_BROWSER_CAPTURE_TASK: "0905",
+      REPOOS_BROWSER_CAPTURE_BRANCH: "feat/check-remote-wip-test-breaks-when-the-ga",
+      REPOOS_BROWSER_CAPTURE_ENTRY: "{}",
+      REPOOS_BROWSER_CAPTURE_CANONICAL: "{}",
+    };
+    Object.assign(process.env, offloadEnv);
+    try {
+      const root = remoteWipFixture();
+      vi.spyOn(preReview, "shouldRunCliRemotePreReviewGate").mockReturnValue(true);
+      vi.spyOn(engineerRemote, "commitWipCheckpointForRemoteGate").mockResolvedValue(
+        "mock staging failure",
+      );
+      const { logs: out } = await runManagedCheck(root);
+      expect(out).toMatch(/could not commit a WIP checkpoint/i);
+      // The unmanaged branch's message: taking it means the runner's env leaked
+      // past the test and changed the path it asserts on.
+      expect(out).not.toMatch(/the remote gate tests committed HEAD only/i);
+      // Saved and restored, not silently dropped for later files.
+      for (const [k, v] of Object.entries(offloadEnv)) expect(process.env[k]).toBe(v);
+    } finally {
+      for (const key of Object.keys(offloadEnv)) delete process.env[key];
+    }
   });
 });
