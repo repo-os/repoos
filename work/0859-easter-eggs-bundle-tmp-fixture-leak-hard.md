@@ -9,8 +9,10 @@ depends_on: ["0858"]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T02:26:34Z"
+updated_at: "2026-10-21T03:51:01Z"
 ---
 ## Items
 
@@ -121,3 +123,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-20T08:30:42Z · note: bundle add E4
 - 2026-10-21T02:26:34Z · body: Items (added 1); E5 · Docs site (HMR) target fails when user-docs deps are not installed (added)
 - 2026-10-21T02:26:34Z · note: bundle add E5
+- 2026-10-21T03:51:01Z · cli_override, model_override
