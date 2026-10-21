@@ -22,7 +22,9 @@ const validateScript = readFileSync(join(repoRoot, "scripts/remote-runner/valida
 
 /** Every `-e REPOOS_...=` the runner hands to the test container. */
 function injectedKeys(): string[] {
-  return [...validateScript.matchAll(/^\s*-e\s+"?(REPOOS_[A-Z0-9_]+)=/gm)].map((match) => match[1]);
+  return [...validateScript.matchAll(/^\s*-e\s+"?(REPOOS_[A-Z0-9_]+)=/gm)]
+    .map((match) => match[1] ?? "")
+    .filter(Boolean);
 }
 
 describe("remote-runner env isolation (#0905)", () => {
