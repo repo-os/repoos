@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 163697
-last_close_out_gate_at: "2026-10-21T14:26:03.865Z"
 id: "0543"
 title: Create tasks and drive task lifecycle from Telegram
 type: feature
-status: review
+status: done
 priority: p3
 area: server
 story: RepoOS Telegram Bot
+merged_commit: "03d9075b26f149a57880f46ac6bebe9615614964"
 assigned_to: ai
 created_by: ""
 branch: feat/create-tasks-and-drive-task-lifecycle-fr
@@ -15,6 +14,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-27T07:33:58Z"
 updated_at: "2026-10-21T14:26:03Z"
+last_close_out_gate_ms: 163697
+last_close_out_gate_at: "2026-10-21T14:26:03.865Z"
 review_passes: 1
 ---
 ## Problem

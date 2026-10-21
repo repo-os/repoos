@@ -293,6 +293,10 @@ import {
   resetTelegramProviders,
 } from "./telegram/index.js";
 import { createTelegramGuideTurn } from "./telegram/guide-chat.js";
+import { createTelegramTask } from "./telegram/task-creation.js";
+import type { TelegramTaskActionOps } from "./telegram/task-actions.js";
+import { transcribeAudio } from "./routes/transcribe.js";
+import { Readable } from "node:stream";
 import { parseCookies, SESSION_COOKIE_NAME, randomHex } from "../core/auth.js";
 import { getAuthStore } from "../core/auth-store.js";
 import {
@@ -4445,12 +4449,169 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // originating chat. #0542's task-agent follow-ups (/msg) and #0540's
       // read-only commands run on this same single sink —
       // `chainedOnAuthorized` composes them.
+      // #0543 write path. The bot reuses the HTTP routes' orchestration
+      // instead of forking it: creation goes through `repoos.createTask` (the
+      // same helper the New-task drawer uses), and lifecycle buttons call the
+      // real `/api/tasks/:id/{start,pause,done}` and PATCH handlers in-process
+      // with a synthetic request. Nothing here merges by hand.
+      const telegramRouteContext = {
+        config,
+        servePort: requestedPort,
+        index,
+        indexReady,
+        runner,
+        previews,
+        reviews,
+        cto,
+        freeformRuns,
+        repoos,
+        logger,
+        emitEvent: (e: RepoEvent) => {
+          for (const client of clients) {
+            try {
+              client.write(`event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`);
+            } catch {
+              /* client disconnected */
+            }
+          }
+        },
+        closeOutLock,
+        rootLock,
+        jobCoordinator,
+        closeOutOutcomes,
+        attentionEvents,
+        ctoActionRates,
+        remoteValidator,
+        taskChecks,
+        reportedStages,
+        reportedStageAt,
+        reportedDetail,
+        triggerJobProcessing,
+        pendingReview,
+        uiDir,
+        syncTaskBranch,
+        onServerStatusChange,
+        startUnifiedHandoff,
+        reload,
+      } as RouteContext;
+
+      const runTaskRoute = async (
+        handler: typeof taskAction | typeof patchTask,
+        params: Record<string, string>,
+        body: Record<string, unknown>,
+      ): Promise<{ status: number; body: Record<string, unknown> }> => {
+        const req = Readable.from([
+          Buffer.from(JSON.stringify(body)),
+        ]) as unknown as IncomingMessage;
+        // `readBody` only consumes the stream; no headers are needed by the
+        // start/pause/done paths and the review PATCH treats an absent local
+        // CLI token as a human caller.
+        (req as unknown as { headers: Record<string, string> }).headers = {};
+        let status = 200;
+        let payload: Record<string, unknown> = {};
+        const res = {
+          writeHead(nextStatus: number) {
+            status = nextStatus;
+          },
+          end(data?: string | Buffer) {
+            try {
+              payload = data ? (JSON.parse(data.toString()) as Record<string, unknown>) : {};
+            } catch {
+              payload = {};
+            }
+          },
+        } as unknown as ServerResponse;
+        await handler(telegramRouteContext, req, res, params);
+        return { status, body: payload };
+      };
+
+      const routeFailure = (status: number, body: Record<string, unknown>): string => {
+        const error = typeof body.error === "string" ? body.error : null;
+        if (status < 400 && error === null) return "";
+        if (error) return error;
+        return `the request failed (HTTP ${status})`;
+      };
+
+      const telegramTaskOps: TelegramTaskActionOps = {
+        createTask: (draft, attachments, actor) =>
+          createTelegramTask({ config, repoos, index, logger }, draft, attachments, actor),
+        start: async (task, actor) => {
+          const res = await runTaskRoute(taskAction, { param1: task.id, param2: "start" }, {});
+          const failure = routeFailure(res.status, res.body);
+          if (failure) {
+            logger.task(task.id, "warn", "Telegram start refused", { actor: actor.email, failure });
+            return { ok: false, message: `Could not start #${task.id}: ${failure}` };
+          }
+          return { ok: true, message: `▶️ Started #${task.id} — the agent is working.` };
+        },
+        pause: async (task) => {
+          const res = await runTaskRoute(taskAction, { param1: task.id, param2: "pause" }, {});
+          const failure = routeFailure(res.status, res.body);
+          if (failure) return { ok: false, message: `Could not pause #${task.id}: ${failure}` };
+          return {
+            ok: true,
+            message: `⏸ Paused #${task.id} — it stays active; start it again to resume.`,
+          };
+        },
+        requestReview: async (task, actor) => {
+          if (task.status !== "active") {
+            return {
+              ok: false,
+              message: `#${task.id} is '${task.status}' — only an active task can request review.`,
+            };
+          }
+          // The same unified handoff the PATCH /api/tasks/:id review branch
+          // starts (commit + validate gate); the actor is the presser, so the
+          // activity entry never falls back to "human".
+          const result = startUnifiedHandoff(task, {
+            origin: "ui-review",
+            actor: actor.email,
+          });
+          if (!result.started) {
+            return {
+              ok: false,
+              message: `Could not request review for #${task.id}: ${
+                result.reason ?? "a handoff is already running"
+              }`,
+            };
+          }
+          return {
+            ok: true,
+            message: `👀 Review requested for #${task.id} — checks are running; it moves to review when they pass.`,
+          };
+        },
+        moveToDone: async (task) => {
+          const res = await runTaskRoute(taskAction, { param1: task.id, param2: "done" }, {});
+          const failure = routeFailure(res.status, res.body);
+          if (failure) {
+            const dirty = Array.isArray(res.body.dirtyFiles)
+              ? ` (${(res.body.dirtyFiles as string[]).join(", ")})`
+              : "";
+            return { ok: false, message: `Could not close out #${task.id}: ${failure}${dirty}` };
+          }
+          return {
+            ok: true,
+            message: `🚀 Close-out started for #${task.id}. The merge and gate run in the background.`,
+          };
+        },
+        downloadFile: async (fileId, options) => {
+          const result = await getTelegramProvider(config).downloadFile(fileId, options);
+          return { data: result.data, filePath: result.filePath };
+        },
+        transcribeVoice: async (bytes, mime) => {
+          const result = await transcribeAudio(config, bytes, mime);
+          if (!result.ok) throw new Error(result.error);
+          return result.text;
+        },
+      };
+
       void bootstrapTelegramAtBoot(config, {
         index,
         runner,
         reviews,
         publicOrigin: url,
         agentChat: { logger },
+        taskActions: { ops: telegramTaskOps },
         onAuthorized: createTelegramGuideTurn(config, runner, {
           getTasks: () => index.getTasks(),
           resolveBotUsername: () => getTelegramProvider(config).status().bot?.username ?? null,

@@ -2,7 +2,9 @@ import {
   listTelegramNotificationChatIds,
   mayDeliverTelegramNotification,
 } from "../../core/telegram-chat.js";
+import { telegramInviteSecret } from "../../core/telegram-identity.js";
 import { getTelegramProvider } from "../telegram/index.js";
+import { telegramTaskActionMarkup } from "../telegram/task-actions.js";
 import type {
   NotificationDispatchContext,
   NotificationPayload,
@@ -31,12 +33,32 @@ function formatTelegramBody(payload: NotificationPayload): string {
   return parts.join("\n");
 }
 
-function inlineKeyboard(payload: NotificationPayload): unknown | undefined {
+interface InlineRow {
+  text: string;
+  url?: string;
+  callback_data?: string;
+}
+
+function inlineKeyboard(
+  payload: NotificationPayload,
+  config: NotificationDispatchContext["config"],
+): unknown | undefined {
+  const rows: InlineRow[][] = [];
   const action = payload.actions?.[0];
   const url = action?.url ?? payload.link;
-  if (!url.startsWith("http://") && !url.startsWith("https://")) return undefined;
-  const label = action?.label ?? "Open task";
-  return { inline_keyboard: [[{ text: label, url }]] };
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    const label = action?.label ?? "Open task";
+    rows.push([{ text: label, url }]);
+  }
+  // #0543: an opportunity to act carries the admin buttons that apply. A
+  // member may see them; pressing one is refused with a role explanation.
+  const actions = telegramTaskActionMarkup(telegramInviteSecret(config.auth?.sessionSecret), {
+    taskId: payload.taskId,
+    status: payload.status,
+    kind: payload.kind,
+  });
+  if (actions) rows.push(...actions.inline_keyboard);
+  return rows.length > 0 ? { inline_keyboard: rows } : undefined;
 }
 
 export class TelegramNotificationProvider implements NotificationProvider {
@@ -66,7 +88,7 @@ export class TelegramNotificationProvider implements NotificationProvider {
     if (!provider.status().connected) return;
 
     const text = formatTelegramBody(payload);
-    const replyMarkup = inlineKeyboard(payload);
+    const replyMarkup = inlineKeyboard(payload, ctx.config);
     const chatIds = listTelegramNotificationChatIds(store).filter((id) =>
       mayDeliverTelegramNotification(store, id),
     );
