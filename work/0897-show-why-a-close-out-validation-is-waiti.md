@@ -157,3 +157,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T19:02:59Z · body
 - 2026-10-21T19:02:59Z · body
 - 2026-10-21T19:03:41Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-21T19:03:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
