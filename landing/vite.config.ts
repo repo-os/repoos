@@ -8,6 +8,11 @@ import { llmsTxtPlugin } from "./vite-plugin-llms-txt.js";
 // repoos.org marketing app. Static pages plus a separate Worker for enquiries.
 // Independent of src/ui-app, with its own package and deployment pipeline.
 const appRoot = fileURLToPath(new URL(".", import.meta.url));
+// The header mark's geometry lives above this project root (shared/logo.ts) so
+// the landing and docs sites draw the same logo. The dev server — which is what
+// task previews run — must be allowed to serve that file; a production build
+// has no such restriction.
+const sharedRoot = fileURLToPath(new URL("../shared", import.meta.url));
 
 export default defineConfig({
   root: appRoot,
@@ -30,6 +35,12 @@ export default defineConfig({
     },
   ],
   base: "/",
+  server: {
+    fs: {
+      // Both are required: setting `allow` replaces Vite's default of [root].
+      allow: [appRoot, sharedRoot],
+    },
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

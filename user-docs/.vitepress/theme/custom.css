@@ -43,6 +43,13 @@
   --vp-c-brand-3: #6244cf;
   --vp-c-brand-soft: rgba(10, 127, 156, 0.1);
 
+  /* Shared-mark aliases (#0862): the landing header draws the RepoOS logo with
+     --cyan → --violet, and the docs header uses the same component geometry
+     (shared/logo.ts). Map them onto the brand ramp — brand-1 is the cyan
+     accent and brand-3 the violet one in every theme, light and dark. */
+  --cyan: var(--vp-c-brand-1);
+  --violet: var(--vp-c-brand-3);
+
   --vp-font-family-base:
     "Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --vp-font-family-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -575,6 +582,18 @@ html[data-ui-theme="gruvbox"] .release-notice {
 /* 8px less padding per nav link: the room the full bar needs at 1280px. */
 .VPNav .VPNavBar .VPNavBarMenuLink {
   padding: 0 8px;
+}
+
+/* Header mark (#0862): inline SVG from the nav-bar-title-before slot, sharing
+ * the landing's geometry. Landing uses 28px with a 10px gap to the 15px
+ * wordmark (landing/src/App.vue); keep those proportions here, and no box:
+ * the old static favicon brought its own rounded-square background. */
+.VPNav .VPNavBarTitle .docs-logo {
+  display: block;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin-right: 10px;
 }
 
 /* The ⌘K hint is the widest part of the search pill; dropping it below 1440px
