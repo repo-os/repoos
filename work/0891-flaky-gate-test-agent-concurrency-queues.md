@@ -3,12 +3,6 @@ id: "0891"
 title: "Flaky gate test: agent-concurrency 'queues starts beyond maxConcurrentAgents and drains' fails on remote runners"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: Transport"
-debug_tldr: Agent transport failed mid-run after checks passed — retry the engineer session; no test fix needed until a run completes.
-debug_tldr_at: "2026-10-21T06:03:47Z"
-debug_tldr_key: "dev-error|error: Transport"
 priority: p2
 area: server
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/flaky-gate-test-agent-concurrency-queues
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T04:07:35Z"
-updated_at: "2026-10-21T07:38:32Z"
+updated_at: "2026-10-21T07:38:33Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T06:03:26.061Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -81,3 +75,4 @@ After the fix, on the same machine: `agent-concurrency.test.ts` passed 50/50 seq
 - 2026-10-21T07:35:16Z · body
 - 2026-10-21T07:38:32Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-10-21T07:38:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-21T07:38:33Z · needs_input
