@@ -11,7 +11,7 @@ branch: feat/remove-the-faint-repoos-title-text-at-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T14:00:36Z"
-updated_at: "2026-10-21T03:12:44Z"
+updated_at: "2026-10-21T03:29:51Z"
 ---
 ## Problem
 A faint "RepoOS" label shows at the top left of the window, overlapping the macOS traffic-light buttons and sitting next to the real RepoOS logo and wordmark. It appears in two states: with the sidebar collapsed (partly behind the green button, above the wordmark) and in the normal layout (just right of the traffic lights). It looks like a leftover from the old native RepoOS Hub topbar, and it duplicates the wordmark.
@@ -36,3 +36,4 @@ No faint duplicate "RepoOS" text anywhere in the title bar or top left area, in 
 - 2026-10-21T03:12:34Z · status inbox→ready
 - 2026-10-21T03:12:42Z · cli_override, model_override
 - 2026-10-21T03:12:44Z · status ready→active, branch
+- 2026-10-21T03:29:51Z · message_queued at 2026-10-21T03:29:51.134Z
