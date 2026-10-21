@@ -12,7 +12,7 @@ branch: feat/repoos-hub-macos-web-view-sits-under-the
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T08:37:10Z"
-updated_at: "2026-10-21T14:22:54Z"
+updated_at: "2026-10-21T14:23:02Z"
 last_close_out_gate_ms: 95683
 last_close_out_gate_at: "2026-10-21T14:22:54.219Z"
 review_passes: 2
@@ -91,4 +91,4 @@ Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode fro
 - 2026-10-21T14:15:01Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-21T14:15:42Z · note: review pass 2: good to go
 - 2026-10-21T14:22:54Z · close-out gate completed in 96s
-
+- 2026-10-21T14:23:02Z · status done→done, release:success
