@@ -19,6 +19,21 @@ import {
   type RemoteExecDeps,
   type RemoteExecResult,
 } from "../../server/remote-validation.js";
+import { HOST_HEALTH_PROBE_TOKEN } from "../../core/runner-health.js";
+
+/** Healthy probe transcript so concurrency tests never read a real host's pressure. */
+const HEALTHY_HOST_PROBE = `${HOST_HEALTH_PROBE_TOKEN}
+__UNAME__
+Linux
+__MEMINFO__
+MemTotal:       16777216 kB
+MemAvailable:    8388608 kB
+SwapTotal:       4194304 kB
+SwapFree:        3670016 kB
+__SWAP__
+__VMSTAT__
+__MEMSIZE__
+`;
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -200,6 +215,9 @@ describe("TailscaleRunner queueing and isolation", () => {
         }
         if (cmd.includes("__HOST_LOCK__")) {
           return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
+        }
+        if (cmd.includes(HOST_HEALTH_PROBE_TOKEN)) {
+          return { code: 0, output: HEALTHY_HOST_PROBE, timedOut: false };
         }
         cmds.push(cmd);
         inFlight++;
