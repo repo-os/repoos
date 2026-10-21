@@ -14,7 +14,7 @@ model_override: grok-4.7-low
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-20T13:31:37Z"
-updated_at: "2026-10-21T07:34:38Z"
+updated_at: "2026-10-21T07:35:20Z"
 last_close_out_gate_ms: 439737
 last_close_out_gate_at: "2026-10-21T07:34:38.580Z"
 review_passes: 2
@@ -397,4 +397,4 @@ Test both layouts, switching between them, narrow windows, many servers, and nat
 - 2026-10-21T07:22:16Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (81c8c4af0) during finalization (#0734)
 - 2026-10-21T07:24:06Z · note: review pass 2: good to go
 - 2026-10-21T07:34:38Z · close-out gate completed in 440s
-
+- 2026-10-21T07:35:20Z · status done→done, release:success
