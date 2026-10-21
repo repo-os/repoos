@@ -2,16 +2,21 @@
 id: "0895"
 title: "RepoOS Hub (macOS): web view sits under the top bar in tabs mode (UI cut off), and sidebar mode shows two collapse buttons"
 type: bug
-status: ready
+status: done
 priority: p2
 area: macos
+merged_commit: c9e09461b94cc83455c58c393d9b75454f90e1b7
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-web-view-sits-under-the
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T08:37:10Z"
-updated_at: "2026-10-21T15:46:20Z"
+updated_at: "2026-10-21T14:23:02Z"
+last_close_out_gate_ms: 95683
+last_close_out_gate_at: "2026-10-21T14:22:54.219Z"
+review_passes: 2
+review_rounds: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -35,8 +40,9 @@ Two layout problems in the native macOS app (RepoOS Hub), both visible in the ne
 Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode from #0875, plus the sidebar view). The title bar looks like a full-size content view, so the web view needs a top inset (safe-area or `contentLayoutGuide`) equal to the tab-strip height. The three reporter screenshots are attached to this task: 1.png shows the tab strip with the collapse button over the first tab, 2.png shows the top of the web UI cut off in a windowed layout, 3.png shows sidebar mode with the collapse button in both rows.
 
 ## Verification (engineer)
-- New `HubWorkspaceChromeTests` hosts the real composition — `NavigationSplitView` detail → `HubWorkspaceChrome` → page, with the scene's `HubWindowChromeView` background — in a real `fullSizeContentView` NSWindow that is never ordered front. It asserts Tabs-mode page top == 46 (the strip's bottom edge), Sidebar-mode page top == 0 (reclaimed titlebar band), that the toolbar SwiftUI installs after scene setup is hidden once laid out, and that its automatic sidebar-toggle item is gone. A second test installs a toolbar late and re-runs layout: it is re-hidden and loses the toggle.
-- `xcodebuild -scheme RepoOSHub ... test` on Xcode 26.6 / macOS 26.5.2: build succeeds, 164 tests pass. `LocalServerDiscoveryTests` (7) fail on this machine because the live `~/.repoos/servers/7171.json` registry makes discovery use its registry path instead of the tests' fake port scan; unrelated to this diff and reproducible without it. `repoos check --changed main` passes.
+- Review round 1 follow-up: merged `main` (which landed #0893's Hub snapshot target) into the branch. `macos/RepoOSHub.xcodeproj/project.pbxproj` conflicted because both sides used object IDs A/C…90–92; this task's files were renumbered to A/C…93 (HubWorkspaceChrome) and A/C…94 (HubWorkspaceChromeTests), keeping #0893's `HubSnapshotSupport`/`HubSnapshotTests` entries intact. The task file took main's copy. Rebuilt and re-ran the Hub suite: 163 tests pass, 3 `HubSnapshotTests` skip (env-gated, as designed). `repoos check --changed main` passes.
+- `HubWorkspaceChromeTests` hosts the real composition — `NavigationSplitView` detail → `HubWorkspaceChrome` → page, with the scene's `HubWindowChromeView` background — in a real `fullSizeContentView` NSWindow that is never ordered front. It asserts Tabs-mode page top == 46 (the strip's bottom edge), Sidebar-mode page top == 0 (reclaimed titlebar band), that the toolbar SwiftUI installs after scene setup is hidden once laid out, and that its automatic sidebar-toggle item is gone. A second test installs a toolbar late and re-runs layout: it is re-hidden and loses the toggle.
+- `xcodebuild -scheme RepoOSHub ... test` on Xcode 26.6 / macOS 26.5.2: build succeeds. `LocalServerDiscoveryTests` (7) fail on this machine because the live `~/.repoos/servers/7171.json` registry makes discovery use its registry path instead of the tests' fake port scan; unrelated to this diff and reproducible without it.
 - Not verified by the engineer: pixel-level appearance in a running Hub window — the agent harness has no display, so a real Hub build was not watched. Reviewer/human check on a real build: windowed and full screen, light and dark, Tabs and Sidebar, and switching layout at runtime; confirm the page header clears the strip and only one sidebar toggle is present.
 
 ## Screenshots
@@ -69,4 +75,20 @@ Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode fro
 - 2026-10-21T13:09:15Z · status ready→active
 - 2026-10-21T13:27:10Z · handoff failed · remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > returns a task to active when review findings are auto-bounced to the engineer, tests/agent-review.test.ts > agent review before human sign-off (#0101) > flags needs_input instead of parking silently once auto-bounce rounds are used up, tests/agent-review.test.ts > agent review before human sign-off (#0101) > does not re-raise an exhausted-rounds flag dismissed during the review on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-21T13:32:00Z · note: handoff requested (ui-review)
-- 2026-10-21T15:46:20Z · watchdog: auto-surfaced stuck task · status active→ready · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > returns a task to active when review findings are auto-bounced to the engineer, tests/agent-review.test.ts > agent review before human sign-off (#0101) > flags needs_input instead of parking silently once auto-bounce rounds are used up, tests/agent-review.test.ts > agent review before human sign-off (#0101) > does not re-raise an exhausted-rounds flag dismissed during the review on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-21T13:40:28Z · status active→review
+- 2026-10-21T13:40:28Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-21T13:41:36Z · note: review pass 1: needs some work
+- 2026-10-21T13:41:37Z · status review→active
+- 2026-10-21T13:45:40Z · body
+- 2026-10-21T13:46:21Z · body: Verification (engineer) (added 3, removed 2)
+- 2026-10-21T13:46:21Z · message_queued at 2026-10-21T13:46:21.657Z
+- 2026-10-21T13:46:35Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-21T13:46:36Z · message_delivered: 1 message(s)
+- 2026-10-21T13:59:22Z · handoff failed · remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > returns a task to active when review findings are auto-bounced to the engineer, tests/agent-review.test.ts > agent review before human sign-off (#0101) > flags needs_input instead of parking silently once auto-bounce rounds are used up, tests/agent-review.test.ts > agent review before human sign-off (#0101) > does not re-raise an exhausted-rounds flag dismissed during the review on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-21T14:04:33Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > returns a task to active when review findings are auto-bounced to the engineer, tests/agent-review.test.ts > agent review before human sign-off (#0101) > flags needs_input instead of parking silently once auto-bounce rounds are used up, tests/agent-review.test.ts > agent review before human sign-off (#0101) > does not re-raise an exhausted-rounds flag dismissed during the review on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-21T14:04:33Z · note: handoff requested (cli)
+- 2026-10-21T14:15:01Z · status active→review
+- 2026-10-21T14:15:01Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-21T14:15:42Z · note: review pass 2: good to go
+- 2026-10-21T14:22:54Z · close-out gate completed in 96s
+- 2026-10-21T14:23:02Z · status done→done, release:success
