@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T05:39:59Z"
+updated_at: "2026-10-21T05:55:37Z"
 dev_error_count: 3
 ---
 ## Items
@@ -170,3 +170,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T05:23:03Z · message_queued at 2026-10-21T05:23:03.486Z
 - 2026-10-21T05:23:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-21T05:39:59Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-21T05:55:37Z · body
