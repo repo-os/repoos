@@ -11,7 +11,7 @@ branch: feat/crash-recovery-relaunch-fails-when-the-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T01:27:17Z"
-updated_at: "2026-10-21T03:50:38Z"
+updated_at: "2026-10-21T03:51:20Z"
 last_check_failure: "repoos check at 2026-10-21T03:30:35.724Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 3b3cd293 to 969b3573) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 dev_error_count: 5
 ---
@@ -69,4 +69,4 @@ Relevant code: src/server/engineer-crash-recovery.ts, src/server/agents.ts (resu
 - 2026-10-21T03:09:16Z · body
 - 2026-10-21T03:38:26Z · body
 - 2026-10-21T03:50:38Z · body
-
+- 2026-10-21T03:51:20Z · note: shots: skipped — the diff (14 changed paths) touches no capture target's globs — no UI change to capture
