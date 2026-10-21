@@ -194,8 +194,10 @@ function errorMessage(err: unknown): string {
  * (#0859). Before this, a throwing `context.close()` / `browser.close()` skipped
  * `server.close()` entirely, leaving the fixture's server alive (its `port === 0`
  * root-reaper fires asynchronously) even though the fixture directory was
- * deleted. All three closes are attempted, the fixture is removed only after
- * every close has settled, and every failure is reported together.
+ * deleted. All three closes are attempted in order (context, then browser, then
+ * server — closing a Playwright browser before its context reports the context
+ * as already closed), the fixture is removed only after every close has
+ * settled, and every failure is reported together.
  */
 export async function teardownUiHarness(opts: HarnessTeardownOptions): Promise<void> {
   const attempts: { label: string; close: () => Promise<void> }[] = [];
@@ -203,13 +205,14 @@ export async function teardownUiHarness(opts: HarnessTeardownOptions): Promise<v
   if (opts.browser) attempts.push({ label: "browser.close()", close: () => opts.browser!.close() });
   if (opts.server) attempts.push({ label: "server.close()", close: () => opts.server!.close() });
 
-  const results = await Promise.allSettled(attempts.map((attempt) => attempt.close()));
   const problems: string[] = [];
-  results.forEach((result, index) => {
-    if (result.status === "rejected") {
-      problems.push(`${attempts[index]!.label} failed: ${errorMessage(result.reason)}`);
+  for (const attempt of attempts) {
+    try {
+      await attempt.close();
+    } catch (err) {
+      problems.push(`${attempt.label} failed: ${errorMessage(err)}`);
     }
-  });
+  }
   try {
     opts.removeFixture();
   } catch (err) {
