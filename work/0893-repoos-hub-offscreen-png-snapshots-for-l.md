@@ -2,7 +2,7 @@
 id: "0893"
 title: "RepoOS Hub: offscreen PNG snapshots for layout checks, with a shot target in repoos.toml"
 type: feature
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repoos-hub-offscreen-png-snapshots-for-l
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T07:08:04Z"
-updated_at: "2026-10-21T13:15:57Z"
+updated_at: "2026-10-21T13:16:01Z"
 review_passes: 1
 ---
 ## Problem
@@ -102,3 +102,4 @@ Merged main (#0892/#0895 Hub changes) into the branch. Resolved `macos/.gitignor
 - 2026-10-21T13:05:50Z · message_delivered: 2 message(s)
 - 2026-10-21T13:07:22Z · body
 - 2026-10-21T13:15:57Z · status active→ready
+- 2026-10-21T13:16:01Z · status ready→active
