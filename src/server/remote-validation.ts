@@ -3795,7 +3795,7 @@ export class TailscaleHostPool {
    * with the same number of active runs this rotates sequential short checks
    * across the pool instead of pinning them to the first healthy host; a host
    * that has never run sorts as oldest, so configured order still decides a
-   * fresh pool and an exact timestamp tie.
+   * fresh pool (and any tie between never-used hosts).
    */
   private compareHosts(a: PoolHostState, b: PoolHostState): number {
     return (
