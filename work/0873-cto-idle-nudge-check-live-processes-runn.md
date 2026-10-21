@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-21T01:44:59Z"
-review_passes: 1
+last_close_out_gate_ms: 104939
+last_close_out_gate_at: "2026-10-21T01:47:59.461Z"
 id: "0873"
 title: "CTO idle nudge: check live processes, running gates and reviews, and machine pressure first; make the threshold configurable"
 type: feature
@@ -14,6 +14,8 @@ branch: feat/cto-idle-nudge-check-live-processes-runn
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:23:49Z"
+updated_at: "2026-10-21T01:47:59Z"
+review_passes: 1
 ---
 ## Problem
 The CTO's automatic idle nudge (src/server/cto-monitor.ts, `nudgeIdleActiveTasks`) fires after 5 minutes without worktree activity (AUTOMATIC_NUDGE_IDLE_MS = 5 min, cooldown 60 min, both hard-coded constants) and decides only from recent worktree file activity. On 2026-10-20 it sent "completion reminder after 5m without worktree activity" to engineers that were not idle: they were running a long `repoos check`, a remote validation wait, a handoff gate or a headless browser step, or the whole machine was thrashing (load 90-500, swap full) so nothing could write files. The reminders queue as messages and are delivered at the end of a turn, so they add noise and sometimes arrive as the engineer's next instruction, and they hid the real cause (a starved machine, a phantom runner, a running review).
@@ -75,4 +77,5 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T01:43:54Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (19d9db73d) during finalization (#0734)
 - 2026-10-21T01:43:55Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (19d9db73d) during finalization (#0734)
 - 2026-10-21T01:44:58Z · note: review pass 1: good to go
+- 2026-10-21T01:47:59Z · close-out gate completed in 105s
 
