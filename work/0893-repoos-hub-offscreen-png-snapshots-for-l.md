@@ -44,3 +44,4 @@ Offscreen snapshots render the view's content into a bitmap — not how a real w
 - 2026-10-21T11:59:30Z · cli_override, model_override
 - 2026-10-21T11:59:32Z · status ready→active, branch
 - 2026-10-21T12:09:37Z · body: Snapshot limitations (added)
+- 2026-10-21T12:09:37Z · message_queued at 2026-10-21T12:09:37.825Z
