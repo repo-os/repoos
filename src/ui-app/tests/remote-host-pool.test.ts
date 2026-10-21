@@ -453,6 +453,8 @@ function poolFixture(opts: {
   loadProbeFails?: boolean;
   /** Validation SSH never resolves and ignores registerAbort (#0739 wedge). */
   validateStallNoAbortOn?: string[];
+  /** Stream `repoos check` step headings so phase timings split build/tests (#0897). */
+  streamStepHeadingsOn?: string[];
 }): Fixture {
   const root = tmpRoot();
   const config = {
@@ -636,6 +638,10 @@ function poolFixture(opts: {
         (cmds[host.ip] ??= []).push(cmd);
         inFlight++;
         peak = Math.max(peak, inFlight);
+        if (opts.streamStepHeadingsOn?.includes(host.ip)) {
+          onChunk?.("$ bun run check\n  ◆ build\n");
+          onChunk?.("  ◆ tests\n");
+        }
         await new Promise<void>((resolve) => {
           const entry = { host: host.ip, resolve };
           pending.push(entry);
@@ -2017,6 +2023,25 @@ describe("queue detail: position, kind and blockers (#0897)", () => {
     const activity = f.runner.taskActivity("0897-phases");
     expect(activity?.run).toMatchObject({ kind: "self-check", host: "a", stage: "run" });
     expect(activity?.queue).toBeNull();
+
+    f.release("a");
+    await job;
+  });
+
+  it("splits the run phase into build and tests from check step headings (#0897)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }], streamStepHeadingsOn: ["a"] });
+    const job = f.runner.validate(opts("0897-steps"));
+    for (let i = 0; i < 50 && f.pending().length === 0; i++) await tick(5);
+    expect(f.pending()).toEqual(["a"]);
+
+    const run = f.runner.hostStatus()![0]!.activeRuns![0]!;
+    expect(run.stage).toBe("tests");
+    const phases = run.phases?.map((p) => p.phase) ?? [];
+    expect(phases.slice(-2)).toEqual(["build", "tests"]);
+    const build = run.phases![run.phases!.length - 2]!;
+    expect(build.endedAt).toBeTruthy();
+    expect(build.durationMs).toBeGreaterThanOrEqual(0);
+    expect(run.phases!.at(-1)!.endedAt).toBeUndefined();
 
     f.release("a");
     await job;

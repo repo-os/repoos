@@ -184,6 +184,8 @@ const STAGE_LABELS: Record<string, string> = {
   upload: "uploading",
   queue: "waiting for host slot",
   run: "build + tests",
+  build: "install/build",
+  tests: "tests",
 };
 
 function stageLabel(stage: string | null | undefined): string {

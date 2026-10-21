@@ -5135,19 +5135,20 @@ export class TailscaleRunner implements RemoteValidator {
           priority: lockPriority,
         });
         outerTimeoutMs = this.timings.remoteRunTimeoutMs + waitSecs * 1000;
-        this.setActiveRunStage(
-          {
-            taskId: opts.taskId,
-            host: host.ip,
-            phase: opts.phase ?? "pre-review",
-            scope: runScope,
-            startedAt: runStartedIso,
-            stage: "run",
-            uploadBytes: upload.bundleBytes,
-            uploadSeconds,
-          },
-          opts.taskId,
-        );
+        // Live run info, kept mutable so a check step boundary can advance the
+        // stage (#0897) without losing upload stats.
+        const runInfo: ActiveRemoteRunInfo = {
+          taskId: opts.taskId,
+          host: host.ip,
+          phase: opts.phase ?? "pre-review",
+          scope: runScope,
+          startedAt: runStartedIso,
+          stage: "run",
+          uploadBytes: upload.bundleBytes,
+          uploadSeconds,
+          kind: opts.kind ?? remoteRunKindForPhase(opts.phase),
+        };
+        this.setActiveRunStage(runInfo, opts.taskId);
 
         // Hang watchdog (#0729): a run whose output stops advancing while the
         // host sits idle is hung (the 2026-10-06/07 incidents looped
@@ -5242,8 +5243,31 @@ export class TailscaleRunner implements RemoteValidator {
           },
         });
         watchdog.start();
+        // `repoos check` prints each step as `  ◆ <name>` on stdout. The two
+        // long steps get their own phase (#0897) so "build + tests 6m" in the
+        // Runners tab means what it says instead of one opaque `run` block.
+        let stepScanOffset = 0;
+        const advanceStepStage = (): void => {
+          const re = /◆\s+([^\n]+)/g;
+          re.lastIndex = stepScanOffset;
+          let match: RegExpExecArray | null;
+          while ((match = re.exec(streamBuf))) {
+            stepScanOffset = re.lastIndex;
+            const label = match[1]!.trim();
+            const stage = /^build\b/i.test(label)
+              ? "build"
+              : /^tests?\b/i.test(label)
+                ? "tests"
+                : null;
+            if (stage && runInfo.stage !== stage) {
+              runInfo.stage = stage;
+              this.setActiveRunStage({ ...runInfo }, opts.taskId);
+            }
+          }
+        };
         const emitStream = (s: string): void => {
           streamBuf += s;
+          advanceStepStage();
           if (!gateFinished && remoteRunHasGateExit(streamBuf)) {
             gateFinished = true;
             watchdog.stop();
