@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: Transport"
+debug_tldr: "Cursor agent transport dropped (dev-error) — retry the engineer on #0889 to finish sanitizing resume prompts that contain NUL bytes."
+debug_tldr_at: "2026-10-21T02:20:31Z"
+debug_tldr_key: "dev-error|error: Transport"
 priority: p2
 area: server
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/crash-recovery-relaunch-fails-when-the-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T01:27:17Z"
-updated_at: "2026-10-21T02:20:13Z"
+updated_at: "2026-10-21T02:20:31Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:20:05.086Z\",\"kind\":\"dev-error\"}]"
 ---
