@@ -6,13 +6,13 @@ status: active
 priority: p2
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/cto-idle-nudge-check-live-processes-runn
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T12:23:49Z"
-updated_at: "2026-10-21T02:56:53Z"
+updated_at: "2026-10-21T02:56:58Z"
 last_close_out_gate_ms: 105173
 last_close_out_gate_at: "2026-10-21T01:50:32.952Z"
 review_passes: 1
@@ -98,3 +98,4 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T02:29:32Z · status ready→active
 - 2026-10-21T02:37:20Z · body
 - 2026-10-21T02:46:03Z · body
+- 2026-10-21T02:56:58Z · assigned_to
