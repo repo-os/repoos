@@ -88,6 +88,19 @@ struct HubSettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Server navigation") {
+                Picker("Layout", selection: navigationLayoutBinding) {
+                    ForEach(HubServerNavigationLayout.allCases, id: \.self) { layout in
+                        Text(layout.displayName).tag(layout)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityLabel("Server navigation layout")
+                Text("Sidebar is the vertical server list. Tabs is one horizontal row of servers, shared with the window controls. Switching keeps the selected server and its open page.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Updates") {
                 Text(Self.versionInfo.displayText)
                     .font(.callout)
@@ -157,6 +170,13 @@ struct HubSettingsView: View {
                 }
             }
         }
+    }
+
+    private var navigationLayoutBinding: Binding<HubServerNavigationLayout> {
+        Binding(
+            get: { appState.hubGlobalPreferences.navigationLayout },
+            set: { appState.updateServerNavigationLayout($0) }
+        )
     }
 
     private var appearanceBinding: Binding<HubAppAppearance> {

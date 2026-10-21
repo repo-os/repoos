@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 439737
-last_close_out_gate_at: "2026-10-21T07:34:38.580Z"
 id: "0875"
 title: Add compact Chrome-style server tabs to RepoOS Hub
 type: feature
-status: review
+status: done
 priority: p2
 area: macos
+merged_commit: 81c8c4af0f8f09ab851edee04e6dfe0ce20e9710
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-compact-chrome-style-server-tabs-to-
@@ -16,6 +15,8 @@ pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-20T13:31:37Z"
 updated_at: "2026-10-21T07:34:38Z"
+last_close_out_gate_ms: 439737
+last_close_out_gate_at: "2026-10-21T07:34:38.580Z"
 review_passes: 2
 review_rounds: 1
 ---

@@ -264,7 +264,7 @@ struct ServerSidebarRow: View {
     }
 }
 
-private struct ServerActionsMenu: View {
+struct ServerActionsMenu: View {
     @EnvironmentObject private var appState: HubAppState
     let entry: ServerEntry
 
