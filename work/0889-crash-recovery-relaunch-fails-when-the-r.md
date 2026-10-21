@@ -11,7 +11,7 @@ branch: feat/crash-recovery-relaunch-fails-when-the-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T01:27:17Z"
-updated_at: "2026-10-21T02:30:46Z"
+updated_at: "2026-10-21T02:47:00Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:20:05.086Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:25:58.742Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -55,3 +55,4 @@ Relevant code: src/server/engineer-crash-recovery.ts, src/server/agents.ts (resu
 - 2026-10-21T02:30:13Z · cli_override, model_override
 - 2026-10-21T02:30:31Z · status active→ready
 - 2026-10-21T02:30:46Z · status ready→active
+- 2026-10-21T02:47:00Z · body
