@@ -8,8 +8,10 @@ area: macos
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-add-copy-url-to-the-ser
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T09:15:33Z"
+updated_at: "2026-10-21T09:17:52Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -121,3 +123,4 @@ Swift tests run: `ServerActionsMenuModelTests`, `RepoAccentColorPreferenceTests`
 - 2026-10-21T08:56:28Z · body
 - 2026-10-21T09:06:23Z · body
 - 2026-10-21T09:15:33Z · CTO nudge: held — machine under pressure (the memory compressor is holding 42% of RAM (10.1 GB of RAM) — holding new work until memory pressure eases)
+- 2026-10-21T09:17:52Z · cli_override, model_override
