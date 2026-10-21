@@ -37,3 +37,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-21T20:03:47Z · cli_override, model_override
 - 2026-10-21T20:19:07Z · status ready→active, branch
 - 2026-10-21T20:34:56Z · message_queued at 2026-10-21T20:34:56.324Z
+- 2026-10-21T20:34:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
