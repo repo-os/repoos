@@ -63,3 +63,4 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T00:38:09Z · body
 - 2026-10-21T01:02:06Z · handoff failed · remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-21T01:25:24Z · message_queued at 2026-10-21T01:25:24.621Z
+- 2026-10-21T01:25:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
