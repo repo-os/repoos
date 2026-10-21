@@ -14,7 +14,7 @@ branch: feat/tests-that-start-engineers-fail-on-runne
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-21T14:05:10Z"
-updated_at: "2026-10-21T15:26:03Z"
+updated_at: "2026-10-21T15:26:04Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: b9a79219d8bbcf186a3f904d719bf13a69dbaa92
 dev_error_count: 2
@@ -67,3 +67,4 @@ Look at src/core/pressure-guard.ts, resource-limits.ts and the test helpers (mak
 - 2026-10-21T15:22:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-21T15:26:03Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 5 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
 - 2026-10-21T15:26:03Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · ActionRequiredError: Weekly usage limit reached. It resets in 5 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-10-21T15:26:04Z · message_delivered: 1 message(s)
