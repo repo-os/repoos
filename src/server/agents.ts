@@ -6684,11 +6684,6 @@ export class AgentRunner {
       if (worktreeRefusal) return { ok: false, reason: worktreeRefusal };
     }
     const pressure = this.pressureHold();
-    if (process.env.REPOOS_DIAG_SPAWN) {
-      console.error(
-        `[diag] id=${id} guard=${JSON.stringify(this.config.pressureGuard)} pressure=${JSON.stringify(pressure)}`,
-      );
-    }
     if (pressure) {
       this.queuedIds.set(id, now());
       this.queuedMeta.set(id, { reason: "pressure", detail: pressure });
