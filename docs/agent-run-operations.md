@@ -119,7 +119,8 @@ forever. TaskWatchdog detects that shape without waiting for the CTO:
 
 This is the completion path when the CTO is off. It never overrides a person:
 `repoos pause` marks the task paused and both the watchdog and the resume path
-skip it.
+skip it, and a deliberate stop records `engineer stopped by request` in
+Activity, which cancels a pending resume (a stop is not a stall).
 
 ### Handoff and status flips
 

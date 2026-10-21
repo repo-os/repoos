@@ -225,7 +225,11 @@ describe("clean-exit activity signal (#0888)", () => {
 
   it("reads a clean-exit marker in the current active episode", () => {
     const body = `## Activity\n\n${transition}\n- 2026-10-21T11:10:00Z · engineer turn ended without a handoff: the turn exited cleanly\n`;
-    expect(readEngineerCleanExitSignal(body)).toEqual({ clean: true, deferred: 0 });
+    expect(readEngineerCleanExitSignal(body)).toEqual({
+      clean: true,
+      deferred: 0,
+      stoppedByPerson: false,
+    });
   });
 
   it("ignores a marker from an earlier active episode", () => {
@@ -245,11 +249,67 @@ describe("clean-exit activity signal (#0888)", () => {
 
   it("a deferred handoff is itself proof of a clean turn and reports the queue size", () => {
     const body = `## Activity\n\n${transition}\n- 2026-10-21T11:10:00Z · handoff_deferred: 2 queued message(s) must be read before review\n`;
-    expect(readEngineerCleanExitSignal(body)).toEqual({ clean: true, deferred: 2 });
+    expect(readEngineerCleanExitSignal(body)).toEqual({
+      clean: true,
+      deferred: 2,
+      stoppedByPerson: false,
+    });
+  });
+
+  it("a deliberate stop after a clean exit cancels the resume", () => {
+    const body =
+      `## Activity\n\n${transition}\n` +
+      `- 2026-10-21T11:10:00Z · engineer turn ended without a handoff\n` +
+      `- 2026-10-21T11:20:00Z · engineer stopped by request\n`;
+    expect(readEngineerCleanExitSignal(body)).toEqual({
+      clean: false,
+      deferred: 0,
+      stoppedByPerson: true,
+    });
+  });
+
+  it("a deliberate stop after a deferred handoff cancels the resume", () => {
+    const body =
+      `## Activity\n\n${transition}\n` +
+      `- 2026-10-21T11:10:00Z · handoff_deferred: 1 queued message(s) must be read before review\n` +
+      `- 2026-10-21T11:20:00Z · engineer stopped by request\n`;
+    expect(readEngineerCleanExitSignal(body)).toEqual({
+      clean: false,
+      deferred: 0,
+      stoppedByPerson: true,
+    });
+  });
+
+  it("a clean exit after a deliberate stop is resumable again", () => {
+    const body =
+      `## Activity\n\n${transition}\n` +
+      `- 2026-10-21T11:10:00Z · engineer stopped by request\n` +
+      `- 2026-10-21T11:20:00Z · engineer turn ended without a handoff\n`;
+    expect(readEngineerCleanExitSignal(body)).toEqual({
+      clean: true,
+      deferred: 0,
+      stoppedByPerson: false,
+    });
+  });
+
+  it("a plain crash (not a handoff failure) is not a clean exit", () => {
+    const body =
+      `## Activity\n\n${transition}\n` +
+      `- 2026-10-21T11:10:00Z · engineer turn ended without a handoff\n` +
+      `- 2026-10-21T11:20:00Z · agent exited with an error · boom\n`;
+    expect(readEngineerCleanExitSignal(body)).toEqual({
+      clean: false,
+      deferred: 0,
+      stoppedByPerson: false,
+    });
   });
 
   it("no activity at all is not a clean-exit signal", () => {
-    expect(readEngineerCleanExitSignal("## Activity\n")).toEqual({ clean: false, deferred: 0 });
+    expect(readEngineerCleanExitSignal("## Activity\n")).toEqual({
+      clean: false,
+      deferred: 0,
+      stoppedByPerson: false,
+    });
   });
 });
 
@@ -449,6 +509,20 @@ describe("recoverEngineerAfterStalledCleanExit (#0888)", () => {
   it("never resumes a paused task", async () => {
     const fx = makeFixture();
     const { deps, launches } = recoveryDeps(fx, { isPaused: true });
+    const outcome = await recoverEngineerAfterStalledCleanExit(deps, TASK_ID, {
+      exitKind: "clean",
+    });
+    expect(outcome.action).toBe("skipped");
+    expect(launches).toHaveLength(0);
+  });
+
+  it("never resumes a task whose latest turn a person stopped", async () => {
+    const fx = makeFixture({
+      body:
+        "- 2026-10-21T11:10:00Z · engineer turn ended without a handoff\n" +
+        "- 2026-10-21T11:20:00Z · engineer stopped by request\n",
+    });
+    const { deps, launches } = recoveryDeps(fx);
     const outcome = await recoverEngineerAfterStalledCleanExit(deps, TASK_ID, {
       exitKind: "clean",
     });

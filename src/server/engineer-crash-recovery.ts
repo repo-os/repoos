@@ -26,6 +26,7 @@ import {
   parseEngineerStallResumeLog,
   planEngineerCrashRecovery,
   planEngineerStallResume,
+  readEngineerCleanExitSignal,
   recordEngineerCrash,
   recordEngineerStallResume,
   serializeEngineerCrashLog,
@@ -374,6 +375,10 @@ export async function recoverEngineerAfterStalledCleanExit(
     if (task.status !== "active" || task.isArchived) {
       return { action: "skipped", detail: "task left active" };
     }
+    // Re-read the durable signal from the fresh task file: between the
+    // watchdog's scan and this call a person may have stopped the turn, which
+    // must cancel the resume.
+    const signal = readEngineerCleanExitSignal(task.body);
 
     const now = opts.now ?? Date.now();
     const resumes = parseEngineerStallResumeLog(task.extra?.[ENGINEER_STALL_RESUME_LOG_KEY]);
@@ -384,6 +389,7 @@ export async function recoverEngineerAfterStalledCleanExit(
       assignedToHuman:
         task.assignee === "human" || task.assignedTo.trim().toLowerCase() === "human",
       paused: false,
+      stoppedByPerson: signal.stoppedByPerson,
       running: false,
       handoffInFlight: false,
       pendingHandoff: false,
