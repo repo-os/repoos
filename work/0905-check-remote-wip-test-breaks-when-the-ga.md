@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: the agent process exited with an error — open the task to see the full output
+debug_tldr: "Self-check failed oxfmt on validate-env-isolation.test.ts — run bun run fmt, commit the formatting, then rerun repoos check."
+debug_tldr_at: "2026-10-21T16:25:52Z"
+debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p1
 area: [core, server]
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/check-remote-wip-test-breaks-when-the-ga
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T16:03:26Z"
-updated_at: "2026-10-21T16:25:33Z"
+updated_at: "2026-10-21T16:25:52Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T16:25:33.719Z\",\"kind\":\"dev-error\"}]"
 ---
