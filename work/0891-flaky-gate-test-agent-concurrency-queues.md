@@ -80,3 +80,4 @@ After the fix, on the same machine: `agent-concurrency.test.ts` passed 50/50 seq
 - 2026-10-21T07:34:09Z · body
 - 2026-10-21T07:35:16Z · body
 - 2026-10-21T07:38:32Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-10-21T07:38:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
