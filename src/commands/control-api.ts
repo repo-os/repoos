@@ -914,9 +914,7 @@ export async function cmdRunners(args: string[]): Promise<number> {
           : h.probed
             ? c.red("unhealthy")
             : c.dim("unprobed");
-        console.log(
-          `  ${h.host} ${state} ${c.dim(`(${h.inFlight}/${h.maxConcurrent} running)`)}`,
-        );
+        console.log(`  ${h.host} ${state} ${c.dim(`(${h.inFlight}/${h.maxConcurrent} running)`)}`);
         for (const r of h.activeRuns ?? []) {
           const elapsed = r.elapsedMs ?? Math.max(0, now - Date.parse(r.startedAt));
           const phases = (r.phases ?? [])
