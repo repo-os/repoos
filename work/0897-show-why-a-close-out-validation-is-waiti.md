@@ -162,3 +162,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T19:07:00Z · body
 - 2026-10-21T19:07:00Z · body
 - 2026-10-21T19:15:56Z · status active→review
+- 2026-10-21T19:15:56Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
