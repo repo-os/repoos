@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T08:37:10Z"
-updated_at: "2026-10-21T08:37:54Z"
+updated_at: "2026-10-21T08:37:55Z"
 ---
 ## Problem
 Two layout problems in the native macOS app (RepoOS Hub), both visible in the new Window layout modes:
@@ -35,9 +35,11 @@ Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode fro
 
 ![Tabs mode: the sidebar collapse button is drawn over the RepoOS tab](/api/tasks/0895/attachments/att_3acc8c47-27c9-4b61-8d96-3042886db432.png)
 ![Windowed layout: the top of the web UI is cut off behind the title bar and traffic lights](/api/tasks/0895/attachments/att_2d87281e-7286-4518-8f09-8adbdcb94885.png)
+![Sidebar mode: the collapse button appears twice (title-bar row and back/forward/refresh row)](/api/tasks/0895/attachments/att_c5be048e-59f8-4617-809d-d124d0314c16.png)
 
 ## Activity
 
 - 2026-10-21T08:37:10Z · created · njachowski@gmail.com
 - 2026-10-21T08:37:37Z · screenshots
 - 2026-10-21T08:37:46Z · screenshots
+- 2026-10-21T08:37:55Z · screenshots
