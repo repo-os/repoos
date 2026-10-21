@@ -11,7 +11,7 @@ branch: feat/show-why-a-close-out-validation-is-waiti
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T12:39:47Z"
-updated_at: "2026-10-21T17:13:07Z"
+updated_at: "2026-10-21T17:17:30Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 42ac6a27980d8a4baafffffc03e470389ee9d5df
 dev_error_count: 2
@@ -129,3 +129,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T17:13:07Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-10-21T17:13:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T17:13:07Z · message_delivered: 2 message(s)
+- 2026-10-21T17:17:30Z · body
