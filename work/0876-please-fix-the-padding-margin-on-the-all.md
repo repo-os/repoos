@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-21T01:15:24Z"
+review_passes: 1
 id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
@@ -13,7 +15,6 @@ model_override: opencode-go/deepseek-v4.1-flash
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T01:15:23Z"
 ---
 ## Problem
 
@@ -115,3 +116,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T01:14:24Z · status active→review
 - 2026-10-21T01:14:25Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-21T01:15:23Z · note: review pass 1: needs some work
+
