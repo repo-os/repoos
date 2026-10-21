@@ -56,6 +56,8 @@ setInterval(() => {}, 1000);
   git(root, ["config", "user.email", "t@example.com"]);
   git(root, ["config", "user.name", "Test"]);
   git(root, ["commit", "--allow-empty", "-m", "init"]);
+  // Isolate spawn behaviour from the host's memory pressure (#0900).
+  writeFileSync(join(root, "repoos.toml"), "[pressureGuard]\nenabled = false\n");
   const wtDir = join(dirname(root), `${basename(root)}-worktrees`);
   return {
     root,

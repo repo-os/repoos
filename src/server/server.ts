@@ -94,6 +94,7 @@ import { homedir } from "node:os";
 import { extname, join, dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
+import type { MemoryPressureProbe } from "../core/memory-pressure.js";
 import { STATUSES } from "../core/types.js";
 import { readBuildMeta } from "../core/build.js";
 import { injectBuildHashIntoUiIndex } from "../core/ui-index.js";
@@ -730,6 +731,12 @@ export interface ServeOptions {
    * `boot-timing.test.ts` is the only user.
    */
   indexBuildGate?: () => void | Promise<void>;
+  /**
+   * Test-only seam (#0900): feed the pressure guard a fixed reading instead of
+   * sampling the host. Production leaves it unset. Tests that prove spawn
+   * behaviour is isolated from the runner's swap use inject a 73%-swap sample.
+   */
+  pressureProbe?: MemoryPressureProbe;
 }
 
 /**
@@ -1853,6 +1860,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     },
     {
       logger,
+      pressureProbe: opts.pressureProbe,
       getTask: (taskId) => index.getTask(taskId),
       onTaskFilePatched: (absPath) => index.applyFileChange(absPath),
       onDiagnosableFailure: (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),

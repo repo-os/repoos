@@ -75,12 +75,17 @@ describe("managed engineer dirty-tree fallback (#0695)", () => {
     const saved = {
       REPOOS_AGENT: process.env.REPOOS_AGENT,
       REPOOS_TASK_ID: process.env.REPOOS_TASK_ID,
+      REPOOS_ROOT: process.env.REPOOS_ROOT,
       REPOOS_CHECK_STORE_ROOT: process.env.REPOOS_CHECK_STORE_ROOT,
       REPOOS_SKIP_TESTS: process.env.REPOOS_SKIP_TESTS,
       REPOOS_REMOTE_VALIDATION_DONE: process.env.REPOOS_REMOTE_VALIDATION_DONE,
     };
     process.env.REPOOS_AGENT = "1";
     process.env.REPOOS_TASK_ID = "0695";
+    // A runner exports REPOOS_ROOT for the project under test. Left set, the
+    // fixture's task id is foreign (#0870) and the managed WIP path is skipped,
+    // so the assertion only fails on the remote host.
+    delete process.env.REPOOS_ROOT;
     delete process.env.REPOOS_CHECK_STORE_ROOT;
     delete process.env.REPOOS_SKIP_TESTS;
     delete process.env.REPOOS_REMOTE_VALIDATION_DONE;
