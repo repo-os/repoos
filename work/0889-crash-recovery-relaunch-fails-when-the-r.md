@@ -13,7 +13,6 @@ model_override: composer-2.5
 created_at: "2026-10-21T01:27:17Z"
 updated_at: "2026-10-21T03:09:16Z"
 dev_error_count: 5
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:25:58.742Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-21T02:50:18.390Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-21T02:50:22.935Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-21T02:50:30.823Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 On 2026-10-21 ~09:26 local, #0877's engineer crashed and the new crash recovery (#0869) tried to relaunch it. The relaunch failed with: `engineer crash recovery: start failed — The argument 'args[6]' must be a string without null bytes. Received "Working directory: ..."`. The resume prompt (working-directory preamble plus the Task Context Pack) contains at least one NUL byte, which Node rejects as a spawn argument. A manual `repoos start 0877` then worked, so the failure is specific to the recovery path's prompt (likely a field in the context pack built from the task body, a diff or a log excerpt that carries a NUL). Until fixed, a crashed engineer whose context contains a NUL stays dead and flagged needs_input.
