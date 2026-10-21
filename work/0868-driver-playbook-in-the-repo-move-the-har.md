@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1257
-last_close_out_gate_at: "2026-10-21T00:57:33.016Z"
 id: "0868"
 title: "Driver notes: append the 2026-10-19/20 driving lessons to docs/driver-notes.md (and point drivers at repoos driver brief)"
 type: chore
-status: review
+status: done
 priority: p2
 area: docs
+merged_commit: a861d9ebb27821cce2364f998b0a65cce5ff8cb0
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/driver-notes-append-the-2026-10-19-20-dr
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:07Z"
 updated_at: "2026-10-21T00:57:33Z"
+last_close_out_gate_ms: 1257
+last_close_out_gate_at: "2026-10-21T00:57:33.016Z"
 review_passes: 1
 ---
 ## Problem

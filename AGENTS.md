@@ -64,6 +64,9 @@ Where to put what:
 | Work that still needs doing | A task, via `repoos new` — never a note-to-self |
 | How a *user* of RepoOS does something | `user-docs/` (this repo only) |
 
+Driving the board? Start with `repoos driver brief` for live state and
+`docs/driver-notes.md` for the judgement calls and sharp edges it cannot carry.
+
 This applies in any repo running RepoOS, not just this one. If your harness has
 its own memory feature, treat it as a cache of what's already in the repo, not
 as the system of record — and prefer writing to the repo first.
