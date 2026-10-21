@@ -220,6 +220,18 @@ describe("evaluatePressure", () => {
 });
 
 describe("waitForPressureRelief", () => {
+  it("returns immediately when the guard is disabled", async () => {
+    const waiting: string[] = [];
+    // The probe would report critical pressure forever; disabled means no hold.
+    const fake = probe(readings({ compressorBytes: 12 * GB }));
+    await waitForPressureRelief(config({ enabled: false }), {
+      probe: fake,
+      pollMs: 1,
+      onWaiting: (reason) => waiting.push(reason),
+    });
+    expect(waiting).toHaveLength(0);
+  });
+
   it("waits until a fake probe reports relief, then proceeds", async () => {
     const waiting: string[] = [];
     const fake = probe(

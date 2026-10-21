@@ -123,6 +123,48 @@ injected, plus exporting `selectSkillsForRun` and adding `skill-routing.test.ts`
 — the feature had **zero** test coverage, which is why it read as a flake
 rather than a regression.
 
+## Browser-capture env leaking into gate tests (#0905)
+
+When browser steps or capture are offloaded (`remoteValidation.offloadBrowserSteps`,
+`browserCaptureMode = runner-only`), the remote runner's `validate.sh` passes
+`REPOOS_OFFLOAD_BROWSER_STEPS=1` and the `REPOOS_BROWSER_CAPTURE_*` variables
+into the `repoos-ci` container. It also sets `REPOOS_ROOT=/repo`. All of these
+describe the **runner**, not the fixture repo a test creates, and a test that
+spawns `repoos check` inherits them.
+
+The failure looks like a behaviour change, not a code assertion: a suite that
+drives the managed engineer check takes a different branch and prints the
+*unmanaged* warning — `uncommitted changes (...) — the remote gate tests
+committed HEAD only` — instead of the `could not commit a WIP checkpoint` line
+it asserts on.`REPOOS_ROOT=/repo` alone does the same thing by making the
+fixture's task id look foreign (#0870), dropping the run's attribution. A test
+that used to exit at a warning may instead run the whole local gate and time
+out, which reads like a hang.
+
+Recognition:
+
+- It passes in isolation and on an idle local box, and fails only in the remote
+  gate (or only when the capture policy is switched to runner-only).
+- Re-running the file with the runner's env reproduces it deterministically:
+
+  ```bash
+  REPOOS_OFFLOAD_BROWSER_STEPS=1 REPOOS_BROWSER_CAPTURE_MODE=shots \
+    bunx vitest run --config src/ui-app/vite.config.ts \
+    src/ui-app/tests/check-remote-wip.test.ts
+  ```
+
+- Clearing the variables (`env -u REPOOS_OFFLOAD_BROWSER_STEPS -u
+  REPOOS_BROWSER_CAPTURE_MODE ...`) makes it pass, with no source change.
+
+The fix is in the test worker setup, not in `validate.sh`: `check-env.ts`
+clears `VALIDATE_INJECTED_ENV_KEYS` (`tests/setup/validate-injected-env.ts`)
+once for every file, and `validate-env-isolation.test.ts` fails when
+`validate.sh` gains a `-e REPOOS_*` line that is not in that list. A test that
+deliberately exercises the managed check still saves, clears and restores the
+set around its own run (`check-remote-wip.test.ts`) so the result is independent
+of the caller's environment. Do not treat "passes in isolation in the runner
+container" as proof — run it with the offload variables set.
+
 ## Related: it can also be a runtime difference
 
 "Passes for me, fails in the pipeline" is a version or runtime difference far
