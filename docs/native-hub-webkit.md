@@ -89,6 +89,17 @@ The Hub never reads the server's session cookie and still injects no script or
 message handler. The native registry's `accentColorHex` is a display cache that
 is reconciled from this cookie.
 
+The old bridge read `localStorage` with a one-shot `evaluateJavaScript` on page
+finish or when leaving a server. A color picked while the page stayed open
+therefore never reached the sidebar, since nothing observed the write, and the
+registry's display cache was only refreshed by that one navigation-driven read.
+The cookie fixes both sides: `WKHTTPCookieStore` observers plus a low-frequency
+poll for the active server refresh the row as soon as the swatch is picked, and
+the cookie outlives a relaunch because it is stored in the per-server
+identifier-backed data store. The reader also ignores a cookie whose domain is
+not the entry's current host, so editing a server URL cannot inherit the
+previous origin's color.
+
 ## Navigation policy
 
 `ServerNavigationPolicy` (pure Swift, unit-tested) governs each navigation:

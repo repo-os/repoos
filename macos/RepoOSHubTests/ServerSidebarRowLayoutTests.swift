@@ -191,6 +191,22 @@ final class RepoAccentColorPreferenceTests: XCTestCase {
         XCTAssertEqual(RepoAccentColorPreference.parseCookieValue("not-a-color"), .unsupported)
     }
 
+    func testMatchesOnlyTheCurrentOriginHost() {
+        XCTAssertTrue(
+            RepoAccentColorPreference.cookieMatches(domain: "localhost", host: "localhost")
+        )
+        XCTAssertTrue(
+            RepoAccentColorPreference.cookieMatches(domain: ".localhost", host: "LOCALHOST")
+        )
+        // A cookie left in the store by a previous origin must not paint the row.
+        XCTAssertFalse(
+            RepoAccentColorPreference.cookieMatches(domain: "127.0.0.1", host: "localhost")
+        )
+        XCTAssertFalse(
+            RepoAccentColorPreference.cookieMatches(domain: "hub.example.com", host: "other.example.com")
+        )
+    }
+
     func testScopesThePreferenceToTheRepoThatChoseIt() {
         XCTAssertEqual(
             RepoAccentColorPreference.parseCookieValue(
