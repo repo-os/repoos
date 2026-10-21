@@ -188,6 +188,23 @@ its PID and command — with a **Stop** action for a process RepoOS started. A
 off with `autoPort = false` when you need a fixed port. Enable the optional
 AI-written summary under **Settings → Advanced → Dev failure summaries**.
 
+## Missing dependencies
+
+A target's `cwd` is its own project directory. If that directory has a
+`package.json`, it needs its own `node_modules` — a fresh task worktree has
+none, and an older install can predate a dependency added to `package.json`.
+Starting the target then fails with `ERR_MODULE_NOT_FOUND` even though the
+command itself is correct.
+
+`repoos doctor` reports this as **A dev or preview target is missing its
+installed dependencies** and gives the exact fix, for example:
+
+```bash
+cd user-docs && bun install
+```
+
+The check is read-only — doctor never installs anything for you.
+
 ## See also
 
 - [Configuration](/configuration) — the full `repoos.toml` reference, including

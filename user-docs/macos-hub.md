@@ -229,7 +229,9 @@ buttons in the sidebar:
 - **Settings** (the gear) sits in the sidebar footer, next to **Add server**.
 
 The existing window behavior is unchanged — dragging, resizing, minimizing,
-and fullscreen all work as before.
+and fullscreen all work as before. A brand-new window opens large, at 90% of
+the screen's visible area, instead of at the minimum size; once you resize it,
+macOS remembers your frame for next time.
 
 ## Switching and the keyboard workflow
 
