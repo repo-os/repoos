@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T05:56:10Z"
+updated_at: "2026-10-21T05:57:44Z"
 dev_error_count: 3
 ---
 ## Items
@@ -173,3 +173,5 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T05:55:37Z · body
 - 2026-10-21T05:55:55Z · body
 - 2026-10-21T05:56:10Z · body
+- 2026-10-21T05:57:37Z · note: E4 manual check: launched a copy of the built Hub with a fresh bundle id; the window opened at 1485x967 on a 1650x1074 visible frame (90%), and the clamp/no-screen cases are unit-tested. E2: the only remaining 'scans one nested level' wording is in the historical #0858 task record; current code/comments/docs say SPAWN_LOG_SCAN_DEPTH=32 (work files are never hand-edited). Local full bun run test hit timeout flakes under heavy machine load; the changed suites (doctor, reap-fixtures, ui-harness-teardown) pass, and the scoped check incl. remote changed-path tests is green.
+- 2026-10-21T05:57:44Z · body
