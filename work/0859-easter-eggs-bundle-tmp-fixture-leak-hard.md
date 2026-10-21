@@ -10,9 +10,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
-model_override: opencode-go/deepseek-v4.1-flash
+model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T04:14:55Z"
+updated_at: "2026-10-21T04:14:56Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:13.053Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:08:06.822Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:09:05.450Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -133,3 +133,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T04:08:06Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-21T04:09:05Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-21T04:14:52Z · needs_input
+- 2026-10-21T04:14:56Z · model_override
