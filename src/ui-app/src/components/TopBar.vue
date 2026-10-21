@@ -7,6 +7,7 @@ import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
 import SearchBar from "./SearchBar.vue";
 import NoticeBell from "./NoticeBell.vue";
+import { readRepoColor, writeRepoColor } from "../repo-color";
 
 const repo = useRepoStore();
 const config = useConfigStore();
@@ -51,18 +52,12 @@ const DARK_PALETTE = ["#E07A8A", "#E4C86B", "#7FD9A0", "#6FB3E0", "#9E8FD0", "#6
 
 const ALL_COLORS = [...PALETTE, ...DARK_PALETTE];
 
-const COLOR_KEY_PREFIX = "repoos.repoColor.";
-
 const popoverOpen = ref(false);
 const savedColor = ref<string | null>(null);
 
-function localStorageKey(name: string): string {
-  return COLOR_KEY_PREFIX + name.toLowerCase().replace(/\//g, "-");
-}
-
 function loadSavedColor(): void {
   if (!repoName.value) return;
-  savedColor.value = localStorage.getItem(localStorageKey(repoName.value));
+  savedColor.value = readRepoColor(repoName.value);
   applyColorCues(savedColor.value);
 }
 
@@ -144,21 +139,16 @@ function togglePopover(): void {
 
 function selectColor(color: string): void {
   if (!repoName.value) return;
-  const key = localStorageKey(repoName.value);
-  if (savedColor.value === color) {
-    localStorage.removeItem(key);
-    savedColor.value = null;
-  } else {
-    localStorage.setItem(key, color);
-    savedColor.value = color;
-  }
+  const next = savedColor.value === color ? null : color;
+  writeRepoColor(repoName.value, next);
+  savedColor.value = next;
   applyColorCues(savedColor.value);
   popoverOpen.value = false;
 }
 
 function clearColor(): void {
   if (!repoName.value) return;
-  localStorage.removeItem(localStorageKey(repoName.value));
+  writeRepoColor(repoName.value, null);
   savedColor.value = null;
   applyColorCues(null);
   popoverOpen.value = false;

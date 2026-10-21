@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1291699
-last_close_out_gate_at: "2026-10-21T12:33:45.830Z"
 id: "0892"
 title: "RepoOS Hub (macOS): add Copy URL to the server menu, and fix the server color bar not applying or persisting"
 type: bug
-status: review
+status: done
 priority: p2
 area: macos
+merged_commit: 77986e5d495440e570c6ed0560ff649aac5e658a
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-add-copy-url-to-the-ser
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T05:57:31Z"
 updated_at: "2026-10-21T12:33:45Z"
+last_close_out_gate_ms: 1291699
+last_close_out_gate_at: "2026-10-21T12:33:45.830Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-21T11:18:00.093Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
