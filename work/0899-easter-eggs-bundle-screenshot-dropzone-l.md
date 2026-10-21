@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T16:46:22Z"
+updated_at: "2026-10-21T16:51:22Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 4ffff8a8c3a575b4eb2eee506797f91ad72280cd
 ---
@@ -121,3 +121,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T16:19:07Z · CTO nudge: held — machine under pressure (the memory compressor is holding 36% of RAM (8.7 GB of RAM) — holding new work until memory pressure eases)
 - 2026-10-21T16:36:22Z · CTO nudge: held — machine under pressure (the memory compressor is holding 40% of RAM (9.7 GB of RAM) — holding new work until memory pressure eases)
 - 2026-10-21T16:46:22Z · CTO nudge: held — machine under pressure (the memory compressor is holding 42% of RAM (10.2 GB of RAM) — holding new work until memory pressure eases)
+- 2026-10-21T16:51:22Z · CTO nudge: held — handoff gate is running
