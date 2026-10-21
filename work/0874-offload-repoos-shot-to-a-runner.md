@@ -13,7 +13,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T12:27:49Z"
 updated_at: "2026-10-21T12:09:28Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T09:07:49.677Z: repoos check failed: ◆ Check plan"
 dev_error_count: 5
 ---
@@ -74,3 +73,4 @@ Not required for #0854's acceptance criteria. #0864 (rebuild the runner image an
 - 2026-10-21T12:03:26Z · status ready→active
 - 2026-10-21T12:08:13Z · body
 - 2026-10-21T12:09:28Z · needs_input
+
