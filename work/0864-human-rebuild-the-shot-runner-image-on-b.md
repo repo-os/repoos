@@ -3,7 +3,6 @@ id: "0864"
 title: "Human: rebuild the shot-runner image on bee and record an end-to-end remote capture proof (#0854)"
 type: chore
 status: ready
-hold: true
 priority: p2
 area: server
 depends_on: ["0854"]
@@ -11,7 +10,7 @@ assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T09:31:45Z"
-updated_at: "2026-10-21T18:33:17Z"
+updated_at: "2026-10-21T19:23:40Z"
 ---
 ## Problem
 #0854 moves browser shots and UI verification to a runner. Its code and tests can be reviewed without a real runner, but its acceptance criterion "a real end-to-end proof on one runner, recorded in the task" needs a person: rebuild/deploy the runner image (Dockerfile.ci with Playwright/WebKit) on the Tailscale runner (bee) and hand a task off with the runner-only policy.
@@ -44,3 +43,4 @@ Proof run (driver, 2026-10-22), with remoteValidation.browserCaptureMode = runne
 - 2026-10-20T09:32:02Z · held, assigned_to
 - 2026-10-20T11:26:02Z · status inbox→ready
 - 2026-10-21T18:33:17Z · body: Proof (added)
+- 2026-10-21T19:23:40Z · released
