@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T19:06:34Z"
+updated_at: "2026-10-21T19:07:37Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -100,15 +100,15 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 "route": "/work?task=new",
 "highlight": ".field .shot-dropzone",
 "steps": [
-  {
-    "click": ".drawer-tabs .tab-btn:nth-child(2)"
-  },
-  {
-    "waitFor": ".field .shot-dropzone"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": ".drawer-tabs .tab-btn:nth-child(2)"
+},
+{
+  "waitFor": ".field .shot-dropzone"
+},
+{
+  "waitMs": 300
+}
 ]
 },
 {
@@ -202,3 +202,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:05:12Z · note: review pass 2: needs some work
 - 2026-10-21T19:05:12Z · status review→active
 - 2026-10-21T19:06:20Z · body
+- 2026-10-21T19:07:37Z · body
