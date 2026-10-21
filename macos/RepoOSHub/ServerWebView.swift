@@ -103,6 +103,10 @@ struct ServerWebView: NSViewRepresentable {
         context.coordinator.syncNavigationState()
     }
 
+    static func dismantleNSView(_ nsView: HubServerWebContainerView, coordinator: Coordinator) {
+        coordinator.stopObservingAccentColor()
+    }
+
     @MainActor
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKHTTPCookieStoreObserver {
         var model: ServerWebViewModel
@@ -407,6 +411,15 @@ struct ServerWebView: NSViewRepresentable {
                     self.readRepositoryAccentColor()
                 }
             }
+        }
+
+        /// Release the cookie-store observer when SwiftUI tears this web view
+        /// down, so the coordinator and its timer do not outlive the page.
+        func stopObservingAccentColor() {
+            accentColorTimer?.invalidate()
+            accentColorTimer = nil
+            accentColorCookieStore?.remove(self)
+            accentColorCookieStore = nil
         }
 
         func cookiesDidChange(in cookieStore: WKHTTPCookieStore) {
