@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 0e6cbf9917a5eb49f5efc97ffa26995a3ff85a2d
 id: "0873"
 title: "CTO idle nudge: check live processes, running gates and reviews, and machine pressure first; make the threshold configurable"
 type: feature
@@ -14,7 +12,9 @@ branch: feat/cto-idle-nudge-check-live-processes-runn
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T12:23:49Z"
-updated_at: "2026-10-21T02:59:01Z"
+updated_at: "2026-10-21T02:59:15Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 0e6cbf9917a5eb49f5efc97ffa26995a3ff85a2d
 last_close_out_gate_ms: 105173
 last_close_out_gate_at: "2026-10-21T01:50:32.952Z"
 review_passes: 1
@@ -103,4 +103,4 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T02:56:58Z · assigned_to
 - 2026-10-21T02:57:08Z · assigned_to
 - 2026-10-21T02:59:01Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-10-21T02:59:15Z · note: handoff requested (ui-review)
