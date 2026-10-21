@@ -20,6 +20,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { writeChildStdin } from "./child-stdin.js";
 import { resolveBinary, KNOWN_AGENTS } from "./detect.js";
+import { sanitizeSpawnArgs } from "./spawn-args.js";
 
 /** Default ceiling on the `opencode models` probe, ms. A hung CLI is SIGKILLed. */
 export const MODELS_TIMEOUT_MS = 12_000;
@@ -182,7 +183,7 @@ function spawnModels(
   return new Promise((resolve) => {
     let proc: ChildProcess;
     try {
-      proc = spawn(bin, args, {
+      proc = spawn(bin, sanitizeSpawnArgs(args).args, {
         cwd: opts.cwd ?? process.cwd(),
         stdio: ["ignore", "pipe", "pipe"],
       });
