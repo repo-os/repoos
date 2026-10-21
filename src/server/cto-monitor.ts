@@ -230,8 +230,7 @@ export class CTOMonitor {
     const idleMs = resolveCtoNudgeIdleMs(this.config);
     const cooldownMs = resolveCtoNudgeCooldownMs(this.config);
     const activeIds = new Set<string>();
-    // Sample machine pressure at most once per tick, and only when a running
-    // task actually reaches the check that needs it.
+    // Sample machine pressure at most once per tick.
     let pressure: string | null | undefined;
     const pressureNow = (): string | null => {
       if (pressure === undefined) pressure = this.currentPressureReason();

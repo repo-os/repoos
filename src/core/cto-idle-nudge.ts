@@ -93,33 +93,24 @@ export function decideIdleNudge(signals: IdleNudgeSignals): IdleNudgeDecision {
   if (signals.paused) return skip("paused");
   if (!signals.runnerRunning) return skip("not-running");
   if (signals.handoffInFlight || signals.pendingHandoff) {
-    return skip("handoff-in-flight", "the handoff gate is running");
+    return skip("handoff-in-flight");
   }
-  if (signals.reviewRunning) return skip("review-running", "a review is running");
+  if (signals.reviewRunning) return skip("review-running");
   // RepoOS thinks a turn is running but no process (or child) exists: the
   // phantom-runner recovery (#0863) owns this, not a nudge.
-  if (!signals.processGroupAlive) {
-    return skip(
-      "phantom-runner",
-      "RepoOS thinks the engineer is running but no process exists (phantom runner, #0863)",
-    );
-  }
+  if (!signals.processGroupAlive) return skip("phantom-runner");
   if (signals.busyChild) {
-    return skip("process-busy", `the engineer is running ${signals.busyChild}`);
+    return skip("process-busy", signals.busyChild);
   }
-  if (signals.remoteValidationRunning) {
-    return skip("remote-validation-running", "a remote-validation run is active");
-  }
-  if (signals.messageQueued) {
-    return skip("message-queued", "an undelivered message is already queued");
-  }
+  if (signals.remoteValidationRunning) return skip("remote-validation-running");
+  if (signals.messageQueued) return skip("message-queued");
   if (signals.recentWorktreeActivity) return skip("recent-activity");
   if (signals.idleForMs < signals.idleThresholdMs) {
     return skip("below-threshold", `idle for ${formatDuration(signals.idleForMs)}`);
   }
   if (signals.cooldownActive) return skip("cooldown", "nudged recently");
   if (signals.pressureReason) {
-    return skip("machine-pressure", `machine under pressure: ${signals.pressureReason}`);
+    return skip("machine-pressure", signals.pressureReason);
   }
   return { nudge: true, reason: null, detail: null };
 }
@@ -148,11 +139,11 @@ export function describeIdleSkip(
   const label: Record<string, string> = {
     "handoff-in-flight": "handoff gate is running",
     "review-running": "review is running",
-    "phantom-runner": "phantom runner — no live process exists",
+    "phantom-runner": "phantom runner — RepoOS thinks it is running but no process exists (#0863)",
     "process-busy": "engineer process is busy",
     "remote-validation-running": "remote validation is running",
     "message-queued": "an undelivered message is already queued",
-    "machine-pressure": "machine pressure is holding the nudge",
+    "machine-pressure": "machine under pressure",
   };
   const base = label[reason] ?? reason;
   return detail && detail !== base ? `${base} (${detail})` : base;
