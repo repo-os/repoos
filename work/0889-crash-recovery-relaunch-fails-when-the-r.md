@@ -11,7 +11,7 @@ branch: feat/crash-recovery-relaunch-fails-when-the-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T01:27:17Z"
-updated_at: "2026-10-21T02:54:09Z"
+updated_at: "2026-10-21T02:54:42Z"
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:25:58.742Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-21T02:50:18.390Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-21T02:50:22.935Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-21T02:50:30.823Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -62,3 +62,4 @@ Relevant code: src/server/engineer-crash-recovery.ts, src/server/agents.ts (resu
 - 2026-10-21T02:50:30Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-21T02:51:16Z · needs_input
 - 2026-10-21T02:54:09Z · body
+- 2026-10-21T02:54:42Z · body
