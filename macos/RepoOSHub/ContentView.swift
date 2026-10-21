@@ -8,22 +8,46 @@ struct ContentView: View {
     /// source of truth so collapsing the sidebar survives a relaunch (#0855).
     private var columnVisibility: Binding<NavigationSplitViewVisibility> {
         Binding(
-            get: { HubSidebarVisibility.visibility(isCollapsed: isSidebarCollapsed) },
-            set: { isSidebarCollapsed = HubSidebarVisibility.isCollapsed($0) }
+            get: {
+                // Tabs mode hides the sidebar column without writing the
+                // persisted collapsed flag, so returning to Sidebar restores it.
+                if usesTabStrip { return .detailOnly }
+                return HubSidebarVisibility.visibility(isCollapsed: isSidebarCollapsed)
+            },
+            set: { newValue in
+                guard !usesTabStrip else { return }
+                isSidebarCollapsed = HubSidebarVisibility.isCollapsed(newValue)
+            }
         )
     }
 
+    private var usesTabStrip: Bool {
+        appState.hubGlobalPreferences.navigationLayout == .tabs
+    }
+
     var body: some View {
+        // One NavigationSplitView and one WorkspaceDetailView for both layouts.
+        // An if/else that builds a second workspace destroys the WKWebViews
+        // when the user switches between Sidebar and Tabs.
         NavigationSplitView(columnVisibility: columnVisibility) {
             ServerSidebarView(columnVisibility: columnVisibility)
         } detail: {
             WorkspaceDetailView()
+                .padding(.top, usesTabStrip ? HubServerTabStripMetrics.height : 0)
+                .ignoresSafeArea(edges: usesTabStrip ? .top : [])
+                .overlay(alignment: .top) {
+                    if usesTabStrip {
+                        HubServerTabStrip()
+                            .frame(height: HubServerTabStripMetrics.height)
+                            .ignoresSafeArea(edges: .top)
+                    }
+                }
         }
         // The reveal tab lives on the split view, not the detail column, so it
         // sits flush against the window's left edge when the sidebar collapses
         // instead of inheriting the detail column's leading inset (#0857).
         .overlay(alignment: .topLeading) {
-            if isSidebarCollapsed {
+            if !usesTabStrip && isSidebarCollapsed {
                 HubSidebarRevealTab {
                     isSidebarCollapsed = false
                 }

@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-21T07:24:07Z"
-review_passes: 2
 id: "0875"
 title: Add compact Chrome-style server tabs to RepoOS Hub
 type: feature
@@ -15,7 +13,7 @@ model_override: grok-4.7-low
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-20T13:31:37Z"
-review_rounds: 1
+updated_at: "2026-10-21T07:06:28Z"
 ---
 ## Problem
 
@@ -348,18 +346,6 @@ Test both layouts, switching between them, narrow windows, many servers, and nat
 
 **Success means RepoOS Hub feels like Chrome's compact tab bar, but each tab represents a separate RepoOS server. The native chrome should consume approximately one row of vertical space, not two.**
 
-## Shots
-```json
-[
-{
-"label": "Server navigation layout documented",
-"target": "Docs site",
-"route": "/macos-hub",
-"highlight": "#window-layout"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-20T13:31:37Z · created · hello@repoos.org
@@ -372,25 +358,4 @@ Test both layouts, switching between them, narrow windows, many servers, and nat
 - 2026-10-21T05:58:17Z · cli_override, model_override
 - 2026-10-21T05:58:19Z · model_override
 - 2026-10-21T06:08:57Z · status ready→active, branch
-- 2026-10-21T06:12:42Z · CTO nudge: held — engineer process is busy (headless browser)
-- 2026-10-21T06:17:20Z · body
-- 2026-10-21T06:20:18Z · body
-- 2026-10-21T06:53:11Z · message_queued at 2026-10-21T06:53:11.334Z
-- 2026-10-21T06:53:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-21T06:54:14Z · body
-- 2026-10-21T06:58:11Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-21T06:58:20Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-21T06:58:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-21T06:58:21Z · message_delivered: 1 message(s)
 - 2026-10-21T07:06:28Z · status active→review
-- 2026-10-21T07:06:28Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (8471a77e4) during finalization (#0734)
-- 2026-10-21T07:06:30Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (8471a77e4) during finalization (#0734)
-- 2026-10-21T07:07:43Z · note: review pass 1: needs some work
-- 2026-10-21T07:07:44Z · status review→active
-- 2026-10-21T07:08:11Z · CTO nudge: held — engineer process is busy (headless browser)
-- 2026-10-21T07:11:41Z · body
-- 2026-10-21T07:22:04Z · status active→review
-- 2026-10-21T07:22:05Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (81c8c4af0) during finalization (#0734)
-- 2026-10-21T07:22:16Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (81c8c4af0) during finalization (#0734)
-- 2026-10-21T07:24:06Z · note: review pass 2: good to go
-
