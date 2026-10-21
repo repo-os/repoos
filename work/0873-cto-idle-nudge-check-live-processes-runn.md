@@ -2,7 +2,7 @@
 id: "0873"
 title: "CTO idle nudge: check live processes, running gates and reviews, and machine pressure first; make the threshold configurable"
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/cto-idle-nudge-check-live-processes-runn
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:23:49Z"
-updated_at: "2026-10-21T02:28:58Z"
+updated_at: "2026-10-21T02:28:59Z"
 last_close_out_gate_ms: 105173
 last_close_out_gate_at: "2026-10-21T01:50:32.952Z"
 review_passes: 1
@@ -91,3 +91,4 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T02:27:27Z · engineer stopped by request
 - 2026-10-21T02:27:35Z · status ready→active
 - 2026-10-21T02:28:58Z · engineer stopped by request
+- 2026-10-21T02:28:59Z · status active→review
