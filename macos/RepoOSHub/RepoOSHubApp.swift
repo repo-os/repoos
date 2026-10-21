@@ -319,6 +319,9 @@ func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
 /// SwiftUI's identifier for the sidebar toggle it adds to a
 /// `NavigationSplitView` toolbar. The Hub supplies its own toggle in the
 /// sidebar navigation row, so the system copy must never draw (#0895).
+/// Hiding the toolbar row is the primary fix; removing the item as well means
+/// a toolbar SwiftUI re-shows later still cannot duplicate the control. If a
+/// future macOS renames the identifier the row stays hidden regardless.
 enum HubNativeToolbar {
     static let swiftUISidebarToggleItemIdentifier =
         "com.apple.SwiftUI.navigationSplitView.toggleSidebar"
