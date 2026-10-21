@@ -2,14 +2,14 @@
 id: "0897"
 title: "Show why a close-out/validation is waiting: queue position, what runs ahead on each runner"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [server, web]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T12:39:47Z"
-updated_at: "2026-10-21T12:39:47Z"
+updated_at: "2026-10-21T13:33:34Z"
 ---
 ## Problem
 A close-out sat in 'validating' for ~18 min (2026-10-21, #0892) although its own gate only ran ~6 min on bee. Nothing shows where the other ~12 min went: waiting for a runner slot, a prior phase, or something else queued/running ahead of it on a runner (other handoff checks, reviews, other close-outs). Operators and drivers can't tell a slow gate from a queued one.
@@ -29,3 +29,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 ## Activity
 
 - 2026-10-21T12:39:47Z · created · njachowski@gmail.com
+- 2026-10-21T13:33:34Z · status inbox→ready
