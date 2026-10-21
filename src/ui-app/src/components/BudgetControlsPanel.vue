@@ -408,7 +408,7 @@ async function resumeModel(cli: string, model: string): Promise<void> {
           </DialogDescription>
           <div class="budget-pause-fields">
             <label class="field">
-              <span class="field-label">Resume at (optional)</span>
+              <span class="budget-field-label">Resume at (optional)</span>
               <Input
                 v-model="pauseDialog.until"
                 type="datetime-local"
@@ -416,7 +416,7 @@ async function resumeModel(cli: string, model: string): Promise<void> {
               />
             </label>
             <label class="field">
-              <span class="field-label">Reason (optional)</span>
+              <span class="budget-field-label">Reason (optional)</span>
               <Input
                 v-model="pauseDialog.reason"
                 type="text"
@@ -455,7 +455,7 @@ async function resumeModel(cli: string, model: string): Promise<void> {
           </DialogDescription>
           <form class="budget-add-form" @submit.prevent="confirmAdd">
             <div class="budget-add-picker">
-              <span class="budget-add-picker-label">Coding agent + model</span>
+              <span class="budget-field-label">Coding agent + model</span>
               <AgentModelControl
                 :cli-options="cliOptions"
                 :model-options="addModelOptions"
@@ -504,7 +504,9 @@ async function resumeModel(cli: string, model: string): Promise<void> {
   gap: 8px;
   padding: 16px 24px 0;
 }
-.budget-add-picker-label {
+/* Shared label treatment for the add and pause dialog fields (#0876). */
+.budget-field-label {
+  display: block;
   font-size: 13px;
   font-weight: 500;
   color: var(--txt-secondary);
@@ -694,12 +696,8 @@ async function resumeModel(cli: string, model: string): Promise<void> {
 .budget-pause-fields .field {
   margin-bottom: 0;
 }
-.budget-pause-fields .field-label {
-  display: block;
+.budget-pause-fields .budget-field-label {
   margin-bottom: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--txt-secondary);
 }
 .budget-pause-fields .ff-error {
   margin-bottom: 0;
