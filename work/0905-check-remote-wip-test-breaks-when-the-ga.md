@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from cd54ffe3 to 20106398) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: cd54ffe3c0dbd54e13d7dcae216e92726272d095
 id: "0905"
 title: check-remote-wip test breaks when the gate runs with browser steps offloaded (REPOOS_OFFLOAD_BROWSER_STEPS=1)
 type: feature
@@ -45,3 +47,4 @@ See scripts/remote-runner/validate.sh (the -e REPOOS_OFFLOAD_BROWSER_STEPS / REP
 - 2026-10-21T16:45:42Z · assigned_to
 - 2026-10-21T16:45:43Z · note: handoff requested (ui-review)
 - 2026-10-21T16:56:38Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from cd54ffe3 to 20106398) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+
