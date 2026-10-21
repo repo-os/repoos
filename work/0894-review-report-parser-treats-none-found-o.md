@@ -16,7 +16,6 @@ last_handoff_failure_fingerprint: check|server-side finalization timed out (dead
 last_handoff_failure_sha: a0f2fd958dde8df75ca69c6cded5088a9c7793c5
 review_passes: 1
 dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:19:07.268Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:22:38.129Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 `reviewReportHasBlockingBugs` (src/core/review-report-sections.ts) decides there are blocking bugs whenever the `## Bugs` section has any text other than exactly `None found`. A reviewer who writes `None found.` (trailing period), `None`, `None found — see edge cases`, `No bugs found`, `N/A` or an empty-ish bullet is parsed as having blocking bugs. Observed 2026-10-21 on #0890: the review verdict is `good to go`, Bugs says `None found.`, and `repoos landable` / the Landable panel reports "Not landable yet: Review verdict — the review still lists blocking bugs". The same helper backs the review auto-bounce path and the approval policy gate (its own doc comment says so), so harmless phrasing can also bounce a reviewed task back to its engineer or fail an approval check. Reviewer agents vary their wording between runs and models.
