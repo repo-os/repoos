@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 279520
-last_close_out_gate_at: "2026-10-21T06:03:38.801Z"
 id: "0862"
 title: "Docs site: use the landing page's RepoOS logo (theme-aware, no extra border)"
 type: chore
-status: review
+status: done
 priority: p2
 area: [docs, landing]
+merged_commit: b25f2301cbbf647591a67f0b187dab530b3941b8
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/docs-site-use-the-landing-page-s-repoos-
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-20T06:23:23Z"
 updated_at: "2026-10-21T06:03:38Z"
+last_close_out_gate_ms: 279520
+last_close_out_gate_at: "2026-10-21T06:03:38.801Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-21T05:03:23.727Z: repoos check failed: vite v8.2.0 building client environment for production..."
 dev_error_count: 4
