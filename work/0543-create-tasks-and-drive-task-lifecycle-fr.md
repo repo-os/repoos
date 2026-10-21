@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-21T14:16:01Z"
+review_passes: 1
 id: "0543"
 title: Create tasks and drive task lifecycle from Telegram
 type: feature
@@ -12,7 +14,6 @@ branch: feat/create-tasks-and-drive-task-lifecycle-fr
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-27T07:33:58Z"
-updated_at: "2026-10-21T14:16:01Z"
 ---
 ## Problem
 
@@ -124,3 +125,4 @@ A `member` can still read, be notified, and answer a permitted needs-input quest
 - 2026-10-21T14:14:33Z · status active→review
 - 2026-10-21T14:14:33Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-21T14:16:01Z · note: review pass 1: good to go
+
