@@ -12,7 +12,7 @@ branch: feat/check-remote-wip-test-breaks-when-the-ga
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T16:03:26Z"
-updated_at: "2026-10-21T18:06:44Z"
+updated_at: "2026-10-21T18:07:16Z"
 last_close_out_gate_ms: 227619
 last_close_out_gate_at: "2026-10-21T18:06:44.605Z"
 review_passes: 1
@@ -55,4 +55,4 @@ See scripts/remote-runner/validate.sh (the -e REPOOS_OFFLOAD_BROWSER_STEPS / REP
 - 2026-10-21T17:18:32Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-21T17:19:27Z · note: review pass 1: good to go
 - 2026-10-21T18:06:44Z · close-out gate completed in 228s
-
+- 2026-10-21T18:07:16Z · status done→done, release:success
