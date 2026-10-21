@@ -12,7 +12,7 @@ branch: feat/tests-that-start-engineers-fail-on-runne
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-21T14:05:10Z"
-updated_at: "2026-10-21T15:57:59Z"
+updated_at: "2026-10-21T15:58:54Z"
 last_close_out_gate_ms: 412443
 last_close_out_gate_at: "2026-10-21T15:57:59.632Z"
 review_passes: 1
@@ -73,4 +73,4 @@ Look at src/core/pressure-guard.ts, resource-limits.ts and the test helpers (mak
 - 2026-10-21T15:46:31Z · note: shots: skipped — the diff (15 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-21T15:47:28Z · note: review pass 1: good to go
 - 2026-10-21T15:57:59Z · close-out gate completed in 412s
-
+- 2026-10-21T15:58:54Z · status done→done, release:success
