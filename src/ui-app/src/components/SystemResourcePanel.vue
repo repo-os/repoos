@@ -474,18 +474,17 @@ const serveMessage = computed(() => {
 
 .pressure-level {
   font-weight: 700;
-}
-
-.pressure-alert.warning .pressure-level {
-  color: var(--amber);
-}
-
-.pressure-alert.critical .pressure-level {
-  color: var(--red);
+  /* The tinted warning/critical background pushed the 12px severity label
+     below the WCAG floor in several themes (#0877 gate); the text names the
+     state, the border/background keep the colour cue. */
+  color: var(--txt);
 }
 
 .pressure-metric {
-  color: var(--txt-faint);
+  /* --txt-dim alone sits at 4.29 (gruvbox-light) and 4.49 (gruvbox-dark) on
+     the amber wash; lean it toward the body token to clear the WCAG floor
+     (#0877 gate). */
+  color: color-mix(in srgb, var(--txt-dim) 60%, var(--txt));
   font-variant-numeric: tabular-nums;
 }
 
@@ -551,7 +550,10 @@ const serveMessage = computed(() => {
 
 .top-owner.repoos {
   color: var(--cyan);
-  background: color-mix(in srgb, var(--cyan) 14%, transparent);
+  /* Keep the neutral chip fill used by the sibling owner badge: tinting the
+     background with the same --cyan the text uses pushed 9px labels below the
+     WCAG floor in every light theme and gruvbox-dark (#0877 gate). */
+  background: var(--chip-bg);
 }
 
 .top-owner.other {
