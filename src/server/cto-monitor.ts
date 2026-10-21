@@ -260,7 +260,7 @@ export class CTOMonitor {
         messageQueued: this.runner?.hasQueuedMessages?.(task.id) ?? false,
         recentWorktreeActivity:
           runnerRunning && hasRecentWorktreeActivity(this.config.root, task.branch, idleMs, now),
-        idleForMs: task.updated_at ? now - Date.parse(task.updated_at) : 0,
+        idleForMs: this.idleFor(task, now),
         idleThresholdMs: idleMs,
         cooldownActive: this.wasRecentlyNudged(task, now, cooldownMs),
         pressureReason: pressureNow(),
@@ -314,6 +314,12 @@ export class CTOMonitor {
     for (const id of this.idleSkipReported.keys()) {
       if (!activeIds.has(id)) this.idleSkipReported.delete(id);
     }
+  }
+
+  /** Time since the task's last recorded activity; 0 when it has no valid stamp. */
+  private idleFor(task: Task, now: number): number {
+    const updated = task.updated_at ? Date.parse(task.updated_at) : NaN;
+    return Number.isFinite(updated) ? Math.max(0, now - updated) : 0;
   }
 
   /** Runner process sample, with a conservative fallback for test doubles. */
