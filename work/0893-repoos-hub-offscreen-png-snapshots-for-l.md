@@ -104,3 +104,4 @@ Merged main (#0892/#0895 Hub changes) into the branch. Resolved `macos/.gitignor
 - 2026-10-21T13:15:57Z · status active→ready
 - 2026-10-21T13:16:01Z · status ready→active
 - 2026-10-21T13:22:51Z · status active→review
+- 2026-10-21T13:22:51Z · note: shots: skipped — the diff (11 changed paths) touches no capture target's globs — no UI change to capture
