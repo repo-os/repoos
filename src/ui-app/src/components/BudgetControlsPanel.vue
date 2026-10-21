@@ -680,10 +680,28 @@ async function resumeModel(cli: string, model: string): Promise<void> {
   outline-offset: 1px;
   border-radius: 4px;
 }
+/* Match the add-allowlist dialog's content box: 24px gutter so fields line up
+   with the title/description above and never sit flush against the modal edge,
+   16px below the description, and an even gap between field blocks (#0876). */
 .budget-pause-fields {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin: 14px 0 6px;
+  gap: 14px;
+  padding: 16px 24px 0;
+}
+/* `.field` carries a global 13px bottom margin; inside a flex column that would
+   stack on top of `gap` and make the two field blocks uneven. */
+.budget-pause-fields .field {
+  margin-bottom: 0;
+}
+.budget-pause-fields .field-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--txt-secondary);
+}
+.budget-pause-fields .ff-error {
+  margin-bottom: 0;
 }
 </style>
