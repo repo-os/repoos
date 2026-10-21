@@ -51,6 +51,7 @@ import {
   pairPauseInfo,
 } from "../core/budget-allowlist.js";
 import { pressureReason } from "../core/pressure-guard.js";
+import type { MemoryPressureProbe } from "../core/memory-pressure.js";
 import { effectiveAgentCapacity, registeredEngineerCount } from "../core/global-engineers.js";
 import { clearQueueMarker, writeQueueMarker } from "../core/local-queue-marker.js";
 import { isProviderFailureReason } from "../core/attention.js";
@@ -1202,6 +1203,12 @@ export interface AgentRunnerOptions {
   retentionDays?: number;
   retentionCount?: number;
   now?: () => Date;
+  /**
+   * Injection seam for the machine pressure reading (#0900). Production leaves
+   * it unset so the guard samples the real host; tests inject a fixed sample so
+   * spawn behaviour never depends on the runner's swap/load.
+   */
+  pressureProbe?: MemoryPressureProbe;
   /** Resolve a task from the repo task index by ID. Used to populate task/branch on resume turns. */
   getTask?: (taskId: string) => Task | null;
   /** Notify the live index after the runner patches a task file (#0716). */
@@ -5132,6 +5139,8 @@ export class AgentRunner {
   private readonly recentFinished: FinishedAgentInfo[] = [];
   private readonly sessions = new Map<string, Session>();
   private readonly config: RepoOSConfig;
+  /** Test-only pressure sample override (#0900); production reads the host. */
+  private readonly pressureProbe?: MemoryPressureProbe;
   /**
    * Cap on simultaneously-spawned agent CLI processes — each one may
    * itself run a build/test worker pool sized to the host's core count, so
@@ -5295,6 +5304,7 @@ export class AgentRunner {
     } & AgentRunnerOptions = {},
   ) {
     this.config = config;
+    this.pressureProbe = opts.pressureProbe;
     this.maxConcurrentAgents = config.maxConcurrentAgents ?? defaultMaxConcurrentAgents();
     this.emit = emit;
     this.logger = opts.logger;
@@ -5981,6 +5991,17 @@ export class AgentRunner {
   /** Release a slot claimed by {@link markHandoffInFlight}. Always paired. */
   releaseHandoffInFlight(taskId: string): void {
     this.handoffsInFlight.delete(taskId);
+    // Messages that arrived while the handoff was finalizing were queued
+    // rather than lost (#0821). Now that the task is free, deliver them: an
+    // auto-bounce resume is queued this way when a fast review finishes before
+    // the finalization's `finally` runs, and without this it sat until the next
+    // start/send — which is exactly the "engineer never resumed" timeout a
+    // loaded runner produced (#0900). A task that landed in `review`/`done`
+    // keeps its queue for the next start instead: the engineer must not begin
+    // editing while sign-off is in progress.
+    const task = this.getTask?.(taskId);
+    if (task && task.status !== "active") return;
+    this.deliverQueuedMessages(taskId);
   }
 
   /**
@@ -6623,6 +6644,14 @@ export class AgentRunner {
   }
 
   /**
+   * Machine-pressure verdict for a new start, using this runner's injected
+   * sample when one was supplied (#0900).
+   */
+  private pressureHold(): string | null {
+    return pressureReason(this.config, undefined, this.pressureProbe);
+  }
+
+  /**
    * Gate for every spawnTurn call site: at capacity, defer the spawn
    * instead of oversubscribing the machine. The caller still gets `ok: true`
    * immediately — `queued: true` distinguishes "will run shortly" from
@@ -6654,7 +6683,7 @@ export class AgentRunner {
       const worktreeRefusal = this.otherTaskLiveEngineerInWorkdir(task.id, cwd);
       if (worktreeRefusal) return { ok: false, reason: worktreeRefusal };
     }
-    const pressure = pressureReason(this.config);
+    const pressure = this.pressureHold();
     if (pressure) {
       this.queuedIds.set(id, now());
       this.queuedMeta.set(id, { reason: "pressure", detail: pressure });
@@ -6664,6 +6693,14 @@ export class AgentRunner {
         this.spawnOrQueue(id, cmd, args, cwd, task, branch, opts);
       });
       this.logger?.agent(id, "info", pressure);
+      // Surface the verdict in the server log too (#0900): a held start during
+      // a gate run is the difference between "the branch failed" and "the
+      // runner was under memory pressure", and the task log alone is easy to
+      // miss when diagnosing a remote failure.
+      this.logger?.system("warn", "Pressure guard held an engineer start", {
+        taskId: id,
+        reason: pressure,
+      });
       this.emit({
         type: "agent.queued",
         id,
@@ -6712,7 +6749,11 @@ export class AgentRunner {
 
   private writeAgentPressureMarker(taskId: string, message: string): void {
     if (!/^\d+$/.test(taskId)) return;
-    writeQueueMarker(this.config.root, this.cacheDir, {
+    // `cacheDir` here is repo-relative: `writeQueueMarker` joins it under the
+    // repo root, and the queue API reads it the same way. Passing the runner's
+    // absolute `this.cacheDir` wrote the marker to `<root>/<root>/.repoos/...`,
+    // so a pressure-held start was invisible to the UI (#0900).
+    writeQueueMarker(this.config.root, this.config.cacheDir ?? ".repoos", {
       taskId,
       kind: "pressure",
       ahead: 0,
@@ -6724,7 +6765,7 @@ export class AgentRunner {
 
   private clearAgentPressureMarker(taskId: string): void {
     if (!/^\d+$/.test(taskId)) return;
-    clearQueueMarker(this.config.root, this.cacheDir, taskId, "pressure");
+    clearQueueMarker(this.config.root, this.config.cacheDir ?? ".repoos", taskId, "pressure");
   }
 
   /** Tasks/chats currently waiting for a free maxConcurrentAgents slot. */
@@ -6868,7 +6909,7 @@ export class AgentRunner {
   private schedulePressureRetry(): void {
     if (this.pressureRetryTimer) return;
     this.pressureRetryTimer = setInterval(() => {
-      if (pressureReason(this.config)) return;
+      if (this.pressureHold()) return;
       this.drainQueue();
       if (this.startQueue.length === 0 && this.pressureRetryTimer) {
         clearInterval(this.pressureRetryTimer);
@@ -6881,7 +6922,7 @@ export class AgentRunner {
   /** Start the next queued spawn once a slot is free (called from cleanup() on every exit). */
   private drainQueue(): void {
     while (this.startQueue.length > 0 && this.entries.size < this.machineCapacity().capacity) {
-      if (pressureReason(this.config)) break;
+      if (this.pressureHold()) break;
       const next = this.startQueue.shift();
       next?.();
     }

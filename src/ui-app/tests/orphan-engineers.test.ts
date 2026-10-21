@@ -91,6 +91,7 @@ branch: feat/orphan
           defaultStatus: "inbox" as const,
           defaultAssignee: "unassigned" as const,
           cacheDir,
+          pressureGuard: { enabled: false },
         } as any,
         () => {},
         {
@@ -163,6 +164,7 @@ describe("AgentRunner orphan reconcile (#0837)", () => {
           defaultStatus: "inbox" as const,
           defaultAssignee: "unassigned" as const,
           cacheDir,
+          pressureGuard: { enabled: false },
         } as any,
         () => {},
         { onOrphanEngineerNote: (_id, note) => notes.push(note) },
@@ -227,6 +229,7 @@ cli_override: opencode
         defaultStatus: "inbox" as const,
         defaultAssignee: "unassigned" as const,
         cacheDir,
+        pressureGuard: { enabled: false },
         agents: [{ name: "engineer", cli: "opencode", model: "default", enabled: true }],
       };
       const runner = new AgentRunner(config as any, () => {});
@@ -304,6 +307,7 @@ branch: feat/note
           defaultStatus: "inbox" as const,
           defaultAssignee: "unassigned" as const,
           cacheDir,
+          pressureGuard: { enabled: false },
         } as any,
         () => {},
         { onOrphanEngineerNote: (_id, note) => notes.push(note) },

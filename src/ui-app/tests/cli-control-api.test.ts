@@ -76,7 +76,9 @@ process.exit(0);
   mkdirSync(join(root, "work"), { recursive: true });
   writeFileSync(
     join(root, "repoos.toml"),
-    `[[agents]]
+    `[pressureGuard]
+enabled = false
+[[agents]]
 name = "engineer"
 cli = "opencode"
 model = "deepseek/deepseek-v4.1-flash"
@@ -140,7 +142,9 @@ async function withServer(
   if (opts.auth) {
     writeFileSync(
       join(root, "repoos.toml"),
-      `[auth]
+      `[pressureGuard]
+enabled = false
+[auth]
 enabled = true
 bootstrapAdmin = "hello@repoos.org"
 
