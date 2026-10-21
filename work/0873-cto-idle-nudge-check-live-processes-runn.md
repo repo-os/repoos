@@ -3,12 +3,6 @@ id: "0873"
 title: "CTO idle nudge: check live processes, running gates and reviews, and machine pressure first; make the threshold configurable"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: Transport"
-debug_tldr: "Agent LLM transport dropped mid-session—resume engineer on #0873 and retry close-out; review and remote validation already passed."
-debug_tldr_at: "2026-10-21T02:20:52Z"
-debug_tldr_key: "dev-error|error: Transport"
 priority: p2
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -18,7 +12,7 @@ branch: feat/cto-idle-nudge-check-live-processes-runn
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:23:49Z"
-updated_at: "2026-10-21T02:20:52Z"
+updated_at: "2026-10-21T02:23:20Z"
 last_close_out_gate_ms: 105173
 last_close_out_gate_at: "2026-10-21T01:50:32.952Z"
 review_passes: 1
@@ -92,3 +86,4 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T02:15:03Z · body
 - 2026-10-21T02:18:06Z · body
 - 2026-10-21T02:20:18Z · agent exited with an error (opencode) · error: Transport
+- 2026-10-21T02:23:20Z · needs_input
