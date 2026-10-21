@@ -216,3 +216,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:28:18Z · assigned_to
 - 2026-10-21T19:28:22Z · note: handoff requested (ui-review)
 - 2026-10-21T19:38:03Z · status active→review
+- 2026-10-21T19:38:03Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
