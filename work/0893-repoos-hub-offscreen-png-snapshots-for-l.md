@@ -78,3 +78,4 @@ With that row in place, a handoff that changes Hub sources runs the command, col
 - 2026-10-21T12:16:39Z · screenshots
 - 2026-10-21T12:16:39Z · screenshots
 - 2026-10-21T12:16:53Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-10-21T12:16:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
