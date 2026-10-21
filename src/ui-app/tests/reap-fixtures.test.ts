@@ -85,6 +85,45 @@ describe("reapStaleFixtures", () => {
     }
   });
 
+  it("kills recorded fixture processes nested deeper than the old four-level scan (#0859)", async () => {
+    const runRoot = join(tmpdir(), `${PREFIX}DeepRoot`);
+    // More than four levels below the root, like a fixture tree under a
+    // per-file temp dir whose companion fixtures nest further.
+    const fixture = join(
+      runRoot,
+      "file-ABC123",
+      "nested",
+      "deeper",
+      "still",
+      "and-further",
+      "again",
+      `${PREFIX}Fixture`,
+    );
+    mkdirSync(fixture, { recursive: true });
+    const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], {
+      stdio: "ignore",
+    });
+    const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
+    try {
+      writeFileSync(join(fixture, "spawns.log"), `${JSON.stringify({ pid: child.pid })}\n`);
+      await teardown(runRoot);
+      expect(existsSync(runRoot)).toBe(false);
+      await expect(
+        Promise.race([
+          exited,
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error("deeply nested fixture process survived teardown")),
+              2_000,
+            ),
+          ),
+        ]),
+      ).resolves.toBeUndefined();
+    } finally {
+      if (child.exitCode === null) child.kill("SIGKILL");
+    }
+  });
+
   it("kills recorded fixture processes before teardown removes the run root", async () => {
     const runRoot = join(tmpdir(), `${PREFIX}TeardownRoot`);
     const fixture = join(runRoot, "file-ABC123", `${PREFIX}Fixture`);
