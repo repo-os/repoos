@@ -269,6 +269,8 @@ Crash.
     defaultStatus: "inbox",
     defaultAssignee: "unassigned",
     cacheDir: ".repoos",
+    // Tests measure agent behaviour, not host pressure (#0891).
+    pressureGuard: { enabled: false },
     maxConcurrentAgents: 2,
   };
   const task = parseTask({
