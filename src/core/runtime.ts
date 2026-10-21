@@ -29,8 +29,9 @@
  * signal relay everywhere else.
  */
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, symlinkSync, readlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { delimiter, join } from "node:path";
 import { checkBuild, checkBuildForRoot, findPackageRoot } from "./build.js";
 
 /** True when this process is Bun rather than Node. */
@@ -238,5 +239,58 @@ export function reexecAfterStaleBuild(root?: string): boolean {
     process.exit(1);
   });
   child.on("exit", (code, signal) => process.exit(signal ? 1 : (code ?? 0)));
+  return true;
+}
+
+/**
+ * Prefer Apple's signed `git` over an ad-hoc-signed one (Homebrew, mise, …) for
+ * everything this process spawns (#0896 follow-up).
+ *
+ * macOS re-validates every launch of an ad-hoc-signed binary through
+ * `syspolicyd`/`trustd`. RepoOS and its tests launch `git` hundreds of times
+ * per task, and measured on a MacBook Air that validation cost about half the
+ * wall time of git-heavy suites: 289 tests took 166 s with Homebrew git first
+ * and 73 s with Apple's git first. Apple's `/usr/bin/git` is Apple-signed, so
+ * its launches are cheap.
+ *
+ * Only `git` is redirected: a one-entry directory holding a `git` symlink to
+ * `/usr/bin/git` is put at the front of PATH, so other Homebrew tools are
+ * untouched. Children (engineers, `repoos check`, tests) inherit it. Opt out
+ * with `REPOOS_PREFER_APPLE_GIT=0`. No-op off macOS or when Apple's git is not
+ * installed (no Command Line Tools / Xcode).
+ */
+export function preferAppleGit(
+  env: NodeJS.ProcessEnv = process.env,
+  platform: NodeJS.Platform = process.platform,
+  dir: string = join(tmpdir(), `repoos-apple-git-${process.getuid?.() ?? "u"}`),
+): boolean {
+  if (platform !== "darwin") return false;
+  if (env.REPOOS_PREFER_APPLE_GIT === "0") return false;
+  const hasAppleGit =
+    existsSync("/Library/Developer/CommandLineTools/usr/bin/git") ||
+    existsSync("/Applications/Xcode.app/Contents/Developer/usr/bin/git");
+  if (!hasAppleGit || !existsSync("/usr/bin/git")) return false;
+  const parts = (env.PATH ?? "").split(delimiter);
+  if (parts[0] === dir) return false; // already first
+  try {
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
+    const link = join(dir, "git");
+    let ok = false;
+    try {
+      ok = readlinkSync(link) === "/usr/bin/git";
+    } catch {
+      /* missing or not a link */
+    }
+    if (!ok) {
+      try {
+        symlinkSync("/usr/bin/git", link);
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== "EEXIST") return false;
+      }
+    }
+  } catch {
+    return false;
+  }
+  env.PATH = [dir, ...parts.filter((x) => x && x !== dir)].join(delimiter);
   return true;
 }
