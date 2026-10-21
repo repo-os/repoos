@@ -2,19 +2,20 @@
 id: "0888"
 title: "Engineer turn ends cleanly without a handoff: resume it automatically instead of waiting for a CTO nudge"
 type: bug
-status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
+status: done
 priority: p1
 area: server
+merged_commit: bfa38dfe8e3c2117e1f9f2b219bb6ab10ec08fdb
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineer-turn-ends-cleanly-without-a-han
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T21:57:26Z"
-updated_at: "2026-10-21T00:05:38Z"
+updated_at: "2026-10-21T01:05:53Z"
+last_close_out_gate_ms: 100234
+last_close_out_gate_at: "2026-10-21T01:04:36.950Z"
+review_passes: 1
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T00:05:32.519Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -49,3 +50,19 @@ Relevant code: src/server/agents.ts (`cleanup()`, `deliverQueuedMessages`, crash
 - 2026-10-21T00:05:32Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-21T00:05:35Z · message_delivered: 1 message(s)
 - 2026-10-21T00:05:38Z · body
+- 2026-10-21T00:08:06Z · body
+- 2026-10-21T00:12:25Z · body
+- 2026-10-21T00:15:56Z · body
+- 2026-10-21T00:16:24Z · body
+- 2026-10-21T00:39:02Z · needs_input
+- 2026-10-21T00:39:08Z · assigned_to
+- 2026-10-21T00:40:56Z · body
+- 2026-10-21T00:48:38Z · assigned_to
+- 2026-10-21T00:48:39Z · note: handoff requested (ui-review)
+- 2026-10-21T00:56:35Z · status active→review
+- 2026-10-21T00:56:36Z · note: shots: skipped — the diff (11 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-21T00:57:04Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-21T00:57:46Z · note: review pass 1: good to go
+- 2026-10-21T01:04:36Z · close-out gate completed in 100s
+- 2026-10-21T01:05:15Z · status done→done, release:success
+- 2026-10-21T01:05:53Z · message_overdue: still queued after 60m without being delivered

@@ -411,6 +411,24 @@ fixture the preview applies before capture (preview builds only, via
   per-model pause, each with a reason and a future resume date, so the Paused
   chip and Resume controls render (#0850)
 
+**Target support (#0866).** Fixtures and app routes only exist on the app
+target (`default` for the main RepoOS app), not on the Docs site or Landing
+page. A declared shot with a `state` fixture, or a route such as `"/settings"`
+or `"/work?task=9999&tab=changes"`, therefore:
+- defaults to the app target when `target` is omitted — even when the diff's
+  changed paths resolved the Docs site first;
+- is rejected at declaration time (`repoos update --shots`) when it explicitly
+  names a target that cannot render it, with a message naming the shot, the
+  resolved target and the fix (`"target": "default"` plus a drawer route);
+- fails handoff when the target serves its HTML/404 shell for an app module
+  (**route not served by this target**, the VitePress MIME error), when the
+  state fixture was never applied, or when its container never rendered (a
+  drawer fixture captured on the board). Each failure names the target.
+
+A docs shot stays on a docs target: declare `target: "Docs site"` and a docs
+route (e.g. `"/configuration"`). `/` is deliberately ambiguous and keeps the
+normal target resolution order.
+
 **Preview Settings saves (#0828).** A preview child (`REPOOS_PREVIEW_CHILD=1`)
 applies curated and raw config saves to a gitignored cache-dir overlay only —
 never the worktree's tracked `repoos.toml` — so autosave during shot capture

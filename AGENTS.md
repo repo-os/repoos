@@ -64,6 +64,9 @@ Where to put what:
 | Work that still needs doing | A task, via `repoos new` — never a note-to-self |
 | How a *user* of RepoOS does something | `user-docs/` (this repo only) |
 
+Driving the board? Start with `repoos driver brief` for live state and
+`docs/driver-notes.md` for the judgement calls and sharp edges it cannot carry.
+
 This applies in any repo running RepoOS, not just this one. If your harness has
 its own memory feature, treat it as a cache of what's already in the repo, not
 as the system of record — and prefer writing to the repo first.
@@ -638,7 +641,18 @@ cannot tell from the code alone:
   per-shot message; auto-matched captures still record a miss as a warning only
   (#0743). Tooltip/hover shots need a `hover` or `click` step plus a `state`
   fixture. Duplicates with
-  the same target/route/steps/selector collapse to one capture. **Loading and
+  the same target/route/steps/selector collapse to one capture. **Target
+  support (#0866):** a declared `state` fixture (or an app route such as
+  `/settings` or `/work?task=…`) only renders on the app target — `default`
+  for the main RepoOS app. Naming the Docs site or another content target for
+  such a shot is rejected when you declare it (`repoos update --shots`), and a
+  shot that still resolves there fails handoff with the target named instead of
+  banking a wrong-screen capture. An omitted `target` on an app route/state
+  defaults to the app target, not whichever target the diff matched first. A
+  target that serves its HTML shell for an app module (the VitePress MIME
+  error) is reported as **route not served by this target**, and a `state`
+  fixture that never rendered (a board where a drawer was declared) is a
+  failed shot, never a pass. **Loading and
   stale captures (#0755):** reach a populated view with a `route` or `state`
   fixture, not a `steps` click on a placeholder selector (`data-task-id "9999"`
   and the like) — such a step times out, the capture lands on a loading state

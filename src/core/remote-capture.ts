@@ -23,6 +23,8 @@ import type { CaptureEntry } from "./shot-plan.js";
 export interface CanonicalCapturePlan {
   entries: CaptureEntry[];
   errors: string[];
+  /** #0866: declared shots that cannot render on their resolved target. */
+  blockingErrors?: string[];
   skips: string[];
   collapsed: string[];
 }
