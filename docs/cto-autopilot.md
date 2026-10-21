@@ -28,7 +28,8 @@ Conditions already enforced before #0727:
 - `disabled` / `human-only` tag / `not-in-review` / `needs-input`
 - `no-rule-match` — must match a configured area or type
 - `verdict-not-clean` — reviewer verdict must be `good to go`
-- `blocking-bugs` — report's Bugs section must be empty
+- `blocking-bugs` — report's Bugs section must list no findings (any "None found"
+  phrasing, including `None found.`, `No bugs found` or `N/A`, is empty)
 - `gate-not-green` — no lingering `last_check_failure`
 - `branch-missing` / `branch-conflict` (merge preflight) / `handoff-drift`
   (worktree HEAD must equal the handoff lock SHA)

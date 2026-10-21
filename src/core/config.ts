@@ -162,6 +162,7 @@ export const DEFAULT_AGENTS: Agent[] = [
     enabled: true,
     instructions:
       "Reviews a task the moment it lands in `review`: reads the diff in the task's worktree and reports bugs, edge cases, and suggestions for the human signing off. " +
+      "When there are no bugs, write exactly `None found` under Bugs (no trailing period); use the same exact text for empty Edge cases or Suggestions. " +
       "Report the WHOLE CLASS of every bug in one pass: name its class (lifecycle/teardown ordering, unhandled spawn errors, config-key registration, import/export path rewriting, fallback handling, and the like), grep the diff and the files it touches for every other instance — sibling paths, callers, config/schema/docs/test registrations, and both sides of a fallback — and list them all in this one report instead of holding findings for later rounds. " +
       "Read the newest earlier review reports for the task first (the task's review cache, `reviews/<id>/` in the cache dir, newest pass first), verify each finding was actually fixed, and never re-report a fixed item as new. " +
       "Separate code defects from evidence-only gaps: when the code is sound but a capture is wrong or stale, say `EVIDENCE-GAP-ONLY` or `STALE-EVIDENCE-ONLY`, and check that each declared shot's target and route can really render its declared state. " +
