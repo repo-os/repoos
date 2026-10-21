@@ -1,3 +1,5 @@
+import { clearValidateInjectedEnv } from "./validate-injected-env.js";
+
 /**
  * Drop `REPOOS_CHECK_CHANGED` from every test worker's environment.
  *
@@ -12,6 +14,16 @@
  * touched src/core/config.ts).
  */
 delete process.env.REPOOS_CHECK_CHANGED;
+
+/**
+ * Drop everything `scripts/remote-runner/validate.sh` injects into the
+ * `repoos-ci` container: REPOOS_ROOT and the browser-offload/capture set
+ * (#0905). A worker running inside that container otherwise takes a different
+ * branch in tests that spawn `repoos check`, and the run is green locally but
+ * red on the runner. Listed once in setup/validate-injected-env.ts so a new
+ * variable cannot be cleared in one place and forgotten in another.
+ */
+clearValidateInjectedEnv();
 
 /**
  * Likewise drop the check-history routing vars the server exports to gates
