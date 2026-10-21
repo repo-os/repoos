@@ -79,6 +79,18 @@ concluding anything.
 
 ## Other fixed causes worth recognizing
 
+- **The host pressure guard leaking into an agent test (#0891).** `AgentRunner`
+  defers every `start()` while `pressureReason(config)` is non-null, so a test
+  whose fixture config leaves `pressureGuard` at its default measures the
+  runner's host memory/load rather than the behaviour under test. On a loaded
+  runner the first start is queued as `pressure`, a concurrency test's
+  `r1.queued`/`isRunning` assertions fail, and every later `waitFor` times out.
+  Tests that spawn agents set `pressureGuard: { enabled: false }` unless the
+  guard is the subject; `agent-pressure-guard.test.ts` covers the guard itself.
+  The same fixtures should hold a fake CLI open until the test releases it (a
+  SIGTERM handler that exits cleanly) instead of letting it self-exit: a drain
+  assertion must depend on an explicit exit event, never on how fast a spawned
+  process finished.
 - **Internal `waitFor` deadlines separate from `testTimeout`.**
   `pending-handoff.test.ts` had a hard 3s deadline around real child-process
   spawn/exit, independent of the 15s `testTimeout`; it blocked a release cut

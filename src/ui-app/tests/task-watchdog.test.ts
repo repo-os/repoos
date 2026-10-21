@@ -194,6 +194,10 @@ function makeFx(transitionAgeMs: number): Fx {
   const taskPath = join(root, "work", "0001-stuck.md");
   writeFileSync(taskPath, taskMd(transitionAgeMs));
   const repoos = createRepoOS(root);
+  // These tests measure watchdog behaviour, not the host's memory/load. With
+  // the guard on (the default) a loaded runner queues `start()` for `pressure`
+  // and the turn never reaches the exit the watchdog is waiting on (#0891).
+  repoos.config.pressureGuard = { enabled: false };
   return {
     root,
     bin,
