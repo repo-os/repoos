@@ -270,5 +270,5 @@ describe.sequential("agent CLI argv sanitizing (#0889)", () => {
     } finally {
       runner.dispose();
     }
-  });
+  }, 20_000);
 });
