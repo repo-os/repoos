@@ -2,7 +2,7 @@
 id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
-status: active
+status: ready
 needs_input: true
 needs_input_reason: dev-error
 priority: p2
@@ -15,7 +15,7 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T02:29:39Z"
+updated_at: "2026-10-21T02:29:54Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 1
@@ -138,3 +138,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T02:29:37Z · engineer stopped by request
 - 2026-10-21T02:29:38Z · needs_input
 - 2026-10-21T02:29:39Z · cli_override, model_override
+- 2026-10-21T02:29:54Z · status active→ready
