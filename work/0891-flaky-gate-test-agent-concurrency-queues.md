@@ -11,7 +11,7 @@ branch: feat/flaky-gate-test-agent-concurrency-queues
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T04:07:35Z"
-updated_at: "2026-10-21T07:38:33Z"
+updated_at: "2026-10-21T07:38:34Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T06:03:26.061Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -76,3 +76,4 @@ After the fix, on the same machine: `agent-concurrency.test.ts` passed 50/50 seq
 - 2026-10-21T07:38:32Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-10-21T07:38:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T07:38:33Z · needs_input
+- 2026-10-21T07:38:34Z · message_delivered: 2 message(s)
