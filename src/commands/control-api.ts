@@ -921,8 +921,10 @@ export async function cmdRunners(args: string[]): Promise<number> {
             .map((p) => {
               const ms =
                 p.durationMs ??
-                (p.endedAt ? Date.parse(p.endedAt) - Date.parse(p.startedAt) : null);
-              return `${p.phase} ${ms == null ? "…" : fmtDuration(ms)}`;
+                (p.endedAt
+                  ? Date.parse(p.endedAt) - Date.parse(p.startedAt)
+                  : Math.max(0, now - Date.parse(p.startedAt)));
+              return `${p.phase} ${fmtDuration(ms)}`;
             })
             .join(" · ");
           console.log(

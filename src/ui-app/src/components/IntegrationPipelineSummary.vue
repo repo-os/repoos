@@ -46,8 +46,12 @@ const phaseElapsed = computed(() => {
 
 const phaseBreakdown = computed(() => {
   const parts = (active.value?.phaseTimings ?? []).map((p) => {
-    const ms = p.durationMs ?? (p.endedAt ? Date.parse(p.endedAt) - Date.parse(p.startedAt) : null);
-    return `${p.phase} ${formatDuration(ms ?? 0)}`;
+    const ms =
+      p.durationMs ??
+      (p.endedAt
+        ? Date.parse(p.endedAt) - Date.parse(p.startedAt)
+        : Math.max(0, now.value - Date.parse(p.startedAt)));
+    return `${p.phase} ${formatDuration(ms)}`;
   });
   return parts.join(" · ");
 });

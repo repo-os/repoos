@@ -195,7 +195,11 @@ function stageLabel(stage: string | null | undefined): string {
 function phaseSummary(r: NonNullable<RemoteHostStatusView["activeRuns"]>[number]): string {
   const parts = (r.phases ?? []).map((p) => {
     const label = p.phase === "queued" ? "queued for slot" : stageLabel(p.phase);
-    const ms = p.durationMs ?? (p.endedAt ? Date.parse(p.endedAt) - Date.parse(p.startedAt) : null);
+    const ms =
+      p.durationMs ??
+      (p.endedAt
+        ? Date.parse(p.endedAt) - Date.parse(p.startedAt)
+        : Math.max(0, nowTick.value - Date.parse(p.startedAt)));
     return `${label} ${fmtDuration(ms)}`;
   });
   return parts.join(" · ");
