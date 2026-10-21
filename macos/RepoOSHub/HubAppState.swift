@@ -244,10 +244,13 @@ final class HubAppState: ObservableObject {
         }
         document.hubGlobalPreferences.hiddenServerTabIDs = hidden
         publishHubPreferences()
-        if selectedServerID == id {
-            if let next = visibleServerTabEntries.first?.id {
-                selectServer(next)
-            }
+        let next = HubServerTabOrder.selectionAfterHide(
+            selected: selectedServerID,
+            hiddenID: id,
+            remainingVisible: visibleServerTabEntries.map(\.id)
+        )
+        if next != selectedServerID {
+            selectServer(next)
         }
     }
 

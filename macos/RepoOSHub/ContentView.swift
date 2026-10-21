@@ -8,8 +8,16 @@ struct ContentView: View {
     /// source of truth so collapsing the sidebar survives a relaunch (#0855).
     private var columnVisibility: Binding<NavigationSplitViewVisibility> {
         Binding(
-            get: { HubSidebarVisibility.visibility(isCollapsed: isSidebarCollapsed) },
-            set: { isSidebarCollapsed = HubSidebarVisibility.isCollapsed($0) }
+            get: {
+                // Tabs mode hides the sidebar column without writing the
+                // persisted collapsed flag, so returning to Sidebar restores it.
+                if usesTabStrip { return .detailOnly }
+                return HubSidebarVisibility.visibility(isCollapsed: isSidebarCollapsed)
+            },
+            set: { newValue in
+                guard !usesTabStrip else { return }
+                isSidebarCollapsed = HubSidebarVisibility.isCollapsed(newValue)
+            }
         )
     }
 
@@ -18,12 +26,22 @@ struct ContentView: View {
     }
 
     var body: some View {
-        Group {
-            if usesTabStrip {
-                tabStripShell
-            } else {
-                sidebarShell
-            }
+        // One NavigationSplitView and one WorkspaceDetailView for both layouts.
+        // An if/else that builds a second workspace destroys the WKWebViews
+        // when the user switches between Sidebar and Tabs.
+        NavigationSplitView(columnVisibility: columnVisibility) {
+            ServerSidebarView(columnVisibility: columnVisibility)
+        } detail: {
+            WorkspaceDetailView()
+                .padding(.top, usesTabStrip ? HubServerTabStripMetrics.height : 0)
+                .ignoresSafeArea(edges: usesTabStrip ? .top : [])
+                .overlay(alignment: .top) {
+                    if usesTabStrip {
+                        HubServerTabStrip()
+                            .frame(height: HubServerTabStripMetrics.height)
+                            .ignoresSafeArea(edges: .top)
+                    }
+                }
         }
         // The reveal tab lives on the split view, not the detail column, so it
         // sits flush against the window's left edge when the sidebar collapses
@@ -97,29 +115,6 @@ struct ContentView: View {
                     .environmentObject(appState)
             }
         }
-    }
-
-    /// Existing sidebar shell. Unchanged when the layout preference is Sidebar.
-    private var sidebarShell: some View {
-        NavigationSplitView(columnVisibility: columnVisibility) {
-            ServerSidebarView(columnVisibility: columnVisibility)
-        } detail: {
-            WorkspaceDetailView()
-        }
-    }
-
-    /// One native row: the strip occupies the transparent titlebar band, and
-    /// the existing workspace (same WebViews) starts immediately underneath.
-    private var tabStripShell: some View {
-        WorkspaceDetailView()
-            .padding(.top, HubServerTabStripMetrics.height)
-            .ignoresSafeArea(edges: .top)
-            .overlay(alignment: .top) {
-                HubServerTabStrip()
-                    .frame(height: HubServerTabStripMetrics.height)
-                    .ignoresSafeArea(edges: .top)
-            }
-            .ignoresSafeArea(edges: .top)
     }
 
     private var shellBackground: Color {

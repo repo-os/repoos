@@ -131,6 +131,14 @@ enum HubServerTabOrder {
         return ids
     }
 
+    /// After hiding `hiddenID`, keep the current selection unless that tab was
+    /// the one hidden. Then select the first tab still visible, or nothing
+    /// when the strip is empty so the workspace does not keep showing a hidden server.
+    static func selectionAfterHide(selected: UUID?, hiddenID: UUID, remainingVisible: [UUID]) -> UUID? {
+        guard selected == hiddenID else { return selected }
+        return remainingVisible.first
+    }
+
     static func adjacent(visible: [UUID], selected: UUID?, forward: Bool) -> UUID? {
         guard !visible.isEmpty else { return nil }
         guard let selected, let index = visible.firstIndex(of: selected) else { return visible[0] }
