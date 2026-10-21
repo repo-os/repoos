@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T15:20:51Z"
+updated_at: "2026-10-21T15:21:17Z"
 ---
 ## Items
 - [ ] **E1 · Screenshot dropzone wraps to two lines** (web) — after #0877 made `ShotDropzone` a `<label>`, the global `.field label` rule leaks into it. Source: user report 2026-10-21.
@@ -66,13 +66,13 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
   "label": "New input screenshot dropzone single-row layout",
   "target": "default",
   "route": "/inputs?input=new",
-  "highlight": ".ff-panel .shot-dropzone"
+  "highlight": ".drawer-body .shot-dropzone"
 },
 {
   "label": "New task screenshot dropzone single-row layout",
   "target": "default",
   "route": "/work?task=new",
-  "highlight": ".ff-panel .shot-dropzone"
+  "highlight": ".drawer-body .shot-dropzone"
 }
 ]
 ```
@@ -107,3 +107,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T15:19:34Z · body
 - 2026-10-21T15:20:41Z · body
 - 2026-10-21T15:20:51Z · body
+- 2026-10-21T15:21:17Z · body
