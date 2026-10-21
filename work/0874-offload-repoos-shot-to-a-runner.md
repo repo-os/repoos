@@ -2,7 +2,7 @@
 id: "0874"
 title: Offload repoos shot to a runner
 type: feature
-status: active
+status: review
 priority: p3
 area: [server, core]
 depends_on: ["0854"]
@@ -79,3 +79,4 @@ Not required for #0854's acceptance criteria. #0864 (rebuild the runner image an
 - 2026-10-21T12:11:27Z · note: review pass 1: good to go
 - 2026-10-21T12:51:33Z · status review→active
 - 2026-10-21T12:53:12Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-21T12:53:12Z · status active→review
