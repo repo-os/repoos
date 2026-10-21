@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on mini — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 42ac6a27980d8a4baafffffc03e470389ee9d5df
 id: "0897"
 title: "Show why a close-out/validation is waiting: queue position, what runs ahead on each runner"
 type: feature
@@ -91,3 +93,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T15:45:45Z · note: waitFor .drawer-remote-activity: waitFor: Timeout 5000ms exceeded. on /work?task=9999&tab=changes
 - 2026-10-21T15:45:45Z · note: highlight .drawer-remote-activity matched nothing on /work?task=9999&tab=changes
 - 2026-10-21T15:49:34Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on mini — fix it in the feature branch and re-run the gate
+
