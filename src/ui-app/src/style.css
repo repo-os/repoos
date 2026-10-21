@@ -6968,6 +6968,7 @@
   color: var(--txt-dim);
 }
 .shot-dropzone {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 9px;
@@ -6985,23 +6986,37 @@
   border-color: var(--cyan);
   color: var(--txt);
 }
+/* The tab stop is the transparent file input covering the zone; paint its
+   focus ring on the visible box (the input's own outline is under opacity 0). */
+.shot-dropzone:focus-within {
+  border-color: var(--cyan);
+  color: var(--txt);
+  outline: 2px solid var(--cyan);
+  outline-offset: 1px;
+}
 .shot-dropzone.over {
   border-color: var(--cyan);
   background: var(--cyan-dim);
   color: var(--txt);
 }
-/* The file input must stay rendered, not `display: none`. In a WKWebView-hosted
- * installed PWA (Safari "Add to Dock", the macOS Hub) a programmatic
- * `.click()` on a `display: none` file input never reaches
- * `WKUIDelegate.runOpenPanelWith`, so the picker silently does nothing. Hide it
- * visually instead — the same technique as `.pm-shot-input` and Tailwind's
- * `sr-only` used by the Settings bug-report upload, both of which work (#0642). */
+/* The picker is opened by a real click on the file input, not a synthetic
+ * `input.click()`: in an installed PWA (Safari "Add to Dock", Chrome
+ * standalone) a programmatic click on a visually hidden input is what silently
+ * did nothing (#0877). The input therefore covers the whole dropzone at
+ * `opacity: 0` — the click lands on it natively — while the surrounding
+ * `<label>` keeps label activation as a fallback.
+ *
+ * It must stay *rendered*, not `display: none`: in a WKWebView-hosted installed
+ * PWA (Safari "Add to Dock", the macOS Hub) a programmatic `.click()` on a
+ * `display: none` file input never reaches `WKUIDelegate.runOpenPanelWith`
+ * (#0642). */
 .shot-dropzone .shot-input {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   opacity: 0;
-  pointer-events: none;
+  cursor: pointer;
 }
 /* Captured preview shots (#0582) — the UI-changes section in the Changes tab
  * and the area/target mismatch warning shown near the preview control.
@@ -14191,7 +14206,8 @@
      box highlights, so drop the textarea's own shadow too. */
   box-shadow: none;
 }
-.ai-chat-compose button {
+.ai-chat-compose button,
+.ai-chat-compose .ai-chat-attach {
   /* Deliberately no `background`/`color`: the shared `.ai-chat-send` owns the
      send button's fill. A variant (`.ai-chat-stop`, `.ai-chat-attach`) sets
      its own. Every control is the same compact square-ish icon button (#0757),
@@ -14205,9 +14221,11 @@
   border-radius: 9px;
   cursor: pointer;
 }
-.ai-chat-compose button:disabled {
+.ai-chat-compose button:disabled,
+.ai-chat-compose .ai-chat-attach[aria-disabled="true"] {
   opacity: 0.4;
   cursor: default;
+  pointer-events: none;
 }
 .ai-chat-compose button svg {
   width: 18px;
@@ -14411,29 +14429,34 @@
 
 /* Shared screenshot-upload control (#0757): the same square-ish outline button
  * language as the text input and submit button, so the attach control matches
- * instead of reading as a separate widget. */
-.ai-chat-compose button.ai-chat-attach {
+ * instead of reading as a separate widget. It is a `<label>` around the file
+ * input so pointer activation is native — an installed PWA ignores a synthetic
+ * `input.click()` (#0877). */
+.ai-chat-compose .ai-chat-attach {
+  position: relative;
   background: transparent;
   border: 1px solid var(--border);
   color: var(--txt-dim);
 }
 
-.ai-chat-compose button.ai-chat-attach:hover:not(:disabled) {
+.ai-chat-compose .ai-chat-attach:hover:not([aria-disabled="true"]),
+.ai-chat-compose .ai-chat-attach:focus-within:not([aria-disabled="true"]) {
   border-color: var(--cyan);
   color: var(--cyan);
 }
 
-.ai-chat-compose button.ai-chat-attach svg {
+.ai-chat-compose .ai-chat-attach svg {
   width: 16px;
   height: 16px;
 }
 
 .pm-shot-input {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   opacity: 0;
-  pointer-events: none;
+  cursor: pointer;
 }
 
 .pm-shots {
