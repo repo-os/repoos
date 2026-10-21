@@ -476,16 +476,17 @@ const serveMessage = computed(() => {
   font-weight: 700;
 }
 
-.pressure-alert.warning .pressure-level {
-  color: var(--amber);
-}
-
+/* The alert's amber/red tint is the warning signal; accent-coloured text on
+   that same tint fell under the WCAG floor in several themes (rendered-contrast
+   audit, #0876). Primary text keeps the level and metrics readable while the
+   border/background carry the severity. */
+.pressure-alert.warning .pressure-level,
 .pressure-alert.critical .pressure-level {
-  color: var(--red);
+  color: var(--txt);
 }
 
 .pressure-metric {
-  color: var(--txt-faint);
+  color: var(--txt);
   font-variant-numeric: tabular-nums;
 }
 
@@ -550,7 +551,9 @@ const serveMessage = computed(() => {
 }
 
 .top-owner.repoos {
-  color: var(--cyan);
+  /* 9px chip text: the cyan tint marks the owner, but cyan-on-cyan was below
+     the WCAG floor in light themes (rendered-contrast audit, #0876). */
+  color: var(--txt);
   background: color-mix(in srgb, var(--cyan) 14%, transparent);
 }
 
