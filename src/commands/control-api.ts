@@ -861,10 +861,13 @@ export async function cmdRunners(args: string[]): Promise<number> {
   const api = new RepoOsApi({ port: opts.port });
   try {
     await ensureServer(api);
-    const status = await api.requestOk("GET", "/api/remote-validation/status");
+    let status = await api.requestOk("GET", "/api/remote-validation/status");
     let test: ApiJson | undefined;
     if (probe) {
       test = await api.requestOk("POST", "/api/remote-validation/test", {});
+      // The probe is async on the server; re-read so the printed host states
+      // include the fresh memory-pressure samples (#0901).
+      status = await api.requestOk("GET", "/api/remote-validation/status");
     }
     const out = probe ? { status, test } : status;
     if (opts.json) printJson(out);
@@ -875,6 +878,34 @@ export async function cmdRunners(args: string[]): Promise<number> {
       );
       if (probe && test) {
         console.log(c.dim("  probe:"), (test as { ok?: boolean }).ok ? "ok" : "failed");
+      }
+      const hosts = ((status as { hosts?: ApiJson[] }).hosts ?? []) as Array<
+        Record<string, unknown>
+      >;
+      for (const h of hosts) {
+        const pressure = h.pressure as
+          | {
+              state?: string;
+              reason?: string | null;
+              fix?: string | null;
+              recheckCommand?: string | null;
+            }
+          | undefined;
+        const state = h.healthy ? "ready" : h.probed ? "unavailable" : "unprobed";
+        const memory =
+          pressure?.state === "pressured"
+            ? c.red(" · MEMORY PRESSURE")
+            : pressure?.state === "healthy"
+              ? c.green(" · memory healthy")
+              : "";
+        console.log(`  ${String(h.host)} ${state}${memory}`);
+        if (pressure?.state === "pressured") {
+          if (pressure.reason) console.log(c.yellow(`    ${pressure.reason}`));
+          if (pressure.fix) console.log(c.yellow(`    fix: ${pressure.fix}`));
+          console.log(
+            c.dim(`    re-check: ${pressure.recheckCommand ?? "repoos runners --probe"}`),
+          );
+        }
       }
     }
     return 0;
