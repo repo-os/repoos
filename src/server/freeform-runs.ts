@@ -53,6 +53,7 @@ import {
 } from "./agents.js";
 import { markPmWorking } from "./pm-runs.js";
 import { deleteBranch, removeWorktree } from "../core/git.js";
+import { sanitizeSpawnArgs } from "../core/spawn-args.js";
 
 /** A freeform run in flight, durable across a server reload. */
 export interface FreeformRunRecord {
@@ -281,7 +282,7 @@ export class FreeformRunManager {
       const outFd = openSync(out, "w");
       const errFd = openSync(err, "w");
       try {
-        proc = spawn(input.command.cmd, input.command.args, {
+        proc = spawn(input.command.cmd, sanitizeSpawnArgs(input.command.args).args, {
           cwd: input.cwd,
           // File descriptors, not pipes: the child keeps them when this server
           // exits during a reload, and the new process tails the same files.

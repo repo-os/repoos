@@ -414,6 +414,10 @@ and may use the main checkout, like every other CLI.
 - Status is a frontmatter field; files never move (see ADR-0002).
 - Zero runtime dependencies. Dev deps only.
 - The server adds transport, not logic — anything reusable belongs in core.
+- Every string handed to an agent CLI is NUL-sanitized at the spawn boundary
+  (`core/spawn-args.ts`, #0889). Prompts are assembled from agent output, task
+  bodies, logs and paths; a NUL byte there must never make `spawn` throw and
+  kill a start or a crash recovery.
 
 ## Build and layout notes
 
