@@ -168,3 +168,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T04:58:56Z · body
 - 2026-10-21T04:59:28Z · body
 - 2026-10-21T05:23:03Z · message_queued at 2026-10-21T05:23:03.486Z
+- 2026-10-21T05:23:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
