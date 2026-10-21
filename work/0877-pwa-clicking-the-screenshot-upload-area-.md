@@ -3,9 +3,6 @@ id: "0877"
 title: "PWA: clicking the screenshot upload area does not open the file picker"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: degenerate-output
-needs_input_detail: "engineer keeps crashing (4 in 30m): a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/pwa-clicking-the-screenshot-upload-area-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-20T13:54:39Z"
-updated_at: "2026-10-21T01:38:24Z"
+updated_at: "2026-10-21T01:38:38Z"
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:26:02.934Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:28:21.260Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:33:49.958Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:37:56.820Z\",\"kind\":\"degenerate-output\"}]"
 ---
@@ -161,3 +158,4 @@ Unrelated gate unblock: `rendered-contrast` was already failing on the dashboard
 - 2026-10-21T01:38:04Z · body
 - 2026-10-21T01:38:16Z · cli_override, model_override
 - 2026-10-21T01:38:24Z · model_override
+- 2026-10-21T01:38:38Z · needs_input
