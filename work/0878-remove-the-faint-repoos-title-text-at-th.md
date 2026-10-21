@@ -2,7 +2,7 @@
 id: "0878"
 title: "Remove the faint \"RepoOS\" title text at the top left of the app window (old Hub topbar leftover)"
 type: bug
-status: active
+status: review
 priority: p3
 area: [web, macos]
 assigned_to: ai
@@ -43,4 +43,4 @@ No faint duplicate "RepoOS" text anywhere in the title bar or top left area, in 
 - 2026-10-21T03:42:53Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-21T03:42:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T03:42:53Z · message_delivered: 1 message(s)
-- 2026-10-21T03:50:22Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-21T03:50:22Z · status active→review
