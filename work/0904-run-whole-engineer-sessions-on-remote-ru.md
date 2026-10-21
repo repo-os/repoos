@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/run-whole-engineer-sessions-on-remote-ru
 created_at: "2026-10-21T15:06:23Z"
-updated_at: "2026-10-21T19:41:41Z"
+updated_at: "2026-10-21T19:42:25Z"
 ---
 ## Problem
 Remote runners (bee, thinkpad, mini) today run only validation: self-checks, handoff and close-out gates, and (#0854/#0874) browser shots. The engineer and reviewer agents themselves still run on the laptop. The laptop is a fanless MacBook Air under constant memory pressure (compressor 35-38% of RAM, pressure guard holding new starts, 3 engineers + gates + browsers at once), which is now the main throughput limit: engineers are held, tests time out, and gates fall back to the laptop.
@@ -29,6 +29,9 @@ A task can be started on a chosen runner (or the least loaded healthy one). The 
 ## Notes for AI
 Large; split into stories/tasks after the ADR. Depends in spirit on #0900 (tests isolated from host pressure), #0901 (health-aware dispatch) and #0897 (queue visibility). Start with the ADR; do not build before it is accepted. Existing pieces: src/server/remote-validation.ts, scripts/remote-runner/*, host pool lease/LRU, bundle upload (#0717), src/server/agents.ts AgentRunner.
 
+## ADR and split
+This increment delivers the ADR required by the task notes (docs/adr/0009-remote-engineer-sessions.md, proposed) plus the docs/setup-checklist updates and the AGENTS.md remote-worktree rule. Per the task's own guidance ("Start with the ADR; do not build before it is accepted. Large; split into stories/tasks after the ADR."), the spawn/stream/stop/resume implementation, placement Settings, fetch-back handoff wiring and failure-injection suite are split into the six follow-up tasks listed in the ADR's "Follow-up work" section and are not built in this pass. #0907 remains the human auth + real-run task.
+
 ## Activity
 
 - 2026-10-21T15:06:23Z · created · njachowski@gmail.com
@@ -46,3 +49,4 @@ Large; split into stories/tasks after the ADR. Depends in spirit on #0900 (tests
 - 2026-10-21T19:37:27Z · status ready→active, branch
 - 2026-10-21T19:41:41Z · body
 - 2026-10-21T19:41:41Z · body
+- 2026-10-21T19:42:25Z · body: ADR and split (added)
