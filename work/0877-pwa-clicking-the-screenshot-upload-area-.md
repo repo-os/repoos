@@ -2,7 +2,13 @@
 id: "0877"
 title: "PWA: clicking the screenshot upload area does not open the file picker"
 type: bug
-status: ready
+status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
+debug_tldr: "The engineer agent process crashed before handoff — open the task’s full session log for the stack trace, then restart the run from the board."
+debug_tldr_at: "2026-10-21T01:05:44Z"
+debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +17,9 @@ branch: feat/pwa-clicking-the-screenshot-upload-area-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T13:54:39Z"
-updated_at: "2026-10-21T01:04:01Z"
+updated_at: "2026-10-21T01:05:44Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:05:24.436Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 In the installed PWA, every screenshot-upload area (for example "Click to add screenshots, or drop them anywhere on this panel" in the New task panel, Freeform tab) ignores a click: the file picker never opens. Dropping a file on the area works. The same click opens the picker correctly in the native macOS app (RepoOS Hub) and in the website in Chrome and Safari, so the bug is specific to the PWA (standalone display mode).
@@ -40,4 +48,8 @@ Clicking (or keyboard-activating) any screenshot upload area in the PWA opens th
 - 2026-10-21T00:56:53Z · status inbox→ready
 - 2026-10-21T00:56:59Z · cli_override, model_override
 - 2026-10-21T00:57:00Z · status ready→active, branch
-- 2026-10-21T01:04:01Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-21T01:04:42Z · message_queued at 2026-10-21T01:04:42.900Z
+- 2026-10-21T01:04:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-21T01:05:24Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T01:05:24Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T01:05:27Z · message_delivered: 1 message(s)
