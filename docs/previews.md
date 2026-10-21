@@ -127,10 +127,15 @@ referenced from the task body) and render in the drawer's Changes tab.
 The `remoteValidation.browserCaptureMode` setting in Settings → Performance
 selects `local`, `runner when available`, or `runner only`. Runner modes use the
 remote validation runner and its artifact channel for the automatic handoff
-shots and UI verification. Manual `repoos shot` / `repoos verify` stay local in
-this change — offloading the CLI is tracked separately as #0874 — and the
-interactive Preview button continues to use the local `PreviewManager` on the
-control plane.
+shots, UI verification, and `repoos shot`'s web captures. `repoos shot` posts
+each entry to the server's single-shot capture route, so it follows the same
+policy: `runner-available` falls back to a local capture with a visible note,
+while `runner-only` returns the runner's failure instead of capturing locally.
+A request the single-shot path cannot reproduce — an arbitrary absolute URL, or
+an explicit `--viewport`, `--wait`, or `--full-page` — stays local with a note
+(`runner-only` reports the structured error). `repoos verify` refreshes through
+the server endpoint and therefore uses the same policy. The interactive Preview
+button continues to use the local `PreviewManager` on the control plane.
 Runner-unavailable or infrastructure failures fall back locally with a task
 activity note in `runner when available`; `runner only` returns the failure.
 Declared shot misses retain their normal handoff failure semantics. See
