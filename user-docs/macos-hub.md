@@ -212,11 +212,16 @@ at least once, so it knows where the project lives.
 
 ## Window layout
 
-The Hub has **no visible titlebar or toolbar row**: the sidebar runs to the top
-edge of the window and the embedded web page fills the reclaimed space, while
-the native red/yellow/green window controls stay in their usual upper-left
-position. The controls that used to live in the titlebar are now quiet icon
-buttons in the sidebar:
+Hub settings (the sidebar gear, or `⌘,`) includes **Server navigation** with
+two layouts. **Sidebar** is the default. **Tabs** is one horizontal row of
+servers. The choice is remembered, and switching does not reload the page you
+already have open.
+
+**Sidebar.** The Hub has **no visible titlebar or toolbar row**: the sidebar
+runs to the top edge of the window and the embedded web page fills the
+reclaimed space, while the native red/yellow/green window controls stay in
+their usual upper-left position. The controls that used to live in the
+titlebar are quiet icon buttons in the sidebar:
 
 - **Back / Forward / Reload** sit in a compact row at the top of the sidebar.
   Back and forward are disabled when there is no history, and each has a native
@@ -230,6 +235,17 @@ buttons in the sidebar:
 
 The existing window behavior is unchanged — dragging, resizing, minimizing,
 and fullscreen all work as before.
+
+**Tabs.** The same window controls share one row with a compact tab for each
+server you have chosen to show. The row also has a chevron (Back, Forward,
+Reload, and **Use Sidebar**), a **+** menu of your servers plus **Add
+server…**, and Settings. A check mark in the **+** menu means that server
+already has a tab. Hiding a tab (the × on the tab, or **Hide tab**) only
+takes it off the strip — the server stays in your list. Drag a tab to
+reorder it, or use **Move left** / **Move right**. `⌘1` through `⌘9` select
+the first nine tabs. Control-Tab and Control-Shift-Tab move between them.
+Long lists scroll sideways inside that one row; they do not wrap. The web
+page starts immediately under the row. There is no address bar.
 
 ## Switching and the keyboard workflow
 

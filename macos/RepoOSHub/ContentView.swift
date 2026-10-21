@@ -13,17 +13,23 @@ struct ContentView: View {
         )
     }
 
+    private var usesTabStrip: Bool {
+        appState.hubGlobalPreferences.navigationLayout == .tabs
+    }
+
     var body: some View {
-        NavigationSplitView(columnVisibility: columnVisibility) {
-            ServerSidebarView(columnVisibility: columnVisibility)
-        } detail: {
-            WorkspaceDetailView()
+        Group {
+            if usesTabStrip {
+                tabStripShell
+            } else {
+                sidebarShell
+            }
         }
         // The reveal tab lives on the split view, not the detail column, so it
         // sits flush against the window's left edge when the sidebar collapses
         // instead of inheriting the detail column's leading inset (#0857).
         .overlay(alignment: .topLeading) {
-            if isSidebarCollapsed {
+            if !usesTabStrip && isSidebarCollapsed {
                 HubSidebarRevealTab {
                     isSidebarCollapsed = false
                 }
@@ -91,6 +97,29 @@ struct ContentView: View {
                     .environmentObject(appState)
             }
         }
+    }
+
+    /// Existing sidebar shell. Unchanged when the layout preference is Sidebar.
+    private var sidebarShell: some View {
+        NavigationSplitView(columnVisibility: columnVisibility) {
+            ServerSidebarView(columnVisibility: columnVisibility)
+        } detail: {
+            WorkspaceDetailView()
+        }
+    }
+
+    /// One native row: the strip occupies the transparent titlebar band, and
+    /// the existing workspace (same WebViews) starts immediately underneath.
+    private var tabStripShell: some View {
+        WorkspaceDetailView()
+            .padding(.top, HubServerTabStripMetrics.height)
+            .ignoresSafeArea(edges: .top)
+            .overlay(alignment: .top) {
+                HubServerTabStrip()
+                    .frame(height: HubServerTabStripMetrics.height)
+                    .ignoresSafeArea(edges: .top)
+            }
+            .ignoresSafeArea(edges: .top)
     }
 
     private var shellBackground: Color {
