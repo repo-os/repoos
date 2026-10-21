@@ -155,4 +155,13 @@ describe("degenerate-output scan input (#0718)", () => {
     const { verdict } = run([{ type: "text", text: "<".repeat(500) } as AgentOutputEntry]);
     expect(verdict).toBe("degenerate");
   });
+
+  it("keeps NUL bytes out of the degenerate excerpt (#0889)", () => {
+    const { verdict, t } = run([
+      { type: "text", text: `${"\u0000".repeat(500)}still a loop` } as AgentOutputEntry,
+    ]);
+    expect(verdict).toBe("degenerate");
+    expect(t.lastHit()?.excerpt).not.toContain("\u0000");
+    expect(degenerateHitDetail(t.lastHit())).not.toContain("\u0000");
+  });
 });

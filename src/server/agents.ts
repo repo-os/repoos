@@ -60,6 +60,7 @@ import {
   degenerateHitDetail,
   scrapeProviderFailure,
 } from "../core/agent-run-health.js";
+import { sanitizeSpawnArgs, stripNulBytes } from "../core/spawn-args.js";
 import { notifyAttentionAfterSession, notifyAttentionAgentStalled } from "./attention-notify.js";
 import { taskWorkLink } from "./board-events.js";
 import { parseTaskAreas } from "../core/areas.js";
@@ -4688,7 +4689,9 @@ export function runPrompt(
       resolve({ ok: false, error: reason });
       return;
     }
-    const { cmd, args } = command;
+    const sanitized = sanitizeSpawnArgs(command.args);
+    const { cmd } = command;
+    const args = sanitized.args;
     // Read-only one-shots (model tests, PM authoring) run agy without the
     // permission bypass and may use the main checkout like every other CLI.
     // Anything that does bypass permissions (reviewCommand — e.g. the CTO,
@@ -6808,7 +6811,7 @@ export class AgentRunner {
         defaultStatus: this.config.defaultStatus,
         defaultAssignee: this.config.defaultAssignee,
       });
-      recordChange(current, entry);
+      recordChange(current, stripNulBytes(entry));
       writeFileSync(task.absPath, serializeTask(current));
       commitTaskFile(this.config.root, task.absPath, `docs(${current.id}): record activity`);
     } catch (err) {
@@ -6908,6 +6911,18 @@ export class AgentRunner {
     branch?: string,
     opts: { skipBoardDivergence?: boolean; review?: boolean; reviewKind?: "run" | "chat" } = {},
   ): StartResult {
+    // A prompt assembled from agent output (crash detail, task body, queued
+    // message, log line, path) can contain NUL bytes, which make `spawn` throw
+    // before the CLI starts (#0889). Sanitize every launch, whichever path built
+    // it, and record the change once in the activity log when one was made.
+    const sanitized = sanitizeSpawnArgs(args);
+    args = sanitized.args;
+    if (sanitized.removed > 0 && task) {
+      this.recordTaskActivity(
+        task.id,
+        `prompt sanitized: stripped ${sanitized.removed} NUL byte(s) from the agent command line`,
+      );
+    }
     // Backstop for callers that reach spawnTurn directly (review starts) and
     // for queued turns: never launch a permission-bypassing agy outside a
     // linked task worktree.
