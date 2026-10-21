@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-add-copy-url-to-the-ser
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T08:40:01Z"
+updated_at: "2026-10-21T08:40:29Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:22:35.664Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -44,6 +44,16 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 ![After relaunch: lightingai's header chip and sidebar bar are both the chosen yellow, while pn (purple) and Private (pink) keep their bars](/api/tasks/0892/attachments/att_c5c05988-9b84-4f6d-8f76-b9cf822e86ea.png)
 ![After: the Hub sidebar shows a yellow bar on the lightingai row; pn and Private bars are unchanged](/api/tasks/0892/attachments/att_c519394b-b0ab-4f23-8e8b-620b2f01fcae.png)
 ![After: the server context menu includes Copy URL between Pin server and Edit server](/api/tasks/0892/attachments/att_365c5ac8-5770-4d47-b505-20b5fc561701.png)
+
+## Implementation notes
+**Root cause.** The web UI saved the repo color only in `localStorage` (`repoos.repoColor.<repo>`). The Hub read it by evaluating JavaScript in the embedded `WKWebView`, and only on navigation finish / server switch, so a color picked in the page never reached the sidebar live. `localStorage` was also a weak cross-context source: the Hub kept its own isolated per-server data store, and the read could pick any repo's key.
+
+**Fix.** The web UI now mirrors the preference into one first-party cookie, `repoos_repo_color`, whose value is `<repo-name>:<#RRGGBB>` with an explicit empty color for **Default** (`src/ui-app/src/repo-color.ts`). The Hub observes that server's isolated `WKHTTPCookieStore` (plus a low-frequency read fallback), applies the color to the sidebar row, and stores it as the registry's display cache. No script or message bridge is injected; see `docs/native-hub-webkit.md`. Legacy `localStorage` colors migrate into the cookie on first load, so existing bars keep rendering.
+
+**Copy URL.** The server context menu is now a pure model (`ServerActionsMenuModel`) and includes **Copy URL**, which copies the exact stored origin (scheme and port) for local and remote servers.
+
+**Verified live.** Real Hub build from this worktree, branch UI served in its embedded web view against a running server: picking yellow showed the sidebar bar immediately; the header chip and bar matched; the color survived an app relaunch; **Default** cleared it; pn (purple) and Private (pink) kept their bars. The context menu showed **Copy URL** in place. See the after screenshots above.
+
 
 ## Activity
 
@@ -78,3 +88,4 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 - 2026-10-21T08:39:29Z · screenshots
 - 2026-10-21T08:39:56Z · screenshots
 - 2026-10-21T08:40:01Z · screenshots
+- 2026-10-21T08:40:29Z · body: Implementation notes (added)
