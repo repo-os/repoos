@@ -17,7 +17,7 @@
  * the UI render that same report — the diagnostic logic lives only here.
  */
 import { accessSync, constants, existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { extname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import {
   findRepoRoot,
   isLinkedWorktreeRoot,
@@ -1298,12 +1298,22 @@ export function findTargetInstallProblems(
     ];
     if (declared.length === 0) continue;
     const cwd = relative(root, cwdAbs) || ".";
-    if (!isDirectory(join(cwdAbs, "node_modules"))) {
+    // Resolve like Node does: a package may be installed in the target's own
+    // node_modules or hoisted to a workspace root above it. Only packages
+    // missing from every directory up to the repo root are a real problem.
+    const moduleDirs: string[] = [];
+    for (let dir = cwdAbs; ; dir = dirname(dir)) {
+      moduleDirs.push(join(dir, "node_modules"));
+      if (dir === resolve(root)) break;
+      const parent = dirname(dir);
+      if (parent === dir || !insideRepo(parent, root)) break;
+    }
+    if (moduleDirs.every((dir) => !isDirectory(dir))) {
       problems.push({ targets: names, cwd, nodeModulesMissing: true, missingPackages: [] });
       continue;
     }
     const missingPackages = declared.filter(
-      (name) => !existsSync(join(cwdAbs, "node_modules", name, "package.json")),
+      (name) => !moduleDirs.some((dir) => existsSync(join(dir, name, "package.json"))),
     );
     if (missingPackages.length > 0) {
       problems.push({ targets: names, cwd, nodeModulesMissing: false, missingPackages });
@@ -1442,7 +1452,7 @@ function checkRuntime(
       .map((problem) => {
         const who = problem.targets.join(", ");
         return problem.nodeModulesMissing
-          ? `${who} (${problem.cwd}) has no node_modules`
+          ? `${who} (${problem.cwd}) has no node_modules to resolve packages from`
           : `${who} (${problem.cwd}) is missing ${problem.missingPackages.join(", ")}`;
       })
       .join("; ");
