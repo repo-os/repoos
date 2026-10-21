@@ -2,7 +2,7 @@
 id: "0891"
 title: "Flaky gate test: agent-concurrency 'queues starts beyond maxConcurrentAgents and drains' fails on remote runners"
 type: bug
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -76,4 +76,4 @@ After the fix, on the same machine: `agent-concurrency.test.ts` passed 50/50 seq
 - 2026-10-21T07:38:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T07:38:33Z · needs_input
 - 2026-10-21T07:38:34Z · message_delivered: 2 message(s)
-- 2026-10-21T07:47:02Z · note: shots: skipped — the diff (25 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-21T07:47:02Z · status active→review
