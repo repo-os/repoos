@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0895"
 title: "RepoOS Hub (macOS): web view sits under the top bar in tabs mode (UI cut off), and sidebar mode shows two collapse buttons"
 type: bug
@@ -66,3 +67,4 @@ Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode fro
 - 2026-10-21T13:09:10Z · status active→ready
 - 2026-10-21T13:09:13Z · cli_override, model_override
 - 2026-10-21T13:09:15Z · status ready→active
+
