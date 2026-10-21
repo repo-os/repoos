@@ -66,6 +66,8 @@ Where to put what:
 
 Driving the board? Start with `repoos driver brief` for live state and
 `docs/driver-notes.md` for the judgement calls and sharp edges it cannot carry.
+Re-read a task's live state (`repoos list`, `repoos landable <id>`) before every
+action on it; never act on memory, summaries or loop prompts (2026-10-21, #0879).
 
 This applies in any repo running RepoOS, not just this one. If your harness has
 its own memory feature, treat it as a cache of what's already in the repo, not

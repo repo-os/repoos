@@ -127,3 +127,18 @@ target and a route that really serves the screen (`/work?task=9999&tab=changes`
 for a drawer), then open the PNG and check it shows the change. AGENTS.md's
 shot-hygiene rules apply. Until fixed by #0866, a wrong target is caught only
 when the capture fails.
+
+## 2026-10-21 — re-read live state before every action; memory and loop prompts are hints
+
+An overnight loop prompt still said story #0011's chain had not started, and a
+driver acted on it: it moved already-landed #0879 from done back to ready and
+started an engineer on it, after the whole chain (#0879–#0884) had merged to
+main hours earlier. It was only repaired later, by a status-only `mv` to done
+that the human authorized.
+
+The failure was not the prompt, it was acting on remembered or summarized state.
+Before ANY action on a task (start, restart, message, override, mv, review,
+land), re-read it live: `repoos list`, `repoos landable <id>`, and for "not
+started" claims `git log main --grep <id>` or the merge history. Handoff docs,
+loop prompts, compaction summaries and your own earlier output are hints, never
+facts. A task found done or already merged is never reopened; report it.
