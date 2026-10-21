@@ -17,7 +17,7 @@ branch: feat/docs-site-use-the-landing-page-s-repoos-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-21T04:13:57Z"
+updated_at: "2026-10-21T04:19:18Z"
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:18.973Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:08:12.298Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:09:06.817Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-21T04:10:13.967Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
@@ -47,16 +47,16 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 ```json
 [
 {
-  "label": "Docs header logo — Classic light, matches landing",
-  "target": "Docs site",
-  "route": "/?theme=classic&appearance=light",
-  "highlight": ".docs-logo"
+"label": "Docs header logo — Classic light, matches landing",
+"target": "Docs site",
+"route": "/?theme=classic&appearance=light",
+"highlight": ".docs-logo"
 },
 {
-  "label": "Docs header logo — Gruvbox dark, matches landing",
-  "target": "Docs site",
-  "route": "/?theme=gruvbox&appearance=dark",
-  "highlight": ".docs-logo"
+"label": "Docs header logo — Gruvbox dark, matches landing",
+"target": "Docs site",
+"route": "/?theme=gruvbox&appearance=dark",
+"highlight": ".docs-logo"
 }
 ]
 ```
@@ -94,3 +94,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T04:13:34Z · screenshots
 - 2026-10-21T04:13:51Z · body
 - 2026-10-21T04:13:57Z · body
+- 2026-10-21T04:19:18Z · body
