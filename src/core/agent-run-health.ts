@@ -2,6 +2,7 @@
  * Provider failures, degenerate output loops, and sleep-aware idle timing (#0678).
  */
 import { isProviderFailureReason } from "./attention.js";
+import { stripNulBytes } from "./spawn-args.js";
 
 /** Wall-clock delta credited toward silence/stall timers — caps laptop-sleep gaps. */
 export function creditIdleMs(
@@ -88,7 +89,10 @@ export interface DegenerateOutputHit {
 const HIT_EXCERPT_MAX = 200;
 
 function excerptOf(text: string): string {
-  const collapsed = text.replace(/\s+/g, " ").trim();
+  // NULs are not whitespace to `\s`, so a binary assistant blob used to survive
+  // into the crash detail — and from there into the next prompt as a spawn
+  // argument Node rejects (#0877, #0889). Strip them at the source.
+  const collapsed = stripNulBytes(text).replace(/\s+/g, " ").trim();
   return collapsed.length > HIT_EXCERPT_MAX ? `${collapsed.slice(0, HIT_EXCERPT_MAX)}…` : collapsed;
 }
 
