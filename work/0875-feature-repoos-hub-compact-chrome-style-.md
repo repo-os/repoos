@@ -8,11 +8,12 @@ area: macos
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
-cli_override: github copilot
+cli_override: cursor
+model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-20T13:31:37Z"
-updated_at: "2026-10-21T05:58:16Z"
+updated_at: "2026-10-21T05:58:17Z"
 ---
 ## Problem
 
@@ -354,3 +355,4 @@ Test both layouts, switching between them, narrow windows, many servers, and nat
 - 2026-10-21T01:41:02Z · status inbox→ready
 - 2026-10-21T05:58:14Z · cli_override, model_override
 - 2026-10-21T05:58:16Z · cli_override, model_override
+- 2026-10-21T05:58:17Z · cli_override, model_override
