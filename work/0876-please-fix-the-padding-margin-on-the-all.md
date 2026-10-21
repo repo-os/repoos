@@ -2,7 +2,7 @@
 id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T01:14:23Z"
+updated_at: "2026-10-21T01:14:24Z"
 ---
 ## Problem
 
@@ -112,4 +112,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T01:02:34Z · note: click [data-testid='budget-pause-agent']: click: Error: strict mode violation: locator('[data-testid=\'budget-pause-agent\']') resolved to 2 elements: on /agents?tab=budget-controls
 - 2026-10-21T01:02:35Z · note: highlight .budget-pause-dialog matched nothing on /agents?tab=budget-controls
 - 2026-10-21T01:02:44Z · body
-- 2026-10-21T01:14:23Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-21T01:14:24Z · status active→review
