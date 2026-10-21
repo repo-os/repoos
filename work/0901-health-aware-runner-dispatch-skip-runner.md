@@ -11,7 +11,7 @@ branch: feat/health-aware-runner-dispatch-skip-runner
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T14:21:05Z"
-updated_at: "2026-10-21T17:14:50Z"
+updated_at: "2026-10-21T17:19:15Z"
 ---
 ## Problem
 2026-10-21: thinkpad had 73% swap in use (3012/4095 MB); the memory-pressure guard inside the gate containers (native Linux containers see the host swap) held engineer spawns, so spawn-related tests failed remotely on that runner for #0894, #0895 (twice) and #0897, with fallbackToLocal silently re-running whole gates on the laptop. Nothing in the UI or on the tasks said a runner was unhealthy; the fix (sudo swapoff -a && sudo swapon -a, run by a human) was found by hand. Colima/Docker on macOS hosts is different: containers there see the Linux VM's memory, not macOS swap.
@@ -36,3 +36,4 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 - 2026-10-21T16:53:24Z · cli_override, model_override
 - 2026-10-21T16:53:26Z · status ready→active, branch
 - 2026-10-21T17:14:50Z · body
+- 2026-10-21T17:19:15Z · body
