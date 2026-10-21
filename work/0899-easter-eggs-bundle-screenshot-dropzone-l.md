@@ -2,7 +2,7 @@
 id: "0899"
 title: "Easter eggs bundle: screenshot dropzone layout, CLI screenshot captions"
 type: bug
-status: active
+status: review
 hold: true
 priority: p3
 area: [web, core]
@@ -14,9 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T18:12:24Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/agent-cta.test.ts > shared agent prompt call to action > uses the canonical starter prompt verbatim, tests/agent-cta.test.ts > shared agent prompt call to action > derives the compact preview from the opening of the prompt on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: "057bb1aef2780bb8909ec1afb2d4e55e7e06590f"
+updated_at: "2026-10-21T18:36:07Z"
 ---
 ## Items
 - [ ] **E1 · Screenshot dropzone wraps to two lines** (web) — after #0877 made `ShotDropzone` a `<label>`, the global `.field label` rule leaks into it. Source: user report 2026-10-21.
@@ -135,3 +133,8 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T18:06:48Z · body
 - 2026-10-21T18:10:47Z · body
 - 2026-10-21T18:12:24Z · CTO nudge: held — handoff gate is running
+- 2026-10-21T18:27:09Z · note: handoff requested (ui-review)
+- 2026-10-21T18:36:06Z · status active→review
+- 2026-10-21T18:36:06Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
+- 2026-10-21T18:36:06Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (667edb3e2) during finalization (#0734)
+- 2026-10-21T18:36:07Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (667edb3e2) during finalization (#0734)
