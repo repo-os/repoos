@@ -2,7 +2,7 @@
 id: "0888"
 title: "Engineer turn ends cleanly without a handoff: resume it automatically instead of waiting for a CTO nudge"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -55,4 +55,4 @@ Relevant code: src/server/agents.ts (`cleanup()`, `deliverQueuedMessages`, crash
 - 2026-10-21T00:40:56Z · body
 - 2026-10-21T00:48:38Z · assigned_to
 - 2026-10-21T00:48:39Z · note: handoff requested (ui-review)
-- 2026-10-21T00:56:35Z · note: shots: skipped — the diff (11 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-21T00:56:35Z · status active→review
