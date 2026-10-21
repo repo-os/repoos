@@ -21,6 +21,7 @@ import {
   readShotPreviewFixtureFromLocation,
   seedShotPreviewDebugLogs,
   shotFixturePinnedIntegration,
+  shotFixturePinnedTaskRemoteActivity,
   shotPreviewSkipsTaskLogsFetch,
 } from "../lib/shot-preview-fixtures";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
@@ -2037,7 +2038,10 @@ export const useRepoStore = defineStore("repo", () => {
         remote?: RemoteTaskActivity | null;
       }>(`/api/tasks/${taskId}/checks`);
       taskChecks.value[taskId] = r.runs;
-      taskRemoteActivity.value[taskId] = r.remote ?? null;
+      // A drawer shot fixture pins its remote detail; a preview board's real
+      // 404/empty response must not wipe the seeded state (#0897).
+      taskRemoteActivity.value[taskId] =
+        shotFixturePinnedTaskRemoteActivity(taskId) ?? r.remote ?? null;
     } catch {
       /* non-fatal — the Debug tab falls back to whatever SSE has delivered */
     }

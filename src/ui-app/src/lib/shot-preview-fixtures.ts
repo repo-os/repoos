@@ -18,6 +18,8 @@ import type {
   CloseOutOutcomeEvent,
   DevTargetView,
   IntegrationPipelineSnapshot,
+  RemoteTaskActivity,
+  RemoteValidationStatusView,
   ShotMeta,
   Task,
   TaskLogEntry,
@@ -97,6 +99,29 @@ export function shotFixturePinnedIntegration(): IntegrationPipelineSnapshot | nu
   return pinnedIntegration;
 }
 
+/**
+ * The runner-pool status a fixture pinned (#0897), or null when none.
+ *
+ * The Remote runners panel polls `/api/remote-validation/status` and REPLACES
+ * its rows every 3s; a preview has no runner, so without this a `runners:queued`
+ * shot would race back to an idle panel. Only `applyShotPreviewFixture` writes
+ * it, and that runs solely on preview builds with `?shotState=` (plus tests).
+ */
+let pinnedRemoteStatus: RemoteValidationStatusView | null = null;
+
+/** The fixture-pinned runner status, or null when nothing is pinned (#0897). */
+export function shotFixturePinnedRemoteStatus(): RemoteValidationStatusView | null {
+  return pinnedRemoteStatus;
+}
+
+/** Fixture-pinned remote run/queue detail per task, for drawer shots (#0897). */
+const pinnedTaskRemoteActivity: Record<string, RemoteTaskActivity> = {};
+
+/** The fixture-pinned remote activity for one task, or null (#0897). */
+export function shotFixturePinnedTaskRemoteActivity(taskId: string): RemoteTaskActivity | null {
+  return pinnedTaskRemoteActivity[taskId] ?? null;
+}
+
 function fixtureTask(over: Partial<Task> = {}, taskId = SHOT_PREVIEW_FIXTURE_TASK_ID): Task {
   return {
     id: taskId,
@@ -156,6 +181,171 @@ function activePipeline(
     },
     queue: [],
     at,
+  };
+}
+
+/**
+ * Synthetic runner pool for the `runners:queued` shot (#0897): one host busy
+ * with a close-out and a handoff check queued behind it, so the panel shows the
+ * job kind, per-phase timings, queue position and the blocker without needing
+ * a real runner. The integration snapshot stays consistent with it.
+ */
+function runnersQueuedFixture(): {
+  status: RemoteValidationStatusView;
+  integration: IntegrationPipelineSnapshot;
+} {
+  const now = Date.now();
+  const iso = (msAgo: number): string => new Date(now - msAgo).toISOString();
+  const closeOutStartedAt = iso(6 * 60_000);
+  const queuedForSlot = 12 * 60_000;
+  return {
+    status: {
+      enabled: true,
+      running: true,
+      provider: "tailscale",
+      tailscaleHosts: ["bee", "thinkpad", "mini"],
+      hosts: [
+        {
+          host: "bee",
+          user: "nick",
+          labels: [],
+          maxConcurrent: 1,
+          inFlight: 1,
+          queued: 1,
+          probed: true,
+          healthy: true,
+          activeRuns: [
+            {
+              taskId: "0892",
+              startedAt: closeOutStartedAt,
+              kind: "close-out",
+              stage: "run",
+              elapsedMs: 18 * 60_000,
+              phases: [
+                {
+                  phase: "queued",
+                  startedAt: iso(18 * 60_000),
+                  endedAt: iso(6 * 60_000),
+                  durationMs: queuedForSlot,
+                },
+                {
+                  phase: "bundle",
+                  startedAt: iso(6 * 60_000),
+                  endedAt: iso(6 * 60_000 - 8_000),
+                  durationMs: 8_000,
+                },
+                {
+                  phase: "upload",
+                  startedAt: iso(6 * 60_000 - 8_000),
+                  endedAt: iso(6 * 60_000 - 29_000),
+                  durationMs: 21_000,
+                },
+                { phase: "run", startedAt: iso(6 * 60_000 - 29_000) },
+              ],
+            },
+          ],
+          queuedTasks: ["0897"],
+          queuedRuns: [
+            {
+              taskId: "0897",
+              kind: "handoff",
+              host: "bee",
+              position: 2,
+              ahead: 1,
+              since: iso(4 * 60_000),
+              waitedMs: 4 * 60_000,
+              blockers: [
+                {
+                  taskId: "0892",
+                  kind: "close-out",
+                  host: "bee",
+                  startedAt: closeOutStartedAt,
+                  elapsedMs: 6 * 60_000,
+                },
+              ],
+            },
+          ],
+          serverStats: {
+            available: true,
+            sampledAt: iso(5_000),
+            loadAverage: [0.4, 0.6, 0.7],
+            cpuCount: 8,
+            memoryUsedBytes: 6.2 * 1024 ** 3,
+            memoryTotalBytes: 16 * 1024 ** 3,
+            diskFreeBytes: 240 * 1024 ** 3,
+          },
+        },
+        {
+          host: "thinkpad",
+          user: "nick",
+          labels: [],
+          maxConcurrent: 2,
+          inFlight: 0,
+          queued: 0,
+          probed: true,
+          healthy: true,
+          activeRuns: [],
+          queuedTasks: [],
+          serverStats: {
+            available: true,
+            sampledAt: iso(5_000),
+            loadAverage: [0.1, 0.2, 0.3],
+            cpuCount: 8,
+            memoryUsedBytes: 4.4 * 1024 ** 3,
+            memoryTotalBytes: 16 * 1024 ** 3,
+            diskFreeBytes: 310 * 1024 ** 3,
+          },
+        },
+      ],
+      tailscaleHost: "bee",
+      tailscaleHostPinsTop: true,
+      hostPoolEditable: false,
+      activeServer: null,
+      maxConcurrent: 1,
+    },
+    integration: {
+      empty: false,
+      active: {
+        taskId: "0892",
+        stage: "check",
+        failed: false,
+        startedAt: iso(18 * 60_000),
+        lastProgressAt: iso(0),
+        detail: "remote tests",
+        phase: "validating",
+        phaseStartedAt: closeOutStartedAt,
+        phaseElapsedMs: 6 * 60_000,
+        phaseTimings: [
+          {
+            phase: "queued",
+            startedAt: iso(18 * 60_000),
+            endedAt: iso(12 * 60_000),
+            durationMs: 6 * 60_000,
+          },
+          {
+            phase: "syncing",
+            startedAt: iso(12 * 60_000),
+            endedAt: closeOutStartedAt,
+            durationMs: 6 * 60_000,
+          },
+          { phase: "validating", startedAt: closeOutStartedAt },
+        ],
+      },
+      queue: ["0897"],
+      queueEnqueuedAt: { "0897": iso(4 * 60_000) },
+      queueDetail: [
+        {
+          taskId: "0897",
+          position: 1,
+          enqueuedAt: iso(4 * 60_000),
+          waitedMs: 4 * 60_000,
+          blockerTaskId: "0892",
+          blockerPhase: "validating",
+          blockerElapsedMs: 18 * 60_000,
+        },
+      ],
+      at: iso(0),
+    },
   };
 }
 
@@ -412,6 +602,8 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
   // Reset first: a fixture that seeds no pipeline must not leave a previous
   // pin freezing the live snapshot (#0782).
   pinnedIntegration = null;
+  pinnedRemoteStatus = null;
+  for (const key of Object.keys(pinnedTaskRemoteActivity)) delete pinnedTaskRemoteActivity[key];
   switch (fixture) {
     case "reminders:due": {
       const reminders = useRemindersStore();
@@ -448,6 +640,30 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           state: "upcoming",
         },
       ];
+      break;
+    }
+    case "runners:queued": {
+      const seeded = runnersQueuedFixture();
+      pinnedRemoteStatus = seeded.status;
+      pinnedIntegration = seeded.integration;
+      repo.integration = seeded.integration;
+      // The drawer shot deep-links the fixture task; seed its remote activity
+      // too so the same state explains itself in the task drawer (#0897).
+      ensureFixtureTask(repo, "review");
+      const drawerActivity: RemoteTaskActivity = {
+        run: {
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          host: "bee",
+          kind: "close-out",
+          startedAt: seeded.status.hosts[0]!.activeRuns![0]!.startedAt,
+          elapsedMs: 18 * 60_000,
+          stage: "run",
+          phases: seeded.status.hosts[0]!.activeRuns![0]!.phases ?? [],
+        },
+        queue: null,
+      };
+      pinnedTaskRemoteActivity[SHOT_PREVIEW_FIXTURE_TASK_ID] = drawerActivity;
+      repo.taskRemoteActivity[SHOT_PREVIEW_FIXTURE_TASK_ID] = drawerActivity;
       break;
     }
     case "closeOut:active":
