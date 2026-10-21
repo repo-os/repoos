@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-21T17:50:23.032Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Settings: runner memory-health switch (target \"default\"): highlight #setting-remoteValidation.healthCheck matched nothing on /settings?section=remote-validation (http://127.0.0.1:64582/settings?section=remote-validation)"
 id: "0901"
 title: "Health-aware runner dispatch: skip runners under memory pressure and show it loudly with the fix"
 type: feature
@@ -66,3 +68,4 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 - 2026-10-21T17:41:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T17:41:16Z · message_delivered: 1 message(s)
 - 2026-10-21T17:50:19Z · note: ui verification failed (1 issue(s)): [missing-target] Settings: runner memory-health switch (target "default"): highlight #setting-remoteValidation.healthCheck matched nothing on /settings?section=remote-validation (http://127.0.0.1:64582/settings?section=remote-validation)
+
