@@ -3,6 +3,9 @@ id: "0859"
 title: "Easter eggs bundle: tmp-fixture leak hardening (follow-ups from #0858)"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p3
 area: [core, web]
 depends_on: ["0858"]
@@ -12,7 +15,9 @@ branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T04:04:55Z"
+updated_at: "2026-10-21T04:07:13Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:13.053Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 
@@ -126,3 +131,5 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T03:51:01Z · cli_override, model_override
 - 2026-10-21T03:51:05Z · status ready→active, branch
 - 2026-10-21T04:04:55Z · body
+- 2026-10-21T04:07:13Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T04:07:13Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
