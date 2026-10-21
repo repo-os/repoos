@@ -98,3 +98,4 @@ Merged main (#0892/#0895 Hub changes) into the branch. Resolved `macos/.gitignor
 - 2026-10-21T13:04:08Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-21T13:05:26Z · body
 - 2026-10-21T13:05:50Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-10-21T13:05:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
