@@ -11,7 +11,7 @@ branch: feat/repoos-hub-macos-add-copy-url-to-the-ser
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T09:18:04Z"
+updated_at: "2026-10-21T10:20:04Z"
 dev_error_count: 1
 ---
 ## Problem
