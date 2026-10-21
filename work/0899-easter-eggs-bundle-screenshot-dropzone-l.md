@@ -3,6 +3,9 @@ id: "0899"
 title: "Easter eggs bundle: screenshot dropzone layout, CLI screenshot captions"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — mergeability and RepoOS landability could not be confirmed
 hold: true
 priority: p3
 area: [web, core]
@@ -209,3 +212,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:17:38Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
 - 2026-10-21T19:17:39Z · note: shots: skipped — 6 handoff shots already captured for this exact plan (e15060cbd) during finalization (#0734)
 - 2026-10-21T19:18:03Z · note: review pass 3: needs some work
+- 2026-10-21T19:18:03Z · needs_input
