@@ -37,9 +37,9 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 "route": "/checks?tab=now",
 "highlight": ".rr-panel",
 "steps": [
-  {
-    "waitFor": ".rr-blockers"
-  }
+{
+  "waitFor": ".rr-blockers"
+}
 ],
 "state": "runners:queued"
 },
@@ -49,9 +49,9 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 "route": "/work?task=9999&tab=changes",
 "highlight": ".drawer-remote-activity",
 "steps": [
-  {
-    "waitFor": ".drawer-remote-activity"
-  }
+{
+  "waitFor": ".drawer-remote-activity"
+}
 ],
 "state": "runners:queued"
 }
@@ -89,3 +89,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T15:42:41Z · CTO nudge: held — handoff gate is running
 - 2026-10-21T15:44:48Z · body
 - 2026-10-21T15:45:45Z · note: waitFor .drawer-remote-activity: waitFor: Timeout 5000ms exceeded. on /work?task=9999&tab=changes
+- 2026-10-21T15:45:45Z · note: highlight .drawer-remote-activity matched nothing on /work?task=9999&tab=changes
