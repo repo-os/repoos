@@ -49,10 +49,10 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 "route": "/?theme=gruvbox&appearance=dark",
 "highlight": ".VPNavBarTitle",
 "assert": [
-  {
-    "selector": ".docs-logo",
-    "label": "Inline theme-aware logo in the docs header"
-  }
+{
+  "selector": ".docs-logo",
+  "label": "Inline theme-aware logo in the docs header"
+}
 ]
 },
 {
@@ -61,10 +61,10 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 "route": "/?theme=gruvbox&appearance=light",
 "highlight": ".VPNavBarTitle",
 "assert": [
-  {
-    "selector": ".docs-logo",
-    "label": "Inline theme-aware logo in the docs header"
-  }
+{
+  "selector": ".docs-logo",
+  "label": "Inline theme-aware logo in the docs header"
+}
 ]
 },
 {
@@ -73,10 +73,10 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 "route": "/getting-started?theme=classic&appearance=light",
 "highlight": ".VPNavBarTitle",
 "assert": [
-  {
-    "selector": ".docs-logo",
-    "label": "Inline theme-aware logo in the docs header"
-  }
+{
+  "selector": ".docs-logo",
+  "label": "Inline theme-aware logo in the docs header"
+}
 ]
 },
 {
@@ -85,10 +85,10 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 "route": "/getting-started?theme=classic&appearance=dark",
 "highlight": ".VPNavBarTitle",
 "assert": [
-  {
-    "selector": ".docs-logo",
-    "label": "Inline theme-aware logo in the docs header"
-  }
+{
+  "selector": ".docs-logo",
+  "label": "Inline theme-aware logo in the docs header"
+}
 ]
 },
 {
@@ -97,10 +97,10 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 "route": "/?theme=gruvbox&appearance=dark",
 "highlight": ".VPNavBarTitle",
 "assert": [
-  {
-    "selector": ".docs-logo",
-    "label": "Inline theme-aware logo in the docs header"
-  }
+{
+  "selector": ".docs-logo",
+  "label": "Inline theme-aware logo in the docs header"
+}
 ],
 "viewportWidth": 390
 }
