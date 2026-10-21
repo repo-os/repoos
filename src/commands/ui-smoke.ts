@@ -19,6 +19,8 @@ import {
   startPreviewServer,
   launchWebkit,
   isPlaywrightUnavailable,
+  teardownUiHarness,
+  combineHarnessErrors,
   type SmokeBrowser,
   type SmokeContext,
 } from "./ui-harness.js";
@@ -31,7 +33,7 @@ import {
  * A bare `work/` + minimal `repoos.toml` avoids all of that: no tasks, no
  * recovery, no auto-launch — constant cost regardless of board size.
  */
-function makeSmokeFixture(): string {
+export function makeSmokeFixture(): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-smoke-"));
   mkdirSync(join(root, "work"), { recursive: true });
   writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\nuiTheme = "classic"\n\n');
@@ -88,32 +90,21 @@ function makeSmokeFixture(): string {
  */
 async function runUISmokeTest(): Promise<void> {
   const fixture = makeSmokeFixture();
-  let server;
-  try {
-    server = await startPreviewServer(fixture);
-  } catch (err) {
-    rmSync(fixture, { recursive: true, force: true });
-    throw err;
-  }
+  let server: Awaited<ReturnType<typeof startPreviewServer>> | undefined;
   let browser: SmokeBrowser | undefined;
   let context: SmokeContext | undefined;
+  // The body failure (if any) is held here rather than thrown from the try, so
+  // the finally below can always run the full teardown and then combine both
+  // failures instead of one masking the other (#0859). The wrapper object keeps
+  // a thrown `undefined`/`null` from looking like success.
+  let primaryError: { error: unknown } | undefined;
   try {
+    server = await startPreviewServer(fixture);
     browser = await launchWebkit({
       repoRoot: findRepoRoot(),
       onQueueLine: (line) => console.log(c.dim(`  ${line}`)),
     });
     context = await browser.newContext({ serviceWorkers: "block" });
-  } catch (err) {
-    try {
-      await server.close();
-    } catch (closeErr) {
-      console.warn("UI smoke server cleanup also failed:", closeErr);
-    } finally {
-      rmSync(fixture, { recursive: true, force: true });
-    }
-    throw err;
-  }
-  try {
     const page = await context.newPage();
     const consoleErrs: string[] = [];
     const pageErrors: string[] = [];
@@ -464,17 +455,26 @@ async function runUISmokeTest(): Promise<void> {
     if (pageErrors.length > 0) {
       throw new Error("Page errors (" + pageErrors.length + "): " + pageErrors.join("; "));
     }
+  } catch (err) {
+    primaryError = { error: err };
   } finally {
     try {
-      if (context) await context.close();
-      if (browser) await browser.close();
-      // Await teardown BEFORE deleting its root: async state persistence can
-      // recreate `.repoos/` underneath it. See #0858.
-      await server.close();
-    } finally {
-      rmSync(fixture, { recursive: true, force: true });
+      await teardownUiHarness({
+        context,
+        browser,
+        server,
+        // Await every close BEFORE deleting the root: async state persistence
+        // can recreate `.repoos/` underneath it, and a throwing browser close
+        // must not skip the server close. See #0858, #0859.
+        removeFixture: () => rmSync(fixture, { recursive: true, force: true }),
+      });
+    } catch (teardownErr) {
+      primaryError = primaryError
+        ? { error: combineHarnessErrors(primaryError.error, teardownErr) }
+        : { error: teardownErr };
     }
   }
+  if (primaryError) throw primaryError.error;
 }
 
 /**

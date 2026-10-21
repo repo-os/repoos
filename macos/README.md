@@ -16,9 +16,12 @@ sidebar context menu. The window has no visible titlebar or toolbar row: the
 native red/yellow/green window controls stay in their standard upper-left
 position while the sidebar runs to the top edge and hosts the
 back/forward/reload controls plus the sidebar toggle, with Settings in its
-footer (#0855, #0857). When the native sidebar is collapsed, a slim chevron tab
-flush against the window's left edge brings it back. The main content area loads
-the selected server's RepoOS web UI in an
+footer (#0855, #0857). A brand-new window opens at 90% of the screen's visible
+frame rather than at its 880x520 minimum, so it fills the screen like a
+browser; it stays resizable, and macOS frame restoration takes over once the
+user has sized it (#0859). When the native sidebar is collapsed, a slim chevron
+tab flush against the window's left edge brings it back. The main content area
+loads the selected server's RepoOS web UI in an
 isolated `WKWebView` (per-server data store, no native JavaScript bridge), with
 native back/forward/reload and a **⌘K quick switcher** for servers, recents, and
 pinned task contexts. Authorized servers can expose compact **attention summaries**

@@ -9,6 +9,7 @@ import {
   compatibilityRemediation,
   doctorRemediations,
   findConfigValueProblems,
+  findTargetInstallProblems,
   isKnownConfigKey,
   runDoctor,
   type DoctorReport,
@@ -617,5 +618,134 @@ describe("doctor compatibility bridge and probe arguments", () => {
     // The shipped, uncertified manifest: still on the supported line, so the
     // action is a probe — not "upgrade" to the release you already have.
     expect(at(uncertified, "opencode v2.1.0")).toMatch(/--probe opencode/);
+  });
+});
+
+/**
+ * #0859 E5: a dev/preview target that runs in a subdirectory needs that
+ * directory's own install. `repoos doctor` reports a missing or stale
+ * node_modules with the exact `bun install` fix, and stays quiet once it is
+ * complete.
+ */
+describe("dev/preview target dependency installs (#0859 E5)", () => {
+  function projectWithDocsTarget(): string {
+    const root = cleanProject();
+    writeFileSync(
+      join(root, "repoos.toml"),
+      [
+        'workDir = "work"',
+        'docsDir = "docs"',
+        'cacheDir = ".repoos"',
+        "",
+        "[check]",
+        "version = 1",
+        'defaultProfile = "default"',
+        "",
+        "[[check.steps]]",
+        'name = "build"',
+        'command = "true"',
+        "",
+        "[[dev.targets]]",
+        'name = "Docs site"',
+        'kind = "server"',
+        'command = "bun run dev"',
+        'cwd = "user-docs"',
+        'url = "http://127.0.0.1:5173"',
+        "",
+      ].join("\n"),
+    );
+    return root;
+  }
+
+  function writeDocsPackage(root: string): void {
+    const docs = join(root, "user-docs");
+    mkdirSync(docs, { recursive: true });
+    writeFileSync(
+      join(docs, "package.json"),
+      JSON.stringify(
+        {
+          name: "docs",
+          devDependencies: { vitepress: "^1.6.4", "vitepress-plugin-llms": "^1.14.0" },
+        },
+        null,
+        2,
+      ),
+    );
+  }
+
+  function installPackage(root: string, name: string): void {
+    const dir = join(root, "user-docs", "node_modules", name);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "package.json"), JSON.stringify({ name, version: "1.0.0" }));
+  }
+
+  it("reports a target whose whole node_modules tree is absent", () => {
+    const root = tmp("repoos-doctor-deps-");
+    writeDocsPackage(root);
+    expect(findTargetInstallProblems(root, [{ name: "Docs site", cwd: "user-docs" }])).toEqual([
+      { targets: ["Docs site"], cwd: "user-docs", nodeModulesMissing: true, missingPackages: [] },
+    ]);
+  });
+
+  it("reports a dependency added to package.json after the last install", () => {
+    const root = tmp("repoos-doctor-deps-stale-");
+    writeDocsPackage(root);
+    installPackage(root, "vitepress");
+    expect(findTargetInstallProblems(root, [{ name: "Docs site", cwd: "user-docs" }])).toEqual([
+      {
+        targets: ["Docs site"],
+        cwd: "user-docs",
+        nodeModulesMissing: false,
+        missingPackages: ["vitepress-plugin-llms"],
+      },
+    ]);
+  });
+
+  it("does nothing when every declared dependency is installed", () => {
+    const root = tmp("repoos-doctor-deps-ok-");
+    writeDocsPackage(root);
+    installPackage(root, "vitepress");
+    installPackage(root, "vitepress-plugin-llms");
+    expect(findTargetInstallProblems(root, [{ name: "Docs site", cwd: "user-docs" }])).toEqual([]);
+  });
+
+  it("accepts dependencies hoisted to the repo root (workspace layout)", () => {
+    const root = tmp("repoos-doctor-deps-hoisted-");
+    writeDocsPackage(root);
+    for (const name of ["vitepress", "vitepress-plugin-llms"]) {
+      const dir = join(root, "node_modules", name);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "package.json"), JSON.stringify({ name, version: "1.0.0" }));
+    }
+    expect(findTargetInstallProblems(root, [{ name: "Docs site", cwd: "user-docs" }])).toEqual([]);
+  });
+
+  it("turns the problem into a warn finding with the install fix", async () => {
+    const root = projectWithDocsTarget();
+    writeDocsPackage(root);
+    const report = await runDoctor({
+      root,
+      probePort: 1,
+      hasBinary: tools("git", "bun", "node"),
+    });
+    const finding = findingById(report, "runtime.target-dependencies");
+    expect(finding?.severity).toBe("warn");
+    expect(finding?.detail).toContain("user-docs");
+    expect(finding?.remediation).toBe("cd user-docs && bun install");
+  });
+
+  it("reports a pass once the install is complete", async () => {
+    const root = projectWithDocsTarget();
+    writeDocsPackage(root);
+    installPackage(root, "vitepress");
+    installPackage(root, "vitepress-plugin-llms");
+    const report = await runDoctor({
+      root,
+      probePort: 1,
+      hasBinary: tools("git", "bun", "node"),
+    });
+    const finding = findingById(report, "runtime.target-dependencies");
+    expect(finding?.severity).toBe("pass");
+    expect(report.summary.warn).toBe(0);
   });
 });
