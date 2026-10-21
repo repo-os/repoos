@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 842893
+last_close_out_gate_at: "2026-10-21T06:29:14.047Z"
 id: "0859"
 title: "Easter eggs bundle: tmp-fixture leak hardening (follow-ups from #0858)"
 type: chore
@@ -12,7 +14,7 @@ branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T06:28:17Z"
+updated_at: "2026-10-21T06:29:14Z"
 review_passes: 1
 dev_error_count: 3
 ---
@@ -185,3 +187,5 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T06:13:40Z · note: review pass 1: good to go
 - 2026-10-21T06:15:05Z · body
 - 2026-10-21T06:28:17Z · body
+- 2026-10-21T06:29:14Z · close-out gate completed in 843s
+
