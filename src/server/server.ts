@@ -2370,7 +2370,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
   const cto = new CTOManager(config, emitEvent, runner);
   const ctoHeartbeat = new CtoHeartbeatTracker();
-  const ctoMonitor = new CTOMonitor(config, index, cto, runner);
+  const ctoMonitor = new CTOMonitor(config, index, cto, runner, {
+    // #0873: a running review or remote-validation wait is work, not idleness.
+    reviewRunning: (taskId) => reviews.isRunning(taskId),
+    remoteValidationRunning: (taskId) =>
+      (remoteValidator?.activeRemoteRuns?.() ?? []).some((run) => run.taskId === taskId),
+  });
   ctoMonitor.wireHeartbeatTouch(() => {
     ctoHeartbeat.touch();
     bumpAttention();
