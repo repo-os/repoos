@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 131300
-last_close_out_gate_at: "2026-10-21T17:59:10.138Z"
 id: "0906"
 title: Fix agent-cta tests after the starter prompt heading changed to 'Get started with RepoOS'
 type: feature
-status: review
+status: done
 priority: p0
 area: [core, docs]
+merged_commit: eb1a1ca53b205b6f5726074e39a4471aeda9ba2e
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fix-agent-cta-tests-after-the-starter-pr
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T17:39:04Z"
 updated_at: "2026-10-21T17:59:10Z"
+last_close_out_gate_ms: 131300
+last_close_out_gate_at: "2026-10-21T17:59:10.138Z"
 review_passes: 1
 ---
 ## Problem
