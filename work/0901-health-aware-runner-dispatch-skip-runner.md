@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-21T17:54:52Z"
-review_passes: 1
 id: "0901"
 title: "Health-aware runner dispatch: skip runners under memory pressure and show it loudly with the fix"
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, web]
 assigned_to: ai
@@ -13,6 +11,8 @@ branch: feat/health-aware-runner-dispatch-skip-runner
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T14:21:05Z"
+updated_at: "2026-10-21T18:05:12Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-10-21T17:50:23.032Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Settings: runner memory-health switch (target \"default\"): highlight #setting-remoteValidation.healthCheck matched nothing on /settings?section=remote-validation (http://127.0.0.1:64582/settings?section=remote-validation)"
 ---
 ## Problem
@@ -85,4 +85,4 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 - 2026-10-21T17:53:50Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (872e58046) during finalization (#0734)
 - 2026-10-21T17:53:51Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (872e58046) during finalization (#0734)
 - 2026-10-21T17:54:52Z · note: review pass 1: good to go
-
+- 2026-10-21T18:05:12Z · status review→active
