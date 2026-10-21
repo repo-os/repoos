@@ -268,7 +268,12 @@ export function taskNeedsUiHandoffVerification(config: RepoOSConfig, task: Task)
   const policy = resolvedUiVerification(config);
   if (!policy.enabled) return false;
   const plan = planAutoCapture(config, task);
-  return !("reason" in plan);
+  if ("reason" in plan) {
+    // #0866: a declared shot that cannot render on its target is missing
+    // evidence, so the gate MUST run and report it — not skip as "no plan".
+    return (plan.blockingErrors?.length ?? 0) > 0;
+  }
+  return true;
 }
 
 /**
@@ -360,6 +365,12 @@ export async function preflightUiEvidence(
   }
   const plan = planAutoCapture(config, task);
   if ("reason" in plan) {
+    if (plan.blockingErrors?.length) {
+      return {
+        ok: false,
+        detail: `ui evidence preflight: declared shot cannot render — ${plan.blockingErrors.join("; ")}`,
+      };
+    }
     if (declaredRequiredAssertions) {
       return {
         ok: false,
@@ -369,6 +380,15 @@ export async function preflightUiEvidence(
       };
     }
     return { ok: true, skipped: true, detail: plan.reason };
+  }
+  // #0866: a declared state fixture on a target that cannot render it is
+  // invalid before any capture runs — report it with the target and the fix.
+  const blockingErrors = plan.blockingErrors ?? [];
+  if (blockingErrors.length > 0) {
+    return {
+      ok: false,
+      detail: `ui evidence preflight: declared shot cannot render — ${blockingErrors.join("; ")}`,
+    };
   }
   const assertErrors = plan.errors.filter((e) => /assert/i.test(e));
   if (assertErrors.length > 0) {
@@ -471,7 +491,7 @@ function declaredShotTargetIssues(
   const shotName = entry.label?.trim() || `${entry.target}${entry.route}`;
   return warnings.map((msg) => ({
     kind: "missing-target",
-    message: `${shotName}: ${msg}`,
+    message: `${shotName} (target "${entry.target}"): ${msg}`,
     url: finalUrl,
   }));
 }
@@ -526,6 +546,15 @@ async function captureEntryWithGate(
         // light/dark evidence wrong — recorded, never silent.
         onThemeMiss: (theme, route) => {
           warnings.push(`theme ${theme} could not be applied on ${route}`);
+        },
+        // #0866: a declared state fixture that never rendered, or a target
+        // that served its HTML shell instead of the app, is the wrong screen —
+        // a declared shot's warning becomes a blocking issue below.
+        onStateMiss: (message) => {
+          warnings.push(message);
+        },
+        onRouteNotServed: (message) => {
+          warnings.push(message);
         },
       },
     );
@@ -626,10 +655,22 @@ export async function runUiHandoffGate(
   // hand it to the runner: the bundled branch can lag a `## Shots` edit and its
   // detached checkout cannot re-diff changed paths, so a runner-planned
   // verification could differ from — or skip — what local capture does (#0854).
-  const plan: CanonicalCapturePlan | { reason: string } =
+  const plan: CanonicalCapturePlan | { reason: string; blockingErrors?: string[] } =
     deps.canonicalPlan ?? planAutoCapture(config, task, { forceRefresh: deps.forceRefresh });
   if ("reason" in plan) {
+    if (plan.blockingErrors?.length) {
+      const detail = `ui verification failed: declared shot cannot render — ${plan.blockingErrors.join("; ")}`;
+      log(task.id, "error", detail);
+      return { ok: false, detail };
+    }
     return { ok: true, skipped: true, detail: plan.reason };
+  }
+  // #0866: a declaration the resolved target cannot render is missing
+  // evidence, not a lenient warning — fail before any capture runs.
+  if (plan.blockingErrors?.length) {
+    const detail = `ui verification failed: declared shot cannot render — ${plan.blockingErrors.join("; ")}`;
+    log(task.id, "error", detail);
+    return { ok: false, detail };
   }
 
   if (

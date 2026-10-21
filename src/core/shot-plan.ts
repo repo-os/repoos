@@ -31,6 +31,7 @@ import {
   readBranchFixtureValidator,
 } from "./shot-fixtures.js";
 import { DEFAULT_PREVIEW_TARGET as DEFAULT_FALLBACK_TARGET } from "./shot-targets.js";
+import { appPreviewTargetName, isAppRoute } from "./shot-targets.js";
 import { worktreePathForBranch } from "./git.js";
 
 /** One ordered step within a declared shot. Exactly one key per object. */
@@ -551,6 +552,87 @@ export function resolveDeclaredTarget(
   return { target: declared };
 }
 
+/**
+ * Decide which target a declared shot needs (#0866). App-scoped shots — a
+ * `state` fixture, or a route in the main app's UI — default to the app target
+ * even when the diff's path resolution named some other target first, and an
+ * explicit target that cannot render the app is an error naming the shot, the
+ * resolved target and what to set. Everything else keeps the #0594 resolution
+ * order.
+ */
+export interface DeclaredShotTargetResolution {
+  target?: string;
+  /** True when the shot needs the fixture-aware app target. */
+  appScoped?: boolean;
+  error?: string;
+}
+
+/** True when a declared shot can only render on the main app target (#0866). */
+export function isAppScopedDeclaredShot(shot: DeclaredShot): boolean {
+  return shot.state !== undefined || (shot.route !== undefined && isAppRoute(shot.route));
+}
+
+/** The actionable message for an app-scoped shot resolved to the wrong target (#0866). */
+function appTargetMismatchMessage(shot: DeclaredShot, target: string, appTarget: string): string {
+  if (shot.state) {
+    const routeHint = shot.state.startsWith("drawer:")
+      ? ' and a route that opens the drawer, e.g. "/work?task=9999&tab=changes"'
+      : "";
+    return (
+      `state "${shot.state}" needs the app target; this shot resolved to "${target}" — ` +
+      `set "target": "${appTarget}"${routeHint}`
+    );
+  }
+  return (
+    `route "${shot.route}" is an app route; this shot resolved to "${target}" — ` +
+    `set "target": "${appTarget}" (or remove the app route)`
+  );
+}
+
+/** Resolve one declared shot's target, including the app-target rules (#0866). */
+export function resolveDeclaredShotTarget(
+  shot: DeclaredShot,
+  targets: string[],
+  opts: {
+    /** Target that serves the main app, when it can be identified. */
+    appTarget?: string;
+    /** Command capture target names — they have no page/route/state. */
+    commandTargets?: ReadonlySet<string>;
+  } = {},
+): DeclaredShotTargetResolution {
+  const appScoped = isAppScopedDeclaredShot(shot);
+  const isCommand = (target: string): boolean => opts.commandTargets?.has(target) === true;
+  if (shot.target) {
+    // #0866: an explicit `default` means the app, never "alias to whichever
+    // sole target the diff happened to resolve" — that alias is what turned an
+    // app Settings shot into a Docs-site capture.
+    if (
+      shot.target.trim() === DEFAULT_FALLBACK_TARGET &&
+      opts.appTarget &&
+      !isCommand(shot.target.trim())
+    ) {
+      return { target: opts.appTarget, appScoped };
+    }
+    const resolved = resolveDeclaredTarget(shot.target, targets);
+    if (resolved.error || !resolved.target) {
+      return { error: resolved.error ?? `target "${shot.target}" could not be resolved` };
+    }
+    const target = resolved.target;
+    // A command target drops route/state (#0769), so it is never app-scoped.
+    if (appScoped && opts.appTarget && !isCommand(target) && target !== opts.appTarget) {
+      return { target, appScoped, error: appTargetMismatchMessage(shot, target, opts.appTarget) };
+    }
+    return { target, appScoped };
+  }
+  if (appScoped && opts.appTarget) return { target: opts.appTarget, appScoped };
+  const resolved = resolveDeclaredTarget(undefined, targets);
+  return {
+    ...(resolved.target ? { target: resolved.target } : {}),
+    appScoped,
+    ...(resolved.error ? { error: resolved.error } : {}),
+  };
+}
+
 /** Preview target names from `repoos.toml` (for validating `--shots`). */
 export function previewTargetNames(preview?: PreviewConfig): string[] {
   const named = (preview?.targets ?? []).map((t) => t.name).filter(Boolean);
@@ -577,6 +659,9 @@ export function validateDeclaredShotTargets(
   const named = (preview?.targets ?? []).map((t) => t.name).filter(Boolean);
   const commandNames = new Set((shot?.targets ?? []).map((t) => t.name));
   const valid = new Set([...previewTargetNames(preview), ...commandNames]);
+  // #0866: a `state` fixture (or an app route) only renders on the app target.
+  // Validate it at declaration time so the engineer learns before handoff.
+  const appTarget = appPreviewTargetName(preview);
 
   for (let i = 0; i < shots.length; i++) {
     const label = `shot #${i + 1}`;
@@ -604,6 +689,9 @@ export function validateDeclaredShotTargets(
             `${label}: ${commandFields.map((f) => `"${f}"`).join("/")} are for a command capture target ` +
               `([[shot.targets]]), but "${raw}" is a web preview target`,
           );
+        }
+        if (appTarget && raw !== appTarget && isAppScopedDeclaredShot(shots[i])) {
+          errors.push(`${label}: ${appTargetMismatchMessage(shots[i], raw, appTarget)}`);
         }
       }
       continue;
@@ -661,6 +749,14 @@ function declaredCommandFields(shot: DeclaredShot): string[] {
 export interface CapturePlanResult {
   entries: CaptureEntry[];
   errors: string[];
+  /**
+   * Declaration problems that make a declared shot impossible to capture
+   * correctly (#0866) — wrong target for a `state` fixture. The capture may
+   * still produce other entries, but handoff must FAIL these instead of
+   * treating them as a warning: a declared shot that cannot render is missing
+   * evidence, not a lenient auto-capture miss.
+   */
+  blockingErrors: string[];
   /** Visible skip notes for the automatic capture to record (#0603). */
   autoSkips: string[];
   /**
@@ -676,6 +772,12 @@ export interface CapturePlanOptions {
   matchedGlobs?: ReadonlyMap<string, string[]>;
   /** Target names whose matched files are docs content only (#0603). */
   docsContentOnly?: ReadonlySet<string>;
+  /**
+   * The target that serves the main app (#0866). A declared shot with a `state`
+   * fixture or an app route defaults to it instead of the first resolved
+   * target, and naming a different target for such a shot is a blocking error.
+   */
+  appTarget?: string;
   /**
    * Command capture target names (#0761). A command target has no route, no
    * selector and no highlights — its command renders the image — so the docs
@@ -717,6 +819,7 @@ export function buildCapturePlan(
   options: CapturePlanOptions = {},
 ): CapturePlanResult {
   const errors: string[] = [];
+  const blockingErrors: string[] = [];
   const autoSkips: string[] = [];
   const contentOnly = options.docsContentOnly ?? new Set<string>();
   const commandTargets = options.commandTargets ?? new Set<string>();
@@ -730,6 +833,7 @@ export function buildCapturePlan(
       return {
         entries: [],
         errors: ["no preview target was resolved for the task's changed paths"],
+        blockingErrors,
         autoSkips,
         collapsed: [],
       };
@@ -750,7 +854,7 @@ export function buildCapturePlan(
       autoSkips.push(`${skipped} skipped: no docs shot declared`);
     }
     if (capturable.length === 0) {
-      return { entries: [], errors, autoSkips, collapsed: [] };
+      return { entries: [], errors, blockingErrors, autoSkips, collapsed: [] };
     }
     return {
       entries: capturable.map((target) => {
@@ -781,6 +885,7 @@ export function buildCapturePlan(
         };
       }),
       errors,
+      blockingErrors,
       autoSkips,
       collapsed: [],
     };
@@ -789,9 +894,16 @@ export function buildCapturePlan(
   const declaredTargeted = new Set<string>();
   for (let i = 0; i < declared.length; i++) {
     const shot = declared[i];
-    const resolved = resolveDeclaredTarget(shot.target, targets);
+    const resolved = resolveDeclaredShotTarget(shot, targets, {
+      ...(options.appTarget ? { appTarget: options.appTarget } : {}),
+      commandTargets,
+    });
     if (resolved.error) {
-      errors.push(`shot #${i + 1}: ${resolved.error}`);
+      const message = `shot #${i + 1}: ${resolved.error}`;
+      errors.push(message);
+      // #0866: a wrong target for a state/app route is not a lenient skip —
+      // the declared evidence cannot exist, so handoff must fail it.
+      if (resolved.appScoped) blockingErrors.push(message);
       continue;
     }
     if (!resolved.target) continue;
@@ -882,7 +994,7 @@ export function buildCapturePlan(
     }
   }
 
-  return { entries: deduped, errors, autoSkips, collapsed };
+  return { entries: deduped, errors, blockingErrors, autoSkips, collapsed };
 }
 
 /**

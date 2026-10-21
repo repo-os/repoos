@@ -26,6 +26,54 @@ import { parseTaskAreas } from "./areas.js";
 export const DEFAULT_PREVIEW_TARGET = "default";
 
 /**
+ * Route prefixes served by the main app UI. A declared shot whose `route` is
+ * one of these is an app screen, so an omitted `target` must default to the app
+ * target rather than whichever target the diff happened to resolve first
+ * (#0866). Mirrors `src/ui-app/src/router.ts`; `shot-target-support-0866.test.ts`
+ * fails if the two drift apart.
+ */
+export const APP_ROUTE_PREFIXES = [
+  "/login",
+  "/work",
+  "/stories",
+  "/checks",
+  "/dev",
+  "/releases",
+  "/deployments",
+  "/inputs",
+  "/repo",
+  "/settings",
+  "/agents",
+  "/tasks",
+] as const;
+
+/**
+ * The target that serves the main app (the fixture-aware UI), when it can be
+ * identified: the bare `[preview] command` under its `default` sentinel, or
+ * the repo's only named web target. Undefined when a repo declares several
+ * named targets and no default command — there is no principled way to know
+ * which one is "the app", so callers keep the old resolution order instead of
+ * guessing (#0866).
+ */
+export function appPreviewTargetName(preview?: PreviewConfig): string | undefined {
+  if (preview?.command?.trim()) return DEFAULT_PREVIEW_TARGET;
+  const named = (preview?.targets ?? []).map((t) => t.name).filter(Boolean);
+  return named.length === 1 ? named[0] : undefined;
+}
+
+/** True when `route` is a path in the main app's UI (see {@link APP_ROUTE_PREFIXES}). */
+export function isAppRoute(route: string): boolean {
+  const path = route.startsWith("/") ? route : `/${route}`;
+  // `/` is ambiguous (app dashboard, docs home, landing root): leave it to the
+  // normal resolution order rather than claiming it is app-only.
+  if (path === "/" || path === "") return false;
+  const pathname = path.split(/[?#]/, 1)[0];
+  return APP_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+/**
  * Normalize a task's `area:` value into the individual areas it names, lowercased.
  *
  * The splitting itself is NOT re-implemented here: it delegates to the one
