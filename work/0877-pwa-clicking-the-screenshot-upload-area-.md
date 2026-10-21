@@ -3,6 +3,9 @@ id: "0877"
 title: "PWA: clicking the screenshot upload area does not open the file picker"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: degenerate-output
+needs_input_detail: "engineer keeps crashing (4 in 30m): a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p2
 area: web
 assigned_to: ai
@@ -11,9 +14,9 @@ branch: feat/pwa-clicking-the-screenshot-upload-area-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T13:54:39Z"
-updated_at: "2026-10-21T01:37:53Z"
-dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:05:24.436Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:26:02.934Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:28:21.260Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:33:49.958Z\",\"kind\":\"degenerate-output\"}]"
+updated_at: "2026-10-21T01:37:56Z"
+dev_error_count: 5
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:26:02.934Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:28:21.260Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:33:49.958Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:37:56.820Z\",\"kind\":\"degenerate-output\"}]"
 ---
 ## Problem
 In the installed PWA, every screenshot-upload area (for example "Click to add screenshots, or drop them anywhere on this panel" in the New task panel, Freeform tab) ignores a click: the file picker never opens. Dropping a file on the area works. The same click opens the picker correctly in the native macOS app (RepoOS Hub) and in the website in Chrome and Safari, so the bug is specific to the PWA (standalone display mode).
@@ -175,3 +178,5 @@ Unrelated gate unblock: `rendered-contrast` was already failing on the dashboard
 - 2026-10-21T01:37:27Z · body
 - 2026-10-21T01:37:52Z · body: Implementation notes (added)
 - 2026-10-21T01:37:53Z · needs_input
+- 2026-10-21T01:37:56Z · agent exited with an error (opencode) · Degenerate output loop detected (a very long run of text with no tool call). Excerpt: "                                                                                                                                                                                                        …". If this is a real loop, restart with a fresh session; if it looks like normal output, it is a false positive.
+- 2026-10-21T01:37:56Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
