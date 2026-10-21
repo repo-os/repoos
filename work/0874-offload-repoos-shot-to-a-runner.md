@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 437151
-last_close_out_gate_at: "2026-10-21T13:10:11.680Z"
 id: "0874"
 title: Offload repoos shot to a runner
 type: feature
-status: review
+status: done
 priority: p3
 area: [server, core]
 depends_on: ["0854"]
+merged_commit: da404b456b6e3c8301fca35ae821a87070b818fb
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/offload-repoos-shot-to-a-runner
@@ -15,6 +14,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T12:27:49Z"
 updated_at: "2026-10-21T13:10:11Z"
+last_close_out_gate_ms: 437151
+last_close_out_gate_at: "2026-10-21T13:10:11.680Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-21T09:07:49.677Z: repoos check failed: ◆ Check plan"
 dev_error_count: 5

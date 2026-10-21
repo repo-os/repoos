@@ -30,6 +30,8 @@ const CONTROL_API_MATCHERS: Matcher[] = [
   re("GET", /^\/api\/tasks\/([^/]+)\/landable$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/.source),
+  // `repoos shot` single-entry capture through the browser-capture policy (#0874).
+  re("POST", /^\/api\/tasks\/([^/]+)\/shots\/capture$/.source),
   // `repoos dev …` (#0747): list/status/get and start/stop/restart.
   exact("GET", "/api/dev/targets"),
   re("GET", /^\/api\/dev\/targets\/([^/]+)$/.source),

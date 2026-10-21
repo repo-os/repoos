@@ -1712,18 +1712,22 @@ Remote validation is opt-in and off by default. It runs the expensive half of
 the close-out gate (build + tests) on a disposable Hetzner VM instead of your
 machine. Enabling it sends repo contents to a third-party host.
 
-The automatic handoff screenshots and UI verification use the separate browser
-capture policy below. Manual `repoos shot` / `repoos verify` and the interactive
-Preview stay on this machine regardless of the policy. Remote modes require
-remote validation and a runner image with Bun, Playwright, WebKit, and UI fonts
-installed. `runner-available` uses local capture when a capable runner is
-unavailable; `runner-only` reports that failure instead of using the laptop. The
-initial default remains `local` until the runner image and artifact round-trip
-have passed a real end-to-end proof.
+The automatic handoff screenshots, UI verification, and `repoos shot`'s web
+captures use the separate browser capture policy below. `repoos verify`
+refreshes through the server, so it uses the same policy; only the interactive
+Preview stays on this machine. Remote modes require remote validation and a
+runner image with Bun, Playwright, WebKit, and UI fonts installed.
+`runner-available` uses local capture when a capable runner is unavailable;
+`runner-only` reports that failure instead of using the laptop. A `repoos shot`
+request the remote single-shot path cannot reproduce — an arbitrary absolute
+URL, or an explicit `--viewport`, `--wait`, or `--full-page` — stays local with
+a visible note (`runner-only` reports the structured error instead). The initial
+default remains `local` until the runner image and artifact round-trip have
+passed a real end-to-end proof.
 
 | Key | Type | Default | Restart | Description |
 | --- | --- | --- | --- | --- |
-| `remoteValidation.browserCaptureMode` | select | `local` | yes | Choose where task screenshots and UI verification run: `local`, `runner-available` (runner when available, then local with a note), or `runner-only`. Remote modes require `remoteValidation.enabled` and a runner that provides Playwright and WebKit. |
+| `remoteValidation.browserCaptureMode` | select | `local` | yes | Choose where task screenshots, UI verification, and `repoos shot`'s web captures run: `local`, `runner-available` (runner when available, then local with a note), or `runner-only`. Remote modes require `remoteValidation.enabled` and a runner that provides Playwright and WebKit. An absolute URL or explicit `--viewport`/`--wait`/`--full-page` stays local. |
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |

@@ -597,10 +597,16 @@ body, and shown as the **UI changes** sub-tab of the drawer's Changes tab. This
 is the default local attachment storage; an opt-in cloud provider is configured
 under [`storage.provider`](/configuration#attachment-storage).
 
-`repoos shot` always runs locally on the control-plane machine. The
+`repoos shot` follows the
 [`remoteValidation.browserCaptureMode`](/configuration#remote-validation)
-setting only affects the automatic handoff capture and UI verification; it never
-moves this CLI command to a runner.
+setting. With `local` (the default) it drives Playwright/WebKit on this machine;
+`runner-available` captures on a capable runner and falls back locally with a
+visible note; `runner-only` returns the runner's structured failure instead of
+capturing locally. An arbitrary absolute URL, or an explicit `--viewport`,
+`--wait`, or `--full-page`, stays local with a note in runner-available mode
+(and fails with the reason in runner-only, because the remote single-shot path
+cannot reproduce it). Command capture targets always run locally on this
+machine.
 
 ```bash
 repoos shot                          # capture the preview root for this task
@@ -631,8 +637,12 @@ Refresh the current review evidence without starting an engineer turn. This
 re-runs the declared browser and command captures and UI verification against
 the task worktree's current HEAD. The command waits for the capture to finish.
 
-Like `repoos shot`, this refresh runs locally on the control plane; the
-browser-capture setting only offloads the automatic handoff paths to a runner.
+`repoos verify` refreshes through the server, so the
+[`remoteValidation.browserCaptureMode`](/configuration#remote-validation)
+policy applies exactly as it does to the automatic handoff capture:
+`runner-available` prefers a capable runner and falls back locally with a
+visible note, while `runner-only` reports the runner's failure instead of
+capturing on this machine.
 
 ```bash
 repoos verify 0766
