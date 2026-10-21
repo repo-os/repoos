@@ -16,7 +16,6 @@ updated_at: "2026-10-21T12:09:28Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T09:07:49.677Z: repoos check failed: ◆ Check plan"
 dev_error_count: 5
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T11:40:29.532Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T11:41:47.380Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T11:42:38.515Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T11:59:08.601Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Parent #0854 offloads the AUTOMATIC handoff shots and UI verification to a remote runner. Manual `repoos shot` / `repoos verify` deliberately STAY LOCAL: the spec was narrowed in #0854 review pass 17, so #0854 does not ship a runner-backed CLI. The interactive CLI keeps using the local PreviewManager / WebKit on the control-plane laptop.
