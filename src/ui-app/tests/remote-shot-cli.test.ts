@@ -111,6 +111,24 @@ describe("repoos shot remote capture transport (#0874)", () => {
     }
   });
 
+  it("returns a structured error for a malformed success response", async () => {
+    stubFetch(
+      () =>
+        ({
+          status: 201,
+          ok: true,
+          json: async () => {
+            throw new Error("bad json");
+          },
+        }) as unknown as Response,
+    );
+
+    const result = await captureRemoteShot(8741, "0874", null, ENTRY);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("server returned a malformed shot response");
+  });
+
   it("marks an older server without the route as unsupported", async () => {
     stubFetch(() =>
       jsonResponse(404, { error: "Not found", path: "/api/tasks/0874/shots/capture" }),

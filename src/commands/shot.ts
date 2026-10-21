@@ -416,7 +416,12 @@ export async function captureRemoteShot(
     };
   }
   if (!res.ok) return { ok: false, error: await readApiError(res) };
-  const body = (await res.json()) as Omit<RemoteShotResponse, "entry" | "ok">;
+  let body: Omit<RemoteShotResponse, "entry" | "ok">;
+  try {
+    body = (await res.json()) as Omit<RemoteShotResponse, "entry" | "ok">;
+  } catch {
+    return { ok: false, error: "server returned a malformed shot response" };
+  }
   if (!body?.shot) return { ok: false, error: "server returned no stored shot" };
   return {
     entry,
