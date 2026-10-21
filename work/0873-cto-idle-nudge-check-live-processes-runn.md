@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 140726
+last_close_out_gate_at: "2026-10-21T03:11:19.175Z"
 id: "0873"
 title: "CTO idle nudge: check live processes, running gates and reviews, and machine pressure first; make the threshold configurable"
 type: feature
@@ -12,10 +14,8 @@ branch: feat/cto-idle-nudge-check-live-processes-runn
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T12:23:49Z"
-updated_at: "2026-10-21T03:08:36Z"
+updated_at: "2026-10-21T03:11:19Z"
 review_passes: 2
-last_close_out_gate_ms: 105173
-last_close_out_gate_at: "2026-10-21T01:50:32.952Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -104,5 +104,5 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T02:59:15Z · note: handoff requested (ui-review)
 - 2026-10-21T03:02:37Z · status active→review
 - 2026-10-21T03:03:42Z · note: review pass 2: good to go
-
+- 2026-10-21T03:11:19Z · close-out gate completed in 141s
 
