@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T14:52:38Z"
+updated_at: "2026-10-21T14:55:46Z"
 ---
 ## Items
 - [ ] **E1 · Screenshot dropzone wraps to two lines** (web) — after #0877 made `ShotDropzone` a `<label>`, the global `.field label` rule leaks into it. Source: user report 2026-10-21.
@@ -64,6 +64,45 @@ Start from the `.shot-dropzone` block in `src/ui-app/src/style.css` (~line 6970)
 ### Notes for AI
 Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing that feeds it; check that the CLI's arg parser keeps repeated `--caption` values as a list. Source: user report 2026-10-21.
 
+## Shots
+```json
+[
+{
+  "label": "New task: screenshot dropzone row layout",
+  "target": "default",
+  "route": "/",
+  "highlight": ".field .shot-dropzone",
+  "steps": [
+    {
+      "click": ".new-btn"
+    },
+    {
+      "waitFor": ".shot-dropzone"
+    },
+    {
+      "waitMs": 400
+    }
+  ]
+},
+{
+  "label": "New input: screenshot dropzone row layout",
+  "target": "default",
+  "route": "/inputs",
+  "highlight": ".field .shot-dropzone",
+  "steps": [
+    {
+      "click": ".new-btn"
+    },
+    {
+      "waitFor": ".shot-dropzone"
+    },
+    {
+      "waitMs": 400
+    }
+  ]
+}
+]
+```
 
 ## Activity
 
@@ -82,3 +121,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T14:47:18Z · needs_input
 - 2026-10-21T14:52:29Z · status inbox→ready
 - 2026-10-21T14:52:38Z · status ready→active, branch
+- 2026-10-21T14:55:46Z · body
