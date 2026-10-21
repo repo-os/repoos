@@ -3014,6 +3014,13 @@ interface PoolHostState {
   probing?: Promise<void>;
   retryTimer?: ReturnType<typeof setTimeout>;
   lastRun?: { taskId: string; ok: boolean; at: string; durationMs?: number };
+  /**
+   * Monotonic sequence of this host's last start/finish, for the
+   * least-recently-used tie-break (#0890). 0/undefined means never used, so a
+   * fresh pool still dispatches in configured order. A counter rather than a
+   * timestamp keeps ordering exact when two dispatches share a millisecond.
+   */
+  lastUsedSeq?: number;
   serverStats?: RemoteServerStats;
   statsRequestedAt?: number;
   statsSampling?: Promise<void>;
@@ -3167,6 +3174,8 @@ export function parseRemoteServerStats(
  *
  * - Each host carries its own FIFO cap (`maxConcurrent` per host → global → 1),
  *   so two jobs run on two hosts while a third queues.
+ * - Ties on active-run count go to the least recently used host (#0890), then
+ *   configured order, so short sequential checks rotate across the pool.
  * - A job only ever goes to a host providing its capabilities (`runsOn`); if
  *   none does it fails immediately with the mismatch spelled out.
  * - Every host is probed once before its first job (docker/toolchain +
@@ -3194,6 +3203,8 @@ export class TailscaleHostPool {
   private readonly logger?: Logger;
   /** The image every host's Docker prerequisite probe must find (#0521 review). */
   private containerImage: string;
+  /** Monotonic counter behind the least-recently-used tie-break (#0890). */
+  private useSeq = 0;
   private backgroundProbeTimer?: ReturnType<typeof setInterval>;
 
   constructor(rv: RemoteValidationConfig | undefined, opts: HostPoolOptions) {
@@ -3448,11 +3459,7 @@ export class TailscaleHostPool {
       if (this.waiters.length > 0) this.dispatch();
       const nowFree = healthy
         .filter((s) => this.hostHasCapacity(s))
-        .sort(
-          (a, b) =>
-            this.effectiveActive(a) - this.effectiveActive(b) ||
-            this.hosts.indexOf(a) - this.hosts.indexOf(b),
-        );
+        .sort((a, b) => this.compareHosts(a, b));
       if (nowFree.length > 0) return this.assign(nowFree[0]!, opts.taskId);
     }
 
@@ -3521,6 +3528,7 @@ export class TailscaleHostPool {
     const s = this.hosts.find((c) => c.spec.host === host);
     if (s) {
       s.lastRun = { taskId, ok, at: new Date().toISOString(), durationMs };
+      this.markUsed(s);
     }
   }
 
@@ -3782,6 +3790,26 @@ export class TailscaleHostPool {
     return s.healthy && this.effectiveActive(s) < s.limit;
   }
 
+  /**
+   * Load, then least-recently-used, then configured order (#0890). Among hosts
+   * with the same number of active runs this rotates sequential short checks
+   * across the pool instead of pinning them to the first healthy host; a host
+   * that has never run sorts as oldest, so configured order still decides a
+   * fresh pool (and any tie between never-used hosts).
+   */
+  private compareHosts(a: PoolHostState, b: PoolHostState): number {
+    return (
+      this.effectiveActive(a) - this.effectiveActive(b) ||
+      (a.lastUsedSeq ?? 0) - (b.lastUsedSeq ?? 0) ||
+      this.hosts.indexOf(a) - this.hosts.indexOf(b)
+    );
+  }
+
+  /** Stamp a host as the most recently used for the LRU tie-break (#0890). */
+  private markUsed(s: PoolHostState): void {
+    s.lastUsedSeq = ++this.useSeq;
+  }
+
   hostLockFor(host: string): HostLockSnapshot | undefined {
     return this.hosts.find((s) => s.spec.host === host)?.hostLock;
   }
@@ -3815,17 +3843,14 @@ export class TailscaleHostPool {
 
   /**
    * Which host dispatch would hand the next compatible job (#0706) — healthy
-   * first, then least {@link effectiveActive} (pool slots + host-side locks).
+   * first, then load, least recently used, configured order (#0890).
    */
   private dispatchTargetFor(
     capabilities: string[],
     excludeHosts?: ReadonlySet<string>,
   ): PoolHostState | undefined {
     return this.hostsEligibleFor(capabilities, excludeHosts).sort(
-      (a, b) =>
-        Number(b.healthy) - Number(a.healthy) ||
-        this.effectiveActive(a) - this.effectiveActive(b) ||
-        this.hosts.indexOf(a) - this.hosts.indexOf(b),
+      (a, b) => Number(b.healthy) - Number(a.healthy) || this.compareHosts(a, b),
     )[0];
   }
 
@@ -3836,13 +3861,7 @@ export class TailscaleHostPool {
   ): string {
     const healthy = this.hostsEligibleFor(capabilities, excludeHosts).filter((s) => s.healthy);
     if (healthy.length === 0) return "";
-    return (
-      healthy.sort(
-        (a, b) =>
-          this.effectiveActive(a) - this.effectiveActive(b) ||
-          this.hosts.indexOf(a) - this.hosts.indexOf(b),
-      )[0]?.spec.host ?? ""
-    );
+    return healthy.sort((a, b) => this.compareHosts(a, b))[0]?.spec.host ?? "";
   }
 
   private notifyWaiterQueue(waiter: PoolWaiter): void {
@@ -3918,6 +3937,9 @@ export class TailscaleHostPool {
 
   private assign(s: PoolHostState, taskId?: string): HostSlot {
     s.active++;
+    // Starting a run counts as use for the LRU tie-break (#0890) even before it
+    // finishes, so sequential short checks rotate immediately.
+    this.markUsed(s);
     // Attribute the run to this host with its start time (#0564): the Remote
     // runners tab shows "#0564 · 2m 10s", and release() removes exactly this
     // entry (a host may run several jobs at once).
@@ -3961,11 +3983,7 @@ export class TailscaleHostPool {
             hostSatisfies(s.spec, w.capabilities) &&
             !(w.excludeHosts?.has(s.spec.host) ?? false),
         )
-        .sort(
-          (a, b) =>
-            this.effectiveActive(a) - this.effectiveActive(b) ||
-            this.hosts.indexOf(a) - this.hosts.indexOf(b),
-        )[0];
+        .sort((a, b) => this.compareHosts(a, b))[0];
       if (!free) {
         i++;
         continue;

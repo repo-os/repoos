@@ -1753,11 +1753,12 @@ environment-only.
 
 With the `tailscale` provider you can configure a pool of machines. Jobs
 dispatch to the host with the fewest active runs; they queue only when every
-eligible host is busy. Equal-load hosts are tried in configured order (top to
-bottom), so the first host gets work when all are idle. Use the up/down controls
-in Checks → Remote runners to reorder a plain string pool; the change applies
-immediately to new runs and does not affect in-flight runs. That page also
-shows per-host load averages, CPU count, memory use/total, free disk in the
+eligible host is busy. Equal-load hosts go to the one that has run least
+recently (LRU), so sequential checks rotate across the pool; configured order is
+the final tie-break, so a fresh pool starts with the top host. Use the up/down
+controls in Checks → Remote runners to reorder a plain string pool; the change
+applies immediately to new runs and does not affect in-flight runs. That page
+also shows per-host load averages, CPU count, memory use/total, free disk in the
 remote work area, and when each read-only SSH sample was taken. Samples run
 while the tab is open, at most every 15 seconds, and time out after five
 seconds; a failed or unreachable host reports unavailable stats.
