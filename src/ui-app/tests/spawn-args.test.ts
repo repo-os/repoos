@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeSpawnArgs, stripNulBytes } from "../../core/spawn-args";
+import { sanitizeSpawnArgs, stripNulBytes } from "../../core/spawn-args.js";
 
 describe("spawn argument sanitizing (#0889)", () => {
   it("strips NUL bytes and leaves every other character untouched", () => {
