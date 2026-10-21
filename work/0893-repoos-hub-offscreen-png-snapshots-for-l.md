@@ -11,7 +11,7 @@ branch: feat/repoos-hub-offscreen-png-snapshots-for-l
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T07:08:04Z"
-updated_at: "2026-10-21T12:16:39Z"
+updated_at: "2026-10-21T12:16:53Z"
 ---
 ## Problem
 RepoOS Hub (macos/RepoOSHub) has no way to capture images of its views for review. Divot already renders its popovers offscreen to PNG in tests and collects them as handoff evidence. Hub has no equivalent, so reviewers can't see Hub layout changes without running the app.
@@ -77,3 +77,4 @@ With that row in place, a handoff that changes Hub sources runs the command, col
 - 2026-10-21T12:16:39Z · screenshots
 - 2026-10-21T12:16:39Z · screenshots
 - 2026-10-21T12:16:39Z · screenshots
+- 2026-10-21T12:16:53Z · handoff_deferred: 2 queued message(s) must be read before review
