@@ -106,7 +106,6 @@ const draft = defineModel<string>("draft", { default: "" });
 
 const log = ref<HTMLElement | null>(null);
 const draftTextarea = ref<HTMLTextAreaElement | null>(null);
-const shotInput = ref<HTMLInputElement | null>(null);
 
 const hasConversation = computed(() => props.lines.length > 0);
 // Rows are grouped by the shared transform (#0506): a run of adjacent tool calls
@@ -140,16 +139,6 @@ function onShotFiles(e: Event): void {
   const files = Array.from(input.files ?? []);
   input.value = "";
   if (files.length) emit("attach", files);
-}
-
-/** A label's click is native activation; block it while the composer is off. */
-function onAttachClick(event: MouseEvent): void {
-  if (props.disabled) event.preventDefault();
-}
-
-/** Keyboard activation (Enter/Space); a pointer click is handled natively. */
-function openShotPicker(): void {
-  if (!props.disabled) shotInput.value?.click();
 }
 
 function onKeydown(event: KeyboardEvent): void {
@@ -324,23 +313,20 @@ defineExpose({ focusDraft });
       <label
         v-if="canAttach && !busy"
         class="ai-chat-attach"
-        role="button"
-        :tabindex="disabled ? -1 : 0"
         :aria-disabled="disabled ? 'true' : undefined"
-        aria-label="Attach screenshots"
+        :aria-label="
+          disabled ? 'Attach screenshots (unavailable while PM is working)' : 'Attach screenshots'
+        "
         title="Attach screenshots — they're added to any task the PM creates from this message"
-        @click="onAttachClick"
-        @keydown.enter.prevent="openShotPicker"
-        @keydown.space.prevent="openShotPicker"
       >
-        <ImagePlus />
+        <ImagePlus aria-hidden="true" />
         <input
-          ref="shotInput"
           type="file"
           :accept="SCREENSHOT_ACCEPT"
+          :disabled="disabled"
           multiple
           class="pm-shot-input"
-          tabindex="-1"
+          aria-label="Attach screenshots"
           @change="onShotFiles"
           @click.stop
         />

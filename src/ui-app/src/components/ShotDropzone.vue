@@ -2,21 +2,20 @@
 /**
  * The one screenshot-upload dropzone (#0877).
  *
- * The file input is opened by the browser's native `<label>` activation, not by
- * a JS `input.click()`. In an installed PWA (Safari "Add to Dock", Chrome
- * standalone) a synthetic click on a visually hidden input is the path that
- * silently does nothing, while the upload controls that already worked
- * (Settings import/export, the bug-report upload) are plain labels (#0642,
- * #0877). Keeping the input inside the label means a click anywhere in the
- * zone — or a keyboard activation forwarded below — reaches the picker without
- * a programmatic gesture.
+ * The file picker is opened by the browser's native activation of a real
+ * `<input type="file">`, never by a JS `input.click()`. In an installed PWA
+ * (Safari "Add to Dock", Chrome standalone) a synthetic click on a visually
+ * hidden input is the path that silently does nothing, while the upload
+ * controls that already worked (Settings import/export, the bug-report upload)
+ * hand the click to the input natively (#0642, #0877).
  *
- * The input stays rendered (1x1, `opacity: 0`): `display: none` also blocks the
- * picker in WKWebView (#0642). Drop handling stays with the host panel, whose
- * `dragenter`/`drop` listeners already cover this zone; this component owns the
- * picker trigger only.
+ * So the input itself is the control: it covers the whole zone at
+ * `opacity: 0` and is the tab stop, which makes Enter/Space native too. The
+ * surrounding `<label>` keeps the zone's semantics and label activation as a
+ * fallback. The input stays rendered — `display: none` also blocks the picker in
+ * WKWebView (#0642). Drop handling stays with the host panel, whose
+ * `dragenter`/`drop` listeners already cover this zone.
  */
-import { ref } from "vue";
 import { ImagePlus } from "lucide-vue-next";
 import { SCREENSHOT_ACCEPT } from "../lib/screenshot-viewer";
 
@@ -39,13 +38,6 @@ withDefaults(
 
 const emit = defineEmits<{ files: [File[]] }>();
 
-const input = ref<HTMLInputElement | null>(null);
-
-/** Keyboard activation (Enter/Space). A click on the label is native. */
-function openPicker(): void {
-  input.value?.click();
-}
-
 function onChange(event: Event): void {
   const el = event.target as HTMLInputElement;
   const files = Array.from(el.files ?? []);
@@ -56,23 +48,14 @@ function onChange(event: Event): void {
 </script>
 
 <template>
-  <label
-    class="shot-dropzone"
-    :class="{ over }"
-    role="button"
-    tabindex="0"
-    @keydown.enter.prevent="openPicker"
-    @keydown.space.prevent="openPicker"
-  >
-    <ImagePlus class="size-4" />
+  <label class="shot-dropzone" :class="{ over }">
+    <ImagePlus class="size-4" aria-hidden="true" />
     <span><slot /></span>
     <input
-      ref="input"
       type="file"
       class="shot-input"
       :accept="accept"
       :multiple="multiple"
-      tabindex="-1"
       @change="onChange"
       @click.stop
     />
