@@ -60,3 +60,4 @@ Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode fro
 - 2026-10-21T12:53:44Z · body
 - 2026-10-21T12:56:25Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-10-21T12:56:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-21T12:56:26Z · message_delivered: 2 message(s)
