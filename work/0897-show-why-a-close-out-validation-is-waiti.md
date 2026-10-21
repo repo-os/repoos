@@ -2,7 +2,7 @@
 id: "0897"
 title: "Show why a close-out/validation is waiting: queue position, what runs ahead on each runner"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/show-why-a-close-out-validation-is-waiti
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T12:39:47Z"
-updated_at: "2026-10-21T17:57:25Z"
+updated_at: "2026-10-21T17:57:26Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 42ac6a27980d8a4baafffffc03e470389ee9d5df
 dev_error_count: 2
