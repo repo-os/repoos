@@ -2,7 +2,7 @@
 id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T01:14:23Z"
+updated_at: "2026-10-21T01:14:24Z"
 ---
 ## Problem
 
