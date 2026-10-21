@@ -37,6 +37,7 @@ describe("built-in role prompts (#0872)", () => {
     expect(reviewer).toMatch(/never re-report a fixed item as new/i);
     expect(reviewer).toContain("EVIDENCE-GAP-ONLY");
     expect(reviewer).toContain("STALE-EVIDENCE-ONLY");
+    expect(reviewer).toContain("write exactly `None found`");
     expect(reviewer).toMatch(/declared shot's target and route/);
     expect(reviewer).toMatch(/merges cleanly with its base/);
     expect(reviewer).toMatch(/name the conflicting files/);
