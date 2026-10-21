@@ -14,9 +14,9 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T16:46:22Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 4ffff8a8c3a575b4eb2eee506797f91ad72280cd
+updated_at: "2026-10-21T18:12:24Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/agent-cta.test.ts > shared agent prompt call to action > uses the canonical starter prompt verbatim, tests/agent-cta.test.ts > shared agent prompt call to action > derives the compact preview from the opening of the prompt on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: "057bb1aef2780bb8909ec1afb2d4e55e7e06590f"
 ---
 ## Items
 - [ ] **E1 · Screenshot dropzone wraps to two lines** (web) — after #0877 made `ShotDropzone` a `<label>`, the global `.field label` rule leaks into it. Source: user report 2026-10-21.
@@ -121,3 +121,17 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T16:19:07Z · CTO nudge: held — machine under pressure (the memory compressor is holding 36% of RAM (8.7 GB of RAM) — holding new work until memory pressure eases)
 - 2026-10-21T16:36:22Z · CTO nudge: held — machine under pressure (the memory compressor is holding 40% of RAM (9.7 GB of RAM) — holding new work until memory pressure eases)
 - 2026-10-21T16:46:22Z · CTO nudge: held — machine under pressure (the memory compressor is holding 42% of RAM (10.2 GB of RAM) — holding new work until memory pressure eases)
+- 2026-10-21T16:51:22Z · CTO nudge: held — handoff gate is running
+- 2026-10-21T17:13:03Z · engineer stopped by request
+- 2026-10-21T17:13:15Z · status active→ready
+- 2026-10-21T17:15:41Z · status ready→active
+- 2026-10-21T17:15:52Z · message_queued at 2026-10-21T17:15:52.118Z
+- 2026-10-21T17:17:31Z · assigned_to
+- 2026-10-21T17:20:43Z · assigned_to
+- 2026-10-21T17:20:47Z · note: handoff requested (ui-review)
+- 2026-10-21T17:28:42Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/agent-cta.test.ts > shared agent prompt call to action > uses the canonical starter prompt verbatim, tests/agent-cta.test.ts > shared agent prompt call to action > derives the compact preview from the opening of the prompt on bee — fix it in the feature branch and re-run the gate
+- 2026-10-21T18:00:34Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
+- 2026-10-21T18:00:36Z · message_delivered: 1 message(s)
+- 2026-10-21T18:06:48Z · body
+- 2026-10-21T18:10:47Z · body
+- 2026-10-21T18:12:24Z · CTO nudge: held — handoff gate is running
