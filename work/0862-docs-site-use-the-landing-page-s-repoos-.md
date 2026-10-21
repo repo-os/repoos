@@ -15,7 +15,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/docs-site-use-the-landing-page-s-repoos-
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-21T04:08:12Z"
+updated_at: "2026-10-21T04:08:41Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:18.973Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:08:12.298Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -39,14 +39,6 @@ Cause: the landing page draws the logo as an inline SVG component (`landing/src/
 
 ## Notes for AI
 Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.svg`; for the docs side look at `user-docs/.vitepress/config.mts` (~line 59), `user-docs/.vitepress/theme/index.ts` (register a layout slot) and `custom.css` (the theme tokens the docs defines, including `--vp-c-*` variables and the Gruvbox variants). Prefer CSS variables already defined by the docs theme over hard-coded colours. Do not touch `repoos.toml`. Source: Nick, 2026-10-20 (five screenshots attached: landing in four theme/appearance combinations, and the docs header with the extra border).
-
-## Screenshots
-
-![10](/api/tasks/0862/attachments/att_6f006c24-5900-4dad-96e7-a7fd6ff2612b.png)
-![11](/api/tasks/0862/attachments/att_8065b649-a916-4dc5-a71d-327add82b04a.png)
-![12](/api/tasks/0862/attachments/att_5d6288e7-76d5-48d8-a68b-879d68814f86.png)
-![13](/api/tasks/0862/attachments/att_3a484aab-c29d-4d42-b95a-bb5a01ed8961.png)
-![14](/api/tasks/0862/attachments/att_97366d86-efe1-4634-9672-80441a0938d1.png)
 
 ## Shots
 ```json
@@ -115,6 +107,14 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 ]
 ```
 
+## Screenshots
+
+![10](/api/tasks/0862/attachments/att_6f006c24-5900-4dad-96e7-a7fd6ff2612b.png)
+![11](/api/tasks/0862/attachments/att_8065b649-a916-4dc5-a71d-327add82b04a.png)
+![12](/api/tasks/0862/attachments/att_5d6288e7-76d5-48d8-a68b-879d68814f86.png)
+![13](/api/tasks/0862/attachments/att_3a484aab-c29d-4d42-b95a-bb5a01ed8961.png)
+![14](/api/tasks/0862/attachments/att_97366d86-efe1-4634-9672-80441a0938d1.png)
+
 ## Activity
 
 - 2026-10-20T06:23:23Z · created · njachowski@gmail.com
@@ -130,3 +130,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T04:07:18Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-21T04:08:08Z · note: stopped orphaned engineer pid 26284
 - 2026-10-21T04:08:12Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T04:08:41Z · body
