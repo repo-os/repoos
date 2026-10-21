@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 444447
-last_close_out_gate_at: "2026-10-21T13:31:46.614Z"
 id: "0893"
 title: "RepoOS Hub: offscreen PNG snapshots for layout checks, with a shot target in repoos.toml"
 type: feature
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: e7eb9c5b1b3ea402e3aa5876760476c73eee72e1
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-offscreen-png-snapshots-for-l
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T07:08:04Z"
 updated_at: "2026-10-21T13:31:46Z"
+last_close_out_gate_ms: 444447
+last_close_out_gate_at: "2026-10-21T13:31:46.614Z"
 review_passes: 2
 ---
 ## Problem
