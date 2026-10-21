@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-20T13:31:37Z"
-updated_at: "2026-10-21T06:17:20Z"
+updated_at: "2026-10-21T06:20:18Z"
 ---
 ## Problem
 
@@ -350,10 +350,10 @@ Test both layouts, switching between them, narrow windows, many servers, and nat
 ```json
 [
 {
-  "label": "Server navigation layout documented",
-  "target": "Docs site",
-  "route": "/macos-hub",
-  "highlight": "#window-layout"
+"label": "Server navigation layout documented",
+"target": "Docs site",
+"route": "/macos-hub",
+"highlight": "#window-layout"
 }
 ]
 ```
@@ -372,3 +372,4 @@ Test both layouts, switching between them, narrow windows, many servers, and nat
 - 2026-10-21T06:08:57Z · status ready→active, branch
 - 2026-10-21T06:12:42Z · CTO nudge: held — engineer process is busy (headless browser)
 - 2026-10-21T06:17:20Z · body
+- 2026-10-21T06:20:18Z · body
