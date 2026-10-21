@@ -13,7 +13,6 @@ model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T04:07:35Z"
 updated_at: "2026-10-21T07:38:34Z"
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T06:03:26.061Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 `tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free` (and its sibling "a queued task cannot be double-started while waiting for a slot") repeatedly fails the remote validation gate on bee/thinkpad for tasks whose diff does not touch the runner (#0873 at 01:02 and 01:51, #0876 at 04:06 UTC on 2026-10-21), while the same file passes locally and on main. Each false failure costs a full gate cycle (3-10 minutes, more under load) and sends the task back to the engineer for nothing. On a loaded runner the test's timing assumptions (spawned fake CLIs, drain-on-exit ordering) do not hold.
