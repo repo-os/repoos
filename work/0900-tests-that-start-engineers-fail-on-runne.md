@@ -60,3 +60,4 @@ Look at src/core/pressure-guard.ts, resource-limits.ts and the test helpers (mak
 - 2026-10-21T15:11:21Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on mini — fix it in the feature branch and re-run the gate
 - 2026-10-21T15:16:53Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-10-21T15:22:41Z · message_queued at 2026-10-21T15:22:41.664Z
+- 2026-10-21T15:22:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
