@@ -109,3 +109,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T16:15:44Z · status active→ready
 - 2026-10-21T16:15:54Z · status ready→active
 - 2026-10-21T16:15:56Z · note: stopped orphaned engineer pid 32098
+- 2026-10-21T16:15:56Z · message_delivered: 1 message(s)
