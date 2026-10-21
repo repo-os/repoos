@@ -1123,6 +1123,31 @@ Stuck twice.
     fx.clean();
   });
 
+  it("never resumes a human-assigned task, even with a clean-exit marker (#0888)", async () => {
+    const fx = makeFx(10_000);
+    writeFileSync(
+      fx.taskPath,
+      readFileSync(fx.taskPath, "utf8").replace("assigned_to: ai", "assigned_to: human").trimEnd() +
+        `\n- ${new Date(Date.now() - 9000).toISOString()} · engineer turn ended without a handoff\n`,
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const launches: string[] = [];
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, {
+      launch: async (_deps, _task, instruction) => {
+        launches.push(instruction);
+        return { ok: true as const };
+      },
+    });
+
+    await watchdog.checkNow();
+
+    expect(launches).toHaveLength(0);
+    expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog: auto-resumed");
+    fx.clean();
+  });
+
   it("clears a phantom runner registry entry instead of treating it as a live turn (#0863/#0888)", async () => {
     const fx = makeFx(10_000);
     writeFileSync(

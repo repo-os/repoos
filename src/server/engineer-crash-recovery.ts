@@ -360,6 +360,7 @@ export async function recoverEngineerAfterStalledCleanExit(
     }
     if (
       runner.isRunning(taskId) ||
+      (typeof runner.isQueued === "function" && runner.isQueued(taskId)) ||
       runner.isHandoffInFlight(taskId) ||
       runner.hasPendingHandoff(taskId) ||
       runner.isPaused(taskId)

@@ -97,6 +97,21 @@ describe("stalled clean-exit policy (#0888)", () => {
       expect: { action: "resume", reason: "handoff-deferred", queuedMessages: 2 },
     },
     {
+      name: "a deferred handoff for a human-assigned task is still not resumed",
+      input: { handoffDeferred: true, queuedMessages: 2, assignedToHuman: true },
+      expect: { action: "skip" },
+    },
+    {
+      name: "a deferred handoff on a crashed turn is left to crash recovery",
+      input: { handoffDeferred: true, queuedMessages: 2, exitKind: "crash" },
+      expect: { action: "skip" },
+    },
+    {
+      name: "a paused task with a deferred handoff is not resumed",
+      input: { handoffDeferred: true, queuedMessages: 1, paused: true },
+      expect: { action: "skip" },
+    },
+    {
       name: "a crashed turn belongs to crash recovery",
       input: { exitKind: "crash" },
       expect: { action: "skip" },
