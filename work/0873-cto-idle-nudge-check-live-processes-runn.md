@@ -12,7 +12,7 @@ branch: feat/cto-idle-nudge-check-live-processes-runn
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:23:49Z"
-updated_at: "2026-10-21T01:51:38Z"
+updated_at: "2026-10-21T01:51:43Z"
 last_close_out_gate_ms: 105173
 last_close_out_gate_at: "2026-10-21T01:50:32.952Z"
 review_passes: 1
@@ -80,3 +80,4 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T01:47:59Z · close-out gate completed in 105s
 - 2026-10-21T01:50:32Z · close-out gate completed in 105s
 - 2026-10-21T01:51:38Z · status review→active
+- 2026-10-21T01:51:43Z · note: handoff requested (ui-review)
