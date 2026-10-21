@@ -5,13 +5,13 @@ type: feature
 status: active
 priority: p1
 area: [core, server]
-assigned_to: human
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/check-remote-wip-test-breaks-when-the-ga
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T16:03:26Z"
-updated_at: "2026-10-21T16:45:16Z"
+updated_at: "2026-10-21T16:45:42Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T16:25:33.719Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -42,3 +42,4 @@ See scripts/remote-runner/validate.sh (the -e REPOOS_OFFLOAD_BROWSER_STEPS / REP
 - 2026-10-21T16:25:33Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-21T16:45:05Z · needs_input
 - 2026-10-21T16:45:16Z · assigned_to
+- 2026-10-21T16:45:42Z · assigned_to
