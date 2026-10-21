@@ -2,7 +2,7 @@
 id: "0889"
 title: "Crash recovery relaunch fails when the resume prompt contains NUL bytes: sanitize prompt arguments"
 type: bug
-status: ready
+status: active
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/crash-recovery-relaunch-fails-when-the-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T01:27:17Z"
-updated_at: "2026-10-21T02:24:11Z"
+updated_at: "2026-10-21T02:24:18Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:20:05.086Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -44,3 +44,4 @@ Relevant code: src/server/engineer-crash-recovery.ts, src/server/agents.ts (resu
 - 2026-10-21T02:23:56Z · needs_input
 - 2026-10-21T02:24:10Z · status active→ready
 - 2026-10-21T02:24:11Z · engineer stopped by request
+- 2026-10-21T02:24:18Z · status ready→active
