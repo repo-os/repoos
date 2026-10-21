@@ -160,3 +160,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T19:03:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T19:03:41Z · message_delivered: 1 message(s)
 - 2026-10-21T19:07:00Z · body
+- 2026-10-21T19:07:00Z · body
