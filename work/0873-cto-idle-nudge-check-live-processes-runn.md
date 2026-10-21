@@ -2,7 +2,7 @@
 id: "0873"
 title: "CTO idle nudge: check live processes, running gates and reviews, and machine pressure first; make the threshold configurable"
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/cto-idle-nudge-check-live-processes-runn
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:23:49Z"
-updated_at: "2026-10-21T00:38:09Z"
+updated_at: "2026-10-21T01:04:01Z"
 ---
 ## Problem
 The CTO's automatic idle nudge (src/server/cto-monitor.ts, `nudgeIdleActiveTasks`) fires after 5 minutes without worktree activity (AUTOMATIC_NUDGE_IDLE_MS = 5 min, cooldown 60 min, both hard-coded constants) and decides only from recent worktree file activity. On 2026-10-20 it sent "completion reminder after 5m without worktree activity" to engineers that were not idle: they were running a long `repoos check`, a remote validation wait, a handoff gate or a headless browser step, or the whole machine was thrashing (load 90-500, swap full) so nothing could write files. The reminders queue as messages and are delivered at the end of a turn, so they add noise and sometimes arrive as the engineer's next instruction, and they hid the real cause (a starved machine, a phantom runner, a running review).
@@ -61,3 +61,5 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T00:28:45Z · body
 - 2026-10-21T00:34:30Z · body
 - 2026-10-21T00:38:09Z · body
+- 2026-10-21T01:04:01Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-21T01:04:01Z · note: handoff requested (cli)
