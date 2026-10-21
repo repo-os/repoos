@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 118086
-last_close_out_gate_at: "2026-10-21T03:56:11.248Z"
 id: "0878"
 title: "Remove the faint \"RepoOS\" title text at the top left of the app window (old Hub topbar leftover)"
 type: bug
-status: review
+status: done
 priority: p3
 area: [web, macos]
+merged_commit: 2fa1a50fd90bf02606420db19986eee16fcde803
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remove-the-faint-repoos-title-text-at-th
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T14:00:36Z"
 updated_at: "2026-10-21T03:56:11Z"
+last_close_out_gate_ms: 118086
+last_close_out_gate_at: "2026-10-21T03:56:11.248Z"
 review_passes: 1
 ---
 ## Problem
