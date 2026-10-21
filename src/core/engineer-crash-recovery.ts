@@ -412,11 +412,18 @@ export function countEngineerStallResumes(
  */
 export const ENGINEER_CLEAN_EXIT_ACTIVITY = "engineer turn ended without a handoff";
 
+/**
+ * Activity-log phrase the runner writes when a person (or the server acting on
+ * a person's request) deliberately stops a live turn. A stop is never a stall
+ * to resume: the human wanted it to end, so the watchdog must leave it alone.
+ */
+export const ENGINEER_STOPPED_ACTIVITY = "engineer stopped by request";
+
 /** Activity-log phrase the runner writes when it had to defer a handoff. */
 export const HANDOFF_DEFERRED_ACTIVITY_RE = /handoff_deferred:\s*(\d+)\s+queued message/;
 
-/** A persisted crash/interrupted-handoff line for the same episode. */
-const CRASHED_ACTIVITY_RE = /handoff failed · /;
+/** A persisted crash/interrupted-turn line for the same episode. */
+const CRASHED_ACTIVITY_RE = /(?:handoff failed · |agent exited with an error\b)/;
 
 /** The most recent `status …→active` transition line in an Activity log. */
 const ACTIVE_TRANSITION_RE = /^- (\d{4}-\d{2}-\d{2}T\S+) · status [a-z_]+→active\b/;
@@ -426,42 +433,51 @@ export interface EngineerCleanExitSignal {
   clean: boolean;
   /** How many queued messages a deferred handoff was waiting for (0 when none). */
   deferred: number;
+  /** True when the last turn in this episode was deliberately stopped by a person. */
+  stoppedByPerson: boolean;
 }
 
 /**
  * Read the durable clean-exit signal from a task's Activity log.
  *
- * The runner records `engineer turn ended without a handoff` on a clean turn
+ * Only the most recent relevant event in the current `→active` episode counts:
+ * the runner records `engineer turn ended without a handoff` on a clean turn
  * that never requested review (including one whose handoff was deferred by a
- * queued message). A later `handoff failed · …` line in the same episode means
- * the latest turn crashed instead, so crash recovery owns it and this signal
- * stays false. Only entries after the most recent `→active` transition count,
- * so a resolved earlier episode can never mask a fresh stall.
+ * queued message), `agent exited with an error`/`handoff failed` on a crash,
+ * and `engineer stopped by request` when a person ended the turn. The last one
+ * wins, so a later clean exit after a crash is resumable again and a stop after
+ * a clean exit is never resumed. Scoping to the most recent `→active`
+ * transition keeps a resolved earlier episode from masking a fresh stall.
  */
 export function readEngineerCleanExitSignal(body: string): EngineerCleanExitSignal {
   const lines = body.split("\n");
   const activityIndex = lines.findIndex((line) => line.trim() === "## Activity");
-  if (activityIndex === -1) return { clean: false, deferred: 0 };
+  if (activityIndex === -1) return { clean: false, deferred: 0, stoppedByPerson: false };
 
-  let cleanAt = -1;
-  let crashedAt = -1;
-  let deferred = 0;
   for (let i = lines.length - 1; i > activityIndex; i--) {
     const line = lines[i];
     if (ACTIVE_TRANSITION_RE.test(line)) break;
-    if (cleanAt === -1 && line.includes(ENGINEER_CLEAN_EXIT_ACTIVITY)) cleanAt = i;
-    if (crashedAt === -1 && CRASHED_ACTIVITY_RE.test(line)) crashedAt = i;
-    if (deferred === 0) {
-      const match = line.match(HANDOFF_DEFERRED_ACTIVITY_RE);
-      if (match) deferred = Number(match[1]) || 1;
+    if (line.includes(ENGINEER_STOPPED_ACTIVITY)) {
+      return { clean: false, deferred: 0, stoppedByPerson: true };
+    }
+    if (CRASHED_ACTIVITY_RE.test(line)) {
+      return { clean: false, deferred: 0, stoppedByPerson: false };
+    }
+    const deferredMatch = line.match(HANDOFF_DEFERRED_ACTIVITY_RE);
+    if (deferredMatch) {
+      // A deferred handoff is written at the end of a clean turn, so it is
+      // itself proof the turn ended cleanly (and tells us what to read).
+      return {
+        clean: true,
+        deferred: Number(deferredMatch[1]) || 1,
+        stoppedByPerson: false,
+      };
+    }
+    if (line.includes(ENGINEER_CLEAN_EXIT_ACTIVITY)) {
+      return { clean: true, deferred: 0, stoppedByPerson: false };
     }
   }
-
-  // A deferred handoff is written at the end of a turn, so it is itself proof
-  // the turn ended cleanly even for a task whose clean-exit marker predates the
-  // marker being introduced.
-  const clean = cleanAt !== -1 && (crashedAt === -1 || cleanAt > crashedAt);
-  return { clean: clean || deferred > 0, deferred };
+  return { clean: false, deferred: 0, stoppedByPerson: false };
 }
 
 export type EngineerTurnExitKind = "clean" | "crash" | "unknown";

@@ -69,6 +69,7 @@ import { SHOT_PREVIEW_FIXTURE_IDS } from "../core/shot-fixtures.js";
 import { buildStoryContext, storyContextSummary } from "../core/story-context.js";
 import { unresolvedReviewFindingsBlock } from "../core/review-findings.js";
 import { needsInputClearsOnNewEngineerRun } from "../core/needs-input.js";
+import { ENGINEER_STOPPED_ACTIVITY } from "../core/engineer-crash-recovery.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 import { stripAnsi } from "./done.js";
 import type { Logger } from "../core/logger.js";
@@ -8226,7 +8227,15 @@ export class AgentRunner {
   stop(taskId: string): StopResult {
     const entry = this.entries.get(taskId);
     if (!entry) return { stopped: false, reason: "task is not running" };
+    const alreadyStopping = entry.intentionalStop === true;
     entry.intentionalStop = true;
+    // #0888: a deliberate stop is durable evidence that this turn was NOT a
+    // silent stall. The watchdog sees the marker and never auto-resumes a task
+    // a person (or the server on their behalf) chose to stop. Review turns are
+    // excluded: they are not engineers and their stop is routine.
+    if (!alreadyStopping && !entry.review) {
+      this.recordTaskActivity(taskId, ENGINEER_STOPPED_ACTIVITY);
+    }
     const cancelSignal = engineCancelSignal(this.sessions.get(taskId)?.engine);
     const groupLeader = entry.processGroupLeader ?? entry.proc?.pid ?? entry.adoptedPid;
     for (const tailer of entry.tailers ?? []) {

@@ -381,7 +381,8 @@ export async function recoverEngineerAfterStalledCleanExit(
       status: task.status,
       isArchived: task.isArchived,
       needsInput: task.needsInput,
-      assignedToHuman: task.assignedTo.trim().toLowerCase() === "human",
+      assignedToHuman:
+        task.assignee === "human" || task.assignedTo.trim().toLowerCase() === "human",
       paused: false,
       running: false,
       handoffInFlight: false,
