@@ -9,10 +9,10 @@ story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/cto-idle-nudge-check-live-processes-runn
-cli_override: opencode
-model_override: opencode-go/deepseek-v4.1-flash
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-20T12:23:49Z"
-updated_at: "2026-10-21T02:29:01Z"
+updated_at: "2026-10-21T02:29:03Z"
 last_close_out_gate_ms: 105173
 last_close_out_gate_at: "2026-10-21T01:50:32.952Z"
 review_passes: 1
@@ -93,3 +93,4 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T02:28:58Z · engineer stopped by request
 - 2026-10-21T02:28:59Z · status active→review
 - 2026-10-21T02:29:01Z · note: handoff requested (cli)
+- 2026-10-21T02:29:03Z · cli_override, model_override
