@@ -17,7 +17,7 @@ branch: feat/review-report-parser-treats-none-found-o
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T08:17:11Z"
-updated_at: "2026-10-21T08:19:29Z"
+updated_at: "2026-10-21T08:22:35Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:19:07.268Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -45,3 +45,4 @@ Consumers: src/server/landable.ts (line ~51), the review auto-bounce path in src
 - 2026-10-21T08:17:30Z · status ready→active, branch
 - 2026-10-21T08:19:07Z · agent exited with an error (opencode) · error: Upstream request failed: Endpoint is unavailable.
 - 2026-10-21T08:19:07Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · error: Upstream request failed: Endpoint is unavailable.
+- 2026-10-21T08:22:35Z · note: stopped orphaned engineer pid 92447
