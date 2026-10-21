@@ -1,0 +1,37 @@
+---
+id: "0904"
+title: "Run whole engineer sessions on remote runners, not only checks, shots and gates"
+type: feature
+status: inbox
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+priority: p1
+area: [server, core]
+assigned_to: ai
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-21T15:06:23Z"
+updated_at: "2026-10-21T15:06:27Z"
+---
+## Problem
+Remote runners (bee, thinkpad, mini) today run only validation: self-checks, handoff and close-out gates, and (#0854/#0874) browser shots. The engineer and reviewer agents themselves still run on the laptop. The laptop is a fanless MacBook Air under constant memory pressure (compressor 35-38% of RAM, pressure guard holding new starts, 3 engineers + gates + browsers at once), which is now the main throughput limit: engineers are held, tests time out, and gates fall back to the laptop.
+
+## Desired UX
+A task can be started on a chosen runner (or the least loaded healthy one). The engineer process runs in a worktree on that host in the repoos-ci environment; the laptop shows the live transcript and can message, pause and resume it as today; review and close-out are unchanged. Local runs remain the default and the fallback. Runner choice and health are visible per task.
+
+## Acceptance criteria
+- An ADR (docs/adr/) decides the execution model: remote worktree + sync of commits back (bundle/push to a local bare ref) vs. a remote checkout mounted over ssh/sshfs; how credentials, CLI auth (opencode, codex, cursor, copilot) and model keys reach the runner without writing secrets into config; and how reload-durability (#0288) and phantom-runner healing (#0863) apply.
+- Spawn/stream/stop/message/resume of an engineer on a remote host through the existing AgentRunner interface, with transcript streaming and heartbeat; a lost connection is distinguished from a crashed agent.
+- Worktree creation and commits happen on the runner; the branch tip is fetched back before handoff so lock sha == worktree HEAD still holds; handoff gates run on the same host or another healthy one.
+- Pressure/health-aware placement (see #0901 health-aware dispatch) and a per-host concurrent-engineer limit with Settings controls.
+- Failure injection tests: runner unreachable at start, mid-run disconnect, runner reboot, dirty remote worktree; each ends in a clear state with a recovery path.
+- Docs: user-docs and docs/remote-validation.md updated; AGENTS.md rule about editing the right worktree updated for remote worktrees.
+
+## Notes for AI
+Large; split into stories/tasks after the ADR. Depends in spirit on #0900 (tests isolated from host pressure), #0901 (health-aware dispatch) and #0897 (queue visibility). Start with the ADR; do not build before it is accepted. Existing pieces: src/server/remote-validation.ts, scripts/remote-runner/*, host pool lease/LRU, bundle upload (#0717), src/server/agents.ts AgentRunner.
+
+## Activity
+
+- 2026-10-21T15:06:23Z · created · njachowski@gmail.com
+- 2026-10-21T15:06:27Z · needs_input
