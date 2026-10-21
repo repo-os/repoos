@@ -2,14 +2,14 @@
 id: "0910"
 title: "Reviewer cannot confirm landability in its sandbox and returns 'needs some work' with no bugs: feed it the landing checklist"
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T19:45:25Z"
-updated_at: "2026-10-21T19:47:30Z"
+updated_at: "2026-10-21T19:47:40Z"
 ---
 ## Problem
 2026-10-22: #0899 got five review passes in a row (1-5) that all end 'needs some work' with 'Bugs: None found'. The only stated reason each time is that the reviewer could not confirm RepoOS landability or clean mergeability: its sandbox could not reach the RepoOS server (so repoos landable failed) and git merge-tree --write-tree failed to create a temporary file. The task's real pre-checks all passed (review lock, clean worktree, only its own work file conflicting, 9 files in scope). After enough rounds the task hit review-rounds-exhausted and flagged needs_input. A review that cannot run the landability commands should never turn into a negative verdict; it also burns review rounds and blocks the driver and the human from landing a correct task.
@@ -29,3 +29,4 @@ Reproduce with .repoos/reviews/0899/1.md to 5.md. The reviewer for those passes 
 ## Activity
 
 - 2026-10-21T19:45:25Z · created · njachowski@gmail.com
+- 2026-10-21T19:47:40Z · status inbox→ready
