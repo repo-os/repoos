@@ -11,10 +11,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/pwa-clicking-the-screenshot-upload-area-
-cli_override: opencode
-model_override: opencode-go/deepseek-v4.1-flash
+cli_override: cursor
+model_override: default
 created_at: "2026-10-20T13:54:39Z"
-updated_at: "2026-10-21T01:38:04Z"
+updated_at: "2026-10-21T01:38:16Z"
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:26:02.934Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:28:21.260Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:33:49.958Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:37:56.820Z\",\"kind\":\"degenerate-output\"}]"
 ---
@@ -85,10 +85,10 @@ controls.
 ```json
 [
 {
-  "label": "New task screenshot dropzone — a real file input covers the zone, so click/Enter/Space open the picker",
-  "target": "default",
-  "route": "/work?task=new",
-  "highlight": ".shot-dropzone"
+"label": "New task screenshot dropzone — a real file input covers the zone, so click/Enter/Space open the picker",
+"target": "default",
+"route": "/work?task=new",
+"highlight": ".shot-dropzone"
 }
 ]
 ```
@@ -159,3 +159,4 @@ Unrelated gate unblock: `rendered-contrast` was already failing on the dashboard
 - 2026-10-21T01:37:56Z · agent exited with an error (opencode) · Degenerate output loop detected (a very long run of text with no tool call). Excerpt: "                                                                                                                                                                                                        …". If this is a real loop, restart with a fresh session; if it looks like normal output, it is a false positive.
 - 2026-10-21T01:37:56Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
 - 2026-10-21T01:38:04Z · body
+- 2026-10-21T01:38:16Z · cli_override, model_override
