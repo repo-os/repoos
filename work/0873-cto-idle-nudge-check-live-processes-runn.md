@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 140726
-last_close_out_gate_at: "2026-10-21T03:11:19.175Z"
 id: "0873"
 title: "CTO idle nudge: check live processes, running gates and reviews, and machine pressure first; make the threshold configurable"
 type: feature
-status: review
+status: done
 priority: p2
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+merged_commit: c264eaddfe56c6bae97b7d919d3ee61cde425b11
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/cto-idle-nudge-check-live-processes-runn
@@ -15,6 +14,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T12:23:49Z"
 updated_at: "2026-10-21T03:11:19Z"
+last_close_out_gate_ms: 140726
+last_close_out_gate_at: "2026-10-21T03:11:19.175Z"
 review_passes: 2
 dev_error_count: 1
 ---

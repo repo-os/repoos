@@ -127,6 +127,8 @@ closeOut.timeoutMs = 360000  # 6-minute budget per close-out attempt; 0 = no lim
 maxConcurrentAgents = 5  # omit to size from this machine's CPU count
 ctoSkipHealthy = true    # skip the CTO model call while the board is healthy
 # cto.actions = []       # opt-in allowlist: restart-stalled-agent, refresh-main-install, requeue-closeout-after-env-fix
+# cto.nudgeIdleMs = 300000        # 5 minutes without worktree activity before the idle nudge
+# cto.nudgeCooldownMs = 3600000   # 60 minutes before the same task is nudged again
 
 # ── Notifications ────────────────────────────────────────────────────────
 ntfyEnabled = false
@@ -924,6 +926,8 @@ provider = "none"
 | `remoteValidation.localFallback` | select | `serialize` | yes | When remote validation falls back locally: `serialize` (one suite at a time), `allow` (use `localChecks.maxConcurrent`), or `off` (refuse fallback). |
 | `ctoSkipHealthy` | boolean | `true` | yes | When true (the default), the CTO monitor skips its model call while the board is healthy — no stuck tasks, a fresh build and a normal process check — and only calls the model when something needs attention. Set `false` to run a full CTO pass whenever the material signal changes. |
 | `cto.actions` | string[] | `[]` | yes | Opt-in allowlist of bounded recovery actions the CTO may run automatically (rate limited, audited in the bell). Values: `restart-stalled-agent` (dead active engineer), `refresh-main-install` (lockfile install in main), `requeue-closeout-after-env-fix` (refresh main then re-queue a failed env close-out). Empty means report-only. Humans can also invoke `POST /api/cto/actions/<id>`. Every automatic action is recorded in the task activity log and the notification bell, and all of them stop at once when `automation.paused = true`. |
+| `cto.nudgeIdleMs` | number | `300000` (5 min) | yes | How long an active engineer may show no worktree activity before the CTO sends one completion reminder. The nudge is held while an engineer process is running a known step (check, tests, build, headless browser), a remote-validation wait or review is active, a handoff gate is finalizing, an undelivered message is already queued, or machine memory pressure is above the `pressureGuard` thresholds. Minimum 30000; invalid values fall back to 300000. |
+| `cto.nudgeCooldownMs` | number | `3600000` (60 min) | yes | How long the CTO waits before nudging the same task again after a completion reminder, and after recording a held-nudge reason in the activity log. Minimum 60000; invalid values fall back to 3600000. |
 
 **Restart strategy for a dead engineer.** `restart-stalled-agent` picks one of two
 shapes from how the previous session ended: a network stall, timeout, or
