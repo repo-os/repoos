@@ -136,7 +136,7 @@ The failure looks like a behaviour change, not a code assertion: a suite that
 drives the managed engineer check takes a different branch and prints the
 *unmanaged* warning — `uncommitted changes (...) — the remote gate tests
 committed HEAD only` — instead of the `could not commit a WIP checkpoint` line
-it asserts on.`REPOOS_ROOT=/repo` alone does the same thing by making the
+it asserts on. `REPOOS_ROOT=/repo` alone does the same thing by making the
 fixture's task id look foreign (#0870), dropping the run's attribution. A test
 that used to exit at a warning may instead run the whole local gate and time
 out, which reads like a hang.
