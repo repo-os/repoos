@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-21T19:18:03Z"
-review_passes: 3
 id: "0899"
 title: "Easter eggs bundle: screenshot dropzone layout, CLI screenshot captions"
 type: bug
@@ -19,6 +17,8 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
+updated_at: "2026-10-21T19:22:49Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Items
