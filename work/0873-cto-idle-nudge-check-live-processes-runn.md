@@ -12,7 +12,7 @@ branch: feat/cto-idle-nudge-check-live-processes-runn
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:23:49Z"
-updated_at: "2026-10-21T02:15:03Z"
+updated_at: "2026-10-21T02:18:06Z"
 last_close_out_gate_ms: 105173
 last_close_out_gate_at: "2026-10-21T01:50:32.952Z"
 review_passes: 1
@@ -83,3 +83,4 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T01:51:43Z · note: handoff requested (ui-review)
 - 2026-10-21T02:04:05Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-21T02:15:03Z · body
+- 2026-10-21T02:18:06Z · body
