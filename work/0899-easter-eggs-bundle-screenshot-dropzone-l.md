@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T19:38:03Z"
+updated_at: "2026-10-21T19:38:04Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -217,3 +217,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:28:22Z · note: handoff requested (ui-review)
 - 2026-10-21T19:38:03Z · status active→review
 - 2026-10-21T19:38:03Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
+- 2026-10-21T19:38:04Z · note: shots: skipped — 6 handoff shots already captured for this exact plan (8428c8869) during finalization (#0734)
