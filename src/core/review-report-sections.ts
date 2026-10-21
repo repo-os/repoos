@@ -44,8 +44,12 @@ const NONE_QUALIFIER_PHRASES = [
   "not applicable",
 ];
 
+// Deliberately excludes "but"/"however": those usually introduce an actual
+// finding in a bullet ("- None found, but the CLI crashes"), while the
+// connectors below are a pointer or scope qualifier on the same "nothing here"
+// statement.
 const QUALIFIER_TAIL =
-  /^(?:see|but|except|though|however|apart from|aside from|other than|regarding|beyond|elsewhere|otherwise)\b/;
+  /^(?:see|except|apart from|aside from|other than|regarding|beyond|elsewhere|otherwise)\b/;
 
 const LIST_MARKER = /^\s*(?:[-+*•]|\d+[.)])\s+/;
 

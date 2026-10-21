@@ -7,13 +7,14 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { unresolvedReviewFindingsBlock } from "./review-findings.js";
+import { unresolvedReviewFindingsBlock } from "../../core/review-findings.js";
 import {
   extractReviewReportSections,
   isEmptyReviewSection,
   reviewReportHasBlockingBugs,
-} from "./review-report-sections.js";
-import type { RepoOSConfig } from "./types.js";
+} from "../../core/review-report-sections.js";
+import type { RepoOSConfig } from "../../core/types.js";
+import { reviewFindingsMessage } from "../../server/review.js";
 
 const EMPTY_PHRASINGS = [
   "",
@@ -114,6 +115,39 @@ describe("reviewReportHasBlockingBugs (#0894)", () => {
     expect(reviewReportHasBlockingBugs("")).toBe(false);
     expect(reviewReportHasBlockingBugs(null)).toBe(false);
     expect(reviewReportHasBlockingBugs(undefined)).toBe(false);
+  });
+});
+
+describe("review auto-bounce consumer (#0894)", () => {
+  it.each(EMPTY_PHRASINGS)("sends no Bugs findings for %j", (phrasing) => {
+    expect(reviewFindingsMessage(reportWith("Bugs", phrasing))).toBe("");
+  });
+
+  it.each(FINDING_PHRASINGS)("forwards a real Bugs finding %j", (phrasing) => {
+    const message = reviewFindingsMessage(reportWith("Bugs", phrasing));
+    expect(message).toContain("## Bugs");
+    expect(message).toContain(phrasing.trim());
+  });
+
+  it("keeps the sections that do list findings and drops the none-ish ones", () => {
+    const report = [
+      "## Verdict",
+      "needs some work",
+      "",
+      "## Bugs",
+      "None found.",
+      "",
+      "## Edge cases",
+      "- Rename a task while its worktree is locked",
+      "",
+      "## Suggestions",
+      "N/A",
+    ].join("\n");
+    const message = reviewFindingsMessage(report);
+    expect(message).not.toContain("## Bugs");
+    expect(message).toContain("## Edge cases");
+    expect(message).toContain("- Rename a task while its worktree is locked");
+    expect(message).not.toContain("## Suggestions");
   });
 });
 
