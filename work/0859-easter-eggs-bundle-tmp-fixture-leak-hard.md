@@ -177,3 +177,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T05:57:44Z · body
 - 2026-10-21T06:00:32Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-21T06:00:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-21T06:00:33Z · message_delivered: 1 message(s)
