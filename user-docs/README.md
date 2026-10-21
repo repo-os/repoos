@@ -57,6 +57,16 @@ paint (see `.vitepress/theme/theme-boot.ts` and `vite-plugin-theme-boot.ts`).
 VitePress's built-in appearance toggle is disabled so there is a single control in
 the navbar (desktop) and mobile nav screen.
 
+### Header logo
+
+The header mark is an inline SVG (`.vitepress/theme/NavBarLogo.vue`) injected
+through the `nav-bar-title-before` layout slot, not the static `favicon.svg`.
+Its geometry lives in `../shared/logo.ts`, shared with
+`landing/src/components/SiteLogo.vue`, and its `--cyan`/`--violet` colours are
+mapped to `--vp-c-brand-1`/`--vp-c-brand-3` in `custom.css`, so it follows the
+theme and appearance like the landing page. The browser-tab favicon is the
+separate square icon in `public/favicon.svg` and is unchanged.
+
 ### Shareable URLs and cross-site hand-off
 
 | Param | Values | Example |
