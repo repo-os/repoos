@@ -6,7 +6,7 @@ status: active
 hold: true
 priority: p3
 area: [web, core]
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-screenshot-dropzone-l
 cli_override: cursor
@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T17:16:29Z"
+updated_at: "2026-10-21T17:17:31Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 4ffff8a8c3a575b4eb2eee506797f91ad72280cd
 ---
@@ -126,3 +126,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T17:13:15Z · status active→ready
 - 2026-10-21T17:15:41Z · status ready→active
 - 2026-10-21T17:15:52Z · message_queued at 2026-10-21T17:15:52.118Z
+- 2026-10-21T17:17:31Z · assigned_to
