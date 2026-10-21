@@ -41,3 +41,4 @@ Pool/dispatch lives around `src/core/remote-pool-queue.ts` and `src/core/remote-
 - 2026-10-21T07:57:16Z · body
 - 2026-10-21T08:06:39Z · status active→review
 - 2026-10-21T08:06:39Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (3c6765c38) during finalization (#0734)
+- 2026-10-21T08:06:39Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (3c6765c38) during finalization (#0734)
