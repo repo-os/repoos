@@ -31,6 +31,7 @@ import {
   AGENT_COMPATIBILITY_MANIFEST,
 } from "./agent-compatibility.js";
 import { KNOWN_AGENTS, resolveBinary } from "./detect.js";
+import { sanitizeSpawnArgs } from "./spawn-args.js";
 
 export type ContractCapabilityId =
   | "version"
@@ -811,7 +812,7 @@ function spawnCapture(
     const needsShell = process.platform === "win32" && /\.(cmd|bat)$/i.test(binary);
     let proc;
     try {
-      proc = spawn(binary, args, {
+      proc = spawn(binary, sanitizeSpawnArgs(args).args, {
         cwd: opts.cwd,
         stdio: ["ignore", "pipe", "pipe"],
         shell: needsShell,
@@ -1261,7 +1262,7 @@ export async function runAdapterContract(
     let cancelOk = false;
     let cancelDetail = "";
     try {
-      const cancelProc = spawn(binary, runArgs, {
+      const cancelProc = spawn(binary, sanitizeSpawnArgs(runArgs).args, {
         cwd: workDir,
         stdio: ["ignore", "pipe", "pipe"],
         shell: needsShell,
