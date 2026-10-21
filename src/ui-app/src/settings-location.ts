@@ -183,6 +183,9 @@ export const REMOTE_VALIDATION_GENERAL_FIELD_KEYS = new Set([
   "remoteValidation.offloadBrowserSteps",
   "remoteValidation.localFallback",
   "remoteValidation.browserCaptureMode",
+  // #0901: the runner memory-health switch is a first-class Settings row, not
+  // a raw-TOML-only detail — turning it off must be discoverable.
+  "remoteValidation.healthCheck",
 ]);
 
 /** Mirrors `isFieldVisible` in SettingsView.vue */

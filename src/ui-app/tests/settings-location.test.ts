@@ -87,6 +87,18 @@ describe("resolveSettingLocation", () => {
     expect(isGeneralSchemaFieldKey("editor.command")).toBe(true);
   });
 
+  // #0901 — the runner memory-health switch is a rendered remote-validation row.
+  it("gives remoteValidation.healthCheck a rendered General row", () => {
+    expect(
+      resolveSettingLocation(
+        "remoteValidation.healthCheck",
+        field({ key: "remoteValidation.healthCheck", type: "boolean" }),
+        ctx,
+      ),
+    ).toEqual({ tab: "general", hasUiRow: true });
+    expect(isGeneralSchemaFieldKey("remoteValidation.healthCheck")).toBe(true);
+  });
+
   // #0573 — the close-out budget must render as a real Settings control, not
   // fall through to the raw repoos.toml editor.
   it("gives closeOut.timeoutMs a rendered General row", () => {
