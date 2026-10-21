@@ -11,7 +11,7 @@ branch: feat/flaky-gate-test-agent-concurrency-queues
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T04:07:35Z"
-updated_at: "2026-10-21T05:51:22Z"
+updated_at: "2026-10-21T05:58:41Z"
 ---
 ## Problem
 `tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free` (and its sibling "a queued task cannot be double-started while waiting for a slot") repeatedly fails the remote validation gate on bee/thinkpad for tasks whose diff does not touch the runner (#0873 at 01:02 and 01:51, #0876 at 04:06 UTC on 2026-10-21), while the same file passes locally and on main. Each false failure costs a full gate cycle (3-10 minutes, more under load) and sends the task back to the engineer for nothing. On a loaded runner the test's timing assumptions (spawned fake CLIs, drain-on-exit ordering) do not hold.
@@ -42,3 +42,5 @@ See AGENTS.md "Is a `repoos check` failure a flake or a real bug?" and docs/debu
 - 2026-10-21T05:51:15Z · engineer stopped by request
 - 2026-10-21T05:51:21Z · status ready→active
 - 2026-10-21T05:51:22Z · message_delivered: 1 message(s)
+- 2026-10-21T05:57:03Z · body
+- 2026-10-21T05:58:41Z · body
