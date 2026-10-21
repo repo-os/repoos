@@ -159,9 +159,9 @@ final class HubAppDelegate: NSObject, NSApplicationDelegate {
 }
 
 /// SwiftUI's WindowGroup may assign its system appearance after the app
-/// delegate has finished launching. This view is attached only after the real
-/// NSWindow exists, making the Hub preference authoritative for its native
-/// title bar, toolbar, and sidebar.
+/// delegate has finished launching. This host view follows the real NSWindow
+/// once AppKit attaches it, making the Hub preference authoritative for its
+/// native title bar, toolbar, and sidebar.
 private struct HubWindowAppearanceConfigurator: NSViewRepresentable {
     let appearance: HubAppAppearance
 
