@@ -2,7 +2,7 @@
 id: "0900"
 title: "Tests that start engineers fail on runners whose swap is over the pressure guard limit: isolate tests from host memory pressure"
 type: feature
-status: active
+status: review
 priority: p1
 area: [core, server]
 assigned_to: ai
@@ -67,4 +67,4 @@ Look at src/core/pressure-guard.ts, resource-limits.ts and the test helpers (mak
 - 2026-10-21T15:34:33Z · body
 - 2026-10-21T15:37:07Z · body
 - 2026-10-21T15:37:47Z · needs_input
-- 2026-10-21T15:46:30Z · note: shots: skipped — the diff (15 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-21T15:46:30Z · status active→review
