@@ -224,6 +224,13 @@ describe("buildDriverBrief — blocked validations (#0897)", () => {
               startedAt: "2026-10-21T12:24:00Z",
               elapsedMs: 6 * 60_000,
             },
+            {
+              taskId: "0893",
+              kind: "review",
+              host: "mini",
+              startedAt: "2026-10-21T12:35:00Z",
+              elapsedMs: 2 * 60_000,
+            },
           ],
         },
         {
@@ -241,6 +248,7 @@ describe("buildDriverBrief — blocked validations (#0897)", () => {
 
     const blocked = collectBlockedValidations(validator);
     expect(blocked).toHaveLength(1);
+    // Longest-held slot wins, not the first entry in the array.
     expect(blocked[0]).toMatchObject({
       taskId: "0900",
       kind: "handoff",
@@ -248,6 +256,7 @@ describe("buildDriverBrief — blocked validations (#0897)", () => {
       position: 2,
       blocking: { taskId: "0892", kind: "close-out", host: "bee", elapsedMs: 6 * 60_000 },
     });
+    expect(blocked[0]?.blockers).toHaveLength(2);
 
     // The pure builder carries it through to the --json payload.
     const brief = buildDriverBrief(baseInput({ blockedValidations: blocked }));

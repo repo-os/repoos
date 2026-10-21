@@ -58,6 +58,8 @@ import {
   parseRemoteGateExitCode,
   remoteRunPaths,
   validateContainerName,
+  ActiveRemoteRunRegistry,
+  taskActivityFromRegistry,
   type RemoteExecDeps,
   type RemoteExecResult,
 } from "../../server/remote-validation.js";
@@ -3337,5 +3339,70 @@ describe("runner memory health dispatch (#0901)", () => {
     expect(summary.runnerNotices).toHaveLength(1);
     expect(summary.runnerNotices![0]).toMatchObject({ host: "a", action: "failed" });
     expect(summary.runnerNotices![0]!.message).toContain("not counted as a branch test failure");
+  });
+});
+
+// ── per-task run detail without a host pool (#0897) ─────────────────────────
+
+describe("task activity from the live run registry (#0897)", () => {
+  it("reports the phase and per-phase timings for a host-pool-less runner", () => {
+    const registry = new ActiveRemoteRunRegistry();
+    const base = {
+      taskId: "0897",
+      host: "46.4.1.2",
+      phase: "close-out" as const,
+      scope: "full",
+      startedAt: "2026-10-21T12:00:00Z",
+      stage: "bundle",
+      uploadBytes: null,
+      uploadSeconds: null,
+      kind: "close-out" as const,
+      phases: [
+        {
+          phase: "queued",
+          startedAt: "2026-10-21T11:59:00Z",
+          endedAt: "2026-10-21T12:00:00Z",
+          durationMs: 60_000,
+        },
+        { phase: "bundle", startedAt: "2026-10-21T12:00:00Z" },
+      ],
+    };
+    registry.set(base, "0897");
+
+    // Hetzner has no host pool, so the drawer gets the run detail but no queue.
+    const activity = taskActivityFromRegistry(registry, "0897");
+    expect(activity?.queue).toBeNull();
+    expect(activity?.run).toMatchObject({
+      taskId: "0897",
+      host: "46.4.1.2",
+      kind: "close-out",
+      stage: "bundle",
+    });
+    expect(activity?.run?.phases?.map((p) => p.phase)).toEqual(["queued", "bundle"]);
+    expect(activity?.run?.phases?.[0]).toMatchObject({ phase: "queued", durationMs: 60_000 });
+
+    // A later stage closes the open bundle phase and opens the next.
+    registry.set({ ...base, stage: "run" }, "0897");
+    const advanced = taskActivityFromRegistry(registry, "0897");
+    expect(advanced?.run?.phases?.map((p) => p.phase)).toEqual(["queued", "bundle", "run"]);
+    expect(advanced?.run?.phases?.[1]?.endedAt).toBeTruthy();
+    expect(advanced?.run?.stage).toBe("run");
+  });
+
+  it("returns null for a task with no live run and carries a queue when given one", () => {
+    const registry = new ActiveRemoteRunRegistry();
+    expect(taskActivityFromRegistry(registry, "0897")).toBeNull();
+
+    const queue = {
+      taskId: "0897",
+      kind: "handoff" as const,
+      host: "bee",
+      position: 2,
+      ahead: 1,
+      since: "2026-10-21T12:00:00Z",
+      waitedMs: 120_000,
+      blockers: [],
+    };
+    expect(taskActivityFromRegistry(registry, "0897", queue)).toEqual({ run: null, queue });
   });
 });
