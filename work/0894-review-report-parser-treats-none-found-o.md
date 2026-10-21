@@ -2,16 +2,16 @@
 id: "0894"
 title: Review report parser treats 'None found.' (or any phrasing other than exact 'None found') in Bugs as blocking bugs
 type: bug
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/review-report-parser-treats-none-found-o
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T08:17:11Z"
-updated_at: "2026-10-21T08:17:28Z"
+updated_at: "2026-10-21T08:17:30Z"
 ---
 ## Problem
 `reviewReportHasBlockingBugs` (src/core/review-report-sections.ts) decides there are blocking bugs whenever the `## Bugs` section has any text other than exactly `None found`. A reviewer who writes `None found.` (trailing period), `None`, `None found — see edge cases`, `No bugs found`, `N/A` or an empty-ish bullet is parsed as having blocking bugs. Observed 2026-10-21 on #0890: the review verdict is `good to go`, Bugs says `None found.`, and `repoos landable` / the Landable panel reports "Not landable yet: Review verdict — the review still lists blocking bugs". The same helper backs the review auto-bounce path and the approval policy gate (its own doc comment says so), so harmless phrasing can also bounce a reviewed task back to its engineer or fail an approval check. Reviewer agents vary their wording between runs and models.
@@ -34,3 +34,4 @@ Consumers: src/server/landable.ts (line ~51), the review auto-bounce path in src
 - 2026-10-21T08:17:11Z · created · njachowski@gmail.com
 - 2026-10-21T08:17:23Z · status inbox→ready
 - 2026-10-21T08:17:28Z · cli_override, model_override
+- 2026-10-21T08:17:30Z · status ready→active, branch
