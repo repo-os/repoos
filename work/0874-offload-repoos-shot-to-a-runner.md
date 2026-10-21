@@ -15,10 +15,10 @@ depends_on: ["0854"]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/offload-repoos-shot-to-a-runner
-cli_override: opencode
-model_override: opencode-go/deepseek-v4.1-flash
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-20T12:27:49Z"
-updated_at: "2026-10-21T11:59:08Z"
+updated_at: "2026-10-21T12:03:11Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T09:07:49.677Z: repoos check failed: ◆ Check plan"
 dev_error_count: 5
@@ -76,3 +76,4 @@ Not required for #0854's acceptance criteria. #0864 (rebuild the runner image an
 - 2026-10-21T11:51:30Z · status ready→active
 - 2026-10-21T11:53:15Z · body
 - 2026-10-21T11:59:08Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
+- 2026-10-21T12:03:11Z · cli_override, model_override
