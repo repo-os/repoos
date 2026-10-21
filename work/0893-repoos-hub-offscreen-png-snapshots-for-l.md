@@ -8,8 +8,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T07:08:04Z"
-updated_at: "2026-10-21T08:38:06Z"
+updated_at: "2026-10-21T11:59:30Z"
 ---
 ## Problem
 RepoOS Hub (macos/RepoOSHub) has no way to capture images of its views for review. Divot already renders its popovers offscreen to PNG in tests and collects them as handoff evidence. Hub has no equivalent, so reviewers can't see Hub layout changes without running the app.
@@ -36,3 +38,4 @@ RepoOS Hub (macos/RepoOSHub) has no way to capture images of its views for revie
 - 2026-10-21T07:08:04Z · created · njachowski@gmail.com
 - 2026-10-21T07:47:33Z · status inbox→ready
 - 2026-10-21T08:38:06Z · body: Desired UX (added 1, removed 1)
+- 2026-10-21T11:59:30Z · cli_override, model_override
