@@ -43,7 +43,7 @@ struct HubWorkspaceChrome<Content: View>: View {
             .safeAreaInset(edge: .top, spacing: 0) {
                 if HubWorkspaceLayout.usesTabStrip(layout) {
                     HubServerTabStrip()
-                        .frame(height: HubServerTabStripMetrics.height)
+                        .frame(height: HubWorkspaceLayout.contentTopInset(layout))
                 }
             }
             .ignoresSafeArea(edges: HubWorkspaceLayout.usesTabStrip(layout) ? .top : [])

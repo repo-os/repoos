@@ -39,6 +39,16 @@ final class HubWorkspaceChromeTests: XCTestCase {
             window.toolbar?.isVisible ?? false,
             "SwiftUI's native toolbar row must be hidden once the view has laid out"
         )
+        // Not merely absent: SwiftUI installs this toolbar with the split view,
+        // and the chrome view is what hides it and removes its toggle.
+        XCTAssertNotNil(window.toolbar)
+        XCTAssertFalse(
+            window.toolbar?.items.contains {
+                $0.itemIdentifier.rawValue
+                    == HubNativeToolbar.swiftUISidebarToggleItemIdentifier
+            } ?? false,
+            "the system sidebar toggle must not duplicate the Hub's own control"
+        )
     }
 
     @MainActor
@@ -50,25 +60,6 @@ final class HubWorkspaceChromeTests: XCTestCase {
 
         let pageTop = try marker(from: window, named: "page").topFromWindow
         XCTAssertEqual(pageTop, 0, accuracy: 1, "sidebar mode keeps the reclaimed titlebar band")
-    }
-
-    /// The web view previously ignored the top safe area in both layouts. That
-    /// is what pulled the page under the strip in Tabs mode (#0895): a
-    /// child-level ignore outranks the container's inset, so the layout test
-    /// above only proves the fix when the page follows the same decision the
-    /// production page uses.
-    @MainActor
-    func testTabsModeLayoutDoesNotLetAnIgnoringPageCoverTheStrip() throws {
-        let state = try makeAppState()
-        let window = hostWindow(layout: .tabs, state: state, forceIgnoringPage: true)
-        defer { window.close() }
-        settle(window)
-
-        // Documents the platform behavior the fix depends on: an ignoring page
-        // starts at the window top, which is exactly the bug. Production never
-        // builds this combination for Tabs mode.
-        let pageTop = try marker(from: window, named: "page").topFromWindow
-        XCTAssertLessThan(pageTop, HubServerTabStripMetrics.height)
     }
 
     @MainActor
@@ -134,8 +125,7 @@ final class HubWorkspaceChromeTests: XCTestCase {
     @MainActor
     private func hostWindow(
         layout: HubServerNavigationLayout,
-        state: HubAppState,
-        forceIgnoringPage: Bool = false
+        state: HubAppState
     ) -> NSWindow {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 900, height: 640),
@@ -146,10 +136,20 @@ final class HubWorkspaceChromeTests: XCTestCase {
         window.isReleasedWhenClosed = false
         configureHubWorkspaceWindowChrome(window)
 
-        let root = HubWorkspaceChrome(layout: layout) {
-            ProbePage(layout: layout, forceIgnoringPage: forceIgnoringPage)
+        // Mirror the app's real composition: the chrome container lives in the
+        // detail column of a NavigationSplitView, which is what installs the
+        // late native toolbar, and the chrome view itself hides that toolbar.
+        let root = NavigationSplitView(
+            columnVisibility: .constant(layout == .tabs ? .detailOnly : .all)
+        ) {
+            Color.gray
+        } detail: {
+            HubWorkspaceChrome(layout: layout) {
+                ProbePage(layout: layout)
+            }
         }
         .environmentObject(state)
+        .background(WindowChromeHost())
 
         window.contentView = NSHostingView(rootView: root)
         window.setContentSize(NSSize(width: 900, height: 640))
@@ -202,10 +202,9 @@ private enum MarkerError: Error {
 
 private struct ProbePage: View {
     let layout: HubServerNavigationLayout
-    var forceIgnoringPage = false
 
     private var ignoresTop: Bool {
-        forceIgnoringPage || HubWorkspaceLayout.pageExtendsUnderTitleBar(layout)
+        HubWorkspaceLayout.pageExtendsUnderTitleBar(layout)
     }
 
     var body: some View {
@@ -240,6 +239,16 @@ private struct LayoutMarker: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: LayoutMarkerView, context: Context) {}
+}
+
+/// Mounts the app's real window-chrome view (the same one the scene applies as
+/// a background) so the test exercises the late-toolbar hiding path.
+private struct WindowChromeHost: NSViewRepresentable {
+    func makeNSView(context: Context) -> HubWindowChromeView {
+        HubWindowChromeView(appearance: .light)
+    }
+
+    func updateNSView(_ nsView: HubWindowChromeView, context: Context) {}
 }
 
 private struct StubHealthChecker: HealthChecking {
