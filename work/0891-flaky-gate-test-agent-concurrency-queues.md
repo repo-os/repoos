@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: Transport"
+debug_tldr: Agent transport failed mid-run after checks passed — retry the engineer session; no test fix needed until a run completes.
+debug_tldr_at: "2026-10-21T06:03:47Z"
+debug_tldr_key: "dev-error|error: Transport"
 priority: p2
 area: server
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/flaky-gate-test-agent-concurrency-queues
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T04:07:35Z"
-updated_at: "2026-10-21T06:03:26Z"
+updated_at: "2026-10-21T06:09:02Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T06:03:26.061Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -51,3 +54,4 @@ See AGENTS.md "Is a `repoos check` failure a flake or a real bug?" and docs/debu
 - 2026-10-21T05:58:41Z · body
 - 2026-10-21T06:03:26Z · agent exited with an error (opencode) · error: Transport
 - 2026-10-21T06:03:26Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · error: Transport
+- 2026-10-21T06:09:02Z · message_queued at 2026-10-21T06:09:02.483Z
