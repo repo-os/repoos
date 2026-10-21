@@ -11,7 +11,7 @@ branch: feat/repoos-hub-offscreen-png-snapshots-for-l
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T07:08:04Z"
-updated_at: "2026-10-21T12:16:07Z"
+updated_at: "2026-10-21T12:16:39Z"
 ---
 ## Problem
 RepoOS Hub (macos/RepoOSHub) has no way to capture images of its views for review. Divot already renders its popovers offscreen to PNG in tests and collects them as handoff evidence. Hub has no equivalent, so reviewers can't see Hub layout changes without running the app.
@@ -53,6 +53,12 @@ timeoutMs = 600000
 
 With that row in place, a handoff that changes Hub sources runs the command, collects the light PNGs from `REPOOS_SHOT_DIR`, and attaches them as task shots; paths that match none of the globs skip the target cleanly. Until the row is on main, this task itself cannot show the new native shots at handoff — the running server reads main's config. I verified the command end to end by running it with `REPOOS_SHOT_DIR=<work>/.attachments/... HUB_SNAPSHOT_SET=shots`, which wrote `hub-sidebar-light.png`, `hub-summary-light.png`, and `hub-tabs-top-bar-light.png`, and by resolving the row through `resolveShotTargets` (Hub paths select the target; docs/src paths do not).
 
+## Screenshots
+
+![Hub sidebar (light), rendered offscreen by HubSnapshotTests](/api/tasks/0893/attachments/att_940799d2-e752-463c-a12e-883831da485c.png)
+![Hub server summary popover (light), rendered offscreen](/api/tasks/0893/attachments/att_86357b22-fdbf-4ffb-bb64-a60c6df8f9fc.png)
+![Hub top bar in Tabs mode (light), rendered offscreen](/api/tasks/0893/attachments/att_d1abb4d9-462e-4f71-b839-7047839946b0.png)
+
 ## Activity
 
 - 2026-10-21T07:08:04Z · created · njachowski@gmail.com
@@ -68,3 +74,6 @@ With that row in place, a handoff that changes Hub sources runs the command, col
 - 2026-10-21T12:14:05Z · message_queued at 2026-10-21T12:14:05.537Z
 - 2026-10-21T12:14:52Z · body
 - 2026-10-21T12:16:07Z · body
+- 2026-10-21T12:16:39Z · screenshots
+- 2026-10-21T12:16:39Z · screenshots
+- 2026-10-21T12:16:39Z · screenshots
