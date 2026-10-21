@@ -2,7 +2,7 @@
 id: "0894"
 title: Review report parser treats 'None found.' (or any phrasing other than exact 'None found') in Bugs as blocking bugs
 type: bug
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/review-report-parser-treats-none-found-o
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T08:17:11Z"
-updated_at: "2026-10-21T10:45:35Z"
+updated_at: "2026-10-21T11:51:41Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 4d9e806781e08ebdc9fadd779e22ad150bf7b5ee
 review_passes: 1
@@ -70,3 +70,4 @@ Consumers: src/server/landable.ts (line ~51), the review auto-bounce path in src
 - 2026-10-21T10:31:37Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-21T10:40:48Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-21T10:45:35Z · status review→active
+- 2026-10-21T11:51:41Z · status active→review
