@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T01:14:24Z"
+updated_at: "2026-10-21T01:14:25Z"
 ---
 ## Problem
 
@@ -69,10 +69,10 @@ Please fix the padding/margin on the allowlist pause modal
 "highlight": ".budget-pause-dialog",
 "steps": [
 {
-  "click": "[data-testid='budget-row-li-opencode'] [data-testid='budget-pause-agent']"
+"click": "[data-testid='budget-row-li-opencode'] [data-testid='budget-pause-agent']"
 },
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ],
 "state": "budget:paused",
@@ -85,10 +85,10 @@ Please fix the padding/margin on the allowlist pause modal
 "highlight": ".budget-pause-dialog",
 "steps": [
 {
-  "click": "[data-testid='budget-row-li-opencode'] [data-testid='budget-pause-agent']"
+"click": "[data-testid='budget-row-li-opencode'] [data-testid='budget-pause-agent']"
 },
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ],
 "state": "budget:paused",
@@ -113,3 +113,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T01:02:35Z · note: highlight .budget-pause-dialog matched nothing on /agents?tab=budget-controls
 - 2026-10-21T01:02:44Z · body
 - 2026-10-21T01:14:24Z · status active→review
+- 2026-10-21T01:14:25Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
