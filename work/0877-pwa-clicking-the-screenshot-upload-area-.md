@@ -151,3 +151,4 @@ The implementation matches `## Fix notes` above. Reviewer notes:
 - 2026-10-21T01:47:31Z · body: Fix notes (added 13, removed 32)
 - 2026-10-21T01:47:32Z · message_queued at 2026-10-21T01:47:32.235Z
 - 2026-10-21T01:47:42Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-21T01:47:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
