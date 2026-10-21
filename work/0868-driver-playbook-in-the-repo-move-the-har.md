@@ -2,7 +2,7 @@
 id: "0868"
 title: "Driver notes: append the 2026-10-19/20 driving lessons to docs/driver-notes.md (and point drivers at repoos driver brief)"
 type: chore
-status: active
+status: review
 priority: p2
 area: docs
 assigned_to: ai
@@ -39,4 +39,4 @@ Read docs/driver-notes.md (the format and the 2026-10-07 entry) and docs/cto-aut
 - 2026-10-21T00:31:10Z · cli_override, model_override
 - 2026-10-21T00:31:12Z · status ready→active, branch
 - 2026-10-21T00:35:33Z · body
-- 2026-10-21T00:45:04Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-21T00:45:04Z · status active→review
