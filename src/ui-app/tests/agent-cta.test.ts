@@ -13,7 +13,11 @@ describe("shared agent prompt call to action", () => {
   it("uses the canonical starter prompt verbatim", () => {
     const prompt = readFileSync(`${repoRoot}/agent/starter-prompt.md`, "utf8").trim();
     expect(STARTER_PROMPT).toBe(prompt);
-    expect(STARTER_PROMPT).toContain("# Set up RepoOS in this repository");
+    // The canonical file's own heading is the sentinel; a prompt rewrite must
+    // not leave a hard-coded copy of it behind in this test.
+    const heading = prompt.split(/\r?\n/)[0]!.trim();
+    expect(heading.startsWith("# ")).toBe(true);
+    expect(STARTER_PROMPT).toContain(heading);
   });
 
   it("derives the compact preview from the opening of the prompt", () => {
@@ -24,7 +28,7 @@ describe("shared agent prompt call to action", () => {
     expect(STARTER_PROMPT_PREVIEW).toBe(
       opening.map((line) => line.replace(/^#{1,6}\s+/, "")).join("\n"),
     );
-    expect(STARTER_PROMPT_PREVIEW).toContain("Set up RepoOS in this repository");
+    expect(STARTER_PROMPT_PREVIEW).toContain(opening[0]!.replace(/^#{1,6}\s+/, ""));
   });
 
   it("publishes the guide link each site needs, without a dead relative link", () => {
