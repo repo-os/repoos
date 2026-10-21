@@ -1,8 +1,10 @@
 ---
+updated_at: "2026-10-21T17:19:27Z"
+review_passes: 1
 id: "0905"
 title: check-remote-wip test breaks when the gate runs with browser steps offloaded (REPOOS_OFFLOAD_BROWSER_STEPS=1)
 type: feature
-status: active
+status: review
 priority: p1
 area: [core, server]
 assigned_to: ai
@@ -11,9 +13,6 @@ branch: feat/check-remote-wip-test-breaks-when-the-ga
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T16:03:26Z"
-updated_at: "2026-10-21T17:08:57Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from cd54ffe3 to 20106398) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: cd54ffe3c0dbd54e13d7dcae216e92726272d095
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T16:25:33.719Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -49,3 +48,7 @@ See scripts/remote-runner/validate.sh (the -e REPOOS_OFFLOAD_BROWSER_STEPS / REP
 - 2026-10-21T16:56:38Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from cd54ffe3 to 20106398) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-10-21T16:56:47Z · body
 - 2026-10-21T17:08:57Z · note: handoff requested (ui-review)
+- 2026-10-21T17:18:32Z · status active→review
+- 2026-10-21T17:18:32Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-21T17:19:27Z · note: review pass 1: good to go
+
