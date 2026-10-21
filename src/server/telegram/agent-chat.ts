@@ -51,7 +51,11 @@ import type { TelegramUpdate } from "./types.js";
  * `provider.sendMessage`; tests capture calls. Failures are the handler's to
  * log — never the caller's.
  */
-export type TelegramChatReply = (chatId: number, text: string) => Promise<void>;
+export type TelegramChatReply = (
+  chatId: number,
+  text: string,
+  options?: { replyToMessageId?: number; messageThreadId?: number },
+) => Promise<void>;
 
 /** The index surface the handler needs; LiveIndex satisfies this structurally. */
 export interface TelegramTaskIndex {
@@ -182,9 +186,11 @@ export function createTelegramAgentChatHandler(
     if (!msg || update.kind !== "message" || msg.command !== "msg") return;
     const chatId = msg.chatId;
 
+    const replyOptions =
+      msg.messageThreadId != null ? { messageThreadId: msg.messageThreadId } : undefined;
     const respond = async (text: string): Promise<void> => {
       try {
-        await options.reply(chatId, text);
+        await options.reply(chatId, text, replyOptions);
       } catch (err) {
         logger.system("warn", "Telegram agent-chat reply failed", {
           chatId,

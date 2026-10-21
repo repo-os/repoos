@@ -104,6 +104,12 @@ export interface TelegramCommandDeps {
    * instance does not run.
    */
   agentChat?: TelegramAuthorizedHandler;
+  /**
+   * Whether the #0543 task-actions handler is chained after this one. When it
+   * is, `/newtask` is left to it (silently here) instead of falling into the
+   * unknown-command help; when it is not, `/newtask` gets that honest help.
+   */
+  taskActions?: boolean;
 }
 
 /**
@@ -297,8 +303,15 @@ function renderHelp(deps: TelegramCommandDeps, actor: TelegramActor): string {
         "",
         "Admin actions on tasks",
         "/msg <task-id> <message> — send a follow-up to an active task's agent; when the agent is blocked waiting for your input, the message answers it",
+        ...(deps.taskActions
+          ? [
+              "/newtask <description> — draft a task from prose (reply to a message to use its text); you will see a preview before anything is created",
+              "",
+              "Task notifications carry Start / Pause / Resume / Request review / Move to done buttons. Moving a task to done always asks for a second confirmation.",
+            ]
+          : []),
         "",
-        "Other admin actions — starting or pausing agents, reviews, and settings — use the web UI for now.",
+        "Settings still live in the web UI.",
       );
     } else {
       lines.push(
@@ -380,12 +393,16 @@ export function createTelegramCommandHandler(deps: TelegramCommandDeps): Telegra
       });
       return;
     }
+    // #0543 owns `/newtask`; it is chained after this handler. Return without
+    // answering so it is not also treated as an unknown command.
+    if (command === "newtask" && deps.taskActions) return;
     if (!(TELEGRAM_READ_COMMANDS as readonly string[]).includes(command)) {
       // Unknown command: point at what exists rather than staying silent.
       const text = renderHelp(deps, actor);
       await enqueue(message.chatId, async () => {
         await deps.send(message.chatId, clampMessage(text), {
           replyToMessageId: message.messageId,
+          ...(message.messageThreadId != null ? { messageThreadId: message.messageThreadId } : {}),
         });
       });
       return;
@@ -396,6 +413,7 @@ export function createTelegramCommandHandler(deps: TelegramCommandDeps): Telegra
     await enqueue(message.chatId, async () => {
       await deps.send(message.chatId, clampMessage(text), {
         replyToMessageId: message.messageId,
+        ...(message.messageThreadId != null ? { messageThreadId: message.messageThreadId } : {}),
       });
     });
   };

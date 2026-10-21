@@ -1,5 +1,6 @@
 import { json } from "./utils.js";
 import type { RouteHandler } from "./types.js";
+import type { RepoOSConfig } from "../../core/types.js";
 
 async function transcribeWithGroq(
   apiKey: string,
@@ -94,6 +95,38 @@ function parseMultipart(
   return parts;
 }
 
+/**
+ * Transcribe one audio buffer with the configured whisper provider. Shared by
+ * the browser route and the Telegram voice-note path (#0543) so both use the
+ * same provider selection and error text.
+ */
+export async function transcribeAudio(
+  config: Pick<RepoOSConfig, "whisper">,
+  audioBuffer: Buffer,
+  mimeType: string,
+): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  const provider = config.whisper?.provider || "none";
+  const apiKey = config.whisper?.apiKey || "";
+  if (!provider || provider === "none" || !apiKey) {
+    return { ok: false, error: "Voice transcription not configured" };
+  }
+  try {
+    const text =
+      provider === "groq"
+        ? await transcribeWithGroq(apiKey, audioBuffer, mimeType)
+        : provider === "openai"
+          ? await transcribeWithOpenAI(apiKey, audioBuffer, mimeType)
+          : null;
+    if (text === null) return { ok: false, error: `Unknown provider: ${provider}` };
+    return { ok: true, text };
+  } catch (err) {
+    return {
+      ok: false,
+      error: `Transcription failed: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+}
+
 export const transcribe: RouteHandler = async (ctx, req, res) => {
   const { config } = ctx;
 
@@ -137,16 +170,13 @@ export const transcribe: RouteHandler = async (ctx, req, res) => {
       return json(res, 400, { error: "No audio data provided" });
     }
 
-    let text = "";
-    if (provider === "groq") {
-      text = await transcribeWithGroq(apiKey, audioBuffer, mimeType);
-    } else if (provider === "openai") {
-      text = await transcribeWithOpenAI(apiKey, audioBuffer, mimeType);
-    } else {
-      return json(res, 400, { error: `Unknown provider: ${provider}` });
+    const result = await transcribeAudio(config, audioBuffer, mimeType);
+    if (!result.ok) {
+      return json(res, result.error.startsWith("Unknown provider") ? 400 : 500, {
+        error: result.error,
+      });
     }
-
-    return json(res, 200, { text: text || "" });
+    return json(res, 200, { text: result.text || "" });
   } catch (err) {
     console.error("Transcription error:", err);
     return json(res, 500, {
