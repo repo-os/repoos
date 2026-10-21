@@ -26,10 +26,35 @@ import type { LiveIndex } from "./live-index.js";
 import type { CTOManager } from "./cto.js";
 import { resolveAgentForTask, type AgentRunner } from "./agents.js";
 import { hasRecentWorktreeActivity } from "./task-watchdog.js";
+import { pressureReason } from "../core/pressure-guard.js";
+import {
+  NO_ENGINEER_PROCESS,
+  decideIdleNudge,
+  describeIdleSkip,
+  resolveCtoNudgeCooldownMs,
+  resolveCtoNudgeIdleMs,
+  shouldRecordIdleSkip,
+  type EngineerProcessState,
+  type IdleNudgeSkipReason,
+} from "../core/cto-idle-nudge.js";
 
-const AUTOMATIC_NUDGE_IDLE_MS = 5 * 60 * 1000;
-const AUTOMATIC_NUDGE_COOLDOWN_MS = 60 * 60 * 1000;
 const AUTOMATIC_NUDGE_MARKER = "CTO nudge: sent engineer a completion reminder";
+
+/**
+ * Injectable signals for the idle-nudge check (#0873). Everything the monitor
+ * can observe itself (runner, worktree mtimes) needs no wiring; these are the
+ * server-owned pieces.
+ */
+export interface CTOMonitorProbes {
+  /** Process snapshot for a task; defaults to the runner's own sample. */
+  engineerProcess?: (taskId: string) => EngineerProcessState;
+  /** Machine-pressure reason, or null when pressure is normal. */
+  pressureReason?: () => string | null;
+  /** True while a review turn is running for the task. */
+  reviewRunning?: (taskId: string) => boolean;
+  /** True while a remote-validation run is active for the task. */
+  remoteValidationRunning?: (taskId: string) => boolean;
+}
 
 /** A built board digest plus the structural verdict used to gate model calls. */
 interface BuiltDigest {
@@ -74,16 +99,29 @@ export class CTOMonitor {
   private lastMaterialHash: string = "";
   /** Cleared as soon as the worktree becomes active again: one nudge per idle stretch. */
   private nudgedIdleTasks = new Set<string>();
+  /**
+   * Last skip reason recorded per task (#0873), so a machine under pressure or
+   * a running gate is logged once per idle stretch rather than on every tick.
+   */
+  private idleSkipReported = new Map<string, string>();
   /** Optional allowlisted recovery pass (#0688), wired from the server boot. */
   private safeActions: (() => Promise<void>) | null = null;
   /** Called when the monitor wakes (#0728 CTO heartbeat). */
   private heartbeatTouch: (() => void) | null = null;
+  private readonly probes: CTOMonitorProbes;
 
-  constructor(config: RepoOSConfig, index: LiveIndex, cto: CTOManager, runner?: AgentRunner) {
+  constructor(
+    config: RepoOSConfig,
+    index: LiveIndex,
+    cto: CTOManager,
+    runner?: AgentRunner,
+    probes: CTOMonitorProbes = {},
+  ) {
     this.config = config;
     this.index = index;
     this.cto = cto;
     this.runner = runner;
+    this.probes = probes;
   }
 
   start(intervalMs: number = 300_000): void {
@@ -178,34 +216,75 @@ export class CTOMonitor {
   }
 
   /**
-   * Resume a session only after durable evidence says its worktree has been
-   * quiet for five minutes. AgentRunner rejects a busy turn, so this can never
-   * interrupt an engineer who is merely thinking or running a long command.
+   * Offer one completion reminder to an engineer who is genuinely idle.
+   *
+   * "No worktree activity" alone is not idleness: a long check, a test run, a
+   * remote-validation wait, a headless browser step, an in-flight review or a
+   * thrashing machine all leave files untouched (#0873). Every one of those
+   * holds the nudge and records the reason once, so the board shows why the
+   * engineer was silent instead of sending a reminder that queues behind the
+   * work and arrives as noise.
    */
   private nudgeIdleActiveTasks(): void {
     const now = Date.now();
+    const idleMs = resolveCtoNudgeIdleMs(this.config);
+    const cooldownMs = resolveCtoNudgeCooldownMs(this.config);
     const activeIds = new Set<string>();
+    // Sample machine pressure at most once per tick, and only when a running
+    // task actually reaches the check that needs it.
+    let pressure: string | null | undefined;
+    const pressureNow = (): string | null => {
+      if (pressure === undefined) pressure = this.currentPressureReason();
+      return pressure;
+    };
     for (const task of this.index.getTasks("active")) {
       // Archived tasks are parked (#0657): never nudge them, even if their
       // underlying status is active.
       if (task.isArchived) continue;
-      if (this.runner?.isPaused(task.id)) continue;
       activeIds.add(task.id);
-      if (!this.runner?.isRunning(task.id)) continue;
-      if (hasRecentWorktreeActivity(this.config.root, task.branch, AUTOMATIC_NUDGE_IDLE_MS, now)) {
-        this.nudgedIdleTasks.delete(task.id);
+      if (this.runner?.isPaused(task.id)) {
+        this.idleSkipReported.delete(task.id);
         continue;
       }
-      if (!this.isIdleLongEnough(task, now) || this.nudgedIdleTasks.has(task.id)) continue;
-      if (this.runner?.isHandoffInFlight(task.id) || this.runner?.hasPendingHandoff(task.id)) {
-        continue;
-      }
-      if (this.wasRecentlyNudged(task, now)) {
-        this.nudgedIdleTasks.add(task.id);
+
+      const runnerRunning = this.runner?.isRunning(task.id) ?? false;
+      const process = this.processStateFor(task.id, runnerRunning);
+      const decision = decideIdleNudge({
+        runnerRunning,
+        processGroupAlive: process.groupAlive,
+        busyChild: process.busyChild,
+        paused: false,
+        handoffInFlight: this.runner?.isHandoffInFlight(task.id) ?? false,
+        pendingHandoff: this.runner?.hasPendingHandoff(task.id) ?? false,
+        reviewRunning: this.probes.reviewRunning?.(task.id) ?? false,
+        remoteValidationRunning: this.probes.remoteValidationRunning?.(task.id) ?? false,
+        messageQueued: this.runner?.hasQueuedMessages?.(task.id) ?? false,
+        recentWorktreeActivity:
+          runnerRunning && hasRecentWorktreeActivity(this.config.root, task.branch, idleMs, now),
+        idleForMs: task.updated_at ? now - Date.parse(task.updated_at) : 0,
+        idleThresholdMs: idleMs,
+        cooldownActive: this.wasRecentlyNudged(task, now, cooldownMs),
+        pressureReason: pressureNow(),
+      });
+
+      if (!decision.nudge) {
+        this.recordIdleSkip(task, decision.reason, decision.detail);
+        if (
+          decision.reason === "recent-activity" ||
+          decision.reason === "not-running" ||
+          decision.reason === "paused"
+        ) {
+          this.nudgedIdleTasks.delete(task.id);
+          this.idleSkipReported.delete(task.id);
+        }
+        // Keep the in-memory reminder for a task already nudged inside the
+        // cooldown, so it is not re-checked on every tick.
+        if (decision.reason === "cooldown") this.nudgedIdleTasks.add(task.id);
         continue;
       }
 
       const engineer = resolveAgentForTask(this.config, task);
+      const idleMinutes = Math.max(1, Math.round(idleMs / 60_000));
       // #0507: this nudge used to say "commit and hand off to review", which
       // engineers reasonably read as `repoos mv <id> review` — a bare
       // frontmatter write that skipped the checks and, because it moved the
@@ -213,32 +292,64 @@ export class CTOMonitor {
       // error (#0505, #0499). Name the command that actually records a handoff,
       // and say plainly that it does not move the task.
       const message =
-        "CTO check-in: this task has been idle for five minutes. Please finish the current step, " +
-        "run the relevant verification, then hand off — either run `repoos mv <this task's id> review` " +
-        "or finish your reply with the `::repoos-handoff-ready::` signal. Both ask RepoOS to run the " +
-        "checks and move the task; neither sets the status yourself. Or clearly report the blocker.";
+        `CTO check-in: this task has had no worktree activity for ${idleMinutes} minute` +
+        `${idleMinutes === 1 ? "" : "s"}. If a long step is still running, finish it; otherwise ` +
+        "please run the relevant verification and hand off — either run " +
+        "`repoos mv <this task's id> review` or finish your reply with the " +
+        "`::repoos-handoff-ready::` signal. Both ask RepoOS to run the checks and move the task; " +
+        "neither sets the status yourself. Or clearly report the blocker.";
       if (!this.cto.sendTaskMessage(task.id, message, engineer)) continue;
 
       // The write emits an SSE task.corrected event for the human. Apply it
       // immediately too; relying solely on the file watcher makes the board
       // lag on some filesystems.
-      if (this.cto.recordAutomaticNudge(task)) {
+      if (this.cto.recordAutomaticNudge(task, idleMinutes)) {
         this.nudgedIdleTasks.add(task.id);
+        this.idleSkipReported.delete(task.id);
         void this.index.applyFileChange(task.absPath);
       }
     }
     for (const id of this.nudgedIdleTasks) {
       if (!activeIds.has(id)) this.nudgedIdleTasks.delete(id);
     }
+    for (const id of this.idleSkipReported.keys()) {
+      if (!activeIds.has(id)) this.idleSkipReported.delete(id);
+    }
   }
 
-  private isIdleLongEnough(task: Task, now: number): boolean {
-    const updated = task.updated_at ? Date.parse(task.updated_at) : NaN;
-    return Number.isFinite(updated) && now - updated >= AUTOMATIC_NUDGE_IDLE_MS;
+  /** Runner process sample, with a conservative fallback for test doubles. */
+  private processStateFor(taskId: string, runnerRunning: boolean): EngineerProcessState {
+    if (this.probes.engineerProcess) return this.probes.engineerProcess(taskId);
+    if (this.runner?.engineerProcessState) return this.runner.engineerProcessState(taskId);
+    return runnerRunning
+      ? { tracked: true, groupAlive: true, busyChild: null }
+      : NO_ENGINEER_PROCESS;
+  }
+
+  private currentPressureReason(): string | null {
+    if (this.probes.pressureReason) return this.probes.pressureReason();
+    return pressureReason(this.config);
+  }
+
+  /** Record a held nudge once per reason per idle stretch (#0873). */
+  private recordIdleSkip(
+    task: Task,
+    reason: IdleNudgeSkipReason | null,
+    detail: string | null,
+  ): void {
+    if (!reason || !shouldRecordIdleSkip(reason)) return;
+    const text = describeIdleSkip(reason, detail);
+    if (!text) return;
+    if (this.idleSkipReported.get(task.id) === text) return;
+    if (typeof this.cto.recordIdleNudgeSkip !== "function") return;
+    if (this.cto.recordIdleNudgeSkip(task, text)) {
+      this.idleSkipReported.set(task.id, text);
+      void this.index.applyFileChange(task.absPath);
+    }
   }
 
   /** Cooldown survives a server reload, while the in-memory set handles normal idle stretches. */
-  private wasRecentlyNudged(task: Task, now: number): boolean {
+  private wasRecentlyNudged(task: Task, now: number, cooldownMs: number): boolean {
     const marker = new RegExp(`- ([^\\n]+) · ${AUTOMATIC_NUDGE_MARKER}`, "g");
     let match: RegExpExecArray | null;
     let last = 0;
@@ -246,7 +357,7 @@ export class CTOMonitor {
       const at = Date.parse(match[1]);
       if (Number.isFinite(at)) last = Math.max(last, at);
     }
-    return last > 0 && now - last < AUTOMATIC_NUDGE_COOLDOWN_MS;
+    return last > 0 && now - last < cooldownMs;
   }
 
   private buildDigest(): BuiltDigest | null {

@@ -131,7 +131,45 @@ The kill switch (`automation.paused = true`) is the single control to stop
 everything if a run goes wrong; the arrangement above is otherwise fully
 recoverable by flipping `approval.enabled` or emptying `cto.actions`.
 
-## Escalation, not guessing
+## The idle nudge — wait for a genuinely idle engineer (#0873)
+
+The CTO monitor's one automatic action is a bounded completion reminder to an
+active engineer (`nudgeIdleActiveTasks` in `src/server/cto-monitor.ts`). It used
+to fire on worktree silence alone after five minutes, which is not the same as
+idleness: a long `repoos check`, a test run, a remote-validation wait, a headless
+browser step or a thrashing machine all leave files untouched while real work is
+happening. On 2026-10-20 reminders reached engineers that were busy, queued as
+messages, and hid the real cause.
+
+Before nudging, the monitor now takes one snapshot and holds the reminder when
+any of these is true — recording the reason once per idle stretch in the task
+activity log (`CTO nudge: held — …`) instead of sending it:
+
+| Signal | Source | Held reason |
+| --- | --- | --- |
+| Engineer process group has no live process | runner entry vs. its recorded group (#0863) | phantom runner — recovery owns it, not a nudge |
+| A known work child is alive in the group | `ps` on the turn's process group | `repoos check`, vitest, bun, build, headless browser |
+| Handoff gate finalizing / pending | `isHandoffInFlight` / `hasPendingHandoff` | handoff gate is running |
+| Review turn running | `ReviewManager.isRunning` | review is running |
+| Remote-validation run active | `RemoteValidator.activeRemoteRuns()` | remote validation is running |
+| Undelivered message queued | `hasQueuedMessages` | an undelivered message is already queued |
+| Machine memory pressure | `pressureReason` from `src/core/pressure-guard.ts` (#0871) | swap/compressor/available-memory reading |
+| Cooldown or idle window not reached | nudge marker in the task body, `updated_at` | no log, just wait |
+
+The harness process itself being alive is *not* a reason to hold the nudge — a
+model that is thinking has a live process and no worktree output, which is
+exactly the case the reminder exists for. A live *child* doing a known step is
+the busy signal. Load average is only consulted by the pressure guard when the
+platform gives no memory reading.
+
+The idle threshold and cooldown are live Settings controls
+(`cto.nudgeIdleMs`, default 5 minutes, and `cto.nudgeCooldownMs`, default 60
+minutes; minimums 30s and 1min). Invalid values fall back to the defaults.
+`automation.paused = true` still halts the nudge entirely, as it does every
+other automatic CTO action. The reminder text names the handoff command and
+says plainly that it does not move the task itself.
+
+
 
 Anything the policy cannot decide — a new failure shape, a disputed reviewer
 finding, a hotfix on `main`, config/host/release changes — stays manual and shows

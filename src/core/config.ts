@@ -66,6 +66,12 @@ import {
 import { parseModelRouting } from "./model-routing/config.js";
 import { parseCheckPlanConfig } from "./check-plan.js";
 import { ctoActionsSchemaDescription } from "./cto-actions.js";
+import {
+  DEFAULT_CTO_NUDGE_COOLDOWN_MS,
+  DEFAULT_CTO_NUDGE_IDLE_MS,
+  MIN_CTO_NUDGE_COOLDOWN_MS,
+  MIN_CTO_NUDGE_IDLE_MS,
+} from "./cto-idle-nudge.js";
 import { parseDevServices, parseDevTargets, devTargetServiceErrors } from "./dev-targets.js";
 import { parseTailscaleHosts } from "./remote-hosts.js";
 import { DEFAULT_STORAGE_PROVIDER_ID } from "./storage/registry.js";
@@ -284,6 +290,11 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     pmVeto: false,
   },
   ctoSkipHealthy: true,
+  cto: {
+    actions: [],
+    nudgeIdleMs: DEFAULT_CTO_NUDGE_IDLE_MS,
+    nudgeCooldownMs: DEFAULT_CTO_NUDGE_COOLDOWN_MS,
+  },
   automation: {
     paused: false,
   },
@@ -1510,6 +1521,24 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (ctoActions.length) {
       cfg.cto = { ...cfg.cto, actions: ctoActions };
     }
+    // #0873: idle-nudge threshold and cooldown. Invalid values are ignored so
+    // the defaults stay in force rather than producing a zero-delay nudge.
+    const nudgeIdleMs = parsed["cto.nudgeIdleMs"];
+    if (
+      typeof nudgeIdleMs === "number" &&
+      Number.isFinite(nudgeIdleMs) &&
+      nudgeIdleMs >= MIN_CTO_NUDGE_IDLE_MS
+    ) {
+      cfg.cto = { ...cfg.cto, nudgeIdleMs: Math.floor(nudgeIdleMs) };
+    }
+    const nudgeCooldownMs = parsed["cto.nudgeCooldownMs"];
+    if (
+      typeof nudgeCooldownMs === "number" &&
+      Number.isFinite(nudgeCooldownMs) &&
+      nudgeCooldownMs >= MIN_CTO_NUDGE_COOLDOWN_MS
+    ) {
+      cfg.cto = { ...cfg.cto, nudgeCooldownMs: Math.floor(nudgeCooldownMs) };
+    }
     if (typeof get("skillSuggestions") === "boolean")
       cfg.skillSuggestions = get("skillSuggestions") as boolean;
     const maxActiveTasks = get("maxActiveTasks");
@@ -2673,6 +2702,38 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description: ctoActionsSchemaDescription(),
     },
     {
+      key: "cto.nudgeIdleMs",
+      label: "Idle nudge threshold",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      group: "general",
+      min: MIN_CTO_NUDGE_IDLE_MS,
+      step: 60_000,
+      default: DEFAULT_CTO_NUDGE_IDLE_MS,
+      description:
+        "How long (milliseconds) an active engineer may go without worktree activity before " +
+        "the CTO sends one completion reminder. The nudge is held while a check, test, " +
+        "remote validation, review or handoff gate is running, a message is queued, or the " +
+        "machine is under memory pressure. Default 300000 (5 minutes); minimum 30000. " +
+        "Invalid values fall back to the default.",
+    },
+    {
+      key: "cto.nudgeCooldownMs",
+      label: "Idle nudge cooldown",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      group: "general",
+      min: MIN_CTO_NUDGE_COOLDOWN_MS,
+      step: 60_000,
+      default: DEFAULT_CTO_NUDGE_COOLDOWN_MS,
+      description:
+        "How long (milliseconds) the CTO waits before nudging the same task again after a " +
+        "completion reminder, and after recording a held-nudge reason. Default 3600000 " +
+        "(60 minutes); minimum 60000. Invalid values fall back to the default.",
+    },
+    {
       key: "skillSuggestions",
       label: "Auto-suggest skills from completed sessions",
       type: "boolean",
@@ -3663,6 +3724,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "autoEngineering.pmVeto",
   "ctoSkipHealthy",
   "cto.actions",
+  "cto.nudgeIdleMs",
+  "cto.nudgeCooldownMs",
   "skillSuggestions",
   "worktreeWarnThreshold",
   "dev.inspector.enabled",

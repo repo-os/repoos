@@ -1956,6 +1956,17 @@ export interface CtoConfig {
    * requeue-closeout-after-env-fix.
    */
   actions?: string[];
+  /**
+   * How long an active engineer may show no worktree activity before the CTO
+   * sends one completion reminder (#0873). Default 5 minutes; values below
+   * 30 seconds fall back to the default.
+   */
+  nudgeIdleMs?: number;
+  /**
+   * How long the CTO waits before nudging the same task again after a nudge
+   * (#0873). Default 60 minutes; values below 1 minute fall back to the default.
+   */
+  nudgeCooldownMs?: number;
 }
 
 /** Notification bell / attention feed (#0687). */

@@ -488,7 +488,7 @@ export class CTOManager {
    * from `sendTaskMessage` makes the human-facing audit entry durable even
    * when the agent transcript is later compacted or the server reloads.
    */
-  recordAutomaticNudge(task: Task): boolean {
+  recordAutomaticNudge(task: Task, idleMinutes?: number): boolean {
     try {
       const current = parseTask({
         content: readFileSync(task.absPath, "utf8"),
@@ -499,17 +499,51 @@ export class CTOManager {
       });
       if (current.status !== "active") return false;
 
-      const note =
-        "CTO nudge: sent engineer a completion reminder after 5m without worktree activity";
+      const idle = idleMinutes && idleMinutes > 0 ? `${idleMinutes}m` : "the configured window";
+      const note = `CTO nudge: sent engineer a completion reminder after ${idle} without worktree activity`;
       recordChange(current, note);
       writeFileSync(task.absPath, serializeTask(current));
       commitTaskFile(this.config.root, task.absPath, `docs(${current.id}): record CTO nudge`);
-      this.appendMarker(`↗ CTO nudged engineer for #${current.id} after 5m idle — human notified`);
+      this.appendMarker(
+        `↗ CTO nudged engineer for #${current.id} after ${idle} idle — human notified`,
+      );
       this.emit({ type: "task.corrected", id: current.id, path: current.path, note, at: now() });
       return true;
     } catch (err) {
       console.error(
         `[repoos] CTO: failed to record nudge for #${task.id}: ${(err as Error).message}`,
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Record that the idle nudge was deliberately held (#0873), once per reason
+   * per idle stretch. The monitor decides when the reason changed; this method
+   * only writes the durable audit entry, so a machine under pressure or a
+   * running gate is visible instead of leaving the engineer's silence
+   * unexplained.
+   */
+  recordIdleNudgeSkip(task: Task, reason: string): boolean {
+    try {
+      const current = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+      if (current.status !== "active") return false;
+
+      const note = `CTO nudge: held — ${reason}`;
+      recordChange(current, note);
+      writeFileSync(task.absPath, serializeTask(current));
+      commitTaskFile(this.config.root, task.absPath, `docs(${current.id}): record held CTO nudge`);
+      this.emit({ type: "task.corrected", id: current.id, path: current.path, note, at: now() });
+      return true;
+    } catch (err) {
+      console.error(
+        `[repoos] CTO: failed to record held nudge for #${task.id}: ${(err as Error).message}`,
       );
       return false;
     }
