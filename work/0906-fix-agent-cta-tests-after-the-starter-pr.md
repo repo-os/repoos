@@ -35,3 +35,4 @@ Two-line test fix. Verify the test passes before handing off, then run repoos ch
 - 2026-10-21T17:39:35Z · status ready→active, branch
 - 2026-10-21T17:41:38Z · body
 - 2026-10-21T17:51:23Z · status active→review
+- 2026-10-21T17:51:23Z · note: shots: skipped — the diff (2 changed paths) touches no capture target's globs — no UI change to capture
