@@ -108,12 +108,16 @@ final class HubAppAppearanceTests: XCTestCase {
             defer: false
         )
         window.toolbar = NSToolbar(identifier: "HubChromeTestToolbar")
+        window.title = "RepoOS"
 
         configureHubWorkspaceWindowChrome(window)
 
         XCTAssertEqual(window.titleVisibility, .hidden)
         XCTAssertTrue(window.titlebarAppearsTransparent)
         XCTAssertEqual(window.titlebarSeparatorStyle, .none)
+        // Hiding the drawn title must keep the title itself for accessibility,
+        // Mission Control, and the app switcher.
+        XCTAssertEqual(window.title, "RepoOS")
         XCTAssertTrue(window.styleMask.contains(.fullSizeContentView))
         XCTAssertTrue(window.styleMask.contains(.titled))
         XCTAssertTrue(window.styleMask.contains(.closable))
@@ -128,6 +132,35 @@ final class HubAppAppearanceTests: XCTestCase {
         XCTAssertEqual(window.standardWindowButton(.miniaturizeButton)?.isHidden, false)
         XCTAssertEqual(window.standardWindowButton(.zoomButton)?.isHidden, false)
         XCTAssertEqual(window.toolbar?.isVisible, false)
+    }
+
+    /// `makeNSView` can run before SwiftUI assigns the scene's NSWindow, so the
+    /// chrome must be applied when AppKit actually attaches the host view —
+    /// otherwise the WindowGroup's "RepoOS" title stayed visible over the web
+    /// content (#0878).
+    func testChromeViewAppliesHiddenTitleWhenAttachedToWindow() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 900, height: 600),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "RepoOS"
+        let chromeView = HubWindowChromeView(appearance: .system)
+
+        XCTAssertNil(chromeView.window)
+        XCTAssertEqual(window.titleVisibility, .visible)
+
+        window.contentView = chromeView
+
+        XCTAssertEqual(chromeView.window, window)
+        XCTAssertEqual(window.titleVisibility, .hidden)
+        XCTAssertTrue(window.styleMask.contains(.fullSizeContentView))
+        XCTAssertTrue(window.styleMask.contains(.titled))
+        XCTAssertNotNil(window.standardWindowButton(.closeButton))
+        XCTAssertNotNil(window.standardWindowButton(.miniaturizeButton))
+        XCTAssertNotNil(window.standardWindowButton(.zoomButton))
+        XCTAssertEqual(window.title, "RepoOS")
     }
 
     /// The collapsed-sidebar reveal tab is a narrow, edge-attached chevron with
