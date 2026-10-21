@@ -48,6 +48,61 @@ Running under Bun (the default) cut the full suite 403s→~82s with no flakes,
 largely because its lower RSS leaves headroom — so a Node-pinned run is more
 exposed to this than a Bun one.
 
+## The pressure guard held the starts (#0891, #0900)
+
+A distinct, worse version of the memory-pressure flake: the **host pressure
+guard** (`src/core/pressure-guard.ts`, `pressureGuard.maxSwapUsedRatio = 0.5`,
+`maxCompressorRatio = 0.35`) samples the machine before every new engineer
+start. Over the limit, `AgentRunner.spawnOrQueue` defers the turn — it returns
+`queued: true` with reason `pressure` and never spawns. Tests that start real
+engineers through the server then sit on a `waitFor` that can never succeed and
+report a timeout. The branch is fine; the runner's swap was not.
+
+Observed 2026-10-21: #0894 failed its handoff gate on these tests, #0895 failed
+twice, #0874 failed once on mini. Runner swap at diagnosis: **thinkpad 3012/4095
+MB (73%)**, **mini 1027/2048 MB (50.1%)**, bee 428/4095 MB (10%). The same
+files passed on an idle laptop. With `remoteValidation.fallbackToLocal`, the
+close-out silently re-ran the whole gate locally, which is why those runs showed
+**"Ran locally"** events and took 20+ minutes.
+
+**How to spot it**
+
+- The task's queue marker: `.repoos/queue-markers/<taskId>-pressure.json` with
+  `"kind": "pressure"` (the same marker the UI shows as a held start). A
+  `local-check`/`playwright` marker is the other kind and means a gate/browser
+  slot, not an engineer start.
+- `agent.queued` events with `reason: "pressure"` in the task log, and a system
+  log line `Pressure guard held an engineer start` with the reason.
+- The failure names spawn-heavy tests (`agent-review` auto-bounce/exhausted
+  rounds, `agent-concurrency` queue/double-start, `agent-drivers` qwen
+  "on thinkpad") while the diff touches none of them.
+
+**Check the runner's swap — do not read it off the test failure**
+
+```sh
+# macOS: swap used/total plus the compressor pool
+sysctl vm.swapusage
+vm_stat | grep -i 'Pages occupied by compressor'
+memory_pressure | grep -i 'free percentage'
+
+# Linux: swap used = SwapTotal - SwapFree
+grep -E '^(SwapTotal|SwapFree):' /proc/meminfo
+```
+
+If swap is at/over 50% of total or the compressor holds ≥35% of RAM, the guard
+is doing its job. **Never lower the production thresholds to make a test pass**;
+that risks the machine for a green build.
+
+**What keeps it from recurring:** fixtures that start engineers or review turns
+set `[pressureGuard]\nenabled = false` in their `repoos.toml` (or pass
+`pressureGuard: { enabled: false }` to a directly-constructed `AgentRunner`), so
+spawn assertions measure the code, not the host. The guard's own suite injects
+samples (`pressure-guard.test.ts`, `agent-pressure-guard.test.ts`), and
+`agent-start-host-pressure.test.ts` proves a spawn still happens with an
+injected swap-73%/compressor-40% reading while the fixture has the guard off.
+Production keeps the guard on: this is a test-isolation rule, not a reason to
+weaken it.
+
 ## Counter-example: when it looked identical but wasn't
 
 2026-09-03, v0.5.36 release cuts kept failing with `agent-drivers.test.ts >

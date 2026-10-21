@@ -13,7 +13,7 @@ branch: feat/diagnose-4-pre-existing-full-suite-test-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T22:39:47Z"
-updated_at: "2026-10-21T13:14:35Z"
+updated_at: "2026-10-21T16:04:32Z"
 last_close_out_gate_ms: 116390
 last_close_out_gate_at: "2026-10-19T03:11:47.656Z"
 review_passes: 1
@@ -154,3 +154,5 @@ Runner comparison: failures reproduce on current `main` in this worktree (same W
 - 2026-10-21T11:51:32Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-21T11:59:35Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-21T13:14:35Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-21T14:32:41Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-21T16:04:32Z · message_overdue: still queued after 60m without being delivered

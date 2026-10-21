@@ -199,6 +199,39 @@ its messages, or an `@mention` — the same trigger rules as notifications. It
 answers one command at a time per chat, so a burst from several members does
 not interleave replies.
 
+### Create a task
+
+Admins can send `/newtask <description>`, or reply to a message with
+`/newtask` to use its text. You can attach images, documents, or a voice note;
+images and documents are checked by their actual bytes, and a configured voice
+transcription provider turns a voice note into prose. The bot infers a title,
+type, priority, and area and replies with a **preview** — nothing is created
+yet. Use **Edit** to change one field at a time, **Cancel** to discard it, or
+**Create** to file the task. A created task is the same task the web UI would
+create, including the raw prompt under `## Original prompt`, screenshots under
+`## Screenshots`, and a link into the board.
+
+Members cannot create tasks; the bot says which boundary applies rather than
+ignoring them.
+
+### Drive a task
+
+Notifications for work that can move carry inline buttons: **Start**,
+**Resume**, **Pause**, **Request review**, and **Move to done**. Every button
+is re-checked against your current allowlist role when you press it, so a
+demoted admin loses access immediately and an old button cannot be replayed or
+used after it expires (15 minutes).
+
+**Move to done** never happens from one tap. The first press shows a
+confirmation card naming the repository, task id/title, and the exact branch;
+only **Confirm merge** starts the close-out pipeline, and **Cancel** leaves
+everything untouched. Closing a task out still runs the same merge and full
+check gate as the web UI.
+
+In a forum topic, replies and action cards stay in that topic. Topics are a
+routing convenience only — access is still decided by the bound chat and the
+sender's live role.
+
 ## Managed provisioning (the official service)
 
 Managed provisioning lets RepoOS create and hand over a project bot without
