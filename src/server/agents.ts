@@ -83,12 +83,14 @@ import {
   collectRecordedEngineerPids,
   livePidsInRecordedGroup,
   pidAlive,
+  processCommandLine,
   sameWorkdirPath,
   stopRecordedEngineerPid,
   stoppedActivityNote,
   verifyRecordedHarnessPid,
   type RecordedEngineerPid,
 } from "./orphan-engineers.js";
+import { knownWorkProcessLabel, type EngineerProcessState } from "../core/cto-idle-nudge.js";
 import {
   classifyPhantom,
   DEFAULT_PHANTOM_DETECT_MS,
@@ -5871,6 +5873,46 @@ export class AgentRunner {
 
   isRunning(taskId: string): boolean {
     return this.entries.has(taskId);
+  }
+
+  /**
+   * Process snapshot for the CTO idle nudge (#0873): whether the recorded
+   * engineer process group is still alive, and whether a known long-running
+   * work child (check, tests, build, headless browser) is running in it.
+   *
+   * The harness process itself is alive for the whole turn, including when the
+   * model is merely thinking — that is exactly what the nudge exists for. A
+   * live *child* doing a known step is the signal that the turn is busy and a
+   * reminder would queue up behind real work.
+   */
+  engineerProcessState(taskId: string): EngineerProcessState {
+    const entry = this.entries.get(taskId);
+    if (!entry || entry.review) return { tracked: false, groupAlive: false, busyChild: null };
+    const leader = entry.processGroupLeader ?? entry.proc?.pid ?? entry.adoptedPid;
+    let pids: number[] = [];
+    if (leader !== undefined) pids = livePidsInRecordedGroup(leader);
+    // Windows has no process-group listing; fall back to the turn's own PID.
+    if (pids.length === 0) {
+      const own = entry.proc?.pid ?? entry.adoptedPid;
+      if (own !== undefined && pidAlive(own)) pids = [own];
+    }
+    if (pids.length === 0) return { tracked: true, groupAlive: false, busyChild: null };
+
+    const harnessPids = new Set<number>();
+    if (leader !== undefined) harnessPids.add(leader);
+    if (entry.proc?.pid !== undefined) harnessPids.add(entry.proc.pid);
+    if (entry.adoptedPid !== undefined) harnessPids.add(entry.adoptedPid);
+
+    let busyChild: string | null = null;
+    for (const pid of pids) {
+      if (harnessPids.has(pid)) continue;
+      const label = knownWorkProcessLabel(processCommandLine(pid));
+      if (label) {
+        busyChild = label;
+        break;
+      }
+    }
+    return { tracked: true, groupAlive: true, busyChild };
   }
 
   /**
