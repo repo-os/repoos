@@ -45,6 +45,21 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
         URL(string: originString)
     }
 
+    /// The exact stored origin to put on the pasteboard, or nil when the
+    /// registry holds no usable URL. `URL(string: "")` is non-nil, so the
+    /// empty/whitespace and missing-scheme cases are checked explicitly.
+    var copyableOriginString: String? {
+        let trimmed = originString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              let url = URL(string: trimmed),
+              let scheme = url.scheme,
+              !scheme.isEmpty,
+              let host = url.host,
+              !host.isEmpty
+        else { return nil }
+        return trimmed
+    }
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -278,10 +293,10 @@ enum ServerActionsMenuModel {
 
         // Copy the exact stored origin (scheme and port included) rather than a
         // display-formatted URL: local and remote servers both work.
-        if let origin = entry.originURL {
+        if let origin = entry.copyableOriginString {
             serverItems.append(
                 ServerActionMenuItem(
-                    action: .copyURL(origin.absoluteString),
+                    action: .copyURL(origin),
                     title: "Copy URL",
                     systemImage: "doc.on.doc"
                 )
@@ -372,14 +387,31 @@ enum RepoAccentColorPreference {
         case unsupported
     }
 
-    static func parseCookieValue(_ rawValue: String) -> CookieValue {
+    static func parseCookieValue(
+        _ rawValue: String,
+        expectedRepoName: String? = nil
+    ) -> CookieValue {
         let decoded = rawValue.removingPercentEncoding ?? rawValue
         let trimmed = decoded.trimmingCharacters(in: .whitespacesAndNewlines)
+        let repoPart: String
         let colorPart: String
         if let separator = trimmed.lastIndex(of: ":") {
+            repoPart = String(trimmed[..<separator])
             colorPart = String(trimmed[trimmed.index(after: separator)...])
         } else {
+            repoPart = ""
             colorPart = trimmed
+        }
+
+        // The web UI scopes the cookie to the repo name it was chosen for.
+        // A server later serving a different repo must not inherit the color;
+        // an unknown/legacy value has no repo part and stays accepted.
+        if let expectedRepoName,
+           !expectedRepoName.isEmpty,
+           !repoPart.isEmpty,
+           repoPart.caseInsensitiveCompare(expectedRepoName) != .orderedSame
+        {
+            return .unsupported
         }
 
         if let normalized = ServerAccentColor.normalizedHex(colorPart) {
