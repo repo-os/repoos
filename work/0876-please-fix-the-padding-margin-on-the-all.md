@@ -5,6 +5,7 @@ type: bug
 status: active
 needs_input: true
 needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p2
 area: web
 assigned_to: ai
@@ -15,11 +16,11 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T02:52:01Z"
+updated_at: "2026-10-21T02:52:56Z"
 review_rounds: 1
 review_passes: 1
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:03:50.463Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-21T02:52:56.581Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -146,3 +147,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T02:41:56Z · body
 - 2026-10-21T02:48:02Z · body
 - 2026-10-21T02:52:01Z · body
+- 2026-10-21T02:52:56Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
