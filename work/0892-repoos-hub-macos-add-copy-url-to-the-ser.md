@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-add-copy-url-to-the-ser
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T07:07:47Z"
+updated_at: "2026-10-21T07:21:13Z"
 ---
 ## Problem
 Two problems in the native macOS app (RepoOS Hub) server sidebar:
