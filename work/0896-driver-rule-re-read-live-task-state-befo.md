@@ -2,14 +2,14 @@
 id: "0896"
 title: "Driver rule: re-read live task state before every action, never trust memory or loop prompts"
 type: feature
-status: inbox
+status: done
 priority: p2
 area: docs
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T10:43:50Z"
-updated_at: "2026-10-21T10:46:24Z"
+updated_at: "2026-10-21T13:20:13Z"
 ---
 ## Problem
 Driver agents repeatedly act on remembered or stale state instead of the live board. 2026-10-21: the overnight loop prompt said story #0011's chain had not started; the driver reopened already-landed #0879 (done→ready→active) and started an engineer on it. Other occurrences: acting on a remembered task status, landing candidate or engineer count that had changed since the last check.
@@ -29,3 +29,4 @@ Docs plus a small guard. Do not edit work/*.md by hand.
 
 - 2026-10-21T10:43:50Z · created · njachowski@gmail.com
 - 2026-10-21T10:46:24Z · body: Acceptance criteria (added 2, removed 2)
+- 2026-10-21T13:20:13Z · status inbox→done
