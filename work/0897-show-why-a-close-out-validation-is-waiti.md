@@ -2,7 +2,7 @@
 id: "0897"
 title: "Show why a close-out/validation is waiting: queue position, what runs ahead on each runner"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -148,4 +148,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T18:09:46Z · body
 - 2026-10-21T18:10:47Z · needs_input
 - 2026-10-21T18:35:37Z · body
-- 2026-10-21T18:50:42Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-21T18:50:42Z · status active→review
