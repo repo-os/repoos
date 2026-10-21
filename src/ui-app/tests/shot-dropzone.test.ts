@@ -8,7 +8,7 @@
  * tab stop, so Enter/Space are native too. These tests hold that wiring in
  * place — jsdom cannot reproduce the PWA's activation policy itself.
  */
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -16,6 +16,13 @@ import ShotDropzone from "../src/components/ShotDropzone.vue";
 
 const SRC = resolve(__dirname, "../src");
 const readSource = (rel: string) => readFileSync(join(SRC, rel), "utf8");
+
+function cssRule(css: string, selector: string): string {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = css.match(new RegExp(`${escaped}\\s*\\{[^}]*\\}`));
+  expect(match, `style.css must keep the ${selector} rule`).not.toBeNull();
+  return match?.[0] ?? "";
+}
 
 function setup() {
   const wrapper = mount(ShotDropzone, {
@@ -87,5 +94,41 @@ describe("ShotDropzone (#0877)", () => {
     const { wrapper } = setup();
     await wrapper.find("input").trigger("change");
     expect(wrapper.emitted("files")).toBeUndefined();
+  });
+});
+
+describe("ShotDropzone inside .field (#0899)", () => {
+  let style: HTMLStyleElement;
+
+  afterEach(() => {
+    style?.remove();
+    document.body.innerHTML = "";
+  });
+
+  it("wins over .field label in computed styles", () => {
+    const css = readFileSync(join(SRC, "style.css"), "utf8");
+    style = document.createElement("style");
+    style.textContent = [
+      cssRule(css, ".field label"),
+      cssRule(css, ".shot-dropzone"),
+      cssRule(css, ".field .shot-dropzone"),
+    ].join("\n");
+    document.head.appendChild(style);
+
+    const field = document.createElement("div");
+    field.className = "field";
+    document.body.appendChild(field);
+
+    const wrapper = mount(ShotDropzone, {
+      attachTo: field,
+      slots: { default: "Click to add screenshots" },
+    });
+    const label = wrapper.element as HTMLLabelElement;
+    const computed = getComputedStyle(label);
+    expect(computed.display).toBe("flex");
+    expect(computed.textTransform).toBe("none");
+    expect(computed.marginBottom).toBe("0px");
+
+    wrapper.unmount();
   });
 });

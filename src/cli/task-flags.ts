@@ -55,7 +55,7 @@ export const NEW_FLAG_HELP: Record<string, TaskFlagHelp> = {
   },
   caption: {
     value: '"..."',
-    desc: "Alt text for a single --screenshot image",
+    desc: "Alt text for a --screenshot image (repeatable; pairs by position)",
   },
 };
 
@@ -87,7 +87,7 @@ export const UPDATE_FLAG_HELP: Record<string, TaskFlagHelp> = {
   },
   caption: {
     value: '"..."',
-    desc: "Alt text for a single --screenshot image",
+    desc: "Alt text for a --screenshot image (repeatable; pairs by position)",
   },
   section: { value: '"heading"', desc: "Replace/create one ## section (pair with --section-body)" },
   "section-body": { value: '"..."|-', desc: "Body for --section; `-` reads it from stdin" },
