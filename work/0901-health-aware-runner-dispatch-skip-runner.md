@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-21T17:50:23.032Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Settings: runner memory-health switch (target \"default\"): highlight #setting-remoteValidation.healthCheck matched nothing on /settings?section=remote-validation (http://127.0.0.1:64582/settings?section=remote-validation)"
 id: "0901"
 title: "Health-aware runner dispatch: skip runners under memory pressure and show it loudly with the fix"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/health-aware-runner-dispatch-skip-runner
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T14:21:05Z"
-updated_at: "2026-10-21T17:50:19Z"
+updated_at: "2026-10-21T17:50:40Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-21T17:50:23.032Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Settings: runner memory-health switch (target \"default\"): highlight #setting-remoteValidation.healthCheck matched nothing on /settings?section=remote-validation (http://127.0.0.1:64582/settings?section=remote-validation)"
 ---
 ## Problem
 2026-10-21: thinkpad had 73% swap in use (3012/4095 MB); the memory-pressure guard inside the gate containers (native Linux containers see the host swap) held engineer spawns, so spawn-related tests failed remotely on that runner for #0894, #0895 (twice) and #0897, with fallbackToLocal silently re-running whole gates on the laptop. Nothing in the UI or on the tasks said a runner was unhealthy; the fix (sudo swapoff -a && sudo swapon -a, run by a human) was found by hand. Colima/Docker on macOS hosts is different: containers there see the Linux VM's memory, not macOS swap.
@@ -35,16 +35,16 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 ```json
 [
 {
-"label": "Settings: runner memory-health switch",
-"target": "default",
-"route": "/settings?section=remote-validation",
-"highlight": "#setting-remoteValidation.healthCheck"
+  "label": "Settings: runner memory-health switch",
+  "target": "default",
+  "route": "/settings?section=remote-validation",
+  "highlight": "[data-config-key=\"remoteValidation.healthCheck\"]"
 },
 {
-"label": "Runners tab: per-host memory health",
-"target": "default",
-"route": "/checks?tab=now",
-"highlight": ".rr-panel"
+  "label": "Runners tab: per-host memory health",
+  "target": "default",
+  "route": "/checks?tab=now",
+  "highlight": ".rr-panel"
 }
 ]
 ```
@@ -68,4 +68,4 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 - 2026-10-21T17:41:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T17:41:16Z · message_delivered: 1 message(s)
 - 2026-10-21T17:50:19Z · note: ui verification failed (1 issue(s)): [missing-target] Settings: runner memory-health switch (target "default"): highlight #setting-remoteValidation.healthCheck matched nothing on /settings?section=remote-validation (http://127.0.0.1:64582/settings?section=remote-validation)
-
+- 2026-10-21T17:50:40Z · body
