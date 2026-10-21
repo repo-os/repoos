@@ -2,7 +2,7 @@
 id: "0897"
 title: "Show why a close-out/validation is waiting: queue position, what runs ahead on each runner"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, web]
 assigned_to: ai
