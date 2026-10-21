@@ -2,14 +2,14 @@
 id: "0892"
 title: "RepoOS Hub (macOS): add Copy URL to the server menu, and fix the server color bar not applying or persisting"
 type: bug
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-add-copy-url-to-the-ser
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T07:00:21Z"
+updated_at: "2026-10-21T12:08:23Z"
 ---
 ## Problem
 Two problems in the native macOS app (RepoOS Hub) server sidebar:
@@ -45,3 +45,4 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 - 2026-10-21T06:07:16Z · body: Notes for AI (added 1, removed 1)
 - 2026-10-21T06:14:25Z · status inbox→ready
 - 2026-10-21T07:00:21Z · status ready→active, branch
+- 2026-10-21T12:08:23Z · status active→review
