@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-add-copy-url-to-the-ser
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T08:45:40Z"
+updated_at: "2026-10-21T08:45:41Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:22:35.664Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -54,6 +54,7 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 ![After: the Hub sidebar shows a yellow bar on the lightingai row; pn and Private bars are unchanged](/api/tasks/0892/attachments/att_c519394b-b0ab-4f23-8e8b-620b2f01fcae.png)
 ![After: the server context menu includes Copy URL between Pin server and Edit server](/api/tasks/0892/attachments/att_365c5ac8-5770-4d47-b505-20b5fc561701.png)
 ![Before: lightingai has no sidebar bar; pn and Private keep their purple/pink bars](/api/tasks/0892/attachments/att_abc53aa0-642a-4b2d-ac77-065b81d4cd80.png)
+![After: choosing the yellow swatch in the header immediately turns the lightingai sidebar bar yellow](/api/tasks/0892/attachments/att_24aa9516-f7a1-4a8c-be50-3fa05051f5ed.png)
 
 ## Activity
 
@@ -93,3 +94,4 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 - 2026-10-21T08:42:35Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-21T08:45:36Z · screenshots
 - 2026-10-21T08:45:40Z · body
+- 2026-10-21T08:45:41Z · screenshots
