@@ -63,36 +63,36 @@ Please fix the padding/margin on the allowlist pause modal
 ```json
 [
 {
-  "label": "Pause dialog, light theme — padded fields and action row",
-  "target": "default",
-  "route": "/agents?tab=budget-controls",
-  "highlight": ".budget-pause-dialog",
-  "steps": [
-    {
-      "click": "[data-testid='budget-row-li-opencode'] [data-testid='budget-pause-agent']"
-    },
-    {
-      "waitMs": 500
-    }
-  ],
-  "state": "budget:paused",
-  "theme": "light"
+"label": "Pause dialog, light theme — padded fields and action row",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": ".budget-pause-dialog",
+"steps": [
+  {
+    "click": "[data-testid='budget-row-li-opencode'] [data-testid='budget-pause-agent']"
+  },
+  {
+    "waitMs": 500
+  }
+],
+"state": "budget:paused",
+"theme": "light"
 },
 {
-  "label": "Pause dialog, dark theme — padded fields and action row",
-  "target": "default",
-  "route": "/agents?tab=budget-controls",
-  "highlight": ".budget-pause-dialog",
-  "steps": [
-    {
-      "click": "[data-testid='budget-row-li-opencode'] [data-testid='budget-pause-agent']"
-    },
-    {
-      "waitMs": 500
-    }
-  ],
-  "state": "budget:paused",
-  "theme": "dark"
+"label": "Pause dialog, dark theme — padded fields and action row",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": ".budget-pause-dialog",
+"steps": [
+  {
+    "click": "[data-testid='budget-row-li-opencode'] [data-testid='budget-pause-agent']"
+  },
+  {
+    "waitMs": 500
+  }
+],
+"state": "budget:paused",
+"theme": "dark"
 }
 ]
 ```
