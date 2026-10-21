@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T19:28:18Z"
+updated_at: "2026-10-21T19:28:22Z"
 review_passes: 3
 review_rounds: 2
 ---
