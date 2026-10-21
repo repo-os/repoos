@@ -2,14 +2,14 @@
 id: "0895"
 title: "RepoOS Hub (macOS): web view sits under the top bar in tabs mode (UI cut off), and sidebar mode shows two collapse buttons"
 type: bug
-status: active
+status: ready
 priority: p2
 area: macos
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-web-view-sits-under-the
 created_at: "2026-10-21T08:37:10Z"
-updated_at: "2026-10-21T12:56:26Z"
+updated_at: "2026-10-21T13:09:10Z"
 ---
 ## Problem
 Two layout problems in the native macOS app (RepoOS Hub), both visible in the new Window layout modes:
@@ -61,3 +61,4 @@ Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode fro
 - 2026-10-21T12:56:25Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-10-21T12:56:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T12:56:26Z · message_delivered: 2 message(s)
+- 2026-10-21T13:09:10Z · status active→ready
