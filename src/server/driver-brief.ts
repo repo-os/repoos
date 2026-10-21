@@ -257,7 +257,7 @@ export function collectBlockedValidations(
 ): BriefBlockedValidation[] {
   const queued = remoteValidator?.queueStatus?.() ?? [];
   return queued
-    .filter((q) => q.waitedMs > BLOCKED_VALIDATION_THRESHOLD_MS)
+    .filter((q) => q.taskId !== "?" && q.waitedMs > BLOCKED_VALIDATION_THRESHOLD_MS)
     .sort((a, b) => b.waitedMs - a.waitedMs)
     .map((q) => {
       const blockers = q.blockers.map((b) => ({
