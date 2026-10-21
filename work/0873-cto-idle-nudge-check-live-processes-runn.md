@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: Transport"
+debug_tldr: "Agent LLM transport dropped mid-session—resume engineer on #0873 and retry close-out; review and remote validation already passed."
+debug_tldr_at: "2026-10-21T02:20:52Z"
+debug_tldr_key: "dev-error|error: Transport"
 priority: p2
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -15,7 +18,7 @@ branch: feat/cto-idle-nudge-check-live-processes-runn
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:23:49Z"
-updated_at: "2026-10-21T02:20:22Z"
+updated_at: "2026-10-21T02:20:52Z"
 last_close_out_gate_ms: 105173
 last_close_out_gate_at: "2026-10-21T01:50:32.952Z"
 review_passes: 1
