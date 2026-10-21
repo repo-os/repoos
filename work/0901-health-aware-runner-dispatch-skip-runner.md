@@ -2,7 +2,7 @@
 id: "0901"
 title: "Health-aware runner dispatch: skip runners under memory pressure and show it loudly with the fix"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/health-aware-runner-dispatch-skip-runner
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T14:21:05Z"
-updated_at: "2026-10-21T17:52:08Z"
+updated_at: "2026-10-21T17:53:50Z"
 last_check_failure: "repoos check at 2026-10-21T17:50:23.032Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Settings: runner memory-health switch (target \"default\"): highlight #setting-remoteValidation.healthCheck matched nothing on /settings?section=remote-validation (http://127.0.0.1:64582/settings?section=remote-validation)"
 ---
 ## Problem
@@ -39,9 +39,9 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 "route": "/settings?section=remote-validation",
 "highlight": "[data-config-key=\"remoteValidation.healthCheck\"]",
 "steps": [
-  {
-    "waitFor": "[data-config-key=\"remoteValidation.healthCheck\"]"
-  }
+{
+  "waitFor": "[data-config-key=\"remoteValidation.healthCheck\"]"
+}
 ]
 },
 {
@@ -50,9 +50,9 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 "route": "/checks?tab=now",
 "highlight": ".rr-panel",
 "steps": [
-  {
-    "waitFor": ".rr-panel"
-  }
+{
+  "waitFor": ".rr-panel"
+}
 ]
 }
 ]
@@ -80,4 +80,4 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 - 2026-10-21T17:50:40Z · body
 - 2026-10-21T17:50:48Z · body
 - 2026-10-21T17:52:08Z · body
-
+- 2026-10-21T17:53:50Z · status active→review
