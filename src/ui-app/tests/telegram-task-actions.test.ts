@@ -742,7 +742,7 @@ describe("composed handler chain (#0543)", () => {
       order.push("guide-chat");
     };
     const update = textUpdate(7, "a new title");
-    await chainedOnAuthorized(first, second)(update, ADMIN);
+    await chainedOnAuthorized(first, second)!(update, ADMIN);
     expect(order).toEqual(["task-actions"]);
   });
 
@@ -755,7 +755,7 @@ describe("composed handler chain (#0543)", () => {
     const second: TelegramAuthorizedHandler = async () => {
       order.push("guide-chat");
     };
-    await chainedOnAuthorized(first, second)(textUpdate(7, "hello"), ADMIN);
+    await chainedOnAuthorized(first, second)!(textUpdate(7, "hello"), ADMIN);
     expect(order).toEqual(["task-actions", "guide-chat"]);
   });
 });

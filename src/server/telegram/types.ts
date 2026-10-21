@@ -88,7 +88,7 @@ export interface TelegramMessage {
    * Routing only — authorization stays per chat (ADR 0007). Null/absent in
    * private chats and plain groups, which must not require topic config.
    */
-  messageThreadId: number | null;
+  messageThreadId?: number | null;
 }
 
 /** The update kinds the adapter recognizes. */
