@@ -117,7 +117,7 @@ model_routing.mode = "shadow"
 model_routing.provider = "openrouter"
 activityAnimationSize = "24"
 model_routing.humanStepCheck = true
-remoteValidation.browserCaptureMode = "runner-only"
+remoteValidation.browserCaptureMode = "local"
 [[remoteValidation.tailscaleHosts]]
 host = "bee"
 user = "nick"
