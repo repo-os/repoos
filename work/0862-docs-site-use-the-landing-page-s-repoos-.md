@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/docs-site-use-the-landing-page-s-repoos-
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-21T04:03:48Z"
+updated_at: "2026-10-21T04:04:18Z"
 ---
 ## Problem
 The docs site (VitePress, `user-docs/`) and the landing page (`landing/`) show the RepoOS logo differently. In the attached screenshots (in order: 1 landing Gruvbox dark, 2 landing Gruvbox light, 3 landing Classic light, 4 docs site, 5 landing Classic dark) the landing logo is a plain hexagon with the three-bar mark that **changes with the theme**: its stroke gradient and bar colours follow the theme tokens in Gruvbox, Classic, light and dark. The docs site logo (4) sits inside an **extra rounded-square border/box** and stays one fixed colour set whatever theme or appearance is selected.
@@ -44,73 +44,73 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 ```json
 [
 {
-  "label": "Docs header logo — Gruvbox dark",
-  "target": "Docs site",
-  "route": "/?theme=gruvbox&appearance=dark",
-  "highlight": ".VPNavBarTitle",
-  "assert": [
-    {
-      "selector": ".docs-logo",
-      "label": "Inline theme-aware logo in the docs header"
-    }
-  ]
+"label": "Docs header logo — Gruvbox dark",
+"target": "Docs site",
+"route": "/?theme=gruvbox&appearance=dark",
+"highlight": ".VPNavBarTitle",
+"assert": [
+  {
+    "selector": ".docs-logo",
+    "label": "Inline theme-aware logo in the docs header"
+  }
+]
 },
 {
-  "label": "Docs header logo — Gruvbox light",
-  "target": "Docs site",
-  "route": "/?theme=gruvbox&appearance=light",
-  "highlight": ".VPNavBarTitle",
-  "assert": [
-    {
-      "selector": ".docs-logo",
-      "label": "Inline theme-aware logo in the docs header"
-    }
-  ]
+"label": "Docs header logo — Gruvbox light",
+"target": "Docs site",
+"route": "/?theme=gruvbox&appearance=light",
+"highlight": ".VPNavBarTitle",
+"assert": [
+  {
+    "selector": ".docs-logo",
+    "label": "Inline theme-aware logo in the docs header"
+  }
+]
 },
 {
-  "label": "Docs header logo on a doc page — Classic light",
-  "target": "Docs site",
-  "route": "/getting-started?theme=classic&appearance=light",
-  "highlight": ".VPNavBarTitle",
-  "assert": [
-    {
-      "selector": ".docs-logo",
-      "label": "Inline theme-aware logo in the docs header"
-    }
-  ]
+"label": "Docs header logo on a doc page — Classic light",
+"target": "Docs site",
+"route": "/getting-started?theme=classic&appearance=light",
+"highlight": ".VPNavBarTitle",
+"assert": [
+  {
+    "selector": ".docs-logo",
+    "label": "Inline theme-aware logo in the docs header"
+  }
+]
 },
 {
-  "label": "Docs header logo on a doc page — Classic dark",
-  "target": "Docs site",
-  "route": "/getting-started?theme=classic&appearance=dark",
-  "highlight": ".VPNavBarTitle",
-  "assert": [
-    {
-      "selector": ".docs-logo",
-      "label": "Inline theme-aware logo in the docs header"
-    }
-  ]
+"label": "Docs header logo on a doc page — Classic dark",
+"target": "Docs site",
+"route": "/getting-started?theme=classic&appearance=dark",
+"highlight": ".VPNavBarTitle",
+"assert": [
+  {
+    "selector": ".docs-logo",
+    "label": "Inline theme-aware logo in the docs header"
+  }
+]
 },
 {
-  "label": "Docs mobile nav open — Gruvbox dark",
-  "target": "Docs site",
-  "route": "/?theme=gruvbox&appearance=dark",
-  "highlight": ".VPNavBarTitle",
-  "steps": [
-    {
-      "click": ".VPNavBarHamburger"
-    },
-    {
-      "waitMs": 300
-    }
-  ],
-  "assert": [
-    {
-      "selector": ".docs-logo",
-      "label": "Inline theme-aware logo in the docs header"
-    }
-  ],
-  "viewportWidth": 390
+"label": "Docs mobile nav open — Gruvbox dark",
+"target": "Docs site",
+"route": "/?theme=gruvbox&appearance=dark",
+"highlight": ".VPNavBarTitle",
+"steps": [
+  {
+    "click": ".VPNavBarHamburger"
+  },
+  {
+    "waitMs": 300
+  }
+],
+"assert": [
+  {
+    "selector": ".docs-logo",
+    "label": "Inline theme-aware logo in the docs header"
+  }
+],
+"viewportWidth": 390
 }
 ]
 ```
@@ -123,3 +123,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T03:54:30Z · status ready→active, branch
 - 2026-10-21T04:02:15Z · note: route /404.html?theme=classic&appearance=light is not served by target "Docs site" — the target returned its HTML shell for an app module (TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:55031/404/index.md?import&t=1792555334163'.)
 - 2026-10-21T04:03:48Z · body
+- 2026-10-21T04:04:18Z · note: click .VPNavBarHamburger: click: Timeout 5000ms exceeded. on /?theme=gruvbox&appearance=dark
