@@ -15,7 +15,7 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T02:30:07Z"
+updated_at: "2026-10-21T02:33:41Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 1
@@ -65,36 +65,36 @@ Please fix the padding/margin on the allowlist pause modal
 ```json
 [
 {
-"label": "Pause dialog, light theme — padded fields and action row",
-"target": "default",
-"route": "/agents?tab=budget-controls",
-"highlight": ".budget-pause-dialog",
-"steps": [
-{
-"click": "[data-testid='budget-row-li-opencode'] [data-testid='budget-pause-agent']"
+  "label": "Pause dialog, light theme — padded fields and action row",
+  "target": "default",
+  "route": "/agents?tab=budget-controls",
+  "highlight": "[data-testid=budget-pause-dialog]",
+  "steps": [
+    {
+      "click": "[data-testid=\"budget-row-li-claude code\"] [data-testid=\"budget-pause-agent\"]"
+    },
+    {
+      "waitMs": 500
+    }
+  ],
+  "state": "budget:paused",
+  "theme": "light"
 },
 {
-"waitMs": 500
-}
-],
-"state": "budget:paused",
-"theme": "light"
-},
-{
-"label": "Pause dialog, dark theme — padded fields and action row",
-"target": "default",
-"route": "/agents?tab=budget-controls",
-"highlight": ".budget-pause-dialog",
-"steps": [
-{
-"click": "[data-testid='budget-row-li-opencode'] [data-testid='budget-pause-agent']"
-},
-{
-"waitMs": 500
-}
-],
-"state": "budget:paused",
-"theme": "dark"
+  "label": "Pause dialog, dark theme — padded fields and action row",
+  "target": "default",
+  "route": "/agents?tab=budget-controls",
+  "highlight": "[data-testid=budget-pause-dialog]",
+  "steps": [
+    {
+      "click": "[data-testid=\"budget-row-li-claude code\"] [data-testid=\"budget-pause-agent\"]"
+    },
+    {
+      "waitMs": 500
+    }
+  ],
+  "state": "budget:paused",
+  "theme": "dark"
 }
 ]
 ```
@@ -140,3 +140,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T02:29:39Z · cli_override, model_override
 - 2026-10-21T02:29:54Z · status active→ready
 - 2026-10-21T02:30:07Z · status ready→active
+- 2026-10-21T02:33:41Z · body
