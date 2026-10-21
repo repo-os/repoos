@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 412443
-last_close_out_gate_at: "2026-10-21T15:57:59.632Z"
 id: "0900"
 title: "Tests that start engineers fail on runners whose swap is over the pressure guard limit: isolate tests from host memory pressure"
 type: feature
-status: review
+status: done
 priority: p1
 area: [core, server]
+merged_commit: "017fe76715fe3ed92b92856b415d4f616a539d32"
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/tests-that-start-engineers-fail-on-runne
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-21T14:05:10Z"
 updated_at: "2026-10-21T15:57:59Z"
+last_close_out_gate_ms: 412443
+last_close_out_gate_at: "2026-10-21T15:57:59.632Z"
 review_passes: 1
 dev_error_count: 2
 ---
