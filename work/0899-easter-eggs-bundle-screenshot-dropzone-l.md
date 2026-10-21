@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T19:05:12Z"
+updated_at: "2026-10-21T19:06:20Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -65,34 +65,58 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 ```json
 [
 {
-"label": "New input dropzone light",
-"target": "default",
-"route": "/inputs?input=new",
-"highlight": ".field .shot-dropzone",
-"theme": "light"
+  "label": "New input dropzone light",
+  "target": "default",
+  "route": "/inputs?input=new",
+  "highlight": ".field .shot-dropzone",
+  "theme": "light"
 },
 {
-"label": "New input dropzone dark narrow",
-"target": "default",
-"route": "/inputs?input=new",
-"highlight": ".field .shot-dropzone",
-"theme": "dark",
-"viewportWidth": 390
+  "label": "New input dropzone dark narrow",
+  "target": "default",
+  "route": "/inputs?input=new",
+  "highlight": ".field .shot-dropzone",
+  "theme": "dark",
+  "viewportWidth": 390
 },
 {
-"label": "New task dropzone light",
-"target": "default",
-"route": "/work?task=new",
-"highlight": ".field .shot-dropzone",
-"theme": "light"
+  "label": "New task Freeform dropzone light",
+  "target": "default",
+  "route": "/work?task=new",
+  "highlight": ".field .shot-dropzone",
+  "theme": "light"
 },
 {
-"label": "New task dropzone dark narrow",
-"target": "default",
-"route": "/work?task=new",
-"highlight": ".field .shot-dropzone",
-"theme": "dark",
-"viewportWidth": 390
+  "label": "New task Freeform dropzone dark narrow",
+  "target": "default",
+  "route": "/work?task=new",
+  "highlight": ".field .shot-dropzone",
+  "theme": "dark",
+  "viewportWidth": 390
+},
+{
+  "label": "New task Manual tab dropzone",
+  "target": "default",
+  "route": "/work?task=new",
+  "highlight": ".field .shot-dropzone",
+  "steps": [
+    {
+      "click": ".drawer-tabs .tab-btn:nth-child(2)"
+    },
+    {
+      "waitFor": ".field .shot-dropzone"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
+},
+{
+  "label": "Task drawer new-task screenshots field",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".field .shot-dropzone",
+  "state": "panel:freeformFailedScreenshot"
 }
 ]
 ```
@@ -177,3 +201,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:04:48Z · note: shots: skipped — 4 handoff shots already captured for this exact plan (2f623fd32) during finalization (#0734)
 - 2026-10-21T19:05:12Z · note: review pass 2: needs some work
 - 2026-10-21T19:05:12Z · status review→active
+- 2026-10-21T19:06:20Z · body
