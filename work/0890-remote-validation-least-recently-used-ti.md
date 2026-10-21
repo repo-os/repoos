@@ -11,7 +11,7 @@ branch: feat/remote-validation-least-recently-used-ti
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T02:18:32Z"
-updated_at: "2026-10-21T07:52:27Z"
+updated_at: "2026-10-21T07:55:22Z"
 ---
 ## Problem
 When several remote-validation hosts are tied on active runs, the dispatcher breaks the tie by `tailscaleHosts` config order (docs/remote-validation.md, "Dispatch, health and queueing"). Most runs are short, sequential "changed" checks, so the first host is always idle at dispatch and wins every time. Observed 2026-10-19..21 in `.repoos/checks.db`: bee 466 runs, thinkpad 48, mini 4, with all three healthy and idle. Mini (macOS) and thinkpad barely get used, so the pool gives little OS coverage and no load spreading.
@@ -37,3 +37,4 @@ Pool/dispatch lives around `src/core/remote-pool-queue.ts` and `src/core/remote-
 - 2026-10-21T07:45:00Z · status ready→active, branch
 - 2026-10-21T07:51:22Z · body
 - 2026-10-21T07:52:27Z · body
+- 2026-10-21T07:55:22Z · body
