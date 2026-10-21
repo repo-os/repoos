@@ -869,18 +869,24 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
 
     const inFlight = f.runner.validate(opts("active"));
     await tick();
-    expect(f.pending()).toEqual(["a"]);
+    expect(f.pending()).toEqual(["b"]); // a just ran, so LRU sends this to b
     f.config.remoteValidation!.tailscaleHosts = [{ host: "b" }, { host: "a" }];
     f.runner.applyConfig();
 
     expect(f.runner.hostStatus()!.map((host) => host.host)).toEqual(["b", "a"]);
-    expect(f.runner.hostStatus()![1]).toMatchObject({
-      host: "a",
+    expect(f.runner.hostStatus()![0]).toMatchObject({
+      host: "b",
       inFlight: 1,
       probed: true,
       healthy: true,
-      lastRun: { taskId: "prior", ok: true },
       activeRuns: [{ taskId: "active" }],
+    });
+    expect(f.runner.hostStatus()![1]).toMatchObject({
+      host: "a",
+      inFlight: 0,
+      probed: true,
+      healthy: true,
+      lastRun: { taskId: "prior", ok: true },
     });
 
     const next = f.runner.validate(opts("after"));
@@ -1483,6 +1489,91 @@ describe("capability routing (runsOn)", () => {
     expect(summary.configError).toBe(true);
     expect(summary.detail).toContain('provides only "linux"');
     expect(summary.detail).toContain("macos");
+  });
+});
+
+// ── least-recently-used tie-break (#0890) ────────────────────────────────────
+
+describe("pool LRU tie-break across idle hosts (#0890)", () => {
+  function lruPool(
+    hosts: Array<{ host: string; os?: string }>,
+    unavailable: string[] = [],
+  ): TailscaleHostPool {
+    const exec: RemoteExecDeps = {
+      bundleRepo: vi.fn(async () => ({ ok: true })),
+      uploadFile: vi.fn(async () => ({ ok: true })),
+      downloadDir: vi.fn(async () => {}),
+      probeTcp: vi.fn(async () => true),
+      runRemote: vi.fn(async (host, cmd): Promise<RemoteExecResult> => {
+        if (cmd.includes(PREREQ_OK_TOKEN)) {
+          return unavailable.includes(host.ip)
+            ? {
+                code: 255,
+                output: "ssh: connect to host 100.x.x.x port 22: Connection timed out",
+                timedOut: false,
+              }
+            : {
+                code: 0,
+                output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+                timedOut: false,
+              };
+        }
+        if (cmd.includes("__HOST_LOCK__")) {
+          return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
+        }
+        return { code: 0, output: "ok", timedOut: false };
+      }),
+    };
+    return new TailscaleHostPool(
+      {
+        enabled: true,
+        provider: "tailscale",
+        tailscaleHosts: hosts,
+        maxConcurrent: 1,
+      } as never,
+      { exec, healthRetryMs: 60_000 },
+    );
+  }
+
+  /** Lease and immediately free one slot, returning the host it landed on. */
+  async function lease(pool: TailscaleHostPool, capabilities: string[] = []): Promise<string> {
+    const slot = await pool.acquire(capabilities);
+    const host = slot.host.host;
+    slot.release();
+    return host;
+  }
+
+  it("rotates sequential single runs across three idle healthy hosts", async () => {
+    const pool = lruPool([{ host: "a" }, { host: "b" }, { host: "c" }]);
+    const seen: string[] = [];
+    for (let i = 0; i < 6; i++) seen.push(await lease(pool));
+    expect(seen).toEqual(["a", "b", "c", "a", "b", "c"]);
+  });
+
+  it("falls back to configured order while no host has run", async () => {
+    const pool = lruPool([{ host: "a" }, { host: "b" }, { host: "c" }]);
+    expect(await lease(pool)).toBe("a");
+    // a is now the most recently used, so the still-never-used hosts keep their
+    // configured order.
+    expect(await lease(pool)).toBe("b");
+    expect(await lease(pool)).toBe("c");
+  });
+
+  it("never picks an unhealthy or degraded host while another is idle", async () => {
+    const pool = lruPool([{ host: "a" }, { host: "b" }, { host: "c" }], ["a"]);
+    pool.markDegraded("b", "ssh: Connection reset by peer");
+    for (let i = 0; i < 3; i++) expect(await lease(pool)).toBe("c");
+  });
+
+  it("never picks a host that does not provide the job's requirement", async () => {
+    const pool = lruPool([
+      { host: "a" },
+      { host: "linux1", os: "linux" },
+      { host: "mac1", os: "macos" },
+    ]);
+    // `a` has no capabilities and is first in config order; the macos job must
+    // still skip it for mac1, every time.
+    for (let i = 0; i < 3; i++) expect(await lease(pool, ["macos"])).toBe("mac1");
   });
 });
 
