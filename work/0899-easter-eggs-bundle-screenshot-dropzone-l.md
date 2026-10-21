@@ -1,16 +1,16 @@
 ---
 id: "0899"
-title: "Easter eggs bundle: screenshot dropzone layout"
+title: "Easter eggs bundle: screenshot dropzone layout, CLI screenshot captions"
 type: bug
 status: inbox
 hold: true
 priority: p3
-area: web
+area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T14:21:50Z"
+updated_at: "2026-10-21T14:21:53Z"
 ---
 ## Items
 - [ ] **E1 · Screenshot dropzone wraps to two lines** (web) — after #0877 made `ShotDropzone` a `<label>`, the global `.field label` rule leaks into it. Source: user report 2026-10-21.
@@ -69,3 +69,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T13:44:06Z · needs_input
 - 2026-10-21T14:21:41Z · body: E2 · CLI captions for multiple screenshots (added)
 - 2026-10-21T14:21:50Z · body: Items (added 1)
+- 2026-10-21T14:21:53Z · title, area
