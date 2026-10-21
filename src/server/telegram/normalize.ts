@@ -72,6 +72,7 @@ export function normalizeMessage(raw: unknown): TelegramMessage | null {
     date: unixSeconds(m.date),
     command,
     commandArgs: args,
+    messageThreadId: asId(m.message_thread_id),
   };
 }
 
@@ -82,11 +83,19 @@ function normalizeCallbackQuery(raw: unknown): TelegramCallbackQuery | null {
   const from = (q.from ?? null) as Record<string, unknown> | null;
   const fromUserId = asId(from?.id);
   if (!id || fromUserId === null) return null;
+  const message = (q.message ?? null) as Record<string, unknown> | null;
+  const chat = (message?.chat ?? null) as Record<string, unknown> | null;
+  const chatType =
+    typeof chat?.type === "string" && chat.type ? (chat.type as TelegramChatType) : null;
   return {
     id,
     fromUserId,
     fromUsername: typeof from?.username === "string" && from.username ? from.username : null,
     data: typeof q.data === "string" ? q.data : null,
+    chatId: asId(chat?.id),
+    chatType,
+    messageId: asId(message?.message_id),
+    messageThreadId: asId(message?.message_thread_id),
   };
 }
 

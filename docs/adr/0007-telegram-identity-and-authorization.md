@@ -59,6 +59,20 @@ No `auth_audit_log` schema change is needed. Telegram actions have a bound,
 allowlisted email for `actorEmail`, which is already email-typed. System-
 initiated actions use `actorEmail: null` and record context in details.
 
+### Write actions and inline buttons (#0543)
+
+The authorization rule does not change when Telegram can write: the live role
+is resolved from `auth_users` for every update, including an inline-button
+press. What changes is the *token* carrying the action. Callback payloads are
+signed with the instance session secret, carry an expiry, and are consumed
+once. At press time the server verifies the signature and expiry, re-resolves
+the presser (never the renderer), refuses a live `member`, and only then
+consumes the nonce. A payload rendered for an admin but pressed by a member is
+therefore just another member update and is refused with a role explanation
+(they are an authorized sender, so this is not a silent no-op). Moving a task
+to done is two-step: the first press only renders a confirmation card naming
+the repository, task and branch.
+
 ## Consequences
 
 - Phase 1 includes identity linking, per-message live authorization, and audit

@@ -28,7 +28,7 @@ The starter prompt and the agent guide will exist as files, but neither the mark
 
 Landing and the docs homepage render the same compact block from one shared source:
 
-- Heading: "Building with an AI coding agent?"
+- Heading: "Building with an AI agent?"
 - One sentence of explanation.
 - A short preview of the starter prompt (the opening of `agent/starter-prompt.md`, not a rewritten blurb).
 - A button labelled "Copy prompt for your agent" that copies the full prompt, with a visible success state and an accessible name.
