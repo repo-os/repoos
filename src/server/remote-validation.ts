@@ -266,6 +266,11 @@ export interface ValidateOptions {
    */
   phase?: CheckRunPhase;
   /**
+   * What this job belongs to (#0897), for the pool's queue/running display.
+   * Derived from {@link phase} when omitted.
+   */
+  kind?: RemoteRunKind;
+  /**
    * Host capabilities this job needs (#0521) — the `runsOn` union of the check
    * plan. The pool only considers hosts providing every one of them; a job with
    * no requirement runs anywhere. Absent means "any host".
@@ -307,6 +312,102 @@ export interface ValidateOptions {
   };
 }
 
+/**
+ * What a remote validation job belongs to (#0897). The pool previously knew
+ * only a task id; an operator staring at "queued behind 2 runs" could not tell
+ * a handoff check from a close-out gate or a screenshot capture. Callers pass
+ * their kind in; anything that does not is labelled `checks`.
+ */
+export type RemoteRunKind =
+  | "handoff"
+  | "close-out"
+  | "self-check"
+  | "review"
+  | "shot"
+  | "release"
+  | "checks";
+
+/** One elapsed phase of a remote run (#0897). */
+export interface RemoteRunPhaseTiming {
+  /** `queued`, `bundle`, `upload`, `queue`, or `run` (build + tests). */
+  phase: string;
+  startedAt: string;
+  endedAt?: string;
+  durationMs?: number;
+}
+
+/** An in-flight job occupying a slot ahead of a queued validation (#0897). */
+export interface RemoteQueueBlocker {
+  taskId: string;
+  kind: RemoteRunKind;
+  host: string;
+  startedAt: string;
+  elapsedMs: number;
+}
+
+/** A validation waiting for a host slot, with its position and blockers (#0897). */
+export interface RemoteQueuedRunInfo {
+  taskId: string;
+  kind: RemoteRunKind;
+  /** Host dispatch would hand it next (empty while every eligible host is down). */
+  host: string;
+  /** 1-based FIFO position among jobs competing for the same hosts. */
+  position: number;
+  /** In-flight runs on its eligible hosts plus earlier competing waiters. */
+  ahead: number;
+  /** When it joined the queue (ISO). */
+  since: string;
+  waitedMs: number;
+  /** In-flight jobs currently holding a slot it needs. */
+  blockers: RemoteQueueBlocker[];
+}
+
+/** Live run + queue detail for one task, for the drawer (#0897). */
+export interface RemoteTaskActivity {
+  run: {
+    taskId: string;
+    host: string;
+    kind: RemoteRunKind;
+    startedAt: string;
+    elapsedMs: number;
+    stage: string | null;
+    phases: RemoteRunPhaseTiming[];
+  } | null;
+  queue: RemoteQueuedRunInfo | null;
+}
+
+/** Derive a job kind from the check-run phase when a caller did not name one. */
+export function remoteRunKindForPhase(phase: CheckRunPhase | undefined): RemoteRunKind {
+  switch (phase) {
+    case "close-out":
+      return "close-out";
+    case "pre-review":
+      return "handoff";
+    case "release":
+      return "release";
+    default:
+      return "checks";
+  }
+}
+
+/** Map a host-lock job's phase to the same job-kind vocabulary (#0897). */
+export function remoteRunKindForLockPhase(phase: string | undefined): RemoteRunKind {
+  switch (phase) {
+    case "close-out":
+      return "close-out";
+    case "pre-review":
+      return "handoff";
+    case "self-check":
+      return "self-check";
+    case "review":
+      return "review";
+    case "release":
+      return "release";
+    default:
+      return "checks";
+  }
+}
+
 /** One host's live state, surfaced by `/api/remote-validation/status` (#0521). */
 export interface RemoteHostStatus {
   host: string;
@@ -339,11 +440,24 @@ export interface RemoteHostStatus {
     phase?: string;
     label?: string;
     source?: "server" | "host-lock";
+    /** What the job belongs to — handoff/close-out/self-check/… (#0897). */
+    kind?: RemoteRunKind;
+    /** Current stage within the run (`bundle`, `upload`, `queue`, `run`). */
+    stage?: string | null;
+    /** Live elapsed ms, including the queue wait before a slot was leased. */
+    elapsedMs?: number;
+    /** Per-phase timings recorded as the run advanced (#0897). */
+    phases?: RemoteRunPhaseTiming[];
     /** True while this run is being killed as hung (#0729). */
     hung?: boolean;
   }[];
   /** Task ids of the queued runs waiting for THIS host, FIFO order (#0564). */
   queuedTasks?: string[];
+  /**
+   * Queued runs attributed to this host, in FIFO order, each with its position,
+   * wait time and the in-flight jobs blocking it (#0897).
+   */
+  queuedRuns?: RemoteQueuedRunInfo[];
   serverStats?: RemoteServerStats;
   /** Host-side lock holders + waiters sampled over SSH (#0705). */
   hostLock?: HostLockSnapshot;
@@ -420,6 +534,13 @@ export interface RemoteValidator {
    * with no host pool (Hetzner) has nothing to target by name.
    */
   killHungValidation?(taskId: string): Promise<{ ok: boolean; detail: string }>;
+  /**
+   * Every queued remote validation with its position and the jobs blocking it
+   * (#0897). Optional: the Hetzner runner is a single gate with no host pool.
+   */
+  queueStatus?(): RemoteQueuedRunInfo[];
+  /** Live run + queue detail for one task, for the task drawer (#0897). */
+  taskActivity?(taskId: string): RemoteTaskActivity | null;
 }
 
 /** One in-flight remote run, as the slow-run detector (#0720) needs it. */
@@ -433,22 +554,67 @@ export interface ActiveRemoteRunInfo {
   stage: string | null;
   uploadBytes: number | null;
   uploadSeconds: number | null;
+  /** What the job belongs to (#0897). Absent on older callers → `checks`. */
+  kind?: RemoteRunKind;
+  /** Stage-by-stage timings recorded as the run advanced (#0897). */
+  phases?: RemoteRunPhaseTiming[];
 }
 
 /**
  * In-flight remote runs keyed by task id — shared by Hetzner and Tailscale
  * runners so the slow-run detector (#0720) sees every provider the same way.
+ *
+ * It also records stage transitions (#0897): each `set()` with a new stage
+ * closes the previous phase and opens the next, so the Runners tab and the
+ * task drawer can show where a long validation actually spent its time
+ * (queued, uploading, running build + tests) instead of one opaque elapsed
+ * number.
  */
 export class ActiveRemoteRunRegistry {
   private readonly runs = new Map<string, ActiveRemoteRunInfo>();
 
   list(): ActiveRemoteRunInfo[] {
-    return [...this.runs.values()].map((r) => ({ ...r }));
+    return [...this.runs.values()].map((r) => ({
+      ...r,
+      phases: r.phases ? r.phases.map((p) => ({ ...p })) : undefined,
+    }));
+  }
+
+  get(taskId: string): ActiveRemoteRunInfo | null {
+    const run = this.runs.get(taskId);
+    if (!run) return null;
+    return {
+      ...run,
+      phases: run.phases ? run.phases.map((p) => ({ ...p })) : undefined,
+    };
   }
 
   set(info: ActiveRemoteRunInfo | null, taskId: string): void {
-    if (info) this.runs.set(taskId, info);
-    else this.runs.delete(taskId);
+    if (!info) {
+      this.runs.delete(taskId);
+      return;
+    }
+    const prev = this.runs.get(taskId);
+    const now = Date.now();
+    const phases = (prev?.phases ?? info.phases ?? []).map((p) => ({ ...p }));
+    const stage = info.stage ?? "run";
+    const last = phases[phases.length - 1];
+    if (last && last.phase === stage) {
+      // Same stage: keep the open timing, refresh the rest of the info.
+      this.runs.set(taskId, { ...info, kind: info.kind ?? prev?.kind, phases });
+      return;
+    }
+    if (last && !last.endedAt) {
+      last.endedAt = new Date(now).toISOString();
+      last.durationMs = Math.max(0, now - Date.parse(last.startedAt));
+    }
+    phases.push({
+      phase: stage,
+      // The first stage starts when the run did (after the queue wait, which
+      // callers may prepend); later stages start at the transition.
+      startedAt: prev ? new Date(now).toISOString() : info.startedAt,
+    });
+    this.runs.set(taskId, { ...info, kind: info.kind ?? prev?.kind, phases });
   }
 }
 
@@ -1306,6 +1472,7 @@ export function mergeHostLockIntoStatus(
       startedAt: new Date(Date.now() - h.ageSecs * 1000).toISOString(),
       phase: h.phase,
       label: h.label,
+      kind: remoteRunKindForLockPhase(h.phase),
       source: "host-lock" as const,
     }));
   const activeRuns = [
@@ -1326,12 +1493,34 @@ export function mergeHostLockIntoStatus(
     ...lock.waiters.map((w) => w.taskId ?? w.label),
     ...(base.queuedTasks ?? []),
   ];
+  // Surface host-lock waiters in the same queue shape as pool waiters so the
+  // Runners tab and driver brief see standalone `repoos check` jobs too (#0897).
+  const lockQueuedRuns: RemoteQueuedRunInfo[] = lock.waiters.map((w, i) => {
+    const startedAt = new Date(Date.now() - w.ageSecs * 1000).toISOString();
+    return {
+      taskId: w.taskId ?? w.label,
+      kind: remoteRunKindForLockPhase(w.phase),
+      host: base.host,
+      position: w.queuePosition ?? i + 1,
+      ahead: Math.max(0, (w.queuePosition ?? i + 1) - 1),
+      since: startedAt,
+      waitedMs: w.ageSecs * 1000,
+      blockers: lock.holders.map((h) => ({
+        taskId: h.taskId ?? h.label,
+        kind: remoteRunKindForLockPhase(h.phase),
+        host: base.host,
+        startedAt: new Date(Date.now() - h.ageSecs * 1000).toISOString(),
+        elapsedMs: h.ageSecs * 1000,
+      })),
+    };
+  });
   return {
     ...base,
     inFlight,
     queued,
     activeRuns,
     queuedTasks,
+    queuedRuns: [...lockQueuedRuns, ...(base.queuedRuns ?? [])],
     hostLock: lock,
     lockWaiters,
   };
@@ -2577,6 +2766,7 @@ export class RemoteValidationRunner implements RemoteValidator {
           stage: "bundle",
           uploadBytes: null,
           uploadSeconds: null,
+          kind: opts.kind ?? remoteRunKindForPhase(opts.phase),
         },
         opts.taskId,
       );
@@ -3035,6 +3225,8 @@ interface PoolHostState {
 export interface ActiveRemoteRun {
   taskId: string;
   startedAt: string;
+  /** What the job belongs to (#0897); `checks` when the caller did not say. */
+  kind?: RemoteRunKind;
   /** Set while this run is being killed as hung (#0729). */
   hung?: boolean;
   /** This run's container name, once known (#0729) — how a hang is killed. */
@@ -3058,9 +3250,15 @@ interface PoolWaiter {
   onQueue?: (info: { ahead: number; host: string }) => void;
   /** Which run is waiting — surfaced as the queue's next-up tasks (#0564). */
   taskId?: string;
+  /** What the waiting job belongs to, for queue/blocker display (#0897). */
+  kind?: RemoteRunKind;
+  /** When it joined the FIFO queue (epoch ms), for its wait time (#0897). */
+  enqueuedAt: number;
   timer?: ReturnType<typeof setTimeout>;
   /** Re-stream queue position while blocked (#0706 — long waits are not "stuck"). */
   queueHeartbeat?: ReturnType<typeof setInterval>;
+  /** Last measured wait, for the heartbeat/debug copy (#0897). */
+  lastAhead?: number;
 }
 
 /** How often a queued run re-emits its pool position to stdout / transcripts. */
@@ -3367,6 +3565,8 @@ export class TailscaleHostPool {
       onQueue?: (info: { ahead: number; host: string }) => void;
       deadlineAt?: number;
       taskId?: string;
+      /** What the job belongs to — handoff/close-out/self-check/… (#0897). */
+      kind?: RemoteRunKind;
       /**
        * Hosts to skip — failover already tried them this run and they failed
        * transiently (#0632). Guarantees every attempt lands on a distinct
@@ -3460,7 +3660,7 @@ export class TailscaleHostPool {
       const nowFree = healthy
         .filter((s) => this.hostHasCapacity(s))
         .sort((a, b) => this.compareHosts(a, b));
-      if (nowFree.length > 0) return this.assign(nowFree[0]!, opts.taskId);
+      if (nowFree.length > 0) return this.assign(nowFree[0]!, opts.taskId, opts.kind ?? "checks");
     }
 
     // Every eligible host is at its cap — queue, FIFO, and only until one of
@@ -3473,6 +3673,8 @@ export class TailscaleHostPool {
         reject,
         onQueue: opts.onQueue,
         taskId: opts.taskId,
+        kind: opts.kind ?? "checks",
+        enqueuedAt: Date.now(),
       };
       this.waiters.push(waiter);
       if (opts.deadlineAt !== undefined) {
@@ -3633,15 +3835,20 @@ export class TailscaleHostPool {
     // hand it next (eligible, preferring a healthy host, then least loaded) —
     // so per-host `queued` totals sum to the real queue length instead of
     // counting one waiter once per compatible host (#0521 review).
-    const queuedOn = new Map<PoolHostState, { count: number; taskIds: string[] }>();
+    const queuedOn = new Map<
+      PoolHostState,
+      { count: number; taskIds: string[]; runs: RemoteQueuedRunInfo[] }
+    >();
+    const now = Date.now();
     for (const w of this.waiters) {
       const next = this.dispatchTargetFor(w.capabilities, w.excludeHosts);
       if (next) {
-        const entry = queuedOn.get(next) ?? { count: 0, taskIds: [] };
+        const entry = queuedOn.get(next) ?? { count: 0, taskIds: [], runs: [] };
         // Every waiter counts toward `queued`; next-up task ids surface only
         // for waiters that carry one (direct pool.acquires may not).
         entry.count++;
         if (w.taskId) entry.taskIds.push(w.taskId);
+        entry.runs.push({ ...this.queueInfoFor(w, now), host: next.spec.host });
         queuedOn.set(next, entry);
       }
     }
@@ -3662,6 +3869,7 @@ export class TailscaleHostPool {
           lastRun: s.lastRun,
           activeRuns: s.activeRuns.map((r) => ({ ...r })),
           queuedTasks: [...(queuedOn.get(s)?.taskIds ?? [])],
+          queuedRuns: queuedOn.get(s)?.runs ?? [],
           serverStats: s.serverStats ?? { available: false },
           hungRuns: s.hungRuns ? s.hungRuns.map((r) => ({ ...r })) : undefined,
           validateScriptMirrorSupported: s.validateScriptMirrorSupported,
@@ -3868,10 +4076,9 @@ export class TailscaleHostPool {
     const idx = this.waiters.indexOf(waiter);
     if (idx === -1) return;
     const host = this.dispatchTargetHostForQueue(waiter.capabilities, waiter.excludeHosts);
-    waiter.onQueue?.({
-      ahead: this.queueAheadCount(waiter.capabilities, idx, waiter.excludeHosts),
-      host,
-    });
+    const ahead = this.queueAheadCount(waiter.capabilities, idx, waiter.excludeHosts);
+    waiter.lastAhead = ahead;
+    waiter.onQueue?.({ ahead, host });
   }
 
   /** True when two jobs could be assigned to the same host. */
@@ -3909,6 +4116,71 @@ export class TailscaleHostPool {
     return active + aheadWaiters;
   }
 
+  /**
+   * The in-flight jobs currently holding a slot a queued waiter needs (#0897).
+   * Includes host-lock holders from other processes (a standalone `repoos
+   * check`) so the blocker list is complete, deduped per host + task.
+   */
+  private queueBlockers(waiter: PoolWaiter, now = Date.now()): RemoteQueueBlocker[] {
+    const blockers: RemoteQueueBlocker[] = [];
+    const seen = new Set<string>();
+    for (const s of this.hostsEligibleFor(waiter.capabilities, waiter.excludeHosts)) {
+      for (const run of s.activeRuns) {
+        const key = `${s.spec.host}:${run.taskId}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        blockers.push({
+          taskId: run.taskId,
+          kind: run.kind ?? "checks",
+          host: s.spec.host,
+          startedAt: run.startedAt,
+          elapsedMs: Math.max(0, now - Date.parse(run.startedAt)),
+        });
+      }
+      for (const holder of s.hostLock?.holders ?? []) {
+        const taskId = holder.taskId ?? holder.label;
+        const key = `${s.spec.host}:${taskId}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        blockers.push({
+          taskId,
+          kind: remoteRunKindForLockPhase(holder.phase),
+          host: s.spec.host,
+          startedAt: new Date(now - holder.ageSecs * 1000).toISOString(),
+          elapsedMs: holder.ageSecs * 1000,
+        });
+      }
+    }
+    return blockers.sort((a, b) => Date.parse(a.startedAt) - Date.parse(b.startedAt));
+  }
+
+  /** Full queue detail for one waiter — position, wait time and blockers (#0897). */
+  private queueInfoFor(waiter: PoolWaiter, now = Date.now()): RemoteQueuedRunInfo {
+    const idx = this.waiters.indexOf(waiter);
+    const ahead =
+      idx === -1 ? 0 : this.queueAheadCount(waiter.capabilities, idx, waiter.excludeHosts);
+    return {
+      taskId: waiter.taskId ?? "?",
+      kind: waiter.kind ?? "checks",
+      host: this.dispatchTargetHostForQueue(waiter.capabilities, waiter.excludeHosts),
+      position: ahead + 1,
+      ahead,
+      since: new Date(waiter.enqueuedAt).toISOString(),
+      waitedMs: Math.max(0, now - waiter.enqueuedAt),
+      blockers: this.queueBlockers(waiter, now),
+    };
+  }
+
+  /** Every queued run with its position and blockers (#0897). */
+  queueStatus(): RemoteQueuedRunInfo[] {
+    const now = Date.now();
+    return this.waiters.map((waiter) => {
+      const info = this.queueInfoFor(waiter, now);
+      const target = this.dispatchTargetFor(waiter.capabilities, waiter.excludeHosts);
+      return { ...info, host: target?.spec.host ?? info.host };
+    });
+  }
+
   private dropIfIdle(s: PoolHostState): void {
     if (!s.removed || s.active > 0) return;
     const i = this.hosts.indexOf(s);
@@ -3935,7 +4207,7 @@ export class TailscaleHostPool {
     return true;
   }
 
-  private assign(s: PoolHostState, taskId?: string): HostSlot {
+  private assign(s: PoolHostState, taskId?: string, kind?: RemoteRunKind): HostSlot {
     s.active++;
     // Starting a run counts as use for the LRU tie-break (#0890) even before it
     // finishes, so sequential short checks rotate immediately.
@@ -3943,7 +4215,11 @@ export class TailscaleHostPool {
     // Attribute the run to this host with its start time (#0564): the Remote
     // runners tab shows "#0564 · 2m 10s", and release() removes exactly this
     // entry (a host may run several jobs at once).
-    const run: ActiveRemoteRun = { taskId: taskId ?? "?", startedAt: new Date().toISOString() };
+    const run: ActiveRemoteRun = {
+      taskId: taskId ?? "?",
+      startedAt: new Date().toISOString(),
+      kind: kind ?? "checks",
+    };
     s.activeRuns.push(run);
     let released = false;
     const releaseSlot = (): void => {
@@ -3989,7 +4265,7 @@ export class TailscaleHostPool {
         continue;
       }
       this.settle(w);
-      w.resolve(this.assign(free, w.taskId));
+      w.resolve(this.assign(free, w.taskId, w.kind));
     }
   }
 
@@ -4369,7 +4645,47 @@ export class TailscaleRunner implements RemoteValidator {
 
   /** Per-host pool state for the status endpoint (#0521). */
   hostStatus(): RemoteHostStatus[] {
-    return this.pool.status();
+    const status = this.pool.status();
+    const runs = this.activeRunRegistry.list();
+    if (runs.length === 0) return status;
+    const now = Date.now();
+    for (const host of status) {
+      for (const run of host.activeRuns ?? []) {
+        const info =
+          runs.find((r) => r.taskId === run.taskId && r.startedAt === run.startedAt) ??
+          runs.find((r) => r.taskId === run.taskId);
+        if (!info) continue;
+        run.kind = info.kind ?? run.kind;
+        run.stage = info.stage;
+        run.elapsedMs = Math.max(0, now - Date.parse(info.startedAt));
+        run.phases = info.phases;
+      }
+    }
+    return status;
+  }
+
+  /** Every queued validation with its position and blockers (#0897). */
+  queueStatus(): RemoteQueuedRunInfo[] {
+    return this.pool.queueStatus();
+  }
+
+  /** Live run + queue detail for one task, for the task drawer (#0897). */
+  taskActivity(taskId: string): RemoteTaskActivity | null {
+    const queue = this.pool.queueStatus().find((q) => q.taskId === taskId) ?? null;
+    const info = this.activeRunRegistry.get(taskId);
+    if (!info) return queue ? { run: null, queue } : null;
+    return {
+      run: {
+        taskId,
+        host: info.host,
+        kind: info.kind ?? remoteRunKindForPhase(info.phase),
+        startedAt: info.startedAt,
+        elapsedMs: Math.max(0, Date.now() - Date.parse(info.startedAt)),
+        stage: info.stage,
+        phases: info.phases ?? [],
+      },
+      queue,
+    };
   }
 
   /** In-flight runs with their current stage, for the slow-run detector (#0720). */
@@ -4512,6 +4828,7 @@ export class TailscaleRunner implements RemoteValidator {
       try {
         slot = await this.pool.acquire(capabilities, {
           taskId: opts.taskId,
+          kind: opts.kind ?? remoteRunKindForPhase(opts.phase),
           deadlineAt: opts.deadlineAt,
           // Failover guarantee: the pool never hands back a host this run
           // already tried, so a retry cannot re-run the failed host.
@@ -4557,7 +4874,7 @@ export class TailscaleRunner implements RemoteValidator {
       try {
         // The pool's exclusion guarantees a host this run has not tried yet.
         triedHosts.add(slot.host.host);
-        const summary = await this.runValidation(opts, slot, capabilities);
+        const summary = await this.runValidation(opts, slot, capabilities, startedAt);
         recordRemoteRunHistory(
           this.config,
           opts,
@@ -4616,6 +4933,7 @@ export class TailscaleRunner implements RemoteValidator {
     opts: ValidateOptions,
     slot: HostSlot,
     capabilities: string[],
+    queueStartedAt?: number,
   ): Promise<CheckSummary> {
     const rv = this.config.remoteValidation ?? {};
     const host = slot.ssh;
@@ -4652,16 +4970,31 @@ export class TailscaleRunner implements RemoteValidator {
     // Register this run so the slow-run detector (#0720) can watch its stage
     // and elapsed time while it is still in flight.
     const runScope = opts.changedRef ? `changed:${opts.changedRef}` : "full";
+    const runStartedIso = new Date(startedAt).toISOString();
+    const queuedAt = queueStartedAt ?? startedAt;
+    const queuedPhase: RemoteRunPhaseTiming[] =
+      startedAt > queuedAt
+        ? [
+            {
+              phase: "queued",
+              startedAt: new Date(queuedAt).toISOString(),
+              endedAt: runStartedIso,
+              durationMs: startedAt - queuedAt,
+            },
+          ]
+        : [];
     this.setActiveRunStage(
       {
         taskId: opts.taskId,
         host: host.ip,
         phase: opts.phase ?? "pre-review",
         scope: runScope,
-        startedAt: new Date(startedAt).toISOString(),
+        startedAt: runStartedIso,
         stage: "bundle",
         uploadBytes: null,
         uploadSeconds: null,
+        kind: opts.kind ?? remoteRunKindForPhase(opts.phase),
+        phases: queuedPhase,
       },
       opts.taskId,
     );
@@ -4675,7 +5008,6 @@ export class TailscaleRunner implements RemoteValidator {
       const prepared = await prepareRemoteTestBundle(opts.worktreePath, opts.changedRef, emit);
       remoteTestRef = prepared.remoteTestRef;
       const remoteBundle = paths.bundle;
-      const runStartedIso = new Date(startedAt).toISOString();
       this.setActiveRunStage(
         {
           taskId: opts.taskId,

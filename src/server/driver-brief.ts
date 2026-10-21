@@ -16,6 +16,7 @@ import {
   type BriefCloseOutJob,
   type BriefConfigChange,
   type BriefConfigChangeSet,
+  type BriefBlockedValidation,
   type BriefHostHealth,
   type BriefMergedTask,
   type BriefRule,
@@ -222,9 +223,64 @@ function hostHealth(remoteValidator: RemoteValidator | undefined): BriefHostHeal
     queued: h.queued,
     maxConcurrent: h.maxConcurrent,
     detail: h.detail ?? null,
+    activeRuns: (h.activeRuns ?? []).map((r) => ({
+      taskId: r.taskId,
+      kind: r.kind ?? "checks",
+      stage: r.stage ?? null,
+      elapsedMs: r.elapsedMs ?? Math.max(0, Date.now() - Date.parse(r.startedAt)),
+    })),
+    queuedRuns: (h.queuedRuns ?? []).map((q) => ({
+      taskId: q.taskId,
+      kind: q.kind,
+      host: q.host || h.host,
+      position: q.position,
+      ahead: q.ahead,
+      waitedMs: q.waitedMs,
+      blockers: q.blockers.map((b) => ({
+        taskId: b.taskId,
+        kind: b.kind,
+        host: b.host,
+        elapsedMs: b.elapsedMs,
+      })),
+    })),
     hungRuns: (h.hungRuns ?? []).slice(0, 5),
     loadAverage: h.serverStats?.loadAverage ?? null,
   }));
+}
+
+/** How long a queued validation may wait before the brief calls out its blocker. */
+export const BLOCKED_VALIDATION_THRESHOLD_MS = 2 * 60_000;
+
+/** Queued validations past the warning threshold, each with its blocker (#0897). */
+export function collectBlockedValidations(
+  remoteValidator: RemoteValidator | undefined,
+): BriefBlockedValidation[] {
+  const queued = remoteValidator?.queueStatus?.() ?? [];
+  return queued
+    .filter((q) => q.waitedMs > BLOCKED_VALIDATION_THRESHOLD_MS)
+    .sort((a, b) => b.waitedMs - a.waitedMs)
+    .map((q) => {
+      const blockers = q.blockers.map((b) => ({
+        taskId: b.taskId,
+        kind: b.kind,
+        host: b.host,
+        elapsedMs: b.elapsedMs,
+      }));
+      // Oldest blocker is the one actually holding the slot the longest.
+      const blocking = blockers.length
+        ? blockers.reduce((oldest, b) => (b.elapsedMs > oldest.elapsedMs ? b : oldest))
+        : null;
+      return {
+        taskId: q.taskId,
+        kind: q.kind,
+        host: q.host,
+        position: q.position,
+        ahead: q.ahead,
+        waitedMs: q.waitedMs,
+        blockers,
+        blocking,
+      };
+    });
 }
 
 /** Recent slow/hung runs from history plus the in-flight detector (#0720/#0729). */
@@ -339,6 +395,7 @@ export async function assembleDriverBrief(deps: DriverBriefDeps): Promise<Driver
 
   const remoteValidator = deps.remoteValidator;
   const hosts = hostHealth(remoteValidator);
+  const blockedValidations = collectBlockedValidations(remoteValidator);
   const runs = collectRuns(deps);
 
   return buildDriverBrief({
@@ -352,6 +409,7 @@ export async function assembleDriverBrief(deps: DriverBriefDeps): Promise<Driver
     closeOutJobs,
     closeOutOutcomes,
     hosts,
+    blockedValidations,
     recentRuns: { total: runs.total, hung: runs.hung, failed: runs.failed },
     slowRuns: runs.slowRuns,
     configChanges,

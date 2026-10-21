@@ -7553,6 +7553,14 @@
   gap: 6px 10px;
   margin: 0;
 }
+.drawer-remote-activity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
 .drawer-handoff-sub {
   flex-basis: 100%;
   font-size: 12px;

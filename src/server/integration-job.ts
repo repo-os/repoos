@@ -27,6 +27,14 @@ export type JobPhase =
   | "done"
   | "failed";
 
+/** One elapsed close-out phase, for the drawer / pipeline bar (#0897). */
+export interface IntegrationPhaseTiming {
+  phase: JobPhase;
+  startedAt: string;
+  endedAt?: string;
+  durationMs?: number;
+}
+
 export interface IntegrationJob {
   /** Unique ID: task ID */
   taskId: string;
@@ -44,6 +52,10 @@ export interface IntegrationJob {
   branch?: string;
   /** Current phase */
   phase: JobPhase;
+  /** When the job entered {@link phase} (ISO); absent on legacy records. */
+  phaseStartedAt?: string;
+  /** Elapsed time per close-out phase, oldest first (#0897). */
+  phaseTimings?: IntegrationPhaseTiming[];
   /** The phase the job was in when it failed (only set when `phase` is "failed"). */
   failedPhase?: JobPhase;
   /** When the job was enqueued (ISO string) */
@@ -257,6 +269,8 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       attempt: stored.attempt ?? 1,
       branch: stored.branch,
       phase: stored.phase,
+      phaseStartedAt: stored.phaseStartedAt,
+      phaseTimings: stored.phaseTimings,
       failedPhase: stored.failedPhase,
       enqueuedAt: stored.enqueuedAt,
       startedAt: stored.startedAt,
@@ -332,6 +346,7 @@ export function createJobCoordinator(root: string): JobCoordinator {
         return existing;
       }
 
+      const enqueuedAt = new Date().toISOString();
       const job: IntegrationJob = {
         taskId: task.id,
         // A fresh attempt gets a new, MONOTONIC generation so a late callback
@@ -341,7 +356,9 @@ export function createJobCoordinator(root: string): JobCoordinator {
         attempt: Math.max(existing?.attempt ?? 0, readGeneration(root, task.id)) + 1,
         branch: task.branch,
         phase: "queued",
-        enqueuedAt: new Date().toISOString(),
+        phaseStartedAt: enqueuedAt,
+        phaseTimings: [{ phase: "queued", startedAt: enqueuedAt }],
+        enqueuedAt,
         startedAt: null,
         baseMainSha: null,
         branchSha: null,
@@ -398,6 +415,21 @@ export function createJobCoordinator(root: string): JobCoordinator {
 
       const updated: IntegrationJob = { ...existing, ...update, taskId: existing.taskId };
       updated.attempt = expectedAttempt ?? jobAttempt(existing);
+      if (update.phase && update.phase !== existing.phase) {
+        // Record the phase boundary (#0897) so the UI can show where a
+        // close-out spent its time (queued / syncing / validating / …
+        // publishing) instead of one opaque elapsed number.
+        const now = new Date().toISOString();
+        const timings = (existing.phaseTimings ?? []).map((t) => ({ ...t }));
+        const last = timings[timings.length - 1];
+        if (last && !last.endedAt) {
+          last.endedAt = now;
+          last.durationMs = Math.max(0, Date.parse(now) - Date.parse(last.startedAt));
+        }
+        timings.push({ phase: update.phase, startedAt: now });
+        updated.phaseStartedAt = now;
+        updated.phaseTimings = timings;
+      }
       if (update.phase === "failed") updated.failedAt ??= new Date().toISOString();
       else if (update.phase) delete updated.failedAt;
       writeJob(root, updated);
