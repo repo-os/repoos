@@ -8,8 +8,12 @@ area: [docs, landing]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/docs-site-use-the-landing-page-s-repoos-
+cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-21T03:54:30Z"
+updated_at: "2026-10-21T04:57:02Z"
+dev_error_count: 4
+engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 ---
 ## Problem
 The docs site (VitePress, `user-docs/`) and the landing page (`landing/`) show the RepoOS logo differently. In the attached screenshots (in order: 1 landing Gruvbox dark, 2 landing Gruvbox light, 3 landing Classic light, 4 docs site, 5 landing Classic dark) the landing logo is a plain hexagon with the three-bar mark that **changes with the theme**: its stroke gradient and bar colours follow the theme tokens in Gruvbox, Classic, light and dark. The docs site logo (4) sits inside an **extra rounded-square border/box** and stays one fixed colour set whatever theme or appearance is selected.
@@ -32,6 +36,36 @@ Cause: the landing page draws the logo as an inline SVG component (`landing/src/
 ## Notes for AI
 Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.svg`; for the docs side look at `user-docs/.vitepress/config.mts` (~line 59), `user-docs/.vitepress/theme/index.ts` (register a layout slot) and `custom.css` (the theme tokens the docs defines, including `--vp-c-*` variables and the Gruvbox variants). Prefer CSS variables already defined by the docs theme over hard-coded colours. Do not touch `repoos.toml`. Source: Nick, 2026-10-20 (five screenshots attached: landing in four theme/appearance combinations, and the docs header with the extra border).
 
+## Shots
+```json
+[
+{
+"label": "Docs header logo, Classic dark",
+"target": "Docs site",
+"route": "/?theme=classic&appearance=dark",
+"highlight": ".docs-logo"
+},
+{
+"label": "Docs header logo, Classic light",
+"target": "Docs site",
+"route": "/?theme=classic&appearance=light",
+"highlight": ".docs-logo"
+},
+{
+"label": "Docs header logo, Gruvbox light",
+"target": "Docs site",
+"route": "/?theme=gruvbox&appearance=light",
+"highlight": ".docs-logo"
+},
+{
+"label": "Docs header logo, Gruvbox dark",
+"target": "Docs site",
+"route": "/?theme=gruvbox&appearance=dark",
+"highlight": ".docs-logo"
+}
+]
+```
+
 ## Screenshots
 
 ![10](/api/tasks/0862/attachments/att_6f006c24-5900-4dad-96e7-a7fd6ff2612b.png)
@@ -39,6 +73,10 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 ![12](/api/tasks/0862/attachments/att_5d6288e7-76d5-48d8-a68b-879d68814f86.png)
 ![13](/api/tasks/0862/attachments/att_3a484aab-c29d-4d42-b95a-bb5a01ed8961.png)
 ![14](/api/tasks/0862/attachments/att_97366d86-efe1-4634-9672-80441a0938d1.png)
+![docs-classic-light](/api/tasks/0862/attachments/att_3d1a4e14-3720-4610-9783-0a983a12c14c.png)
+![docs-classic-dark](/api/tasks/0862/attachments/att_fee2d465-67f1-46f6-a1ee-a702a4fc37f1.png)
+![docs-gruvbox-light](/api/tasks/0862/attachments/att_f0b831fc-2bc6-4304-b573-f2538992d33b.png)
+![docs-gruvbox-dark](/api/tasks/0862/attachments/att_cb246f30-90d7-4a7a-9a6f-e1b71b0ffafc.png)
 
 ## Activity
 
@@ -46,3 +84,33 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-20T06:23:25Z · screenshots
 - 2026-10-20T11:25:37Z · status inbox→ready
 - 2026-10-21T03:54:30Z · status ready→active, branch
+- 2026-10-21T04:02:15Z · note: route /404.html?theme=classic&appearance=light is not served by target "Docs site" — the target returned its HTML shell for an app module (TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:55031/404/index.md?import&t=1792555334163'.)
+- 2026-10-21T04:03:48Z · body
+- 2026-10-21T04:04:18Z · note: click .VPNavBarHamburger: click: Timeout 5000ms exceeded. on /?theme=gruvbox&appearance=dark
+- 2026-10-21T04:05:04Z · body
+- 2026-10-21T04:07:14Z · note: stopped orphaned engineer pid 1217
+- 2026-10-21T04:07:18Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T04:07:18Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T04:08:08Z · note: stopped orphaned engineer pid 26284
+- 2026-10-21T04:08:12Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T04:08:41Z · body
+- 2026-10-21T04:09:06Z · engineer crash recovery: switched opencode + opencode-go/deepseek-v4.1-flash → opencode + opencode-go/glm-5.3-flash after 3/3 crashes in 30m · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T04:10:13Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T04:13:34Z · screenshots
+- 2026-10-21T04:13:51Z · body
+- 2026-10-21T04:13:57Z · body
+- 2026-10-21T04:19:18Z · body
+- 2026-10-21T04:21:19Z · body
+- 2026-10-21T04:21:20Z · body
+- 2026-10-21T04:21:54Z · body
+- 2026-10-21T04:23:17Z · body
+- 2026-10-21T04:24:28Z · body
+- 2026-10-21T04:26:55Z · cli_override, model_override
+- 2026-10-21T04:27:02Z · model_override
+- 2026-10-21T04:27:08Z · note: stopped orphaned engineer pid 37832
+- 2026-10-21T04:30:46Z · body
+- 2026-10-21T04:35:27Z · body
+- 2026-10-21T04:35:58Z · body
+- 2026-10-21T04:37:38Z · body
+- 2026-10-21T04:45:14Z · CTO nudge: held — machine under pressure (the memory compressor is holding 37% of RAM (8.8 GB of RAM) — holding new work until memory pressure eases)
+- 2026-10-21T04:49:45Z · needs_input

@@ -1,18 +1,21 @@
 ---
-updated_at: "2026-10-21T03:52:14Z"
-review_passes: 1
 id: "0889"
 title: "Crash recovery relaunch fails when the resume prompt contains NUL bytes: sanitize prompt arguments"
 type: bug
-status: review
+status: done
 priority: p2
 area: server
+merged_commit: bdf3e1ab7ee570798eb5a78a09b1f9310ea8594b
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/crash-recovery-relaunch-fails-when-the-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T01:27:17Z"
+updated_at: "2026-10-21T04:07:02Z"
+last_close_out_gate_ms: 541356
+last_close_out_gate_at: "2026-10-21T04:05:31.061Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-10-21T03:30:35.724Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 3b3cd293 to 969b3573) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 dev_error_count: 5
 ---
@@ -73,4 +76,5 @@ Relevant code: src/server/engineer-crash-recovery.ts, src/server/agents.ts (resu
 - 2026-10-21T03:51:21Z · status active→review
 - 2026-10-21T03:51:23Z · note: shots: skipped — the diff (14 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-21T03:52:14Z · note: review pass 1: good to go
-
+- 2026-10-21T04:05:31Z · close-out gate completed in 541s
+- 2026-10-21T04:07:02Z · status done→done, release:success
