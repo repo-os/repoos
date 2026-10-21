@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-20T13:31:37Z"
-updated_at: "2026-10-21T07:22:04Z"
+updated_at: "2026-10-21T07:22:05Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -390,3 +390,4 @@ Test both layouts, switching between them, narrow windows, many servers, and nat
 - 2026-10-21T07:08:11Z · CTO nudge: held — engineer process is busy (headless browser)
 - 2026-10-21T07:11:41Z · body
 - 2026-10-21T07:22:04Z · status active→review
+- 2026-10-21T07:22:05Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (81c8c4af0) during finalization (#0734)
