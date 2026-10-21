@@ -88,3 +88,4 @@ With that row in place, a handoff that changes Hub sources runs the command, col
 - 2026-10-21T12:51:49Z · status review→active
 - 2026-10-21T13:01:41Z · message_queued at 2026-10-21T13:01:41.022Z
 - 2026-10-21T13:01:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-21T13:01:41Z · body
