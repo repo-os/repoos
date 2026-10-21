@@ -70,3 +70,4 @@ Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode fro
 - 2026-10-21T13:27:10Z · handoff failed · remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > returns a task to active when review findings are auto-bounced to the engineer, tests/agent-review.test.ts > agent review before human sign-off (#0101) > flags needs_input instead of parking silently once auto-bounce rounds are used up, tests/agent-review.test.ts > agent review before human sign-off (#0101) > does not re-raise an exhausted-rounds flag dismissed during the review on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-21T13:32:00Z · note: handoff requested (ui-review)
 - 2026-10-21T13:40:28Z · status active→review
+- 2026-10-21T13:40:28Z · note: shots: skipped — Docs site skipped: no docs shot declared
