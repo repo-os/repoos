@@ -3,9 +3,6 @@ id: "0889"
 title: "Crash recovery relaunch fails when the resume prompt contains NUL bytes: sanitize prompt arguments"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p2
 area: server
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/crash-recovery-relaunch-fails-when-the-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T01:27:17Z"
-updated_at: "2026-10-21T02:50:30Z"
+updated_at: "2026-10-21T02:51:16Z"
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:25:58.742Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-21T02:50:18.390Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-21T02:50:22.935Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-21T02:50:30.823Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -63,3 +60,4 @@ Relevant code: src/server/engineer-crash-recovery.ts, src/server/agents.ts (resu
 - 2026-10-21T02:50:18Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-10-21T02:50:22Z · engineer crash recovery: resuming cursor + composer-2.5 (2/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-10-21T02:50:30Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-21T02:51:16Z · needs_input
