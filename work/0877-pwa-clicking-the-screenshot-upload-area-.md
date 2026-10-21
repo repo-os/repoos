@@ -14,7 +14,7 @@ branch: feat/pwa-clicking-the-screenshot-upload-area-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T13:54:39Z"
-updated_at: "2026-10-21T01:44:34Z"
+updated_at: "2026-10-21T01:47:24Z"
 dev_error_count: 7
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:26:02.934Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:28:21.260Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:33:49.958Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:37:56.820Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-21T01:38:46.690Z\",\"kind\":\"degenerate-output\"},{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-21T01:39:08.943Z\",\"kind\":\"degenerate-output\"}]"
 ---
@@ -85,10 +85,16 @@ controls.
 ```json
 [
 {
-"label": "New task screenshot dropzone — a real file input covers the zone, so click/Enter/Space open the picker",
-"target": "default",
-"route": "/work?task=new",
-"highlight": ".shot-dropzone"
+  "label": "New task screenshot dropzone uses native file-input activation (#0877)",
+  "target": "default",
+  "route": "/work?task=new",
+  "highlight": ".shot-dropzone"
+},
+{
+  "label": "New input panel shares ShotDropzone wiring (#0877)",
+  "target": "default",
+  "route": "/inputs?input=new",
+  "highlight": ".shot-dropzone"
 }
 ]
 ```
@@ -161,3 +167,4 @@ The implementation matches `## Fix notes` above. Reviewer notes:
 - 2026-10-21T01:40:38Z · model_override
 - 2026-10-21T01:44:31Z · body
 - 2026-10-21T01:44:34Z · body
+- 2026-10-21T01:47:24Z · body
