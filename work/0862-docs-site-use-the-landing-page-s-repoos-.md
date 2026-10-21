@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-21T05:03:23.727Z: repoos check failed: vite v8.2.0 building client environment for production..."
 id: "0862"
 title: "Docs site: use the landing page's RepoOS logo (theme-aware, no extra border)"
 type: chore
@@ -13,7 +11,9 @@ branch: feat/docs-site-use-the-landing-page-s-repoos-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-21T05:03:23Z"
+updated_at: "2026-10-21T05:39:59Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-21T05:03:23.727Z: repoos check failed: vite v8.2.0 building client environment for production..."
 dev_error_count: 4
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 ---
@@ -118,4 +118,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T04:49:45Z · needs_input
 - 2026-10-21T05:03:21Z · note: handoff requested (ui-review)
 - 2026-10-21T05:03:23Z · message_queued at 2026-10-21T05:03:23.474Z
-
+- 2026-10-21T05:39:59Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
