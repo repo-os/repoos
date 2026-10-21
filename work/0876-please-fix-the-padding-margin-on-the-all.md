@@ -68,12 +68,12 @@ Please fix the padding/margin on the allowlist pause modal
 "route": "/agents?tab=budget-controls",
 "highlight": ".budget-pause-dialog",
 "steps": [
-  {
-    "click": "[data-testid='budget-pause-agent']"
-  },
-  {
-    "waitMs": 500
-  }
+{
+  "click": "[data-testid='budget-pause-agent']"
+},
+{
+  "waitMs": 500
+}
 ],
 "state": "budget:paused",
 "theme": "light"
@@ -84,12 +84,12 @@ Please fix the padding/margin on the allowlist pause modal
 "route": "/agents?tab=budget-controls",
 "highlight": ".budget-pause-dialog",
 "steps": [
-  {
-    "click": "[data-testid='budget-pause-agent']"
-  },
-  {
-    "waitMs": 500
-  }
+{
+  "click": "[data-testid='budget-pause-agent']"
+},
+{
+  "waitMs": 500
+}
 ],
 "state": "budget:paused",
 "theme": "dark"
@@ -108,3 +108,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T01:00:27Z · body
 - 2026-10-21T01:02:05Z · body
 - 2026-10-21T01:02:27Z · note: click [data-testid='budget-pause-agent']: click: Error: strict mode violation: locator('[data-testid=\'budget-pause-agent\']') resolved to 2 elements: on /agents?tab=budget-controls
+- 2026-10-21T01:02:27Z · note: highlight .budget-pause-dialog matched nothing on /agents?tab=budget-controls
