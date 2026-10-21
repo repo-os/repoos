@@ -14,7 +14,7 @@ branch: feat/tests-that-start-engineers-fail-on-runne
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-21T14:05:10Z"
-updated_at: "2026-10-21T14:41:39Z"
+updated_at: "2026-10-21T14:44:15Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T14:27:40.155Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -49,3 +49,4 @@ Look at src/core/pressure-guard.ts, resource-limits.ts and the test helpers (mak
 - 2026-10-21T14:41:29Z · model_override
 - 2026-10-21T14:41:37Z · note: stopped orphaned engineer pid 84383
 - 2026-10-21T14:41:39Z · message_delivered: 1 message(s)
+- 2026-10-21T14:44:15Z · body
