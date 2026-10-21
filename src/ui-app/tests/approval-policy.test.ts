@@ -14,6 +14,26 @@ import type { Task } from "../../core/types.js";
 const CLEAN_REPORT = "## Verdict\ngood to go — nothing blocks sign-off.\n";
 const BUGGY_REPORT = "## Verdict\ngood to go.\n\n## Bugs\n- Off-by-one in parser\n";
 
+// #0894 — harmless "nothing to report" phrasing must not fail the approval gate.
+const EMPTY_BUGS_PHRASINGS = [
+  "",
+  "None",
+  "None found",
+  "None found.",
+  "No bugs",
+  "No bugs found",
+  "No issues found",
+  "N/A",
+  "Nothing found",
+  "-",
+];
+const FINDING_BUGS_PHRASINGS = [
+  "- Off-by-one in parser",
+  "1. Crash on empty input",
+  "**Bug:** crash on empty input",
+  "None found.\n\n- Off-by-one in parser",
+];
+
 function task(overrides: Partial<Task> = {}): Task {
   return {
     id: "0686",
@@ -126,6 +146,22 @@ describe("evaluateApprovalPolicy (#0686)", () => {
     const r = evaluateApprovalPolicy(enabledApi, {
       task: task({}),
       reviewMarkdown: BUGGY_REPORT,
+    });
+    expect(r.reason).toBe("blocking-bugs");
+  });
+
+  it.each(EMPTY_BUGS_PHRASINGS)("accepts a none-ish Bugs section %j (#0894)", (phrasing) => {
+    const r = evaluateApprovalPolicy(enabledApi, {
+      task: task({}),
+      reviewMarkdown: `## Verdict\ngood to go.\n\n## Bugs\n${phrasing}\n`,
+    });
+    expect(r).toEqual({ eligible: true, rule: "area:api" });
+  });
+
+  it.each(FINDING_BUGS_PHRASINGS)("rejects a real Bugs finding %j (#0894)", (phrasing) => {
+    const r = evaluateApprovalPolicy(enabledApi, {
+      task: task({}),
+      reviewMarkdown: `## Verdict\ngood to go.\n\n## Bugs\n${phrasing}\n`,
     });
     expect(r.reason).toBe("blocking-bugs");
   });
