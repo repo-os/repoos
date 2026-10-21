@@ -14,7 +14,6 @@ model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:27:49Z"
 updated_at: "2026-10-21T08:56:00Z"
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:24:31.668Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Parent #0854 offloads the AUTOMATIC handoff shots and UI verification to a remote runner. Manual `repoos shot` / `repoos verify` deliberately STAY LOCAL: the spec was narrowed in #0854 review pass 17, so #0854 does not ship a runner-backed CLI. The interactive CLI keeps using the local PreviewManager / WebKit on the control-plane laptop.
