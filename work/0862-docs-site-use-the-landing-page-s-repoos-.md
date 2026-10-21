@@ -117,6 +117,10 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 ![12](/api/tasks/0862/attachments/att_5d6288e7-76d5-48d8-a68b-879d68814f86.png)
 ![13](/api/tasks/0862/attachments/att_3a484aab-c29d-4d42-b95a-bb5a01ed8961.png)
 ![14](/api/tasks/0862/attachments/att_97366d86-efe1-4634-9672-80441a0938d1.png)
+![docs-classic-light](/api/tasks/0862/attachments/att_3d1a4e14-3720-4610-9783-0a983a12c14c.png)
+![docs-classic-dark](/api/tasks/0862/attachments/att_fee2d465-67f1-46f6-a1ee-a702a4fc37f1.png)
+![docs-gruvbox-light](/api/tasks/0862/attachments/att_f0b831fc-2bc6-4304-b573-f2538992d33b.png)
+![docs-gruvbox-dark](/api/tasks/0862/attachments/att_cb246f30-90d7-4a7a-9a6f-e1b71b0ffafc.png)
 
 ## Activity
 
@@ -136,3 +140,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T04:08:41Z · body
 - 2026-10-21T04:09:06Z · engineer crash recovery: switched opencode + opencode-go/deepseek-v4.1-flash → opencode + opencode-go/glm-5.3-flash after 3/3 crashes in 30m · the agent process exited with an error — open the task to see the full output
 - 2026-10-21T04:10:13Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T04:13:34Z · screenshots
