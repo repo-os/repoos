@@ -586,6 +586,25 @@ export function reviewMission(
 }
 
 /**
+ * Render the findings sections the auto-bounce path sends to the engineer.
+ * Sections that say there is nothing to report (`None found.`, `No bugs
+ * found`, an empty section, …) are omitted entirely, so harmless reviewer
+ * phrasing never reaches the engineer as a bug list (#0894).
+ */
+export function reviewFindingsMessage(markdown: string): string {
+  const sections = extractReviewReportSections(markdown);
+  const parts: string[] = [];
+  for (const [heading, body] of [
+    ["## Bugs", sections.bugs],
+    ["## Edge cases", sections.edgeCases],
+    ["## Suggestions", sections.suggestions],
+  ] as const) {
+    if (body) parts.push(heading, body, "");
+  }
+  return parts.join("\n");
+}
+
+/**
  * The mission handed to the review agent for a follow-up chat turn. The human
  * asked a question about the review; the reviewer answers in the same read-only
  * style, grounded in the task spec, its own previous report (when one exists),
@@ -2181,23 +2200,8 @@ export class ReviewManager {
       messageParts.push("");
     }
 
-    if (sections.bugs) {
-      messageParts.push("## Bugs");
-      messageParts.push(sections.bugs);
-      messageParts.push("");
-    }
-
-    if (sections.edgeCases) {
-      messageParts.push("## Edge cases");
-      messageParts.push(sections.edgeCases);
-      messageParts.push("");
-    }
-
-    if (sections.suggestions) {
-      messageParts.push("## Suggestions");
-      messageParts.push(sections.suggestions);
-      messageParts.push("");
-    }
+    const findings = reviewFindingsMessage(report.markdown);
+    if (findings) messageParts.push(findings);
 
     messageParts.push(
       `Please fix the issues and re-handoff to review (review round ${reviewRounds + 2}).`,
