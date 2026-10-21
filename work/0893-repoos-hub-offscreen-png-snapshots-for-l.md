@@ -11,7 +11,7 @@ branch: feat/repoos-hub-offscreen-png-snapshots-for-l
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T07:08:04Z"
-updated_at: "2026-10-21T13:01:41Z"
+updated_at: "2026-10-21T13:02:36Z"
 review_passes: 1
 ---
 ## Problem
@@ -60,6 +60,9 @@ With that row in place, a handoff that changes Hub sources runs the command, col
 ![Hub server summary popover (light), rendered offscreen](/api/tasks/0893/attachments/att_86357b22-fdbf-4ffb-bb64-a60c6df8f9fc.png)
 ![Hub top bar in Tabs mode (light), rendered offscreen](/api/tasks/0893/attachments/att_d1abb4d9-462e-4f71-b839-7047839946b0.png)
 
+## Merge verification (2026-10-21)
+Merged main (#0892/#0895 Hub changes) into the branch. Resolved `macos/.gitignore` by keeping both additions (`.derived-data-*/` from main, `.build/` from this branch) and took main's copy of this task file. `ServerSidebarView.swift` auto-merged: main's Copy URL/actions work is intact and `ServerDetailsPopover` stays internal for the snapshot test (its only branch change). Rebuilt (`bun run build`), ran the full Hub unit suite, and rendered the snapshots: `HubSnapshotTests` pass and write all three views; the full Hub suite passes with `LocalServerDiscoveryTests` skipped. Those six discovery tests fail only because the live server now writes `~/.repoos/servers/7171.json` and discovery correctly prefers that registry over the port scan, so they are environmental and unrelated to this diff. `repoos check --changed main` passes.
+
 ## Activity
 
 - 2026-10-21T07:08:04Z · created · njachowski@gmail.com
@@ -89,3 +92,4 @@ With that row in place, a handoff that changes Hub sources runs the command, col
 - 2026-10-21T13:01:41Z · message_queued at 2026-10-21T13:01:41.022Z
 - 2026-10-21T13:01:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-21T13:01:41Z · body
+- 2026-10-21T13:02:36Z · body: Merge verification (2026-10-21) (added)
