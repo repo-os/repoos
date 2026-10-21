@@ -9,8 +9,10 @@ story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-27T07:33:58Z"
-updated_at: "2026-10-21T13:34:00Z"
+updated_at: "2026-10-21T13:34:09Z"
 ---
 ## Problem
 
@@ -107,3 +109,4 @@ A `member` can still read, be notified, and answer a permitted needs-input quest
 - 2026-10-05T11:15:32Z · needs_input
 - 2026-10-05T15:49:02Z · needs_input
 - 2026-10-05T15:52:35Z · body
+- 2026-10-21T13:34:09Z · cli_override, model_override
