@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T06:00:33Z"
+updated_at: "2026-10-21T06:12:25Z"
 dev_error_count: 3
 ---
 ## Items
@@ -178,3 +178,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T06:00:32Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-21T06:00:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T06:00:33Z · message_delivered: 1 message(s)
+- 2026-10-21T06:12:25Z · body
