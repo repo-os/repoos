@@ -17,7 +17,7 @@ branch: feat/flaky-gate-test-agent-concurrency-queues
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T04:07:35Z"
-updated_at: "2026-10-21T06:09:02Z"
+updated_at: "2026-10-21T06:12:43Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T06:03:26.061Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -56,3 +56,4 @@ See AGENTS.md "Is a `repoos check` failure a flake or a real bug?" and docs/debu
 - 2026-10-21T06:03:26Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · error: Transport
 - 2026-10-21T06:09:02Z · message_queued at 2026-10-21T06:09:02.483Z
 - 2026-10-21T06:09:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-21T06:12:43Z · CTO nudge: held — an undelivered message is already queued
