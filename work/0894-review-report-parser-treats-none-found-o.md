@@ -74,4 +74,4 @@ Consumers: src/server/landable.ts (line ~51), the review auto-bounce path in src
 - 2026-10-21T11:30:38Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-21T11:33:38Z · body
 - 2026-10-21T11:51:41Z · status active→review
-
+- 2026-10-21T11:51:41Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
