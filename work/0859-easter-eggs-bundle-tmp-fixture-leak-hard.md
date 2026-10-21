@@ -2,17 +2,17 @@
 id: "0859"
 title: "Easter eggs bundle: tmp-fixture leak hardening (follow-ups from #0858)"
 type: chore
-status: ready
+status: active
 priority: p3
 area: [core, web]
 depends_on: ["0858"]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T03:51:01Z"
+updated_at: "2026-10-21T03:51:05Z"
 ---
 ## Items
 
@@ -124,3 +124,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T02:26:34Z · body: Items (added 1); E5 · Docs site (HMR) target fails when user-docs deps are not installed (added)
 - 2026-10-21T02:26:34Z · note: bundle add E5
 - 2026-10-21T03:51:01Z · cli_override, model_override
+- 2026-10-21T03:51:05Z · status ready→active, branch
