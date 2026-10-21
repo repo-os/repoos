@@ -18,7 +18,7 @@ branch: feat/offload-repoos-shot-to-a-runner
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:27:49Z"
-updated_at: "2026-10-21T08:35:02Z"
+updated_at: "2026-10-21T08:39:02Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:24:31.668Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -48,3 +48,4 @@ Not required for #0854's acceptance criteria. #0864 (rebuild the runner image an
 - 2026-10-21T08:24:31Z · agent exited with an error (opencode) · error: Upstream request failed: Endpoint is unavailable.
 - 2026-10-21T08:24:31Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · error: Upstream request failed: Endpoint is unavailable.
 - 2026-10-21T08:35:02Z · body
+- 2026-10-21T08:39:02Z · body
