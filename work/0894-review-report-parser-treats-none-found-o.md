@@ -14,10 +14,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-report-parser-treats-none-found-o
-cli_override: opencode
-model_override: opencode-go/deepseek-v4.1-flash
+cli_override: github copilot
+model_override: default
 created_at: "2026-10-21T08:17:11Z"
-updated_at: "2026-10-21T09:08:38Z"
+updated_at: "2026-10-21T09:11:08Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:19:07.268Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:22:38.129Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -53,3 +53,4 @@ Consumers: src/server/landable.ts (line ~51), the review auto-bounce path in src
 - 2026-10-21T08:51:32Z · body
 - 2026-10-21T09:02:10Z · body
 - 2026-10-21T09:08:38Z · body
+- 2026-10-21T09:11:08Z · cli_override, model_override
