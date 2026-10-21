@@ -33,6 +33,16 @@ Query parameters override stored choices on first load (then persist to
 
 Examples: `https://repoos.org/?theme=gruvbox`, `https://repoos.org/?theme=classic&appearance=dark`.
 
+### Header logo
+
+The nav mark (borderless hexagon plus three bars) is an inline SVG in
+`src/components/SiteLogo.vue`. Its geometry — viewBox, both paths and stroke
+widths — lives in `../shared/logo.ts`; the docs header
+(`../user-docs/.vitepress/theme/NavBarLogo.vue`) imports the same module, so the
+two sites cannot drift. Colour is CSS-only (`--cyan` → `--violet`, each site
+mapping those names to its own theme tokens); the browser-tab favicon stays the
+separate square app icon and is intentionally not derived from this.
+
 **Docs hand-off:** every link to `docs.repoos.org` in `src/App.vue` appends the
 current `theme` / `appearance` query params (via `appendThemeToUrl` in
 `theme-resolve.ts`), so a visitor on e.g.
