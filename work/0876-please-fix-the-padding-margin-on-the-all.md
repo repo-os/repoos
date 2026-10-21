@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
+debug_tldr: "The engineer hit the resume retry limit while stuck waiting on a full local check queue with no handoff progress—resume task #0876 after check slots free up."
+debug_tldr_at: "2026-10-21T02:53:32Z"
+debug_tldr_key: "dev-error|RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p2
 area: web
 assigned_to: ai
@@ -16,7 +19,7 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T02:53:15Z"
+updated_at: "2026-10-21T02:53:32Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 2
