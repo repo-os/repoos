@@ -18,16 +18,11 @@ import {
 } from "./setup/validate-injected-env.js";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const validateScript = readFileSync(
-  join(repoRoot, "scripts/remote-runner/validate.sh"),
-  "utf8",
-);
+const validateScript = readFileSync(join(repoRoot, "scripts/remote-runner/validate.sh"), "utf8");
 
 /** Every `-e REPOOS_...=` the runner hands to the test container. */
 function injectedKeys(): string[] {
-  return [...validateScript.matchAll(/^\s*-e\s+"?(REPOOS_[A-Z0-9_]+)=/gm)].map(
-    (match) => match[1],
-  );
+  return [...validateScript.matchAll(/^\s*-e\s+"?(REPOOS_[A-Z0-9_]+)=/gm)].map((match) => match[1]);
 }
 
 describe("remote-runner env isolation (#0905)", () => {
