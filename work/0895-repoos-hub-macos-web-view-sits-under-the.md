@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T08:37:10Z"
-updated_at: "2026-10-21T08:37:46Z"
+updated_at: "2026-10-21T08:37:54Z"
 ---
 ## Problem
 Two layout problems in the native macOS app (RepoOS Hub), both visible in the new Window layout modes:
