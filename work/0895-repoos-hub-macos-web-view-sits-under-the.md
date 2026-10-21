@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-web-view-sits-under-the
 created_at: "2026-10-21T08:37:10Z"
-updated_at: "2026-10-21T12:51:33Z"
+updated_at: "2026-10-21T12:51:55Z"
 ---
 ## Problem
 Two layout problems in the native macOS app (RepoOS Hub), both visible in the new Window layout modes:
@@ -32,9 +32,9 @@ Two layout problems in the native macOS app (RepoOS Hub), both visible in the ne
 Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode from #0875, plus the sidebar view). The title bar looks like a full-size content view, so the web view needs a top inset (safe-area or `contentLayoutGuide`) equal to the tab-strip height. The three reporter screenshots are attached to this task: 1.png shows the tab strip with the collapse button over the first tab, 2.png shows the top of the web UI cut off in a windowed layout, 3.png shows sidebar mode with the collapse button in both rows.
 
 ## Verification (engineer)
-- New `HubWorkspaceChromeTests` hosts the production `HubWorkspaceChrome` in a real, never-shown `fullSizeContentView` NSWindow and asserts the geometry contract: Tabs-mode page top == 46 (the strip's bottom edge), Sidebar-mode page top == 0 (reclaimed titlebar band). It also proves a SwiftUI toolbar installed *after* scene configuration is re-hidden and loses its automatic sidebar-toggle item, and documents that an ignoring page would cover the strip (the #0895 regression).
-- `xcodebuild -scheme RepoOSHub ... test` on Xcode 26.6 / macOS 26.5.2: build succeeds; 164 tests pass. `LocalServerDiscoveryTests` (7) fail on this machine because the live `~/.repoos/servers/7171.json` registry makes discovery take its registry path instead of the tests' fake port scan — unrelated to this diff and reproducible without it. `repoos check --changed main` passes.
-- Not verified by the engineer: pixel-level appearance in a running Hub window (the agent harness has no display). Reviewer/human check on a real build: windowed and full screen, light and dark, Tabs and Sidebar, and switching layout at runtime; confirm the page header clears the strip and only one sidebar toggle is present.
+- New `HubWorkspaceChromeTests` hosts the real composition — `NavigationSplitView` detail → `HubWorkspaceChrome` → page, with the scene's `HubWindowChromeView` background — in a real `fullSizeContentView` NSWindow that is never ordered front. It asserts Tabs-mode page top == 46 (the strip's bottom edge), Sidebar-mode page top == 0 (reclaimed titlebar band), that the toolbar SwiftUI installs after scene setup is hidden once laid out, and that its automatic sidebar-toggle item is gone. A second test installs a toolbar late and re-runs layout: it is re-hidden and loses the toggle.
+- `xcodebuild -scheme RepoOSHub ... test` on Xcode 26.6 / macOS 26.5.2: build succeeds, 164 tests pass. `LocalServerDiscoveryTests` (7) fail on this machine because the live `~/.repoos/servers/7171.json` registry makes discovery use its registry path instead of the tests' fake port scan; unrelated to this diff and reproducible without it. `repoos check --changed main` passes.
+- Not verified by the engineer: pixel-level appearance in a running Hub window — the agent harness has no display, so a real Hub build was not watched. Reviewer/human check on a real build: windowed and full screen, light and dark, Tabs and Sidebar, and switching layout at runtime; confirm the page header clears the strip and only one sidebar toggle is present.
 
 ## Screenshots
 
@@ -55,3 +55,4 @@ Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode fro
 - 2026-10-21T12:48:58Z · message_queued at 2026-10-21T12:48:58.690Z
 - 2026-10-21T12:49:08Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-21T12:51:33Z · body
+- 2026-10-21T12:51:55Z · body: Verification (engineer) (added 3, removed 3)
