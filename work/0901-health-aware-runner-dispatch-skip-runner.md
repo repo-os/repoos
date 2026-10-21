@@ -57,3 +57,4 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 - 2026-10-21T17:19:15Z · body
 - 2026-10-21T17:21:11Z · body
 - 2026-10-21T17:26:22Z · message_queued at 2026-10-21T17:26:22.027Z
+- 2026-10-21T17:26:22Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
