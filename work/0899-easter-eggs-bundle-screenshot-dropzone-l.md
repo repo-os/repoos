@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-21T19:05:12Z"
-review_passes: 2
 id: "0899"
 title: "Easter eggs bundle: screenshot dropzone layout, CLI screenshot captions"
 type: bug
-status: review
+status: active
 hold: true
 priority: p3
 area: [web, core]
@@ -16,7 +14,9 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-review_rounds: 1
+updated_at: "2026-10-21T19:05:12Z"
+review_rounds: 2
+review_passes: 2
 ---
 ## Items
 - [ ] **E1 · Screenshot dropzone wraps to two lines** (web) — after #0877 made `ShotDropzone` a `<label>`, the global `.field label` rule leaks into it. Source: user report 2026-10-21.
@@ -176,4 +176,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:04:47Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
 - 2026-10-21T19:04:48Z · note: shots: skipped — 4 handoff shots already captured for this exact plan (2f623fd32) during finalization (#0734)
 - 2026-10-21T19:05:12Z · note: review pass 2: needs some work
-
+- 2026-10-21T19:05:12Z · status review→active
