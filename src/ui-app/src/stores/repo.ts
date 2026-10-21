@@ -2029,15 +2029,20 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Hydrate a task's check history (Debug tab, 0310) — picks up runs already
    *  recorded, including one currently in progress, rather than waiting for
-   *  the next SSE event. */
-  async function refreshTaskChecks(taskId: string): Promise<void> {
+   *  the next SSE event.
+   *
+   *  `remoteOnly` refreshes just the live remote run/queue detail (#0897): the
+   *  drawer polls it every few seconds while a gate is in flight, and replacing
+   *  `taskChecks` from that poll would overwrite the in-memory SSE run with a
+   *  server copy that may not include it yet (#0897 review). */
+  async function refreshTaskChecks(taskId: string, opts?: { remoteOnly?: boolean }): Promise<void> {
     try {
       const r = await api<{
         ok: boolean;
         runs: TaskCheckRun[];
         remote?: RemoteTaskActivity | null;
       }>(`/api/tasks/${taskId}/checks`);
-      taskChecks.value[taskId] = r.runs;
+      if (!opts?.remoteOnly) taskChecks.value[taskId] = r.runs;
       // A drawer shot fixture pins its remote detail; a preview board's real
       // 404/empty response must not wipe the seeded state (#0897).
       taskRemoteActivity.value[taskId] =

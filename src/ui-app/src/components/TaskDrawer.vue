@@ -432,14 +432,15 @@ function stopCheckLoops(): void {
 function startCheckLoops(taskId: string): void {
   stopCheckLoops();
   void refreshCheckRows(taskId);
-  void repo.refreshTaskChecks(taskId);
+  void repo.refreshTaskChecks(taskId, { remoteOnly: true });
   checkNow.value = Date.now();
   checkTick = setInterval(() => (checkNow.value = Date.now()), 1000);
   checkRowsTimer = setInterval(() => {
     void refreshCheckRows(taskId);
     // Remote phase + pool queue position for the drawer (#0897) — refreshed
     // with the same cadence so a queued validation shows a live wait time.
-    void repo.refreshTaskChecks(taskId);
+    // Remote-only: the in-memory SSE run must not be replaced by a poll.
+    void repo.refreshTaskChecks(taskId, { remoteOnly: true });
   }, CHECK_ROWS_POLL_MS);
 }
 
