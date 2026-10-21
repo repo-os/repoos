@@ -11,7 +11,7 @@ branch: feat/tests-that-start-engineers-fail-on-runne
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-21T14:05:10Z"
-updated_at: "2026-10-21T14:59:14Z"
+updated_at: "2026-10-21T15:01:07Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -50,3 +50,4 @@ Look at src/core/pressure-guard.ts, resource-limits.ts and the test helpers (mak
 - 2026-10-21T14:48:28Z · body
 - 2026-10-21T14:50:46Z · needs_input
 - 2026-10-21T14:59:14Z · handoff failed · remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on bee — fix it in the feature branch and re-run the gate
+- 2026-10-21T15:01:07Z · body
