@@ -93,6 +93,35 @@ Bounds, deliberately (ADR 0008: no unbounded fallback chain):
 Both values are live Settings controls on **Settings → Automation** and are
 documented in [`user-docs/configuration.md`](../user-docs/configuration.md).
 
+### Clean exit without a handoff: bounded auto-resume (#0888)
+
+A turn can also end **cleanly** and still not be finished: the process exits 0,
+the worktree is quiet, no review was requested, and the task sits `active`
+forever. TaskWatchdog detects that shape without waiting for the CTO:
+
+1. The runner records `engineer turn ended without a handoff` in Activity on a
+   clean engineer turn that did not request review. This is durable, so the
+   signal survives a server reload.
+2. The watchdog clears a **phantom** runner-registry row first (#0863): a row
+   whose process group is gone must not read as "already running" and mask the
+   stall.
+3. Unless the task is paused, assigned to a human, in review/closing-out, or
+   already flagged `needs_input`, it resumes the engineer through the **same
+   launch path as crash recovery** — the normal resume preamble plus an
+   instruction to finish and hand off. Each resume is one Activity line.
+4. A **deferred handoff** (`handoff_deferred: N queued message(s)…`) always
+   resumes the engineer to read the queued message, even when the legacy
+   handoff-signal retry still has budget. The resumed turn drains that queue.
+5. Resume budget: **3 resumes per 30 minutes per task**. At the cap the task is
+   surfaced as `needs_input` with reason `watchdog-stuck` and the resume history
+   (`engineer_stall_resume_log`) stays in the task frontmatter. The window is
+   fixed, not a Settings key: this is a safety bound, not a tuning knob.
+
+This is the completion path when the CTO is off. It never overrides a person:
+`repoos pause` marks the task paused and both the watchdog and the resume path
+skip it, and a deliberate stop records `engineer stopped by request` in
+Activity, which cancels a pending resume (a stop is not a stall).
+
 ### Handoff and status flips
 
 - A task flipping **`active` ↔ `review` within seconds** is often the server's
