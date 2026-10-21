@@ -14,7 +14,7 @@ branch: feat/engineer-turn-ends-cleanly-without-a-han
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T21:57:26Z"
-updated_at: "2026-10-21T00:05:35Z"
+updated_at: "2026-10-21T00:05:38Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T00:05:32.519Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -48,3 +48,4 @@ Relevant code: src/server/agents.ts (`cleanup()`, `deliverQueuedMessages`, crash
 - 2026-10-21T00:05:32Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-21T00:05:32Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-21T00:05:35Z · message_delivered: 1 message(s)
+- 2026-10-21T00:05:38Z · body
