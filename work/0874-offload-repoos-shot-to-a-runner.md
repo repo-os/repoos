@@ -18,7 +18,7 @@ branch: feat/offload-repoos-shot-to-a-runner
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:27:49Z"
-updated_at: "2026-10-21T11:41:47Z"
+updated_at: "2026-10-21T11:42:23Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T09:07:49.677Z: repoos check failed: ◆ Check plan"
 dev_error_count: 3
@@ -69,3 +69,4 @@ Not required for #0854's acceptance criteria. #0864 (rebuild the runner image an
 - 2026-10-21T11:40:29Z · agent exited with an error (opencode) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-10-21T11:40:29Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-10-21T11:41:47Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-10-21T11:42:23Z · body
