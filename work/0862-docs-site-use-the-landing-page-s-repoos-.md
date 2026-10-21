@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/docs-site-use-the-landing-page-s-repoos-
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-21T03:54:30Z"
+updated_at: "2026-10-21T04:02:15Z"
 ---
 ## Problem
 The docs site (VitePress, `user-docs/`) and the landing page (`landing/`) show the RepoOS logo differently. In the attached screenshots (in order: 1 landing Gruvbox dark, 2 landing Gruvbox light, 3 landing Classic light, 4 docs site, 5 landing Classic dark) the landing logo is a plain hexagon with the three-bar mark that **changes with the theme**: its stroke gradient and bar colours follow the theme tokens in Gruvbox, Classic, light and dark. The docs site logo (4) sits inside an **extra rounded-square border/box** and stays one fixed colour set whatever theme or appearance is selected.
@@ -46,3 +46,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-20T06:23:25Z · screenshots
 - 2026-10-20T11:25:37Z · status inbox→ready
 - 2026-10-21T03:54:30Z · status ready→active, branch
+- 2026-10-21T04:02:15Z · note: route /404.html?theme=classic&appearance=light is not served by target "Docs site" — the target returned its HTML shell for an app module (TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:55031/404/index.md?import&t=1792555334163'.)
