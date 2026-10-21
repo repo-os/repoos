@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: a0f2fd958dde8df75ca69c6cded5088a9c7793c5
 id: "0894"
 title: Review report parser treats 'None found.' (or any phrasing other than exact 'None found') in Bugs as blocking bugs
 type: bug
@@ -12,8 +14,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T08:17:11Z"
 updated_at: "2026-10-21T11:18:00Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 4d9e806781e08ebdc9fadd779e22ad150bf7b5ee
 review_passes: 1
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:19:07.268Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:22:38.129Z\",\"kind\":\"dev-error\"}]"
@@ -73,3 +73,4 @@ Consumers: src/server/landable.ts (line ~51), the review auto-bounce path in src
 - 2026-10-21T10:46:10Z · note: handoff requested (ui-review)
 - 2026-10-21T11:17:59Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-21T11:18:00Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
+
