@@ -11,7 +11,7 @@ branch: feat/crash-recovery-relaunch-fails-when-the-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T01:27:17Z"
-updated_at: "2026-10-21T02:14:52Z"
+updated_at: "2026-10-21T02:14:53Z"
 ---
 ## Problem
 On 2026-10-21 ~09:26 local, #0877's engineer crashed and the new crash recovery (#0869) tried to relaunch it. The relaunch failed with: `engineer crash recovery: start failed — The argument 'args[6]' must be a string without null bytes. Received "Working directory: ..."`. The resume prompt (working-directory preamble plus the Task Context Pack) contains at least one NUL byte, which Node rejects as a spawn argument. A manual `repoos start 0877` then worked, so the failure is specific to the recovery path's prompt (likely a field in the context pack built from the task body, a diff or a log excerpt that carries a NUL). Until fixed, a crashed engineer whose context contains a NUL stays dead and flagged needs_input.
@@ -35,3 +35,4 @@ Relevant code: src/server/engineer-crash-recovery.ts, src/server/agents.ts (resu
 - 2026-10-21T02:04:07Z · cli_override, model_override
 - 2026-10-21T02:04:09Z · status ready→active, branch
 - 2026-10-21T02:14:52Z · message_queued at 2026-10-21T02:14:52.810Z
+- 2026-10-21T02:14:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
