@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 enum HealthState: String, Codable, Equatable, Sendable {
@@ -223,5 +224,170 @@ enum ReachabilityTransition {
             entry.lastHealthAt = checkedAt
         }
         entry.updatedAt = checkedAt
+    }
+}
+
+// MARK: - Server context menu
+
+/// Pure description of the server row's context menu, so menu contents
+/// (including Copy URL) can be unit-tested without mounting SwiftUI.
+enum ServerAction: Hashable {
+    case notifications
+    case pinTask
+    case togglePin
+    case copyURL(String)
+    case edit
+    case startLocalService
+    case stopLocalService
+    case restartLocalService
+    case remove
+}
+
+struct ServerActionMenuItem: Identifiable, Equatable {
+    let action: ServerAction
+    let title: String
+    let systemImage: String
+    var isDestructive = false
+
+    var id: ServerAction { action }
+}
+
+struct ServerActionMenuSection: Equatable {
+    var items: [ServerActionMenuItem]
+}
+
+enum ServerActionsMenuModel {
+    static func sections(for entry: ServerEntry) -> [ServerActionMenuSection] {
+        var serverItems: [ServerActionMenuItem] = [
+            ServerActionMenuItem(
+                action: .notifications,
+                title: "Notifications…",
+                systemImage: "bell"
+            ),
+            ServerActionMenuItem(
+                action: .pinTask,
+                title: "Pin task…",
+                systemImage: "pin"
+            ),
+            ServerActionMenuItem(
+                action: .togglePin,
+                title: entry.isPinned ? "Unpin server" : "Pin server",
+                systemImage: entry.isPinned ? "pin.slash" : "pin.fill"
+            ),
+        ]
+
+        // Copy the exact stored origin (scheme and port included) rather than a
+        // display-formatted URL: local and remote servers both work.
+        if let origin = entry.originURL {
+            serverItems.append(
+                ServerActionMenuItem(
+                    action: .copyURL(origin.absoluteString),
+                    title: "Copy URL",
+                    systemImage: "doc.on.doc"
+                )
+            )
+        }
+
+        serverItems.append(
+            ServerActionMenuItem(
+                action: .edit,
+                title: "Edit server…",
+                systemImage: "pencil"
+            )
+        )
+
+        var sections = [ServerActionMenuSection(items: serverItems)]
+
+        if canManageLocalService(entry) {
+            let serviceItems: [ServerActionMenuItem]
+            if entry.lastHealth == .healthy {
+                serviceItems = [
+                    ServerActionMenuItem(
+                        action: .stopLocalService,
+                        title: "Stop local server",
+                        systemImage: "stop.circle"
+                    ),
+                    ServerActionMenuItem(
+                        action: .restartLocalService,
+                        title: "Restart local server",
+                        systemImage: "arrow.clockwise"
+                    ),
+                ]
+            } else {
+                serviceItems = [
+                    ServerActionMenuItem(
+                        action: .startLocalService,
+                        title: "Start local server",
+                        systemImage: "play.circle"
+                    )
+                ]
+            }
+            sections.append(ServerActionMenuSection(items: serviceItems))
+        }
+
+        sections.append(
+            ServerActionMenuSection(items: [
+                ServerActionMenuItem(
+                    action: .remove,
+                    title: "Remove server",
+                    systemImage: "trash",
+                    isDestructive: true
+                )
+            ])
+        )
+        return sections
+    }
+
+    static func canManageLocalService(_ entry: ServerEntry) -> Bool {
+        entry.originURL.map(HubAccessPolicy.permitsLoopbackWithoutCapability) == true
+            && entry.localProjectPath != nil
+    }
+}
+
+/// Writes a copied URL to a pasteboard. Injectable so the Copy URL action can
+/// be tested without touching the user's clipboard.
+enum ServerClipboard {
+    static func copy(_ string: String, to pasteboard: NSPasteboard = .general) {
+        pasteboard.clearContents()
+        pasteboard.setString(string, forType: .string)
+    }
+}
+
+// MARK: - Repo color preference
+
+/// The cross-context repo color signal (#0892).
+///
+/// The web UI keeps the user's per-browser repo color in a first-party cookie
+/// named `repoos_repo_color` (with `localStorage` as its legacy fallback). The
+/// Hub reads only this cookie from the server's isolated `WKWebsiteDataStore`;
+/// it never reads the session cookie, injects scripts, or registers a bridge.
+/// The value is `<repo-name>:<#RRGGBB>`, where an empty color is an explicit
+/// Default choice that must clear the native sidebar bar.
+enum RepoAccentColorPreference {
+    static let cookieName = "repoos_repo_color"
+
+    enum CookieValue: Equatable {
+        case color(String)
+        case cleared
+        case unsupported
+    }
+
+    static func parseCookieValue(_ rawValue: String) -> CookieValue {
+        let decoded = rawValue.removingPercentEncoding ?? rawValue
+        let trimmed = decoded.trimmingCharacters(in: .whitespacesAndNewlines)
+        let colorPart: String
+        if let separator = trimmed.lastIndex(of: ":") {
+            colorPart = String(trimmed[trimmed.index(after: separator)...])
+        } else {
+            colorPart = trimmed
+        }
+
+        if let normalized = ServerAccentColor.normalizedHex(colorPart) {
+            return .color(normalized)
+        }
+        if colorPart.isEmpty || colorPart.caseInsensitiveCompare("none") == .orderedSame {
+            return .cleared
+        }
+        return .unsupported
     }
 }
