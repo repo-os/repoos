@@ -14,7 +14,7 @@ branch: feat/tests-that-start-engineers-fail-on-runne
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T14:05:10Z"
-updated_at: "2026-10-21T14:27:40Z"
+updated_at: "2026-10-21T14:27:41Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T14:27:40.155Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -44,3 +44,4 @@ Look at src/core/pressure-guard.ts, resource-limits.ts and the test helpers (mak
 - 2026-10-21T14:22:58Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-21T14:27:40Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-21T14:27:40Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T14:27:41Z · message_delivered: 1 message(s)
