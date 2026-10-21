@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-21T06:13:41Z"
-review_passes: 1
 id: "0859"
 title: "Easter eggs bundle: tmp-fixture leak hardening (follow-ups from #0858)"
 type: chore
@@ -14,6 +12,8 @@ branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-20T03:43:18Z"
+updated_at: "2026-10-21T06:15:05Z"
+review_passes: 1
 dev_error_count: 3
 ---
 ## Items
@@ -183,4 +183,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T06:12:38Z · status active→review
 - 2026-10-21T06:12:39Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-21T06:13:40Z · note: review pass 1: good to go
-
+- 2026-10-21T06:15:05Z · body
