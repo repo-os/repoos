@@ -397,7 +397,7 @@ async function resumeModel(cli: string, model: string): Promise<void> {
     <Teleport to="body">
       <Dialog :open="pauseDialog.open" @update:open="(v) => (pauseDialog.open = v)">
         <DialogOverlay />
-        <DialogContent class="cc-modal budget-pause-dialog">
+        <DialogContent class="cc-modal budget-pause-dialog" data-testid="budget-pause-dialog">
           <div class="cc-modal-head">
             <DialogTitle>{{ dialogTitle }}</DialogTitle>
             <DialogClose class="close-x" aria-label="Close">×</DialogClose>
@@ -408,7 +408,7 @@ async function resumeModel(cli: string, model: string): Promise<void> {
           </DialogDescription>
           <div class="budget-pause-fields">
             <label class="field">
-              <span class="field-label">Resume at (optional)</span>
+              <span class="budget-field-label">Resume at (optional)</span>
               <Input
                 v-model="pauseDialog.until"
                 type="datetime-local"
@@ -416,7 +416,7 @@ async function resumeModel(cli: string, model: string): Promise<void> {
               />
             </label>
             <label class="field">
-              <span class="field-label">Reason (optional)</span>
+              <span class="budget-field-label">Reason (optional)</span>
               <Input
                 v-model="pauseDialog.reason"
                 type="text"
@@ -455,7 +455,7 @@ async function resumeModel(cli: string, model: string): Promise<void> {
           </DialogDescription>
           <form class="budget-add-form" @submit.prevent="confirmAdd">
             <div class="budget-add-picker">
-              <span class="budget-add-picker-label">Coding agent + model</span>
+              <span class="budget-field-label">Coding agent + model</span>
               <AgentModelControl
                 :cli-options="cliOptions"
                 :model-options="addModelOptions"
@@ -504,7 +504,9 @@ async function resumeModel(cli: string, model: string): Promise<void> {
   gap: 8px;
   padding: 16px 24px 0;
 }
-.budget-add-picker-label {
+/* Shared label treatment for the add and pause dialog fields (#0876). */
+.budget-field-label {
+  display: block;
   font-size: 13px;
   font-weight: 500;
   color: var(--txt-secondary);
@@ -680,10 +682,26 @@ async function resumeModel(cli: string, model: string): Promise<void> {
   outline-offset: 1px;
   border-radius: 4px;
 }
+/* Match the add-allowlist dialog's content box: 24px gutter so fields line up
+   with the title/description above and never sit flush against the modal edge,
+   16px below the description, and an even gap between field blocks (#0876). */
 .budget-pause-fields {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin: 14px 0 6px;
+  gap: 14px;
+  padding: 16px 24px 0;
+}
+/* `.field` carries a global 13px bottom margin; inside a flex column that would
+   stack on top of `gap` and make the two field blocks uneven. */
+.budget-pause-fields .field {
+  margin-bottom: 0;
+}
+.budget-pause-fields .budget-field-label {
+  margin-bottom: 8px;
+}
+/* The flex gap spaces the error like the fields; the parent gutter keeps it
+   off the modal edges, so it needs no margin of its own. */
+.budget-pause-fields .ff-error {
+  margin: 0;
 }
 </style>
