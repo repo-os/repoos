@@ -3,12 +3,6 @@ id: "0900"
 title: "Tests that start engineers fail on runners whose swap is over the pressure guard limit: isolate tests from host memory pressure"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "ActionRequiredError: Weekly usage limit reached. It resets in 5 days. Buy credits to keep going now, or upgrade your plan for more weekly usage."
-debug_tldr: "Weekly usage limit stopped the engineer—not a test bug—so buy credits or upgrade your plan, then resume task #0900."
-debug_tldr_at: "2026-10-21T15:26:31Z"
-debug_tldr_key: "dev-error|ActionRequiredError: Weekly usage limit reached. It resets in 5 days. Buy credits to keep going now, or upgrade your plan for more weekly usage."
 priority: p1
 area: [core, server]
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/tests-that-start-engineers-fail-on-runne
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-21T14:05:10Z"
-updated_at: "2026-10-21T15:37:07Z"
+updated_at: "2026-10-21T15:37:47Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: b9a79219d8bbcf186a3f904d719bf13a69dbaa92
 dev_error_count: 2
@@ -73,3 +67,4 @@ Look at src/core/pressure-guard.ts, resource-limits.ts and the test helpers (mak
 - 2026-10-21T15:26:04Z · message_delivered: 1 message(s)
 - 2026-10-21T15:34:33Z · body
 - 2026-10-21T15:37:07Z · body
+- 2026-10-21T15:37:47Z · needs_input
