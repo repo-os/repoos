@@ -2272,6 +2272,8 @@ export interface StoryDefinitionRecord {
   path: string;
   body: string;
   createdAt: string;
+  /** ISO last-modification time (frontmatter `updated_at`, else git/mtime) — #0885. */
+  updatedAt?: string;
   createdBy: string;
   /** True while the PM agent is fleshing this story out in the background. */
   pmWorking?: boolean;

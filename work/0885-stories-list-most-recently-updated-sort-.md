@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 473136
-last_close_out_gate_at: "2026-10-21T00:04:51.074Z"
 id: "0885"
 title: "Stories list: \"most recently updated\" sort puts a just-created story at the bottom"
 type: bug
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 1bf040f44cfd52f5ab9109dc11a02f789f0c8c7d
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/stories-list-most-recently-updated-sort-
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T16:03:09Z"
 updated_at: "2026-10-21T00:04:51Z"
+last_close_out_gate_ms: 473136
+last_close_out_gate_at: "2026-10-21T00:04:51.074Z"
 review_passes: 1
 ---
 ## Problem

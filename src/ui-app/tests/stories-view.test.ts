@@ -161,6 +161,32 @@ describe("StoriesView grouping and roll-up", () => {
     expect(names).toEqual(["Complete", "Quiet", "Active", "Attention"]);
   });
 
+  it("puts a just-created story with no tasks first in most-recently-updated order", () => {
+    setTasks([
+      makeTask({
+        id: "0001",
+        story: "Older larger number",
+        status: "ready",
+        updated_at: "2026-09-01T00:00:00Z",
+      }),
+    ]);
+    useRepoStore().storyDefinitions = [
+      {
+        key: "agent-discoverable-repoos",
+        name: "Agent-discoverable RepoOS",
+        number: "0011",
+        path: "stories/agent-discoverable-repoos.md",
+        body: "",
+        createdAt: "2026-10-20T16:00:00Z",
+        createdBy: "hello@repoos.org",
+      },
+    ];
+    const names = mountView()
+      .findAll(".story-name")
+      .map((n) => n.text());
+    expect(names).toEqual(["Agent-discoverable RepoOS", "Older larger number"]);
+  });
+
   it("shows New story in the header when enabled", () => {
     setTasks([]);
     const wrapper = mountView();
