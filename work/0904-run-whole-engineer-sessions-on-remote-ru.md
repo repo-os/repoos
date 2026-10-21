@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/run-whole-engineer-sessions-on-remote-ru
 created_at: "2026-10-21T15:06:23Z"
-updated_at: "2026-10-21T19:42:25Z"
+updated_at: "2026-10-21T19:42:26Z"
 ---
 ## Problem
 Remote runners (bee, thinkpad, mini) today run only validation: self-checks, handoff and close-out gates, and (#0854/#0874) browser shots. The engineer and reviewer agents themselves still run on the laptop. The laptop is a fanless MacBook Air under constant memory pressure (compressor 35-38% of RAM, pressure guard holding new starts, 3 engineers + gates + browsers at once), which is now the main throughput limit: engineers are held, tests time out, and gates fall back to the laptop.
@@ -50,3 +50,4 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-21T19:41:41Z · body
 - 2026-10-21T19:41:41Z · body
 - 2026-10-21T19:42:25Z · body: ADR and split (added)
+- 2026-10-21T19:42:26Z · message_queued at 2026-10-21T19:42:26.042Z
