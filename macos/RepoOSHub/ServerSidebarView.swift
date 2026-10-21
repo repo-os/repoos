@@ -269,54 +269,42 @@ struct ServerActionsMenu: View {
     let entry: ServerEntry
 
     var body: some View {
-        Button { appState.presentAttentionSettings(for: entry) } label: {
-            Label("Notifications…", systemImage: "bell")
-        }
-        Button { appState.presentPinTaskContext(for: entry) } label: {
-            Label("Pin task…", systemImage: "pin")
-        }
-        Button {
-            appState.setPinned(entry, pinned: !entry.isPinned)
-        } label: {
-            Label(entry.isPinned ? "Unpin server" : "Pin server", systemImage: entry.isPinned ? "pin.slash" : "pin.fill")
-        }
-        Button { appState.presentEditServer(entry) } label: {
-            Label("Edit server…", systemImage: "pencil")
-        }
-        if canManageLocalService {
-            Divider()
-            if entry.lastHealth == .healthy {
-                Button {
-                    Task { await appState.performLocalServiceAction(.stop, for: entry) }
+        ForEach(Array(ServerActionsMenuModel.sections(for: entry).enumerated()), id: \.offset) { pair in
+            if pair.offset > 0 {
+                Divider()
+            }
+            ForEach(pair.element.items) { item in
+                Button(role: item.isDestructive ? .destructive : nil) {
+                    perform(item.action)
                 } label: {
-                    Label("Stop local server", systemImage: "stop.circle")
-                }
-                Button {
-                    Task { await appState.performLocalServiceAction(.restart, for: entry) }
-                } label: {
-                    Label("Restart local server", systemImage: "arrow.clockwise")
-                }
-            } else {
-                Button {
-                    Task { await appState.performLocalServiceAction(.start, for: entry) }
-                } label: {
-                    Label("Start local server", systemImage: "play.circle")
+                    Label(item.title, systemImage: item.systemImage)
                 }
             }
         }
-        Divider()
-        Button(role: .destructive) {
+    }
+
+    private func perform(_ action: ServerAction) {
+        switch action {
+        case .notifications:
+            appState.presentAttentionSettings(for: entry)
+        case .pinTask:
+            appState.presentPinTaskContext(for: entry)
+        case .togglePin:
+            appState.setPinned(entry, pinned: !entry.isPinned)
+        case .copyURL(let url):
+            ServerClipboard.copy(url)
+        case .edit:
+            appState.presentEditServer(entry)
+        case .startLocalService:
+            Task { await appState.performLocalServiceAction(.start, for: entry) }
+        case .stopLocalService:
+            Task { await appState.performLocalServiceAction(.stop, for: entry) }
+        case .restartLocalService:
+            Task { await appState.performLocalServiceAction(.restart, for: entry) }
+        case .remove:
             appState.deleteServer(entry)
-        } label: {
-            Label("Remove server", systemImage: "trash")
         }
     }
-
-    private var canManageLocalService: Bool {
-        entry.originURL.map(HubAccessPolicy.permitsLoopbackWithoutCapability) == true
-            && entry.localProjectPath != nil
-    }
-
 }
 
 private struct ServerIconActionButton: View {

@@ -57,7 +57,11 @@ import { cmdDriver } from "../commands/driver.js";
 import { cmdBundle } from "../commands/bundle.js";
 import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
-import { reexecAfterStaleBuild, reexecUnderBunIfRequested } from "../core/runtime.js";
+import {
+  preferAppleGit,
+  reexecAfterStaleBuild,
+  reexecUnderBunIfRequested,
+} from "../core/runtime.js";
 import { c } from "./colors.js";
 import { commandUsage, printCommandHelp, printHelp, SELF_HELP_COMMANDS } from "./help.js";
 import { readVersion } from "../core/version.js";
@@ -91,6 +95,9 @@ function main(): void {
   if (reexecAfterStaleBuild()) {
     return;
   }
+  // Apple-signed git first on macOS: ad-hoc-signed git costs ~2x wall time in
+  // syspolicyd re-validation on every launch (see preferAppleGit).
+  preferAppleGit();
 
   // Name the managed project in `ps`/Activity Monitor for the long-lived serve
   // process (#0347). Done here — before the staleness check — so the one-time
