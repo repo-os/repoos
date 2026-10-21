@@ -3,12 +3,6 @@ id: "0897"
 title: "Show why a close-out/validation is waiting: queue position, what runs ahead on each runner"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "✗ Server finalization stopped at check: remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on mini — fix it in the feature branch and re-run the gate. The task stays active — fix the failure and ask again."
-debug_tldr: Remote validation on mini failed check-remote-wip and task-drawer-check-chip tests—fix those regressions on the branch and hand off again.
-debug_tldr_at: "2026-10-21T16:26:02Z"
-debug_tldr_key: "dev-error|✗ Server finalization stopped at check: remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on mini — fix it in the feature branch and re-run the gate. The task stays active — fix the failure and ask again."
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/show-why-a-close-out-validation-is-waiti
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T12:39:47Z"
-updated_at: "2026-10-21T16:48:38Z"
+updated_at: "2026-10-21T16:49:03Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 42ac6a27980d8a4baafffffc03e470389ee9d5df
 dev_error_count: 2
@@ -123,3 +117,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T16:26:56Z · body
 - 2026-10-21T16:39:14Z · body
 - 2026-10-21T16:48:38Z · body
+- 2026-10-21T16:49:03Z · needs_input
