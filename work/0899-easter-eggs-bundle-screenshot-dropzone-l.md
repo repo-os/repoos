@@ -206,3 +206,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:07:37Z · body
 - 2026-10-21T19:09:23Z · message_queued at 2026-10-21T19:09:23.204Z
 - 2026-10-21T19:17:38Z · status active→review
+- 2026-10-21T19:17:38Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
