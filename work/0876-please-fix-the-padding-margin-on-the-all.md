@@ -13,7 +13,7 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T03:52:03Z"
+updated_at: "2026-10-21T04:06:22Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T03:35:01.891Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
@@ -158,3 +158,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T03:38:30Z · body
 - 2026-10-21T03:51:48Z · status active→ready
 - 2026-10-21T03:52:03Z · status ready→active
+- 2026-10-21T04:06:22Z · handoff failed · remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate
