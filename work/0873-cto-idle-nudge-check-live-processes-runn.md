@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-21T03:03:42Z"
-review_passes: 2
 id: "0873"
 title: "CTO idle nudge: check live processes, running gates and reviews, and machine pressure first; make the threshold configurable"
 type: feature
@@ -14,6 +12,8 @@ branch: feat/cto-idle-nudge-check-live-processes-runn
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-20T12:23:49Z"
+updated_at: "2026-10-21T03:08:36Z"
+review_passes: 2
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 0e6cbf9917a5eb49f5efc97ffa26995a3ff85a2d
 last_close_out_gate_ms: 105173
