@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-add-copy-url-to-the-ser
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T08:48:53Z"
+updated_at: "2026-10-21T08:50:25Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:22:35.664Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -46,6 +46,17 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 
 **Verified live.** Real Hub build from this worktree, branch UI served in its embedded web view against a running server: picking yellow showed the sidebar bar immediately; the header chip and bar matched; the color survived an app relaunch; **Default** cleared it; pn (purple) and Private (pink) kept their bars. The context menu showed **Copy URL** in place. See the after screenshots above.
 
+## Verification
+Verified on a worktree build of the Hub with `xcodebuild` (Debug, ad-hoc signed) and on screen:
+
+- **Menu:** the server context menu shows **Copy URL** between Pin server and Edit server for local and remote entries. The action copies the saved origin verbatim, scheme and port included (`http://localhost:7559`); `ServerActionsMenuModelTests` covers both cases plus the pasteboard write.
+- **Color bar:** a page in the server's own web view writing the same cookie string as `src/ui-app/src/repo-color.ts` (`repoos_repo_color=lightingai:#E4C86B`) updated the sidebar bar and the registry cache, and the bar survived quitting and relaunching the app. `pn` (#9E8FD0) and `Private` (#E07A8A) kept their bars throughout.
+- **Real picker:** the branch's built web UI was served to the Hub from a local test origin (its API proxied to the local server) to exercise the real swatch popover; the header chip and sidebar bar matched.
+- **Caveat:** the local server on `localhost:7559` is still running a pre-change web-UI build, so its picker only writes `localStorage` there. That is why the end-to-end picker run used the branch's built UI; the reader side is the same cookie in the same per-server data store either way.
+- **Default:** the explicit empty color is parsed as `cleared` and maps to a nil accent (bar removed); `RepoAccentColorPreferenceTests.testEmptyColorIsAnExplicitDefault` pins it.
+
+Swift tests run: `ServerActionsMenuModelTests`, `RepoAccentColorPreferenceTests`, `ServerSidebarRowLayoutTests` (all pass). `REPOOS_CHECK_CHANGED=main repoos check` passes.
+
 ## Screenshots
 
 ![Server context menu has no Copy URL item](/api/tasks/0892/attachments/att_e67ecc24-cacd-4c71-bf34-9f75393d2d75.png)
@@ -58,17 +69,6 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 ![Sidebar before: lightingai has no color bar; pn and Private keep their existing bars](/api/tasks/0892/attachments/att_011e1bb8-f09e-44d7-a54e-746a27d4f353.png)
 ![Sidebar after: lightingai's yellow bar matches the yellow header chip (branch web UI on a local test origin)](/api/tasks/0892/attachments/att_66ea6fdb-70c7-41cd-b689-ba1ec1cd072e.png)
 ![Server context menu in this build: Copy URL sits with the other server items](/api/tasks/0892/attachments/att_45a0e879-72b2-49b5-8506-e8754a18ada6.png)
-
-## Verification
-Verified on a worktree build of the Hub with `xcodebuild` (Debug, ad-hoc signed) and on screen:
-
-- **Menu:** the server context menu shows **Copy URL** between Pin server and Edit server for local and remote entries. The action copies the saved origin verbatim, scheme and port included (`http://localhost:7559`); `ServerActionsMenuModelTests` covers both cases plus the pasteboard write.
-- **Color bar:** a page in the server's own web view writing the same cookie string as `src/ui-app/src/repo-color.ts` (`repoos_repo_color=lightingai:#E4C86B`) updated the sidebar bar and the registry cache, and the bar survived quitting and relaunching the app. `pn` (#9E8FD0) and `Private` (#E07A8A) kept their bars throughout.
-- **Real picker:** the branch's built web UI was served to the Hub from a local test origin (its API proxied to the local server) to exercise the real swatch popover; the header chip and sidebar bar matched.
-- **Caveat:** the local server on `localhost:7559` is still running a pre-change web-UI build, so its picker only writes `localStorage` there. That is why the end-to-end picker run used the branch's built UI; the reader side is the same cookie in the same per-server data store either way.
-- **Default:** the explicit empty color is parsed as `cleared` and maps to a nil accent (bar removed); `RepoAccentColorPreferenceTests.testEmptyColorIsAnExplicitDefault` pins it.
-
-Swift tests run: `ServerActionsMenuModelTests`, `RepoAccentColorPreferenceTests`, `ServerSidebarRowLayoutTests` (all pass). `REPOOS_CHECK_CHANGED=main repoos check` passes.
 
 ## Activity
 
@@ -116,3 +116,4 @@ Swift tests run: `ServerActionsMenuModelTests`, `RepoAccentColorPreferenceTests`
 - 2026-10-21T08:48:34Z · message_queued at 2026-10-21T08:48:34.717Z
 - 2026-10-21T08:48:53Z · body: Verification (added 1, removed 1)
 - 2026-10-21T08:48:53Z · message_queued at 2026-10-21T08:48:53.415Z
+- 2026-10-21T08:50:25Z · body
