@@ -16,14 +16,7 @@
  */
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import type { MemoryPressureProbe, MemoryReadings } from "../../core/memory-pressure.js";
@@ -62,10 +55,7 @@ function makeFixture(opts: { pressureGuard: boolean }): Fixture {
   // The fixture decides the guard's enabled switch; the injected probe decides
   // what the host "reports". Spawn tests use enabled = false so a busy runner
   // can never turn a green test red (#0900).
-  writeFileSync(
-    join(root, "repoos.toml"),
-    `[pressureGuard]\nenabled = ${opts.pressureGuard}\n`,
-  );
+  writeFileSync(join(root, "repoos.toml"), `[pressureGuard]\nenabled = ${opts.pressureGuard}\n`);
   git(root, ["init", "-q"]);
   git(root, ["config", "user.email", "t@example.com"]);
   git(root, ["config", "user.name", "Test"]);
@@ -214,9 +204,9 @@ describe("engineer starts are isolated from host memory pressure (#0900)", () =>
         expect(queued).toBe(false);
         await waitFor(() => spawnCount(fx) === 1, "the engineer spawns despite host pressure");
         // A disabled guard must not leave a pressure marker behind either.
-        expect(
-          existsSync(join(fx.root, ".repoos", "queue-markers", `${id}-pressure.json`)),
-        ).toBe(false);
+        expect(existsSync(join(fx.root, ".repoos", "queue-markers", `${id}-pressure.json`))).toBe(
+          false,
+        );
       } finally {
         killSpawns(fx);
         process.env.PATH = oldPath;
@@ -248,9 +238,17 @@ describe("engineer starts are isolated from host memory pressure (#0900)", () =>
 
         // The queue is legible: API reason + the on-disk marker the UI reads.
         const queuedRes = await api(server, "GET", "/api/agents/queued");
-        const rows = queuedRes.body.tasks as Array<{ id: string; reason?: string; detail?: string }>;
+        const rows = queuedRes.body.tasks as Array<{
+          id: string;
+          reason?: string;
+          detail?: string;
+        }>;
         expect(rows).toContainEqual(
-          expect.objectContaining({ id, reason: "pressure", detail: expect.stringMatching(/swap/i) }),
+          expect.objectContaining({
+            id,
+            reason: "pressure",
+            detail: expect.stringMatching(/swap/i),
+          }),
         );
         const markerPath = join(fx.root, ".repoos", "queue-markers", `${id}-pressure.json`);
         const marker = JSON.parse(readFileSync(markerPath, "utf8")) as {
