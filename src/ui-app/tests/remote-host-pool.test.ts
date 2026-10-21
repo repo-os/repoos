@@ -58,6 +58,8 @@ import {
   parseRemoteGateExitCode,
   remoteRunPaths,
   validateContainerName,
+  ActiveRemoteRunRegistry,
+  taskActivityFromRegistry,
   type RemoteExecDeps,
   type RemoteExecResult,
 } from "../../server/remote-validation.js";
@@ -469,6 +471,8 @@ function poolFixture(opts: {
   loadProbeFails?: boolean;
   /** Validation SSH never resolves and ignores registerAbort (#0739 wedge). */
   validateStallNoAbortOn?: string[];
+  /** Stream `repoos check` step headings so phase timings split build/tests (#0897). */
+  streamStepHeadingsOn?: string[];
 }): Fixture {
   const root = tmpRoot();
   const config = {
@@ -657,6 +661,10 @@ function poolFixture(opts: {
         (cmds[host.ip] ??= []).push(cmd);
         inFlight++;
         peak = Math.max(peak, inFlight);
+        if (opts.streamStepHeadingsOn?.includes(host.ip)) {
+          onChunk?.("$ bun run check\n  ◆ build\n");
+          onChunk?.("  ◆ tests\n");
+        }
         await new Promise<void>((resolve) => {
           const entry = { host: host.ip, resolve };
           pending.push(entry);
@@ -1950,6 +1958,128 @@ describe("host lock observability and dispatch (#0705)", () => {
   });
 });
 
+describe("queue detail: position, kind and blockers (#0897)", () => {
+  it("reports a queued job's position, kind and the running jobs ahead of it", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
+    const first = f.runner.validate(opts("0897-a", { kind: "close-out" }));
+    const second = f.runner.validate(opts("0897-b", { kind: "handoff" }));
+    await tick();
+    const third = f.runner.validate(opts("0897-c", { kind: "shot" }));
+    await tick();
+
+    const queued = f.runner.queueStatus();
+    expect(queued).toHaveLength(1);
+    expect(queued[0]).toMatchObject({
+      taskId: "0897-c",
+      kind: "shot",
+      position: 3,
+      ahead: 2,
+    });
+    expect(queued[0]!.host).toBeTruthy();
+    expect(
+      queued[0]!.blockers.map((b) => [b.taskId, b.kind]).sort((a, b) => a[0]!.localeCompare(b[0]!)),
+    ).toEqual([
+      ["0897-a", "close-out"],
+      ["0897-b", "handoff"],
+    ]);
+    expect(queued[0]!.waitedMs).toBeGreaterThanOrEqual(0);
+
+    // The same detail is attributed to the one host dispatch would use next,
+    // and running jobs carry their kind for the Runners tab.
+    const status = f.runner.hostStatus()!;
+    const withQueue = status.filter((h) => (h.queuedRuns ?? []).length > 0);
+    expect(withQueue).toHaveLength(1);
+    expect(withQueue[0]!.queuedRuns![0]!.taskId).toBe("0897-c");
+    expect(
+      status
+        .flatMap((h) => h.activeRuns ?? [])
+        .map((r) => r.kind)
+        .sort(),
+    ).toEqual(["close-out", "handoff"]);
+
+    f.release();
+    await tick();
+    f.release();
+    await tick();
+    f.release();
+    await Promise.all([first, second, third]);
+  });
+
+  it("does not count a waiter that needs a different host in the position", async () => {
+    const f = poolFixture({
+      hosts: [
+        { host: "linux1", os: "linux" },
+        { host: "mac1", os: "macos" },
+      ],
+    });
+    const linuxBusy = f.runner.validate(opts("0897-linux", { capabilities: ["linux"] }));
+    const macBusy = f.runner.validate(opts("0897-mac", { capabilities: ["macos"] }));
+    await tick();
+    const macQueued = f.runner.validate(
+      opts("0897-mac-queued", { capabilities: ["macos"], kind: "review" }),
+    );
+    await tick();
+
+    const queued = f.runner.queueStatus();
+    expect(queued).toHaveLength(1);
+    expect(queued[0]).toMatchObject({ taskId: "0897-mac-queued", position: 2, ahead: 1 });
+    expect(queued[0]!.blockers.map((b) => [b.taskId, b.host])).toEqual([["0897-mac", "mac1"]]);
+
+    f.release("linux1");
+    await tick();
+    f.release("mac1");
+    await tick();
+    f.release("mac1");
+    await Promise.all([linuxBusy, macBusy, macQueued]);
+  });
+
+  it("records per-stage timings and the job kind for an in-flight run", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    const job = f.runner.validate(opts("0897-phases", { kind: "self-check" }));
+    for (let i = 0; i < 50 && f.pending().length === 0; i++) await tick(5);
+    expect(f.pending()).toEqual(["a"]);
+
+    const run = f.runner.hostStatus()![0]!.activeRuns![0]!;
+    expect(run.taskId).toBe("0897-phases");
+    expect(run.kind).toBe("self-check");
+    expect(run.stage).toBe("run");
+    const phases = run.phases?.map((p) => p.phase) ?? [];
+    // The queue wait is only recorded when the slot was not free instantly.
+    expect(["queued", "bundle"]).toContain(phases[0]);
+    expect(phases).toContain("upload");
+    expect(phases.slice(-2)).toEqual(["queue", "run"]);
+    expect(run.phases![0]!.endedAt).toBeTruthy();
+    expect(run.phases!.at(-1)!.endedAt).toBeUndefined();
+    expect(run.elapsedMs).toBeGreaterThanOrEqual(0);
+
+    const activity = f.runner.taskActivity("0897-phases");
+    expect(activity?.run).toMatchObject({ kind: "self-check", host: "a", stage: "run" });
+    expect(activity?.queue).toBeNull();
+
+    f.release("a");
+    await job;
+  });
+
+  it("splits the run phase into build and tests from check step headings (#0897)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }], streamStepHeadingsOn: ["a"] });
+    const job = f.runner.validate(opts("0897-steps"));
+    for (let i = 0; i < 50 && f.pending().length === 0; i++) await tick(5);
+    expect(f.pending()).toEqual(["a"]);
+
+    const run = f.runner.hostStatus()![0]!.activeRuns![0]!;
+    expect(run.stage).toBe("tests");
+    const phases = run.phases?.map((p) => p.phase) ?? [];
+    expect(phases.slice(-2)).toEqual(["build", "tests"]);
+    const build = run.phases![run.phases!.length - 2]!;
+    expect(build.endedAt).toBeTruthy();
+    expect(build.durationMs).toBeGreaterThanOrEqual(0);
+    expect(run.phases!.at(-1)!.endedAt).toBeUndefined();
+
+    f.release("a");
+    await job;
+  });
+});
+
 describe("host-side lock (server + standalone CLI share one limit)", () => {
   it("serialises two independent processes on a one-slot host", async () => {
     const root = tmpRoot();
@@ -3209,5 +3339,70 @@ describe("runner memory health dispatch (#0901)", () => {
     expect(summary.runnerNotices).toHaveLength(1);
     expect(summary.runnerNotices![0]).toMatchObject({ host: "a", action: "failed" });
     expect(summary.runnerNotices![0]!.message).toContain("not counted as a branch test failure");
+  });
+});
+
+// ── per-task run detail without a host pool (#0897) ─────────────────────────
+
+describe("task activity from the live run registry (#0897)", () => {
+  it("reports the phase and per-phase timings for a host-pool-less runner", () => {
+    const registry = new ActiveRemoteRunRegistry();
+    const base = {
+      taskId: "0897",
+      host: "46.4.1.2",
+      phase: "close-out" as const,
+      scope: "full",
+      startedAt: "2026-10-21T12:00:00Z",
+      stage: "bundle",
+      uploadBytes: null,
+      uploadSeconds: null,
+      kind: "close-out" as const,
+      phases: [
+        {
+          phase: "queued",
+          startedAt: "2026-10-21T11:59:00Z",
+          endedAt: "2026-10-21T12:00:00Z",
+          durationMs: 60_000,
+        },
+        { phase: "bundle", startedAt: "2026-10-21T12:00:00Z" },
+      ],
+    };
+    registry.set(base, "0897");
+
+    // Hetzner has no host pool, so the drawer gets the run detail but no queue.
+    const activity = taskActivityFromRegistry(registry, "0897");
+    expect(activity?.queue).toBeNull();
+    expect(activity?.run).toMatchObject({
+      taskId: "0897",
+      host: "46.4.1.2",
+      kind: "close-out",
+      stage: "bundle",
+    });
+    expect(activity?.run?.phases?.map((p) => p.phase)).toEqual(["queued", "bundle"]);
+    expect(activity?.run?.phases?.[0]).toMatchObject({ phase: "queued", durationMs: 60_000 });
+
+    // A later stage closes the open bundle phase and opens the next.
+    registry.set({ ...base, stage: "run" }, "0897");
+    const advanced = taskActivityFromRegistry(registry, "0897");
+    expect(advanced?.run?.phases?.map((p) => p.phase)).toEqual(["queued", "bundle", "run"]);
+    expect(advanced?.run?.phases?.[1]?.endedAt).toBeTruthy();
+    expect(advanced?.run?.stage).toBe("run");
+  });
+
+  it("returns null for a task with no live run and carries a queue when given one", () => {
+    const registry = new ActiveRemoteRunRegistry();
+    expect(taskActivityFromRegistry(registry, "0897")).toBeNull();
+
+    const queue = {
+      taskId: "0897",
+      kind: "handoff" as const,
+      host: "bee",
+      position: 2,
+      ahead: 1,
+      since: "2026-10-21T12:00:00Z",
+      waitedMs: 120_000,
+      blockers: [],
+    };
+    expect(taskActivityFromRegistry(registry, "0897", queue)).toEqual({ run: null, queue });
   });
 });

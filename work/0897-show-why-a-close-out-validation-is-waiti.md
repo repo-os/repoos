@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 85655
-last_close_out_gate_at: "2026-10-21T19:22:28.042Z"
 id: "0897"
 title: "Show why a close-out/validation is waiting: queue position, what runs ahead on each runner"
 type: feature
-status: review
+status: done
 priority: p2
 area: [server, web]
+merged_commit: 383d2013a0fff6044b7baade9f3723e0a5ce2bac
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/show-why-a-close-out-validation-is-waiti
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T12:39:47Z"
 updated_at: "2026-10-21T19:22:28Z"
+last_close_out_gate_ms: 85655
+last_close_out_gate_at: "2026-10-21T19:22:28.042Z"
 review_passes: 2
 review_rounds: 1
 dev_error_count: 3

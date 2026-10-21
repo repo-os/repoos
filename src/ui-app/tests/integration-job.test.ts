@@ -525,3 +525,37 @@ describe("closeOutPending (#0518)", () => {
     }
   });
 });
+
+describe("close-out phase timings (#0897)", () => {
+  it("records a timing per phase transition and keeps legacy records readable", () => {
+    const root = join(tmpdir(), `repoos-phase-timings-${Date.now()}`);
+    mkdirSync(root, { recursive: true });
+    try {
+      const coordinator = createJobCoordinator(root);
+      const queued = coordinator.enqueue({ id: "0897", branch: "feat/x" } as never)!;
+      expect(queued.phaseStartedAt).toBe(queued.enqueuedAt);
+      expect(queued.phaseTimings?.map((t) => t.phase)).toEqual(["queued"]);
+
+      coordinator.updateJob("0897", { phase: "syncing" });
+      const syncing = coordinator.getJob("0897")!;
+      expect(syncing.phaseTimings?.map((t) => t.phase)).toEqual(["queued", "syncing"]);
+      expect(syncing.phaseTimings?.[0]?.endedAt).toBeTruthy();
+      expect(syncing.phaseTimings?.[0]?.durationMs).toBeGreaterThanOrEqual(0);
+
+      // Re-writing the SAME phase (progress) does not open a duplicate timing.
+      coordinator.updateJob("0897", { phase: "syncing", baseMainSha: "abc" });
+      expect(coordinator.getJob("0897")!.phaseTimings).toHaveLength(2);
+
+      coordinator.updateJob("0897", { phase: "validating" });
+      const validating = coordinator.getJob("0897")!;
+      expect(validating.phaseTimings?.map((t) => t.phase)).toEqual([
+        "queued",
+        "syncing",
+        "validating",
+      ]);
+      expect(validating.phaseTimings?.at(-1)?.endedAt).toBeUndefined();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
