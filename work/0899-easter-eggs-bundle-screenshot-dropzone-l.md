@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T13:44:06Z"
+updated_at: "2026-10-21T14:21:41Z"
 ---
 ## Items
 
@@ -41,9 +41,29 @@ Start from the `.shot-dropzone` block in `src/ui-app/src/style.css` (~line 6970)
 ![1](/api/tasks/0899/attachments/att_6573b9c6-4601-44c5-a381-0a2e1a8b6e8c.png)
 ![2](/api/tasks/0899/attachments/att_4a56fb0d-3858-4cd1-bc4c-be4ab34a6eb8.png)
 
+## E2 · CLI captions for multiple screenshots
+### Problem
+`repoos new` / `repoos update` reject `--caption` when more than one `--screenshot` is given (`screenshotFlagError` in `src/commands/tasks.ts`, tested in `src/ui-app/tests/cli-screenshots.test.ts`). A request with several images therefore lands with generic alt text (`![1]`, `![2]`) or needs one command per image, which duplicates attachments that are already stored. Found while filing this bundle with two screenshots (2026-10-21).
+
+### Desired UX
+- Repeated `--caption` flags pair with repeated `--screenshot` flags by position: the Nth caption labels the Nth screenshot.
+- Fewer captions than screenshots is fine (the rest keep default alt text). More captions than screenshots, or a caption with no screenshot, is an error that names the counts.
+- A single `--caption` with a single `--screenshot` behaves exactly as today. `--help` and `user-docs/cli.md` describe the pairing.
+
+### Acceptance criteria
+- Test: two `--screenshot` plus two `--caption` write both alt texts in order in `## Screenshots`.
+- Test: one caption with two screenshots labels only the first; three captions with two screenshots errors.
+- Test: single screenshot with single caption is unchanged, and `--caption` with no `--screenshot` still errors.
+- The help text and CLI docs match the new behavior.
+
+### Notes for AI
+Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing that feeds it; check that the CLI's arg parser keeps repeated `--caption` values as a list. Source: user report 2026-10-21.
+
+
 ## Activity
 
 - 2026-10-21T13:43:38Z · created · njachowski@gmail.com
 - 2026-10-21T13:43:42Z · screenshots
 - 2026-10-21T13:43:45Z · needs_input
 - 2026-10-21T13:44:06Z · needs_input
+- 2026-10-21T14:21:41Z · body: E2 · CLI captions for multiple screenshots (added)
