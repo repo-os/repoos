@@ -397,7 +397,10 @@ private struct InfoOrBadgesTrigger: View {
     }
 }
 
-private struct ServerDetailsPopover: View {
+/// The sidebar's server summary: health, address, runtime details, and the
+/// attention counts. Not private because `HubSnapshotTests` renders it
+/// offscreen as the "summary view" snapshot (#0893); it is still app-internal.
+struct ServerDetailsPopover: View {
     let entry: ServerEntry
     let runtimeInfo: ServerRuntimeInfo?
     let attention: ServerAttentionSnapshot?
