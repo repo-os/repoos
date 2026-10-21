@@ -11,7 +11,7 @@ branch: feat/docs-site-use-the-landing-page-s-repoos-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-21T05:57:04Z"
+updated_at: "2026-10-21T05:58:44Z"
 last_check_failure: "repoos check at 2026-10-21T05:03:23.727Z: repoos check failed: vite v8.2.0 building client environment for production..."
 dev_error_count: 4
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
@@ -121,4 +121,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T05:48:39Z · note: handoff requested (ui-review)
 - 2026-10-21T05:57:03Z · status active→review
 - 2026-10-21T05:57:04Z · note: shots: skipped — 28 shots already captured — an engineer-made capture pre-empts the automatic one
-
+- 2026-10-21T05:58:44Z · note: review pass 1: good to go
