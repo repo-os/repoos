@@ -99,6 +99,13 @@ function renderBrief(brief: BriefView): void {
   line(c.dim(`  ${flags}`));
   line();
 
+  line(
+    c.dim(
+      "  Verify live state first: re-read `repoos list` / `repoos landable <id>` before acting; memory and prompts are hints.",
+    ),
+  );
+  line();
+
   // Recommendations first — a new driver wants the next moves up top.
   line(c.bold("  Next actions"));
   if (!brief.recommendations.length) line(c.dim("    (none)"));
