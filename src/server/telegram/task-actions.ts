@@ -257,7 +257,11 @@ export function telegramTaskActionMarkup(
   if (input.status === "ready") {
     row.push({ text: "▶️ Start", callback_data: token("start") });
   } else if (input.status === "active") {
-    if (input.needsInput || input.kind === "task.agent_failed") {
+    if (
+      input.needsInput ||
+      input.kind === "task.needs_input" ||
+      input.kind === "task.agent_failed"
+    ) {
       row.push({ text: "▶️ Resume", callback_data: token("resume") });
     }
     row.push({ text: "⏸ Pause", callback_data: token("pause") });

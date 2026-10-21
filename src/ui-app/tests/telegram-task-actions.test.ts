@@ -25,7 +25,10 @@ import type { Task } from "../../core/types.js";
 import { Logger } from "../../core/logger.js";
 import type { TelegramAuthorizedHandler } from "../../server/telegram/intake.js";
 import { chainedOnAuthorized } from "../../server/telegram/index.js";
-import { createTelegramTaskActionsHandler } from "../../server/telegram/task-actions.js";
+import {
+  createTelegramTaskActionsHandler,
+  telegramTaskActionMarkup,
+} from "../../server/telegram/task-actions.js";
 import {
   resetTelegramRateLimitersForTests,
   tryAcquireTelegramCreateLimits,
@@ -340,6 +343,17 @@ describe("Telegram task creation (#0543)", () => {
       "✏️ Edit",
       "✖️ Cancel",
     ]);
+    // A private chat has no topic and needs no topic configuration.
+    expect(h.sent[0].options?.messageThreadId).toBeUndefined();
+  });
+
+  it("replies into the originating forum topic", async () => {
+    bindUser("admin@test.com", "admin", 7);
+    const h = makeHarness();
+    const update = newtaskUpdate(7, "/newtask Add a dark mode toggle to Settings");
+    update.message!.messageThreadId = 77;
+    await h.handler(update, ADMIN);
+    expect(h.sent[0].options?.messageThreadId).toBe(77);
   });
 
   it("refuses a member with a role explanation and creates nothing", async () => {
@@ -728,6 +742,37 @@ describe("Telegram-created tasks match UI-created tasks (#0543)", () => {
     const uiFile = normalize(readFileSync(uiTask.absPath, "utf8"));
     const tgFile = normalize(readFileSync(tgResult.task.absPath, "utf8"));
     expect(tgFile).toBe(uiFile);
+  });
+});
+
+describe("notification action buttons (#0543)", () => {
+  it("offers the actions that apply to a task's state", () => {
+    const now = new Date("2026-10-21T00:00:00Z");
+    const ready = telegramTaskActionMarkup(SECRET, { taskId: "0042", status: "ready" }, now);
+    expect(ready?.inline_keyboard[0].map((b) => b.text)).toEqual(["▶️ Start"]);
+
+    const active = telegramTaskActionMarkup(
+      SECRET,
+      { taskId: "0042", status: "active", kind: "task.needs_input" },
+      now,
+    );
+    expect(active?.inline_keyboard[0].map((b) => b.text)).toEqual([
+      "▶️ Resume",
+      "⏸ Pause",
+      "👀 Request review",
+    ]);
+
+    const review = telegramTaskActionMarkup(SECRET, { taskId: "0042", status: "review" }, now);
+    expect(review?.inline_keyboard[0].map((b) => b.text)).toEqual(["✅ Move to done"]);
+    const token = review?.inline_keyboard[0][0].callback_data ?? "";
+    expect(verifyTelegramAction(SECRET, token, now)).toMatchObject({
+      ok: true,
+      payload: { kind: "done", ref: "0042" },
+    });
+  });
+
+  it("does not render buttons without a signing secret", () => {
+    expect(telegramTaskActionMarkup(null, { taskId: "0042", status: "review" })).toBeUndefined();
   });
 });
 

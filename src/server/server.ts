@@ -4553,15 +4553,27 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             message: `⏸ Paused #${task.id} — it stays active; start it again to resume.`,
           };
         },
-        requestReview: async (task) => {
-          const res = await runTaskRoute(
-            patchTask,
-            { param1: task.id },
-            { status: "review", origin: "ui-review" },
-          );
-          const failure = routeFailure(res.status, res.body);
-          if (failure) {
-            return { ok: false, message: `Could not request review for #${task.id}: ${failure}` };
+        requestReview: async (task, actor) => {
+          if (task.status !== "active") {
+            return {
+              ok: false,
+              message: `#${task.id} is '${task.status}' — only an active task can request review.`,
+            };
+          }
+          // The same unified handoff the PATCH /api/tasks/:id review branch
+          // starts (commit + validate gate); the actor is the presser, so the
+          // activity entry never falls back to "human".
+          const result = startUnifiedHandoff(task, {
+            origin: "ui-review",
+            actor: actor.email,
+          });
+          if (!result.started) {
+            return {
+              ok: false,
+              message: `Could not request review for #${task.id}: ${
+                result.reason ?? "a handoff is already running"
+              }`,
+            };
           }
           return {
             ok: true,
