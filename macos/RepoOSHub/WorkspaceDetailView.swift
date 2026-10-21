@@ -62,7 +62,7 @@ private struct SelectServerPrompt: View {
         VStack(spacing: 12) {
             Text("Select a server")
                 .font(.title3.weight(.semibold))
-            Text("Choose a saved server in the sidebar to make it the active workspace.")
+            Text("Choose a saved server to make it the active workspace.")
                 .foregroundStyle(.secondary)
         }
         .padding()

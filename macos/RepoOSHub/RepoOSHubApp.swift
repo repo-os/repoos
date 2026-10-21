@@ -126,6 +126,20 @@ struct RepoOSHubApp: App {
                     appState.workspaceReload()
                 }
                 .keyboardShortcut("r", modifiers: .command)
+
+                Divider()
+
+                Button("Next Server Tab") {
+                    appState.selectAdjacentVisibleTab(forward: true)
+                }
+                .keyboardShortcut(.tab, modifiers: .control)
+                .disabled(appState.hubGlobalPreferences.navigationLayout != .tabs)
+
+                Button("Previous Server Tab") {
+                    appState.selectAdjacentVisibleTab(forward: false)
+                }
+                .keyboardShortcut(.tab, modifiers: [.control, .shift])
+                .disabled(appState.hubGlobalPreferences.navigationLayout != .tabs)
             }
         }
     }

@@ -220,6 +220,80 @@ final class HubAppState: ObservableObject {
         updateHubGlobalPreferences(notificationsEnabled: nil, dockBadgeEnabled: nil, appearance: appearance)
     }
 
+    func updateServerNavigationLayout(_ layout: HubServerNavigationLayout) {
+        guard document.hubGlobalPreferences.navigationLayout != layout else { return }
+        document.hubGlobalPreferences.navigationLayout = layout
+        publishHubPreferences()
+    }
+
+    var visibleServerTabEntries: [ServerEntry] {
+        let ids = HubServerTabOrder.visibleServerIDs(
+            entries: entries,
+            preferredOrder: hubGlobalPreferences.serverTabOrder,
+            hiddenIDs: hubGlobalPreferences.hiddenServerTabIDs
+        )
+        let byID = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0) })
+        return ids.compactMap { byID[$0] }
+    }
+
+    func hideServerTab(_ id: UUID) {
+        guard entries.contains(where: { $0.id == id }) else { return }
+        var hidden = document.hubGlobalPreferences.hiddenServerTabIDs
+        if !hidden.contains(id) {
+            hidden.append(id)
+        }
+        document.hubGlobalPreferences.hiddenServerTabIDs = hidden
+        publishHubPreferences()
+        let next = HubServerTabOrder.selectionAfterHide(
+            selected: selectedServerID,
+            hiddenID: id,
+            remainingVisible: visibleServerTabEntries.map(\.id)
+        )
+        if next != selectedServerID {
+            selectServer(next)
+        }
+    }
+
+    func showServerTab(_ id: UUID) {
+        guard entries.contains(where: { $0.id == id }) else { return }
+        document.hubGlobalPreferences.hiddenServerTabIDs.removeAll { $0 == id }
+        if !document.hubGlobalPreferences.serverTabOrder.contains(id) {
+            document.hubGlobalPreferences.serverTabOrder.append(id)
+        }
+        publishHubPreferences()
+        selectServer(id)
+    }
+
+    func moveServerTab(source: UUID, to target: UUID) {
+        document.hubGlobalPreferences.serverTabOrder = HubServerTabOrder.move(
+            entries: entries,
+            preferredOrder: document.hubGlobalPreferences.serverTabOrder,
+            hiddenIDs: document.hubGlobalPreferences.hiddenServerTabIDs,
+            source: source,
+            to: target
+        )
+        publishHubPreferences()
+    }
+
+    func selectAdjacentVisibleTab(forward: Bool) {
+        guard hubGlobalPreferences.navigationLayout == .tabs else { return }
+        let ids = visibleServerTabEntries.map(\.id)
+        guard let next = HubServerTabOrder.adjacent(visible: ids, selected: selectedServerID, forward: forward) else { return }
+        selectServer(next)
+    }
+
+    func selectVisibleTab(shortcutIndex: Int) {
+        guard hubGlobalPreferences.navigationLayout == .tabs else { return }
+        let ids = visibleServerTabEntries.map(\.id)
+        guard ids.indices.contains(shortcutIndex) else { return }
+        selectServer(ids[shortcutIndex])
+    }
+
+    private func publishHubPreferences() {
+        hubGlobalPreferences = document.hubGlobalPreferences
+        try? store.save(document)
+    }
+
     func handleHubNotificationOpen(serverID: UUID, path: String) {
         selectServer(serverID)
         requestNavigation(serverID: serverID, path: path)
@@ -753,6 +827,9 @@ final class HubAppState: ObservableObject {
         let valid = Set(document.entries.map(\.id))
         document.serverRecents = HubRecentsRetention.prune(metadata: document.serverRecents, validServerIDs: valid)
         document.pinnedTaskContexts = HubRecentsRetention.prune(pinned: document.pinnedTaskContexts, validServerIDs: valid)
+        document.hubGlobalPreferences.serverTabOrder.removeAll { !valid.contains($0) }
+        document.hubGlobalPreferences.hiddenServerTabIDs.removeAll { !valid.contains($0) }
+        hubGlobalPreferences = document.hubGlobalPreferences
     }
 
     private func restorePendingRouteForSelectedServer() {
