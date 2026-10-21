@@ -14,10 +14,10 @@ area: [docs, landing]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/docs-site-use-the-landing-page-s-repoos-
-cli_override: opencode
-model_override: opencode-go/glm-5.3-flash
+cli_override: cursor
+model_override: default
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-21T04:24:28Z"
+updated_at: "2026-10-21T04:26:55Z"
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:18.973Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:08:12.298Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:09:06.817Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-21T04:10:13.967Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
@@ -116,3 +116,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T04:21:54Z · body
 - 2026-10-21T04:23:17Z · body
 - 2026-10-21T04:24:28Z · body
+- 2026-10-21T04:26:55Z · cli_override, model_override
