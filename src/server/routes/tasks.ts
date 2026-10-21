@@ -1669,6 +1669,174 @@ export const uploadTaskShot: RouteHandler = async (ctx, req, res, params) => {
 };
 
 /**
+ * Capture one web shot for `repoos shot` (#0874).
+ *
+ * The CLI drives WebKit directly in local mode, so `browserCaptureMode` would
+ * otherwise be silently ignored for manual captures. This route is the same
+ * single-entry capture the drawer uses (`captureDeclaredShot`): it applies the
+ * configured local / runner-available / runner-only policy, starts the preview
+ * on the runner when one is available, and imports the returned PNG into the
+ * local shot store. Unlike the drawer's Add shot it does NOT append a
+ * `## Shots` declaration — `repoos shot` is an ad-hoc capture, not a
+ * declaration.
+ */
+export const captureTaskShot: RouteHandler = async (ctx, req, res, params) => {
+  const { config, index, previews } = ctx;
+  const task = index.getTask(params.param1);
+  if (!task) {
+    return json(res, 404, { error: `Task #${params.param1} not found` });
+  }
+  if (task.status !== "active" && task.status !== "review") {
+    return json(res, 400, {
+      error: `Shots can only be captured while a task is active or review (#${task.id} is ${task.status})`,
+    });
+  }
+  if (!task.branch) {
+    return json(res, 400, { error: "The task has no branch yet — nothing to capture" });
+  }
+  const body = (await readBody(req)) as {
+    entry?: unknown;
+    provenance?: unknown;
+  };
+  // Branch fixtures (#0786): the CLI validated the entry against the task
+  // branch's source, so admit the same branch-only `state` ids here.
+  const fixtureValidator = taskFixtureValidator(
+    (path: string) => {
+      try {
+        return existsSync(path) ? readFileSync(path, "utf8") : null;
+      } catch {
+        return null;
+      }
+    },
+    config,
+    task,
+  );
+  const parsed = parseShotEntry(
+    body?.entry,
+    "shot",
+    fixtureValidator ? { fixtureValidator } : undefined,
+  );
+  if (parsed.error || !parsed.shot) {
+    return json(res, 400, { error: parsed.error ?? "Invalid shot entry" });
+  }
+  const entry = parsed.shot;
+  if (!entry.target) {
+    return json(res, 400, { error: "shot entry needs a target" });
+  }
+  const rawEntry =
+    body?.entry && typeof body.entry === "object" && !Array.isArray(body.entry)
+      ? (body.entry as Record<string, unknown>)
+      : undefined;
+  // The plan may have merged highlight selectors (#0613); keep the detail so a
+  // remote capture reports the same per-selector misses as a local one.
+  const highlights =
+    Array.isArray(rawEntry?.highlights) &&
+    rawEntry.highlights.length > 0 &&
+    rawEntry.highlights.every((value) => typeof value === "string" && value)
+      ? (rawEntry.highlights as string[])
+      : undefined;
+  const shotContext = computeTaskShotContext(config, task);
+  const resolution = resolveShotTargets(
+    config.preview,
+    task.area,
+    shotContext.changedPaths,
+    entry.target,
+    config.shot,
+  );
+  if (resolution.names.length === 0) {
+    return json(res, 400, {
+      error:
+        (resolution.reason ?? "no preview target") +
+        " — add a target with [[preview.paths]] matching this task's diff, or configure a default preview",
+    });
+  }
+  const appTarget = appPreviewTargetName(config.preview);
+  const resolved = resolveDeclaredShotTarget(entry, resolution.names, {
+    ...(appTarget ? { appTarget } : {}),
+    commandTargets: new Set((config.shot?.targets ?? []).map((t) => t.name)),
+  });
+  if (resolved.error || !resolved.target) {
+    return json(res, 400, { error: resolved.error ?? "the target could not be resolved" });
+  }
+  if ((config.shot?.targets ?? []).some((t) => t.name === resolved.target)) {
+    return json(res, 400, {
+      error:
+        `"${resolved.target}" is a command capture target — it renders its image by running a command, ` +
+        "not by loading a page",
+    });
+  }
+  const provenance = parseShotProvenance(body?.provenance) ?? {
+    kind: "declared" as const,
+    ...(entry.label ? { label: entry.label } : {}),
+  };
+  let fallbackNote: string | undefined;
+  const result = await captureDeclaredShot(
+    config,
+    task,
+    previews,
+    {
+      ...entry,
+      target: resolved.target,
+      route: entry.route ?? "/",
+      ...(highlights ? { highlights } : {}),
+      provenance,
+    },
+    remoteBrowserEvidenceTransport(config, ctx.remoteValidator),
+    (message) => {
+      fallbackNote = message;
+      ctx.logger.task(task.id, "warn", `shot capture: ${message}`);
+    },
+  );
+  if ("error" in result) {
+    return json(res, result.busy ? 409 : 400, {
+      error: result.error,
+      ...(result.busy ? { busy: true } : {}),
+      ...(result.unavailable ? { unavailable: true } : {}),
+    });
+  }
+  // #0613: persist capture misses (a selector/highlight that matched nothing)
+  // on the task, exactly like the local upload path does — a remote capture
+  // must not lose that visible caveat.
+  for (const warning of result.warnings) {
+    if (!warning.trim()) continue;
+    try {
+      patchTaskFile(config, task.absPath, { note: warning.trim() });
+    } catch {
+      /* best-effort — the CLI and the response already carry it */
+    }
+  }
+  return json(res, 201, {
+    ok: true,
+    shot: result.shot,
+    warnings: result.warnings,
+    ...(fallbackNote ? { note: fallbackNote } : {}),
+  });
+};
+
+/** Validate the optional provenance object a CLI capture sends with its entry. */
+function parseShotProvenance(
+  raw: unknown,
+): import("../../core/shot-plan.js").CaptureEntry["provenance"] | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const value = raw as { kind?: unknown; label?: unknown; globs?: unknown };
+  if (value.kind === "declared") {
+    return {
+      kind: "declared",
+      ...(typeof value.label === "string" && value.label ? { label: value.label } : {}),
+    };
+  }
+  if (value.kind === "auto") {
+    return {
+      kind: "auto",
+      ...(Array.isArray(value.globs) && value.globs.every((g) => typeof g === "string")
+        ? { globs: value.globs as string[] }
+        : {}),
+    };
+  }
+  return undefined;
+}
+
+/**
  * The drawer's Add shot (#0627): validate ONE declared entry with the shared
  * `parseShotPlan` rules, capture it immediately through the server-owned
  * preview (never evicting a preview a human is viewing — busy is a structured
