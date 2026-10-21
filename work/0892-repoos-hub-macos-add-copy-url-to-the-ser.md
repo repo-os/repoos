@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T06:06:49Z"
+updated_at: "2026-10-21T06:06:50Z"
 ---
 ## Problem
 Two problems in the native macOS app (RepoOS Hub) server sidebar:
@@ -35,8 +35,10 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 ## Screenshots
 
 ![Server context menu has no Copy URL item](/api/tasks/0892/attachments/att_e67ecc24-cacd-4c71-bf34-9f75393d2d75.png)
+![lightingai color popover is yellow; sidebar bar is not](/api/tasks/0892/attachments/att_464c834d-dcfe-41db-831d-829b5eebf38f.png)
 
 ## Activity
 
 - 2026-10-21T05:57:31Z · created · njachowski@gmail.com
 - 2026-10-21T06:06:44Z · screenshots
+- 2026-10-21T06:06:50Z · screenshots
