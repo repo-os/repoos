@@ -120,6 +120,34 @@ describe("UI harness teardown (#0859 E1)", () => {
     expect(existsSync(fixture)).toBe(false);
   });
 
+  it("still closes the server when a closer throws synchronously", async () => {
+    const { fixture } = buildIsolated(makeSmokeFixture);
+    let serverClosed = false;
+    const context: HarnessCloser = {
+      // A synchronous throw must be isolated too: an earlier
+      // Promise.allSettled(map(close)) skipped every closer after it.
+      close: () => {
+        throw new Error("sync context boom");
+      },
+    };
+    const server: HarnessCloser = {
+      close: async () => {
+        serverClosed = true;
+      },
+    };
+
+    await expect(
+      teardownUiHarness({
+        context,
+        server,
+        removeFixture: () => rmSync(fixture, { recursive: true, force: true }),
+      }),
+    ).rejects.toThrow(/sync context boom/);
+
+    expect(serverClosed).toBe(true);
+    expect(existsSync(fixture)).toBe(false);
+  });
+
   it("surfaces every failure when context, browser and server all throw", async () => {
     const { fixture } = buildIsolated(makeSmokeFixture);
     const context = throwingCloser("context");
