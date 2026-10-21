@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T03:51:05Z"
+updated_at: "2026-10-21T04:04:55Z"
 ---
 ## Items
 
@@ -125,3 +125,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T02:26:34Z · note: bundle add E5
 - 2026-10-21T03:51:01Z · cli_override, model_override
 - 2026-10-21T03:51:05Z · status ready→active, branch
+- 2026-10-21T04:04:55Z · body
