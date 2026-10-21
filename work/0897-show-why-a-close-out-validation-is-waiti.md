@@ -11,7 +11,7 @@ branch: feat/show-why-a-close-out-validation-is-waiti
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T12:39:47Z"
-updated_at: "2026-10-21T15:26:48Z"
+updated_at: "2026-10-21T15:34:42Z"
 ---
 ## Problem
 A close-out sat in 'validating' for ~18 min (2026-10-21, #0892) although its own gate only ran ~6 min on bee. Nothing shows where the other ~12 min went: waiting for a runner slot, a prior phase, or something else queued/running ahead of it on a runner (other handoff checks, reviews, other close-outs). Operators and drivers can't tell a slow gate from a queued one.
@@ -32,10 +32,10 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 ```json
 [
 {
-"label": "Remote runners + close-out pipeline: job kind, per-phase timings, queue position and blockers",
-"target": "default",
-"route": "/checks?tab=now",
-"highlight": ".rr-panel"
+  "label": "Remote runners + close-out pipeline: job kind, per-phase timings, queue position and blockers",
+  "target": "default",
+  "route": "/checks?tab=now",
+  "highlight": ".rr-panel"
 }
 ]
 ```
@@ -66,3 +66,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T14:52:33Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-21T15:14:37Z · body
 - 2026-10-21T15:26:48Z · body
+- 2026-10-21T15:34:42Z · body
