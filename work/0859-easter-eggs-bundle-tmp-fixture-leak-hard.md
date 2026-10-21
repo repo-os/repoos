@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T04:51:32Z"
+updated_at: "2026-10-21T04:51:43Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:13.053Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:08:06.822Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:09:05.450Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -85,10 +85,7 @@ Reuse the tmp-isolation and reap helpers from #0858 (`tmp-isolation.ts`, `global
 - Test: Unit-test the pure default-size helper (visible frame in, window size out, clamped to the min size) and manually launch the Hub.
 
 ### Notes for AI
-
-
-
-
+Implemented as a pure helper ({@link HubWindowDefaults.defaultWindowSize}, 90% of NSScreen.visibleFrame clamped to the 880x520 minimum) used via .defaultSize on the WindowGroup, so macOS frame restoration still wins after the user resizes. Unit tests cover the helper (fill, small-screen clamp, nil-screen fallback); the "manually launch the Hub" half of the criterion is human verification — launch the Hub once after this lands to confirm it opens large.
 ## E5 · Docs site (HMR) target fails when user-docs deps are not installed
 
 ### Problem
@@ -163,3 +160,5 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T04:51:32Z · body: Items (added 1, removed 1)
 - 2026-10-21T04:51:32Z · note: bundle done E5
 - 2026-10-21T04:51:32Z · message_queued at 2026-10-21T04:51:32.511Z
+- 2026-10-21T04:51:43Z · body: E4 · RepoOS Hub opens at its minimum size instead of filling the screen (added 1)
+- 2026-10-21T04:51:43Z · note: bundle edit E4
