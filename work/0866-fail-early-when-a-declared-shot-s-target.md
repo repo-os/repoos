@@ -5,13 +5,13 @@ type: bug
 status: active
 priority: p2
 area: server
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/fail-early-when-a-declared-shot-s-target
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T11:55:38Z"
-updated_at: "2026-10-21T00:06:30Z"
+updated_at: "2026-10-21T00:06:39Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 66bcc54b to e2117d96) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 66bcc54beaa4fe11f66a42ab867f710506e97898
 review_rounds: 1
@@ -85,3 +85,4 @@ See the shot declaration and capture code in src/server/shot-capture.ts, `planAu
 - 2026-10-20T23:36:08Z · body
 - 2026-10-20T23:37:55Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 66bcc54b to e2117d96) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-10-21T00:05:54Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
+- 2026-10-21T00:06:39Z · assigned_to
