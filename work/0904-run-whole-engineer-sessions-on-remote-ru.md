@@ -45,3 +45,4 @@ Large; split into stories/tasks after the ADR. Depends in spirit on #0900 (tests
 - 2026-10-21T19:37:04Z · needs_input
 - 2026-10-21T19:37:27Z · status ready→active, branch
 - 2026-10-21T19:41:41Z · body
+- 2026-10-21T19:41:41Z · body
