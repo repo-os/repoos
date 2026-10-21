@@ -26,7 +26,9 @@ Example `7559.json`:
   "projectName": "lightingai",
   "version": "0.5.71",
   "startedAt": "2026-10-19T12:00:00.000Z",
-  "kind": "server"
+  "kind": "server",
+  "activeEngineers": 1,
+  "engineersUpdatedAt": "2026-10-19T12:05:00.000Z"
 }
 ```
 
@@ -40,6 +42,8 @@ Example `7559.json`:
 | `version` | Running RepoOS install version |
 | `startedAt` | ISO-8601 time when this listener registered |
 | `kind` | Always `"server"` for control-plane serves |
+| `activeEngineers` | Live engineer turns in that server; refreshed every 5s (#0871) |
+| `engineersUpdatedAt` | Last refresh of `activeEngineers` |
 
 ## Lifecycle
 
@@ -69,8 +73,8 @@ treated as stale and overwritten on register.
 ## CLI
 
 ```bash
-repoos servers           # human table: port, project, root, pid, uptime, validity
-repoos servers --json    # machine-readable list + validity
+repoos servers           # human table: port, project, root, pid, uptime, engineers, validity
+repoos servers --json    # machine-readable list + validity + activeEngineers
 repoos servers --prune   # delete stale entries (dead PID or failed health), then list
 ```
 

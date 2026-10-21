@@ -107,6 +107,37 @@ export function isShotPreviewFixtureId(value: string): value is ShotPreviewFixtu
   return (SHOT_PREVIEW_FIXTURE_IDS as readonly string[]).includes(value);
 }
 
+/**
+ * The page container a fixture needs after it is applied (#0866), so a capture
+ * can tell "the fixture never rendered" apart from a clean pass. A drawer shot
+ * on the board is a wrong screen even though the fixture query was applied.
+ * `null` means the fixture has no structural requirement this capture can
+ * check (e.g. a settings seed shown by the route itself).
+ */
+export type ShotFixtureContainer = "dialog" | "task-card";
+
+export function shotFixtureContainer(fixture: string): ShotFixtureContainer | null {
+  if (
+    fixture.startsWith("drawer:") ||
+    fixture.startsWith("panel:") ||
+    fixture.startsWith("schedule:")
+  ) {
+    return "dialog";
+  }
+  if (
+    fixture.startsWith("board:") ||
+    fixture.startsWith("card:") ||
+    fixture.startsWith("closeOut:") ||
+    fixture.startsWith("integration:")
+  ) {
+    return "task-card";
+  }
+  return null;
+}
+
+/** `data-*` attribute the app sets when it actually applies a `state` fixture (#0866). */
+export const SHOT_PREVIEW_APPLIED_ATTR = "data-repoos-shot-state";
+
 /** Extract fixture ids from the source file's SHOT_PREVIEW_FIXTURE_IDS array (#0786). */
 export function extractFixturesFromSource(sourceContent: string): string[] {
   const patterns = [

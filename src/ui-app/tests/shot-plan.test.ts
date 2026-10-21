@@ -589,6 +589,7 @@ describe("planAutoCapture gates (#0594)", () => {
         },
       ],
       errors: [],
+      blockingErrors: [],
       skips: [],
       collapsed: [],
     });
