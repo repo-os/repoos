@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T06:06:43Z"
+updated_at: "2026-10-21T06:06:44Z"
 ---
 ## Problem
 Two problems in the native macOS app (RepoOS Hub) server sidebar:
@@ -32,6 +32,11 @@ Two problems in the native macOS app (RepoOS Hub) server sidebar:
 ## Notes for AI
 Native code is under macos/RepoOSHub (server list/sidebar view and its context menu). The web UI's color picker is the "lightingai" header chip popover; find where it saves (search the ui-app for the color swatch component and its storage key) and how the Hub embeds the page (WKWebView storage and any message bridge). The reporter's two screenshots (the context menu and the color popover with the unchanged sidebar) were pasted in chat and could not be attached automatically: ask for the files if the visuals are needed. Verify on a real Hub build using the iOS/macOS tooling available, not only unit tests.
 
+## Screenshots
+
+![Server context menu has no Copy URL item](/api/tasks/0892/attachments/att_e67ecc24-cacd-4c71-bf34-9f75393d2d75.png)
+
 ## Activity
 
 - 2026-10-21T05:57:31Z · created · njachowski@gmail.com
+- 2026-10-21T06:06:44Z · screenshots
