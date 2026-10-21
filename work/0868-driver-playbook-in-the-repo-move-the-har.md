@@ -8,8 +8,10 @@ area: docs
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:06:07Z"
-updated_at: "2026-10-21T00:31:00Z"
+updated_at: "2026-10-21T00:31:10Z"
 ---
 ## Problem
 AGENTS.md says durable project knowledge belongs in the repo, but the lessons from driving RepoOS on 2026-10-19/20 live only in a scratch handoff file under /private/tmp, which disappears with the session. A new driver has to relearn them: reviews and messages race (a message queues and the engineer hands off before reading it); how to repair a phantom runner (`repoos mv <id> ready` then `repoos start <id>`); review whack-a-mole (give one message naming the class); a crashed engineer needs --needs-input false, a model switch and full context; the machine thrashes mostly because of non-RepoOS processes; run landing pre-checks separately from `repoos done`; ask before deleting unknown untracked files on main.
@@ -35,3 +37,4 @@ Read docs/driver-notes.md (the format and the 2026-10-07 entry) and docs/cto-aut
 - 2026-10-20T12:20:29Z · body: Acceptance criteria (added 4, removed 5)
 - 2026-10-20T12:20:34Z · body: Notes for AI (added 1, removed 1)
 - 2026-10-21T00:31:00Z · status inbox→ready
+- 2026-10-21T00:31:10Z · cli_override, model_override
