@@ -68,7 +68,9 @@ function makeFixture(repoosToml?: string): Fixture {
   mkdirSync(bin, { recursive: true });
   mkdirSync(join(root, "work"), { recursive: true });
   writeFileSync(join(bin, "opencode"), `#!/usr/bin/env node\n${FAKE}`, { mode: 0o755 });
-  if (repoosToml !== undefined) writeFileSync(join(root, "repoos.toml"), repoosToml);
+  // Spawn behaviour must not depend on the host's memory state (#0900).
+  const toml = `[pressureGuard]\nenabled = false\n${repoosToml ?? ""}`;
+  writeFileSync(join(root, "repoos.toml"), toml);
   git(root, ["init", "-q"]);
   git(root, ["config", "user.email", "t@example.com"]);
   git(root, ["config", "user.name", "Test"]);
