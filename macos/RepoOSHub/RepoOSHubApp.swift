@@ -248,6 +248,18 @@ final class HubWindowChromeView: NSView {
         configureWindow()
     }
 
+    override func layout() {
+        super.layout()
+        // SwiftUI's NavigationSplitView installs its own toolbar (including an
+        // automatic sidebar toggle) after the window first attaches, so hiding
+        // it once in `configureWindow` misses it. Re-hide on every layout pass:
+        // the 52pt native toolbar row otherwise sits over the tab strip and the
+        // page, and its toggle duplicates the sidebar control (#0895).
+        if let window {
+            hideHubNativeToolbarRow(window)
+        }
+    }
+
     private func configureWindow() {
         guard let window else { return }
         let appKitAppearance = hubAppearance.appKitAppearance
@@ -293,7 +305,7 @@ func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
     window.titleVisibility = .hidden
     window.titlebarAppearsTransparent = true
     window.titlebarSeparatorStyle = .none
-    window.toolbar?.isVisible = false
+    hideHubNativeToolbarRow(window)
 
     // SwiftUI may hide the standard buttons when a scene's toolbar visibility
     // changes. Keep the window's own close/minimize/fullscreen controls
@@ -301,6 +313,37 @@ func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
     let standardButtons: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
     for buttonType in standardButtons {
         window.standardWindowButton(buttonType)?.isHidden = false
+    }
+}
+
+/// SwiftUI's identifier for the sidebar toggle it adds to a
+/// `NavigationSplitView` toolbar. The Hub supplies its own toggle in the
+/// sidebar navigation row, so the system copy must never draw (#0895).
+/// Hiding the toolbar row is the primary fix; removing the item as well means
+/// a toolbar SwiftUI re-shows later still cannot duplicate the control. If a
+/// future macOS renames the identifier the row stays hidden regardless.
+enum HubNativeToolbar {
+    static let swiftUISidebarToggleItemIdentifier =
+        "com.apple.SwiftUI.navigationSplitView.toggleSidebar"
+}
+
+/// Hides the native toolbar row, which the Hub never shows, and removes the
+/// system sidebar toggle it carries.
+///
+/// `NSWindow.toolbar` can be nil when the scene is first configured and be
+/// installed by SwiftUI moments later, so callers must be able to re-run this
+/// (the chrome view does so on every layout pass). Both operations are
+/// idempotent and cheap when already applied.
+func hideHubNativeToolbarRow(_ window: NSWindow) {
+    guard let toolbar = window.toolbar else { return }
+    if toolbar.isVisible {
+        toolbar.isVisible = false
+    }
+    for index in toolbar.items.indices.reversed()
+    where toolbar.items[index].itemIdentifier.rawValue
+        == HubNativeToolbar.swiftUISidebarToggleItemIdentifier
+    {
+        toolbar.removeItem(at: index)
     }
 }
 
