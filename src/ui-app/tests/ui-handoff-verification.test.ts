@@ -249,6 +249,52 @@ describe("UI handoff verification gate (#0680)", () => {
     await expect(verification).resolves.toMatchObject({ ok: true, skipped: true });
   });
 
+  it("returns a structured runner-only failure from verify instead of throwing", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-runner-only-"));
+    temps.push(root);
+    execFileSync("git", ["init", "-b", "main"], { cwd: root, stdio: "ignore" });
+    execFileSync("git", ["config", "user.email", "runner-test@example.com"], {
+      cwd: root,
+      stdio: "ignore",
+    });
+    execFileSync("git", ["config", "user.name", "Runner test"], {
+      cwd: root,
+      stdio: "ignore",
+    });
+    writeFileSync(join(root, "README.md"), "fixture\n");
+    execFileSync("git", ["add", "README.md"], { cwd: root, stdio: "ignore" });
+    execFileSync("git", ["commit", "-m", "fixture"], { cwd: root, stdio: "ignore" });
+    const config = {
+      root,
+      workDir: "work",
+      cacheDir: ".repoos",
+      uiVerification: { enabled: true },
+      preview: { command: "echo preview" },
+      remoteValidation: { enabled: true, browserCaptureMode: "runner-only" },
+    } as RepoOSConfig;
+    const task = {
+      id: "runner-only-verify",
+      title: "t",
+      path: "work/runner-only-verify.md",
+      absPath: join(root, "work/runner-only-verify.md"),
+      status: "review",
+      branch: "main",
+      area: "web",
+      body: '## Shots\n```json\n[{ "target": "default", "route": "/" }]\n```\n',
+    } as Task;
+    const result = await runUiHandoffGate(config, task, undefined, vi.fn(), {
+      forceRefresh: true,
+      remoteTransport: {
+        capture: async () => {
+          throw new Error("runner offline");
+        },
+      },
+    });
+    expect(result.ok).toBe(false);
+    expect(result.detail).toContain("runner-only browser capture failed");
+    expect(result.detail).toContain("runner offline");
+  });
+
   it("explicit refresh bypasses the normal engineer-capture pre-emption check", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-uigate-force-manual-"));
     temps.push(root);
