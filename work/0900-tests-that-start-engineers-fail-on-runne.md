@@ -35,3 +35,4 @@ Look at src/core/pressure-guard.ts, resource-limits.ts and the test helpers (mak
 - 2026-10-21T14:05:35Z · cli_override, model_override
 - 2026-10-21T14:05:36Z · status ready→active, branch
 - 2026-10-21T14:20:32Z · message_queued at 2026-10-21T14:20:32.508Z
+- 2026-10-21T14:20:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
