@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-21T10:20:16Z"
+review_passes: 1
 id: "0894"
 title: Review report parser treats 'None found.' (or any phrasing other than exact 'None found') in Bugs as blocking bugs
 type: bug
@@ -11,7 +13,6 @@ branch: feat/review-report-parser-treats-none-found-o
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T08:17:11Z"
-updated_at: "2026-10-21T10:20:16Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:19:07.268Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:22:38.129Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -60,3 +61,4 @@ Consumers: src/server/landable.ts (line ~51), the review auto-bounce path in src
 - 2026-10-21T10:19:26Z · status active→review
 - 2026-10-21T10:19:26Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-21T10:20:16Z · note: review pass 1: good to go
+
