@@ -14,7 +14,8 @@ Proposed; pending human acceptance before any implementation starts (#0904).
 Remote runners already execute the expensive, bounded parts of a task:
 pre-review and close-out gates (`src/server/remote-validation.ts`,
 `src/server/pre-review-remote-gate.ts`), browser evidence
-(`src/server/remote-shot-capture.ts`, #0854/#0874), and health-aware
+(`src/server/shot-capture.ts`, `scripts/remote-runner/capture-browser.ts`,
+#0854/#0874), and health-aware
 placement with a per-host pool and memory-pressure probe (#0901). The engineer
 and reviewer processes themselves still start on the laptop.
 
