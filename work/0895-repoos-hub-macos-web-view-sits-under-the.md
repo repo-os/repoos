@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-web-view-sits-under-the
 created_at: "2026-10-21T08:37:10Z"
-updated_at: "2026-10-21T12:36:14Z"
+updated_at: "2026-10-21T12:48:08Z"
 ---
 ## Problem
 Two layout problems in the native macOS app (RepoOS Hub), both visible in the new Window layout modes:
@@ -45,3 +45,4 @@ Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode fro
 - 2026-10-21T08:37:55Z · screenshots
 - 2026-10-21T11:37:53Z · status inbox→ready
 - 2026-10-21T12:36:14Z · status ready→active, branch
+- 2026-10-21T12:48:08Z · body
