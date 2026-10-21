@@ -643,7 +643,8 @@ export class TaskWatchdog {
     // first refusal, and once its (lifetime) budget is spent this bounded
     // watchdog resume takes over instead of surfacing the task for a human.
     // A task assigned to a human is never resumed by either path.
-    const assignedToHuman = current.assignedTo.trim().toLowerCase() === "human";
+    const assignedToHuman =
+      current.assignee === "human" || current.assignedTo.trim().toLowerCase() === "human";
     if (kind === "exited-without-handoff" && !assignedToHuman) {
       if (readEngineerCleanExitSignal(current.body).deferred > 0) {
         if (this.handleStalledCleanExit(current)) return;
@@ -688,8 +689,10 @@ export class TaskWatchdog {
       status: task.status,
       isArchived: task.isArchived,
       needsInput: task.needsInput,
-      assignedToHuman: task.assignedTo.trim().toLowerCase() === "human",
+      assignedToHuman:
+        task.assignee === "human" || task.assignedTo.trim().toLowerCase() === "human",
       paused: this.runner.isPaused(task.id),
+      stoppedByPerson: signal.stoppedByPerson,
       running:
         this.runner.isRunning(task.id) ||
         (typeof this.runner.isQueued === "function" && this.runner.isQueued(task.id)),
