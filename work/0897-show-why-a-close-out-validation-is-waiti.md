@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-21T19:17:02Z"
+review_passes: 2
 id: "0897"
 title: "Show why a close-out/validation is waiting: queue position, what runs ahead on each runner"
 type: feature
@@ -11,9 +13,7 @@ branch: feat/show-why-a-close-out-validation-is-waiti
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T12:39:47Z"
-updated_at: "2026-10-21T19:17:01Z"
 review_rounds: 1
-review_passes: 1
 dev_error_count: 3
 ---
 ## Problem
@@ -164,3 +164,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T19:15:56Z · status active→review
 - 2026-10-21T19:15:56Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-21T19:17:01Z · note: review pass 2: good to go
+
