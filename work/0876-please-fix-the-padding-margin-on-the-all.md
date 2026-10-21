@@ -3,11 +3,9 @@ id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
 priority: p2
 area: web
-assigned_to: ai
+assigned_to: human
 created_by: hello@repoos.org
 branch: feat/fix-padding-and-margin-on-allowlist-paus
 cli_override: cursor
@@ -15,11 +13,10 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T02:41:56Z"
+updated_at: "2026-10-21T03:15:17Z"
 review_rounds: 1
 review_passes: 1
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:03:50.463Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 2
 ---
 ## Problem
 
@@ -65,32 +62,32 @@ Please fix the padding/margin on the allowlist pause modal
 ```json
 [
 {
-"label": "Pause dialog, light theme — padded fields and action row",
+"label": "Pause dialog spacing matches add-allowlist modal (light)",
 "target": "default",
 "route": "/agents?tab=budget-controls",
-"highlight": "[data-testid=budget-pause-dialog]",
+"highlight": "[data-testid=\"budget-pause-dialog\"]",
 "steps": [
 {
-"click": "[data-testid=\"budget-row-li-claude code\"] [data-testid=\"budget-pause-agent\"]"
+"click": "[data-testid=\"budget-row-li-opencode\"] [data-testid=\"budget-pause-agent\"]"
 },
 {
-"waitMs": 500
+"waitMs": 400
 }
 ],
 "state": "budget:paused",
 "theme": "light"
 },
 {
-"label": "Pause dialog, dark theme — padded fields and action row",
+"label": "Pause dialog spacing (dark)",
 "target": "default",
 "route": "/agents?tab=budget-controls",
-"highlight": "[data-testid=budget-pause-dialog]",
+"highlight": "[data-testid=\"budget-pause-dialog\"]",
 "steps": [
 {
-"click": "[data-testid=\"budget-row-li-claude code\"] [data-testid=\"budget-pause-agent\"]"
+"click": "[data-testid=\"budget-row-li-opencode\"] [data-testid=\"budget-pause-agent\"]"
 },
 {
-"waitMs": 500
+"waitMs": 400
 }
 ],
 "state": "budget:paused",
@@ -144,3 +141,14 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T02:35:26Z · body
 - 2026-10-21T02:38:28Z · body
 - 2026-10-21T02:41:56Z · body
+- 2026-10-21T02:48:02Z · body
+- 2026-10-21T02:52:01Z · body
+- 2026-10-21T02:52:56Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-21T02:53:15Z · body
+- 2026-10-21T02:53:53Z · body
+- 2026-10-21T02:55:12Z · body
+- 2026-10-21T03:04:57Z · needs_input
+- 2026-10-21T03:04:59Z · needs_input
+- 2026-10-21T03:05:04Z · needs_input
+- 2026-10-21T03:07:44Z · body
+- 2026-10-21T03:15:10Z · assigned_to
