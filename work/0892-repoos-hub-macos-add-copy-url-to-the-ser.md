@@ -136,3 +136,4 @@ Swift tests run: `ServerActionsMenuModelTests`, `RepoAccentColorPreferenceTests`
 - 2026-10-21T11:34:08Z · body
 - 2026-10-21T11:40:42Z · CTO nudge: held — handoff gate is running
 - 2026-10-21T11:41:30Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-21T11:41:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
