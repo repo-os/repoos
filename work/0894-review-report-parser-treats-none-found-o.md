@@ -12,7 +12,7 @@ branch: feat/review-report-parser-treats-none-found-o
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T08:17:11Z"
-updated_at: "2026-10-21T11:58:41Z"
+updated_at: "2026-10-21T11:59:02Z"
 last_close_out_gate_ms: 88942
 last_close_out_gate_at: "2026-10-21T11:58:41.326Z"
 review_passes: 2
@@ -80,4 +80,4 @@ Consumers: src/server/landable.ts (line ~51), the review auto-bounce path in src
 - 2026-10-21T11:51:41Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-21T11:52:36Z · note: review pass 2: good to go
 - 2026-10-21T11:58:41Z · close-out gate completed in 89s
-
+- 2026-10-21T11:59:02Z · status done→done, release:success
