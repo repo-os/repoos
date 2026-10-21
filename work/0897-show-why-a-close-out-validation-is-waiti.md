@@ -12,8 +12,6 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T12:39:47Z"
 updated_at: "2026-10-21T18:50:42Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on mini — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 42ac6a27980d8a4baafffffc03e470389ee9d5df
 dev_error_count: 3
 ---
 ## Problem
@@ -149,3 +147,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T18:10:47Z · needs_input
 - 2026-10-21T18:35:37Z · body
 - 2026-10-21T18:50:42Z · status active→review
+
