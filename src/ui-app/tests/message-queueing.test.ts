@@ -104,6 +104,11 @@ function config(root: string): RepoOSConfig {
     defaultAssignee: "unassigned",
     cacheDir: ".repoos",
     maxConcurrentAgents: 1,
+    // A busy runner's pressure guard defers the first start(), so `start()`
+    // returns `{ queued: true }` with no pid and the busy-turn assertions below
+    // never run (#0891). These tests measure queueing, not host pressure; the
+    // guard has its own suite.
+    pressureGuard: { enabled: false },
   };
 }
 

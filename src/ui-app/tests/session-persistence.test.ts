@@ -54,6 +54,8 @@ if (process.env.REPOOS_SESSION_TEST_HOLD === "1") setTimeout(() => {}, 800);
     defaultStatus: "inbox",
     defaultAssignee: "unassigned",
     cacheDir: ".repoos",
+    // Tests measure agent behaviour, not host pressure (#0891).
+    pressureGuard: { enabled: false },
   };
   const task: Task = {
     id: "0001",

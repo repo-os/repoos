@@ -2,15 +2,20 @@
 id: "0874"
 title: Offload repoos shot to a runner
 type: feature
-status: inbox
+status: active
 priority: p3
 area: [server, core]
 depends_on: ["0854"]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/offload-repoos-shot-to-a-runner
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:27:49Z"
-updated_at: "2026-10-20T13:22:47Z"
+updated_at: "2026-10-21T10:37:25Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-21T09:07:49.677Z: repoos check failed: ◆ Check plan"
+dev_error_count: 1
 ---
 ## Problem
 Parent #0854 offloads the AUTOMATIC handoff shots and UI verification to a remote runner. Manual `repoos shot` / `repoos verify` deliberately STAY LOCAL: the spec was narrowed in #0854 review pass 17, so #0854 does not ship a runner-backed CLI. The interactive CLI keeps using the local PreviewManager / WebKit on the control-plane laptop.
@@ -32,3 +37,18 @@ Not required for #0854's acceptance criteria. #0864 (rebuild the runner image an
 - 2026-10-20T12:27:52Z · needs_input
 - 2026-10-20T12:28:31Z · body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
 - 2026-10-20T13:22:47Z · needs_input
+- 2026-10-21T08:22:46Z · status inbox→ready
+- 2026-10-21T08:22:50Z · cli_override, model_override
+- 2026-10-21T08:22:51Z · status ready→active, branch
+- 2026-10-21T08:24:31Z · agent exited with an error (opencode) · error: Upstream request failed: Endpoint is unavailable.
+- 2026-10-21T08:24:31Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · error: Upstream request failed: Endpoint is unavailable.
+- 2026-10-21T08:35:02Z · body
+- 2026-10-21T08:39:02Z · body
+- 2026-10-21T08:44:28Z · body
+- 2026-10-21T08:50:59Z · body
+- 2026-10-21T08:54:44Z · body
+- 2026-10-21T08:56:00Z · needs_input
+- 2026-10-21T09:03:13Z · status active→ready
+- 2026-10-21T09:03:17Z · status ready→active
+- 2026-10-21T10:24:21Z · body
+- 2026-10-21T10:37:25Z · CTO nudge: held — machine under pressure (the memory compressor is holding 40% of RAM (9.7 GB of RAM) — holding new work until memory pressure eases)
