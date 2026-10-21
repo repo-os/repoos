@@ -3,12 +3,6 @@ id: "0874"
 title: Offload repoos shot to a runner
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (4 in 30m): a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
-debug_tldr: "Handoff deferred because queued CTO check-in was unread—read it, finish verification, then request review again."
-debug_tldr_at: "2026-10-21T11:41:18Z"
-debug_tldr_key: "dev-error|✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p3
 area: [server, core]
 depends_on: ["0854"]
@@ -18,7 +12,7 @@ branch: feat/offload-repoos-shot-to-a-runner
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-20T12:27:49Z"
-updated_at: "2026-10-21T12:08:13Z"
+updated_at: "2026-10-21T12:09:28Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T09:07:49.677Z: repoos check failed: ◆ Check plan"
 dev_error_count: 5
@@ -80,3 +74,4 @@ Not required for #0854's acceptance criteria. #0864 (rebuild the runner image an
 - 2026-10-21T12:03:22Z · status active→ready
 - 2026-10-21T12:03:26Z · status ready→active
 - 2026-10-21T12:08:13Z · body
+- 2026-10-21T12:09:28Z · needs_input
