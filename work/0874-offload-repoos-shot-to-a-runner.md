@@ -2,7 +2,7 @@
 id: "0874"
 title: Offload repoos shot to a runner
 type: feature
-status: active
+status: review
 priority: p3
 area: [server, core]
 depends_on: ["0854"]
@@ -73,4 +73,4 @@ Not required for #0854's acceptance criteria. #0864 (rebuild the runner image an
 - 2026-10-21T12:03:26Z · status ready→active
 - 2026-10-21T12:08:13Z · body
 - 2026-10-21T12:09:28Z · needs_input
-- 2026-10-21T12:10:04Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-21T12:10:04Z · status active→review
