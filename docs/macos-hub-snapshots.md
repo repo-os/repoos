@@ -71,7 +71,10 @@ never be committed.
 
 ## RepoOS handoff integration
 
-`repoos.toml` declares a command capture target:
+RepoOS collects these through a `[[shot.targets]]` command capture target.
+`repoos.toml` is human-owned config and RepoOS's landability check rejects a
+task branch that changes it, so the row is applied on main separately rather
+than carried by a feature branch. The row is:
 
 ```toml
 [[shot.targets]]
