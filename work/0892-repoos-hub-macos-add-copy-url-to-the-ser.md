@@ -2,7 +2,7 @@
 id: "0892"
 title: "RepoOS Hub (macOS): add Copy URL to the server menu, and fix the server color bar not applying or persisting"
 type: bug
-status: ready
+status: active
 priority: p2
 area: macos
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repoos-hub-macos-add-copy-url-to-the-ser
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T09:18:00Z"
+updated_at: "2026-10-21T09:18:04Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -126,3 +126,4 @@ Swift tests run: `ServerActionsMenuModelTests`, `RepoAccentColorPreferenceTests`
 - 2026-10-21T09:17:52Z · cli_override, model_override
 - 2026-10-21T09:17:53Z · engineer stopped by request
 - 2026-10-21T09:18:00Z · status active→ready
+- 2026-10-21T09:18:04Z · status ready→active
