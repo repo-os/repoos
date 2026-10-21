@@ -216,7 +216,8 @@ logged redacted, never allowed to kill the transport loop.
 The intake supports exactly ONE `onAuthorized` sink, and later tasks each
 bring their own surface — so `bootstrapTelegramAtBoot` composes them with
 `chainedOnAuthorized(...)`: the read-only command handler (#0540) first, then
-the agent-chat handler (#0541). Every composed handler filters its own scope
+the task-actions handler (#0543), then the agent-chat handler (#0541). Every
+composed handler filters its own scope
 out of every update (commands act on `msg.command`; the agent chat acts only
 on plain, new, non-command text), so a chained update flows through every
 handler that can act on it — plain text never reaches `/help`'s
@@ -349,6 +350,76 @@ state) and a merge-conflict notification (`needs_merge` off→on, the
 `syncTaskBranch` failure edge). Flag edges are detected by key presence in the
 index's `prev` diff — not `?? false` — so a held flag is not re-pushed on
 every unrelated task-file write.
+
+
+
+## Task creation and lifecycle actions (#0543)
+
+`/newtask <prose>` (or a reply to a message with `/newtask`) is the first
+Telegram surface that writes to the repository. The handler is
+`src/server/telegram/task-actions.ts`; it joins the ONE `onAuthorized` chain,
+after the read commands and before guide chat, so `/newtask`, the text that
+answers an Edit prompt, and inline-button presses all arrive through the same
+serialized intake path. The command handler leaves `/newtask` to it (instead of
+answering with "unknown command"). A plain message is only consumed here when
+a preview is waiting for an Edit value; everything else still belongs to the
+guide conversation.
+
+**Creation is a preview, not a write.** `inferTaskDraft` does a conservative,
+deterministic keyword parse (title/type/priority/area) rather than an LLM call;
+too-thin prose gets a specific question instead of a guess. The card commits
+nothing and carries Create / Edit / Cancel. Edit lets one field change at a
+time and re-renders. Create calls the same `repoos.createTask` path as the
+New-task drawer (same frontmatter, `## Original prompt`, attachment storage,
+activity entry, index notification and `docs(<id>): add task` commit), so a
+Telegram task is structurally identical to a UI-created one — pinned by
+`src/ui-app/tests/telegram-task-actions.test.ts`.
+
+**Signed, single-use buttons.** `callbacks.ts` packs
+`kind.task-or-draft.nonce.expiry.mac` into Telegram's 64-byte callback-data
+cap, signed with the instance session secret (16 hex chars of HMAC-SHA256 is
+ample for a 15-minute token whose value is one already-authorized transition).
+On every press the handler verifies signature and expiry, re-resolves the
+presser's role from `auth_users` (never the renderer's role), and only then
+consumes the nonce against a persisted ledger
+(`.repoos/telegram-action-nonces.json`). Forged, expired, replayed, and
+member-pressed tokens are all refused; a member's press does not burn the
+nonce, so an admin can still use the button.
+
+**Two-step close-out.** A Move to done button never merges on one tap. The
+first press renders a confirmation card naming the repository, task id/title,
+and exact branch; Confirm merge is a separate signed token and only that press
+calls the close-out operation. Cancel is a no-op.
+
+**Lifecycle operations reuse the HTTP routes.** `startServer` supplies
+`TelegramTaskActionOps`: creation through `repoos.createTask`; start/pause/done
+through the real `taskAction` handler in-process; review through the real
+`PATCH /api/tasks/:id` handler. Nothing forks the orchestration or calls
+`repoos mv done` (which only edits frontmatter).
+
+**Rate limits and audit.** `tryAcquireTelegramCreateLimits` (5/user and
+10/chat per 10 minutes) and `tryAcquireTelegramActionLimits` (12/user and
+24/chat per 5 minutes) are checked before a preview is accepted, a task is
+created, or an agent/close-out is queued; refusals are answered and audited.
+Every privileged outcome writes a `TELEGRAM_AUDIT` row (`telegram_task_created`,
+`telegram_task_action[_refused]`, `telegram_callback_rejected`) with the
+presser's allowlisted email — never `"human"`.
+
+**Attachments.** Buttons that arrive with a file are downloaded through the
+Bot API and classified by magic bytes (`attachments.ts`), never the declared
+MIME or filename. Oversize and disallowed content is refused before storage;
+images go through the shared screenshot helper (so they land in
+`## Screenshots`), other allowed documents are referenced from an
+`## Attachments` section. Everything lives under
+`work/.attachments/<taskId>/`, which is gitignored — the committed record is
+the markdown. Voice notes are transcribed with the configured whisper provider
+and treated as prose; when transcription is unconfigured the sender is told
+so rather than having the note silently dropped.
+
+**Topics.** `TelegramMessage`/`TelegramCallbackQuery` carry
+`messageThreadId` from `message_thread_id`; replies and action cards post back
+into the same forum topic. Chat binding remains the authorization boundary — a
+topic is routing only, and private chats/plain groups need no topic config.
 
 ## The `[telegram] enabled` gate
 
