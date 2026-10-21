@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T15:02:05Z"
+updated_at: "2026-10-21T15:12:03Z"
 ---
 ## Items
 - [ ] **E1 · Screenshot dropzone wraps to two lines** (web) — after #0877 made `ShotDropzone` a `<label>`, the global `.field label` rule leaks into it. Source: user report 2026-10-21.
@@ -69,13 +69,13 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 "highlight": ".field .shot-dropzone",
 "steps": [
 {
-  "click": ".new-btn"
+"click": ".new-btn"
 },
 {
-  "waitFor": ".shot-dropzone"
+"waitFor": ".shot-dropzone"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ]
 },
@@ -86,13 +86,13 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 "highlight": ".field .shot-dropzone",
 "steps": [
 {
-  "click": ".new-btn"
+"click": ".new-btn"
 },
 {
-  "waitFor": ".shot-dropzone"
+"waitFor": ".shot-dropzone"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ]
 }
@@ -124,3 +124,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T14:55:46Z · body
 - 2026-10-21T15:00:29Z · body
 - 2026-10-21T15:02:05Z · body
+- 2026-10-21T15:12:03Z · handoff failed · remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on thinkpad — fix it in the feature branch and re-run the gate
