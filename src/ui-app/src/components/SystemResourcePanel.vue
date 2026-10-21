@@ -551,7 +551,10 @@ const serveMessage = computed(() => {
 
 .top-owner.repoos {
   color: var(--cyan);
-  background: color-mix(in srgb, var(--cyan) 14%, transparent);
+  /* Keep the neutral chip fill used by the sibling owner badge: tinting the
+     background with the same --cyan the text uses pushed 9px labels below the
+     WCAG floor in every light theme and gruvbox-dark (#0877 gate). */
+  background: var(--chip-bg);
 }
 
 .top-owner.other {
