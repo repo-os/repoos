@@ -90,18 +90,40 @@ function killSpawnedFromLog(path: string): void {
   }
 }
 
-/** Find spawn logs a few levels below a stale root without following symlinks. */
-export function killSpawnedLogs(root: string, remainingDepth = 4): void {
-  killSpawnedFromLog(join(root, "spawns.log"));
-  if (remainingDepth === 0) return;
-  try {
-    for (const entry of readdirSync(root, { withFileTypes: true })) {
-      if (entry.isDirectory()) {
-        killSpawnedLogs(join(root, entry.name), remainingDepth - 1);
-      }
+/**
+ * How deep the spawn-log walk goes below a stale root. A fixture's log lives at
+ * `runRoot/file-XXX/repoos-XXX/spawns.log` (3 levels) and companion fixtures can
+ * nest further, so the old fixed 4-level recursion could miss a deeper child
+ * and leave it running after a worker kill (#0859). Deep enough for any real
+ * fixture layout, shallow enough that walking a huge stale checkout cannot run
+ * away.
+ */
+export const SPAWN_LOG_SCAN_DEPTH = 32;
+
+/**
+ * Find every spawn log below a stale root without following symlinks. Iterative
+ * rather than recursive so the depth limit is explicit and a deep fixture tree
+ * cannot overflow the stack; the whole fixture tree within
+ * {@link SPAWN_LOG_SCAN_DEPTH} is covered, however it is nested.
+ */
+export function killSpawnedLogs(root: string, maxDepth = SPAWN_LOG_SCAN_DEPTH): void {
+  const pending: { dir: string; depth: number }[] = [{ dir: root, depth: 0 }];
+  while (pending.length > 0) {
+    const { dir, depth } = pending.pop()!;
+    killSpawnedFromLog(join(dir, "spawns.log"));
+    if (depth >= maxDepth) continue;
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      /* unreadable — the rm below still removes it */
+      continue;
     }
-  } catch {
-    /* unreadable — the rm below still removes it */
+    for (const entry of entries) {
+      // `isDirectory()` is false for symlinks, so the walk never escapes the
+      // fixture root or revisits a loop.
+      if (entry.isDirectory()) pending.push({ dir: join(dir, entry.name), depth: depth + 1 });
+    }
   }
 }
 
@@ -133,8 +155,9 @@ export function reapStaleFixtures(prefix: string): number {
     }
     if (mtimeMs >= cutoff) continue;
     if (!isWorktreesSibling) {
-      // Scan a few levels because test fixtures can be nested under a
-      // per-file temp dir (runRoot/file-*/repoos-*/spawns.log).
+      // Walk the whole fixture tree (up to SPAWN_LOG_SCAN_DEPTH) because test
+      // fixtures can be nested at any depth under a per-file temp dir
+      // (runRoot/file-*/repoos-*/spawns.log, or deeper).
       killSpawnedLogs(root);
     }
     rmSync(root, { recursive: true, force: true });

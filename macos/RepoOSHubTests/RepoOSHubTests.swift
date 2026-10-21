@@ -7,6 +7,35 @@ final class RepoOSHubTests: XCTestCase {
         XCTAssertEqual(Bundle(for: Self.self).bundleIdentifier, "org.repoos.hub.tests")
     }
 
+    /// #0859 E4: a new Hub window fills most of the visible screen instead of
+    /// opening at its 880x520 minimum, and still never shrinks below it.
+    func testDefaultWindowSizeFillsMostOfTheVisibleFrame() {
+        let visible = CGRect(x: 0, y: 0, width: 1600, height: 1000)
+        let size = HubWindowDefaults.defaultWindowSize(for: visible)
+        XCTAssertEqual(size.width, 1440, accuracy: 0.5)
+        XCTAssertEqual(size.height, 900, accuracy: 0.5)
+    }
+
+    func testDefaultWindowSizeClampsToTheMinimumOnASmallScreen() {
+        let small = HubWindowDefaults.defaultWindowSize(
+            for: CGRect(x: 0, y: 0, width: 800, height: 400)
+        )
+        XCTAssertEqual(small.width, HubWindowDefaults.minWidth)
+        XCTAssertEqual(small.height, HubWindowDefaults.minHeight)
+
+        let tiny = HubWindowDefaults.defaultWindowSize(
+            for: CGRect(x: 0, y: 0, width: 640, height: 480)
+        )
+        XCTAssertEqual(tiny.width, HubWindowDefaults.minWidth)
+        XCTAssertEqual(tiny.height, HubWindowDefaults.minHeight)
+    }
+
+    func testDefaultWindowSizeFallsBackToTheMinimumWithoutAScreen() {
+        let size = HubWindowDefaults.defaultWindowSize(for: nil)
+        XCTAssertEqual(size.width, HubWindowDefaults.minWidth)
+        XCTAssertEqual(size.height, HubWindowDefaults.minHeight)
+    }
+
     func testDockIconTracksLightAndDarkAppearance() throws {
         XCTAssertEqual(
             DockIconAppearanceController.assetName(for: NSAppearance(named: .aqua)!),

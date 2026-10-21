@@ -2,6 +2,36 @@ import SwiftUI
 import UserNotifications
 import AppKit
 
+/// Window geometry shared by the scene declaration and its unit test.
+///
+/// A SwiftUI `WindowGroup` with only a minimum frame opens new windows near that
+/// minimum, centred, which felt like a quarter-screen popover rather than a
+/// browser (#0859 E4). Give a brand-new window a default size that fills most of
+/// the visible screen; macOS frame restoration still wins once the user has
+/// resized the window, because `.defaultSize` only applies to a window with no
+/// saved frame.
+enum HubWindowDefaults {
+    static let minWidth: CGFloat = 880
+    static let minHeight: CGFloat = 520
+    /// Fraction of `NSScreen.visibleFrame` a new window occupies. `visibleFrame`
+    /// already excludes the menu bar and Dock, so 90% leaves a browser-like
+    /// inset without ever covering them.
+    static let visibleFrameFill: CGFloat = 0.9
+
+    /// The default content size for a new window, clamped to the minimum size
+    /// on a screen too small to fit the fill fraction (or when no screen is
+    /// available, as in a unit test).
+    static func defaultWindowSize(for visibleFrame: CGRect?) -> CGSize {
+        guard let visibleFrame, visibleFrame.width > 0, visibleFrame.height > 0 else {
+            return CGSize(width: minWidth, height: minHeight)
+        }
+        return CGSize(
+            width: max(minWidth, visibleFrame.width * visibleFrameFill),
+            height: max(minHeight, visibleFrame.height * visibleFrameFill)
+        )
+    }
+}
+
 @main
 struct RepoOSHubApp: App {
     @NSApplicationDelegateAdaptor(HubAppDelegate.self) private var appDelegate
@@ -13,7 +43,7 @@ struct RepoOSHubApp: App {
         WindowGroup("RepoOS") {
             ContentView()
                 .environmentObject(appState)
-                .frame(minWidth: 880, maxWidth: .infinity, minHeight: 520, maxHeight: .infinity)
+                .frame(minWidth: HubWindowDefaults.minWidth, maxWidth: .infinity, minHeight: HubWindowDefaults.minHeight, maxHeight: .infinity)
                 .preferredColorScheme(appState.hubGlobalPreferences.appearance.colorScheme)
                 .background(HubWindowAppearanceConfigurator(appearance: appState.hubGlobalPreferences.appearance))
                 .onAppear {
@@ -33,6 +63,7 @@ struct RepoOSHubApp: App {
                     appDelegate.setAppearanceOverride(newValue)
                 }
         }
+        .defaultSize(HubWindowDefaults.defaultWindowSize(for: NSScreen.main?.visibleFrame))
         .commands {
             CommandGroup(replacing: .appSettings) {
                 Button("Settings…") {

@@ -171,3 +171,60 @@ export function isPlaywrightUnavailable(msg: string): boolean {
     msg.includes("Executable doesn't exist")
   );
 }
+
+/** Anything the UI harnesses close during teardown. */
+export interface HarnessCloser {
+  close(): Promise<void>;
+}
+
+export interface HarnessTeardownOptions {
+  context?: HarnessCloser;
+  browser?: HarnessCloser;
+  server?: HarnessCloser;
+  /** Remove the throwaway fixture dir. Always runs, after every close attempt. */
+  removeFixture: () => void;
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+/**
+ * Tear down a UI harness without letting one failing close hide the others
+ * (#0859). Before this, a throwing `context.close()` / `browser.close()` skipped
+ * `server.close()` entirely, leaving the fixture's server alive (its `port === 0`
+ * root-reaper fires asynchronously) even though the fixture directory was
+ * deleted. All three closes are attempted, the fixture is removed only after
+ * every close has settled, and every failure is reported together.
+ */
+export async function teardownUiHarness(opts: HarnessTeardownOptions): Promise<void> {
+  const attempts: { label: string; close: () => Promise<void> }[] = [];
+  if (opts.context) attempts.push({ label: "context.close()", close: () => opts.context!.close() });
+  if (opts.browser) attempts.push({ label: "browser.close()", close: () => opts.browser!.close() });
+  if (opts.server) attempts.push({ label: "server.close()", close: () => opts.server!.close() });
+
+  const results = await Promise.allSettled(attempts.map((attempt) => attempt.close()));
+  const problems: string[] = [];
+  results.forEach((result, index) => {
+    if (result.status === "rejected") {
+      problems.push(`${attempts[index]!.label} failed: ${errorMessage(result.reason)}`);
+    }
+  });
+  try {
+    opts.removeFixture();
+  } catch (err) {
+    problems.push(`fixture cleanup failed: ${errorMessage(err)}`);
+  }
+  if (problems.length > 0) throw new Error(`UI harness teardown failed: ${problems.join("; ")}`);
+}
+
+/**
+ * Fold a teardown failure into a body failure without losing either (#0859).
+ * The selected error keeps the body's message first, because that is the real
+ * result the harness is reporting; the teardown failure follows.
+ */
+export function combineHarnessErrors(primary: unknown, teardown: unknown): Error {
+  return new Error(`${errorMessage(primary)}; teardown also failed: ${errorMessage(teardown)}`, {
+    cause: [primary, teardown],
+  });
+}
