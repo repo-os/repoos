@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: rendered-contrast — jelly-light (3):"
+last_handoff_failure_sha: 738f5844ef34eef7f0aced9a1d84a714b35bf820
 id: "0873"
 title: "CTO idle nudge: check live processes, running gates and reviews, and machine pressure first; make the threshold configurable"
 type: feature
@@ -65,3 +67,4 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T01:25:24Z · message_queued at 2026-10-21T01:25:24.621Z
 - 2026-10-21T01:25:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-21T01:36:00Z · handoff failed · task-file handoff failed at check · repoos check failed: rendered-contrast — jelly-light (3):
+
