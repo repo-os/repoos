@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T01:14:24Z"
+updated_at: "2026-10-21T01:14:30Z"
 ---
 ## Problem
 
@@ -69,3 +69,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T00:58:08Z · status ready→active, branch
 - 2026-10-21T01:14:23Z · status active→review
 - 2026-10-21T01:14:23Z · note: handoff requested (cli)
+- 2026-10-21T01:14:30Z · handoff failed · task-file handoff failed at commit · task #0876 has no registered worktree for branch feat/fix-padding-and-margin-on-allowlist-paus
