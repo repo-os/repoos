@@ -55,3 +55,4 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-21T19:43:47Z · body
 - 2026-10-21T19:43:47Z · body
 - 2026-10-21T19:44:15Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-21T19:44:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
