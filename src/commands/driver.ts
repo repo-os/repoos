@@ -35,7 +35,7 @@ function printErr(message: string): void {
 }
 
 /** Compact elapsed time for queue/blocker copy (mm:ss / h:mm). */
-function fmtDuration(ms: number): string {
+export function fmtDuration(ms: number): string {
   const total = Math.max(0, Math.round(ms / 1000));
   if (total < 60) return `${total}s`;
   const m = Math.floor(total / 60);
