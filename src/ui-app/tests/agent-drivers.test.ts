@@ -5,7 +5,15 @@
  * without touching a real coding agent.
  */
 import { afterEach, describe, expect, it } from "vitest";
-import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -145,7 +153,26 @@ function config(root: string): RepoOSConfig {
     defaultStatus: "inbox",
     defaultAssignee: "unassigned",
     cacheDir: ".repoos",
+    // Driver behaviour must not depend on the host's memory/load: with the
+    // guard on (the default), a busy runner queues `start()` for `pressure`
+    // and every wait below times out at the per-test ceiling (#0891). The
+    // guard has its own suite; these tests measure the drivers.
+    pressureGuard: { enabled: false },
   };
+}
+
+/** Read the PID a gated fake CLI wrote so the test can release its turn. */
+function readPid(file: string): number {
+  return Number(readFileSync(file, "utf8").trim());
+}
+
+/** Release a gated fake turn; a signal is the explicit exit event. */
+function releasePid(pid: number): void {
+  try {
+    process.kill(pid, "SIGTERM");
+  } catch {
+    /* already exited */
+  }
 }
 
 const TASK: Task = {
@@ -232,6 +259,7 @@ afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_PI_NO_BLOCK;
   delete process.env.REPOOS_FAKEBIN_PI_NO_SESSION_HEADER;
   delete process.env.REPOOS_FAKEBIN_FAIL;
+  delete process.env.REPOOS_FAKEBIN_PID;
 });
 
 describe("model-aware driver commands", () => {
@@ -1386,14 +1414,22 @@ describe("stall detection (0080)", () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const pidFile = join(fx.bin, "quiet.pid");
+    process.env.REPOOS_FAKEBIN_PID = pidFile;
+    // The second line arrives only when the test releases the turn, so the
+    // stall flag is guaranteed to be observed before output resumes. A fixed
+    // sleep raced the stall poll under load (#0891).
     const quietBin = `#!/usr/bin/env node
 const fs = require("fs");
-fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
-process.stdout.write("first line\\n");
-setTimeout(() => {
+// Handler first: the test signals as soon as the pid file exists.
+process.on("SIGTERM", () => {
   process.stdout.write("second line\\n");
   process.exit(0);
-}, 300);
+});
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+fs.writeFileSync(process.env.REPOOS_FAKEBIN_PID, String(process.pid));
+process.stdout.write("first line\\n");
+setInterval(() => {}, 60_000);
 `;
     writeFileSync(join(fx.bin, "claude"), quietBin, { mode: 0o755 });
     try {
@@ -1403,6 +1439,8 @@ setTimeout(() => {
       await waitFor(() => runner.stats("0001").stalled === true, "stall flag raised", 2000);
       expect(runner.isRunning("0001")).toBe(true); // stalled is never "dead"
 
+      await waitFor(() => existsSync(pidFile), "turn to record its pid", 2000);
+      releasePid(readPid(pidFile));
       await waitFor(
         () => runner.stats("0001").stalled === false,
         "stall flag cleared by output",
@@ -1411,6 +1449,7 @@ setTimeout(() => {
       await waitFor(() => !runner.isRunning("0001"), "turn exit");
       expect(runner.stats("0001").stalled).toBe(false);
     } finally {
+      if (existsSync(pidFile)) releasePid(readPid(pidFile));
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
       fx.clean();
@@ -1421,11 +1460,17 @@ setTimeout(() => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const pidFile = join(fx.bin, "hang.pid");
+    process.env.REPOOS_FAKEBIN_PID = pidFile;
+    // Stays alive until the test releases it, so exit can never beat the
+    // stall flag being observed (a 200ms sleep could under load, #0891).
     const hangBin = `#!/usr/bin/env node
 const fs = require("fs");
+process.on("SIGTERM", () => process.exit(0));
 fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+fs.writeFileSync(process.env.REPOOS_FAKEBIN_PID, String(process.pid));
 process.stdout.write("only line\\n");
-setTimeout(() => process.exit(0), 200);
+setInterval(() => {}, 60_000);
 `;
     writeFileSync(join(fx.bin, "claude"), hangBin, { mode: 0o755 });
     try {
@@ -1433,10 +1478,13 @@ setTimeout(() => process.exit(0), 200);
       runner.start(TASK, "feat/x", agent("claude code"), { cwd: fx.bin });
 
       await waitFor(() => runner.stats("0001").stalled === true, "stall flag raised", 2000);
+      await waitFor(() => existsSync(pidFile), "turn to record its pid", 2000);
+      releasePid(readPid(pidFile));
       await waitFor(() => !runner.isRunning("0001"), "process exits while still flagged");
       expect(runner.stats("0001").stalled).toBe(false);
       expect(runner.stats("0001").turnStartedAt).toBeNull();
     } finally {
+      if (existsSync(pidFile)) releasePid(readPid(pidFile));
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
       fx.clean();
@@ -1533,35 +1581,48 @@ process.exit(1);
     const task = taskOnDisk(root);
     try {
       const runner = new AgentRunner({ ...config(root), root }, () => {});
+      const readTask = () =>
+        parseTask({
+          content: readFileSync(task.absPath, "utf8"),
+          absPath: task.absPath,
+          root,
+          defaultStatus: "inbox",
+          defaultAssignee: "unassigned",
+        });
       runner.start(task, "feat/x", agent("claude code"), { cwd });
+      // `isRunning` flips false before cleanup finishes writing the task file,
+      // so gate on the recorded state, not on the process entry.
       await waitFor(() => !runner.isRunning("0001"), "402 exit", 5000);
-      const onDisk = parseTask({
-        content: readFileSync(task.absPath, "utf8"),
-        absPath: task.absPath,
-        root,
-        defaultStatus: "inbox",
-        defaultAssignee: "unassigned",
-      });
+      await waitFor(
+        () => readTask().needsInputReason === "provider-failure",
+        "provider failure recorded",
+        5000,
+      );
+      const onDisk = readTask();
       expect(onDisk.needsInput).toBe(true);
       expect(onDisk.needsInputReason).toBe("provider-failure");
       expect(onDisk.needsInputDetail).toContain("402");
 
+      const resumePidFile = join(fx.bin, "resume.pid");
+      process.env.REPOOS_FAKEBIN_PID = resumePidFile;
+      // The resumed turn stays up until the test releases it: a 50ms child
+      // could exit between two polls and make `isRunning` an unreliable
+      // observe-then-exit pair under load.
       const hangBin = `#!/usr/bin/env node
+const fs = require("fs");
+process.on("SIGTERM", () => process.exit(0));
+fs.writeFileSync(process.env.REPOOS_FAKEBIN_PID, String(process.pid));
 process.stdout.write("resumed after provider error\\n");
-setTimeout(() => process.exit(0), 50);
+setInterval(() => {}, 60_000);
 `;
       writeFileSync(join(fx.bin, "claude"), hangBin, { mode: 0o755 });
       runner.start(task, "feat/x", agent("claude code"), { cwd });
       await waitFor(() => runner.isRunning("0001"), "resumed turn starts", 5000);
+      await waitFor(() => existsSync(resumePidFile), "resumed turn to record its pid", 5000);
+      releasePid(readPid(resumePidFile));
       await waitFor(() => !runner.isRunning("0001"), "resumed turn exits", 5000);
-      const afterResume = parseTask({
-        content: readFileSync(task.absPath, "utf8"),
-        absPath: task.absPath,
-        root,
-        defaultStatus: "inbox",
-        defaultAssignee: "unassigned",
-      });
-      expect(afterResume.needsInput).toBe(false);
+      await waitFor(() => !readTask().needsInput, "clean resume clears needs_input", 5000);
+      expect(readTask().needsInput).toBe(false);
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
@@ -1612,21 +1673,30 @@ setTimeout(() => process.exit(0), 30_000);
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const pidFile = join(fx.bin, "silent.pid");
+    process.env.REPOOS_FAKEBIN_PID = pidFile;
+    // Stay alive until the test releases the turn, instead of a 15s wall-clock
+    // sleep that both leaked a child and could expire before the stall poll on
+    // a loaded box (#0891).
     const hangBin = `#!/usr/bin/env node
+const fs = require("fs");
+process.on("SIGTERM", () => process.exit(0));
+fs.writeFileSync(process.env.REPOOS_FAKEBIN_PID, String(process.pid));
 process.stdout.write("only line\\n");
-Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 15_000);
-process.exit(0);
+setInterval(() => {}, 60_000);
 `;
     writeFileSync(join(fx.bin, "claude"), hangBin, { mode: 0o755 });
+    const runner = new AgentRunner(config(fx.bin), () => {}, {
+      stallTimeoutMs: 60,
+      stallCheckIntervalMs: 20,
+    });
     try {
-      const runner = new AgentRunner(config(fx.bin), () => {}, {
-        stallTimeoutMs: 60,
-        stallCheckIntervalMs: 20,
-      });
       runner.start(TASK, "feat/x", agent("claude code"), { cwd: fx.bin });
       await waitFor(() => runner.stats("0001").stalled === true, "silent stall", 8000);
       expect(runner.isRunning("0001")).toBe(true);
     } finally {
+      if (existsSync(pidFile)) releasePid(readPid(pidFile));
+      runner.dispose();
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
       fx.clean();

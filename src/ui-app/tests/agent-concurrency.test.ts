@@ -2,6 +2,11 @@
  * Concurrency gate on agent spawns: with maxConcurrentAgents set,
  * extra start()/send() calls queue instead of spawning immediately, and are
  * drained one at a time as running agents exit.
+ *
+ * Deterministic by construction (#0891): every fake turn stays alive until the
+ * test releases it with SIGTERM, so the slot transition never depends on how
+ * fast a spawned process exits, and host memory/load can never pre-empt the
+ * concurrency cap being measured.
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -13,9 +18,25 @@ import { waitFor } from "./helpers";
 
 const FAKEBIN = `#!/usr/bin/env node
 const fs = require("fs");
-fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, (process.env.REPOOS_TASK_ID || "") + "\\n");
-process.stdout.write("done\\n");
+// Install the release handler BEFORE publishing the pid: a test may signal us
+// the instant the pid file appears, and a default SIGTERM would look unclean.
+process.on("SIGTERM", () => process.exit(0));
+fs.appendFileSync(
+  process.env.REPOOS_FAKEBIN_LOG,
+  (process.env.REPOOS_TASK_ID || "") + " " + process.pid + "\\n",
+);
+// Hold the turn open until the test releases it. Exiting on its own made the
+// drain assertion depend on how fast this process finished; the signal makes
+// each "slot frees up" step an explicit event the test controls.
+setInterval(() => {}, 60_000);
+// Fail-safe if a crashed run never gets to release us.
+setTimeout(() => process.exit(0), 10 * 60_000).unref();
 `;
+
+interface Spawn {
+  id: string;
+  pid: number;
+}
 
 interface Fixture {
   bin: string;
@@ -59,6 +80,11 @@ function config(root: string, maxConcurrentAgents: number): RepoOSConfig {
     defaultAssignee: "unassigned",
     cacheDir: ".repoos",
     maxConcurrentAgents,
+    // This suite measures the slot cap, not the machine. With the guard on
+    // (the default), a loaded or memory-tight runner queues the first start
+    // for `pressure` before the cap is consulted, and a passing local run
+    // fails remotely (#0891). Pressure behaviour has its own suite.
+    pressureGuard: { enabled: false },
   };
 }
 
@@ -98,11 +124,40 @@ const task = (id: string): Task => ({
 
 const agent: Agent = { name: "engineer", cli: "qwen code", model: "default", enabled: true };
 
-function spawnOrder(fx: Fixture): string[] {
+function spawns(fx: Fixture): Spawn[] {
   try {
-    return readFileSync(fx.log, "utf8").trim().split("\n").filter(Boolean);
+    return readFileSync(fx.log, "utf8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => {
+        const [id, pid] = line.split(" ");
+        return { id, pid: Number(pid) };
+      });
   } catch {
     return [];
+  }
+}
+
+function spawnOrder(fx: Fixture): string[] {
+  return spawns(fx).map((spawn) => spawn.id);
+}
+
+/** Release the fake turn for `id`, letting the runner drain the next one. */
+function release(fx: Fixture, id: string): void {
+  const spawn = spawns(fx).find((s) => s.id === id);
+  if (!spawn) throw new Error(`task ${id} has not spawned yet`);
+  process.kill(spawn.pid, "SIGTERM");
+}
+
+/** Never leave a gated child behind if an assertion fails mid-test. */
+function releaseAll(fx: Fixture): void {
+  for (const spawn of spawns(fx)) {
+    try {
+      process.kill(spawn.pid, "SIGTERM");
+    } catch {
+      /* already exited */
+    }
   }
 }
 
@@ -133,12 +188,28 @@ describe("agent start concurrency cap", () => {
       expect(runner.isRunning("0002")).toBe(false);
       expect(runner.isRunning("0003")).toBe(false);
 
-      await waitFor(
-        () => spawnOrder(fx).length === 3,
-        "all three turns to have spawned in sequence",
-      );
+      // The first turn is the only one that has spawned; the other two are
+      // still held by the cap, not merely slow to start.
+      await waitFor(() => spawnOrder(fx).length === 1, "the first turn to spawn");
+      expect(spawnOrder(fx)).toEqual(["0001"]);
+      expect(runner.isQueued("0002")).toBe(true);
+      expect(runner.isQueued("0003")).toBe(true);
+
+      // Freeing the slot drains exactly one waiter, in FIFO order.
+      release(fx, "0001");
+      await waitFor(() => spawnOrder(fx).length === 2, "the second turn to spawn");
+      expect(spawnOrder(fx)).toEqual(["0001", "0002"]);
+      expect(runner.isRunning("0002")).toBe(true);
+      expect(runner.isRunning("0003")).toBe(false);
+
+      release(fx, "0002");
+      await waitFor(() => spawnOrder(fx).length === 3, "the third turn to spawn");
       expect(spawnOrder(fx)).toEqual(["0001", "0002", "0003"]);
+
+      release(fx, "0003");
+      await waitFor(() => !runner.isRunning("0003"), "the last turn to exit");
     } finally {
+      releaseAll(fx);
       runner.dispose();
       process.env.PATH = oldPath;
       fx.clean();
@@ -151,15 +222,27 @@ describe("agent start concurrency cap", () => {
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
     const runner = new AgentRunner(config(fx.bin, 1), () => {});
     try {
-      runner.start(task("0001"), "feat/0001", agent, { cwd: fx.workdir("0001") });
+      const first = runner.start(task("0001"), "feat/0001", agent, { cwd: fx.workdir("0001") });
+      expect(first.queued).toBeFalsy();
+      await waitFor(() => spawnOrder(fx).length === 1, "the first turn to spawn");
+
       const queued = runner.start(task("0002"), "feat/0002", agent, { cwd: fx.workdir("0002") });
       expect(queued.queued).toBe(true);
 
       const dupe = runner.start(task("0002"), "feat/0002", agent, { cwd: fx.workdir("0002") });
       expect(dupe.ok).toBe(false);
 
-      await waitFor(() => spawnOrder(fx).length === 2, "both turns to have spawned");
+      // The duplicate was refused, so only the running turn has spawned.
+      expect(spawnOrder(fx)).toEqual(["0001"]);
+
+      release(fx, "0001");
+      await waitFor(() => spawnOrder(fx).length === 2, "the queued turn to spawn");
+      expect(spawnOrder(fx)).toEqual(["0001", "0002"]);
+
+      release(fx, "0002");
+      await waitFor(() => !runner.isRunning("0002"), "the queued turn to exit");
     } finally {
+      releaseAll(fx);
       runner.dispose();
       process.env.PATH = oldPath;
       fx.clean();
