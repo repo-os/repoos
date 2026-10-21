@@ -14,7 +14,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AgentRunner } from "../../server/agents";
+import { AgentRunner, runPrompt } from "../../server/agents";
 import { recoverEngineerAfterCrash } from "../../server/engineer-crash-recovery";
 import { generateContextPack } from "../../core/context-pack";
 import { parseTask } from "../../core/task";
@@ -164,6 +164,18 @@ const PATHS = ["start", "resume", "message-delivery", "recovery"] as const;
 
 // Each case prepends a private bin dir to process.env.PATH — run sequentially.
 describe.sequential("agent CLI argv sanitizing (#0889)", () => {
+  it("sanitizes a one-shot prompt before spawn", async () => {
+    const fx = fixture();
+    const marker = "MARK_ONESHOT_0889";
+    const result = await runPrompt(
+      { name: "cto", cli: "opencode", model: "test-model", enabled: true },
+      `Review this${NUL}change (${marker})`,
+      { cwd: fx.root, timeoutMs: 5_000 },
+    );
+    expect(result.ok).toBe(true);
+    expectCleanArgs(fx.argvLog, marker);
+  });
+
   it.each(
     SOURCES.flatMap(({ source, make }) =>
       PATHS.map((path) => ({ source, make, path, marker: `MARK_${path}_0889` })),
