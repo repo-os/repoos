@@ -3,6 +3,9 @@ id: "0899"
 title: "Easter eggs bundle: screenshot dropzone layout"
 type: bug
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
 hold: true
 priority: p3
 area: web
@@ -10,7 +13,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T13:43:42Z"
+updated_at: "2026-10-21T13:43:45Z"
 ---
 ## Items
 
@@ -45,3 +48,4 @@ Start from the `.shot-dropzone` block in `src/ui-app/src/style.css` (~line 6970)
 
 - 2026-10-21T13:43:38Z · created · njachowski@gmail.com
 - 2026-10-21T13:43:42Z · screenshots
+- 2026-10-21T13:43:45Z · needs_input
