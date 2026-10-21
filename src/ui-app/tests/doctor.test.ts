@@ -709,6 +709,17 @@ describe("dev/preview target dependency installs (#0859 E5)", () => {
     expect(findTargetInstallProblems(root, [{ name: "Docs site", cwd: "user-docs" }])).toEqual([]);
   });
 
+  it("accepts dependencies hoisted to the repo root (workspace layout)", () => {
+    const root = tmp("repoos-doctor-deps-hoisted-");
+    writeDocsPackage(root);
+    for (const name of ["vitepress", "vitepress-plugin-llms"]) {
+      const dir = join(root, "node_modules", name);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "package.json"), JSON.stringify({ name, version: "1.0.0" }));
+    }
+    expect(findTargetInstallProblems(root, [{ name: "Docs site", cwd: "user-docs" }])).toEqual([]);
+  });
+
   it("turns the problem into a warn finding with the install fix", async () => {
     const root = projectWithDocsTarget();
     writeDocsPackage(root);
