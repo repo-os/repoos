@@ -1,6 +1,6 @@
-# Set up RepoOS in this repository
+# Get started with RepoOS
 
-You are working in a Git repository where the owner wants to try RepoOS.
+Help me set up RepoOS for a new project or an existing repo.
 
 Before you change anything:
 
