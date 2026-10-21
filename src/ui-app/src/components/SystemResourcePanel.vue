@@ -481,7 +481,10 @@ const serveMessage = computed(() => {
 }
 
 .pressure-metric {
-  color: var(--txt-dim);
+  /* --txt-dim alone sits at 4.29 (gruvbox-light) and 4.49 (gruvbox-dark) on
+     the amber wash; lean it toward the body token to clear the WCAG floor
+     (#0877 gate). */
+  color: color-mix(in srgb, var(--txt-dim) 60%, var(--txt));
   font-variant-numeric: tabular-nums;
 }
 
