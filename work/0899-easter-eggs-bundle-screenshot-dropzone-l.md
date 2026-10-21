@@ -214,3 +214,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:27:09Z · needs_input
 - 2026-10-21T19:27:12Z · assigned_to
 - 2026-10-21T19:28:18Z · assigned_to
+- 2026-10-21T19:28:22Z · note: handoff requested (ui-review)
