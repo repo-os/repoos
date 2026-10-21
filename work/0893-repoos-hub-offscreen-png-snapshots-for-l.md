@@ -99,3 +99,4 @@ Merged main (#0892/#0895 Hub changes) into the branch. Resolved `macos/.gitignor
 - 2026-10-21T13:05:26Z · body
 - 2026-10-21T13:05:50Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-10-21T13:05:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-21T13:05:50Z · message_delivered: 2 message(s)
