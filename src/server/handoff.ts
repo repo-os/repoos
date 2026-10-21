@@ -1142,10 +1142,8 @@ const HANDOFF_SIGNAL_RETRY_DELAY_MS = 3_000;
  * already do this: auto-resuming on a vague prompt risks looping on genuine
  * confusion, not just fixing a rendering hiccup. The cap bounds that risk the
  * same way it bounds the other two; on exhaustion this returns false and the
- * caller (task-watchdog.ts) falls through to its EXISTING surface behavior —
- * there is no separate give-up path here, unlike the other two schedulers,
- * because surfacing already IS the correct terminal state the watchdog was
- * built for.
+ * caller (task-watchdog.ts) falls through to the #0888 clean-exit resume path,
+ * which has its own 3-per-30-minutes budget and then surfaces `needs_input`.
  *
  * Returns true when a retry was scheduled; false means "give up, surface it
  * the normal way" — either the cap was hit or no engineer is configured.

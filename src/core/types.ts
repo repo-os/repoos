@@ -2244,7 +2244,9 @@ export interface BoardTask {
    *  exited without a clean handoff (see handoff.ts's
    *  scheduleHandoffSignalRetry, capped at 2, #0271 follow-up). The task
    *  stays `active` throughout, unlike the other two which stay `review` —
-   *  lets the board distinguish this from ordinary active-status coding. */
+   *  lets the board distinguish this from ordinary active-status coding.
+   *  Once this budget is spent, the #0888 clean-exit resume path takes over
+   *  with its own bounded window (`engineer_stall_resume_log`). */
   handoffSignalRetryCount: number;
 }
 
