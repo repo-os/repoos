@@ -12,7 +12,7 @@ branch: feat/health-aware-runner-dispatch-skip-runner
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T14:21:05Z"
-updated_at: "2026-10-21T18:41:43Z"
+updated_at: "2026-10-21T18:41:58Z"
 last_close_out_gate_ms: 492211
 last_close_out_gate_at: "2026-10-21T18:41:43.817Z"
 review_passes: 2
@@ -94,4 +94,4 @@ Relates to #0900 (tests must not depend on host pressure) and #0897 (queue visib
 - 2026-10-21T18:28:08Z · status active→review
 - 2026-10-21T18:29:04Z · note: review pass 2: good to go
 - 2026-10-21T18:41:43Z · close-out gate completed in 492s
-
+- 2026-10-21T18:41:58Z · status done→done, release:success
