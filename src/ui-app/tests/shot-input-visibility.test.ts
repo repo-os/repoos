@@ -1,13 +1,13 @@
 /**
- * Screenshot file-input visibility (#0642).
+ * Screenshot file-input visibility (#0642, #0877).
  *
  * In a WKWebView-hosted installed PWA (Safari "Add to Dock", the macOS Hub) a
  * programmatic `.click()` on a `display: none` file input never reaches
  * `WKUIDelegate.runOpenPanelWith`, so the New Task and New Input "add
  * screenshots" buttons silently did nothing. The input must stay rendered and
- * be hidden visually only — the same technique as `.pm-shot-input` and
- * Tailwind's `sr-only` used by the Settings bug-report upload, both of which
- * already worked.
+ * be hidden visually only (#0642), and the picker is now opened by native
+ * `<label>` activation instead of a synthetic click (#0877;
+ * `shot-dropzone.test.ts` covers that wiring).
  *
  * jsdom neither loads the stylesheet nor applies it to a mounted component, so
  * this asserts the source rule directly (mirroring overlay-layer-isolation).
@@ -29,5 +29,8 @@ describe("screenshot file input visibility (#0642)", () => {
     // Visually hidden but still laid out, so the picker can open.
     expect(body).toMatch(/position:\s*absolute/);
     expect(body).toMatch(/opacity:\s*0/);
+    // The input covers the zone, so the user's click is a native click on it
+    // rather than a synthetic one the PWA can ignore (#0877).
+    expect(body).toMatch(/inset:\s*0/);
   });
 });
