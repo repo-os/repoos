@@ -2,7 +2,7 @@
 id: "0893"
 title: "RepoOS Hub: offscreen PNG snapshots for layout checks, with a shot target in repoos.toml"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -81,4 +81,4 @@ With that row in place, a handoff that changes Hub sources runs the command, col
 - 2026-10-21T12:16:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T12:16:53Z · message_delivered: 2 message(s)
 - 2026-10-21T12:18:07Z · body
-- 2026-10-21T12:25:28Z · note: shots: skipped — the diff (11 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-21T12:25:28Z · status active→review
