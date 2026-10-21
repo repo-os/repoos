@@ -12,7 +12,7 @@ branch: feat/show-why-a-close-out-validation-is-waiti
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T12:39:47Z"
-updated_at: "2026-10-21T19:22:28Z"
+updated_at: "2026-10-21T19:22:41Z"
 last_close_out_gate_ms: 85655
 last_close_out_gate_at: "2026-10-21T19:22:28.042Z"
 review_passes: 2
@@ -168,4 +168,4 @@ Dispatch is least-recently-used among free hosts and queues only when every host
 - 2026-10-21T19:15:56Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-21T19:17:01Z · note: review pass 2: good to go
 - 2026-10-21T19:22:28Z · close-out gate completed in 86s
-
+- 2026-10-21T19:22:41Z · status done→done, release:success
