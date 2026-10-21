@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T18:00:36Z"
+updated_at: "2026-10-21T18:06:48Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/agent-cta.test.ts > shared agent prompt call to action > uses the canonical starter prompt verbatim, tests/agent-cta.test.ts > shared agent prompt call to action > derives the compact preview from the opening of the prompt on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: "057bb1aef2780bb8909ec1afb2d4e55e7e06590f"
 ---
@@ -132,3 +132,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T17:28:42Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/agent-cta.test.ts > shared agent prompt call to action > uses the canonical starter prompt verbatim, tests/agent-cta.test.ts > shared agent prompt call to action > derives the compact preview from the opening of the prompt on bee — fix it in the feature branch and re-run the gate
 - 2026-10-21T18:00:34Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-10-21T18:00:36Z · message_delivered: 1 message(s)
+- 2026-10-21T18:06:48Z · body
