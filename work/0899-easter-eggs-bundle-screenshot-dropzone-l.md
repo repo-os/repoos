@@ -12,8 +12,10 @@ area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: cursor
+model_override: default
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T14:27:40Z"
+updated_at: "2026-10-21T14:42:00Z"
 ---
 ## Items
 - [ ] **E1 · Screenshot dropzone wraps to two lines** (web) — after #0877 made `ShotDropzone` a `<label>`, the global `.field label` rule leaks into it. Source: user report 2026-10-21.
@@ -74,3 +76,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T14:21:50Z · body: Items (added 1)
 - 2026-10-21T14:21:53Z · title, area
 - 2026-10-21T14:27:40Z · needs_input
+- 2026-10-21T14:42:00Z · cli_override, model_override
