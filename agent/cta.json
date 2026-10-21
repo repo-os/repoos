@@ -1,6 +1,6 @@
 {
-  "heading": "Building with an AI coding agent?",
-  "sentence": "Hand your agent the starter prompt: it reads the RepoOS overview, checks this repository, and asks before changing anything.",
+  "heading": "Building with an AI agent?",
+  "sentence": "Hand your agent the starter prompt: it learns about RepoOS, checks the repo, and asks before changing anything.",
   "previewLabel": "The start of the prompt",
   "buttonLabel": "Copy prompt for your agent",
   "copiedLabel": "Copied — paste it into your agent",
