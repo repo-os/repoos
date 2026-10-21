@@ -511,15 +511,19 @@ remote-validation log and in the caller's output (repeated on a heartbeat while
 it waits), and the log records which host ran each job
 (`[runner user@host (os)]`).
 
-When eligible hosts have the same number of active runs, the configured host
-order breaks the tie: hosts are tried from top to bottom, so the first host
-receives a run when all are idle. The Checks → Remote runners tab has up/down
-controls for plain string pools and saves their order immediately; in-flight
-runs keep their existing host. A configured `tailscaleHost` shorthand pins its
-host first only when there is no non-empty `tailscaleHosts` list. Remove the
-shorthand from `repoos.toml` to let the list order control that host. Pools
-using `[[remoteValidation.tailscaleHosts]]` rows are shown read-only in the
-tab; edit their order in `repoos.toml`.
+When eligible hosts have the same number of active runs, the pool prefers the
+host that has gone **longest without a run** (least recently used). Starting a
+run counts as use, so short sequential checks rotate across the whole pool
+instead of always landing on the first host. The configured host order is the
+final tie-break: with no recorded run on any host (a fresh server) hosts are
+tried from top to bottom, so the first host receives the first run. The
+Checks → Remote runners tab has up/down controls for plain string pools and
+saves their order immediately; in-flight runs keep their existing host. A
+configured `tailscaleHost` shorthand pins its host first only when there is no
+non-empty `tailscaleHosts` list. Remove the shorthand from `repoos.toml` to let
+the list order control that host. Pools using
+`[[remoteValidation.tailscaleHosts]]` rows are shown read-only in the tab; edit
+their order in `repoos.toml`.
 
 Before a host's first job it is probed over SSH (and again on a timer while
 the server runs, without opening the Checks UI — #0683): reachability, the toolchain

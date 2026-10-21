@@ -82,9 +82,8 @@ describe("RemoteRunnersPanel", () => {
     });
     await flushPromises();
 
-    expect(wrapper.text()).toContain(
-      "Hosts with equal load are tried top to bottom, so the first host gets the work when all are idle.",
-    );
+    expect(wrapper.text()).toContain("then to the host that has run least recently (LRU)");
+    expect(wrapper.text()).toContain("Config order is the final tie-break");
     expect(wrapper.text()).toContain("Server stats");
     expect(wrapper.text()).toContain("Load average");
     expect(wrapper.find('button[aria-label="Move nick@bee up"]').exists()).toBe(true);
