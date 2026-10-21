@@ -267,6 +267,11 @@ These run as part of a task's life. They're what the `pm`, `engineer`, and
   truncated reason, so provider credit/auth failures show up on the Tokens
   panel instead of disappearing. Tune this with `ctoSkipHealthy` on the
   Settings page — see [Configuration](/configuration#agents).
+  Its one automatic reminder waits for a genuinely idle engineer: a running
+  check/test/build/browser step, a remote-validation wait, an in-flight review or
+  handoff, an already-queued message, or machine memory pressure holds it and
+  records why. Set the idle window and cooldown with `cto.nudgeIdleMs` and
+  `cto.nudgeCooldownMs` in Settings.
 
 When you assign a task to an agent from the UI, RepoOS creates a dedicated git
 worktree and branch for that task and runs the agent there. A task can override
