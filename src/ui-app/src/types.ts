@@ -1018,7 +1018,7 @@ export interface RemoteHostStatusView {
     kind?: RemoteRunKind;
     /** Current stage (`bundle`, `upload`, `queue`, `run`). */
     stage?: string | null;
-    /** Live elapsed ms, including the queue wait before a slot was leased. */
+    /** Live elapsed ms since the host slot was leased (the queue wait is its own phase). */
     elapsedMs?: number;
     /** Per-phase timings recorded as the run advanced (#0897). */
     phases?: RemoteRunPhaseTiming[];

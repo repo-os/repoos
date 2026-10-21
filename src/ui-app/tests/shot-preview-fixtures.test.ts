@@ -10,6 +10,8 @@ import {
   isShotPreviewConfigFixture,
   readShotPreviewFixtureFromLocation,
   shotFixturePinnedIntegration,
+  shotFixturePinnedRemoteStatus,
+  shotFixturePinnedTaskRemoteActivity,
 } from "../src/lib/shot-preview-fixtures";
 import { useConfigStore } from "../src/stores/config";
 import { useNoticesStore } from "../src/stores/notices";
@@ -226,6 +228,65 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(copy.label).toContain("remote tests");
     // A non-zero elapsed since the job started.
     expect(copy.label).toMatch(/remote tests · \dm/);
+  });
+
+  it("pins the runner pool and drawer remote activity for a queued validation (#0897)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "runners:queued");
+
+    // The Runners tab shot: one busy host, a handoff check queued behind a
+    // close-out, with phases and the blocker that explains the wait.
+    const status = shotFixturePinnedRemoteStatus();
+    expect(status?.hosts[0]).toMatchObject({ host: "bee", inFlight: 1, queued: 1 });
+    expect(status?.hosts[0]?.activeRuns?.[0]).toMatchObject({
+      taskId: "0892",
+      kind: "close-out",
+      stage: "run",
+    });
+    expect(status?.hosts[0]?.activeRuns?.[0]?.phases?.map((p) => p.phase)).toEqual([
+      "queued",
+      "bundle",
+      "upload",
+      "run",
+    ]);
+    expect(status?.hosts[0]?.queuedRuns?.[0]).toMatchObject({
+      taskId: "0897",
+      kind: "handoff",
+      position: 2,
+      ahead: 1,
+    });
+    expect(status?.hosts[0]?.queuedRuns?.[0]?.blockers[0]).toMatchObject({
+      taskId: "0892",
+      kind: "close-out",
+      host: "bee",
+    });
+
+    // The drawer shot: the fixture task (review status) has live remote
+    // activity, so `.drawer-remote-activity` renders instead of timing out.
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task?.status).toBe("review");
+    expect(task?.branch).toBe("");
+    expect(shotFixturePinnedTaskRemoteActivity(SHOT_PREVIEW_FIXTURE_TASK_ID)?.run).toMatchObject({
+      taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+      kind: "close-out",
+      host: "bee",
+      stage: "run",
+    });
+    // The close-out pipeline stays consistent with the runner rows.
+    expect(repo.integration?.active).toMatchObject({ taskId: "0892", phase: "validating" });
+    expect(repo.integration?.queueDetail?.[0]).toMatchObject({
+      taskId: "0897",
+      position: 1,
+      blockerTaskId: "0892",
+    });
+
+    // A later fixture must clear both pins, or a fresh capture would reuse
+    // this state (#0782).
+    applyShotPreviewFixture(repo, "closeOut:active");
+    expect(shotFixturePinnedRemoteStatus()).toBeNull();
+    expect(shotFixturePinnedTaskRemoteActivity(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBeNull();
   });
 
   it("keeps the seeded pipeline against a live refresh, then unpins (#0782)", async () => {
