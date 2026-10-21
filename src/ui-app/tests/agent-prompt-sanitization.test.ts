@@ -16,6 +16,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AgentRunner } from "../../server/agents";
 import { recoverEngineerAfterCrash } from "../../server/engineer-crash-recovery";
+import { generateContextPack } from "../../core/context-pack";
 import { parseTask } from "../../core/task";
 import type { LiveIndex } from "../../server/live-index";
 import type { Logger } from "../../core/logger";
@@ -187,9 +188,30 @@ describe.sequential("agent CLI argv sanitizing (#0889)", () => {
       try {
         if (path === "start") {
           // The context pack is where a task body (and its Activity log) lands.
-          const started = runner.start(fx.task, branch, fx.agent, {
+          // For the task-body source, poison the real task file and build the
+          // pack from it, so this covers the actual #0877 pipeline rather than
+          // a hand-built string.
+          let contextPack = `## Task Context Pack\n${text}`;
+          let taskToStart = fx.task;
+          if (source === "task body") {
+            writeFileSync(
+              fx.taskPath,
+              readFileSync(fx.taskPath, "utf8").replace("A prompt can carry agent output.\n", text),
+            );
+            taskToStart = parseTask({
+              content: readFileSync(fx.taskPath, "utf8"),
+              absPath: fx.taskPath,
+              root: fx.config.root,
+              defaultStatus: fx.config.defaultStatus,
+              defaultAssignee: fx.config.defaultAssignee,
+            });
+            contextPack = generateContextPack(fx.config, taskToStart, branch, fx.root, null).content;
+            expect(contextPack).toContain(marker);
+            expect(contextPack).toContain(NUL);
+          }
+          const started = runner.start(taskToStart, branch, fx.agent, {
             cwd: fx.root,
-            contextPack: `## Task Context Pack\n${text}`,
+            contextPack,
             resumePreamble: text,
           });
           expect(started.ok).toBe(true);
@@ -197,7 +219,11 @@ describe.sequential("agent CLI argv sanitizing (#0889)", () => {
           expectCleanArgs(fx.argvLog, marker);
           // The prompt changed, so the task records one activity line.
           expect(readFileSync(fx.taskPath, "utf8")).toContain("prompt sanitized");
-          expect(readFileSync(fx.taskPath, "utf8")).not.toContain(NUL);
+          if (source !== "task body") {
+            // (The poisoned task body itself is left intact; only the prompt
+            // and the activity line are sanitized.)
+            expect(readFileSync(fx.taskPath, "utf8")).not.toContain(NUL);
+          }
         }
 
         if (path === "resume") {
