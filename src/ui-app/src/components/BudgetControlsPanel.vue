@@ -397,10 +397,7 @@ async function resumeModel(cli: string, model: string): Promise<void> {
     <Teleport to="body">
       <Dialog :open="pauseDialog.open" @update:open="(v) => (pauseDialog.open = v)">
         <DialogOverlay />
-        <DialogContent
-          class="cc-modal budget-pause-dialog"
-          data-testid="budget-pause-dialog"
-        >
+        <DialogContent class="cc-modal budget-pause-dialog" data-testid="budget-pause-dialog">
           <div class="cc-modal-head">
             <DialogTitle>{{ dialogTitle }}</DialogTitle>
             <DialogClose class="close-x" aria-label="Close">×</DialogClose>
