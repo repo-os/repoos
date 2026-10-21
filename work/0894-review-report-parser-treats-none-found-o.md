@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: Upstream request failed: Endpoint is unavailable."
+debug_tldr: "The upstream model API was unreachable, so retry the agent run or confirm the provider endpoint and network in Settings."
+debug_tldr_at: "2026-10-21T08:19:29Z"
+debug_tldr_key: "dev-error|error: Upstream request failed: Endpoint is unavailable."
 priority: p2
 area: core
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/review-report-parser-treats-none-found-o
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T08:17:11Z"
-updated_at: "2026-10-21T08:19:07Z"
+updated_at: "2026-10-21T08:19:29Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:19:07.268Z\",\"kind\":\"dev-error\"}]"
 ---
