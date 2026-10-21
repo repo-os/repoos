@@ -227,7 +227,9 @@ titlebar are quiet icon buttons in the sidebar:
   Back and forward are disabled when there is no history, and each has a native
   tooltip.
 - The **sidebar toggle** on the right of that row hides the native sidebar;
-  the embedded RepoOS web app's own sidebar is unaffected. When the native
+  the embedded RepoOS web app's own sidebar is unaffected. It is the only
+  sidebar control — the Hub has no separate titlebar row with a second one.
+  When the native
   sidebar is hidden, a slim chevron tab flush against the window's left edge,
   just below the window controls, brings it back. The collapsed state is
   remembered across launches.
@@ -247,7 +249,9 @@ takes it off the strip — the server stays in your list. Drag a tab to
 reorder it, or use **Move left** / **Move right**. `⌘1` through `⌘9` select
 the first nine tabs. Control-Tab and Control-Shift-Tab move between them.
 Long lists scroll sideways inside that one row; they do not wrap. The web
-page starts immediately under the row. There is no address bar.
+page starts immediately under the row — the strip is the only chrome above
+it, so no part of the page or of a tab sits behind a titlebar or toolbar.
+There is no address bar.
 
 ## Switching and the keyboard workflow
 
