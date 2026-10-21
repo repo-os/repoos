@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import type { Agent } from "../core/types.js";
 import type { ModelSourceResult } from "../core/models.js";
 import { oneShotFailureDetail, promptCommand } from "./agents.js";
+import { sanitizeSpawnArgs } from "../core/spawn-args.js";
 
 export const MODEL_TEST_SENTINEL = "REPOOS_MODEL_OK";
 /** Fallback probe ceiling when a CLI has no calibrated value below (#0677). */
@@ -91,10 +92,11 @@ export function testModelCombination(
   // not marked trusted yet. The prompt cannot modify files, so bypass only the
   // repository trust preflight for this disposable probe.
   if (cli === "codex") args.splice(1, 0, "--skip-git-repo-check");
+  const spawnArgs = sanitizeSpawnArgs(args).args;
   return new Promise((resolve) => {
     let proc: ChildProcess;
     try {
-      proc = spawn(cmd, args, { cwd: opts.cwd, stdio: ["ignore", "pipe", "pipe"] });
+      proc = spawn(cmd, spawnArgs, { cwd: opts.cwd, stdio: ["ignore", "pipe", "pipe"] });
     } catch (err) {
       resolve(finish("failed", err instanceof Error ? err.message : String(err)));
       return;

@@ -12,7 +12,7 @@ branch: feat/restore-native-macos-window-controls
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-19T17:58:19Z"
-updated_at: "2026-10-21T02:04:03Z"
+updated_at: "2026-10-21T04:15:07Z"
 last_close_out_gate_ms: 85418
 last_close_out_gate_at: "2026-10-19T19:08:18.544Z"
 review_passes: 1
@@ -130,3 +130,4 @@ My overall assessment: The new expanded sidebar already looks substantially clea
 - 2026-10-21T00:05:53Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-21T01:05:52Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-21T02:04:03Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-21T04:15:07Z · message_overdue: still queued after 60m without being delivered
