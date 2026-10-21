@@ -1,18 +1,21 @@
 ---
-updated_at: "2026-10-21T01:04:03Z"
-review_passes: 2
 id: "0888"
 title: "Engineer turn ends cleanly without a handoff: resume it automatically instead of waiting for a CTO nudge"
 type: bug
-status: review
+status: done
 priority: p1
 area: server
+merged_commit: bfa38dfe8e3c2117e1f9f2b219bb6ab10ec08fdb
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineer-turn-ends-cleanly-without-a-han
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T21:57:26Z"
+updated_at: "2026-10-21T01:05:53Z"
+last_close_out_gate_ms: 100234
+last_close_out_gate_at: "2026-10-21T01:04:36.950Z"
+review_passes: 1
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T00:05:32.519Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -60,5 +63,6 @@ Relevant code: src/server/agents.ts (`cleanup()`, `deliverQueuedMessages`, crash
 - 2026-10-21T00:56:36Z · note: shots: skipped — the diff (11 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-21T00:57:04Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-21T00:57:46Z · note: review pass 1: good to go
-- 2026-10-21T01:04:03Z · note: review pass 1: good to go
-
+- 2026-10-21T01:04:36Z · close-out gate completed in 100s
+- 2026-10-21T01:05:15Z · status done→done, release:success
+- 2026-10-21T01:05:53Z · message_overdue: still queued after 60m without being delivered
