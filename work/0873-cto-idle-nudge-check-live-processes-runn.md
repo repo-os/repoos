@@ -1,6 +1,6 @@
 ---
-last_close_out_gate_ms: 104939
-last_close_out_gate_at: "2026-10-21T01:47:59.461Z"
+last_close_out_gate_ms: 105173
+last_close_out_gate_at: "2026-10-21T01:50:32.952Z"
 id: "0873"
 title: "CTO idle nudge: check live processes, running gates and reviews, and machine pressure first; make the threshold configurable"
 type: feature
@@ -14,7 +14,7 @@ branch: feat/cto-idle-nudge-check-live-processes-runn
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T12:23:49Z"
-updated_at: "2026-10-21T01:47:59Z"
+updated_at: "2026-10-21T01:50:32Z"
 review_passes: 1
 ---
 ## Problem
@@ -78,4 +78,5 @@ Look at src/server/cto-monitor.ts (AUTOMATIC_NUDGE_IDLE_MS, AUTOMATIC_NUDGE_COOL
 - 2026-10-21T01:43:55Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (19d9db73d) during finalization (#0734)
 - 2026-10-21T01:44:58Z · note: review pass 1: good to go
 - 2026-10-21T01:47:59Z · close-out gate completed in 105s
+- 2026-10-21T01:50:32Z · close-out gate completed in 105s
 
