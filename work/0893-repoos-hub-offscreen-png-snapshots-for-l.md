@@ -11,7 +11,7 @@ branch: feat/repoos-hub-offscreen-png-snapshots-for-l
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T07:08:04Z"
-updated_at: "2026-10-21T13:01:41Z"
+updated_at: "2026-10-21T13:04:08Z"
 review_passes: 1
 ---
 ## Problem
@@ -54,6 +54,9 @@ timeoutMs = 600000
 
 With that row in place, a handoff that changes Hub sources runs the command, collects the light PNGs from `REPOOS_SHOT_DIR`, and attaches them as task shots; paths that match none of the globs skip the target cleanly. Until the row is on main, this task itself cannot show the new native shots at handoff — the running server reads main's config. I verified the command end to end by running it with `REPOOS_SHOT_DIR=<work>/.attachments/... HUB_SNAPSHOT_SET=shots`, which wrote `hub-sidebar-light.png`, `hub-summary-light.png`, and `hub-tabs-top-bar-light.png`, and by resolving the row through `resolveShotTargets` (Hub paths select the target; docs/src paths do not).
 
+## Merge verification (2026-10-21)
+Merged main (#0892/#0895 Hub changes) into the branch. Resolved `macos/.gitignore` by keeping both additions (`.derived-data-*/` from main, `.build/` from this branch) and took main's copy of this task file. `ServerSidebarView.swift` auto-merged: main's Copy URL/actions work is intact and `ServerDetailsPopover` stays internal for the snapshot test (its only branch change). Rebuilt (`bun run build`), ran the full Hub unit suite, and rendered the snapshots: `HubSnapshotTests` pass and write all three views; the full Hub suite passes with `LocalServerDiscoveryTests` skipped. Those six discovery tests fail only because the live server now writes `~/.repoos/servers/7171.json` and discovery correctly prefers that registry over the port scan, so they are environmental and unrelated to this diff. `repoos check --changed main` passes.
+
 ## Screenshots
 
 ![Hub sidebar (light), rendered offscreen by HubSnapshotTests](/api/tasks/0893/attachments/att_940799d2-e752-463c-a12e-883831da485c.png)
@@ -89,3 +92,7 @@ With that row in place, a handoff that changes Hub sources runs the command, col
 - 2026-10-21T13:01:41Z · message_queued at 2026-10-21T13:01:41.022Z
 - 2026-10-21T13:01:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-21T13:01:41Z · body
+- 2026-10-21T13:02:36Z · body: Merge verification (2026-10-21) (added)
+- 2026-10-21T13:02:36Z · message_queued at 2026-10-21T13:02:36.667Z
+- 2026-10-21T13:03:41Z · body
+- 2026-10-21T13:04:08Z · CTO nudge: held — an undelivered message is already queued
