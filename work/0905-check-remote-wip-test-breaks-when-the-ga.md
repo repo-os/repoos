@@ -48,4 +48,4 @@ See scripts/remote-runner/validate.sh (the -e REPOOS_OFFLOAD_BROWSER_STEPS / REP
 - 2026-10-21T16:56:47Z · body
 - 2026-10-21T17:08:57Z · note: handoff requested (ui-review)
 - 2026-10-21T17:18:32Z · status active→review
-
+- 2026-10-21T17:18:32Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
