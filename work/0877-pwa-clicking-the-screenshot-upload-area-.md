@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: the agent process exited with an error — open the task to see the full output
+debug_tldr: "The engineer agent process crashed before handoff — open the task’s full session log for the stack trace, then restart the run from the board."
+debug_tldr_at: "2026-10-21T01:05:44Z"
+debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/pwa-clicking-the-screenshot-upload-area-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T13:54:39Z"
-updated_at: "2026-10-21T01:05:27Z"
+updated_at: "2026-10-21T01:05:44Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:05:24.436Z\",\"kind\":\"dev-error\"}]"
 ---
