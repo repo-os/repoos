@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-21T20:52:34.600Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0904"
 title: "Run whole engineer sessions on remote runners, not only checks, shots and gates"
 type: feature
@@ -59,3 +61,4 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-21T19:44:15Z · message_delivered: 1 message(s)
 - 2026-10-21T20:52:33Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
 - 2026-10-21T20:52:34Z · message_queued at 2026-10-21T20:52:34.482Z
+
