@@ -3,6 +3,9 @@ id: "0900"
 title: "Tests that start engineers fail on runners whose swap is over the pressure guard limit: isolate tests from host memory pressure"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "ActionRequiredError: Weekly usage limit reached. It resets in 5 days. Buy credits to keep going now, or upgrade your plan for more weekly usage."
 priority: p1
 area: [core, server]
 assigned_to: ai
@@ -11,10 +14,11 @@ branch: feat/tests-that-start-engineers-fail-on-runne
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-21T14:05:10Z"
-updated_at: "2026-10-21T15:22:41Z"
+updated_at: "2026-10-21T15:26:03Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: b9a79219d8bbcf186a3f904d719bf13a69dbaa92
-dev_error_count: 1
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-21T15:26:03.144Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Remote validation fails persistently on spawn-related tests (tests/agent-review.test.ts auto-bounce/exhausted-rounds, tests/agent-concurrency.test.ts queue/double-start, agent-drivers qwen 'on thinkpad'). 2026-10-21: #0894 failed its handoff gate on these, #0895 failed twice (13:27Z and 13:59Z), #0874 failed once on mini; the same tests also fail on main on the laptop under load (agent-review 'timed out waiting for engineer resumed with auto-bounce findings'). Root cause found: the memory-pressure guard (#0871, pressureGuard.maxSwapUsedRatio=0.5) reads the HOST's swap, and the tests start real engineer spawns through the server. Runner swap at diagnosis time: thinkpad 3012/4095 MB (73%), mini 1027/2048 MB (50.1%), bee 428/4095 MB (10%). Over the limit the guard holds new engineer starts, so the tests' expected spawn never happens. Because fallbackToLocal=true, close-outs then silently re-run the whole gate on the laptop (slow, high load) - the 'Ran locally' events and 20+ minute close-outs.
@@ -61,3 +65,5 @@ Look at src/core/pressure-guard.ts, resource-limits.ts and the test helpers (mak
 - 2026-10-21T15:16:53Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-10-21T15:22:41Z · message_queued at 2026-10-21T15:22:41.664Z
 - 2026-10-21T15:22:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-21T15:26:03Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 5 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-10-21T15:26:03Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · ActionRequiredError: Weekly usage limit reached. It resets in 5 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
