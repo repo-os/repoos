@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, Check, RefreshCw } from "lucide-vue-next";
 import { api } from "../api";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
+import { shotFixturePinnedRemoteStatus } from "../lib/shot-preview-fixtures";
 import Button from "./ui/button.vue";
 import type {
   RemoteHostStatusView,
@@ -35,6 +36,16 @@ let tickTimer: ReturnType<typeof setInterval> | undefined;
 
 async function load(opts?: { manual?: boolean }): Promise<void> {
   const manual = opts?.manual === true;
+  // A declared shot fixture pins a synthetic pool so the capture shows the
+  // queued/running rows a preview (with no runner) could never produce (#0897).
+  const pinned = shotFixturePinnedRemoteStatus();
+  if (pinned) {
+    status.value = pinned;
+    loading.value = false;
+    lastRefreshedAt.value = Date.now();
+    refreshOk.value = true;
+    return;
+  }
   if (manual) refreshing.value = true;
   try {
     status.value = await api<RemoteValidationStatusView>(
