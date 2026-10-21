@@ -381,3 +381,4 @@ Test both layouts, switching between them, narrow windows, many servers, and nat
 - 2026-10-21T06:58:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T06:58:21Z · message_delivered: 1 message(s)
 - 2026-10-21T07:06:28Z · status active→review
+- 2026-10-21T07:06:28Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (8471a77e4) during finalization (#0734)
