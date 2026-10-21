@@ -2895,6 +2895,7 @@ export class CloseOutOrchestrator {
             worktreePath: wtPath,
             taskId: job.taskId,
             phase: "close-out",
+            kind: "close-out",
             ...(changedRef ? { changedRef } : {}),
             // The pool queue and a stuck SSH session must spend the SAME budget
             // as the rest of the pipeline (#0573 → #0521's queue-deadline path):

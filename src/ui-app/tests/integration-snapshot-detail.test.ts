@@ -114,3 +114,49 @@ describe("applyPipelineDetail (#0782 review)", () => {
     }
   });
 });
+
+describe("integration snapshot phase + queue detail (#0897)", () => {
+  it("shows the active phase's elapsed time and why each queued job waits", () => {
+    const { root, coordinator } = makeCoordinator();
+    try {
+      coordinator.enqueue({ id: "0892", branch: "feat/a" } as never);
+      coordinator.updateJob("0892", {
+        phase: "validating",
+        enqueuedAt: "2026-10-21T12:00:00.000Z",
+      });
+      // Pin the phase start independently of the real clock for a stable assertion.
+      coordinator.updateJob("0892", { phaseStartedAt: "2026-10-21T12:10:00.000Z" });
+      coordinator.enqueue({ id: "0897", branch: "feat/b" } as never);
+      coordinator.updateJob("0897", { enqueuedAt: "2026-10-21T12:08:00.000Z" });
+
+      const snap = buildIntegrationSnapshot(
+        coordinator,
+        {},
+        undefined,
+        {},
+        {},
+        "2026-10-21T12:16:00.000Z",
+      );
+      expect(snap.active).toMatchObject({
+        taskId: "0892",
+        phase: "validating",
+        phaseStartedAt: "2026-10-21T12:10:00.000Z",
+        phaseElapsedMs: 6 * 60_000,
+      });
+      expect(snap.active?.phaseTimings?.map((t) => t.phase)).toEqual(["queued", "validating"]);
+      expect(snap.queueDetail).toEqual([
+        {
+          taskId: "0897",
+          position: 1,
+          enqueuedAt: "2026-10-21T12:08:00.000Z",
+          waitedMs: 8 * 60_000,
+          blockerTaskId: "0892",
+          blockerPhase: "validating",
+          blockerElapsedMs: 16 * 60_000,
+        },
+      ]);
+    } finally {
+      rmFixture(root);
+    }
+  });
+});

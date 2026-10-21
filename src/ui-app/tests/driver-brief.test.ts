@@ -16,6 +16,11 @@ import {
   taskCause,
   type DriverBriefInput,
 } from "../../core/driver-brief.js";
+import {
+  BLOCKED_VALIDATION_THRESHOLD_MS,
+  collectBlockedValidations,
+} from "../../server/driver-brief.js";
+import type { RemoteValidator } from "../../server/remote-validation.js";
 
 function baseInput(overrides: Partial<DriverBriefInput> = {}): DriverBriefInput {
   return {
@@ -196,6 +201,66 @@ describe("buildDriverBrief — close-out split", () => {
     );
     expect(brief.queuedCloseOuts.map((j) => j.taskId)).toEqual(["0040"]);
     expect(brief.failedCloseOuts.map((j) => j.taskId)).toEqual(["0041"]);
+  });
+});
+
+describe("buildDriverBrief — blocked validations (#0897)", () => {
+  it("names the blocking job for a validation waiting more than two minutes", () => {
+    const validator = {
+      queueStatus: () => [
+        {
+          taskId: "0900",
+          kind: "handoff",
+          host: "bee",
+          position: 2,
+          ahead: 1,
+          since: "2026-10-21T12:30:00Z",
+          waitedMs: BLOCKED_VALIDATION_THRESHOLD_MS + 60_000,
+          blockers: [
+            {
+              taskId: "0892",
+              kind: "close-out",
+              host: "bee",
+              startedAt: "2026-10-21T12:24:00Z",
+              elapsedMs: 6 * 60_000,
+            },
+            {
+              taskId: "0893",
+              kind: "review",
+              host: "mini",
+              startedAt: "2026-10-21T12:35:00Z",
+              elapsedMs: 2 * 60_000,
+            },
+          ],
+        },
+        {
+          taskId: "0901",
+          kind: "shot",
+          host: "mini",
+          position: 1,
+          ahead: 0,
+          since: "2026-10-21T12:39:00Z",
+          waitedMs: 30_000,
+          blockers: [],
+        },
+      ],
+    } as unknown as RemoteValidator;
+
+    const blocked = collectBlockedValidations(validator);
+    expect(blocked).toHaveLength(1);
+    // Longest-held slot wins, not the first entry in the array.
+    expect(blocked[0]).toMatchObject({
+      taskId: "0900",
+      kind: "handoff",
+      host: "bee",
+      position: 2,
+      blocking: { taskId: "0892", kind: "close-out", host: "bee", elapsedMs: 6 * 60_000 },
+    });
+    expect(blocked[0]?.blockers).toHaveLength(2);
+
+    // The pure builder carries it through to the --json payload.
+    const brief = buildDriverBrief(baseInput({ blockedValidations: blocked }));
+    expect(brief.blockedValidations).toEqual(blocked);
   });
 });
 

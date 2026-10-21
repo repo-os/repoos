@@ -11,6 +11,7 @@ import {
 } from "../cli/repoos-api.js";
 import { effectiveEngineerFromApi } from "../cli/effective-from-api.js";
 import { HANDOFF_DEADLINE_MS } from "../server/handoff.js";
+import { fmtDuration } from "./driver.js";
 import {
   agentModelAllowRows,
   pauseAllowlistEntry,
@@ -872,39 +873,104 @@ export async function cmdRunners(args: string[]): Promise<number> {
     const out = probe ? { status, test } : status;
     if (opts.json) printJson(out);
     else {
-      console.log(
-        c.dim("  remote validation:"),
-        (status as { enabled?: boolean }).enabled ? "on" : "off",
-      );
+      const rv = status as unknown as {
+        enabled?: boolean;
+        hosts?: Array<{
+          host: string;
+          healthy: boolean;
+          probed: boolean;
+          inFlight: number;
+          maxConcurrent: number;
+          activeRuns?: Array<{
+            taskId: string;
+            kind?: string;
+            stage?: string | null;
+            startedAt: string;
+            elapsedMs?: number;
+            phases?: Array<{
+              phase: string;
+              startedAt: string;
+              endedAt?: string;
+              durationMs?: number;
+            }>;
+          }>;
+          queuedRuns?: Array<{
+            taskId: string;
+            kind: string;
+            host: string;
+            position: number;
+            waitedMs: number;
+            blockers?: Array<{ taskId: string; kind: string; host: string; elapsedMs: number }>;
+          }>;
+          /** Runner memory health from the probe (#0901). */
+          pressure?: {
+            state?: string;
+            reason?: string | null;
+            fix?: string | null;
+            recheckCommand?: string | null;
+          };
+        }>;
+      };
+      console.log(c.dim("  remote validation:"), rv.enabled ? "on" : "off");
       if (probe && test) {
         console.log(c.dim("  probe:"), (test as { ok?: boolean }).ok ? "ok" : "failed");
       }
-      const hosts = ((status as { hosts?: ApiJson[] }).hosts ?? []) as Array<
-        Record<string, unknown>
-      >;
-      for (const h of hosts) {
-        const pressure = h.pressure as
-          | {
-              state?: string;
-              reason?: string | null;
-              fix?: string | null;
-              recheckCommand?: string | null;
-            }
-          | undefined;
-        const state = h.healthy ? "ready" : h.probed ? "unavailable" : "unprobed";
+      // Same run + queue detail the Runners tab shows (#0897): which host is
+      // busy with what, and why a validation is waiting instead of running.
+      // Host state carries the memory-pressure banner from #0901 too.
+      const now = Date.now();
+      for (const h of rv.hosts ?? []) {
+        const pressure = h.pressure;
         const memory =
           pressure?.state === "pressured"
             ? c.red(" · MEMORY PRESSURE")
             : pressure?.state === "healthy"
               ? c.green(" · memory healthy")
               : "";
-        console.log(`  ${String(h.host)} ${state}${memory}`);
+        const state = h.healthy ? "ready" : h.probed ? "unavailable" : "unprobed";
+        console.log(
+          `  ${h.host} ${state}${memory} ${c.dim(`(${h.inFlight}/${h.maxConcurrent} running)`)}`,
+        );
         if (pressure?.state === "pressured") {
           if (pressure.reason) console.log(c.yellow(`    ${pressure.reason}`));
           if (pressure.fix) console.log(c.yellow(`    fix: ${pressure.fix}`));
           console.log(
             c.dim(`    re-check: ${pressure.recheckCommand ?? "repoos runners --probe"}`),
           );
+        }
+        for (const r of h.activeRuns ?? []) {
+          const elapsed = r.elapsedMs ?? Math.max(0, now - Date.parse(r.startedAt));
+          const phases = (r.phases ?? [])
+            .map((p) => {
+              const ms =
+                p.durationMs ??
+                (p.endedAt
+                  ? Date.parse(p.endedAt) - Date.parse(p.startedAt)
+                  : Math.max(0, now - Date.parse(p.startedAt)));
+              return `${p.phase} ${fmtDuration(ms)}`;
+            })
+            .join(" · ");
+          console.log(
+            c.dim(
+              `    running #${r.taskId} ${r.kind ?? "checks"}${r.stage ? ` · ${r.stage}` : ""} · ${fmtDuration(elapsed)}`,
+            ) + (phases ? c.dim(` (${phases})`) : ""),
+          );
+        }
+        for (const q of h.queuedRuns ?? []) {
+          console.log(
+            c.yellow(
+              `    queued #${q.taskId} ${q.kind} on ${q.host || h.host} — position ${q.position}, waiting ${fmtDuration(q.waitedMs)}`,
+            ),
+          );
+          if (q.blockers?.length) {
+            console.log(
+              c.dim(
+                `      ahead: ${q.blockers
+                  .map((b) => `#${b.taskId} ${b.kind} on ${b.host} (${fmtDuration(b.elapsedMs)})`)
+                  .join(", ")}`,
+              ),
+            );
+          }
         }
       }
     }

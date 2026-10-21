@@ -34,6 +34,16 @@ function printErr(message: string): void {
   console.error(c.red("  ✗ ") + message);
 }
 
+/** Compact elapsed time for queue/blocker copy (mm:ss / h:mm). */
+export function fmtDuration(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 1000));
+  if (total < 60) return `${total}s`;
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  if (m < 60) return `${m}m ${s}s`;
+  return `${Math.floor(m / 60)}h ${m % 60}m`;
+}
+
 async function ensureServer(api: RepoOsApi): Promise<void> {
   if (!(await api.health())) {
     throw new RepoOsApiError(
@@ -70,12 +80,22 @@ interface BriefView {
     queued: number;
     detail: string | null;
     hungRuns: { taskId: string; at: string }[];
+    activeRuns?: { taskId: string; kind: string; stage: string | null; elapsedMs: number }[];
     pressureState?: "healthy" | "pressured" | "unknown";
     pressureReason?: string | null;
     pressureFix?: string | null;
     pressureRecheck?: string | null;
     swapUsedRatio?: number | null;
     availableMemRatio?: number | null;
+  }[];
+  blockedValidations?: {
+    taskId: string;
+    kind: string;
+    host: string;
+    position: number;
+    ahead: number;
+    waitedMs: number;
+    blocking: { taskId: string; kind: string; host: string; elapsedMs: number } | null;
   }[];
   pressuredHosts?: {
     host: string;
@@ -202,6 +222,13 @@ function renderBrief(brief: BriefView): void {
     line(
       `    ${h.host} ${state}${pressure} ${c.dim(`(${h.inFlight}/${h.queued} running/queued)`)}${detail}`,
     );
+    for (const r of h.activeRuns ?? []) {
+      line(
+        c.dim(
+          `      running #${r.taskId} ${r.kind}${r.stage ? ` · ${r.stage}` : ""} · ${fmtDuration(r.elapsedMs)}`,
+        ),
+      );
+    }
   }
   for (const p of brief.pressuredHosts ?? []) {
     line(c.red(`    pressure on ${p.host}: ${p.reason}`));
@@ -216,6 +243,23 @@ function renderBrief(brief: BriefView): void {
   for (const s of brief.runs.slowRuns) {
     line(c.yellow(`    slow: ${s.label} at ${s.ratio.toFixed(1)}× median`));
     if (s.likelyCause) line(c.dim(`          ${s.likelyCause}`));
+  }
+  if (brief.blockedValidations?.length) {
+    line(c.yellow("  Blocked validations (queued >2m)"));
+    for (const b of brief.blockedValidations) {
+      const mins = Math.round(b.waitedMs / 60_000);
+      line(
+        `    #${b.taskId} ${b.kind} on ${b.host || "?"} — position ${b.position}, waiting ${mins}m`,
+      );
+      if (b.blocking) {
+        line(
+          c.dim(
+            `          ahead: #${b.blocking.taskId} ${b.blocking.kind} on ${b.blocking.host} ` +
+              `(${fmtDuration(b.blocking.elapsedMs)})`,
+          ),
+        );
+      }
+    }
   }
   line();
 
