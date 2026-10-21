@@ -5,11 +5,11 @@ type: bug
 status: inbox
 priority: p2
 area: macos
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T05:57:31Z"
+updated_at: "2026-10-21T06:06:43Z"
 ---
 ## Problem
 Two problems in the native macOS app (RepoOS Hub) server sidebar:
