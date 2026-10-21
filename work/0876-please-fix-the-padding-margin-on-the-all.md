@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T01:02:27Z"
+updated_at: "2026-10-21T01:02:34Z"
 ---
 ## Problem
 
@@ -69,10 +69,10 @@ Please fix the padding/margin on the allowlist pause modal
 "highlight": ".budget-pause-dialog",
 "steps": [
 {
-  "click": "[data-testid='budget-pause-agent']"
+"click": "[data-testid='budget-pause-agent']"
 },
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ],
 "state": "budget:paused",
@@ -85,10 +85,10 @@ Please fix the padding/margin on the allowlist pause modal
 "highlight": ".budget-pause-dialog",
 "steps": [
 {
-  "click": "[data-testid='budget-pause-agent']"
+"click": "[data-testid='budget-pause-agent']"
 },
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ],
 "state": "budget:paused",
@@ -109,3 +109,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T01:02:05Z · body
 - 2026-10-21T01:02:27Z · note: click [data-testid='budget-pause-agent']: click: Error: strict mode violation: locator('[data-testid=\'budget-pause-agent\']') resolved to 2 elements: on /agents?tab=budget-controls
 - 2026-10-21T01:02:27Z · note: highlight .budget-pause-dialog matched nothing on /agents?tab=budget-controls
+- 2026-10-21T01:02:34Z · note: click [data-testid='budget-pause-agent']: click: Error: strict mode violation: locator('[data-testid=\'budget-pause-agent\']') resolved to 2 elements: on /agents?tab=budget-controls
