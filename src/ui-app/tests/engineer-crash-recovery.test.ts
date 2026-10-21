@@ -449,6 +449,30 @@ describe("applying crash recovery to a task (#0869)", () => {
     }
   });
 
+  it("strips NUL bytes from a degenerate crash detail before the relaunch prompt (#0889)", async () => {
+    const fx = runnerFixture(CLEAN_SCRIPT);
+    try {
+      const { deps, launches } = recoveryDeps(fx);
+      // #0877's actual shape: the degenerate-output excerpt was a run of NULs.
+      const detail = `Degenerate output loop detected (a very long run of text with no tool call). Excerpt: "${"\u0000".repeat(200)}…"`;
+      const outcome = await recoverEngineerAfterCrash(
+        deps,
+        "0869",
+        { cli: "opencode", model: "test-model", kind: "degenerate-output", reason: detail },
+        { now: Date.parse("2026-10-21T01:26:00Z") },
+      );
+      expect(outcome.action).toBe("resumed");
+      expect(launches).toHaveLength(1);
+      expect(launches[0].instruction).not.toContain("\u0000");
+      expect(launches[0].instruction).toContain("Degenerate output loop detected");
+      const onDisk = readFileSync(fx.taskPath, "utf8");
+      expect(onDisk).not.toContain("\u0000");
+      expect(onDisk).toContain("stripped NUL bytes from the crash detail");
+    } finally {
+      fx.restorePath();
+    }
+  });
+
   it("surfaces instead of replacing a human-set override", async () => {
     const fx = runnerFixture(CLEAN_SCRIPT);
     try {
