@@ -2,7 +2,7 @@
 id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T04:07:54Z"
+updated_at: "2026-10-21T04:14:14Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T03:35:01.891Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
@@ -160,3 +160,6 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T03:52:03Z · status ready→active
 - 2026-10-21T04:06:22Z · handoff failed · remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-21T04:07:54Z · note: handoff requested (ui-review)
+- 2026-10-21T04:08:24Z · note: handoff requested (ui-review)
+- 2026-10-21T04:14:14Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-21T04:14:14Z · note: handoff requested (cli)
