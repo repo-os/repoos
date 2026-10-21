@@ -4,7 +4,11 @@ import { ArrowDown, ArrowUp, Check, RefreshCw } from "lucide-vue-next";
 import { api } from "../api";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
-import { shotFixturePinnedRemoteStatus } from "../lib/shot-preview-fixtures";
+import {
+  applyShotPreviewFixture,
+  readShotPreviewFixtureFromLocation,
+  shotFixturePinnedRemoteStatus,
+} from "../lib/shot-preview-fixtures";
 import Button from "./ui/button.vue";
 import type {
   RemoteHostStatusView,
@@ -72,6 +76,13 @@ async function refreshManual(): Promise<void> {
 }
 
 onMounted(() => {
+  // A capture can mount this panel before App.vue applies the fixture; seed it
+  // here first so the very first load paints the queued state (a poll would
+  // take another 3s, long enough for the shot's waitFor to time out) (#0897).
+  if (typeof window !== "undefined" && repo.health?.isPreviewBuild) {
+    const fixture = readShotPreviewFixtureFromLocation(window.location);
+    if (fixture) applyShotPreviewFixture(repo, fixture);
+  }
   void load();
   pollTimer = setInterval(() => void load(), 3000);
   tickTimer = setInterval(() => (nowTick.value = Date.now()), 1000);
