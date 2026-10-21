@@ -642,7 +642,9 @@ export class TaskWatchdog {
     // the queued message; otherwise the pre-existing quick signal retry gets
     // first refusal, and once its (lifetime) budget is spent this bounded
     // watchdog resume takes over instead of surfacing the task for a human.
-    if (kind === "exited-without-handoff") {
+    // A task assigned to a human is never resumed by either path.
+    const assignedToHuman = current.assignedTo.trim().toLowerCase() === "human";
+    if (kind === "exited-without-handoff" && !assignedToHuman) {
       if (readEngineerCleanExitSignal(current.body).deferred > 0) {
         if (this.handleStalledCleanExit(current)) return;
       }
@@ -688,7 +690,9 @@ export class TaskWatchdog {
       needsInput: task.needsInput,
       assignedToHuman: task.assignedTo.trim().toLowerCase() === "human",
       paused: this.runner.isPaused(task.id),
-      running: this.runner.isRunning(task.id),
+      running:
+        this.runner.isRunning(task.id) ||
+        (typeof this.runner.isQueued === "function" && this.runner.isQueued(task.id)),
       handoffInFlight: this.runner.isHandoffInFlight(task.id),
       pendingHandoff: this.runner.hasPendingHandoff(task.id),
       closingOut,
