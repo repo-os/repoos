@@ -12,7 +12,7 @@ branch: feat/remove-the-faint-repoos-title-text-at-th
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T14:00:36Z"
-updated_at: "2026-10-21T03:56:11Z"
+updated_at: "2026-10-21T03:56:25Z"
 last_close_out_gate_ms: 118086
 last_close_out_gate_at: "2026-10-21T03:56:11.248Z"
 review_passes: 1
@@ -51,4 +51,4 @@ No faint duplicate "RepoOS" text anywhere in the title bar or top left area, in 
 - 2026-10-21T03:50:23Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-21T03:51:14Z · note: review pass 1: good to go
 - 2026-10-21T03:56:11Z · close-out gate completed in 118s
-
+- 2026-10-21T03:56:25Z · status done→done, release:success
