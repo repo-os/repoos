@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T17:20:47Z"
+updated_at: "2026-10-21T17:28:42Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-remote-wip.test.ts > managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 4ffff8a8c3a575b4eb2eee506797f91ad72280cd
 ---
@@ -129,3 +129,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T17:17:31Z · assigned_to
 - 2026-10-21T17:20:43Z · assigned_to
 - 2026-10-21T17:20:47Z · note: handoff requested (ui-review)
+- 2026-10-21T17:28:42Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/agent-cta.test.ts > shared agent prompt call to action > uses the canonical starter prompt verbatim, tests/agent-cta.test.ts > shared agent prompt call to action > derives the compact preview from the opening of the prompt on bee — fix it in the feature branch and re-run the gate
