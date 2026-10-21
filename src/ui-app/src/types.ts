@@ -1016,6 +1016,29 @@ export interface RemoteHostStatusView {
   /** Set after the prerequisite probe (#0725). */
   validateScriptMirrorSupported?: boolean;
   validateScriptInstallCommand?: string;
+  /** Memory health sampled from the host (#0901). */
+  pressure?: {
+    state: "healthy" | "pressured" | "unknown";
+    level: "normal" | "warning" | "critical";
+    source: "linux" | "macos-vm" | "macos-host" | "unknown";
+    swapUsedBytes: number | null;
+    swapTotalBytes: number | null;
+    swapUsedRatio: number | null;
+    availableMemRatio: number | null;
+    totalMemBytes: number | null;
+    compressorBytes: number | null;
+    reason: string | null;
+    fix: string | null;
+    recheckCommand: string;
+    sampledAt?: string;
+  };
+  pressureCheckEnabled?: boolean;
+  pressureThresholds?: {
+    maxLoadPerCpu: number;
+    minAvailableMemRatio: number;
+    maxSwapUsedRatio: number;
+    maxCompressorRatio: number;
+  };
 }
 
 /** The `/api/remote-validation/status` payload (#0521/#0564). */
@@ -1030,6 +1053,8 @@ export interface RemoteValidationStatusView {
   hostPoolEditable: boolean;
   activeServer: { id: number; ip: string; ageMinutes: number } | null;
   maxConcurrent: number;
+  /** Whether dispatch reads host memory pressure (#0901). */
+  pressureCheck?: boolean;
 }
 
 /** One entry from a task's `.repoos/logs/tasks/<id>.log` (0310 Debug tab). */
@@ -1052,6 +1077,8 @@ export interface RemoteValidationEvent {
   exitCode?: number | null;
   infra?: boolean;
   configError?: boolean;
+  /** Human fix for a memory-pressure skip/failure (#0901). */
+  fix?: string;
 }
 
 /** Latest auto-engineering reconcile decision (mirrors the server shape). */

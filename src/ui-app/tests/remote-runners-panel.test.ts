@@ -201,4 +201,101 @@ describe("RemoteRunnersPanel", () => {
     expect(wrapper.text()).toContain("nick@bee");
     wrapper.unmount();
   });
+
+  it("shows a loud, actionable banner for a runner under memory pressure (#0901)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string | URL) => {
+        const path = String(url);
+        if (path.startsWith("/api/remote-validation/status")) {
+          return jsonResponse({
+            enabled: true,
+            running: true,
+            provider: "tailscale",
+            pressureCheck: true,
+            tailscaleHosts: ["thinkpad", "mini"],
+            tailscaleHost: "",
+            tailscaleHostPinsTop: false,
+            hostPoolEditable: true,
+            hosts: [
+              {
+                host: "thinkpad",
+                user: "nick",
+                os: "linux",
+                labels: [],
+                maxConcurrent: 1,
+                inFlight: 0,
+                queued: 0,
+                probed: true,
+                healthy: true,
+                pressureCheckEnabled: true,
+                pressureThresholds: {
+                  maxLoadPerCpu: 4,
+                  minAvailableMemRatio: 0.08,
+                  maxSwapUsedRatio: 0.5,
+                  maxCompressorRatio: 0.35,
+                },
+                pressure: {
+                  state: "pressured",
+                  level: "critical",
+                  source: "linux",
+                  swapUsedBytes: 3_221_225_472,
+                  swapTotalBytes: 4_294_967_296,
+                  swapUsedRatio: 0.75,
+                  availableMemRatio: 0.03,
+                  totalMemBytes: 17_179_869_184,
+                  compressorBytes: null,
+                  reason: "swap is nearly full (3.0 GB of 4.0 GB swap, 75%)",
+                  fix: "run `sudo swapoff -a && sudo swapon -a` on the runner",
+                  recheckCommand: "repoos runners --probe",
+                },
+              },
+              {
+                host: "mini",
+                user: "nick",
+                os: "macos",
+                labels: [],
+                maxConcurrent: 1,
+                inFlight: 0,
+                queued: 0,
+                probed: true,
+                healthy: true,
+                pressureCheckEnabled: true,
+                pressure: {
+                  state: "healthy",
+                  level: "normal",
+                  source: "macos-host",
+                  swapUsedBytes: 0,
+                  swapTotalBytes: 2_147_483_648,
+                  swapUsedRatio: 0,
+                  availableMemRatio: 0.4,
+                  totalMemBytes: 17_179_869_184,
+                  compressorBytes: 0,
+                  reason: null,
+                  fix: null,
+                  recheckCommand: "repoos runners --probe",
+                },
+              },
+            ],
+          });
+        }
+        throw new Error(`Unexpected ${path}`);
+      }),
+    );
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const wrapper = mount(RemoteRunnersPanel, {
+      global: { plugins: [pinia], stubs: { "router-link": true } },
+    });
+    await flushPromises();
+    const banner = wrapper.get(".rr-pressure-banner");
+    expect(banner.text()).toContain("Runner memory pressure");
+    expect(banner.text()).toContain("1 of 2 hosts");
+    expect(banner.text()).toContain("swap 75% used");
+    expect(banner.text()).toContain("sudo swapoff -a && sudo swapon -a");
+    expect(banner.text()).toContain("repoos runners --probe");
+    expect(wrapper.find('[data-test-id="runner-pressure-badge"]').exists()).toBe(true);
+    expect(wrapper.text()).toContain("Memory health");
+    wrapper.unmount();
+  });
 });

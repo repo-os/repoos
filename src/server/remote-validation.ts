@@ -74,6 +74,18 @@ import { runGit } from "../core/git.js";
 import { formatRemotePoolQueueMessage } from "../core/remote-pool-queue.js";
 import { ConcurrencyGate, QueueDeadlineError } from "../core/concurrency-gate.js";
 import {
+  evaluateRunnerHealth,
+  formatRunnerHealthLine,
+  hostPressureProbeCommand,
+  parseHostPressureSample,
+  runnerHealthNotice,
+  type HostPressureSample,
+  type RunnerHealth,
+  type RunnerHealthNotice,
+} from "../core/runner-health.js";
+import { pressureThresholds, type PressureThresholds } from "../core/pressure-guard.js";
+import { runnerHealthCheckEnabled } from "../core/resource-limits.js";
+import {
   offloadBrowserStepsEnabled,
   REPOOS_OFFLOAD_BROWSER_STEPS,
 } from "../core/browser-offload.js";
@@ -360,6 +372,16 @@ export interface RemoteHostStatus {
   validateScriptMirrorSupported?: boolean;
   /** One-line install command to refresh `validate.sh` on this host (#0725). */
   validateScriptInstallCommand?: string;
+  /**
+   * Memory health sampled over SSH (#0901). Present once the host has answered
+   * the probe; `state: "pressured"` means dispatch skips it and the UI shows
+   * the reason plus the OS-specific fix.
+   */
+  pressure?: RunnerHealth;
+  /** Whether the runner-health check is enabled in config (#0901). */
+  pressureCheckEnabled?: boolean;
+  /** Per-host thresholds, mirrored from `pressureGuard` for the UI (#0901). */
+  pressureThresholds?: PressureThresholds;
   /** Standalone / host-lock waiters with phase and queue position (#0705). */
   lockWaiters?: {
     taskId: string;
@@ -400,6 +422,8 @@ export interface RemoteValidator {
   hostStatus?(): RemoteHostStatus[];
   /** Start non-blocking, independent SSH sampling for configured pool hosts. */
   refreshHostStats?(): void;
+  /** Sample host memory pressure now (or let the pool use its brief cache). */
+  refreshHostPressure?(opts?: { force?: boolean }): void;
   /** Sample host-side validate locks for the Remote runners tab (#0705). */
   refreshHostLocks?(): void;
   /**
@@ -565,6 +589,8 @@ export interface RemoteValidationEvent {
   infra?: boolean;
   /** No config change could make this run pass (routing/misconfiguration). */
   configError?: boolean;
+  /** Human fix for a memory-pressure skip/failure (#0901). */
+  fix?: string;
 }
 
 /** `<taskId>.events.ndjson` beside the per-task raw remote log. */
@@ -3029,6 +3055,12 @@ interface PoolHostState {
   hostLockSampling?: Promise<void>;
   /** Recent hung-run records for the Remote runners tab (#0729). */
   hungRuns?: { taskId: string; at: string; detail?: string }[];
+  /** Latest memory-health sample from SSH (#0901). */
+  pressure?: RunnerHealth;
+  /** When `pressure` was sampled, for the brief cache. */
+  pressureSampledAt?: number;
+  /** In-flight pressure probe; repeated callers share it. */
+  pressureSampling?: Promise<void>;
 }
 
 /** One in-flight remote run, attributed to the host executing it (#0564). */
@@ -3055,9 +3087,11 @@ interface PoolWaiter {
   excludeHosts?: ReadonlySet<string>;
   resolve: (slot: HostSlot) => void;
   reject: (err: Error) => void;
-  onQueue?: (info: { ahead: number; host: string }) => void;
+  onQueue?: (info: { ahead: number; host: string; reason?: string }) => void;
   /** Which run is waiting — surfaced as the queue's next-up tasks (#0564). */
   taskId?: string;
+  /** Set while every eligible host is pressured (#0901) — shown in the queue. */
+  pressureReason?: string;
   timer?: ReturnType<typeof setTimeout>;
   /** Re-stream queue position while blocked (#0706 — long waits are not "stuck"). */
   queueHeartbeat?: ReturnType<typeof setInterval>;
@@ -3098,6 +3132,42 @@ const HOST_LOCK_INSPECT_TIMEOUT_MS = 4_000;
  * whose eligible hosts have ALL hit this cap.
  */
 const MAX_HEALTH_RETRIES = 10;
+
+/** How long a per-host memory-pressure sample stays valid (#0901). */
+const PRESSURE_CACHE_MS = 30_000;
+/** Bounded SSH budget for the pressure probe — it runs before dispatch. */
+const PRESSURE_PROBE_TIMEOUT_MS = 8_000;
+
+/** Effective runner-health config for the pool (read live, so Settings applies). */
+export interface HostPressureOptions {
+  enabled: boolean;
+  thresholds: PressureThresholds;
+}
+
+/** Injectable host pressure sampler (tests supply fixed samples). */
+export type HostPressureProbe = (
+  host: RemoteValidationHost,
+  ssh: RemoteHost,
+  containerImage: string,
+) => Promise<HostPressureSample | null>;
+
+/** Default SSH probe: read the host's (or macOS Docker VM's) pressure. */
+export function defaultHostPressureProbe(exec: RemoteExecDeps): HostPressureProbe {
+  return async (host, ssh, containerImage) => {
+    const res = await exec.runRemote(
+      ssh,
+      hostPressureProbeCommand(host, containerImage),
+      () => {},
+      PRESSURE_PROBE_TIMEOUT_MS,
+    );
+    if (res.code !== 0 || res.timedOut) return null;
+    return parseHostPressureSample(res.output, {
+      runner: hostRunner(host),
+      declaredOs: host.os,
+      sampledAt: new Date().toISOString(),
+    });
+  };
+}
 
 const SERVER_STATS_COMMAND =
   "printf '__UPTIME__\\n'; uptime 2>/dev/null || true; " +
@@ -3206,6 +3276,12 @@ export class TailscaleHostPool {
   /** Monotonic counter behind the least-recently-used tie-break (#0890). */
   private useSeq = 0;
   private backgroundProbeTimer?: ReturnType<typeof setInterval>;
+  /** Default 30s cache for per-host memory pressure (#0901). */
+  private readonly pressureCacheMs: number;
+  private readonly pressureProbe: HostPressureProbe;
+  private readonly pressureOptions: () => HostPressureOptions;
+  /** Re-samples pressured hosts while runs are queued (#0901). */
+  private pressureRetryTimer?: ReturnType<typeof setTimeout>;
 
   constructor(rv: RemoteValidationConfig | undefined, opts: HostPoolOptions) {
     this.exec = opts.exec;
@@ -3214,6 +3290,11 @@ export class TailscaleHostPool {
     this.healthRetryMs = opts.healthRetryMs ?? HEALTH_RETRY_MS;
     this.backgroundProbeIntervalMs =
       opts.backgroundProbeIntervalMs ?? DEFAULT_TIMINGS.backgroundProbeIntervalMs;
+    this.pressureCacheMs = opts.pressureCacheMs ?? PRESSURE_CACHE_MS;
+    this.pressureProbe = opts.pressureProbe ?? defaultHostPressureProbe(opts.exec);
+    this.pressureOptions =
+      opts.pressureOptions ??
+      (() => ({ enabled: true, thresholds: pressureThresholds(undefined) }));
     this.containerImage = rv?.containerImage ?? "repoos-ci";
     const key = opts.keyPath ?? "";
     this.keyPath = key && existsSync(key) ? key : undefined;
@@ -3280,6 +3361,8 @@ export class TailscaleHostPool {
         existing.healthFails = 0;
         existing.detail = undefined;
         existing.retryAt = 0;
+        existing.pressure = undefined;
+        existing.pressureSampledAt = undefined;
         if (existing.retryTimer) {
           clearTimeout(existing.retryTimer);
           existing.retryTimer = undefined;
@@ -3364,7 +3447,7 @@ export class TailscaleHostPool {
     capabilities: string[],
     opts: {
       /** Fired once this run joins the FIFO queue (#0706: host + position too). */
-      onQueue?: (info: { ahead: number; host: string }) => void;
+      onQueue?: (info: { ahead: number; host: string; reason?: string }) => void;
       deadlineAt?: number;
       taskId?: string;
       /**
@@ -3373,6 +3456,12 @@ export class TailscaleHostPool {
        * host while one remains; throws once all eligible hosts are spent.
        */
       excludeHosts?: readonly string[];
+      /**
+       * Fired for every healthy host excluded from THIS lease because it is
+       * over the memory-pressure thresholds (#0901), so the caller can put the
+       * skip, its numbers and the human fix on the task.
+       */
+      onPressureSkip?: (notice: RunnerHealthNotice) => void;
     } = {},
   ): Promise<HostSlot> {
     const excluded = new Set(opts.excludeHosts ?? []);
@@ -3450,21 +3539,65 @@ export class TailscaleHostPool {
           candidates.map((s) => `${s.spec.host}: ${s.detail ?? "unreachable"}`).join("; "),
       );
     }
-    await Promise.all(healthy.map((s) => this.refreshHostLockFor(s)));
-    const free = healthy.filter((s) => this.hostHasCapacity(s));
+
+    // Memory-health gate (#0901): read each healthy host's pressure (briefly
+    // cached) and never lease a host over the pressureGuard thresholds. A
+    // pressured host is SKIPPED, not marked unhealthy — it is fine again as
+    // soon as swap drains, and this run may need it later.
+    let dispatchable = healthy;
+    let pressureReason: string | undefined;
+    if (this.pressureEnabled()) {
+      await Promise.all(healthy.map((s) => this.ensurePressure(s)));
+      const pressured = healthy.filter((s) => this.isPressured(s));
+      dispatchable = healthy.filter((s) => !this.isPressured(s));
+      for (const s of pressured) {
+        if (!s.pressure) continue;
+        this.onPressureSkipped(s, opts);
+      }
+      if (dispatchable.length === 0 && pressured.length > 0) {
+        // Every eligible host is pressured: queue with a visible reason rather
+        // than failing the branch's tests on a thrashing machine. The retry
+        // timer re-samples and dispatches as soon as one recovers.
+        pressureReason = pressured
+          .map((s) => this.pressureMessage(s))
+          .filter((m): m is string => !!m)
+          .join(" | ");
+        this.logger?.system(
+          "warn",
+          `remote validation: every eligible host is under memory pressure — ${pressureReason}`,
+        );
+      }
+    }
+    await Promise.all(dispatchable.map((s) => this.refreshHostLockFor(s)));
+    const free = dispatchable.filter((s) => this.hostHasCapacity(s));
     if (free.length > 0) {
       // Somebody already queued may be ahead of this arrival for that slot
       // (#0521 review: e.g. a host recovering while a waiter holds the queue).
       // Dispatch first, then re-check — a late arrival never jumps the queue.
       if (this.waiters.length > 0) this.dispatch();
-      const nowFree = healthy
+      const nowFree = dispatchable
         .filter((s) => this.hostHasCapacity(s))
         .sort((a, b) => this.compareHosts(a, b));
       if (nowFree.length > 0) return this.assign(nowFree[0]!, opts.taskId);
     }
 
-    // Every eligible host is at its cap — queue, FIFO, and only until one of
-    // THEM frees (a later-arriving compatible job never jumps the queue).
+    // Every eligible host is at its cap (or all are pressured) — queue, FIFO,
+    // and only until one of THEM frees (a later-arriving compatible job never
+    // jumps the queue).
+    return this.queueWaiter(capabilities, opts, excluded, pressureReason);
+  }
+
+  /** Join the FIFO queue, honouring the caller's deadline. */
+  private queueWaiter(
+    capabilities: string[],
+    opts: {
+      onQueue?: (info: { ahead: number; host: string; reason?: string }) => void;
+      deadlineAt?: number;
+      taskId?: string;
+    },
+    excluded: Set<string>,
+    pressureReason?: string,
+  ): Promise<HostSlot> {
     return new Promise<HostSlot>((resolve, reject) => {
       const waiter: PoolWaiter = {
         capabilities,
@@ -3473,6 +3606,7 @@ export class TailscaleHostPool {
         reject,
         onQueue: opts.onQueue,
         taskId: opts.taskId,
+        pressureReason,
       };
       this.waiters.push(waiter);
       if (opts.deadlineAt !== undefined) {
@@ -3499,9 +3633,14 @@ export class TailscaleHostPool {
         POOL_QUEUE_HEARTBEAT_MS,
       );
       waiter.queueHeartbeat.unref?.();
+      // A run queued because every host is pressured needs a re-sample timer;
+      // arming after the waiter exists is what lets the timer find it (#0901).
+      if (pressureReason) this.armPressureRetry();
       // Opportunistic recovery while queued: re-probe dead candidates so the
       // job can move to one the moment it comes back.
-      for (const s of candidates) if (!s.healthy) this.armHealthRetry(s);
+      for (const s of this.hostsEligibleFor(capabilities, excluded)) {
+        if (!s.healthy) this.armHealthRetry(s);
+      }
     });
   }
 
@@ -3666,6 +3805,9 @@ export class TailscaleHostPool {
           hungRuns: s.hungRuns ? s.hungRuns.map((r) => ({ ...r })) : undefined,
           validateScriptMirrorSupported: s.validateScriptMirrorSupported,
           validateScriptInstallCommand: validateScriptInstallCommand(s.ssh.user, s.spec.host),
+          pressure: s.pressure,
+          pressureCheckEnabled: this.pressureEnabled(),
+          pressureThresholds: this.pressureOptions().thresholds,
         },
         s.hostLock,
       ),
@@ -3766,6 +3908,10 @@ export class TailscaleHostPool {
         s.retryTimer = undefined;
       }
     }
+    if (this.pressureRetryTimer) {
+      clearTimeout(this.pressureRetryTimer);
+      this.pressureRetryTimer = undefined;
+    }
     const waiting = this.waiters.splice(0, this.waiters.length);
     for (const w of waiting) {
       if (w.timer) clearTimeout(w.timer);
@@ -3787,7 +3933,121 @@ export class TailscaleHostPool {
   }
 
   private hostHasCapacity(s: PoolHostState): boolean {
-    return s.healthy && this.effectiveActive(s) < s.limit;
+    return s.healthy && !this.isPressured(s) && this.effectiveActive(s) < s.limit;
+  }
+
+  /** Whether the runner-health check is enabled in the live config (#0901). */
+  private pressureEnabled(): boolean {
+    return this.pressureOptions().enabled;
+  }
+
+  private isPressured(s: PoolHostState): boolean {
+    return this.pressureEnabled() && s.pressure?.state === "pressured";
+  }
+
+  /** One host's pressure reason + fix, for queue copy and logs. */
+  private pressureMessage(s: PoolHostState): string | null {
+    if (!s.pressure) return null;
+    const notice = runnerHealthNotice(s.spec.host, s.pressure, "skipped");
+    return notice?.message ?? `${s.spec.host}: ${formatRunnerHealthLine(s.pressure)}`;
+  }
+
+  /** Fire the caller's skip callback once per host per acquire attempt. */
+  private onPressureSkipped(
+    s: PoolHostState,
+    opts: { onPressureSkip?: (notice: RunnerHealthNotice) => void },
+  ): void {
+    if (!s.pressure || !opts.onPressureSkip) return;
+    const notice = runnerHealthNotice(s.spec.host, s.pressure, "skipped");
+    if (notice) opts.onPressureSkip(notice);
+  }
+
+  /**
+   * Refresh one host's pressure sample, honouring the brief cache. Failures
+   * degrade to "unknown" (never block dispatch): a transient SSH hiccup must
+   * not look like a pressured host.
+   */
+  private async ensurePressure(s: PoolHostState, force = false): Promise<void> {
+    if (!this.pressureEnabled()) return;
+    if (
+      !force &&
+      s.pressureSampledAt !== undefined &&
+      Date.now() - s.pressureSampledAt < this.pressureCacheMs
+    ) {
+      return;
+    }
+    if (s.pressureSampling) return s.pressureSampling;
+    s.pressureSampling = (async () => {
+      try {
+        const sample = await this.pressureProbe(s.spec, s.ssh, this.containerImage);
+        const thresholds = this.pressureOptions().thresholds;
+        s.pressure = sample ? evaluateRunnerHealth(sample, thresholds) : undefined;
+        s.pressureSampledAt = Date.now();
+        if (s.pressure?.state === "pressured") {
+          this.logger?.system(
+            "warn",
+            `remote validation host ${s.spec.host} is under memory pressure ` +
+              `(${formatRunnerHealthLine(s.pressure)}) — skipping it until it recovers`,
+          );
+        }
+      } catch (e) {
+        s.pressure = undefined;
+        s.pressureSampledAt = Date.now();
+        this.logger?.system(
+          "info",
+          `remote validation host ${s.spec.host}: memory pressure probe failed (${(e as Error).message})`,
+        );
+      }
+    })().finally(() => {
+      s.pressureSampling = undefined;
+    });
+    return s.pressureSampling;
+  }
+
+  /** Sample every live host's pressure now (status endpoint / re-check command). */
+  refreshHostPressure(opts: { force?: boolean } = {}): void {
+    for (const s of this.liveHosts()) {
+      if (!s.probed || !s.healthy) continue;
+      void this.ensurePressure(s, opts.force === true);
+    }
+  }
+
+  /** Latest pressure verdict for one host (tests and failure correlation). */
+  pressureFor(host: string): RunnerHealth | undefined {
+    return this.hosts.find((s) => s.spec.host === host)?.pressure;
+  }
+
+  /** Force a fresh sample for one host (post-run failure correlation). */
+  async refreshPressureFor(host: string, force = true): Promise<RunnerHealth | undefined> {
+    if (!this.pressureEnabled()) return undefined;
+    const s = this.hosts.find((c) => c.spec.host === host);
+    if (!s) return undefined;
+    await this.ensurePressure(s, force);
+    return s.pressure;
+  }
+
+  /** Re-sample every healthy host while a run is queued on pressure, then dispatch. */
+  private armPressureRetry(): void {
+    if (this.pressureRetryTimer || !this.pressureEnabled()) return;
+    if (
+      !this.waiters.some(
+        (w) => w.pressureReason || this.liveHosts().some((s) => this.isPressured(s)),
+      )
+    ) {
+      return;
+    }
+    this.pressureRetryTimer = setTimeout(() => {
+      this.pressureRetryTimer = undefined;
+      if (!this.waiters.length) return;
+      const hosts = this.liveHosts().filter((s) => s.healthy);
+      void Promise.all(hosts.map((s) => this.ensurePressure(s, true))).then(() => {
+        this.dispatch();
+        if (this.waiters.length && hosts.some((s) => this.isPressured(s))) {
+          this.armPressureRetry();
+        }
+      });
+    }, this.pressureCacheMs);
+    this.pressureRetryTimer.unref?.();
   }
 
   /**
@@ -3849,17 +4109,23 @@ export class TailscaleHostPool {
     capabilities: string[],
     excludeHosts?: ReadonlySet<string>,
   ): PoolHostState | undefined {
-    return this.hostsEligibleFor(capabilities, excludeHosts).sort(
+    const eligible = this.hostsEligibleFor(capabilities, excludeHosts);
+    // Never advertise a pressured host as "next" while a healthy one exists;
+    // when every host is pressured the queue copy says so explicitly.
+    const usable = eligible.filter((s) => !this.isPressured(s));
+    return (usable.length ? usable : eligible).sort(
       (a, b) => Number(b.healthy) - Number(a.healthy) || this.compareHosts(a, b),
     )[0];
   }
 
-  /** Host named in queue copy — only healthy targets; omit while every host is down. */
+  /** Host named in queue copy — only healthy, unpressured targets; omit otherwise. */
   private dispatchTargetHostForQueue(
     capabilities: string[],
     excludeHosts?: ReadonlySet<string>,
   ): string {
-    const healthy = this.hostsEligibleFor(capabilities, excludeHosts).filter((s) => s.healthy);
+    const healthy = this.hostsEligibleFor(capabilities, excludeHosts).filter(
+      (s) => s.healthy && !this.isPressured(s),
+    );
     if (healthy.length === 0) return "";
     return healthy.sort((a, b) => this.compareHosts(a, b))[0]?.spec.host ?? "";
   }
@@ -3871,6 +4137,7 @@ export class TailscaleHostPool {
     waiter.onQueue?.({
       ahead: this.queueAheadCount(waiter.capabilities, idx, waiter.excludeHosts),
       host,
+      ...(waiter.pressureReason ? { reason: waiter.pressureReason } : {}),
     });
   }
 
@@ -3990,6 +4257,9 @@ export class TailscaleHostPool {
       }
       this.settle(w);
       w.resolve(this.assign(free, w.taskId));
+    }
+    if (this.waiters.length > 0 && this.liveHosts().some((s) => s.healthy && this.isPressured(s))) {
+      this.armPressureRetry();
     }
   }
 
@@ -4156,6 +4426,12 @@ export interface HostPoolOptions {
   healthRetryMs?: number;
   /** Periodic re-probe of unhealthy hosts; 0 disables the timer (#0683). */
   backgroundProbeIntervalMs?: number;
+  /** How long a memory-pressure sample stays valid (#0901). Default 30s. */
+  pressureCacheMs?: number;
+  /** Injected pressure sampler (tests); default SSH probe (#0901). */
+  pressureProbe?: HostPressureProbe;
+  /** Live runner-health enablement + thresholds (#0901). */
+  pressureOptions?: () => HostPressureOptions;
 }
 
 /**
@@ -4274,7 +4550,16 @@ export class TailscaleRunner implements RemoteValidator {
   constructor(
     private readonly config: RepoOSConfig,
     private readonly logger?: Logger,
-    deps?: { exec?: RemoteExecDeps; timings?: Partial<RunnerTimings> },
+    deps?: {
+      exec?: RemoteExecDeps;
+      timings?: Partial<RunnerTimings>;
+      /** Injected host pressure sampler (tests) (#0901). */
+      pressureProbe?: HostPressureProbe;
+      /** Override the pressure sample cache for tests (#0901). */
+      pressureCacheMs?: number;
+      /** Override enablement/thresholds (tests); defaults to live config. */
+      pressureOptions?: () => HostPressureOptions;
+    },
   ) {
     this.exec = deps?.exec ?? defaultRemoteExec();
     this.timings = { ...DEFAULT_TIMINGS, ...deps?.timings };
@@ -4286,6 +4571,14 @@ export class TailscaleRunner implements RemoteValidator {
       probeTimeoutMs: this.timings.probeTimeoutMs,
       healthRetryMs: this.timings.healthRetryMs,
       backgroundProbeIntervalMs: this.timings.backgroundProbeIntervalMs,
+      pressureProbe: deps?.pressureProbe,
+      pressureCacheMs: deps?.pressureCacheMs,
+      pressureOptions:
+        deps?.pressureOptions ??
+        (() => ({
+          enabled: runnerHealthCheckEnabled(this.config),
+          thresholds: pressureThresholds(this.config),
+        })),
     });
     if (config.remoteValidation?.enabled) {
       this.pool.startBackgroundProbing();
@@ -4370,6 +4663,11 @@ export class TailscaleRunner implements RemoteValidator {
   /** Per-host pool state for the status endpoint (#0521). */
   hostStatus(): RemoteHostStatus[] {
     return this.pool.status();
+  }
+
+  /** Sample runner memory pressure for the Runners tab / `repoos runners` (#0901). */
+  refreshHostPressure(opts: { force?: boolean } = {}): void {
+    this.pool.refreshHostPressure(opts);
   }
 
   /** In-flight runs with their current stage, for the slow-run detector (#0720). */
@@ -4506,6 +4804,28 @@ export class TailscaleRunner implements RemoteValidator {
     const maxAttempts = retryEnabled ? Math.max(1, hostCount) : 1;
     const triedHosts = new Set<string>();
     let lastSummary: CheckSummary | null = null;
+    // Memory-pressure notices from skips/failed hosts (#0901). Carried on the
+    // final summary even when another host passes, so the task activity and the
+    // drawer can show why a host was skipped and how a human fixes it.
+    const notices: RunnerHealthNotice[] = [];
+    const noticedHosts = new Set<string>();
+    const notePressure = (notice: RunnerHealthNotice | null): void => {
+      if (!notice || noticedHosts.has(notice.host)) return;
+      noticedHosts.add(notice.host);
+      notices.push(notice);
+      emit(`\n[${notice.message}]\n`);
+      appendRemoteValidationEvent(this.config.root, opts.taskId, {
+        level: "warn",
+        phase: "dispatch",
+        message: notice.message,
+        host: notice.host,
+        fix: notice.fix,
+      });
+    };
+    const withNotices = (summary: CheckSummary): CheckSummary =>
+      notices.length
+        ? { ...summary, runnerNotices: [...(summary.runnerNotices ?? []), ...notices] }
+        : summary;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       let slot: HostSlot;
@@ -4516,11 +4836,15 @@ export class TailscaleRunner implements RemoteValidator {
           // Failover guarantee: the pool never hands back a host this run
           // already tried, so a retry cannot re-run the failed host.
           excludeHosts: [...triedHosts],
-          onQueue: ({ ahead, host }) => {
-            const note = formatRemotePoolQueueMessage(
+          // A healthy host skipped for memory pressure is a visible event,
+          // never a silent choice that leaves a branch test red.
+          onPressureSkip: notePressure,
+          onQueue: ({ ahead, host, reason }) => {
+            const base = formatRemotePoolQueueMessage(
               { ahead, host, position: ahead + 1 },
               capabilities,
             );
+            const note = reason ? `${base}\n[waiting: ${reason}]\n` : base;
             emit(note);
             appendRemoteValidationEvent(this.config.root, opts.taskId, {
               level: "info",
@@ -4547,17 +4871,41 @@ export class TailscaleRunner implements RemoteValidator {
             phase: "dispatch",
             message: detail,
           });
-          return lastSummary;
+          return withNotices(lastSummary);
         }
         recordRemoteRunHistory(this.config, opts, startedAt, null, outcome, detail);
-        if (e instanceof NoEligibleHostError) return this.configFail(detail, dispatch);
-        return this.infraFail(detail, dispatch);
+        if (e instanceof NoEligibleHostError) {
+          return withNotices(this.configFail(detail, dispatch));
+        }
+        return withNotices(this.infraFail(detail, dispatch));
       }
 
       try {
         // The pool's exclusion guarantees a host this run has not tried yet.
         triedHosts.add(slot.host.host);
-        const summary = await this.runValidation(opts, slot, capabilities);
+        let summary = await this.runValidation(opts, slot, capabilities);
+        // A gate failure while the host was thrashing is infra, not a branch
+        // test failure (#0901): re-sample pressure and, when it matches the
+        // signature, mark the run transient so it retries on another healthy
+        // host (or falls back) instead of reporting red tests.
+        if (!summary.ok && !summary.cancelled) {
+          const health = await this.pool.refreshPressureFor(slot.host.host, true);
+          const failureNotice = health
+            ? runnerHealthNotice(slot.host.host, health, "failed")
+            : null;
+          if (failureNotice) {
+            notePressure(failureNotice);
+            summary = {
+              ...summary,
+              transient: true,
+              infraFailure: true,
+              detail:
+                `${summary.detail ?? "the remote run failed"} — NOT a branch test failure: ` +
+                `${failureNotice.reason}. Fix: ${failureNotice.fix}.`,
+            };
+          }
+        }
+        summary = withNotices(summary);
         recordRemoteRunHistory(
           this.config,
           opts,
@@ -4603,12 +4951,12 @@ export class TailscaleRunner implements RemoteValidator {
     }
     // Unreachable while exclusion holds (the final attempt always returns) —
     // kept as a backstop so the loop can never fall through without a result.
-    return (
+    return withNotices(
       lastSummary ??
-      this.infraFail("remote validation retry loop exhausted", {
-        taskId: opts.taskId,
-        phase: "result",
-      })
+        this.infraFail("remote validation retry loop exhausted", {
+          taskId: opts.taskId,
+          phase: "result",
+        }),
     );
   }
 

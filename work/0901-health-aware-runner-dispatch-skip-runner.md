@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 492211
-last_close_out_gate_at: "2026-10-21T18:41:43.817Z"
 id: "0901"
 title: "Health-aware runner dispatch: skip runners under memory pressure and show it loudly with the fix"
 type: feature
-status: review
+status: done
 priority: p1
 area: [server, web]
+merged_commit: f61c572222418f542690087edcca5fb32fa4a318
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/health-aware-runner-dispatch-skip-runner
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T14:21:05Z"
 updated_at: "2026-10-21T18:41:43Z"
+last_close_out_gate_ms: 492211
+last_close_out_gate_at: "2026-10-21T18:41:43.817Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-21T17:50:23.032Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Settings: runner memory-health switch (target \"default\"): highlight #setting-remoteValidation.healthCheck matched nothing on /settings?section=remote-validation (http://127.0.0.1:64582/settings?section=remote-validation)"
 ---

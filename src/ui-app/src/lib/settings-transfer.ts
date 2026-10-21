@@ -252,6 +252,7 @@ const REMOTE_VALIDATION_RULES: Record<string, RemoteValidationRule> = {
   hangIdleMinutes: { kind: "int", min: 0 },
   fallbackToLocal: { kind: "boolean" },
   retryOtherHosts: { kind: "boolean" },
+  healthCheck: { kind: "boolean" },
   engineerSelfCheckRemote: { kind: "boolean" },
   useForReleases: { kind: "boolean" },
   offloadBrowserSteps: { kind: "boolean" },
