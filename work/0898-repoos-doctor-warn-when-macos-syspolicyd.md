@@ -1,0 +1,31 @@
+---
+id: "0898"
+title: "repoos doctor: warn when macOS syspolicyd/trustd slow spawn-heavy work, and name the git cause"
+type: feature
+status: inbox
+priority: p2
+area: [core, docs]
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-21T13:43:26Z"
+updated_at: "2026-10-21T13:43:26Z"
+---
+## Problem
+On macOS, an ad-hoc-signed git (Homebrew, mise) makes every real git command cost extra syspolicyd/trustd CPU. Measured 2026-10-21 on a MacBook Air: 600 real git commands took 16-29 s with Homebrew git and 6-8 s with Apple's (syspolicyd +8..19 s vs +0..5 s); a 289-test run took ~160 s vs ~80 s. RepoOS now prefers Apple's git automatically (preferAppleGit), but a user whose Command Line Tools are missing, who set REPOOS_PREFER_APPLE_GIT=0, or who runs other ad-hoc-signed tooling gets no signal about why their machine is slow.
+
+## Desired UX
+`repoos doctor` (and the Runners/Settings health area) detects macOS, checks whether the first git on PATH is ad-hoc signed (codesign -dv) and whether Apple's git is available, and prints one actionable line: what is slow, the measured cost, and the fix (install Command Line Tools, or unset REPOOS_PREFER_APPLE_GIT). It also samples syspolicyd CPU time over a short window and warns when it is high while spawn-heavy work runs.
+
+## Acceptance criteria
+- doctor reports: preferAppleGit active or not, why not, and the first git on PATH with its signature kind.
+- A warning appears only on macOS and only when a real cause is found; no noise elsewhere.
+- Template AGENTS.md (src/commands/init.ts) and docs/driver-notes.md mention: do not benchmark with git --version (cheap), measure real commands.
+- Tests cover the signature detection with fake binaries and the non-macOS no-op.
+
+## Notes for AI
+See src/core/runtime.ts preferAppleGit, user-docs/configuration.md (Apple-signed git on macOS) and docs/driver-notes.md 2026-10-21 entry. Developer Tools exemption did NOT help; do not recommend it.
+
+## Activity
+
+- 2026-10-21T13:43:26Z · created · njachowski@gmail.com
