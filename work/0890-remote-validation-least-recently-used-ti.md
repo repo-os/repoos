@@ -12,7 +12,7 @@ branch: feat/remote-validation-least-recently-used-ti
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T02:18:32Z"
-updated_at: "2026-10-21T08:22:03Z"
+updated_at: "2026-10-21T08:22:28Z"
 last_close_out_gate_ms: 155847
 last_close_out_gate_at: "2026-10-21T08:22:03.220Z"
 review_passes: 1
@@ -48,4 +48,4 @@ Pool/dispatch lives around `src/core/remote-pool-queue.ts` and `src/core/remote-
 - 2026-10-21T08:06:39Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (3c6765c38) during finalization (#0734)
 - 2026-10-21T08:07:37Z · note: review pass 1: good to go
 - 2026-10-21T08:22:03Z · close-out gate completed in 156s
-
+- 2026-10-21T08:22:28Z · status done→done, release:success
