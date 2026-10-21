@@ -1442,16 +1442,15 @@ setInterval(() => {}, 60_000);
       const runner = new AgentRunner(config(fx.bin), () => {}, { stallTimeoutMs: 50 });
       runner.start(TASK, "feat/x", agent("claude code"), { cwd: fx.bin });
 
-      await waitFor(() => runner.stats("0001").stalled === true, "stall flag raised", 2000);
+      await waitFor(() => runner.stats("0001").stalled === true, "stall flag raised");
       expect(runner.isRunning("0001")).toBe(true); // stalled is never "dead"
 
-      await waitFor(() => existsSync(pidFile), "turn to record its pid", 2000);
+      // No internal deadline: the fake turn writes this before its first line,
+      // but a loaded box can take several seconds to spawn it. The test's own
+      // timeout bounds a genuine hang (#0891).
+      await waitFor(() => existsSync(pidFile), "turn to record its pid");
       releasePid(readPid(pidFile));
-      await waitFor(
-        () => runner.stats("0001").stalled === false,
-        "stall flag cleared by output",
-        2000,
-      );
+      await waitFor(() => runner.stats("0001").stalled === false, "stall flag cleared by output");
       await waitFor(() => !runner.isRunning("0001"), "turn exit");
       expect(runner.stats("0001").stalled).toBe(false);
     } finally {
@@ -1483,8 +1482,8 @@ setInterval(() => {}, 60_000);
       const runner = new AgentRunner(config(fx.bin), () => {}, { stallTimeoutMs: 50 });
       runner.start(TASK, "feat/x", agent("claude code"), { cwd: fx.bin });
 
-      await waitFor(() => runner.stats("0001").stalled === true, "stall flag raised", 2000);
-      await waitFor(() => existsSync(pidFile), "turn to record its pid", 2000);
+      await waitFor(() => runner.stats("0001").stalled === true, "stall flag raised");
+      await waitFor(() => existsSync(pidFile), "turn to record its pid");
       releasePid(readPid(pidFile));
       await waitFor(() => !runner.isRunning("0001"), "process exits while still flagged");
       expect(runner.stats("0001").stalled).toBe(false);
@@ -1598,11 +1597,12 @@ process.exit(1);
       runner.start(task, "feat/x", agent("claude code"), { cwd });
       // `isRunning` flips false before cleanup finishes writing the task file,
       // so gate on the recorded state, not on the process entry.
-      await waitFor(() => !runner.isRunning("0001"), "402 exit", 5000);
+      // No internal deadline: spawn + cleanup on a loaded box can exceed a few
+      // seconds, and the test's own timeout bounds a genuine hang (#0891).
+      await waitFor(() => !runner.isRunning("0001"), "402 exit");
       await waitFor(
         () => readTask().needsInputReason === "provider-failure",
         "provider failure recorded",
-        5000,
       );
       const onDisk = readTask();
       expect(onDisk.needsInput).toBe(true);
@@ -1623,11 +1623,11 @@ setInterval(() => {}, 60_000);
 `;
       writeFileSync(join(fx.bin, "claude"), hangBin, { mode: 0o755 });
       runner.start(task, "feat/x", agent("claude code"), { cwd });
-      await waitFor(() => runner.isRunning("0001"), "resumed turn starts", 5000);
-      await waitFor(() => existsSync(resumePidFile), "resumed turn to record its pid", 5000);
+      await waitFor(() => runner.isRunning("0001"), "resumed turn starts");
+      await waitFor(() => existsSync(resumePidFile), "resumed turn to record its pid");
       releasePid(readPid(resumePidFile));
-      await waitFor(() => !runner.isRunning("0001"), "resumed turn exits", 5000);
-      await waitFor(() => !readTask().needsInput, "clean resume clears needs_input", 5000);
+      await waitFor(() => !runner.isRunning("0001"), "resumed turn exits");
+      await waitFor(() => !readTask().needsInput, "clean resume clears needs_input");
       expect(readTask().needsInput).toBe(false);
     } finally {
       process.env.PATH = oldPath;
@@ -1656,7 +1656,7 @@ setTimeout(() => process.exit(0), 30_000);
     try {
       const runner = new AgentRunner({ ...config(root), root }, () => {});
       runner.start(task, "feat/x", agent("opencode"), { cwd });
-      await waitFor(() => !runner.isRunning("0001"), "degenerate stopped", 15_000);
+      await waitFor(() => !runner.isRunning("0001"), "degenerate stopped");
       const onDisk = parseTask({
         content: readFileSync(task.absPath, "utf8"),
         absPath: task.absPath,
@@ -1698,7 +1698,7 @@ setInterval(() => {}, 60_000);
     });
     try {
       runner.start(TASK, "feat/x", agent("claude code"), { cwd: fx.bin });
-      await waitFor(() => runner.stats("0001").stalled === true, "silent stall", 8000);
+      await waitFor(() => runner.stats("0001").stalled === true, "silent stall");
       expect(runner.isRunning("0001")).toBe(true);
     } finally {
       if (existsSync(pidFile)) releasePid(readPid(pidFile));
