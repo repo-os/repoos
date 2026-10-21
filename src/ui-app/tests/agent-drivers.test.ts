@@ -166,8 +166,13 @@ function readPid(file: string): number {
   return Number(readFileSync(file, "utf8").trim());
 }
 
+/** PIDs already signalled this test, so cleanup never signals a recycled pid. */
+const releasedPids = new Set<number>();
+
 /** Release a gated fake turn; a signal is the explicit exit event. */
 function releasePid(pid: number): void {
+  if (releasedPids.has(pid)) return;
+  releasedPids.add(pid);
   try {
     process.kill(pid, "SIGTERM");
   } catch {
@@ -260,6 +265,7 @@ afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_PI_NO_SESSION_HEADER;
   delete process.env.REPOOS_FAKEBIN_FAIL;
   delete process.env.REPOOS_FAKEBIN_PID;
+  releasedPids.clear();
 });
 
 describe("model-aware driver commands", () => {
