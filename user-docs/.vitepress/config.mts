@@ -1,7 +1,14 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitepress";
 import llmstxt from "vitepress-plugin-llms";
 import { themeBootPlugin, themeBootScriptContent } from "./vite-plugin-theme-boot";
 import { LLMS_INDEX_EXCLUDED_SOURCES, SITE_ORIGIN, llmsIndexTemplate } from "./llms-index";
+
+// The header mark's geometry is shared with the landing page (repo-root
+// `shared/logo.ts`), which sits above this project's root. The dev server —
+// what task previews run — needs explicit permission to serve it; the static
+// build has no such restriction.
+const sharedRoot = fileURLToPath(new URL("../../shared", import.meta.url));
 
 const themeBootInline = themeBootScriptContent();
 
@@ -34,6 +41,12 @@ export default defineConfig({
   // design; they resolve on a checkout, not on the published site.
   ignoreDeadLinks: [/^\.{1,2}\//],
   vite: {
+    server: {
+      fs: {
+        // Concatenated onto VitePress's own [client, srcDir, workspace] list.
+        allow: [sharedRoot],
+      },
+    },
     plugins: [
       themeBootPlugin(),
       // Publishes the public manual to agents alongside the HTML pages:
