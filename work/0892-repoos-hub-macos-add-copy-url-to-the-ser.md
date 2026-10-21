@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-add-copy-url-to-the-ser
 created_at: "2026-10-21T05:57:31Z"
-updated_at: "2026-10-21T08:39:28Z"
+updated_at: "2026-10-21T08:39:29Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T08:22:35.664Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -41,6 +41,7 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 
 ![Server context menu has no Copy URL item](/api/tasks/0892/attachments/att_e67ecc24-cacd-4c71-bf34-9f75393d2d75.png)
 ![lightingai color popover is yellow; sidebar bar is not](/api/tasks/0892/attachments/att_464c834d-dcfe-41db-831d-829b5eebf38f.png)
+![After relaunch: lightingai's header chip and sidebar bar are both the chosen yellow, while pn (purple) and Private (pink) keep their bars](/api/tasks/0892/attachments/att_c5c05988-9b84-4f6d-8f76-b9cf822e86ea.png)
 
 ## Activity
 
@@ -72,3 +73,4 @@ Native code is under macos/RepoOSHub (server list/sidebar view and its context m
 - 2026-10-21T08:23:04Z · message_delivered: 1 message(s)
 - 2026-10-21T08:29:05Z · body
 - 2026-10-21T08:36:42Z · body
+- 2026-10-21T08:39:29Z · screenshots
