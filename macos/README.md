@@ -76,6 +76,27 @@ release workflow; no signing identity or credential is committed here.
 
 The `macos/.derived-data/` directory is ignored and may be removed at any time.
 
+### Layout snapshots
+
+The Hub has no browser preview. `macos/scripts/hub-snapshots.sh` renders the
+sidebar, the server summary popover, and the Tabs-mode top bar offscreen to PNGs
+for review:
+
+```sh
+macos/scripts/hub-snapshots.sh
+```
+
+They land in `macos/.build/snapshots/` by default; `HUB_SNAPSHOT_DIR` overrides
+the directory and `HUB_SNAPSHOT_SET=shots` writes the light-appearance handoff
+set. The snapshot tests skip unless `HUB_SNAPSHOT_DIR` is set, so the normal
+`xcodebuild test` run is unchanged. RepoOS's `[[shot.targets]]` row runs the
+same script at handoff and attaches the PNGs to a task that touches Hub sources.
+
+An offscreen snapshot shows the view's content, not how a real window sizes or
+ornaments it. Use an XCUITest with `XCTAttachment` when the window frame,
+traffic lights, or titlebar/tab-strip geometry is the question. See
+[`docs/macos-hub-snapshots.md`](../docs/macos-hub-snapshots.md).
+
 ## Local server discovery (Add server)
 
 The **Add server** sheet calls `LocalServerDiscovery` to populate **Running locally**.
