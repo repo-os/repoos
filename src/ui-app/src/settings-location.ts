@@ -102,6 +102,7 @@ export function generalSectionForKey(key: string): string {
   if (key === "remoteValidation.offloadBrowserSteps" || key === "remoteValidation.localFallback") {
     return "remote-validation";
   }
+  if (key === "remoteValidation.healthCheck") return "remote-validation";
   if (key === "storage.provider") return "attachments";
   if (
     key.startsWith("localChecks.") ||

@@ -254,6 +254,20 @@ const resourceQueueNotice = computed(() =>
   localQueueHintForTask(repo.resourceQueueMarkers, props.task.id),
 );
 
+/** Distinct memory-pressure notices for this task, newest last (#0901). */
+const pressureNotices = computed<Array<{ host: string; message: string; fix: string }>>(() => {
+  const seen = new Set<string>();
+  const out: Array<{ host: string; message: string; fix: string }> = [];
+  for (const e of repo.taskRemoteEvents[props.task.id] ?? []) {
+    if (!e.fix) continue;
+    const key = `${e.host ?? ""}|${e.fix}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ host: e.host ?? "runner", message: e.message, fix: e.fix });
+  }
+  return out.slice(-3);
+});
+
 /**
  * #0592 — the newest COMPLETED check run was skipped because the repo has no
  * check plan. Drives the amber reminder (with the one-click setup task) above
@@ -518,6 +532,21 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
         </p>
       </Card>
 
+      <!-- #0901: a runner skipped/failed for memory pressure is not a red
+           branch — say which host, why, and the exact human fix. -->
+      <Card v-if="pressureNotices.length" class="debug-pressure-card" role="alert">
+        <p class="debug-pressure-head">Runner memory pressure</p>
+        <div
+          v-for="p in pressureNotices"
+          :key="`${p.host}-${p.message}`"
+          class="debug-pressure-row"
+        >
+          <span class="debug-pressure-host">{{ p.host }}</span>
+          <span class="debug-pressure-message">{{ p.message }}</span>
+          <span class="debug-pressure-fix"><strong>Fix:</strong> {{ p.fix }}</span>
+        </div>
+      </Card>
+
       <Card v-if="runningCheck" class="debug-live">
         <div class="debug-live-head">
           <span class="debug-live-dot" />
@@ -602,6 +631,13 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
                 title="no config change could make this run pass"
               >
                 config
+              </span>
+              <span
+                v-if="e.remote.fix"
+                class="debug-event-chip debug-event-chip-infra"
+                :title="e.remote.fix"
+              >
+                memory pressure
               </span>
             </span>
             <span class="debug-event-time" :title="e.at">{{ relTime(e.at) }}</span>
@@ -780,6 +816,42 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   line-height: 1.45;
   /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   color: var(--yellow, #e6b450);
+}
+
+/* #0901: memory-pressure banner — red, specific, and never a branch failure. */
+.debug-pressure-card {
+  border: 1px solid var(--red);
+  border-left: 4px solid var(--red);
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+}
+.debug-pressure-head {
+  margin: 0;
+  color: var(--red);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.debug-pressure-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0 0;
+  border-top: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
+  margin-top: 8px;
+}
+.debug-pressure-host {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-weight: 650;
+  color: var(--txt);
+}
+.debug-pressure-message,
+.debug-pressure-fix {
+  color: var(--txt-dim);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.debug-pressure-fix strong {
+  color: var(--txt);
 }
 
 .debug-live {

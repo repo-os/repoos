@@ -501,3 +501,20 @@ describe("GET /api/remote-validation/status reflects a same-process save immedia
     await cleanup();
   });
 });
+
+/** Runner memory-health switch (#0901): on unless explicitly disabled. */
+describe("remoteValidation.healthCheck", () => {
+  const base = '[remoteValidation]\nenabled = true\nprovider = "tailscale"\n';
+
+  it("defaults on when the key is absent", async () => {
+    const root = repo(`${base}tailscaleHosts = ["bee"]\n`);
+    expect(loadConfig(root).remoteValidation?.healthCheck).not.toBe(false);
+    await cleanup();
+  });
+
+  it("honours an explicit false", async () => {
+    const root = repo(`${base}tailscaleHosts = ["bee"]\nhealthCheck = false\n`);
+    expect(loadConfig(root).remoteValidation?.healthCheck).toBe(false);
+    await cleanup();
+  });
+});

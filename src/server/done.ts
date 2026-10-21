@@ -94,6 +94,13 @@ export interface CheckSummary {
    * full suite ran (no `--changed`, or the ref did not resolve).
    */
   remoteTestScopeRef?: string | null;
+  /**
+   * Host memory-pressure notices from this run (#0901): a host skipped before
+   * leasing, or a gate failure that matched the pressure signature. Carried on
+   * a GREEN summary too, so the task activity and drawer can name the skip and
+   * the human fix even though another host passed the gate.
+   */
+  runnerNotices?: import("../core/runner-health.js").RunnerHealthNotice[];
 }
 
 export interface CompleteResult {
