@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: opencode-go/minimax-m3.1-flash-free
 created_at: "2026-10-21T15:04:49Z"
-updated_at: "2026-10-21T15:06:08Z"
+updated_at: "2026-10-21T15:33:19Z"
 ---
 ## Problem
 
@@ -56,3 +57,4 @@ The new reminders feature is nice, but when the time comes it just shows in the 
 - 2026-10-21T15:04:54Z · screenshots
 - 2026-10-21T15:05:30Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-10-21T15:06:08Z · status inbox→ready
+- 2026-10-21T15:33:19Z · model_override
