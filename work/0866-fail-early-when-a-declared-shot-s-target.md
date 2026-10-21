@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-21T00:17:05Z"
-review_passes: 3
 id: "0866"
 title: Fail early when a declared shot's target cannot render its state or route
 type: bug
@@ -13,7 +11,9 @@ branch: feat/fail-early-when-a-declared-shot-s-target
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T11:55:38Z"
+updated_at: "2026-10-21T00:16:05Z"
 review_rounds: 1
+review_passes: 2
 last_check_failure: "repoos check at 2026-10-20T21:59:05.771Z: repoos check failed: ◆ Check plan"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-20T23:17:21.436Z\",\"kind\":\"dev-error\"}]"
@@ -77,17 +77,4 @@ See the shot declaration and capture code in src/server/shot-capture.ts, `planAu
 - 2026-10-20T23:27:43Z · assigned_to
 - 2026-10-20T23:28:06Z · note: handoff requested (ui-review)
 - 2026-10-20T23:29:28Z · body
-- 2026-10-20T23:31:44Z · body
-- 2026-10-20T23:32:20Z · body
-- 2026-10-20T23:35:33Z · body
-- 2026-10-20T23:36:08Z · body
-- 2026-10-20T23:37:55Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 66bcc54b to e2117d96) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-- 2026-10-21T00:05:54Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
-- 2026-10-21T00:06:39Z · assigned_to
-- 2026-10-21T00:06:59Z · assigned_to
-- 2026-10-21T00:07:21Z · note: handoff requested (ui-review)
-- 2026-10-21T00:08:45Z · body
-- 2026-10-21T00:16:06Z · status active→review
-- 2026-10-21T00:16:07Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (9bd80a7e8) during finalization (#0734)
-- 2026-10-21T00:17:05Z · note: review pass 3: good to go
-
+- 2026-10-21T00:16:05Z · status active→review
