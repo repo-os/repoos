@@ -6917,12 +6917,6 @@ export class AgentRunner {
     // it, and record the change once in the activity log when one was made.
     const sanitized = sanitizeSpawnArgs(args);
     args = sanitized.args;
-    if (sanitized.removed > 0 && task) {
-      this.recordTaskActivity(
-        task.id,
-        `prompt sanitized: stripped ${sanitized.removed} NUL byte(s) from the agent command line`,
-      );
-    }
     // Backstop for callers that reach spawnTurn directly (review starts) and
     // for queued turns: never launch a permission-bypassing agy outside a
     // linked task worktree.
@@ -6968,6 +6962,15 @@ export class AgentRunner {
     // turn's session (never `--continue`, which could attach another task).
     const crushSessionsBefore =
       cmd === "crush" ? (readCrushSessionIds(cwd) ?? undefined) : undefined;
+    // The launch is going ahead: if the sanitizer had to change this prompt,
+    // name that once in the task activity. Recorded after the refusals above so
+    // a start that never ran is not described as sanitized.
+    if (sanitized.removed > 0 && task) {
+      this.recordTaskActivity(
+        task.id,
+        `prompt sanitized: stripped ${sanitized.removed} NUL byte(s) from the agent command line`,
+      );
+    }
     let outFd: number | undefined;
     let errFd: number | undefined;
     let proc: ChildProcess;

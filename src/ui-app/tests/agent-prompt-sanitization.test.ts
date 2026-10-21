@@ -205,7 +205,13 @@ describe.sequential("agent CLI argv sanitizing (#0889)", () => {
               defaultStatus: fx.config.defaultStatus,
               defaultAssignee: fx.config.defaultAssignee,
             });
-            contextPack = generateContextPack(fx.config, taskToStart, branch, fx.root, null).content;
+            contextPack = generateContextPack(
+              fx.config,
+              taskToStart,
+              branch,
+              fx.root,
+              null,
+            ).content;
             expect(contextPack).toContain(marker);
             expect(contextPack).toContain(NUL);
           }
