@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-21T17:19:27Z"
-review_passes: 1
+last_close_out_gate_ms: 227619
+last_close_out_gate_at: "2026-10-21T18:06:44.605Z"
 id: "0905"
 title: check-remote-wip test breaks when the gate runs with browser steps offloaded (REPOOS_OFFLOAD_BROWSER_STEPS=1)
 type: feature
@@ -13,6 +13,8 @@ branch: feat/check-remote-wip-test-breaks-when-the-ga
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T16:03:26Z"
+updated_at: "2026-10-21T18:06:44Z"
+review_passes: 1
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T16:25:33.719Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -51,4 +53,5 @@ See scripts/remote-runner/validate.sh (the -e REPOOS_OFFLOAD_BROWSER_STEPS / REP
 - 2026-10-21T17:18:32Z · status active→review
 - 2026-10-21T17:18:32Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-21T17:19:27Z · note: review pass 1: good to go
+- 2026-10-21T18:06:44Z · close-out gate completed in 228s
 
