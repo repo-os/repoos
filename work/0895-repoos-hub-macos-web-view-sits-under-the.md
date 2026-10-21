@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-web-view-sits-under-the
 created_at: "2026-10-21T08:37:10Z"
-updated_at: "2026-10-21T12:48:58Z"
+updated_at: "2026-10-21T12:49:08Z"
 ---
 ## Problem
 Two layout problems in the native macOS app (RepoOS Hub), both visible in the new Window layout modes:
@@ -53,3 +53,4 @@ Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode fro
 - 2026-10-21T12:48:08Z · body
 - 2026-10-21T12:48:58Z · body: Verification (engineer) (added)
 - 2026-10-21T12:48:58Z · message_queued at 2026-10-21T12:48:58.690Z
+- 2026-10-21T12:49:08Z · CTO nudge: held — an undelivered message is already queued
