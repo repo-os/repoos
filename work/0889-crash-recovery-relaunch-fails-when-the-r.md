@@ -11,7 +11,7 @@ branch: feat/crash-recovery-relaunch-fails-when-the-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T01:27:17Z"
-updated_at: "2026-10-21T02:28:34Z"
+updated_at: "2026-10-21T02:30:11Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:20:05.086Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:25:58.742Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -51,3 +51,4 @@ Relevant code: src/server/engineer-crash-recovery.ts, src/server/agents.ts (resu
 - 2026-10-21T02:28:25Z · status active→ready
 - 2026-10-21T02:28:25Z · engineer stopped by request
 - 2026-10-21T02:28:34Z · status ready→active
+- 2026-10-21T02:30:11Z · engineer stopped by request
