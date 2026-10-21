@@ -11,7 +11,7 @@ branch: feat/show-why-a-close-out-validation-is-waiti
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T12:39:47Z"
-updated_at: "2026-10-21T18:51:17Z"
+updated_at: "2026-10-21T18:51:50Z"
 dev_error_count: 3
 ---
 ## Problem
