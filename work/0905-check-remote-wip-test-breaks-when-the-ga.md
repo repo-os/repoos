@@ -3,6 +3,9 @@ id: "0905"
 title: check-remote-wip test breaks when the gate runs with browser steps offloaded (REPOOS_OFFLOAD_BROWSER_STEPS=1)
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p1
 area: [core, server]
 assigned_to: ai
@@ -11,7 +14,9 @@ branch: feat/check-remote-wip-test-breaks-when-the-ga
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T16:03:26Z"
-updated_at: "2026-10-21T16:22:36Z"
+updated_at: "2026-10-21T16:25:33Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T16:25:33.719Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 2026-10-21: with remoteValidation.browserCaptureMode = runner-only, validate.sh passes REPOOS_OFFLOAD_BROWSER_STEPS=1 (and the REPOOS_BROWSER_CAPTURE_* variables) into the repoos-ci container. tests/check-remote-wip.test.ts ('managed engineer dirty-tree fallback (#0695) > warns and runs locally when a WIP checkpoint cannot be created') does not clear them, so the managed check takes the 'uncommitted changes ... running the full local gate on the working tree instead' path and never prints 'could not commit a WIP checkpoint'. Result: every task's remote gate failed on this test from ~22:59 to ~23:37 (#0899, #0900, #0897 handoffs), blocking all shipping for about an hour. Reverting the capture policy to local made the gates pass again. The test passes in isolation in the runner container, so it only breaks when those env vars are set. This also blocks the #0864 end-to-end proof (needs runner-only).
@@ -36,3 +41,5 @@ See scripts/remote-runner/validate.sh (the -e REPOOS_OFFLOAD_BROWSER_STEPS / REP
 - 2026-10-21T16:04:25Z · status ready→active, branch
 - 2026-10-21T16:17:52Z · body
 - 2026-10-21T16:22:36Z · body
+- 2026-10-21T16:25:33Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T16:25:33Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
