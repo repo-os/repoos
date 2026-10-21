@@ -14,12 +14,14 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  statSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig } from "./types.js";
 import { FM_DELIM, parseDocument, serializeDocument } from "./frontmatter.js";
+import { lastCommitsForDir } from "./git.js";
 import { normalizeStoryName, storyKey } from "./stories.js";
 import type { StoryDefinition } from "./story-display.js";
 
@@ -36,7 +38,7 @@ export function storiesDirOf(config: Pick<RepoOSConfig, "storiesDir">): string {
 }
 
 /** Frontmatter key order for a story file — `repoos` normalizes on write. */
-const STORY_KEY_ORDER = ["name", "number", "created_at", "created_by"] as const;
+const STORY_KEY_ORDER = ["name", "number", "created_at", "updated_at", "created_by"] as const;
 
 /**
  * Normalize a raw frontmatter `number` to the canonical zero-padded form.
@@ -188,7 +190,12 @@ export function collisionFreeStoryPath(
   return path;
 }
 
-export function parseStoryDefinitionFile(content: string, path: string): StoryDefinition | null {
+export function parseStoryDefinitionFile(
+  content: string,
+  path: string,
+  /** Last-modification fallback when the frontmatter has no `updated_at` (#0885). */
+  fallbackUpdatedAt = "",
+): StoryDefinition | null {
   const { data, body, hadFrontmatter } = parseDocument(content);
   if (!hadFrontmatter) return null;
   const name = normalizeStoryName(data.name);
@@ -197,6 +204,8 @@ export function parseStoryDefinitionFile(content: string, path: string): StoryDe
     typeof data.created_at === "string" && data.created_at.trim() ? data.created_at.trim() : "";
   const createdBy =
     typeof data.created_by === "string" && data.created_by.trim() ? data.created_by.trim() : "";
+  const frontmatterUpdatedAt =
+    typeof data.updated_at === "string" && data.updated_at.trim() ? data.updated_at.trim() : "";
   return {
     key: storyKey(name),
     name,
@@ -204,6 +213,9 @@ export function parseStoryDefinitionFile(content: string, path: string): StoryDe
     path,
     body: body.trim(),
     createdAt,
+    // `updated_at` is authoritative once written; older files predate the field,
+    // so fall back to the file's git/mtime (passed by `listStoryDefinitions`).
+    updatedAt: frontmatterUpdatedAt || fallbackUpdatedAt || createdAt,
     createdBy,
   };
 }
@@ -211,12 +223,20 @@ export function parseStoryDefinitionFile(content: string, path: string): StoryDe
 export function listStoryDefinitions(config: RepoOSConfig): StoryDefinition[] {
   const dir = storiesRoot(config);
   if (!existsSync(dir)) return [];
+  // One git pass for the whole directory (never one walk per file) gives the
+  // durable last-modified time for older story files that have no
+  // `updated_at` frontmatter. Fail-soft: an untracked or non-git file falls
+  // back to its mtime.
+  const commits = lastCommitsForDir(config.root, storiesDirOf(config));
   return readdirSync(dir)
     .filter(isStoryFile)
     .map((file) => {
       const path = `${storiesDirOf(config)}/${file}`;
+      const abs = join(dir, file);
       try {
-        return parseStoryDefinitionFile(readFileSync(join(dir, file), "utf8"), path);
+        const committedAt = commits.get(path)?.date ?? "";
+        const modifiedAt = committedAt || statSync(abs).mtime.toISOString();
+        return parseStoryDefinitionFile(readFileSync(abs, "utf8"), path, modifiedAt);
       } catch {
         return null;
       }
@@ -339,8 +359,9 @@ export function writeStoryDefinition(
   // first read and `ensureStoryNumbers` only ever has to backfill stories
   // written before this field existed.
   const number = nextStoryNumber(config);
+  const updatedAt = createdAt;
   const content = serializeDocument(
-    { name, number, created_at: createdAt, created_by: createdBy },
+    { name, number, created_at: createdAt, updated_at: updatedAt, created_by: createdBy },
     body.endsWith("\n") ? body : `${body}\n`,
     [...STORY_KEY_ORDER],
   );
@@ -354,6 +375,7 @@ export function writeStoryDefinition(
     path,
     body,
     createdAt,
+    updatedAt,
     createdBy,
   };
 }
@@ -390,8 +412,15 @@ export function rewriteStoryDefinition(
   // written before #0515 and not yet reached by the boot migration still gets
   // one here rather than being rewritten with an empty field.
   const number = current.number || nextStoryNumber(config);
+  const updatedAt = new Date().toISOString();
   const content = serializeDocument(
-    { name, number, created_at: current.createdAt, created_by: current.createdBy },
+    {
+      name,
+      number,
+      created_at: current.createdAt,
+      updated_at: updatedAt,
+      created_by: current.createdBy,
+    },
     `${body}\n`,
     [...STORY_KEY_ORDER],
   );
@@ -405,6 +434,7 @@ export function rewriteStoryDefinition(
       path: nextPath,
       body,
       createdAt: current.createdAt,
+      updatedAt,
       createdBy: current.createdBy,
     },
     previousPath: nextPath !== path ? path : undefined,
