@@ -228,8 +228,7 @@ titlebar are quiet icon buttons in the sidebar:
   tooltip.
 - The **sidebar toggle** on the right of that row hides the native sidebar;
   the embedded RepoOS web app's own sidebar is unaffected. It is the only
-  sidebar control — the Hub has no separate titlebar row with a second one.
-  When the native
+  sidebar toggle — the Hub has no second one in a titlebar row. When the native
   sidebar is hidden, a slim chevron tab flush against the window's left edge,
   just below the window controls, brings it back. The collapsed state is
   remembered across launches.
