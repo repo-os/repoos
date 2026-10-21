@@ -11,7 +11,7 @@ branch: feat/repoos-hub-macos-web-view-sits-under-the
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T08:37:10Z"
-updated_at: "2026-10-21T13:46:36Z"
+updated_at: "2026-10-21T13:59:22Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -81,3 +81,4 @@ Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode fro
 - 2026-10-21T13:46:21Z · message_queued at 2026-10-21T13:46:21.657Z
 - 2026-10-21T13:46:35Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-21T13:46:36Z · message_delivered: 1 message(s)
+- 2026-10-21T13:59:22Z · handoff failed · remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > returns a task to active when review findings are auto-bounced to the engineer, tests/agent-review.test.ts > agent review before human sign-off (#0101) > flags needs_input instead of parking silently once auto-bounce rounds are used up, tests/agent-review.test.ts > agent review before human sign-off (#0101) > does not re-raise an exhausted-rounds flag dismissed during the review on thinkpad — fix it in the feature branch and re-run the gate
