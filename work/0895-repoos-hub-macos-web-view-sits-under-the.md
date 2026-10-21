@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 95683
-last_close_out_gate_at: "2026-10-21T14:22:54.219Z"
 id: "0895"
 title: "RepoOS Hub (macOS): web view sits under the top bar in tabs mode (UI cut off), and sidebar mode shows two collapse buttons"
 type: bug
-status: review
+status: done
 priority: p2
 area: macos
+merged_commit: c9e09461b94cc83455c58c393d9b75454f90e1b7
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-hub-macos-web-view-sits-under-the
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T08:37:10Z"
 updated_at: "2026-10-21T14:22:54Z"
+last_close_out_gate_ms: 95683
+last_close_out_gate_at: "2026-10-21T14:22:54.219Z"
 review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 1

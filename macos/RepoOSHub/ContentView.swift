@@ -32,16 +32,12 @@ struct ContentView: View {
         NavigationSplitView(columnVisibility: columnVisibility) {
             ServerSidebarView(columnVisibility: columnVisibility)
         } detail: {
-            WorkspaceDetailView()
-                .padding(.top, usesTabStrip ? HubServerTabStripMetrics.height : 0)
-                .ignoresSafeArea(edges: usesTabStrip ? .top : [])
-                .overlay(alignment: .top) {
-                    if usesTabStrip {
-                        HubServerTabStrip()
-                            .frame(height: HubServerTabStripMetrics.height)
-                            .ignoresSafeArea(edges: .top)
-                    }
-                }
+            // One chrome container for both layouts: Tabs adds the strip as a
+            // real top row (content starts below it); Sidebar adds nothing and
+            // the page keeps the reclaimed titlebar band (#0895).
+            HubWorkspaceChrome(layout: appState.hubGlobalPreferences.navigationLayout) {
+                WorkspaceDetailView()
+            }
         }
         // The reveal tab lives on the split view, not the detail column, so it
         // sits flush against the window's left edge when the sidebar collapses
