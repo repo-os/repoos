@@ -68,3 +68,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T00:58:06Z · cli_override, model_override
 - 2026-10-21T00:58:08Z · status ready→active, branch
 - 2026-10-21T01:14:23Z · status active→review
+- 2026-10-21T01:14:23Z · note: handoff requested (cli)
