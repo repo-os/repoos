@@ -11,7 +11,7 @@ branch: feat/engineer-turn-ends-cleanly-without-a-han
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T21:57:26Z"
-updated_at: "2026-10-21T00:48:39Z"
+updated_at: "2026-10-21T00:56:35Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T00:05:32.519Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -55,3 +55,4 @@ Relevant code: src/server/agents.ts (`cleanup()`, `deliverQueuedMessages`, crash
 - 2026-10-21T00:40:56Z · body
 - 2026-10-21T00:48:38Z · assigned_to
 - 2026-10-21T00:48:39Z · note: handoff requested (ui-review)
+- 2026-10-21T00:56:35Z · note: shots: skipped — the diff (11 changed paths) touches no capture target's globs — no UI change to capture
