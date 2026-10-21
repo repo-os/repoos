@@ -11,7 +11,7 @@ branch: feat/repoos-hub-macos-web-view-sits-under-the
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T08:37:10Z"
-updated_at: "2026-10-21T13:46:21Z"
+updated_at: "2026-10-21T13:46:35Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -79,3 +79,4 @@ Native code is under macos/RepoOSHub (window/toolbar setup and the Tabs mode fro
 - 2026-10-21T13:45:40Z · body
 - 2026-10-21T13:46:21Z · body: Verification (engineer) (added 3, removed 2)
 - 2026-10-21T13:46:21Z · message_queued at 2026-10-21T13:46:21.657Z
+- 2026-10-21T13:46:35Z · handoff_deferred: 1 queued message(s) must be read before review
