@@ -25,7 +25,7 @@ import {
 } from "../../core/cto-idle-nudge.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 import type { LiveIndex } from "../../server/live-index.js";
-import { resolveSettingLocation } from "../src/settings-location.js";
+import { generalSectionForKey, resolveSettingLocation } from "../src/settings-location.js";
 
 const roots: string[] = [];
 
@@ -253,18 +253,17 @@ describe("idle nudge config (#0873)", () => {
     expect(SUPPORTED_TOML_KEYS).toEqual(
       expect.arrayContaining(["cto.nudgeIdleMs", "cto.nudgeCooldownMs"]),
     );
-    // Both controls live on the Settings Automation tab with the rest of the CTO.
+    // Both controls live on the General tab's Automation section with the rest
+    // of the CTO; the section id is stable for search/anchor links.
     expect(
-      resolveSettingLocation("cto.nudgeIdleMs", {
-        key: "cto.nudgeIdleMs",
-        label: "Idle nudge threshold",
-        type: "number",
-        tier: "live",
-        restartRequired: false,
-        default: DEFAULT_CTO_NUDGE_IDLE_MS,
-        description: "",
-      }),
-    ).toEqual({ tab: "automation", hasUiRow: true });
+      resolveSettingLocation(
+        "cto.nudgeIdleMs",
+        { tier: "live", group: "general" },
+        { inspectorAvailable: true },
+      ),
+    ).toEqual({ tab: "general", hasUiRow: true });
+    expect(generalSectionForKey("cto.nudgeIdleMs")).toBe("automation");
+    expect(generalSectionForKey("cto.nudgeCooldownMs")).toBe("automation");
   });
 
   it("parses valid values from repoos.toml and ignores invalid ones", () => {
