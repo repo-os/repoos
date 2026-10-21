@@ -3,13 +3,18 @@ id: "0862"
 title: "Docs site: use the landing page's RepoOS logo (theme-aware, no extra border)"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: [docs, landing]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/docs-site-use-the-landing-page-s-repoos-
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-21T04:07:14Z"
+updated_at: "2026-10-21T04:07:18Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:18.973Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The docs site (VitePress, `user-docs/`) and the landing page (`landing/`) show the RepoOS logo differently. In the attached screenshots (in order: 1 landing Gruvbox dark, 2 landing Gruvbox light, 3 landing Classic light, 4 docs site, 5 landing Classic dark) the landing logo is a plain hexagon with the three-bar mark that **changes with the theme**: its stroke gradient and bar colours follow the theme tokens in Gruvbox, Classic, light and dark. The docs site logo (4) sits inside an **extra rounded-square border/box** and stays one fixed colour set whatever theme or appearance is selected.
@@ -50,8 +55,8 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 "highlight": ".VPNavBarTitle",
 "assert": [
 {
-  "selector": ".docs-logo",
-  "label": "Inline theme-aware logo in the docs header"
+"selector": ".docs-logo",
+"label": "Inline theme-aware logo in the docs header"
 }
 ]
 },
@@ -62,8 +67,8 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 "highlight": ".VPNavBarTitle",
 "assert": [
 {
-  "selector": ".docs-logo",
-  "label": "Inline theme-aware logo in the docs header"
+"selector": ".docs-logo",
+"label": "Inline theme-aware logo in the docs header"
 }
 ]
 },
@@ -74,8 +79,8 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 "highlight": ".VPNavBarTitle",
 "assert": [
 {
-  "selector": ".docs-logo",
-  "label": "Inline theme-aware logo in the docs header"
+"selector": ".docs-logo",
+"label": "Inline theme-aware logo in the docs header"
 }
 ]
 },
@@ -86,8 +91,8 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 "highlight": ".VPNavBarTitle",
 "assert": [
 {
-  "selector": ".docs-logo",
-  "label": "Inline theme-aware logo in the docs header"
+"selector": ".docs-logo",
+"label": "Inline theme-aware logo in the docs header"
 }
 ]
 },
@@ -98,8 +103,8 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 "highlight": ".VPNavBarTitle",
 "assert": [
 {
-  "selector": ".docs-logo",
-  "label": "Inline theme-aware logo in the docs header"
+"selector": ".docs-logo",
+"label": "Inline theme-aware logo in the docs header"
 }
 ],
 "viewportWidth": 390
@@ -118,3 +123,5 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T04:04:18Z · note: click .VPNavBarHamburger: click: Timeout 5000ms exceeded. on /?theme=gruvbox&appearance=dark
 - 2026-10-21T04:05:04Z · body
 - 2026-10-21T04:07:14Z · note: stopped orphaned engineer pid 1217
+- 2026-10-21T04:07:18Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T04:07:18Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
