@@ -617,6 +617,33 @@ close-out with `closeOut.timeoutMs = 0`, pass no deadline of their own;
 close-out otherwise passes its pipeline budget — #0573). A run whose every
 eligible host is unusable fails retryably with each host's reason.
 
+#### Why a validation is waiting (#0897)
+
+A long close-out is not necessarily a slow gate. Every remote run now carries
+its **kind** (`handoff`, `close-out`, `self-check`, `review`, `shot`, `release`,
+or `checks`) and records a timing per stage — **queued for a slot**, `bundle`,
+`upload`, waiting for the host-side lock, then `build` and `tests` (the phase
+advances at each `repoos check` step heading; `run` covers the gap before the
+first heading). The pool
+status payload exposes that on `activeRuns[]` (`kind`, `stage`, `elapsedMs`,
+`phases[]`) and adds `queuedRuns[]`: each waiting job with its FIFO `position`,
+`waitedMs`, the host it will land on, and `blockers[]` naming the in-flight
+jobs holding its slots (task id, kind, host, elapsed) — including host-lock
+holders from standalone `repoos check` processes. `GET
+/api/tasks/:id/checks` returns the same run/queue detail as `remote`, so the
+task drawer shows the live phase and "ahead: #<id> <kind> on <host> (6m)"
+instead of an opaque "validating".
+
+`repoos driver brief --json` gains `blockedValidations`: any queued validation
+that has waited **more than two minutes**, with `blocking` set to the
+longest-running job ahead of it (the slot holder that has held longest). The human brief prints the same rows under **Blocked
+validations (queued >2m)**, and `repoos runners` prints each host's running
+jobs (kind, stage, elapsed, per-phase breakdown) and its queue with positions
+and the jobs ahead. Close-out jobs also record `phaseStartedAt` and
+`phaseTimings` (queued → syncing → validating → publishing → cleanup), which
+the pipeline snapshot and the drawer's "Integrating… (validating · 6m 12s)"
+label use.
+
 #### Check-run history (#0564)
 
 Every remote validation run — pass, fail, or never dispatched — is recorded as

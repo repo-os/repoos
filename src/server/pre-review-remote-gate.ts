@@ -195,6 +195,11 @@ export async function runRemotePreReviewGate(params: {
   taskId: string;
   /** Which gate is calling — recorded in the check-run history (#0564). */
   phase?: CheckRunPhase;
+  /**
+   * What this job belongs to for the runner queue display (#0897). Falls back
+   * to the check-run phase when omitted.
+   */
+  kind?: import("./remote-validation.js").RemoteRunKind;
   onChunk?: (chunk: string) => void;
   /**
    * Epoch ms after which the caller has given up (#0521) — passed through so a
@@ -240,6 +245,7 @@ export async function runRemotePreReviewGate(params: {
     worktreePath: params.worktreePath,
     candidateSha,
     phase: params.phase ?? "pre-review",
+    ...(params.kind ? { kind: params.kind } : {}),
     onChunk: params.onChunk,
     ...(capabilities.length ? { capabilities } : {}),
     ...(params.deadlineAt !== undefined ? { deadlineAt: params.deadlineAt } : {}),

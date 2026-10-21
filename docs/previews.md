@@ -382,6 +382,10 @@ fixture the preview applies before capture (preview builds only, via
 - `closeOut:remoteTests` — active close-out in the remote test run; card shows
   the "remote tests" step heartbeat and elapsed time, not stalled (`#9999`
   fixture task, #0799)
+- `runners:queued` — Remote runners panel with a close-out running on `bee` and
+  a handoff check queued behind it, showing each job's kind, per-phase timings,
+  queue position and blocker; also seeds `#9999` with a live remote close-out
+  for a task-drawer capture (#0897)
 - `card:doneError` — review card with done-error footer (`#9999` fixture task)
 - `card:humanStep` — ready card flagged by the decision-model human-step check,
   showing the model's bounded explanation (`#9999` fixture task, #0804)
