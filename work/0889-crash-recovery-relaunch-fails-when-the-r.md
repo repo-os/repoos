@@ -3,6 +3,9 @@ id: "0889"
 title: "Crash recovery relaunch fails when the resume prompt contains NUL bytes: sanitize prompt arguments"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "error: Upstream request failed: Endpoint is unavailable."
 priority: p2
 area: server
 assigned_to: ai
@@ -11,9 +14,9 @@ branch: feat/crash-recovery-relaunch-fails-when-the-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T01:27:17Z"
-updated_at: "2026-10-21T02:24:18Z"
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:20:05.086Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-10-21T02:25:58Z"
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:20:05.086Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:25:58.742Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 On 2026-10-21 ~09:26 local, #0877's engineer crashed and the new crash recovery (#0869) tried to relaunch it. The relaunch failed with: `engineer crash recovery: start failed — The argument 'args[6]' must be a string without null bytes. Received "Working directory: ..."`. The resume prompt (working-directory preamble plus the Task Context Pack) contains at least one NUL byte, which Node rejects as a spawn argument. A manual `repoos start 0877` then worked, so the failure is specific to the recovery path's prompt (likely a field in the context pack built from the task body, a diff or a log excerpt that carries a NUL). Until fixed, a crashed engineer whose context contains a NUL stays dead and flagged needs_input.
@@ -45,3 +48,5 @@ Relevant code: src/server/engineer-crash-recovery.ts, src/server/agents.ts (resu
 - 2026-10-21T02:24:10Z · status active→ready
 - 2026-10-21T02:24:11Z · engineer stopped by request
 - 2026-10-21T02:24:18Z · status ready→active
+- 2026-10-21T02:25:58Z · agent exited with an error (opencode) · error: Upstream request failed: Endpoint is unavailable.
+- 2026-10-21T02:25:58Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · error: Upstream request failed: Endpoint is unavailable.
