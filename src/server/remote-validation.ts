@@ -642,6 +642,33 @@ export class ActiveRemoteRunRegistry {
   }
 }
 
+/**
+ * Live run + queue detail from an active-run registry (#0897). Shared by both
+ * runner implementations so the task drawer shows the phase and per-phase
+ * elapsed time on a host-pool-less runner (Hetzner) too, where there is no
+ * queue to report.
+ */
+export function taskActivityFromRegistry(
+  registry: ActiveRemoteRunRegistry,
+  taskId: string,
+  queue: RemoteQueuedRunInfo | null = null,
+): RemoteTaskActivity | null {
+  const info = registry.get(taskId);
+  if (!info) return queue ? { run: null, queue } : null;
+  return {
+    run: {
+      taskId,
+      host: info.host,
+      kind: info.kind ?? remoteRunKindForPhase(info.phase),
+      startedAt: info.startedAt,
+      elapsedMs: Math.max(0, Date.now() - Date.parse(info.startedAt)),
+      stage: info.stage,
+      phases: info.phases ?? [],
+    },
+    queue,
+  };
+}
+
 interface RunnerState {
   serverId: number;
   ip: string;
@@ -2630,6 +2657,20 @@ export class RemoteValidationRunner implements RemoteValidator {
   /** In-flight runs with stage metadata, for the slow-run detector (#0720). */
   activeRemoteRuns(): ActiveRemoteRunInfo[] {
     return this.activeRunRegistry.list();
+  }
+
+  /**
+   * The Hetzner runner is one shared gate with no host pool, so no run is ever
+   * queued behind a host slot — an in-process concurrency wait is not a
+   * per-host queue and has no position to report (#0897).
+   */
+  queueStatus(): RemoteQueuedRunInfo[] {
+    return [];
+  }
+
+  /** Live run detail for the task drawer — phases work without a host pool (#0897). */
+  taskActivity(taskId: string): RemoteTaskActivity | null {
+    return taskActivityFromRegistry(this.activeRunRegistry, taskId);
   }
 
   private setActiveRunStage(info: ActiveRemoteRunInfo | null, taskId: string): void {
@@ -4970,20 +5011,7 @@ export class TailscaleRunner implements RemoteValidator {
   /** Live run + queue detail for one task, for the task drawer (#0897). */
   taskActivity(taskId: string): RemoteTaskActivity | null {
     const queue = this.pool.queueStatus().find((q) => q.taskId === taskId) ?? null;
-    const info = this.activeRunRegistry.get(taskId);
-    if (!info) return queue ? { run: null, queue } : null;
-    return {
-      run: {
-        taskId,
-        host: info.host,
-        kind: info.kind ?? remoteRunKindForPhase(info.phase),
-        startedAt: info.startedAt,
-        elapsedMs: Math.max(0, Date.now() - Date.parse(info.startedAt)),
-        stage: info.stage,
-        phases: info.phases ?? [],
-      },
-      queue,
-    };
+    return taskActivityFromRegistry(this.activeRunRegistry, taskId, queue);
   }
 
   /** Sample runner memory pressure for the Runners tab / `repoos runners` (#0901). */

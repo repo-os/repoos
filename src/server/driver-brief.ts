@@ -272,9 +272,11 @@ export function collectBlockedValidations(
         host: b.host,
         elapsedMs: b.elapsedMs,
       }));
-      // Oldest blocker is the one actually holding the slot the longest.
+      // The job that has held a slot longest (largest elapsed → oldest start)
+      // is the one actually keeping this validation waiting. `blockers` carries
+      // elapsed rather than start time, so elapsed is the ordering key.
       const blocking = blockers.length
-        ? blockers.reduce((oldest, b) => (b.elapsedMs > oldest.elapsedMs ? b : oldest))
+        ? blockers.reduce((longest, b) => (b.elapsedMs > longest.elapsedMs ? b : longest))
         : null;
       return {
         taskId: q.taskId,
