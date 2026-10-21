@@ -3,12 +3,6 @@ id: "0862"
 title: "Docs site: use the landing page's RepoOS logo (theme-aware, no extra border)"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
-debug_tldr: RepoOS server went unreachable during shot upload (likely OOM pressure) — restart repoos serve and retry handoff.
-debug_tldr_at: "2026-10-21T04:07:43Z"
-debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p2
 area: [docs, landing]
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/docs-site-use-the-landing-page-s-repoos-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-21T04:45:14Z"
+updated_at: "2026-10-21T04:49:45Z"
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:18.973Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:08:12.298Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:09:06.817Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-21T04:10:13.967Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
@@ -120,3 +114,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-21T04:35:58Z · body
 - 2026-10-21T04:37:38Z · body
 - 2026-10-21T04:45:14Z · CTO nudge: held — machine under pressure (the memory compressor is holding 37% of RAM (8.8 GB of RAM) — holding new work until memory pressure eases)
+- 2026-10-21T04:49:45Z · needs_input
