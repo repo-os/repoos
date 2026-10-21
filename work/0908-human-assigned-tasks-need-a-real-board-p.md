@@ -5,11 +5,11 @@ type: feature
 status: inbox
 priority: p2
 area: [web, server, core]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T19:22:55Z"
-updated_at: "2026-10-21T19:22:55Z"
+updated_at: "2026-10-21T19:23:07Z"
 ---
 ## Problem
 Tasks assigned to a human (for example #0864 and #0907) have no usable path to done in the UI. The only visible 'hold' signal is the assigned-to-human marker, and a task can't be moved to Done without going through active and review, which start AI work, checks, handoff gates and reviewers that make no sense for a human-only task. The only way to close one today is the CLI: repoos update <id> --hold false and repoos mv <id> done. Human steps (rebuild an image, log CLIs in on runners, record a proof, run a trial) are a normal part of the work and need to be first-class on the board.
