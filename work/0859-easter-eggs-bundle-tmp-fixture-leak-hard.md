@@ -12,14 +12,14 @@ branch: feat/easter-eggs-bundle-tmp-fixture-leak-hard
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-21T04:51:26Z"
+updated_at: "2026-10-21T04:51:27Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:07:13.053Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:08:06.822Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T04:09:05.450Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 
 - [x] **E1 · Server teardown survives a browser-close failure** (core) — in the UI smoke and contrast harnesses, close the server in its own `finally` so a throwing `context.close()`/`browser.close()` cannot skip it. Source: #0858 review, 2026-10-20.
-- [ ] **E2 · Worker-kill reaches nested fixtures deeper than 4 levels** (core) — `killSpawnedLogs` recurses only four levels, so a deeper fixture's child process survives a worker kill. Source: #0858 review.
+- [x] **E2 · Worker-kill reaches nested fixtures deeper than 4 levels** (core) — `killSpawnedLogs` recurses only four levels, so a deeper fixture's child process survives a worker kill. Source: #0858 review.
 - [ ] **E3 · Test the smoke/contrast "0 new dirs in the real tmpdir" behaviour** (core) — that half of #0858's fix was only hand-verified. Source: #0858 review.
 - [ ] **E4 · RepoOS Hub opens at its minimum size instead of filling the screen** (macos) — RepoOSHubApp.swift WindowGroup sets only a min frame (880x520) and no default size, so a fresh window opens near that minimum, centered. Give the window a default size that fills the visible screen (use .defaultSize/.windowResizability or size the NSWindow to screen.visibleFrame on first creation, like a browser), keep it resizable, and let macOS frame restore win once the user resizes it.. Source: Nick, 2026-10-20: Hub always opens about 25% of the screen, centered; wants it to open large like a browser..
 - [ ] **E5 · Docs site (HMR) target fails when user-docs deps are not installed** (core) — The docs preview target (cd user-docs && bun run dev) fails with ERR_MODULE_NOT_FOUND for vitepress-plugin-llms when user-docs/node_modules predates a dependency added to user-docs/package.json (a gitignored install nobody refreshes; fresh task worktrees have none). Make the target run bun install in user-docs first, or have the doctor check flag a missing/stale user-docs install with that fix.. Source: Nick, 2026-10-21: Docs site (HMR) target failed to start; fixed by hand with bun install in user-docs..
@@ -151,3 +151,5 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-21T04:51:26Z · body: Items (added 1, removed 1)
 - 2026-10-21T04:51:26Z · note: bundle done E1
 - 2026-10-21T04:51:26Z · message_queued at 2026-10-21T04:51:26.586Z
+- 2026-10-21T04:51:27Z · body: Items (added 1, removed 1)
+- 2026-10-21T04:51:27Z · note: bundle done E2
