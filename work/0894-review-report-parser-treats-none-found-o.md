@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 4d9e806781e08ebdc9fadd779e22ad150bf7b5ee
 id: "0894"
 title: Review report parser treats 'None found.' (or any phrasing other than exact 'None found') in Bugs as blocking bugs
 type: bug
@@ -67,3 +69,4 @@ Consumers: src/server/landable.ts (line ~51), the review auto-bounce path in src
 - 2026-10-21T10:31:09Z · body
 - 2026-10-21T10:31:37Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-21T10:40:48Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot, tests/agent-drivers.test.ts > qwen code driver > spawns headless args, streams output, and resumes by session id on thinkpad — fix it in the feature branch and re-run the gate
+
