@@ -40,6 +40,7 @@ import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 
 import type { PendingScreenshot } from "../stores/ui";
 import { attachmentUploadPhase } from "../lib/attachment-upload-ui";
+import { SCREENSHOT_ACCEPT } from "../lib/screenshot-viewer";
 import ActivityIndicator from "./ActivityIndicator.vue";
 
 export type PendingShot = PendingScreenshot;
@@ -139,6 +140,16 @@ function onShotFiles(e: Event): void {
   const files = Array.from(input.files ?? []);
   input.value = "";
   if (files.length) emit("attach", files);
+}
+
+/** A label's click is native activation; block it while the composer is off. */
+function onAttachClick(event: MouseEvent): void {
+  if (props.disabled) event.preventDefault();
+}
+
+/** Keyboard activation (Enter/Space); a pointer click is handled natively. */
+function openShotPicker(): void {
+  if (!props.disabled) shotInput.value?.click();
 }
 
 function onKeydown(event: KeyboardEvent): void {
@@ -310,28 +321,30 @@ defineExpose({ focusDraft });
     <ChatQueuedNotice :active="queued" />
 
     <form class="ai-chat-compose" @submit.prevent="emit('send')">
-      <input
-        ref="shotInput"
-        v-if="canAttach"
-        type="file"
-        accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp"
-        multiple
-        class="pm-shot-input"
-        aria-hidden="true"
-        tabindex="-1"
-        @change="onShotFiles"
-      />
-      <button
+      <label
         v-if="canAttach && !busy"
-        type="button"
         class="ai-chat-attach"
+        role="button"
+        :tabindex="disabled ? -1 : 0"
+        :aria-disabled="disabled ? 'true' : undefined"
         aria-label="Attach screenshots"
         title="Attach screenshots — they're added to any task the PM creates from this message"
-        :disabled="disabled"
-        @click="shotInput?.click()"
+        @click="onAttachClick"
+        @keydown.enter.prevent="openShotPicker"
+        @keydown.space.prevent="openShotPicker"
       >
         <ImagePlus />
-      </button>
+        <input
+          ref="shotInput"
+          type="file"
+          :accept="SCREENSHOT_ACCEPT"
+          multiple
+          class="pm-shot-input"
+          tabindex="-1"
+          @change="onShotFiles"
+          @click.stop
+        />
+      </label>
       <textarea
         ref="draftTextarea"
         v-model="draft"
