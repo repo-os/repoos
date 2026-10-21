@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-20T13:31:37Z"
-updated_at: "2026-10-21T06:12:42Z"
+updated_at: "2026-10-21T06:17:20Z"
 ---
 ## Problem
 
@@ -346,6 +346,18 @@ Test both layouts, switching between them, narrow windows, many servers, and nat
 
 **Success means RepoOS Hub feels like Chrome's compact tab bar, but each tab represents a separate RepoOS server. The native chrome should consume approximately one row of vertical space, not two.**
 
+## Shots
+```json
+[
+{
+  "label": "Server navigation layout documented",
+  "target": "Docs site",
+  "route": "/macos-hub",
+  "highlight": "#window-layout"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-20T13:31:37Z · created · hello@repoos.org
@@ -359,3 +371,4 @@ Test both layouts, switching between them, narrow windows, many servers, and nat
 - 2026-10-21T05:58:19Z · model_override
 - 2026-10-21T06:08:57Z · status ready→active, branch
 - 2026-10-21T06:12:42Z · CTO nudge: held — engineer process is busy (headless browser)
+- 2026-10-21T06:17:20Z · body
