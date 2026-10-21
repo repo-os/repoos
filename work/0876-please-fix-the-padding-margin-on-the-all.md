@@ -2,18 +2,18 @@
 id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/fix-padding-and-margin-on-allowlist-paus
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T00:58:06Z"
+updated_at: "2026-10-21T00:58:08Z"
 ---
 ## Problem
 
@@ -66,3 +66,4 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-20T13:45:38Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added); Related (added)
 - 2026-10-21T00:58:01Z · status inbox→ready
 - 2026-10-21T00:58:06Z · cli_override, model_override
+- 2026-10-21T00:58:08Z · status ready→active, branch
