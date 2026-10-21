@@ -2,7 +2,7 @@
 id: "0906"
 title: Fix agent-cta tests after the starter prompt heading changed to 'Get started with RepoOS'
 type: feature
-status: active
+status: review
 priority: p0
 area: [core, docs]
 assigned_to: ai
@@ -34,4 +34,4 @@ Two-line test fix. Verify the test passes before handing off, then run repoos ch
 - 2026-10-21T17:39:33Z · cli_override, model_override
 - 2026-10-21T17:39:35Z · status ready→active, branch
 - 2026-10-21T17:41:38Z · body
-- 2026-10-21T17:51:23Z · note: shots: skipped — the diff (2 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-21T17:51:23Z · status active→review
