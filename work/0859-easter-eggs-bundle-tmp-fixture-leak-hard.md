@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-20T03:43:18Z"
-updated_at: "2026-10-20T08:30:42Z"
+updated_at: "2026-10-21T02:26:34Z"
 ---
 ## Items
 
@@ -18,6 +18,7 @@ updated_at: "2026-10-20T08:30:42Z"
 - [ ] **E2 · Worker-kill reaches nested fixtures deeper than 4 levels** (core) — `killSpawnedLogs` recurses only four levels, so a deeper fixture's child process survives a worker kill. Source: #0858 review.
 - [ ] **E3 · Test the smoke/contrast "0 new dirs in the real tmpdir" behaviour** (core) — that half of #0858's fix was only hand-verified. Source: #0858 review.
 - [ ] **E4 · RepoOS Hub opens at its minimum size instead of filling the screen** (macos) — RepoOSHubApp.swift WindowGroup sets only a min frame (880x520) and no default size, so a fresh window opens near that minimum, centered. Give the window a default size that fills the visible screen (use .defaultSize/.windowResizability or size the NSWindow to screen.visibleFrame on first creation, like a browser), keep it resizable, and let macOS frame restore win once the user resizes it.. Source: Nick, 2026-10-20: Hub always opens about 25% of the screen, centered; wants it to open large like a browser..
+- [ ] **E5 · Docs site (HMR) target fails when user-docs deps are not installed** (core) — The docs preview target (cd user-docs && bun run dev) fails with ERR_MODULE_NOT_FOUND for vitepress-plugin-llms when user-docs/node_modules predates a dependency added to user-docs/package.json (a gitignored install nobody refreshes; fresh task worktrees have none). Make the target run bun install in user-docs first, or have the doctor check flag a missing/stale user-docs install with that fix.. Source: Nick, 2026-10-21: Docs site (HMR) target failed to start; fixed by hand with bun install in user-docs..
 
 Add further small, independent fixes here with `repoos bundle add <id> ...` (one open bundle at a time). Start this bundle after #0858 lands.
 
@@ -83,6 +84,23 @@ Reuse the tmp-isolation and reap helpers from #0858 (`tmp-isolation.ts`, `global
 
 
 
+
+## E5 · Docs site (HMR) target fails when user-docs deps are not installed
+
+### Problem
+
+
+### Desired UX
+
+
+### Acceptance criteria
+
+- Test: Unit-test the check/target setup: with user-docs/node_modules missing or lacking a package.json dependency, the install runs (or the doctor reports it); with everything installed it does nothing.
+
+### Notes for AI
+
+
+
 ## Problem
 Three small, independent follow-ups from #0858's review; see the E-sections.
 
@@ -101,3 +119,5 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-20T04:46:48Z · status inbox→ready
 - 2026-10-20T08:30:42Z · body: Items (added 1); E4 · RepoOS Hub opens at its minimum size instead of filling the screen (added)
 - 2026-10-20T08:30:42Z · note: bundle add E4
+- 2026-10-21T02:26:34Z · body: Items (added 1); E5 · Docs site (HMR) target fails when user-docs deps are not installed (added)
+- 2026-10-21T02:26:34Z · note: bundle add E5

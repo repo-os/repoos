@@ -1,3 +1,6 @@
+/** The image types every screenshot upload accepts (#0877). */
+export const SCREENSHOT_ACCEPT = "image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp";
+
 /** A screenshot the shared viewer can render — pending `data:` or stored `/api/` URL. */
 export interface ScreenshotShot {
   src: string;

@@ -40,6 +40,7 @@ import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 
 import type { PendingScreenshot } from "../stores/ui";
 import { attachmentUploadPhase } from "../lib/attachment-upload-ui";
+import { SCREENSHOT_ACCEPT } from "../lib/screenshot-viewer";
 import ActivityIndicator from "./ActivityIndicator.vue";
 
 export type PendingShot = PendingScreenshot;
@@ -105,7 +106,6 @@ const draft = defineModel<string>("draft", { default: "" });
 
 const log = ref<HTMLElement | null>(null);
 const draftTextarea = ref<HTMLTextAreaElement | null>(null);
-const shotInput = ref<HTMLInputElement | null>(null);
 
 const hasConversation = computed(() => props.lines.length > 0);
 // Rows are grouped by the shared transform (#0506): a run of adjacent tool calls
@@ -310,28 +310,27 @@ defineExpose({ focusDraft });
     <ChatQueuedNotice :active="queued" />
 
     <form class="ai-chat-compose" @submit.prevent="emit('send')">
-      <input
-        ref="shotInput"
-        v-if="canAttach"
-        type="file"
-        accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp"
-        multiple
-        class="pm-shot-input"
-        aria-hidden="true"
-        tabindex="-1"
-        @change="onShotFiles"
-      />
-      <button
+      <label
         v-if="canAttach && !busy"
-        type="button"
         class="ai-chat-attach"
-        aria-label="Attach screenshots"
+        :aria-disabled="disabled ? 'true' : undefined"
+        :aria-label="
+          disabled ? 'Attach screenshots (unavailable while PM is working)' : 'Attach screenshots'
+        "
         title="Attach screenshots — they're added to any task the PM creates from this message"
-        :disabled="disabled"
-        @click="shotInput?.click()"
       >
-        <ImagePlus />
-      </button>
+        <ImagePlus aria-hidden="true" />
+        <input
+          type="file"
+          :accept="SCREENSHOT_ACCEPT"
+          :disabled="disabled"
+          multiple
+          class="pm-shot-input"
+          aria-label="Attach screenshots"
+          @change="onShotFiles"
+          @click.stop
+        />
+      </label>
       <textarea
         ref="draftTextarea"
         v-model="draft"

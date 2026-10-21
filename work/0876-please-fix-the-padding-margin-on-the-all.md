@@ -3,19 +3,23 @@ id: "0876"
 title: Fix padding and margin on allowlist pause modal
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-padding-and-margin-on-allowlist-paus
-cli_override: opencode
-model_override: opencode-go/deepseek-v4.1-flash
+cli_override: cursor
+model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-10-20T13:45:00Z"
-updated_at: "2026-10-21T01:33:53Z"
+updated_at: "2026-10-21T02:35:26Z"
 review_rounds: 1
 review_passes: 1
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T02:03:50.463Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -64,14 +68,14 @@ Please fix the padding/margin on the allowlist pause modal
 "label": "Pause dialog, light theme — padded fields and action row",
 "target": "default",
 "route": "/agents?tab=budget-controls",
-"highlight": ".budget-pause-dialog",
+"highlight": "[data-testid=budget-pause-dialog]",
 "steps": [
-{
-"click": "[data-testid='budget-row-li-opencode'] [data-testid='budget-pause-agent']"
-},
-{
-"waitMs": 500
-}
+  {
+    "click": "[data-testid=\"budget-row-li-claude code\"] [data-testid=\"budget-pause-agent\"]"
+  },
+  {
+    "waitMs": 500
+  }
 ],
 "state": "budget:paused",
 "theme": "light"
@@ -80,14 +84,14 @@ Please fix the padding/margin on the allowlist pause modal
 "label": "Pause dialog, dark theme — padded fields and action row",
 "target": "default",
 "route": "/agents?tab=budget-controls",
-"highlight": ".budget-pause-dialog",
+"highlight": "[data-testid=budget-pause-dialog]",
 "steps": [
-{
-"click": "[data-testid='budget-row-li-opencode'] [data-testid='budget-pause-agent']"
-},
-{
-"waitMs": 500
-}
+  {
+    "click": "[data-testid=\"budget-row-li-claude code\"] [data-testid=\"budget-pause-agent\"]"
+  },
+  {
+    "waitMs": 500
+  }
 ],
 "state": "budget:paused",
 "theme": "dark"
@@ -121,3 +125,20 @@ Please fix the padding/margin on the allowlist pause modal
 - 2026-10-21T01:20:46Z · body
 - 2026-10-21T01:26:19Z · body
 - 2026-10-21T01:33:53Z · body
+- 2026-10-21T01:51:06Z · body
+- 2026-10-21T01:52:27Z · body
+- 2026-10-21T02:03:50Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T02:03:50Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-21T02:16:13Z · body
+- 2026-10-21T02:18:41Z · body
+- 2026-10-21T02:24:29Z · needs_input
+- 2026-10-21T02:27:55Z · status active→ready
+- 2026-10-21T02:27:55Z · engineer stopped by request
+- 2026-10-21T02:28:04Z · status ready→active
+- 2026-10-21T02:29:37Z · engineer stopped by request
+- 2026-10-21T02:29:38Z · needs_input
+- 2026-10-21T02:29:39Z · cli_override, model_override
+- 2026-10-21T02:29:54Z · status active→ready
+- 2026-10-21T02:30:07Z · status ready→active
+- 2026-10-21T02:33:41Z · body
+- 2026-10-21T02:35:26Z · body

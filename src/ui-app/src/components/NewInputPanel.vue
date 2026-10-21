@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
-import { X, ImagePlus } from "lucide-vue-next";
+import { X } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore, type InputAttachmentUploadJob } from "../stores/repo";
 import { randomId } from "../lib/random-id";
@@ -14,11 +14,11 @@ import DialogOverlay from "./ui/dialog/overlay.vue";
 import DialogTitle from "./ui/dialog/title.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import PendingAttachmentList from "./PendingAttachmentList.vue";
+import ShotDropzone from "./ShotDropzone.vue";
 import { isImageMime, pendingToShots, shotIndex } from "../lib/screenshot-viewer";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 const ui = useUiStore(),
   repo = useRepoStore(),
-  fileInput = ref<HTMLInputElement | null>(null),
   open = computed(() => ui.isNewInput),
   /**
    * True once the user submits an input. The form swaps to an acknowledgment
@@ -53,10 +53,8 @@ watch(open, (v) => {
   // The panel reuses the draft, so size its remounted textarea immediately.
   void nextTick(adjustInputHeight);
 });
-function files(e: Event): void {
-  const input = e.target as HTMLInputElement;
-  if (input.files) ui.addInputScreenshots(Array.from(input.files));
-  input.value = "";
+function addFiles(files: File[]): void {
+  ui.addInputScreenshots(files);
 }
 function onDragEnter(): void {
   if (submitted.value) return;
@@ -187,30 +185,11 @@ function done(): void {
         <template v-else>
           <div class="field" style="margin-top: 4px">
             <label>Screenshots</label>
-            <div
-              class="shot-dropzone"
-              :class="{ over: dragDepth > 0 }"
-              role="button"
-              tabindex="0"
-              @click="fileInput?.click()"
-              @keydown.enter="fileInput?.click()"
-            >
-              <ImagePlus class="size-4" />
-              <span>{{
-                ui.inputScreenshots.length
-                  ? `Add more — ${ui.inputScreenshots.length} screenshot${ui.inputScreenshots.length === 1 ? "" : "s"} added`
-                  : "Click to add screenshots, or drop them anywhere on this panel"
-              }}</span>
-              <input
-                id="new-input-file"
-                ref="fileInput"
-                type="file"
-                multiple
-                class="shot-input"
-                @change="files"
-                @click.stop
-              />
-            </div>
+            <ShotDropzone :over="dragDepth > 0" @files="addFiles">{{
+              ui.inputScreenshots.length
+                ? `Add more — ${ui.inputScreenshots.length} screenshot${ui.inputScreenshots.length === 1 ? "" : "s"} added`
+                : "Click to add screenshots, or drop them anywhere on this panel"
+            }}</ShotDropzone>
             <PendingAttachmentList
               v-if="ui.inputScreenshots.length"
               :items="ui.inputScreenshots"
