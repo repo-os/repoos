@@ -3,6 +3,9 @@ id: "0899"
 title: "Easter eggs bundle: screenshot dropzone layout, CLI screenshot captions"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — clean mergeability and RepoOS landability remain unconfirmed
 hold: true
 priority: p3
 area: [web, core]
@@ -222,3 +225,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:38:30Z · needs_input
 - 2026-10-21T19:39:15Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-10-21T19:39:35Z · note: review pass 5: needs some work
+- 2026-10-21T19:39:35Z · needs_input
