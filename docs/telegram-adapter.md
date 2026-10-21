@@ -1,6 +1,6 @@
 # Telegram adapter — implementation notes (#0531)
 
-Build context for the tasks that consume the local adapter (#0532–#0538,
+Build context for the tasks that consume the local adapter (#0532–#0543,
 #0559). The adapter lives in `src/server/telegram/`; routes are in
 `src/server/routes/telegram.ts`. Read this before adding a second Telegram
 call site — the point of the task was that there be none.
@@ -22,9 +22,15 @@ call site — the point of the task was that there be none.
 | `telegram/index.ts` | Per-repository provider singleton (`getTelegramProvider(config)`); `setTelegramProvider`/`resetTelegramProviders` for tests. |
 | `telegram/actor.ts` | `TelegramActor` (email/role/telegramUserId) for downstream mutations — never the "human" fallback. |
 | `telegram/intake.ts` | Per-message authorization, rate limits, audit (#0534), group addressing (#0535); dispatches authorized updates to `onAuthorized` handlers (agent chat registers here, #0541). |
-| `telegram/rate-limits.ts` | In-memory per-user/per-chat limiters: general intake plus the tighter agent pair, consumed before any LLM run (#0541). |
+| `telegram/rate-limits.ts` | In-memory per-user/per-chat limiters: general intake, the tighter agent pair (#0541), and separate creation/action pairs (#0543), all consumed before any expensive work. |
 | `telegram/guide-chat.ts` | Telegram → repository-guide agent turns (#0541): per-user conversation state on the shared AgentRunner, expiry, reply delivery. |
 | `telegram/group-addressing.ts` | Group trigger rules: commands, replies to the bot, @mentions (#0535). |
+| `telegram/task-actions.ts` | Write surface (#0543): `/newtask` previews, Edit/Edit/Cancel buttons, callback verification, lifecycle actions, two-step close-out, rate limits and audit. |
+| `telegram/task-draft.ts` | Deterministic prose → title/type/priority/area inference and per-field validation. |
+| `telegram/task-drafts-store.ts` | Pending previews keyed by nonce under `.repoos/telegram-task-drafts.json`. |
+| `telegram/task-creation.ts` | Telegram → `repoos.createTask` with the same fields, original prompt, attachments and commit as the UI path. |
+| `telegram/callbacks.ts` | Signed, expiring, single-use inline payloads plus the persisted nonce ledger. |
+| `telegram/attachments.ts` | Content sniffing (magic bytes) and safe storage names for Telegram files. |
 
 ## Security invariants (test-pinned)
 
@@ -211,7 +217,7 @@ logging for privileged intake. Unbound or unauthorized senders are dropped
 silently with no outbound Telegram traffic (ADR 0007). A handler failure is
 logged redacted, never allowed to kill the transport loop.
 
-## Composed authorized handlers (#0540 + #0541)
+## Composed authorized handlers (#0540–#0543)
 
 The intake supports exactly ONE `onAuthorized` sink, and later tasks each
 bring their own surface — so `bootstrapTelegramAtBoot` composes them with
