@@ -101,13 +101,13 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 "highlight": ".field .shot-dropzone",
 "steps": [
 {
-  "click": ".drawer-tabs .tab-btn:nth-child(2)"
+"click": ".drawer-tabs .tab-btn:nth-child(2)"
 },
 {
-  "waitFor": ".field .shot-dropzone"
+"waitFor": ".field .shot-dropzone"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ]
 },
@@ -202,4 +202,5 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:05:12Z · note: review pass 2: needs some work
 - 2026-10-21T19:05:12Z · status review→active
 - 2026-10-21T19:06:20Z · body
+- 2026-10-21T19:07:37Z · body
 - 2026-10-21T19:07:37Z · body
