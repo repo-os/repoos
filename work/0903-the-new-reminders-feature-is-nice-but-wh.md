@@ -2,14 +2,14 @@
 id: "0903"
 title: Show due reminders as header cards beside alerts
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-21T15:04:49Z"
-updated_at: "2026-10-21T15:05:30Z"
+updated_at: "2026-10-21T15:06:08Z"
 ---
 ## Problem
 
@@ -55,3 +55,4 @@ The new reminders feature is nice, but when the time comes it just shows in the 
 - 2026-10-21T15:04:49Z · created · hello@repoos.org
 - 2026-10-21T15:04:54Z · screenshots
 - 2026-10-21T15:05:30Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
+- 2026-10-21T15:06:08Z · status inbox→ready
