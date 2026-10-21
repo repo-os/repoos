@@ -14,7 +14,7 @@ branch: feat/pwa-clicking-the-screenshot-upload-area-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T13:54:39Z"
-updated_at: "2026-10-21T01:26:11Z"
+updated_at: "2026-10-21T01:26:56Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:05:24.436Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-21T01:26:02.934Z\",\"kind\":\"degenerate-output\"}]"
 ---
@@ -82,10 +82,10 @@ repo’s already-working label-based upload controls.
 "highlight": ".shot-dropzone",
 "steps": [
 {
-  "click": ".new-btn"
+"click": ".new-btn"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ]
 },
@@ -96,10 +96,10 @@ repo’s already-working label-based upload controls.
 "highlight": ".shot-dropzone",
 "steps": [
 {
-  "click": ".new-btn"
+"click": ".new-btn"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ]
 }
