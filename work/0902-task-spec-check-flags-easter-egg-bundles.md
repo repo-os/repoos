@@ -2,7 +2,7 @@
 id: "0902"
 title: Task spec check flags easter-egg bundles as underspecified
 type: bug
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/task-spec-check-flags-easter-egg-bundles
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T14:52:31Z"
-updated_at: "2026-10-22T01:51:14Z"
+updated_at: "2026-10-22T01:51:19Z"
 dev_error_count: 6
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:48:07.742Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:48:09.533Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:48:11.344Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-22T01:48:12.924Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-22T01:48:14.671Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-22T01:48:16.769Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
@@ -51,3 +51,4 @@ Start from `assessTaskUnderspecified` and `specSectionHeadingsForTask` in `src/c
 - 2026-10-22T01:50:59Z · cli_override, model_override
 - 2026-10-22T01:51:00Z · needs_input
 - 2026-10-22T01:51:14Z · status active→ready
+- 2026-10-22T01:51:19Z · status ready→active
