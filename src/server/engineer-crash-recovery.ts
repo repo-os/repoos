@@ -37,6 +37,8 @@ import {
 } from "../core/engineer-crash-recovery.js";
 import type { Logger } from "../core/logger.js";
 import { stripNulBytes } from "../core/spawn-args.js";
+import { pauseAllowlistEntry, pairPauseInfo } from "../core/budget-allowlist.js";
+import { detectProviderUsageLimit } from "../core/provider-usage-limit.js";
 import { resolveAgentForTask, type AgentRunner, type EngineerCrashInfo } from "./agents.js";
 import { isTaskClosingOut } from "./close-out-lock.js";
 import { relaunchEngineerOnActiveTask, type EngineerLaunchResult } from "./engineer-launch.js";
@@ -174,16 +176,36 @@ export async function recoverEngineerAfterCrash(
     // activity line, and one NUL in argv makes `spawn` throw, so strip it once
     // here and name the change in the activity entry.
     const reason = stripNulBytes(info.reason);
+    const detectedLimit = detectProviderUsageLimit(reason);
+    const usageLimit = config.watchdog?.autoPauseOnUsageLimit === false ? null : detectedLimit;
     const nulNote = reason === info.reason ? "" : " · stripped NUL bytes from the crash detail";
 
     const now = opts.now ?? Date.now();
     const nowIso = new Date(now).toISOString();
+    if (usageLimit && config.budget?.allowlist) {
+      const wasPaused = pairPauseInfo(config.budget.allowlist, pair.cli, pair.model, now).paused;
+      const paused = pauseAllowlistEntry(config.budget.allowlist, {
+        cli: pair.cli,
+        model: pair.model,
+        ...(usageLimit.retryAt ? { until: usageLimit.retryAt } : {}),
+        reason: `out of usage since ${nowIso}: ${reason.slice(0, 240)}`,
+      });
+      if ("rows" in paused) config.budget.allowlist = paused.rows;
+      if (!wasPaused) {
+        logger.task(taskId, "warn", "agent model paused after provider usage limit", {
+          cli: pair.cli,
+          model: pair.model,
+          retryAt: usageLimit.retryAt,
+          command: `repoos agents resume ${pair.cli} --model ${pair.model}`,
+        });
+      }
+    }
     const threshold = thresholdFor(config);
     const windowMs = windowFor(config);
     const crashes = recordEngineerCrash(
       parseEngineerCrashLog(task.extra?.[ENGINEER_CRASH_LOG_KEY]),
       pair,
-      info.kind,
+      usageLimit ? "usage-limit" : info.kind === "usage-limit" ? "provider-failure" : info.kind,
       nowIso,
       windowMs,
     );

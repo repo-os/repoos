@@ -1847,6 +1847,8 @@ export interface WatchdogConfig {
    * Default 3. Minimum 1.
    */
   engineerCrashFailoverThreshold?: number;
+  /** Pause an exhausted agent+model immediately on a provider quota error. Default true. */
+  autoPauseOnUsageLimit?: boolean;
   /**
    * Window the crash count is measured in (#0869), in milliseconds.
    * Default 30 minutes. Minimum 1 minute.
