@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-22T02:27:19.227Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Needs-human-step detail shows criterion quote (target \"default\"): highlight .agent-waiting-sub matched nothing on /work?task=0909&tab=overview (http://127.0.0.1:58600/work?shotState=card:humanStep)"
 id: "0909"
 title: "Stop false 'needs human step' flags: sticky overrides, model check before keywords, tagged criteria with auto-split"
 type: feature
@@ -106,3 +108,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T02:24:57Z · body
 - 2026-10-22T02:24:57Z · body
 - 2026-10-22T02:27:16Z · note: ui verification failed (1 issue(s)): [missing-target] Needs-human-step detail shows criterion quote (target "default"): highlight .agent-waiting-sub matched nothing on /work?task=0909&tab=overview (http://127.0.0.1:58600/work?shotState=card:humanStep)
+
