@@ -2,8 +2,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { parseFlatToml, patchTomlConfig } from "./config.js";
-import { validateToml } from "./toml-validate.js";
+import { parseFlatToml, patchTomlConfig } from "../../core/config.js";
+import { validateToml } from "../../core/toml-validate.js";
 
 const dirs: string[] = [];
 function fixture(text: string): string {
