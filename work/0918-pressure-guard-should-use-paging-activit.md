@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-22T09:32:01Z"
-review_passes: 3
 id: "0918"
 title: "Pressure guard should use paging activity, not occupancy: macOS compressor share and swap used/total hold work on an idle laptop"
 type: feature
@@ -10,7 +8,7 @@ needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — RunnerHealth drops `psiMemoryAvg10` (Runners-tab PSI is dead code) and a host-pressure fixture falls through to the rea…
 priority: p1
 area: [server, core]
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/pressure-guard-should-use-paging-activit
 cli_override: codex
@@ -18,6 +16,8 @@ model_override: gpt-6-luna
 review_cli_override: opencode
 review_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-22T04:18:52Z"
+updated_at: "2026-10-22T09:33:10Z"
+review_passes: 3
 review_rounds: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-22T09:02:53.015Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
@@ -118,4 +118,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T09:26:07Z · status active→review
 - 2026-10-22T09:32:01Z · note: review pass 3: needs some work
 - 2026-10-22T09:32:01Z · needs_input
-
+- 2026-10-22T09:33:10Z · assigned_to
