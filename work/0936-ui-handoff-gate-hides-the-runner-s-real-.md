@@ -36,3 +36,4 @@ Related: AGENTS.md shot hygiene (#0613, #0830) and #0866.
 - 2026-10-22T22:57:10Z · message_queued at 2026-10-22T22:57:10.543Z
 - 2026-10-22T22:57:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-22T23:02:28Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T23:02:28Z · message_delivered: 1 message(s)
