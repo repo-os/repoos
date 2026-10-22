@@ -138,6 +138,8 @@ export interface DoctorOptions {
   env?: NodeJS.ProcessEnv;
   /** Injectable signature probe for tests. */
   signatureProbe?: (binary: string) => string | null;
+  /** Injectable Apple git availability probe for cross-platform tests. */
+  appleGitProbe?: () => boolean;
   /** Injectable short-window syspolicyd CPU delta in seconds. */
   syspolicydCpuProbe?: () => Promise<number | null>;
 }
@@ -198,9 +200,10 @@ async function macGitFinding(opts: DoctorOptions): Promise<DoctorFinding[]> {
   const signature = gitSignature(git, opts.signatureProbe ?? probeGitSignature);
   const cpuDelta = await (opts.syspolicydCpuProbe ?? sampleSyspolicydCpu)();
   const appleGit =
-    existsSync("/usr/bin/git") &&
-    (existsSync("/Library/Developer/CommandLineTools/usr/bin/git") ||
-      existsSync("/Applications/Xcode.app/Contents/Developer/usr/bin/git"));
+    opts.appleGitProbe?.() ??
+    (existsSync("/usr/bin/git") &&
+      (existsSync("/Library/Developer/CommandLineTools/usr/bin/git") ||
+        existsSync("/Applications/Xcode.app/Contents/Developer/usr/bin/git")));
   const active = env.REPOOS_PREFER_APPLE_GIT !== "0" && appleGit;
   const elevatedCpu = cpuDelta !== null && cpuDelta >= 0.4;
   const detail = `First git on PATH: ${git} (${signature ?? "signature unknown"}). preferAppleGit is ${active ? "active" : "inactive"}${active ? "; RepoOS uses Apple's signed git" : env.REPOOS_PREFER_APPLE_GIT === "0" ? " because REPOOS_PREFER_APPLE_GIT=0" : appleGit ? "" : " because Apple's git is unavailable"}. Ad-hoc git can add about 8–19 seconds of syspolicyd CPU across 600 real git commands.${cpuDelta === null ? " syspolicyd CPU was unavailable to sample." : ` syspolicyd used ${cpuDelta.toFixed(1)} CPU seconds in a 0.5-second sample.`}`;
