@@ -2,7 +2,7 @@
 id: "0924"
 title: "Checks page: show % complete for a running check (steps and test files)"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T14:49:25Z"
+updated_at: "2026-10-22T14:49:26Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -54,3 +54,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T14:39:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T14:39:11Z · message_delivered: 1 message(s)
 - 2026-10-22T14:49:25Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-10-22T14:49:26Z · status active→review
