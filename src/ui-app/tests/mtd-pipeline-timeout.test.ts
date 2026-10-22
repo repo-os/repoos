@@ -16,6 +16,7 @@ import { dirname, join } from "node:path";
 import { rmFixture } from "./helpers";
 import { ensureWorktree, worktreePathForBranch } from "../../core/git.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
+import { acquireCrossProcessSlot } from "../../core/cross-process-slots.js";
 import {
   CloseOutOrchestrator,
   CANCEL_REASON,
@@ -249,4 +250,56 @@ describe("pipeline timeout enforcement (#0573)", () => {
       rmFixture(root);
     }
   }, 15_000);
+
+  it("cancels the whole close-out process group", async () => {
+    if (process.platform === "win32") return;
+    const root = mkdtempSync(join(tmpdir(), "repoos-mtd-cancel-tree-"));
+    let cancelled = false;
+    let workerPid = 0;
+    try {
+      const run = runProcess("sh", ["-c", "sleep 30 & echo $!; wait"], {
+        cwd: root,
+        timeout: 60_000,
+        isCancelled: () => cancelled,
+        onChunk: (chunk) => {
+          const parsed = Number(chunk.trim());
+          if (parsed) workerPid = parsed;
+        },
+      });
+      for (let i = 0; i < 50 && !workerPid; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      expect(workerPid).toBeGreaterThan(0);
+      cancelled = true;
+      const result = await run;
+      expect(result.cancelled).toBe(true);
+      let alive = true;
+      try {
+        process.kill(workerPid, 0);
+      } catch {
+        alive = false;
+      }
+      expect(alive).toBe(false);
+    } finally {
+      rmFixture(root);
+    }
+  }, 15_000);
+
+  it("reclaims a local check slot as soon as its holder pid is dead", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-slot-dead-holder-"));
+    const lockRoot = join(root, "slots");
+    const deadSlot = join(lockRoot, "0");
+    mkdirSync(deadSlot, { recursive: true });
+    writeFileSync(join(deadSlot, ".holder"), "2147483647", "utf8");
+    try {
+      const release = await acquireCrossProcessSlot({
+        slots: 1,
+        lockRoot,
+        waitTimeoutMs: 100,
+      });
+      release();
+    } finally {
+      rmFixture(root);
+    }
+  });
 });
