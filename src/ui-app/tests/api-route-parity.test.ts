@@ -18,6 +18,14 @@ afterEach(() => {
 });
 
 describe("API route parity", () => {
+  it("audits regex-registered API mutations instead of silently treating them as non-API routes", () => {
+    expect(
+      uncoveredApiRoutes([
+        { method: "POST", pattern: String.raw`^\/api\/tasks\/([^/]+)\/unmapped$` },
+      ]),
+    ).toEqual([{ method: "POST", pattern: String.raw`^\/api\/tasks\/([^/]+)\/unmapped$` }]);
+  });
+
   it("every /api route is covered by a CLI command or the UI-only allowlist", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-parity-"));
     tmpRoots.push(root);

@@ -215,22 +215,31 @@ done wait by default in human mode).
 | `repoos sync <id>` | `POST /api/tasks/:id/sync` — merge main into the task branch (lists conflicting paths and exits non-zero on conflict) |
 | `repoos message <id> "…" [--now]` | `POST /api/tasks/:id/message` (`now: true` interrupts a busy agent) |
 | `repoos review <id> [--wait]` | `PATCH /api/tasks/:id` (`status: review`) |
+| `repoos review cancel <id>` | `PATCH /api/tasks/:id` (`status: active`, cancels an in-flight handoff/review) |
 | `repoos review again <id>` | `POST /api/tasks/:id/review/again` |
 | `repoos done <id> [--commit-dirty] [--wait]` | `POST /api/tasks/:id/done` |
+| `repoos done <id> --cancel` (`repoos abort <id>`) | `POST /api/tasks/:id/done/cancel` |
+| `repoos api <METHOD> /api/<path> [--json body] [--port N]` | Any `/api/` route |
 | `repoos landable <id>` | `GET /api/tasks/:id/landable` — read-only landing pre-checks; exits non-zero unless the task can land (`--json` for a stable checklist shape) |
 | `repoos override <id> --cli X --model Y` | `PATCH /api/tasks/:id` |
 | `repoos preview <id> [--stop]` | `POST /api/tasks/:id/preview` (+ `/stop`) |
 | `repoos dev [list]` · `repoos dev <name> start\|stop\|restart\|status\|logs` | `GET`/`POST /api/dev/targets` |
 | `repoos config get\|set <key> [value]` | `GET` / `PATCH /api/config` |
 | `repoos runners [--probe]` | remote-validation status + test |
+| `repoos integration list\|pipeline\|get <id>\|retry <id>\|refresh-install <id>` | Integration job inspection and retry routes |
+| `repoos attention list\|dismiss <id>` | `GET /api/attention` and needs-input dismissal |
 | `repoos agents` | `GET /api/agents/running` |
 | `repoos agents pause\|resume <agent> [--model M] [--until <date>] [--reason "…"]` | `PATCH /api/config` — pause/resume an allowlist agent or model (#0850) |
 | `repoos stats` | `GET /api/stats/board` + `GET /api/system` — board spend, pressure, and top CPU/memory processes labeled RepoOS vs other (`--json` includes both under `system`) |
-| `repoos decisions` (`repoos attention`) | `GET /api/decisions` — CTO escalation digest with cause, evidence, and actions |
+| `repoos decisions` | `GET /api/decisions` — CTO escalation digest with cause, evidence, and actions |
 | `repoos driver brief` | `GET /api/driver/brief` — the CTO board brief from live state (#0731) |
 
 Pass `--port N` when the server is not on the default port. If the server is
 down, the CLI exits with a clear message instead of a generic fetch error.
+`repoos api` is an authenticated escape hatch for a route that has no dedicated
+CLI command yet. Prefer the named command when one exists. API parity is
+enforced by `src/cli/api-route-parity.ts`; routes intentionally unavailable to
+drivers must have a documented exemption there.
 
 ### `repoos bundle` (easter-eggs bundles)
 
