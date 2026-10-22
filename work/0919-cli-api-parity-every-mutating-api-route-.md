@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-22T13:22:36Z"
+review_passes: 2
 id: "0919"
 title: "CLI/API parity: every mutating API route gets a CLI command (or an explicit exemption), starting with stop-close-out, plus a generic 'repoos api' escape hatch"
 type: feature
@@ -11,9 +13,7 @@ branch: feat/cli-api-parity-every-mutating-api-route-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T04:47:28Z"
-updated_at: "2026-10-22T13:22:36Z"
 review_rounds: 1
-review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -52,3 +52,4 @@ Evidence: route count from grep of router.register in src/server/server.ts and s
 - 2026-10-22T13:20:49Z · status active→review
 - 2026-10-22T13:20:50Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-22T13:22:36Z · note: review pass 2: good to go
+
