@@ -13,7 +13,6 @@ model_override: gpt-6-luna
 created_at: "2026-10-21T19:45:25Z"
 updated_at: "2026-10-22T01:25:20Z"
 dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:14:24.294Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:14:26.072Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:14:27.749Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 2026-10-22: #0899 got five review passes in a row (1-5) that all end 'needs some work' with 'Bugs: None found'. The only stated reason each time is that the reviewer could not confirm RepoOS landability or clean mergeability: its sandbox could not reach the RepoOS server (so repoos landable failed) and git merge-tree --write-tree failed to create a temporary file. The task's real pre-checks all passed (review lock, clean worktree, only its own work file conflicting, 9 files in scope). After enough rounds the task hit review-rounds-exhausted and flagged needs_input. A review that cannot run the landability commands should never turn into a negative verdict; it also burns review rounds and blocks the driver and the human from landing a correct task.
