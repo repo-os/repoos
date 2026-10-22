@@ -65,6 +65,8 @@ export interface TaskCheckRun {
   stepsTotal: number | null;
   testsDone: number | null;
   testsTotal: number | null;
+  testsPass: number | null;
+  currentStep: number | null;
   attempt: number | null;
   attemptReason: string | null;
 }
@@ -82,6 +84,8 @@ export interface CheckProgressRecord {
   stepsTotal?: number;
   testsDone?: number;
   testsTotal?: number;
+  testsPass?: number;
+  currentStep?: number;
   attempt?: number;
   reason?: string;
 }
@@ -98,6 +102,8 @@ export function parseCheckProgress(output: string): CheckProgressRecord | null {
         stepsTotal?: unknown;
         testsDone?: unknown;
         testsTotal?: unknown;
+        testsPass?: unknown;
+        currentStep?: unknown;
         attempt?: unknown;
         reason?: unknown;
       };
@@ -107,6 +113,8 @@ export function parseCheckProgress(output: string): CheckProgressRecord | null {
         "stepsTotal",
         "testsDone",
         "testsTotal",
+        "testsPass",
+        "currentStep",
         "attempt",
       ] as const) {
         if (Number.isInteger(value[key]) && Number(value[key]) >= 0)
@@ -185,6 +193,8 @@ export class TaskCheckManager {
       stepsTotal: null,
       testsDone: null,
       testsTotal: null,
+      testsPass: null,
+      currentStep: null,
       attempt,
       attemptReason,
     };
@@ -209,6 +219,8 @@ export class TaskCheckManager {
           run.stepsTotal = progress.stepsTotal ?? run.stepsTotal;
           run.testsDone = progress.testsDone ?? run.testsDone;
           run.testsTotal = progress.testsTotal ?? run.testsTotal;
+          run.testsPass = progress.testsPass ?? run.testsPass;
+          run.currentStep = progress.currentStep ?? run.currentStep;
           run.attempt = progress.attempt ?? run.attempt;
           run.attemptReason = progress.reason ?? run.attemptReason;
         }

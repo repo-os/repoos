@@ -151,8 +151,7 @@ import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { reportPredatesLatestHandoff, reviewSupersededByFixRound } from "../lib/reviewFreshness";
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
-import { checkProgressPercent } from "../lib/check-progress";
-import { checkProgressLabel } from "../lib/check-progress";
+import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import { resolveEffectiveAgent } from "../lib/effective-agent";
 import CopyableNumber from "./CopyableNumber.vue";
@@ -528,7 +527,7 @@ const checkChip = computed(() => {
         ? `${localQueue.label} · ${elapsed}`
         : poolQueue
           ? `${poolQueue.label} · ${elapsed}`
-          : `Checks running${machine ? ` on ${machine}` : ""} · ${elapsed}`,
+          : `Checks running${machine ? ` on ${machine}` : ""}${run.stepsTotal != null || run.testsTotal != null ? ` · ${checkProgressLabel(run)}` : ""} · ${elapsed}`,
       title: localQueue
         ? localQueue.title
         : poolQueue

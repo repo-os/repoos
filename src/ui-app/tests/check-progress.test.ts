@@ -13,4 +13,23 @@ describe("check progress display", () => {
     expect(checkProgressPercent(progress)).toBe(42);
     expect(checkProgressLabel(progress)).toBe("step 5 of 12 · tests 140/289 files");
   });
+
+  it("labels the step that is currently running and the test pass", () => {
+    const progress = {
+      stepsDone: 4,
+      currentStep: 5,
+      stepsTotal: 12,
+      testsDone: 140,
+      testsTotal: 289,
+      testsPass: 1,
+    };
+    expect(checkProgressPercent(progress)).toBe(33);
+    expect(checkProgressLabel(progress)).toBe("step 5 of 12 · pass 1 · tests 140/289 files");
+  });
+
+  it("does not invent a percentage when stepsDone is missing", () => {
+    const progress = { stepsDone: null, stepsTotal: 12 };
+    expect(checkProgressPercent(progress)).toBeNull();
+    expect(checkProgressLabel(progress)).toBe("step — of 12");
+  });
 });
