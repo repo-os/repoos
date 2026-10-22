@@ -107,6 +107,19 @@ describe("needsInputPrimaryAction (#0511)", () => {
     ).toContain("Split human step");
   });
 
+  it("offers one-click split when mixed human and AI criteria are tagged", () => {
+    expect(
+      needsInputPrimaryAction("needs-human-step", false, {
+        status: "inbox",
+        agentRunning: false,
+        humanStepSplitAvailable: true,
+      }),
+    ).toEqual({
+      kind: "split-human-step",
+      label: "Split human steps into a held task",
+    });
+  });
+
   it("offers Send to PM for underspecified tasks", () => {
     expect(needsInputStatusLabel("underspecified")).toBe("Not fully fleshed out");
     expect(needsInputBannerText("underspecified")).toContain("doesn't look fully fleshed out");
