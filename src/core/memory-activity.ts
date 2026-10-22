@@ -41,13 +41,6 @@ export interface MemoryActivityRates {
 
 export type MemoryPressureVmLevel = "normal" | "warn" | "critical";
 
-const UNIT_BYTES: Record<string, number> = {
-  B: 1,
-  K: 1024,
-  M: 1024 ** 2,
-  G: 1024 ** 3,
-};
-
 function run(cmd: string, args: string[]): string | null {
   try {
     return execFileSync(cmd, args, {
@@ -95,15 +88,16 @@ export function parseLinuxVmstatCounters(content: string): LinuxVmstatCounters |
 }
 
 /**
- * macOS `kern.memorystatus_vm_pressure_level` (0 normal, 1 warn, 2 critical).
+ * macOS `kern.memorystatus_vm_pressure_level` (1 normal, 2 warn, 4 critical).
  * Exported for tests with an injectable reader.
  */
 export function parseDarwinMemoryPressureLevel(raw: string): MemoryPressureVmLevel | null {
   const level = Number(raw.trim());
   if (!Number.isFinite(level)) return null;
-  if (level >= 2) return "critical";
-  if (level >= 1) return "warn";
-  return "normal";
+  if (level >= 4) return "critical";
+  if (level >= 2) return "warn";
+  if (level === 1) return "normal";
+  return null;
 }
 
 /** Linux PSI memory `avg10` (0–100). */
@@ -241,9 +235,11 @@ export function readPlatformMemoryActivity(
     }
     const counters = vmstat ? parseLinuxVmstatCounters(vmstat) : null;
     if (counters) {
+      const pageSizeRaw = runCommand("getconf", ["PAGESIZE"]);
+      const pageSize = Number(pageSizeRaw?.trim()) || 4096;
       rates = tracker.record({
         atMs: now(),
-        pageSize: UNIT_BYTES.K,
+        pageSize,
         pageouts: 0,
         swapins: counters.pswpin,
         swapouts: counters.pswpout,

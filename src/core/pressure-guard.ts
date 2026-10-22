@@ -114,6 +114,10 @@ function hasMemorySignals(sample: Partial<PressureSnapshot> & Partial<MemoryRead
   if (sample.compressorBytes !== undefined && sample.compressorBytes !== null) return true;
   if (sample.swapUsedRatio !== undefined && sample.swapUsedRatio !== null) return true;
   if (sample.compressorRatio !== undefined && sample.compressorRatio !== null) return true;
+  if (sample.memoryPressureLevel !== undefined && sample.memoryPressureLevel !== null) return true;
+  if (sample.psiMemoryAvg10 !== undefined && sample.psiMemoryAvg10 !== null) return true;
+  if (sample.swapIoBytesPerSec !== undefined && sample.swapIoBytesPerSec !== null) return true;
+  if (sample.pageoutBytesPerSec !== undefined && sample.pageoutBytesPerSec !== null) return true;
   return false;
 }
 
@@ -177,7 +181,9 @@ export function evaluatePressure(
   }
 
   if (memoryPressureLevel === "warn" || memoryPressureLevel === "critical") {
-    warnings.push(`memory_pressure level is ${memoryPressureLevel}`);
+    reasons.push(
+      `macOS memory_pressure reports ${memoryPressureLevel} — holding new work until memory pressure eases. ${ACTIVITY_DIAG}`,
+    );
   }
 
   if (psiMemoryAvg10 !== null && psiMemoryAvg10 > thresholds.maxPsiMemoryAvg10) {
@@ -361,7 +367,10 @@ export async function waitForPressureRelief(
   const poll = Math.max(500, opts.pollMs ?? 2000);
   while (true) {
     const snapshot = pressureSnapshot(config, opts.probe);
-    const reason = snapshot.reason;
+    const reason =
+      snapshot.reason && snapshot.warnings.length > 0
+        ? `${snapshot.reason}; additional signals: ${snapshot.warnings.join("; ")}`
+        : snapshot.reason;
     if (!reason) return;
     opts.onWaiting?.(reason);
     if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {

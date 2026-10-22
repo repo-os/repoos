@@ -4,8 +4,8 @@
  * Load average alone is a poor pressure signal on a thrashing machine: threads
  * pile up waiting on swap while the CPU sits idle, and the number says nothing
  * about the cause. Swap use and the macOS memory compressor measure the thing
- * that actually hurts — the OS reclaiming pages under duress — so they are the
- * primary inputs. Where those readings are unavailable (Linux without swap,
+ * that actually hurts — the OS reclaiming pages under duress — so they are
+ * informational inputs alongside paging activity. Where those readings are unavailable (Linux without swap,
  * Windows) the caller falls back to load average.
  *
  * Every external command is optional and failure-tolerant: a missing tool must

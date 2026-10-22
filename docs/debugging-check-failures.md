@@ -108,7 +108,9 @@ grep -E '^(SwapTotal|SwapFree|MemAvailable):' /proc/meminfo
 `pressureGuard.enabled = false` unless the guard is the subject. The guard's
 suite injects samples (`pressure-guard.test.ts`, `agent-pressure-guard.test.ts`);
 `agent-start-host-pressure.test.ts` proves high occupancy without thrashing
-activity does not block when the guard is on. **Never lower activity thresholds
+activity does not block when the guard is on; its fixture includes high swap
+I/O, so the idle-but-full case is covered by `pressure-guard.test.ts`.
+**Never lower activity thresholds
 just to green a test** on a machine that is actually paging hard.
 
 ## Counter-example: when it looked identical but wasn't
