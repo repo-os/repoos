@@ -3,9 +3,8 @@ id: "0247"
 title: Hide mic/voice icons when no valid API key is configured
 type: feature
 status: done
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: 44b75147
 priority: p2
 area: web
 assigned_to: ai
@@ -15,7 +14,7 @@ model_override: default
 hotfix: true
 hotfix_target: branch
 created_at: "2026-08-17T11:15:56Z"
-updated_at: "2026-10-06T23:48:16Z"
+updated_at: "2026-10-22T07:47:51Z"
 ---
 ## Problem
 
@@ -57,3 +56,4 @@ Out of scope: voice input backend changes, API key validation beyond presence ch
 - 2026-08-17T12:49:01Z · status active→review
 - 2026-08-17T13:19:38Z · status review→done, release:success
 - 2026-10-06T23:48:16Z · needs_input
+- 2026-10-22T07:47:51Z · needs_input
