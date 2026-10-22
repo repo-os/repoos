@@ -2925,7 +2925,11 @@ export function resolveReviewerForTask(config: RepoOSConfig, task: Task): Agent 
   const baseName = task.reviewAgentOverride || "reviewer";
   const base = list.find((a) => a.enabled && matchesRole(a, baseName)) ?? null;
   if (!base) return null;
-  return mergeAgentOverride(base, task.reviewCliOverride, task.reviewModelOverride);
+  const pinned = mergeAgentOverride(base, task.reviewCliOverride, task.reviewModelOverride);
+  const pause = pairPauseInfo(config.budget?.allowlist ?? [], pinned.cli, pinned.model);
+  if (pause.paused && pause.reason?.startsWith("out of usage since "))
+    return resolveReviewer(config);
+  return pinned;
 }
 
 export function resolveCto(config: RepoOSConfig): Agent | null {
@@ -3023,7 +3027,12 @@ export function resolveAgentForTask(
   // An explicit override is kept even when paused: an agent driver's attempt
   // to set one is refused up front (overrideRefusal), so anything persisted
   // here was chosen by a human in the UI and must keep working.
-  return mergeAgentOverride(base, task.cliOverride, task.modelOverride);
+  const pinned = mergeAgentOverride(base, task.cliOverride, task.modelOverride);
+  const pause = pairPauseInfo(config.budget?.allowlist ?? [], pinned.cli, pinned.model);
+  if (pause.paused && pause.reason?.startsWith("out of usage since ")) {
+    return resolveRoleAgent(config, task.agentOverride || role);
+  }
+  return pinned;
 }
 
 /** Configured (non-fallback) agent+pair for a task, used to explain a fallback. */
