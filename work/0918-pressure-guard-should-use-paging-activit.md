@@ -5,7 +5,7 @@ type: feature
 status: active
 priority: p1
 area: [server, core]
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/pressure-guard-should-use-paging-activit
 cli_override: cursor
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-22T04:18:52Z"
-updated_at: "2026-10-22T07:50:25Z"
+updated_at: "2026-10-22T07:50:33Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-22T05:27:08.607Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -69,3 +69,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T07:48:50Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-22T07:50:25Z · engineer stopped by request
 - 2026-10-22T07:50:25Z · needs_input
+- 2026-10-22T07:50:33Z · assigned_to
