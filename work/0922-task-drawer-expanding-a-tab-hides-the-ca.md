@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-22T13:12:00Z"
-review_passes: 1
+last_close_out_gate_ms: 151500
+last_close_out_gate_at: "2026-10-22T13:17:38.727Z"
 id: "0922"
 title: "Task drawer: expanding a tab hides the cards between title and tabs"
 type: feature
@@ -13,6 +13,8 @@ branch: feat/task-drawer-expanding-a-tab-hides-the-ca
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T05:45:27Z"
+updated_at: "2026-10-22T13:17:38Z"
+review_passes: 1
 ---
 ## Problem
 The task drawer stacks a lot between the title and the tab strip: the handoff-failure banner, the status row (status picker, Stop work, Move to done), the "Not landable yet" checklist, the preview control, and the "Waiting for you" needs-input card. On a task with several warnings (see the attached #0908 screenshots: handoff failure, landability checklist, reviewer-failed card) these push the tab strip down and leave only a thin strip of vertical space for the tab's content (Review, Changes, Dev, ...).
@@ -98,4 +100,5 @@ Start from the `fullscreen` ref, `toggleFullscreen`, `onEscapeKeyDown` and the `
 - 2026-10-22T13:10:07Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-10-22T13:10:08Z · status active→review
 - 2026-10-22T13:12:00Z · note: review pass 1: good to go
+- 2026-10-22T13:17:38Z · close-out gate completed in 152s
 
