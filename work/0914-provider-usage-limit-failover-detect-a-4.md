@@ -11,7 +11,7 @@ branch: feat/provider-usage-limit-failover-detect-a-4
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T02:17:25Z"
-updated_at: "2026-10-22T06:58:30Z"
+updated_at: "2026-10-22T07:07:08Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-22T05:55:25.520Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-22T06:08:25.959Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-22T06:17:25.965Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -97,3 +97,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T06:52:59Z · handoff failed · remote validation failed: test failure: tests/notifications.test.ts > notifications store defaults + persistence > defaults everything to off (task types + release kinds, 0606), tests/notifications.test.ts > NOTIFICATION_TYPE_LABELS > covers every monitorable type — task attention, release kinds (0606) and close-out kinds (#0640) on mini — fix it in the feature branch and re-run the gate
 - 2026-10-22T06:58:30Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/notifications.test.ts > notifications store defaults + persistence > defaults everything to off (task types + release kinds, 0606), tests/notifications.test.ts > NOTIFICATION_TYPE_LABELS > covers every monitorable type — task attention, release kinds (0606) and close-out kinds (#0640) on mini — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-22T06:58:30Z · note: handoff requested (cli)
+- 2026-10-22T07:07:08Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/notifications.test.ts > notifications store defaults + persistence > defaults everything to off (task types + release kinds, 0606), tests/notifications.test.ts > NOTIFICATION_TYPE_LABELS > covers every monitorable type — task attention, release kinds (0606) and close-out kinds (#0640) on bee — fix it in the feature branch and re-run the gate
