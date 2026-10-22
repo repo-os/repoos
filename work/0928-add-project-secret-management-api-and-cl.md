@@ -72,3 +72,4 @@ Build on the authentication/authorization, route, audit, and CLI patterns alread
 - 2026-10-22T16:43:30Z · body
 - 2026-10-22T16:45:52Z · body
 - 2026-10-22T16:55:14Z · status active→review
+- 2026-10-22T16:55:14Z · note: shots: skipped — Docs site skipped: no docs shot declared
