@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { detectProviderUsageLimit } from "./provider-usage-limit.js";
 
 describe("detectProviderUsageLimit", () => {
