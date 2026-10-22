@@ -28,6 +28,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0867 — review task whose landing pre-checks show one failing merge,
   // so a capture can show the checklist next to Move to done.
   "drawer:landable",
+  // #0922 — task drawer with a failed handoff, blocked landing checklist and
+  // needs-input card for expanded-tab screenshots.
+  "drawer:tabExpandWarnings",
   // #0817 — active task with requirement sections so the drawer shows Update
   // requirements on the spec header (the action is active-only).
   "drawer:activeRequirements",
