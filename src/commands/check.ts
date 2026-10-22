@@ -2351,7 +2351,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     for (const holder of holders) {
       console.log(
         c.dim(
-          `  slot ${holder.slot}: pid ${holder.pid ?? "unknown"}, ${Math.round(holder.ageMs / 1000)}s${holder.wedged ? " (possibly wedged)" : ""}`,
+          `  slot ${holder.slot}: pid ${holder.pid ?? "unknown"}, ${Math.round(holder.ageMs / 1000)}s${holder.dead ? " (dead; reclaiming)" : holder.wedged ? " (possibly wedged)" : ""}`,
         ),
       );
     }

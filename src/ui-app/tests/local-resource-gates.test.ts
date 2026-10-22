@@ -2,12 +2,15 @@
  * Local check and Playwright caps (#0836): third waiter blocks until a slot frees.
  */
 import { afterEach, describe, expect, it } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { spawn } from "node:child_process";
 import type { RepoOSConfig } from "../../core/types.js";
 import {
   acquireCrossProcessSlot,
+  inspectCrossProcessSlots,
+  reapOrphanedLocalCheckGroups,
   localCheckLockRoot,
   localFallbackSerializeLockRoot,
   playwrightLockRoot,
@@ -62,6 +65,59 @@ describe("ConcurrencyGate", () => {
 });
 
 describe("cross-process local check slots", () => {
+  it("reclaims a slot immediately when its recorded holder is dead", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-dead-slot-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    writeFileSync(join(slot, ".holder"), "2147483647");
+    writeFileSync(join(slot, ".meta.json"), JSON.stringify({ kind: "test" }));
+    const holders = inspectCrossProcessSlots(lockRoot);
+    expect(holders[0]).toMatchObject({ slot: 0, dead: true, wedged: false });
+    const release = await acquireCrossProcessSlot({ slots: 1, lockRoot, waitTimeoutMs: 100 });
+    release();
+  });
+
+  it("marks and reclaims a live silent holder after its reclaim grace", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-wedged-slot-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    writeFileSync(join(slot, ".holder"), String(process.pid));
+    writeFileSync(join(slot, ".wedged-since"), String(Date.now() - 160_000));
+    const old = new Date(Date.now() - 240_000);
+    utimesSync(slot, old, old);
+    expect(inspectCrossProcessSlots(lockRoot)[0]).toMatchObject({ dead: false, wedged: true });
+    const release = await acquireCrossProcessSlot({ slots: 1, lockRoot, waitTimeoutMs: 100 });
+    release();
+  });
+
+  it("reaps a detached close-out check group after its candidate disappeared", () => {
+    if (process.platform === "win32") return;
+    const root = mkdtempSync(join(tmpdir(), "repoos-orphan-slot-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const candidate = join(root, "missing-candidate");
+    const child = spawn("sh", ["-c", "sleep 60"], {
+      cwd: root,
+      detached: true,
+      stdio: "ignore",
+    });
+    if (!child.pid) throw new Error("could not start fixture process");
+    child.unref();
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    writeFileSync(join(slot, ".holder"), String(child.pid));
+    writeFileSync(
+      join(slot, ".meta.json"),
+      JSON.stringify({ kind: "local-check", worktree: candidate, processGroup: true }),
+    );
+    expect(reapOrphanedLocalCheckGroups(lockRoot)).toEqual([child.pid]);
+    expect(() => process.kill(-child.pid!, 0)).toThrow();
+  });
+
   it("never exceeds the configured limit across processes", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-local-slots-"));
     dirs.push(root);
