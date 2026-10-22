@@ -41,3 +41,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T04:34:54Z · review_model_override
 - 2026-10-22T04:35:01Z · status ready→active, branch
 - 2026-10-22T04:50:31Z · message_queued at 2026-10-22T04:50:31.151Z
+- 2026-10-22T04:50:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
