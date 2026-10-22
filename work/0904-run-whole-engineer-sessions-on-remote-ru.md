@@ -105,3 +105,4 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-22T01:23:07Z · body
 - 2026-10-22T01:32:31Z · status active→review
 - 2026-10-22T01:32:31Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d731c62d8) during finalization (#0734)
+- 2026-10-22T01:32:31Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d731c62d8) during finalization (#0734)
