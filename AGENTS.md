@@ -886,6 +886,18 @@ mistake on 2026-10-01.
   for every file/edit tool whose own working directory you don't control. A
   `cd` is not enough when the tool's root is fixed at the session's start.
 
+When a task's engineer session runs on a remote runner (ADR
+[0009](docs/adr/0009-remote-engineer-sessions.md)), the same rule has a remote
+form: the real worktree is on that host under the path the task context names,
+and the laptop's copy is a *fetched mirror*, not the working tree. Do not edit
+the laptop copy to "fix" something the agent saw remotely — those edits are not
+where the agent is working, are not committed by the remote turn, and are
+discarded or flagged when the branch tip is fetched back. Run shell work through
+the runner (the task context gives the host and worktree), and remember that
+`repoos check`/handoff read the fetched local branch: a remote commit only
+counts once RepoOS has fetched it back. If the fetch-back reports a diverged
+local tree, stop and surface it — never reset or force-push around it.
+
 ## Stuck-active incident (#0151): worktree missing its own task file
 
 A task can get permanently stuck `active`, failing finalization with
