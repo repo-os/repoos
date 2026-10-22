@@ -11,13 +11,13 @@ branch: feat/easter-eggs-bundle-dropzone-shot-evidenc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T01:34:32Z"
-updated_at: "2026-10-22T17:44:12Z"
+updated_at: "2026-10-22T17:44:25Z"
 ---
 ## Items
-- [ ] **E1 · Manual-tab handoff capture does not show a dropzone** (web) — #0899's declared Manual-tab shot has a click step but no recorded assertion, so the capture alone does not prove the dropzone rendered. Source: reviewer notes on #0899 (passes 4 and 5), 2026-10-22.
-- [ ] **E2 · TaskDrawer handoff shot shows the upload-failure state, not the default picker** (web) — the declared TaskDrawer fixture lands on the failure state; add a shot of the default upload picker beside it. Source: same reviewer notes.
-- [ ] **E3 · Debug-tab banner cards have no inner padding (red 'Runner memory pressure' card and the yellow 'queued · local check' / 'Sync with main' notices)** (web) — in the task drawer Debug tab the red card's heading ('Runner memory pressure'), host name (thinkpad) and body text sit flush against the card border with no inner padding, and the 'Fix:' sentence is shown twice; the yellow 'queued · local check (position 2, 1 ahead)' card has the same problem (text hard against the left edge and the border), unlike the neighbouring 'Sync with main' card which has proper padding. Give all of these cards the shared card padding and spacing (use the global card/ff-notice classes in style.css, not scoped one-offs), keep one consistent look for red/yellow/info variants, and show the fix line once. Sources: user screenshots, 2026-10-22 (two).
-- [ ] **E4 · Settings: put the 'restart required' hint to the left of the control so every input and toggle is flush right** (web) — on Settings rows (for example 'Task browser work' with the 'Runner when available' dropdown) the amber 'restart required' badge sits to the right of the control, which pushes controls out of alignment with rows that have no badge. Move the badge to the left of the control (between the description and the control, or just left of it) so all dropdowns, inputs and toggles share one right edge. Keep the badge's tooltip/ARIA text, and keep it readable on narrow widths. Source: user screenshot, 2026-10-22.
+- [x] **E1 · Manual-tab handoff capture does not show a dropzone** (web) — #0899’s declared Manual-tab shot lacked a recorded assertion; the light and dark captures now assert the dropzone exists. Source: reviewer notes on #0899 (passes 4 and 5), 2026-10-22.
+- [x] **E2 · TaskDrawer handoff shot shows the upload-failure state, not the default picker** (web) — added a state-fixture capture of the default upload picker beside the retained failure-state shot. Source: reviewer notes on #0899, 2026-10-22.
+- [ ] **E3 · Debug-tab banner cards have no inner padding (red “Runner memory pressure” card and yellow queued / Sync with main notices)** (web) — deferred per human direction pending the additional screenshot upload; no implementation in this pass.
+- [x] **E4 · Settings restart hint alignment** (web) — moved the restart-required hint before the control so controls keep a shared right edge, including on narrow rows.
 
 ## Problem
 #0899 landed the dropzone layout fix, but two pieces of handoff evidence are weaker than they should be: one declared shot has no assertion, and the TaskDrawer shot shows only the failure state.
@@ -37,74 +37,74 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 ```json
 [
 {
-  "label": "Manual tab dropzone · light",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".shot-dropzone",
-  "steps": [
-    {
-      "click": ".drawer-tabs .tab-btn:nth-child(2)"
-    }
-  ],
-  "assert": [
-    {
-      "selector": ".shot-dropzone",
-      "label": "Screenshot dropzone is rendered"
-    }
-  ],
-  "state": "panel:defaultScreenshotPicker",
-  "theme": "light"
+"label": "Manual tab dropzone · light",
+"target": "default",
+"route": "/work",
+"highlight": ".shot-dropzone",
+"steps": [
+  {
+    "click": ".drawer-tabs .tab-btn:nth-child(2)"
+  }
+],
+"assert": [
+  {
+    "selector": ".shot-dropzone",
+    "label": "Screenshot dropzone is rendered"
+  }
+],
+"state": "panel:defaultScreenshotPicker",
+"theme": "light"
 },
 {
-  "label": "Manual tab dropzone · dark",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".shot-dropzone",
-  "steps": [
-    {
-      "click": ".drawer-tabs .tab-btn:nth-child(2)"
-    }
-  ],
-  "assert": [
-    {
-      "selector": ".shot-dropzone",
-      "label": "Screenshot dropzone is rendered"
-    }
-  ],
-  "state": "panel:defaultScreenshotPicker",
-  "theme": "dark"
+"label": "Manual tab dropzone · dark",
+"target": "default",
+"route": "/work",
+"highlight": ".shot-dropzone",
+"steps": [
+  {
+    "click": ".drawer-tabs .tab-btn:nth-child(2)"
+  }
+],
+"assert": [
+  {
+    "selector": ".shot-dropzone",
+    "label": "Screenshot dropzone is rendered"
+  }
+],
+"state": "panel:defaultScreenshotPicker",
+"theme": "dark"
 },
 {
-  "label": "Task drawer default screenshot picker",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".shot-dropzone",
-  "assert": [
-    {
-      "selector": ".shot-dropzone",
-      "label": "Default screenshot picker is rendered"
-    }
-  ],
-  "state": "panel:defaultScreenshotPicker"
+"label": "Task drawer default screenshot picker",
+"target": "default",
+"route": "/work",
+"highlight": ".shot-dropzone",
+"assert": [
+  {
+    "selector": ".shot-dropzone",
+    "label": "Default screenshot picker is rendered"
+  }
+],
+"state": "panel:defaultScreenshotPicker"
 },
 {
-  "label": "Task drawer screenshot upload failure",
-  "target": "default",
-  "route": "/work",
-  "state": "panel:freeformFailedScreenshot"
+"label": "Task drawer screenshot upload failure",
+"target": "default",
+"route": "/work",
+"state": "panel:freeformFailedScreenshot"
 },
 {
-  "label": "Task browser work restart hint before control",
-  "target": "default",
-  "route": "/settings?tab=general&section=remote-validation",
-  "highlight": "[id=\"setting-remoteValidation.browserCaptureMode\"]",
-  "assert": [
-    {
-      "selector": "[id=\"setting-remoteValidation.browserCaptureMode\"] .restart-badge",
-      "label": "Restart hint is shown beside the setting",
-      "text": "restart required"
-    }
-  ]
+"label": "Task browser work restart hint before control",
+"target": "default",
+"route": "/settings?tab=general&section=remote-validation",
+"highlight": "[id=\"setting-remoteValidation.browserCaptureMode\"]",
+"assert": [
+  {
+    "selector": "[id=\"setting-remoteValidation.browserCaptureMode\"] .restart-badge",
+    "label": "Restart hint is shown beside the setting",
+    "text": "restart required"
+  }
+]
 }
 ]
 ```
@@ -139,3 +139,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T17:44:00Z · body: Notes for AI (added 1, removed 1)
 - 2026-10-22T17:44:00Z · message_queued at 2026-10-22T17:44:00.340Z
 - 2026-10-22T17:44:12Z · body
+- 2026-10-22T17:44:25Z · body: Items (added 4, removed 4)
