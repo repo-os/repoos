@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/run-whole-engineer-sessions-on-remote-ru
 created_at: "2026-10-21T15:06:23Z"
-updated_at: "2026-10-22T01:11:24Z"
+updated_at: "2026-10-22T01:11:25Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T20:52:34.600Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
@@ -73,3 +73,4 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-22T01:11:24Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-22T01:11:24Z · agent exited with an error (opencode) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-10-22T01:11:24Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-10-22T01:11:25Z · message_delivered: 1 message(s)
