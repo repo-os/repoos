@@ -11,7 +11,7 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T14:54:30Z"
+updated_at: "2026-10-22T14:58:47Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
@@ -32,6 +32,26 @@ Do not change the check plan or step semantics; this is reporting only. Related:
 
 ## Queue wording
 Shorten the local-slot queue message. The banner already says 'queued', so 'waiting for a local check slot (2 ahead, position 3)' repeats itself. Show just 'queued #3' (position in line; 'queued' alone when first) in src/core/local-gates.ts (~line 142) and src/ui-app/src/lib/local-queue-hint.ts, with the full sentence only in the hover/tooltip. Update the tests that assert the old text. (Nick, 2026-10-22)
+
+## Shots
+```json
+[
+{
+  "label": "Running check progress with test files and retry attempt",
+  "target": "default",
+  "route": "/work?task=9999&tab=overview",
+  "highlight": "[data-test-id=\"close-out-check-progress\"]",
+  "state": "closeOut:checkProgress"
+},
+{
+  "label": "Running check progress with unknown test totals",
+  "target": "default",
+  "route": "/work?task=9999&tab=overview",
+  "highlight": "[data-test-id=\"close-out-check-progress\"]",
+  "state": "closeOut:checkProgressUnknown"
+}
+]
+```
 
 ## Activity
 
@@ -60,3 +80,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T14:53:30Z · status review→active
 - 2026-10-22T14:53:51Z · CTO nudge: held — remote validation is running
 - 2026-10-22T14:54:26Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-10-22T14:58:47Z · body
