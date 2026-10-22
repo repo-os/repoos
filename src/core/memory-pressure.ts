@@ -16,6 +16,8 @@ import { readFileSync } from "node:fs";
 import { cpus, loadavg, platform, totalmem } from "node:os";
 import { availableMemBytes } from "./sysmem.js";
 
+import type { MemoryPressureVmLevel } from "./memory-activity.js";
+
 export interface MemoryStatsReadings {
   swapUsedBytes: number | null;
   swapTotalBytes: number | null;
@@ -24,6 +26,14 @@ export interface MemoryStatsReadings {
   memoryFreePercent: number | null;
   /** True when the platform probe returned a usable swap/compressor reading. */
   memoryStatsAvailable: boolean;
+  /** Combined swap-in/out bytes per second over the activity window (#0918). */
+  swapIoBytesPerSec?: number | null;
+  pageoutBytesPerSec?: number | null;
+  activityWindowSec?: number | null;
+  /** macOS sysctl memory pressure level when sampled (#0918). */
+  memoryPressureLevel?: MemoryPressureVmLevel | null;
+  /** Linux PSI memory `avg10` (0–100), when `/proc/pressure/memory` exists. */
+  psiMemoryAvg10?: number | null;
 }
 
 export interface MemoryReadings extends MemoryStatsReadings {

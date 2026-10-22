@@ -89,6 +89,10 @@ function criticalReadings(swapRatio = 0.73): MemoryReadings {
     compressorBytes: Math.round(totalMemBytes * 0.4),
     memoryFreePercent: 60,
     memoryStatsAvailable: true,
+    // Occupancy alone no longer blocks (#0918); thrashing activity does.
+    swapIoBytesPerSec: 5 * 1024 * 1024,
+    pageoutBytesPerSec: 512 * 1024,
+    activityWindowSec: 30,
   };
 }
 
