@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-22T10:51:17Z"
+review_passes: 1
 id: "0925"
 title: Cancelling a close-out must kill its check process tree and free its slot
 type: bug
@@ -11,7 +13,6 @@ branch: feat/cancelling-a-close-out-must-kill-its-che
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:32:56Z"
-updated_at: "2026-10-22T10:51:17Z"
 last_check_failure: "repoos check at 2026-10-22T10:14:46.588Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Local check slot diagnostics (target \"default\"): highlight .ck-local-slots matched nothing on /checks?tab=now (http://127.0.0.1:42895/checks?tab=now)"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-22T08:20:35.105Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-22T08:39:33.891Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -98,3 +99,4 @@ Also fix #0921 in the same change (dead-holder detection for local check slots: 
 - 2026-10-22T10:49:23Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-10-22T10:49:24Z · status active→review
 - 2026-10-22T10:51:17Z · note: review pass 1: good to go
+
