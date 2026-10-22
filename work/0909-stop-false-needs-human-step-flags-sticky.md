@@ -5,13 +5,13 @@ type: feature
 status: active
 priority: p2
 area: [core, server, web]
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/stop-false-needs-human-step-flags-sticky
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T19:41:23Z"
-updated_at: "2026-10-22T02:12:24Z"
+updated_at: "2026-10-22T02:12:35Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:11.193Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:12.880Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:14.431Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -98,3 +98,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T02:01:28Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-22T02:06:43Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-22T02:06:43Z · note: handoff requested (cli)
+- 2026-10-22T02:12:35Z · assigned_to
