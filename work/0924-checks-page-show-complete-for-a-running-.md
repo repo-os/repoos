@@ -11,7 +11,7 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T15:19:33Z"
+updated_at: "2026-10-22T15:21:08Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
@@ -93,3 +93,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T15:14:28Z · note: state "closeOut:checkProgress" did not render on target "default" — /checks?tab=now shows no task card
 - 2026-10-22T15:15:04Z · body
 - 2026-10-22T15:19:33Z · body
+- 2026-10-22T15:21:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
