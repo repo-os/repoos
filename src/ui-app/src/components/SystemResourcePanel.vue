@@ -1,14 +1,78 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { api, JSON_OPTS } from "../api";
 import { useRepoStore } from "../stores/repo";
 import Card from "./ui/card.vue";
+import DeleteConfirmDialog from "./DeleteConfirmDialog.vue";
 import type { SystemStats } from "../types";
 
 const repo = useRepoStore();
 const { systemStats, runningIds, queuedIds } = storeToRefs(repo);
 const killingPid = ref<number | null>(null);
+type GcPreview = {
+  report: {
+    removedWorktrees: Array<{ branch: string; path: string }>;
+    keptDirty: Array<{ branch: string; reason: string }>;
+  };
+  activeCloseOutTaskIds: string[];
+  blocked: boolean;
+};
+const gcPreview = ref<GcPreview | null>(null);
+const gcStatus = ref<GcPreview | null>(null);
+const gcConfirmOpen = ref(false);
+const gcBusy = ref(false);
+let gcStatusTimer: ReturnType<typeof setInterval> | null = null;
+
+async function refreshGcStatus(): Promise<void> {
+  try {
+    const status = await api<GcPreview>("/api/system/worktree-gc");
+    gcStatus.value = status;
+    if (gcPreview.value) gcPreview.value = status;
+  } catch {
+    // The cleanup endpoint may not exist on an older server build.
+  }
+}
+
+onMounted(() => {
+  void refreshGcStatus();
+  gcStatusTimer = setInterval(() => void refreshGcStatus(), 5000);
+});
+onUnmounted(() => {
+  if (gcStatusTimer) clearInterval(gcStatusTimer);
+});
+
+async function previewWorktreeCleanup(): Promise<void> {
+  try {
+    gcPreview.value = await api<GcPreview>("/api/system/worktree-gc");
+  } catch (err) {
+    repo.pushToast(
+      err instanceof Error ? err.message : "Could not preview worktree cleanup",
+      "error",
+    );
+  }
+}
+
+async function cleanWorktrees(): Promise<void> {
+  gcBusy.value = true;
+  try {
+    const result = await api<{ removedWorktrees: Array<{ branch: string }> }>(
+      "/api/system/worktree-gc",
+      { method: "POST" },
+    );
+    repo.pushToast(
+      `Removed ${result.removedWorktrees.length} worktree${result.removedWorktrees.length === 1 ? "" : "s"}.`,
+      "info",
+    );
+    gcConfirmOpen.value = false;
+    gcPreview.value = null;
+  } catch (err) {
+    repo.pushToast(err instanceof Error ? err.message : "Could not clean up worktrees", "error");
+    await previewWorktreeCleanup();
+  } finally {
+    gcBusy.value = false;
+  }
+}
 
 async function killProcess(pid: number): Promise<void> {
   if (killingPid.value !== null) return;
@@ -250,10 +314,54 @@ const serveMessage = computed(() => {
                   ? `Over the advisory ceiling of ${repoStats.worktreeWarnThreshold}. Run \`repoos gc\` to reclaim worktrees left by done / abandoned tasks.`
                   : 'Registered git worktrees, including the main checkout. Run `repoos gc` if this climbs.'
               "
-              >{{ repoStats.worktrees }} git worktree{{ repoStats.worktrees === 1 ? "" : "s"
-              }}{{ worktreesOverLimit ? " — run `repoos gc`" : "" }}</span
+              >{{ repoStats.worktrees }} git worktree{{
+                repoStats.worktrees === 1 ? "" : "s"
+              }}</span
             >
+            <button
+              type="button"
+              class="gc-action"
+              :disabled="gcStatus?.blocked"
+              :title="
+                gcStatus?.blocked
+                  ? `Close-out active: ${gcStatus.activeCloseOutTaskIds.map((id) => `#${id}`).join(', ')}`
+                  : undefined
+              "
+              @click="previewWorktreeCleanup"
+            >
+              {{ worktreesOverLimit ? "Run repoos gc · clean up worktrees" : "Clean up worktrees" }}
+            </button>
             <span>tracked on main · gitignored excluded</span>
+          </div>
+          <div v-if="gcPreview" class="gc-preview" aria-live="polite">
+            <strong>Cleanup preview</strong>
+            <span
+              >{{ gcPreview.report.removedWorktrees.length }} worktree{{
+                gcPreview.report.removedWorktrees.length === 1 ? "" : "s"
+              }}
+              would be removed.</span
+            >
+            <span v-for="item in gcPreview.report.removedWorktrees" :key="item.path"
+              >Remove {{ item.branch || item.path }}</span
+            >
+            <span v-for="item in gcPreview.report.keptDirty" :key="item.path"
+              >Keep {{ item.branch || item.path }} — {{ item.reason }}</span
+            >
+            <span v-if="gcPreview.blocked" class="gc-blocked"
+              >Disabled while close-out{{
+                gcPreview.activeCloseOutTaskIds.length === 1 ? " is" : "s are"
+              }}
+              active: {{ gcPreview.activeCloseOutTaskIds.map((id) => `#${id}`).join(", ") }}</span
+            >
+            <button
+              type="button"
+              class="gc-action"
+              :disabled="gcPreview.blocked"
+              @click="gcConfirmOpen = true"
+            >
+              Confirm cleanup
+            </button>
+            <button type="button" class="gc-action" @click="gcPreview = null">Dismiss</button>
           </div>
         </div>
       </div>
@@ -405,6 +513,17 @@ const serveMessage = computed(() => {
       <span class="waiting-dot"></span>
       Waiting for resource data — connect to the live server
     </div>
+    <DeleteConfirmDialog
+      :open="gcConfirmOpen"
+      title="Clean up worktrees?"
+      confirm-label="Clean up worktrees"
+      :busy="gcBusy"
+      @update:open="gcConfirmOpen = $event"
+      @confirm="cleanWorktrees"
+    >
+      This removes the worktrees listed in the preview. Worktrees kept for active close-outs or
+      unmerged work remain in place.
+    </DeleteConfirmDialog>
   </Card>
 </template>
 
@@ -724,6 +843,35 @@ const serveMessage = computed(() => {
   /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   color: var(--amber, #f5a524);
   font-weight: 600;
+}
+
+.gc-action {
+  align-self: flex-start;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 7px;
+  color: var(--txt);
+  background: var(--panel);
+  cursor: pointer;
+  font: inherit;
+}
+
+.gc-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.gc-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--txt-dim);
+}
+
+.gc-blocked {
+  color: var(--amber);
 }
 
 .sparkline {
