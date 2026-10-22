@@ -102,3 +102,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T02:13:48Z · assigned_to
 - 2026-10-22T02:13:49Z · note: handoff requested (ui-review)
 - 2026-10-22T02:23:20Z · note: ui verification failed (1 issue(s)): [missing-target] Needs-human-step detail shows criterion quote (target "default"): highlight .agent-waiting-sub matched nothing on /work?task=0909&tab=overview (http://127.0.0.1:57885/work?shotState=card:humanStep)
+- 2026-10-22T02:23:20Z · handoff failed · ui-review handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Needs-human-step detail shows criterion quote (target "default"): highlight .agent-waiting-sub matched nothing on /work?task=0909&tab=overview (http://127.0.0.1:57885/work?shotState=card:humanStep)
