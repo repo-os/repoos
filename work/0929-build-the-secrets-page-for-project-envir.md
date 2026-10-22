@@ -15,8 +15,6 @@ model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
 updated_at: "2026-10-22T20:37:08Z"
 last_check_failure: "repoos check at 2026-10-22T19:44:36.309Z: repoos check failed: ui verification failed: runner result omitted the UI verification record"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 3b3805a62ded3d06e7724a86aa8652e967fcb27e
 ---
 ## Problem
 Users have no RepoOS screen to see which project environment is selected or which expected keys are set, missing, or inherited. The metadata and write operations from #0928 need a safe, usable interface that never reveals saved values.
@@ -132,3 +130,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T20:23:19Z · note: Verifying registered Secrets shots locally
 - 2026-10-22T20:26:44Z · body
 - 2026-10-22T20:37:08Z · status active→review
+
