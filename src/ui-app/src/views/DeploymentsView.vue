@@ -12,6 +12,7 @@ interface DeploymentRow {
   url: string | null;
   dashboardUrl: string | null;
   subdir: string | null;
+  environmentConsumer: string;
   environment: string | null;
   environmentError: string | null;
   lastPushAt: string | null;
@@ -181,6 +182,7 @@ async function load(): Promise<void> {
             url: "https://app.example.test",
             dashboardUrl: null,
             subdir: "app",
+            environmentConsumer: "deployment:dashboard-production",
             environment: "production",
             environmentError: null,
             lastPushAt: "2026-10-22T10:30:00.000Z",
@@ -223,13 +225,7 @@ async function bindEnvironment(row: DeploymentRow, environment: string | null): 
     await api(
       "/api/project-environment-bindings",
       JSON_OPTS("PUT", {
-        consumer: `deployment:${
-          row.name
-            .trim()
-            .toLowerCase()
-            .replace(/[^a-z0-9_.-]+/g, "-")
-            .replace(/^-|-$/g, "") || "default"
-        }`,
+        consumer: row.environmentConsumer,
         environment,
         keys: [],
       }),
