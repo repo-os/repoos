@@ -16,7 +16,7 @@ branch: feat/bind-dev-and-check-processes-to-explicit
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:43Z"
-updated_at: "2026-10-22T18:10:51Z"
+updated_at: "2026-10-22T18:11:17Z"
 last_close_out_gate_ms: 480359
 last_close_out_gate_at: "2026-10-22T18:10:51.993Z"
 review_passes: 2
@@ -61,4 +61,4 @@ Depends on #0927 for the storage/environment contract and #0928 for authorized m
 - 2026-10-22T17:57:53Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-22T17:59:22Z · note: review pass 2: good to go
 - 2026-10-22T18:10:51Z · close-out gate completed in 480s
-
+- 2026-10-22T18:11:17Z · status done→done, release:success
