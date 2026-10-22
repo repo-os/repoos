@@ -751,6 +751,7 @@ export type RepoEvent =
    *  emits this only when the computed state actually differs. */
   | { type: "repo.status"; status: RepoStatus; at: string }
   | { type: "story.definitionsChanged"; at: string }
+  | { type: "bookkeeping.recovered"; paths: string[]; at: string }
   | {
       type: "story.pmFinished";
       path: string;
