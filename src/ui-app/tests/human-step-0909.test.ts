@@ -193,7 +193,8 @@ describe("model check before keyword (#0909)", () => {
         },
       }));
       const flagged = await flagNeedsHumanStepIfNeededAsync(config, task);
-      expect(flagged).toBeNull();
+      expect(flagged?.needsInput).not.toBe(true);
+      expect(flagged?.humanStepDecision).toBe("agent");
       vi.restoreAllMocks();
     } finally {
       rmSync(root, { recursive: true, force: true });
