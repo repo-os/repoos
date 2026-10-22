@@ -1166,6 +1166,9 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       });
       break;
     }
+    case "panel:defaultScreenshotPicker":
+      useUiStore().openNewTask();
+      break;
     case "card:checkpointRecovery":
       // #0834 — a review task whose branch moved after handoff only by WIP self-
       // check checkpoints, so the card renders "re-reviewing checkpoint…"
