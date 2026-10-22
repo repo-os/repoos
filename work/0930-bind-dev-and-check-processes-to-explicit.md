@@ -15,7 +15,7 @@ branch: feat/bind-dev-and-check-processes-to-explicit
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:43Z"
-updated_at: "2026-10-22T17:48:34Z"
+updated_at: "2026-10-22T17:57:53Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -54,3 +54,4 @@ Depends on #0927 for the storage/environment contract and #0928 for authorized m
 - 2026-10-22T17:48:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T17:48:34Z · status active→review
 - 2026-10-22T17:48:34Z · note: handoff requested (cli)
+- 2026-10-22T17:57:53Z · note: shots: skipped — Docs site skipped: no docs shot declared
