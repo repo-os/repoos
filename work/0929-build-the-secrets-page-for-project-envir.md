@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-22T20:54:47Z"
-review_passes: 2
 id: "0929"
 title: Build the Secrets page for project environments
 type: feature
-status: review
+status: active
 priority: p1
 area: [web, ui]
 story: Secrets and project environments
@@ -15,7 +13,9 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-review_rounds: 1
+updated_at: "2026-10-22T20:54:47Z"
+review_rounds: 2
+review_passes: 2
 last_check_failure: "repoos check at 2026-10-22T19:44:36.309Z: repoos check failed: ui verification failed: runner result omitted the UI verification record"
 ---
 ## Problem
@@ -140,4 +140,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T20:53:45Z · status active→review
 - 2026-10-22T20:53:45Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-22T20:54:47Z · note: review pass 2: needs some work
-
+- 2026-10-22T20:54:47Z · status review→active
