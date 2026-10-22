@@ -21,6 +21,8 @@ defineProps<{
   title: string;
   /** Confirm button text; names the action ("Replace notes"). */
   confirmLabel: string;
+  /** Optional surface class for task-specific review selectors and styling. */
+  contentClass?: string;
 }>();
 
 const emit = defineEmits<{
@@ -33,7 +35,7 @@ const emit = defineEmits<{
   <Teleport to="body">
     <Dialog :open="open" @update:open="(v) => emit('update:open', v)">
       <DialogOverlay />
-      <DialogContent class="cc-modal">
+      <DialogContent :class="['cc-modal', contentClass]">
         <div class="cc-modal-head">
           <DialogTitle>{{ title }}</DialogTitle>
           <DialogClose class="close-x" aria-label="Close">×</DialogClose>

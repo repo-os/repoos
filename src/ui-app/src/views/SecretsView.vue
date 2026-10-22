@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import Button from "../components/ui/button.vue";
+import Select from "../components/ui/select/root.vue";
+import SelectContent from "../components/ui/select/content.vue";
+import SelectItem from "../components/ui/select/item.vue";
+import SelectTrigger from "../components/ui/select/trigger.vue";
+import SelectValue from "../components/ui/select/value.vue";
+import SelectViewport from "../components/ui/select/viewport.vue";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
 import Dialog from "../components/ui/dialog/root.vue";
 import DialogContent from "../components/ui/dialog/content.vue";
@@ -28,7 +34,6 @@ const snapshot = ref<Snapshot | null>(null);
 const loading = ref(true);
 const error = ref("");
 const query = ref("");
-const pickerOpen = ref(false);
 const createOpen = ref(false);
 const newName = ref("");
 const keyDraft = ref("");
@@ -46,7 +51,8 @@ const visibleRows = computed(() =>
     )
     .filter((row) => row.name.toLowerCase().includes(query.value.toLowerCase())),
 );
-const privateRow = (row: KeyRow) => !/^(VITE_|NEXT_PUBLIC_|PUBLIC_)/.test(row.name);
+const rowVisibility = (row: KeyRow) =>
+  row.visibility === "public" ? "Public · exposed to client builds" : "Server only";
 
 async function loadEnvironments(): Promise<void> {
   loading.value = true;
@@ -117,7 +123,7 @@ async function loadSnapshot(): Promise<void> {
 function safeError(e: unknown): string {
   if (e instanceof ApiError && e.status === 409)
     return "This environment changed since it was loaded. Reload the key list, then retry your change.";
-  return e instanceof ApiError ? e.message : "Could not load environment metadata. Try again.";
+  return "Could not update environment metadata. Check the environment and try again.";
 }
 async function createEnvironment(): Promise<void> {
   const name = newName.value.trim();
@@ -216,46 +222,29 @@ onMounted(() => {
       <div class="secrets-env-control">
         <span class="secrets-label">Viewing environment</span>
         <div class="secrets-picker-wrap">
-          <button
-            class="secrets-picker"
-            type="button"
-            aria-haspopup="listbox"
-            :aria-expanded="pickerOpen"
-            @click="pickerOpen = !pickerOpen"
-          >
-            {{ selected || "Choose environment" }} <span aria-hidden="true">⌄</span>
-          </button>
-          <div
-            v-if="pickerOpen"
-            class="secrets-picker-menu"
-            role="listbox"
-            aria-label="Project environments"
-          >
-            <button
-              v-for="env in environments"
-              :key="env.id"
-              type="button"
-              role="option"
-              :aria-selected="selected === env.id"
-              @click="
-                selected = env.id;
-                pickerOpen = false;
+          <Select
+            :model-value="selected"
+            @update:model-value="
+              (value) => {
+                selected = String(value);
                 void loadSnapshot();
-              "
-            >
-              {{ env.id }}
-            </button>
-            <button
-              type="button"
-              class="secrets-create-option"
-              @click="
-                pickerOpen = false;
-                createOpen = true;
-              "
-            >
-              ＋ Create environment
-            </button>
-          </div>
+              }
+            "
+          >
+            <SelectTrigger class="secrets-picker" aria-label="Viewing environment">
+              <SelectValue placeholder="Choose environment" />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                <SelectItem v-for="env in environments" :key="env.id" :value="env.id">{{
+                  env.id
+                }}</SelectItem>
+              </SelectViewport>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" class="secrets-create-inline" @click="createOpen = true"
+            >Create environment</Button
+          >
         </div>
         <span class="secrets-view-note">Changes here do not switch running processes.</span>
       </div>
@@ -342,7 +331,7 @@ onMounted(() => {
             </div>
             <div>
               <dt>Visibility</dt>
-              <dd>{{ privateRow(row) ? "Server only" : "Public · exposed to client builds" }}</dd>
+              <dd>{{ rowVisibility(row) }}</dd>
             </div>
             <div>
               <dt>Consumers</dt>
@@ -410,6 +399,7 @@ onMounted(() => {
       :open="!!confirmKey"
       title="Remove project key?"
       confirm-label="Remove key"
+      content-class="delete-confirm-modal"
       @update:open="
         (open) => {
           if (!open) confirmKey = null;
