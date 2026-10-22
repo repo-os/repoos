@@ -16,7 +16,7 @@ model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-22T04:18:52Z"
-updated_at: "2026-10-22T07:37:23Z"
+updated_at: "2026-10-22T07:48:39Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-22T05:27:08.607Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -68,3 +68,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T05:42:14Z · message_queued at 2026-10-22T05:42:14.464Z
 - 2026-10-22T07:04:41Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-22T07:37:23Z · body
+- 2026-10-22T07:48:39Z · CTO nudge: held — an undelivered message is already queued
