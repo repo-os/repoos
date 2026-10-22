@@ -90,7 +90,18 @@ export interface LocalSlotHolder {
   pid?: number;
   ageMs: number;
   wedged: boolean;
+  dead: boolean;
   meta?: Record<string, unknown>;
+}
+
+function holderIsDead(pid: number | undefined): boolean {
+  if (!pid || !Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return false;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "ESRCH";
+  }
 }
 
 /** Read local slot ownership for the Checks surface and CLI diagnostics. */
@@ -114,10 +125,48 @@ export function inspectCrossProcessSlots(lockRoot: string): LocalSlotHolder[] {
       slot: Number(dir.slice(dir.lastIndexOf("/") + 1)),
       pid,
       ageMs,
-      wedged: ageMs > WEDGED_AFTER_MS,
+      dead: holderIsDead(pid),
+      wedged: !holderIsDead(pid) && ageMs > WEDGED_AFTER_MS,
       meta,
     };
   });
+}
+
+/** Reap close-out check groups left behind after their candidate worktree vanished. */
+export function reapOrphanedLocalCheckGroups(lockRoot: string): number[] {
+  if (process.platform === "win32") return [];
+  const reaped: number[] = [];
+  for (const dir of slotDirs(lockRoot)) {
+    try {
+      const meta = JSON.parse(readFileSync(join(dir, ".meta.json"), "utf8")) as Record<
+        string,
+        unknown
+      >;
+      if (meta.kind !== "local-check" || meta.processGroup !== true) continue;
+      const worktree = typeof meta.worktree === "string" ? meta.worktree : "";
+      const pid = Number(readFileSync(join(dir, ".holder"), "utf8"));
+      if (!worktree || existsSync(worktree) || !Number.isInteger(pid) || pid <= 0) continue;
+      try {
+        process.kill(-pid, "SIGTERM");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ESRCH") {
+          rmSync(dir, { recursive: true, force: true });
+          continue;
+        }
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1500);
+      try {
+        process.kill(-pid, "SIGKILL");
+      } catch {
+        /* the group exited during the grace period */
+      }
+      rmSync(dir, { recursive: true, force: true });
+      reaped.push(pid);
+    } catch {
+      /* malformed or concurrently released slot */
+    }
+  }
+  return reaped;
 }
 
 function tryTakeSlot(

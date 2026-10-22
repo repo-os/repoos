@@ -83,9 +83,9 @@ const profile = ref<string>("");
 const changedRef = ref("");
 const changedInput = ref("");
 const openOutput = ref<string | null>(null);
-const localSlotHolders = ref<Array<{ slot: number; pid?: number; ageMs: number; wedged: boolean }>>(
-  [],
-);
+const localSlotHolders = ref<
+  Array<{ slot: number; pid?: number; ageMs: number; wedged: boolean; dead: boolean }>
+>([]);
 
 async function loadLocalSlotHolders(): Promise<void> {
   try {
@@ -274,6 +274,7 @@ const RESULT_ICON: Record<string, string> = {
         <p v-for="holder in localSlotHolders" :key="holder.slot">
           Slot {{ holder.slot }} · PID {{ holder.pid ?? "unknown" }} ·
           {{ Math.round(holder.ageMs / 1000) }}s
+          <strong v-if="holder.dead"> · dead holder (slot reclaiming)</strong>
           <strong v-if="holder.wedged"> · possibly wedged</strong>
         </p>
       </section>

@@ -135,6 +135,8 @@ export async function acquireLocalCheckSlot(opts: AcquireLocalCheckSlotOpts): Pr
         kind: "local-check",
         pid: process.pid,
         taskId: taskIdFromEnv(opts.env),
+        worktree: process.cwd(),
+        processGroup: opts.env.REPOOS_CHECK_PROCESS_GROUP === "1",
       },
       onQueued: (ahead, position) => {
         const msg =
