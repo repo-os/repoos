@@ -2368,7 +2368,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // unavailable and failed all fall through to the keyword check below, so a
     // model outage can never block a task on its own.
     let humanStepOverride: "agent" | "human" | undefined;
-    let humanStepStartDetail: string | undefined;
+    let humanStepShadowRecord: "human" | undefined;
     // #0815 / #0909: human-assigned tasks and sticky overrides skip the check.
     // The model runs only when the keyword tripwire or a [human] tag fires.
     if (
@@ -2410,11 +2410,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
             detail: check.detail,
           });
           if (check.decision?.needsHumanStep) {
-            humanStepOverride = "human";
-            humanStepStartDetail = humanStepFlagDetail(
-              tripwire.sentence,
-              check.detail ?? check.decision.explanation,
-            );
+            humanStepShadowRecord = "human";
           } else if (check.decision) {
             humanStepOverride = "agent";
           }
@@ -2541,6 +2537,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       patch.humanStepDecision = "agent";
       patch.humanStepDecisionKey = needsHumanStepFingerprint(existing.body);
     }
+    if (humanStepShadowRecord === "human") {
+      patch.humanStepDecision = "human";
+      patch.humanStepDecisionKey = needsHumanStepFingerprint(existing.body);
+    }
     if (!existing.branch) patch.branch = branch;
     // Patch (and commit) the task file in main BEFORE forking the worktree's
     // branch — ensureWorktree forks from main's current committed HEAD, so
@@ -2568,7 +2568,6 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       });
       const flagged = await flagTaskSpecFlagsIfNeededAsync(config, startedTask, {
         humanStepDecision: humanStepOverride,
-        humanStepDetail: humanStepStartDetail,
       });
       if (flagged) {
         index.applyFileChange(flagged.absPath, { guarded: true });

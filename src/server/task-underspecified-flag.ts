@@ -67,6 +67,7 @@ async function resolveKeywordTripwire(
 ): Promise<
   | { action: "flag"; detail: string; persistDecision?: "human" }
   | { action: "clear"; persistDecision?: "agent" }
+  | { action: "shadow"; persistDecision: "human" | "agent" }
   | { action: "keyword-fallback"; detail: string }
 > {
   if (assessment.taggedHuman) {
@@ -83,6 +84,12 @@ async function resolveKeywordTripwire(
   });
   if (check.outcome === "unavailable" || check.outcome === "failed") {
     return { action: "keyword-fallback", detail: assessment.detail };
+  }
+  if (check.outcome === "shadow") {
+    return {
+      action: "shadow",
+      persistDecision: check.decision?.needsHumanStep ? "human" : "agent",
+    };
   }
   const explanation = check.detail ?? check.decision?.explanation ?? assessment.detail;
   const detail = humanStepFlagDetail(assessment.sentence, explanation);
@@ -123,10 +130,11 @@ export async function flagNeedsHumanStepIfNeededAsync(
   const modelSaidHuman =
     opts?.humanStepDecision === "human" ||
     (task.humanStepDecision === "human" && task.humanStepDecisionKey === fingerprint);
-  if (modelSaidHuman) {
-    if (task.needsInput && task.needsInputReason === NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON) {
-      return null;
-    }
+  if (
+    modelSaidHuman &&
+    task.needsInput &&
+    task.needsInputReason === NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON
+  ) {
     return null;
   }
 
@@ -144,6 +152,25 @@ export async function flagNeedsHumanStepIfNeededAsync(
       : opts?.humanStepDecision === "agent"
         ? { action: "clear" as const, persistDecision: "agent" as const }
         : await resolveKeywordTripwire(config, task, assessment);
+
+  if (resolved.action === "shadow") {
+    const cleared = clearHumanStepFlag(config, task);
+    const current = cleared ?? task;
+    if (
+      current.humanStepDecision === resolved.persistDecision &&
+      current.humanStepDecisionKey === fingerprint &&
+      !current.needsInput
+    ) {
+      return cleared;
+    }
+    return patchTaskFile(config, current.absPath, {
+      humanStepDecision: resolved.persistDecision,
+      humanStepDecisionKey: fingerprint,
+      needsInput: false,
+      needsInputReason: null,
+      needsInputDetail: null,
+    });
+  }
 
   if (resolved.action === "clear") {
     const cleared = clearHumanStepFlag(config, task);
@@ -209,7 +236,11 @@ export function flagNeedsHumanStepIfNeeded(
   const modelSaidHuman =
     opts?.humanStepDecision === "human" ||
     (task.humanStepDecision === "human" && task.humanStepDecisionKey === fingerprint);
-  if (modelSaidHuman) {
+  if (
+    modelSaidHuman &&
+    task.needsInput &&
+    task.needsInputReason === NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON
+  ) {
     return null;
   }
 

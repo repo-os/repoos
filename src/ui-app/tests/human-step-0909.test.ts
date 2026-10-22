@@ -246,6 +246,84 @@ describe("model check before keyword (#0909)", () => {
   });
 });
 
+describe("shadow mode sweep (#0909)", () => {
+  it("records a human verdict without raising needs_input", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-shadow-sweep-"));
+    const work = join(root, "work");
+    mkdirSync(work, { recursive: true });
+    const path = join(work, "0909s.md");
+    writeFileSync(path, taskFile("0909s"));
+    const config = baseConfig(root, {
+      mode: "shadow",
+      provider: "jev",
+      humanStepCheck: true,
+    });
+    try {
+      const task = parseTask({
+        content: readFileSync(path, "utf8"),
+        absPath: path,
+        root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      });
+      vi.spyOn(
+        await import("../../server/human-step-decision.js"),
+        "runHumanStepDecisionCheck",
+      ).mockImplementation(async () => ({
+        outcome: "shadow",
+        detail:
+          "Decision model (91%): split this into an AI task and a human task — it needs a real account, credential, or API key.",
+        decision: {
+          needsHumanStep: true,
+          probability: 0.91,
+          reason: "account",
+          explanation:
+            "Decision model (91%): split this into an AI task and a human task — it needs a real account, credential, or API key.",
+        },
+      }));
+      const result = await flagNeedsHumanStepIfNeededAsync(config, task);
+      expect(result?.needsInput).not.toBe(true);
+      expect(result?.humanStepDecision).toBe("human");
+      vi.restoreAllMocks();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("dismissed human verdict (#0909)", () => {
+  it("re-flags when a persisted human verdict was cleared and sticky override is off", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-reflag-"));
+    const work = join(root, "work");
+    mkdirSync(work, { recursive: true });
+    const path = join(work, "0909r.md");
+    const key = needsHumanStepFingerprint(KEYS_BODY);
+    writeFileSync(
+      path,
+      taskFile("0909r", `human_step_decision: human\nhuman_step_decision_key: ${key}\n`, KEYS_BODY),
+    );
+    const config = baseConfig(root, {
+      mode: "automatic",
+      provider: "jev",
+      humanStepCheck: false,
+      humanStepSticky: false,
+    });
+    try {
+      const task = parseTask({
+        content: readFileSync(path, "utf8"),
+        absPath: path,
+        root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      });
+      const flagged = await flagNeedsHumanStepIfNeededAsync(config, task);
+      expect(flagged?.needsInputReason).toBe("needs-human-step");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("split human-step tasks (#0909)", () => {
   const mixedBody = KEYS_BODY.replace(
     "## Acceptance criteria\n\n- [ ] The dev config",
