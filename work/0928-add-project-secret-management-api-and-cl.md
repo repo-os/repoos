@@ -2,7 +2,7 @@
 id: "0928"
 title: Add project secret management API and CLI
 type: feature
-status: inbox
+status: ready
 human_step_decision: agent
 human_step_decision_key: 10dfc9f8
 priority: p1
@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T08:06:03Z"
-updated_at: "2026-10-22T08:06:08Z"
+updated_at: "2026-10-22T15:27:50Z"
 ---
 ## Problem
 The environment storage foundation in #0927 does not yet let an authorized user inspect or change project environment entries. Without an authenticated management surface, project values risk leaking through responses, logs, errors, or RepoOS internal credential settings.
@@ -36,3 +36,4 @@ Build on the authentication/authorization, route, audit, and CLI patterns alread
 ## Activity
 
 - 2026-10-22T08:06:03Z · created · njachowski@gmail.com
+- 2026-10-22T15:27:50Z · status inbox→ready
