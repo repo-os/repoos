@@ -307,6 +307,8 @@ async function withServer(fx: Fixture, fn: (server: ServerHandle) => Promise<voi
     process.env.PATH = oldPath;
     delete process.env.REPOOS_FAKEBIN_LOG;
     delete process.env.REPOOS_FAKEBIN_TASKFILE;
+    delete process.env.REPOOS_FAKEBIN_REVIEW_STARTED;
+    delete process.env.REPOOS_FAKEBIN_REVIEW_RELEASE;
     await server.close();
     fx.clean();
   }
@@ -886,10 +888,27 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       "## Suggestions",
       "- none found",
     ].join("\n");
-    const fx = makeFixture(
-      `setTimeout(() => process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n"), 700);`,
-    );
+    const fx = makeFixture(`
+const started = process.env.REPOOS_FAKEBIN_REVIEW_STARTED;
+const release = process.env.REPOOS_FAKEBIN_REVIEW_RELEASE;
+const finish = () => process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
+if (!started || !release) finish();
+else {
+  fs.writeFileSync(started, "ready");
+  if (fs.existsSync(release)) finish();
+  else {
+    const watcher = fs.watch(require("path").dirname(release), () => {
+      if (fs.existsSync(release)) {
+        watcher.close();
+        finish();
+      }
+    });
+  }
+}
+`);
     await withServer(fx, async (server) => {
+      const reviewStarted = `${fx.log}.review-started`;
+      const reviewRelease = `${fx.log}.review-release`;
       const task = await taskWithWorktree(server, fx, "Dismiss during exhausted review");
       const started = await api(server, "POST", `/api/tasks/${task.id}/start`);
       expect(started.status).toBe(200);
@@ -903,6 +922,8 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
         return !running.tasks.some((entry) => entry.id === task.id);
       }, "the initial engineer turn exits");
 
+      process.env.REPOOS_FAKEBIN_REVIEW_STARTED = reviewStarted;
+      process.env.REPOOS_FAKEBIN_REVIEW_RELEASE = reviewRelease;
       const before = readFileSync(task.absPath, "utf8");
       writeFileSync(task.absPath, before.replace(/^---\n/, "---\nreview_rounds: 2\n"));
       const flagExhausted = await api(server, "PATCH", `/api/tasks/${task.id}`, {
@@ -912,9 +933,14 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       expect(flagExhausted.status).toBe(200);
       await requestReview(server, task.id, task.absPath);
       await waitForReviewRunning(server, task.id, true);
+      await waitFor(
+        () => existsSync(reviewStarted),
+        "the fake reviewer is waiting at the dismissal gate",
+      );
 
       const dismissed = await api(server, "POST", `/api/tasks/${task.id}/needs-input/dismiss`);
       expect(dismissed.status).toBe(200);
+      writeFileSync(reviewRelease, "continue");
       await waitForReviewRunning(server, task.id, false);
       await waitForAsync(
         async () => getReview(server, task.id).then((review) => review.review !== null),
