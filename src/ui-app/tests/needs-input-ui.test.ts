@@ -90,7 +90,7 @@ describe("needsInputPrimaryAction (#0511)", () => {
     ).toBe("send-engineer");
   });
 
-  it("offers Send to PM for needs-human-step tasks (#0698)", () => {
+  it("offers a dedicated PM split action for needs-human-step tasks", () => {
     expect(needsInputStatusLabel("needs-human-step")).toBe("Needs human step");
     expect(needsInputSuggestionText("needs-human-step")).toContain("Split the human-only");
     expect(
@@ -98,7 +98,13 @@ describe("needsInputPrimaryAction (#0511)", () => {
         status: "inbox",
         agentRunning: false,
       })?.kind,
-    ).toBe("send-pm");
+    ).toBe("send-human-step-pm");
+    expect(
+      needsInputPrimaryAction("needs-human-step", false, {
+        status: "inbox",
+        agentRunning: false,
+      })?.label,
+    ).toContain("Split human step");
   });
 
   it("offers Send to PM for underspecified tasks", () => {
