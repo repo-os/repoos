@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-22T15:43:30Z"
-review_passes: 3
 id: "0924"
 title: "Checks page: show % complete for a running check (steps and test files)"
 type: feature
@@ -13,6 +11,8 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T06:08:54Z"
+updated_at: "2026-10-22T15:50:18Z"
+review_passes: 3
 review_rounds: 1
 handoff_signal_retry_count: 1
 dev_error_count: 2
