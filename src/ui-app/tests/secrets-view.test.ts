@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import * as apiMod from "../src/api";
+import Select from "../src/components/ui/select/root.vue";
 import SecretsView from "../src/views/SecretsView.vue";
 
 const api = vi.spyOn(apiMod, "api");
@@ -79,8 +80,7 @@ describe("SecretsView (#0929)", () => {
   it("changes the viewed environment without rebinding anything", async () => {
     const wrapper = mountPage();
     await flushPromises();
-    await wrapper.get(".secrets-picker").trigger("click");
-    await wrapper.get(".secrets-picker-menu button[role=option]:nth-child(2)").trigger("click");
+    wrapper.findComponent(Select).vm.$emit("update:modelValue", "integration");
     await flushPromises();
     expect(wrapper.get(".secrets-picker").text()).toContain("integration");
     expect(wrapper.text()).toContain("No expected keys yet");

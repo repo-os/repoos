@@ -15124,6 +15124,8 @@
 }
 .secrets-picker-wrap {
   position: relative;
+  display: grid;
+  gap: 7px;
 }
 .secrets-picker {
   width: 100%;
@@ -15144,37 +15146,8 @@
   outline: 2px solid var(--cyan);
   outline-offset: 2px;
 }
-.secrets-picker-menu {
-  position: absolute;
-  z-index: 12;
-  top: calc(100% + 5px);
-  width: 100%;
-  padding: 5px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--panel-solid);
-  box-shadow: var(--drawer-shadow);
-}
-.secrets-picker-menu button {
-  width: 100%;
-  display: block;
-  border: 0;
-  border-radius: 5px;
-  padding: 9px 10px;
-  color: var(--txt);
-  background: transparent;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.secrets-picker-menu button:hover,
-.secrets-picker-menu [aria-selected="true"] {
-  background: var(--muted);
-}
-.secrets-picker-menu .secrets-create-option {
-  border-top: 1px solid var(--border);
-  margin-top: 4px;
-  color: var(--cyan);
+.secrets-create-inline {
+  justify-self: start;
 }
 .secrets-empty {
   display: grid;
