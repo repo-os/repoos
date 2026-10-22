@@ -100,7 +100,7 @@ describe("cross-process local check slots", () => {
     dirs.push(root);
     const lockRoot = localCheckLockRoot(root, ".repoos");
     const candidate = join(root, "missing-candidate");
-    const child = spawn("sh", ["-c", "sleep 60"], {
+    const child = spawn("sh", ["-c", "trap '' TERM; while :; do sleep 1; done"], {
       cwd: root,
       detached: true,
       stdio: "ignore",
@@ -114,8 +114,10 @@ describe("cross-process local check slots", () => {
       join(slot, ".meta.json"),
       JSON.stringify({ kind: "local-check", worktree: candidate, processGroup: true }),
     );
+    const startedAt = Date.now();
     expect(reapOrphanedLocalCheckGroups(lockRoot)).toEqual([child.pid]);
-    expect(() => process.kill(-child.pid!, 0)).toThrow();
+    expect(Date.now() - startedAt).toBeGreaterThanOrEqual(1400);
+    expect(inspectCrossProcessSlots(lockRoot)).toEqual([]);
   });
 
   it("never exceeds the configured limit across processes", async () => {

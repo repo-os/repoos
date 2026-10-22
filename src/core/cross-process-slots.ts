@@ -10,10 +10,51 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
+import { spawnSync } from "node:child_process";
 const STALE_MS = 30 * 60 * 1000;
 const WEDGED_AFTER_MS = 75 * 1000;
 const WEDGED_RECLAIM_AFTER_MS = 150 * 1000;
 const HEARTBEAT_MS = 15_000;
+
+function processIsAlive(pid: number): boolean {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  if (process.platform !== "win32") {
+    const result = spawnSync("ps", ["-o", "stat=", "-p", String(pid)], {
+      encoding: "utf8",
+      timeout: 1_000,
+    });
+    if (result.status === 0 && result.stdout.trim()) {
+      return !result.stdout.trim().startsWith("Z");
+    }
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code !== "ESRCH";
+  }
+}
+
+function processGroupHasLiveMembers(pgid: number): boolean {
+  if (process.platform !== "win32") {
+    const result = spawnSync("ps", ["-axo", "pgid=,stat="], {
+      encoding: "utf8",
+      timeout: 1_000,
+    });
+    if (result.status === 0) {
+      return result.stdout.split(/\r?\n/).some((line) => {
+        const [group, state] = line.trim().split(/\s+/, 2);
+        return Number(group) === pgid && Boolean(state) && !state.startsWith("Z");
+      });
+    }
+  }
+  try {
+    process.kill(-pgid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code !== "ESRCH";
+  }
+}
 
 export class SlotQueueTimeoutError extends Error {
   constructor(message: string) {
@@ -48,11 +89,7 @@ function isStaleSlot(dir: string): boolean {
   try {
     const rawPid = readFileSync(join(dir, ".holder"), "utf8").trim();
     if (/^\d+$/.test(rawPid)) {
-      try {
-        process.kill(Number(rawPid), 0);
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === "ESRCH") return true;
-      }
+      if (!processIsAlive(Number(rawPid))) return true;
     }
   } catch {
     // A slot without holder metadata may be mid-creation; use its age below.
@@ -96,12 +133,7 @@ export interface LocalSlotHolder {
 
 function holderIsDead(pid: number | undefined): boolean {
   if (!pid || !Number.isInteger(pid) || pid <= 0) return false;
-  try {
-    process.kill(pid, 0);
-    return false;
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code === "ESRCH";
-  }
+  return !processIsAlive(pid);
 }
 
 /** Read local slot ownership for the Checks surface and CLI diagnostics. */
@@ -160,6 +192,20 @@ export function reapOrphanedLocalCheckGroups(lockRoot: string): number[] {
       } catch {
         /* the group exited during the grace period */
       }
+      // Do not release the slot while any member of the old check group can
+      // still be running. In particular, SIGKILL delivery is asynchronous;
+      // deleting the lock immediately lets a retry overlap the orphan briefly.
+      const waitArray = new Int32Array(new SharedArrayBuffer(4));
+      const killDeadline = Date.now() + 2_000;
+      let groupAlive = true;
+      while (Date.now() < killDeadline) {
+        if (!processGroupHasLiveMembers(pid)) {
+          groupAlive = false;
+          break;
+        }
+        Atomics.wait(waitArray, 0, 0, 100);
+      }
+      if (groupAlive) continue;
       rmSync(dir, { recursive: true, force: true });
       reaped.push(pid);
     } catch {
