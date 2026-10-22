@@ -2,7 +2,7 @@
 id: "0910"
 title: "Reviewer cannot confirm landability in its sandbox and returns 'needs some work' with no bugs: feed it the landing checklist"
 type: feature
-status: ready
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/reviewer-cannot-confirm-landability-in-i
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T19:45:25Z"
-updated_at: "2026-10-22T01:15:18Z"
+updated_at: "2026-10-22T01:15:23Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:14:24.294Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:14:26.072Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:14:27.749Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -51,3 +51,4 @@ Reproduce with .repoos/reviews/0899/1.md to 5.md. The reviewer for those passes 
 - 2026-10-22T01:15:05Z · cli_override, model_override
 - 2026-10-22T01:15:05Z · needs_input
 - 2026-10-22T01:15:18Z · status active→ready
+- 2026-10-22T01:15:23Z · status ready→active
