@@ -11,7 +11,7 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T15:30:32Z"
+updated_at: "2026-10-22T15:32:04Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
@@ -98,3 +98,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T15:21:09Z · note: handoff requested (cli)
 - 2026-10-22T15:30:31Z · status active→review
 - 2026-10-22T15:30:32Z · note: shots: skipped — 9 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-22T15:32:04Z · note: review pass 2: needs some work
