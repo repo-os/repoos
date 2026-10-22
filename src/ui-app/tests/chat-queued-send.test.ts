@@ -10,9 +10,10 @@
  *  - every chat surface renders the shared notice, and its send control is no
  *    longer disabled merely because the agent is busy.
  */
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import { nextTick, ref } from "vue";
+import { createPinia, setActivePinia } from "pinia";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import ChatQueuedNotice from "../src/components/ChatQueuedNotice.vue";
@@ -21,6 +22,10 @@ import { useQueuedSend } from "../src/composables/useQueuedSend";
 vi.mock("../src/api", () => ({
   api: vi.fn(async () => ({ tasks: [], messages: [] })),
 }));
+
+beforeEach(() => {
+  setActivePinia(createPinia());
+});
 
 const COMPONENTS_DIR = resolve(__dirname, "../src/components");
 
