@@ -7,7 +7,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ChildProcess } from "node:child_process";
-import { Writable } from "node:stream";
+import { PassThrough, Writable } from "node:stream";
 import {
   formatBundleUploadDetail,
   shouldPreferLocalGate,
@@ -96,21 +96,12 @@ describe("uploadFileOverSsh stall (#0917)", () => {
             return false;
           },
         });
-        stdin.on = EventEmitter.prototype.on.bind(stdin);
-        stdin.once = EventEmitter.prototype.once.bind(stdin);
         child.stdin = stdin;
-        child.stdout = new Writable({
-          write(_c, _e, cb) {
-            cb();
-          },
-        });
-        child.stderr = new Writable({
-          write(_c, _e, cb) {
-            cb();
-          },
-        });
+        child.stdout = new PassThrough();
+        child.stderr = new PassThrough();
         child.kill = () => {
           child.emit("close", null);
+          return true;
         };
         return child;
       },
