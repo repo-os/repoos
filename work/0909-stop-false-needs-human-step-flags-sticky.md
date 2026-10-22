@@ -2,7 +2,7 @@
 id: "0909"
 title: "Stop false 'needs human step' flags: sticky overrides, model check before keywords, tagged criteria with auto-split"
 type: feature
-status: active
+status: ready
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/stop-false-needs-human-step-flags-sticky
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T19:41:23Z"
-updated_at: "2026-10-22T01:10:05Z"
+updated_at: "2026-10-22T01:11:06Z"
 ---
 ## Problem
 The 'needs-human-step' detector flags tasks by keyword (credentials, accounts, device, keys…). 2026-10-22: #0904 (design/implement remote engineer sessions, proven with fakes) was flagged because its criteria merely MENTION credentials; #0904, #0905, #0908 and others were flagged repeatedly and a driver cleared the flag three times, then reworded the task to dodge the scanner. Every edit re-scans and can re-flag, new tasks get flagged on creation, and a flagged task blocks AI dispatch until someone notices. It is brittle and wastes human and driver time.
@@ -49,3 +49,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T00:19:46Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-22T01:09:22Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-22T01:10:04Z · engineer stopped by request
+- 2026-10-22T01:11:06Z · status active→ready
