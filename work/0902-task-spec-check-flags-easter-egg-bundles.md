@@ -2,7 +2,7 @@
 id: "0902"
 title: Task spec check flags easter-egg bundles as underspecified
 type: bug
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -53,4 +53,4 @@ Start from `assessTaskUnderspecified` and `specSectionHeadingsForTask` in `src/c
 - 2026-10-22T01:51:19Z · status ready→active
 - 2026-10-22T01:55:00Z · body
 - 2026-10-22T01:55:00Z · body
-- 2026-10-22T02:04:14Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-22T02:04:14Z · status active→review
