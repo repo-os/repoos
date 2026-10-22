@@ -232,6 +232,30 @@ function makeCtx(
 }
 
 describe("PATCH /api/tasks/:id — generic status writes now gated", () => {
+  it("moves a human task from inbox through done as plain status writes", async () => {
+    const fx = makeFixture("inbox", "assigned_to: human\n");
+    const ctx = makeCtx(fx);
+    const start = vi.fn();
+    ctx.startUnifiedHandoff = start as any;
+    try {
+      for (const status of ["ready", "active", "review", "done"] as const) {
+        const { res, fake } = makeRes();
+        await patchTask(
+          ctx,
+          makeReq({ status, ...(status === "done" ? { note: "verified" } : {}) }),
+          res,
+          { param1: "0296" },
+        );
+        expect(fake.status).toBe(200);
+        expect(readTaskFile(fx).status).toBe(status);
+      }
+      expect(start).not.toHaveBeenCalled();
+      expect(readFileSync(fx.taskPath, "utf8")).toContain("closed by human: verified");
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("rejects ready -> active (must use /start, which spawns the agent)", async () => {
     const fx = makeFixture("ready");
     try {
@@ -309,6 +333,19 @@ describe("PATCH /api/tasks/:id — generic status writes now gated", () => {
 });
 
 describe("POST /api/tasks/:id/start — dependency gate", () => {
+  it("does not start work for a human-assigned task", async () => {
+    const fx = makeFixture("ready", "assigned_to: human\n");
+    try {
+      const { res, fake } = makeRes();
+      await taskAction(makeCtx(fx), makeReq(), res, { param1: "0296", param2: "start" });
+      expect(fake.status).toBe(400);
+      expect((fake.payload as { error: string }).error).toMatch(/assigned to a human/);
+      expect(readTaskFile(fx).status).toBe("ready");
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("returns a clear conflict for a missing prerequisite", async () => {
     const fx = makeFixture("ready", 'depends_on: ["9999"]\n');
     try {
