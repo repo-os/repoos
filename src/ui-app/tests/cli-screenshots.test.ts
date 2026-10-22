@@ -162,14 +162,10 @@ describe("repoos new --screenshot", () => {
     }
   });
 
-  it("labels a single image with --caption and refuses a multi-image caption", async () => {
+  it("labels a single image with --caption", async () => {
     const { root, clean } = makeCliRepo();
     tmpRoots.push(root);
     const prevExit = process.exitCode;
-    const errors: string[] = [];
-    const spy = vi
-      .spyOn(console, "error")
-      .mockImplementation((...a: unknown[]) => errors.push(a.map(String).join(" ")));
     try {
       const a = writePng(root, "a.png");
       const code = await runCli(() =>
@@ -180,15 +176,108 @@ describe("repoos new --screenshot", () => {
       const captioned = loadTask(root, id).body;
       expect(captioned).toContain(`![the crash](/api/tasks/${id}/attachments/att_`);
       expect(STABLE_ATTACHMENT_OBJECT_RE.test(attachmentObjectsInBody(captioned)[0])).toBe(true);
+    } finally {
+      process.exitCode = prevExit;
+      clean();
+    }
+  });
 
+  it("writes two captions in order for two --screenshot flags", async () => {
+    const { root, clean } = makeCliRepo();
+    tmpRoots.push(root);
+    const prevExit = process.exitCode;
+    try {
+      const a = writePng(root, "a.png");
+      const b = writePng(root, "b.png");
+      const code = await runCli(() =>
+        withCwd(root, () =>
+          cmdNew([
+            "Two captions",
+            "--screenshot",
+            a,
+            "--caption",
+            "first",
+            "--screenshot",
+            b,
+            "--caption",
+            "second",
+          ]),
+        ),
+      );
+      expect(code).toBe(0);
+      const id = latestTaskId(root);
+      const body = loadTask(root, id).body;
+      expect(body).toContain(`![first](/api/tasks/${id}/attachments/`);
+      expect(body).toContain(`![second](/api/tasks/${id}/attachments/`);
+      expect(body.indexOf("![first]")).toBeLessThan(body.indexOf("![second]"));
+    } finally {
+      process.exitCode = prevExit;
+      clean();
+    }
+  });
+
+  it("applies one caption to the first of two screenshots", async () => {
+    const { root, clean } = makeCliRepo();
+    tmpRoots.push(root);
+    const prevExit = process.exitCode;
+    try {
+      const a = writePng(root, "a.png");
+      const c = writePng(root, "c.png");
+      const code = await runCli(() =>
+        withCwd(root, () =>
+          cmdNew([
+            "Partial caption",
+            "--screenshot",
+            a,
+            "--caption",
+            "only first",
+            "--screenshot",
+            c,
+          ]),
+        ),
+      );
+      expect(code).toBe(0);
+      const id = latestTaskId(root);
+      const body = loadTask(root, id).body;
+      expect(body).toContain(`![only first](/api/tasks/${id}/attachments/`);
+      expect(body).toContain(`![c](/api/tasks/${id}/attachments/`);
+    } finally {
+      process.exitCode = prevExit;
+      clean();
+    }
+  });
+
+  it("errors when there are more captions than screenshots", async () => {
+    const { root, clean } = makeCliRepo();
+    tmpRoots.push(root);
+    const prevExit = process.exitCode;
+    const errors: string[] = [];
+    const spy = vi
+      .spyOn(console, "error")
+      .mockImplementation((...a: unknown[]) => errors.push(a.map(String).join(" ")));
+    try {
+      const a = writePng(root, "a.png");
       const b = writePng(root, "b.png");
       const bad = await runCli(() =>
         withCwd(root, () =>
-          cmdNew(["Too many", "--screenshot", a, "--screenshot", b, "--caption", "x"]),
+          cmdNew([
+            "Too many captions",
+            "--screenshot",
+            a,
+            "--screenshot",
+            b,
+            "--caption",
+            "one",
+            "--caption",
+            "two",
+            "--caption",
+            "three",
+          ]),
         ),
       );
       expect(bad).toBe(1);
-      expect(errors.join("\n")).toContain("--caption applies to a single --screenshot image");
+      expect(errors.join("\n")).toContain("3 caption(s) but only 2 --screenshot");
+      expect(readdirSync(join(root, "work"))).toEqual(["0001-test.md"]);
     } finally {
       spy.mockRestore();
       process.exitCode = prevExit;
