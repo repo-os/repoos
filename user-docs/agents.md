@@ -17,7 +17,10 @@ shows soonest first, with a countdown and upcoming, due, overdue (after 24 hours
 snoozed or done state.
 
 Due notes stay in the bell and the Reminders tab badge until **Done**, **Snooze**
-or **Delete**. Clicking a bell note opens this tab. Snooze for an hour, tomorrow
+or **Delete**. They also appear as small bright cards in the top bar, just left of
+the bell: click a card to jump to this tab focused on that reminder, or dismiss
+the card to hide it from the top bar only (the reminder itself stays in the
+bell). Clicking a bell note opens this tab. Snooze for an hour, tomorrow
 at 09:00 local time, one day (24 hours), or a custom date/time. Editing the fire
 time reopens a completed reminder. Nothing starts agents or changes settings.
 
