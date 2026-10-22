@@ -2,7 +2,7 @@
 id: "0928"
 title: Add project secret management API and CLI
 type: feature
-status: active
+status: review
 human_step_decision: agent
 human_step_decision_key: 10dfc9f8
 priority: p1
@@ -71,4 +71,4 @@ Build on the authentication/authorization, route, audit, and CLI patterns alread
 - 2026-10-22T16:40:35Z · status review→active
 - 2026-10-22T16:43:30Z · body
 - 2026-10-22T16:45:52Z · body
-- 2026-10-22T16:55:14Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-22T16:55:14Z · status active→review
