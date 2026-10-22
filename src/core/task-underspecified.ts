@@ -404,6 +404,7 @@ export function assessTaskUnderspecified(
 
 /** The PM chat's canned "flesh this out" message (mirrors the UI's `PM_FLESH_OUT_CANNED_MESSAGE`). */
 export const PM_FLESH_OUT_MESSAGE = "Can you flesh this out?";
+export const PM_SPLIT_HUMAN_STEP_MESSAGE = "Review and resolve the human-only steps in this task.";
 
 /** Server-side instructions for deciding whether human-only work needs splitting. */
 export function splitHumanStepRequirementsPrompt(): string {
