@@ -1119,6 +1119,23 @@ export interface RemoteHostStatusView {
     minMemoryFreePercent: number;
     maxPsiMemoryAvg10: number;
   };
+  /** Declared engineer CLI install/auth (#0915). */
+  engineerClis?: {
+    host: string;
+    user: string;
+    ok: boolean;
+    checkedAt?: string;
+    cells: Array<{
+      cli: string;
+      declared: boolean;
+      installed: boolean;
+      version: string | null;
+      auth: "signed-in" | "not-signed-in" | "unknown";
+      detail: string | null;
+      fix: string | null;
+      ok: boolean;
+    }>;
+  };
 }
 
 /** The `/api/remote-validation/status` payload (#0521/#0564). */
