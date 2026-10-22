@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-dropzone-shot-evidenc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T01:34:32Z"
-updated_at: "2026-10-22T17:36:30Z"
+updated_at: "2026-10-22T17:37:23Z"
 ---
 ## Items
 - [ ] **E1 · Manual-tab handoff capture does not show a dropzone** (web) — #0899's declared Manual-tab shot has a click step but no recorded assertion, so the capture alone does not prove the dropzone rendered. Source: reviewer notes on #0899 (passes 4 and 5), 2026-10-22.
@@ -39,6 +39,63 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 ![E4: restart required badge sits right of the control; move it left so controls are flush right](/api/tasks/0911/attachments/att_014c0836-9186-4e54-b605-03d73b0520d0.webp)
 ![E3: red and yellow cards in the Debug tab have no inner padding](/api/tasks/0911/attachments/att_ce2dc653-63e6-440e-94e9-53389721ead8.webp)
 
+## Shots
+```json
+[
+{
+  "label": "Manual tab dropzone · light",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".shot-dropzone",
+  "steps": [
+    {
+      "click": ".drawer-tabs .tab-btn:nth-child(2)"
+    }
+  ],
+  "assert": [
+    {
+      "selector": ".shot-dropzone",
+      "label": "Screenshot dropzone is rendered"
+    }
+  ],
+  "state": "panel:defaultScreenshotPicker",
+  "theme": "light"
+},
+{
+  "label": "Manual tab dropzone · dark",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".shot-dropzone",
+  "steps": [
+    {
+      "click": ".drawer-tabs .tab-btn:nth-child(2)"
+    }
+  ],
+  "assert": [
+    {
+      "selector": ".shot-dropzone",
+      "label": "Screenshot dropzone is rendered"
+    }
+  ],
+  "state": "panel:defaultScreenshotPicker",
+  "theme": "dark"
+},
+{
+  "label": "Task drawer default screenshot picker",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".shot-dropzone",
+  "assert": [
+    {
+      "selector": ".shot-dropzone",
+      "label": "Default screenshot picker is rendered"
+    }
+  ],
+  "state": "panel:defaultScreenshotPicker"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-22T01:34:32Z · created · njachowski@gmail.com
@@ -53,3 +110,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T17:36:27Z · status ready→active, branch
 - 2026-10-22T17:36:30Z · message_queued at 2026-10-22T17:36:30.597Z
 - 2026-10-22T17:36:30Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-22T17:37:23Z · body
