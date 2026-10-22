@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 491456
-last_close_out_gate_at: "2026-10-22T11:00:46.168Z"
 id: "0925"
 title: Cancelling a close-out must kill its check process tree and free its slot
 type: bug
-status: review
+status: done
 priority: p1
 area: [server, core]
+merged_commit: c9550ab91f7688ba58fafda4e588c2d6723254d2
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/cancelling-a-close-out-must-kill-its-che
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:32:56Z"
 updated_at: "2026-10-22T11:00:46Z"
+last_close_out_gate_ms: 491456
+last_close_out_gate_at: "2026-10-22T11:00:46.168Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-22T10:14:46.588Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Local check slot diagnostics (target \"default\"): highlight .ck-local-slots matched nothing on /checks?tab=now (http://127.0.0.1:42895/checks?tab=now)"
 handoff_signal_retry_count: 2

@@ -26,6 +26,7 @@ import { spawnSync } from "node:child_process";
 import type { RepoOSConfig, Task } from "./types.js";
 import { worktreesDir } from "./config.js";
 import { buildIndex } from "./indexer.js";
+import { localCheckLockRoot, reapOrphanedLocalCheckGroups } from "./cross-process-slots.js";
 import {
   isGitRepo,
   currentBranch,
@@ -127,6 +128,10 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     report.errors.push("not a git repository");
     return report;
   }
+  // A close-out cancellation normally reaps the detached check group before
+  // removing its candidate. If the server itself was interrupted mid-stop,
+  // the next maintenance sweep can still identify it from the slot metadata.
+  reapOrphanedLocalCheckGroups(localCheckLockRoot(root, config.cacheDir ?? ".repoos"));
 
   const wtDir = worktreesDir(root);
   const mainBranch = currentBranch(root) ?? "main";

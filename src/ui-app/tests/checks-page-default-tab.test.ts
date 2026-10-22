@@ -180,8 +180,10 @@ describe("ChecksView default tab (#0738)", () => {
   });
 
   it("keeps the legacy ?tab=remote deep link on Now", async () => {
-    const { router } = await mountChecks("/checks?tab=remote");
+    const { router, wrapper } = await mountChecks("/checks?tab=remote");
     expect(parseChecksTab(router.currentRoute.value.query.tab)).toBe("now");
+    expect(wrapper.find(".ck-local-slots").exists()).toBe(true);
+    expect(wrapper.text()).toContain("No local check slots are currently in use.");
   });
 });
 
