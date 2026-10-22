@@ -2,7 +2,7 @@
 id: "0930"
 title: Bind dev and check processes to explicit environments
 type: feature
-status: inbox
+status: ready
 human_step_decision: agent
 human_step_decision_key: a1c4ab9e
 priority: p1
@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T08:06:43Z"
-updated_at: "2026-10-22T08:06:47Z"
+updated_at: "2026-10-22T17:07:39Z"
 ---
 ## Problem
 Named environment files are useful only if each dev target, preview, and check receives the selected values safely. Implicit inheritance or mutation of the RepoOS server process could mix two targets’ values, expose production by fallback, or change current behavior for projects that have not opted in.
@@ -35,3 +35,4 @@ Depends on #0927 for the storage/environment contract and #0928 for authorized m
 ## Activity
 
 - 2026-10-22T08:06:43Z · created · njachowski@gmail.com
+- 2026-10-22T17:07:39Z · status inbox→ready
