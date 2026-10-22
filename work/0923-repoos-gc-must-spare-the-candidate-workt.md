@@ -11,7 +11,7 @@ branch: feat/repoos-gc-must-spare-the-candidate-workt
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:06:09Z"
-updated_at: "2026-10-22T12:55:47Z"
+updated_at: "2026-10-22T12:56:56Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-22T12:09:45.656Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Control dashboard worktree cleanup preview (target \"default\"): highlight .gc-preview matched nothing on / (http://127.0.0.1:43707/)"
 ---
@@ -50,7 +50,7 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 "highlight": ".gc-preview",
 "steps": [
 {
-  "click": "button.gc-action"
+"click": "button.gc-action"
 }
 ],
 "state": "system:worktreeGc"
@@ -102,3 +102,4 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 - 2026-10-22T12:55:26Z · body
 - 2026-10-22T12:55:47Z · note: ui verification failed: ui verification failed (1 issue(s)): [request] Failed to load resource: Error resolving “fonts.googleapis.com”: Name or service not known (https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Baloo+2:wght@400;500;600;700;800&family=Bricolage+Grotesque:wght@500;600;700;800&display=swap)
 - 2026-10-22T12:55:47Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [request] Failed to load resource: Error resolving “fonts.googleapis.com”: Name or service not known (https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Baloo+2:wght@400;500;600;700;800&family=Bricolage+Grotesque:wght@500;600;700;800&display=swap)
+- 2026-10-22T12:56:56Z · CTO nudge: held — remote validation is running
