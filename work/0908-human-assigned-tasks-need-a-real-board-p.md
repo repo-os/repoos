@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-22T04:27:14Z"
-review_passes: 3
+last_close_out_gate_ms: 540701
+last_close_out_gate_at: "2026-10-22T06:38:40.925Z"
 id: "0908"
 title: "Human-assigned tasks need a real board pathway: move across columns to done without triggering AI, checks or review"
 type: feature
@@ -13,6 +13,8 @@ branch: feat/human-assigned-tasks-need-a-real-board-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T19:22:55Z"
+updated_at: "2026-10-22T06:38:40Z"
+review_passes: 3
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 27324bdc4a0e6dbe41c65a25ccb6e61441c68654
 handoff_signal_retry_count: 1
@@ -97,4 +99,5 @@ Do not start without the human. Related rule in AGENTS.md: needs-human-step task
 - 2026-10-22T03:36:01Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-22T04:27:14Z · note: review pass 4: needs some work
 - 2026-10-22T04:27:14Z · needs_input
+- 2026-10-22T06:38:40Z · close-out gate completed in 541s
 
