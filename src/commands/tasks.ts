@@ -382,8 +382,9 @@ export function cmdMv(
       process.exitCode = 1;
       return;
     }
-    if (status === "review" && handoffRequestFromRunner(id)) return;
-    if (status === "review") {
+    const humanTask = existingBeforeMv?.assignee === "human";
+    if (!humanTask && status === "review" && handoffRequestFromRunner(id)) return;
+    if (!humanTask && status === "review") {
       console.error(
         c.dim(
           `  For a synchronous handoff with checks, use \`repoos review ${id}\` instead of \`repoos mv review\`.`,
@@ -393,7 +394,7 @@ export function cmdMv(
     // #0896: never reopen a task whose work already landed. A done task whose
     // branch is merged into main is finished; moving it back (as a driver once did
     // from a stale loop prompt, #0879) restarts engineers on shipped work.
-    if (status !== "done" && !opts.force) {
+    if (status !== "done" && !opts.force && existingBeforeMv?.assignee !== "human") {
       const doneTask = repoos.getTask(id);
       if (doneTask?.status === "done" && doneTask.branch) {
         const { root: doneRoot } = boardRoot();
@@ -421,7 +422,7 @@ export function cmdMv(
         }
       }
     }
-    if (status === "done" && !opts.force) {
+    if (status === "done" && !opts.force && !humanTask) {
       const existing = repoos.getTask(id);
       if (existing && existing.status !== "done" && existing.branch) {
         const { root } = boardRoot();
@@ -449,7 +450,13 @@ export function cmdMv(
         }
       }
     }
-    const t = repoos.updateStatus(id, status as Status, note);
+    const closeNote =
+      status === "done" && humanTask
+        ? [`closed by ${process.env.USER ?? process.env.USERNAME ?? "RepoOS CLI"}`, note?.trim()]
+            .filter(Boolean)
+            .join(": ")
+        : note;
+    const t = repoos.updateStatus(id, status as Status, closeNote);
     console.log(
       "  " + c.green("moved ") + c.dim("#" + t.id) + " → " + statusColor(t.status)(t.status),
     );

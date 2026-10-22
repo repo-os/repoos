@@ -2692,6 +2692,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Combined status-change hook, fired for every status change by any route.
   const onStatusChange = (task: Task, prev: Status, next: Status): void => {
+    if (task.assignee === "human") return;
     stopPreviewIfLeft(task, prev, next);
     stopAgentIfLeftActive(task, prev, next);
     if (prev === "active" && next !== "active") runner.discardPendingHandoff(task.id);

@@ -283,11 +283,16 @@ const allStatuses = computed(() => {
 });
 const selectableStatuses = computed(() => {
   const current = ui.active?.status;
+  if (ui.active?.assignee === "human") {
+    return allStatuses.value.filter((status) => status.id !== "draft");
+  }
   const reachable = current ? (GENERIC_PATCH_TARGETS[current] ?? []) : [];
   return allStatuses.value.filter(
     (status) => status.id === current || reachable.includes(status.id),
   );
 });
+const isHumanTask = computed(() => ui.active?.assignee === "human");
+const humanCompletionNote = ref("");
 
 /**
  * #0507: a handoff finalization is running for this task, so the Review
@@ -1260,13 +1265,15 @@ async function setStatus(status: string): Promise<void> {
   // #0507: `review` is a request, not a write — it starts the handoff
   // finalization, so it goes through the confirm modal (run checks / skip
   // checks) instead of a bare PATCH. Every other status is still a plain write.
-  if (status === "review") {
+  if (status === "review" && !isHumanTask.value) {
     openReviewConfirm();
     return;
   }
   ui.saving = true;
   try {
-    await repo.setStatus(ui.active, status);
+    const note =
+      status === "done" && isHumanTask.value ? humanCompletionNote.value.trim() : undefined;
+    await repo.setStatus(ui.active, status, note);
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -4467,6 +4474,24 @@ watch(
           </div>
         </div>
         <div v-else class="drawer-quickbar">
+          <div v-if="isHumanTask" class="ff-notice drawer-human-task" role="status">
+            <strong>Human task: no AI will work on this.</strong>
+            <span>Move it between board columns as the human work progresses.</span>
+            <Input
+              v-if="ui.active.status !== 'done'"
+              v-model="humanCompletionNote"
+              aria-label="Completion note (optional)"
+              placeholder="Completion note (optional)"
+            />
+            <Button
+              v-if="ui.active.status !== 'done'"
+              variant="status"
+              :disabled="ui.saving"
+              @click="setStatus('done')"
+            >
+              <CheckCheck class="size-3.5" /> Mark done
+            </Button>
+          </div>
           <!-- #0897: the remote runner is queued or running for this task —
                name the phase, host, elapsed time and any job ahead of it. -->
           <div v-if="remoteActivityText" class="ff-notice drawer-remote-activity" role="status">
@@ -4546,6 +4571,7 @@ watch(
             </Button>
             <Button
               v-if="
+                !isHumanTask &&
                 (ui.active.status === 'ready' || ui.active.status === 'active') &&
                 (ui.active.status === 'ready' || !repo.isRunning(ui.active.id))
               "
@@ -4566,7 +4592,7 @@ watch(
               }}
             </Button>
             <Button
-              v-if="ui.active.status === 'active' && !repo.isRunning(ui.active.id)"
+              v-if="!isHumanTask && ui.active.status === 'active' && !repo.isRunning(ui.active.id)"
               variant="status"
               :style="{ '--tone': statusColor('review') }"
               :disabled="ui.saving || handoffBusy"
@@ -4582,7 +4608,7 @@ watch(
               {{ handoffBusy ? "Running checks…" : "Review" }}
             </Button>
             <Button
-              v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)"
+              v-if="!isHumanTask && ui.active.status === 'active' && repo.isRunning(ui.active.id)"
               variant="outline"
               :disabled="ui.saving"
               @click="pauseWork"
@@ -4591,7 +4617,9 @@ watch(
               Pause work
             </Button>
             <Button
-              v-if="ui.active.status === 'active' || ui.active.status === 'review'"
+              v-if="
+                !isHumanTask && (ui.active.status === 'active' || ui.active.status === 'review')
+              "
               variant="outline"
               :disabled="ui.saving"
               title="Send this task back to ready — stops the agent/review, keeps the worktree"
@@ -4601,7 +4629,7 @@ watch(
               Stop work
             </Button>
             <Button
-              v-if="ui.active.status === 'done'"
+              v-if="!isHumanTask && ui.active.status === 'done'"
               variant="outline"
               :disabled="ui.saving"
               title="Send this task back to ready with a fresh branch on the next Start work"
@@ -4617,7 +4645,7 @@ watch(
               Last successful close-out gate: {{ lastCloseOutGateLabel }}
             </p>
             <Button
-              v-if="ui.active.status === 'review'"
+              v-if="!isHumanTask && ui.active.status === 'review'"
               variant="status"
               :style="{ '--tone': statusColor('done') }"
               :disabled="

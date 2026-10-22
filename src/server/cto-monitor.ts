@@ -240,6 +240,7 @@ export class CTOMonitor {
       // Archived tasks are parked (#0657): never nudge them, even if their
       // underlying status is active.
       if (task.isArchived) continue;
+      if (task.assignee === "human") continue;
       activeIds.add(task.id);
       if (this.runner?.isPaused(task.id)) {
         this.idleSkipReported.delete(task.id);
@@ -369,13 +370,18 @@ export class CTOMonitor {
     // Archived tasks are parked (#0657): they must not appear in the digest's
     // stuck list or count as work in progress. The status counts below come
     // from `index.counts()`, which already excludes them.
-    const tasks = this.index.getTasks().filter((task) => !task.isArchived);
+    const tasks = this.index
+      .getTasks()
+      .filter((task) => !task.isArchived && task.assignee !== "human");
     const lines: string[] = [];
 
     lines.push("## Task Status Summary");
     lines.push("");
 
-    const counts = this.index.counts();
+    const counts = { inbox: 0, ready: 0, active: 0, review: 0, done: 0 };
+    for (const task of tasks) {
+      if (task.status in counts) counts[task.status as keyof typeof counts]++;
+    }
     lines.push(`- **Inbox**: ${counts.inbox} tasks`);
     lines.push(`- **Ready**: ${counts.ready} tasks (waiting to start)`);
     lines.push(`- **Active**: ${counts.active} tasks (in progress)`);
