@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0898"
 title: "repoos doctor: warn when macOS syspolicyd/trustd slow spawn-heavy work, and name the git cause"
 type: feature
@@ -37,3 +38,4 @@ See src/core/runtime.ts preferAppleGit, user-docs/configuration.md (Apple-signed
 - 2026-10-22T13:26:44Z · body
 - 2026-10-22T13:29:50Z · body
 - 2026-10-22T13:30:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
