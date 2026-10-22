@@ -48,3 +48,4 @@ Work in the existing config/environment loading and file utility layers under sr
 - 2026-10-22T14:43:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T14:43:48Z · message_delivered: 1 message(s)
 - 2026-10-22T14:53:48Z · status active→review
+- 2026-10-22T14:53:48Z · note: shots: skipped — Docs site skipped: no docs shot declared
