@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-22T15:00:59Z"
+review_passes: 1
 id: "0924"
 title: "Checks page: show % complete for a running check (steps and test files)"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T15:00:59Z"
 ---
 ## Problem
 A running check (engineer self-check, handoff, close-out) shows only elapsed time and a log tail. Nick cannot tell whether a 40-minute run is 10% or 90% done, or whether it is looping (incident 2026-10-22, #0909: the test step timed out at 420s twice and restarted, invisible from the UI).
@@ -40,3 +41,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T14:03:27Z · status ready→active, branch
 - 2026-10-22T14:49:26Z · status active→review
 - 2026-10-22T15:00:59Z · note: review pass 1: needs some work
+
