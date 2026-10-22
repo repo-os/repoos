@@ -282,10 +282,7 @@ export function evaluatePressure(
   };
 }
 
-function mergeActivityReadings(
-  readings: MemoryReadings,
-  config?: RepoOSConfig,
-): MemoryReadings {
+function mergeActivityReadings(readings: MemoryReadings, config?: RepoOSConfig): MemoryReadings {
   if (readings.swapIoBytesPerSec !== undefined || readings.pageoutBytesPerSec !== undefined) {
     return readings;
   }
