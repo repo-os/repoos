@@ -41,6 +41,20 @@ function slotDirs(lockRoot: string): string[] {
 }
 
 function isStaleSlot(dir: string): boolean {
+  // A slot's recorded owner is authoritative when its process has exited;
+  // heartbeat timestamps alone can leave a dead close-out blocking for 30m.
+  try {
+    const rawPid = readFileSync(join(dir, ".holder"), "utf8").trim();
+    if (/^\d+$/.test(rawPid)) {
+      try {
+        process.kill(Number(rawPid), 0);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ESRCH") return true;
+      }
+    }
+  } catch {
+    // A slot without holder metadata may be mid-creation; use its age below.
+  }
   try {
     const st = statSync(dir);
     return Date.now() - st.mtimeMs > STALE_MS;

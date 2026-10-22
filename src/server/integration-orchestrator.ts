@@ -821,7 +821,9 @@ export function runProcess(
   },
 ): Promise<ProcessRunResult> {
   return new Promise((resolve) => {
-    const child = spawn(cmd, args, { cwd: opts.cwd, env: opts.env });
+    // Own a process group so cancelling a CLI also stops its test/build workers.
+    // Negative-PID signals address only this detached child group.
+    const child = spawn(cmd, args, { cwd: opts.cwd, env: opts.env, detached: process.platform !== "win32" });
     const effectiveTimeout =
       opts.deadlineAt !== undefined
         ? Math.min(opts.timeout, Math.max(0, opts.deadlineAt - Date.now()))
@@ -834,12 +836,24 @@ export function runProcess(
     let settled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let cancelPoll: ReturnType<typeof setInterval> | undefined;
+    let killTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const signalTree = (signal: NodeJS.Signals): void => {
+      if (child.pid === undefined) return;
+      try {
+        if (process.platform !== "win32") process.kill(-child.pid, signal);
+        else child.kill(signal);
+      } catch {
+        /* process group already exited */
+      }
+    };
 
     const finish = (status: number | null): void => {
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
       if (cancelPoll) clearInterval(cancelPoll);
+      if (killTimer) clearTimeout(killTimer);
       resolve({ status, stdout, stderr, timedOut, errorCode, cancelled });
     };
 
@@ -863,14 +877,16 @@ export function runProcess(
       cancelPoll = setInterval(() => {
         if (opts.isCancelled!()) {
           cancelled = true;
-          child.kill("SIGKILL");
+          signalTree("SIGTERM");
+          if (cancelPoll) clearInterval(cancelPoll);
+          killTimer = setTimeout(() => signalTree("SIGKILL"), 1500);
         }
       }, 400);
     }
 
     timer = setTimeout(() => {
       timedOut = true;
-      child.kill("SIGKILL");
+      signalTree("SIGKILL");
     }, effectiveTimeout);
   });
 }
