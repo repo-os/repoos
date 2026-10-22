@@ -176,6 +176,46 @@ afterEach(() => {
 });
 
 describe("agent start concurrency cap", () => {
+  it("removes dead durable engineer entries before they can block a review, while live entries still block", () => {
+    const fx = makeFixture();
+    const runner = new AgentRunner(config(fx.bin, 1), () => {});
+    const cacheDir = join(fx.bin, "..", ".repoos");
+    mkdirSync(cacheDir, { recursive: true });
+    const deadWorkdir = fx.workdir("dead");
+    const liveWorkdir = fx.workdir("live");
+    const registryPath = join(cacheDir, "agents.json");
+    const entry = (taskId: string, pid: number, workdir: string) => ({
+      taskId,
+      pid,
+      workdir,
+      branch: `feat/${taskId}`,
+      runId: `run-${taskId}`,
+      kind: "engineer",
+    });
+    try {
+      writeFileSync(
+        registryPath,
+        JSON.stringify({
+          entries: [
+            entry("dead", 2_000_000_000, deadWorkdir),
+            entry("live", process.pid, liveWorkdir),
+          ],
+        }),
+      );
+
+      expect(runner.isRunning("dead")).toBe(false);
+      expect(
+        JSON.parse(readFileSync(registryPath, "utf8")).entries.map(
+          (row: { taskId: string }) => row.taskId,
+        ),
+      ).toEqual(["live"]);
+      expect(runner.isRunning("live")).toBe(true);
+    } finally {
+      runner.dispose();
+      fx.clean();
+    }
+  });
+
   it("queues starts beyond maxConcurrentAgents and drains them as slots free", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
