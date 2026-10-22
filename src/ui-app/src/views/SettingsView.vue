@@ -1395,6 +1395,13 @@ onUnmounted(() => {
                     <div class="setting-label">{{ f.label }}</div>
                     <div class="setting-desc">{{ f.description }}</div>
                   </div>
+                  <span
+                    v-if="f.restartRequired"
+                    class="restart-badge"
+                    title="Changes require restarting RepoOS"
+                    aria-label="Restart required"
+                    >restart required</span
+                  >
                   <div :data-config-key="f.key" class="setting-input">
                     <Select
                       v-if="f.type === 'select'"
@@ -1445,7 +1452,6 @@ onUnmounted(() => {
                       @update:model-value="(v) => (form[f.key] = v)"
                     />
                   </div>
-                  <span v-if="f.restartRequired" class="restart-badge">restart required</span>
                 </div>
                 <div
                   v-if="f.key === 'ctoSkipHealthy' && ctoActionsField"
@@ -1491,6 +1497,12 @@ onUnmounted(() => {
                     used.
                   </div>
                 </div>
+                <span
+                  class="restart-badge"
+                  title="Changes require restarting RepoOS"
+                  aria-label="Restart required"
+                  >restart required</span
+                >
                 <div class="setting-input tunnel-setting-actions">
                   <span class="tunnel-status-chip">{{ storageStatusChip }}</span>
                   <Select
@@ -1514,7 +1526,6 @@ onUnmounted(() => {
                     </SelectContent>
                   </Select>
                 </div>
-                <span class="restart-badge">restart required</span>
               </div>
               <div class="setting-desc" style="padding: 0 0 12px; max-width: 72ch">
                 {{ storageExplanation }}
@@ -1593,6 +1604,13 @@ onUnmounted(() => {
                     <div class="setting-label">{{ f.label }}</div>
                     <div class="setting-desc">{{ f.description }}</div>
                   </div>
+                  <span
+                    v-if="f.restartRequired"
+                    class="restart-badge"
+                    title="Changes require restarting RepoOS"
+                    aria-label="Restart required"
+                    >restart required</span
+                  >
                   <div :data-config-key="f.key" class="setting-input">
                     <Select
                       v-if="f.type === 'select'"
@@ -1618,7 +1636,6 @@ onUnmounted(() => {
                       @update:checked="(v: boolean) => (form[f.key] = v)"
                     />
                   </div>
-                  <span v-if="f.restartRequired" class="restart-badge">restart required</span>
                 </div>
               </template>
             </div>
@@ -1921,6 +1938,12 @@ onUnmounted(() => {
                   Require login to access RepoOS (email OTP or Google OAuth).
                 </div>
               </div>
+              <span
+                class="restart-badge"
+                title="Changes require restarting RepoOS"
+                aria-label="Restart required"
+                >restart required</span
+              >
               <div class="setting-input">
                 <Switch
                   :checked="!!form['auth.enabled']"
@@ -1928,7 +1951,6 @@ onUnmounted(() => {
                   @update:checked="(v: boolean) => (form['auth.enabled'] = v)"
                 />
               </div>
-              <span class="restart-badge">restart required</span>
             </div>
             <div id="setting-auth.sessionMaxAge" class="setting-row">
               <div class="setting-info">
@@ -1937,6 +1959,12 @@ onUnmounted(() => {
                   How long a login session lasts before requiring sign-in again. Default 30 days.
                 </div>
               </div>
+              <span
+                class="restart-badge"
+                title="Changes require restarting RepoOS"
+                aria-label="Restart required"
+                >restart required</span
+              >
               <div class="setting-input">
                 <Input
                   :model-value="sessionMaxAgeDays"
@@ -1947,7 +1975,6 @@ onUnmounted(() => {
                   @update:model-value="(v) => (sessionMaxAgeDays = Number(v))"
                 />
               </div>
-              <span class="restart-badge">restart required</span>
             </div>
           </div>
         </Card>
@@ -1969,6 +1996,13 @@ onUnmounted(() => {
                 <div class="setting-label">{{ f.label }}</div>
                 <div class="setting-desc">{{ f.description }}</div>
               </div>
+              <span
+                v-if="f.restartRequired"
+                class="restart-badge"
+                title="Changes require restarting RepoOS"
+                aria-label="Restart required"
+                >restart required</span
+              >
               <div class="setting-input">
                 <Select
                   v-if="f.type === 'select'"
@@ -1996,7 +2030,6 @@ onUnmounted(() => {
                   @update:model-value="(v) => (form[f.key] = v)"
                 />
               </div>
-              <span v-if="f.restartRequired" class="restart-badge">restart required</span>
             </div>
           </div>
         </Card>
@@ -2029,6 +2062,13 @@ onUnmounted(() => {
                 <div class="setting-label">{{ f.label }}</div>
                 <div class="setting-desc">{{ f.description }}</div>
               </div>
+              <span
+                v-if="f.restartRequired"
+                class="restart-badge"
+                title="Changes require restarting RepoOS"
+                aria-label="Restart required"
+                >restart required</span
+              >
               <div :data-config-key="f.key" class="setting-input">
                 <Input
                   v-if="f.type === 'string'"
@@ -2052,7 +2092,6 @@ onUnmounted(() => {
                   @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
                 />
               </div>
-              <span v-if="f.restartRequired" class="restart-badge">restart required</span>
             </div>
           </div>
         </Card>
