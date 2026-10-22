@@ -11,7 +11,7 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T14:39:11Z"
+updated_at: "2026-10-22T14:49:25Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -53,3 +53,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T14:39:11Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-22T14:39:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T14:39:11Z · message_delivered: 1 message(s)
+- 2026-10-22T14:49:25Z · note: ui verification passed: 1 shot captured with clean console
