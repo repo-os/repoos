@@ -14,7 +14,7 @@ branch: feat/human-assigned-tasks-need-a-real-board-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T19:22:55Z"
-updated_at: "2026-10-22T03:23:56Z"
+updated_at: "2026-10-22T03:36:01Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 review_passes: 2
@@ -95,3 +95,4 @@ Do not start without the human. Related rule in AGENTS.md: needs-human-step task
 - 2026-10-22T03:04:55Z · note: highlight .drawer-human-task matched nothing on /work?task=0908
 - 2026-10-22T03:23:55Z · note: review pass 3: failed — no usable report
 - 2026-10-22T03:23:56Z · needs_input
+- 2026-10-22T03:36:01Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
