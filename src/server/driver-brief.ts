@@ -433,9 +433,9 @@ export async function assembleDriverBrief(deps: DriverBriefDeps): Promise<Driver
         config.localChecks?.maxConcurrent ?? 2,
         config.localChecks?.staleAfterMs,
       ),
-      queue: readQueueMarkers(config.root, config.cacheDir ?? ".repoos").filter(
-        (marker) => marker.kind === "local-check",
-      ),
+      queue: readQueueMarkers(config.root, config.cacheDir ?? ".repoos")
+        .filter((marker) => marker.kind === "local-check")
+        .sort((a, b) => a.position - b.position),
     },
     generatedAt: new Date().toISOString(),
   });

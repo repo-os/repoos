@@ -154,7 +154,10 @@ describe("cross-process local check slots", () => {
     const slot = join(lockRoot, "0");
     mkdirSync(slot, { recursive: true });
     writeFileSync(join(slot, ".holder"), String(process.pid));
-    writeFileSync(join(slot, ".wedged-since"), String(Date.now() - 160_000));
+    writeFileSync(
+      join(slot, ".wedged-since"),
+      String(Number(process.hrtime.bigint() / 1_000_000n) - 160_000),
+    );
     const old = new Date(Date.now() - 240_000);
     utimesSync(slot, old, old);
     expect(inspectCrossProcessSlots(lockRoot)[0]).toMatchObject({ dead: false, wedged: true });

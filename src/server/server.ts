@@ -3645,7 +3645,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         config.localChecks?.maxConcurrent ?? 2,
         config.localChecks?.staleAfterMs,
       ),
-      queue: readQueueMarkers(root, cache).filter((marker) => marker.kind === "local-check"),
+      queue: readQueueMarkers(root, cache)
+        .filter((marker) => marker.kind === "local-check")
+        .sort((a, b) => a.position - b.position),
     });
   });
   router.register(
