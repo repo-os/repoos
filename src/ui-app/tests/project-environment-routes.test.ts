@@ -38,6 +38,7 @@ function makeFixture() {
     let status = 0;
     let payload: unknown;
     let raw = "";
+    const headers: Record<string, string> = {};
     return {
       fake: {
         get status() {
@@ -49,11 +50,18 @@ function makeFixture() {
         get raw() {
           return raw;
         },
+        get headers() {
+          return headers;
+        },
       },
       res: {
-        setHeader() {},
-        writeHead(code: number) {
+        setHeader(name: string, value: string) {
+          headers[name.toLowerCase()] = value;
+        },
+        writeHead(code: number, responseHeaders?: Record<string, string>) {
           status = code;
+          for (const [name, value] of Object.entries(responseHeaders ?? {}))
+            headers[name.toLowerCase()] = value;
         },
         end(value: string) {
           raw = value;
@@ -90,6 +98,7 @@ describe("project environment secret routes", () => {
     root = fx.root;
     const first = fx.response();
     listProjectEnvironmentSecrets(fx.ctx, fx.req(), first.res, { param1: "dev" });
+    expect(first.fake.headers["cache-control"]).toBe("no-store");
     const listing = first.fake.payload as { version: string };
     const sentinel = "FAKE_SENTINEL_0928_NEVER_ECHO";
     const put = fx.response();
@@ -107,6 +116,7 @@ describe("project environment secret routes", () => {
       { param1: "dev" },
     );
     expect(put.fake.status).toBe(200);
+    expect(put.fake.headers["cache-control"]).toBe("no-store");
     const auditText = readFileSync(join(root, ".repoos", "secret-audit.ndjson"), "utf8");
     const secretFree =
       JSON.stringify(put.fake.payload) + JSON.stringify(fx.auth.getAuditLog(20)) + auditText;
@@ -128,9 +138,11 @@ describe("project environment secret routes", () => {
       { param1: "dev" },
     );
     expect(stale.fake.status).toBe(409);
+    expect(stale.fake.headers["cache-control"]).toBe("no-store");
     const reread = fx.response();
     listProjectEnvironmentSecrets(fx.ctx, fx.req(), reread.res, { param1: "dev" });
     expect(JSON.stringify(reread.fake.payload)).not.toContain(sentinel);
+    expect(reread.fake.headers["cache-control"]).toBe("no-store");
   });
 
   it("lists environment metadata and creates an empty ignored source without values", async () => {
@@ -140,6 +152,7 @@ describe("project environment secret routes", () => {
     const list = fx.response();
     listProjectEnvironments(fx.ctx, fx.req(), list.res, {});
     expect(list.fake.status).toBe(200);
+    expect(list.fake.headers["cache-control"]).toBe("no-store");
     expect(JSON.stringify(list.fake.payload)).not.toContain("initial");
     expect(JSON.stringify(list.fake.payload)).toContain("dev");
 
@@ -156,6 +169,23 @@ describe("project environment secret routes", () => {
     const reread = fx.response();
     listProjectEnvironments(fx.ctx, fx.req(), reread.res, {});
     expect(JSON.stringify(reread.fake.payload)).toContain("integration");
+  });
+
+  it("reports public visibility prefixes without returning file values", () => {
+    const fx = makeFixture();
+    root = fx.root;
+    const sentinel = "FAKE_SENTINEL_0932_PUBLIC_VALUE";
+    writeFileSync(join(root, ".env.dev"), `PUBLIC_CLIENT_TOKEN=${sentinel}\nSERVER_TOKEN=server-fake\n`);
+    const response = fx.response();
+    listProjectEnvironmentSecrets(fx.ctx, fx.req(), response.res, { param1: "dev" });
+    expect(response.fake.headers["cache-control"]).toBe("no-store");
+    expect(response.fake.raw).not.toContain(sentinel);
+    expect(response.fake.payload).toMatchObject({
+      keys: [
+        { name: "PUBLIC_CLIENT_TOKEN", visibility: "public", status: "set" },
+        { name: "SERVER_TOKEN", visibility: "server-only", status: "set" },
+      ],
+    });
   });
 
   it("rejects non-admin callers, mismatched origins, and reserved RepoOS keys", async () => {
