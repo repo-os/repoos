@@ -7643,9 +7643,34 @@
   margin-left: auto;
   padding: 8px 10px;
 }
-/* #0750: expanded view — the drawer fills the viewport so the active tab's
-   contents are easier to read. Same shell as the normal drawer, so the tab
-   strip (and this toggle) stays reachable to exit. */
+/* Compact path back to hidden task warnings; it stays in the title row so
+   expanded mode keeps the space it recovers above the tabs. */
+.drawer-hidden-alerts {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--amber) 45%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--amber) 10%, transparent);
+  color: var(--amber);
+  font-size: 11px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.drawer-hidden-alerts:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+.drawer-hidden-alert-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+/* Expanded view fills the viewport and hides the task controls and notices
+   above the tabs. The tab strip remains reachable to collapse the drawer. */
 .drawer-wrap.drawer-fullscreen {
   left: 0;
   width: 100vw !important;
