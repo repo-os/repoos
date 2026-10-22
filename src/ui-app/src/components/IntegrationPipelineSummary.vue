@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useRepoStore } from "../stores/repo";
 import { INTEGRATION_STAGES } from "../types";
 import { formatDuration } from "../lib/time";
+import { api } from "../api";
 
 /**
  * Inline close-out pipeline summary (#0738): active task, stage, and FIFO queue.
@@ -20,6 +21,30 @@ const active = computed(() => snapshot.value?.active ?? null);
 const queue = computed(() => snapshot.value?.queue ?? []);
 const queueDetail = computed(() => snapshot.value?.queueDetail ?? []);
 const showQueue = computed(() => queue.value.length > 0 && !active.value?.failed);
+const localSlots = ref<
+  Array<{
+    slot: number;
+    pid?: number;
+    ageMs: number;
+    heartbeatAgeMs: number;
+    dead: boolean;
+    wedged: boolean;
+    meta?: Record<string, unknown>;
+  }>
+>([]);
+const localQueue = ref<Array<{ taskId: string; position: number; since: string }>>([]);
+async function refreshLocalSlots(): Promise<void> {
+  try {
+    const data = await api<{ holders: typeof localSlots.value; queue?: typeof localQueue.value }>(
+      "/api/local-check-slots",
+    );
+    localSlots.value = data.holders ?? [];
+    localQueue.value = data.queue ?? [];
+  } catch {
+    localSlots.value = [];
+    localQueue.value = [];
+  }
+}
 
 const stageIndex = computed(() => {
   const s = active.value?.stage;
@@ -31,7 +56,11 @@ const stageIndex = computed(() => {
 const now = ref(Date.now());
 let ticker: ReturnType<typeof setInterval> | undefined;
 onMounted(() => {
-  ticker = setInterval(() => (now.value = Date.now()), 1000);
+  void refreshLocalSlots();
+  ticker = setInterval(() => {
+    now.value = Date.now();
+    void refreshLocalSlots();
+  }, 5000);
 });
 onUnmounted(() => {
   if (ticker) clearInterval(ticker);
@@ -115,6 +144,22 @@ function queueWait(ms: number): string {
         >
       </span>
       <span v-for="q in queueDetail.length ? [] : queue" :key="q" class="ips-chip">#{{ q }}</span>
+    </div>
+    <div class="ips-local-slots" aria-label="Local check slots">
+      <strong>Local check slots</strong>
+      <span v-for="holder in localSlots" :key="holder.slot" class="ips-chip">
+        slot {{ holder.slot }} ·
+        <template v-if="holder.pid"
+          >{{ holder.meta?.taskId ? `#${holder.meta.taskId}` : "check" }} PID {{ holder.pid }} ·
+          {{ holder.dead ? "dead, reclaiming" : holder.wedged ? "wedged" : "alive" }} · held
+          {{ formatDuration(holder.ageMs) }} · heartbeat
+          {{ formatDuration(holder.heartbeatAgeMs) }} ago</template
+        ><template v-else>free</template>
+      </span>
+      <span v-for="(queued, index) in localQueue" :key="queued.taskId" class="ips-chip"
+        >queue {{ index + 1 }} · #{{ queued.taskId }} · position {{ queued.position }} ·
+        {{ formatDuration(Math.max(0, now - Date.parse(queued.since))) }} waiting</span
+      >
     </div>
   </section>
 </template>

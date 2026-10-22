@@ -96,7 +96,12 @@ import { fileURLToPath } from "node:url";
 import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import type { MemoryPressureProbe } from "../core/memory-pressure.js";
 import { runnerHealthCheckEnabled } from "../core/resource-limits.js";
-import { inspectCrossProcessSlots, localCheckLockRoot } from "../core/cross-process-slots.js";
+import {
+  inspectCrossProcessSlots,
+  localCheckLockRoot,
+  releaseLocalCheckSlot,
+} from "../core/cross-process-slots.js";
+import { readQueueMarkers } from "../core/local-queue-marker.js";
 import { STATUSES } from "../core/types.js";
 import { shouldRunAutomaticTaskLifecycle } from "./task-transitions.js";
 import { readBuildMeta } from "../core/build.js";
@@ -3637,9 +3642,33 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const cache = config.cacheDir ?? ".repoos";
     return json(res, 200, {
       ok: true,
-      holders: inspectCrossProcessSlots(localCheckLockRoot(root, cache)),
+      holders: inspectCrossProcessSlots(
+        localCheckLockRoot(root, cache),
+        config.localChecks?.maxConcurrent ?? 2,
+        config.localChecks?.staleAfterMs,
+      ),
+      queue: readQueueMarkers(root, cache)
+        .filter((marker) => marker.kind === "local-check")
+        .sort((a, b) => a.position - b.position),
     });
   });
+  router.register(
+    "POST",
+    /^\/api\/local-check-slots\/(\d+)\/release\/(\d+)$/,
+    (_ctx, _req, res, params) => {
+      try {
+        const holder = releaseLocalCheckSlot(
+          localCheckLockRoot(config.root, config.cacheDir ?? ".repoos"),
+          Number(params.param1),
+          Number(params.param2),
+          config.localChecks?.staleAfterMs,
+        );
+        return json(res, 200, { ok: true, released: holder.slot, pid: holder.pid });
+      } catch (error) {
+        return json(res, 409, { error: error instanceof Error ? error.message : String(error) });
+      }
+    },
+  );
   // Durable check-run history across all tasks (#0564) — the Runs tab.
   router.register("GET", "/api/check-runs", getCheckRuns);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);

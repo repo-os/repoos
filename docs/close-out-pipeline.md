@@ -1045,3 +1045,13 @@ the deadline still reaches `runRemotePreReviewGate` in
 Do not skip straight to "the pipeline is broken, let me rewrite it" — nearly every
 failure this session traced back to one of a small number of specific, fixable causes
 above, not a fundamentally broken design.
+# Local check slot recovery
+
+Close-out checks use the machine-wide local check slots. A slot records its
+holder PID, process start identity, and monotonic heartbeat. If the PID exits
+or has been reused, the slot is reclaimed immediately. A live holder becomes
+wedged after `localChecks.staleAfterMs`; after
+`localChecks.reclaimGraceMs`, managed process groups receive SIGTERM and then
+SIGKILL if needed. The Checks page and `repoos checks slots` show slot owners
+and queued checks. A wedged managed holder can be released explicitly after
+confirming its displayed PID.
