@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { createAttentionEventStore } from "../../server/attention-events.js";
 import {
   notifyAttentionAfterSession,
+  notifyAttentionProviderUsageLimit,
   wireAttentionNotifications,
 } from "../../server/attention-notify.js";
 import { DEFAULT_CONFIG } from "../../core/config.js";
@@ -38,5 +39,25 @@ describe("notifyAttentionAfterSession", () => {
       id: "providerFailure:eng:test",
       taskId: "0042",
     });
+  });
+});
+
+describe("notifyAttentionProviderUsageLimit", () => {
+  it("records one stable bell item with the resume command and bumps the feed", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-usage-attention-"));
+    const store = createAttentionEventStore(root);
+    let bumps = 0;
+    wireAttentionNotifications(store, () => {
+      bumps += 1;
+    });
+    notifyAttentionProviderUsageLimit("opencode", "go", "2026-10-22T02:30:00.000Z");
+    expect(store.list()).toHaveLength(1);
+    expect(store.list()[0]).toMatchObject({
+      id: "providerUsageLimit:opencode:go:2026-10-22T02:30:00.000Z",
+      kind: "providerUsageLimit",
+      message: expect.stringContaining("opencode-go out of usage since"),
+      detail: expect.stringContaining("repoos agents resume opencode --model go"),
+    });
+    expect(bumps).toBe(1);
   });
 });

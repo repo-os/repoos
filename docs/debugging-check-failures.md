@@ -259,6 +259,12 @@ resume it there when usage is available, or run
 `repoos agents resume <cli> --model <model>`. If no allowed pair remains, add
 an allowed alternative or resume an existing pair before restarting work.
 
+When the provider gives no reset time, RepoOS sends a low-token availability
+probe every 10 minutes. Probe usage is recorded with session type
+`usage-limit-probe`; a successful reply resumes the pair, while another error
+leaves it paused. The bell records one item for each exhaustion event and
+includes the exact resume command.
+
 The detector recognizes explicit usage/quota limit and HTTP 429 wording from
 the supported CLI output. Generic network errors are still handled by ordinary
 crash recovery. Set `watchdog.autoPauseOnUsageLimit = false` to disable

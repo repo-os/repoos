@@ -289,6 +289,7 @@ import {
 } from "./notifications/index.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
+import { startProviderUsageLimitProbes } from "./provider-usage-limit-probe.js";
 import {
   bootstrapTelegramAtBoot,
   getTelegramProvider,
@@ -2056,6 +2057,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       },
     },
   );
+  const stopProviderUsageLimitProbes = startProviderUsageLimitProbes(config, logger);
 
   // Adopt any agent children that survived a server restart (0214).
   // Reads the durable registry, checks PID aliveness, and re-attaches
@@ -4262,6 +4264,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             });
           }
           clearInterval(systemSampleTimer);
+          stopProviderUsageLimitProbes();
           if (engineerCountTimer) clearInterval(engineerCountTimer);
           if (reapTimer) clearInterval(reapTimer);
           clearInterval(worktreeSweepTimer);

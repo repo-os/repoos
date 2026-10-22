@@ -4,6 +4,7 @@
  */
 import { getRepoOSDb } from "../core/db.js";
 import { isProviderFailureReason } from "../core/attention.js";
+import { detectProviderUsageLimit } from "../core/provider-usage-limit.js";
 import type { RepoOSConfig } from "../core/types.js";
 import type { AttentionEventStore } from "./attention-events.js";
 
@@ -23,6 +24,29 @@ export function notifyAttentionAgentStalled(taskId: string): void {
   bumpAttention?.();
 }
 
+/** One durable bell item per exhausted model pair, even when many tasks fail. */
+export function notifyAttentionProviderUsageLimit(
+  cli: string,
+  model: string,
+  at: string,
+  retryAt?: string,
+): void {
+  if (!attentionEvents) return;
+  const id = `providerUsageLimit:${cli}:${model}:${at}`;
+  const command = `repoos agents resume ${cli} --model ${model}`;
+  const name = `${cli}-${model}`.replace(/\s+/g, "-");
+  const time = new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  attentionEvents.record({
+    id,
+    kind: "providerUsageLimit",
+    taskId: null,
+    message: `${name} out of usage since ${time}`,
+    detail: `${retryAt ? `Provider reset at ${new Date(retryAt).toLocaleString()}. ` : "No reset time was provided. "}Resume with: ${command}`,
+    at,
+  });
+  bumpAttention?.();
+}
+
 /** After a session row is written — provider failures and spend-threshold crossings. */
 export function notifyAttentionAfterSession(
   config: Pick<RepoOSConfig, "root" | "cacheDir" | "attention">,
@@ -35,7 +59,12 @@ export function notifyAttentionAfterSession(
   },
 ): void {
   try {
-    if (opts.status === "errored" && isProviderFailureReason(opts.errorReason) && attentionEvents) {
+    if (
+      opts.status === "errored" &&
+      isProviderFailureReason(opts.errorReason) &&
+      !detectProviderUsageLimit(opts.errorReason ?? "") &&
+      attentionEvents
+    ) {
       attentionEvents.record({
         id: `providerFailure:${opts.sessionId}`,
         kind: "providerFailure",
