@@ -2,7 +2,7 @@
 id: "0929"
 title: Build the Secrets page for project environments
 type: feature
-status: ready
+status: review
 priority: p1
 area: [web, ui]
 story: Secrets and project environments
@@ -13,7 +13,7 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T20:59:37Z"
+updated_at: "2026-10-22T21:13:30Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-22T19:44:36.309Z: repoos check failed: ui verification failed: runner result omitted the UI verification record"
@@ -147,3 +147,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T20:57:29Z · message_queued at 2026-10-22T20:57:29.297Z
 - 2026-10-22T20:59:36Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-22T20:59:37Z · message_delivered: 1 message(s)
+- 2026-10-22T21:13:30Z · status ready→review
