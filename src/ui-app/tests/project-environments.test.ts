@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { loadDotEnv } from "../../core/config";
 import {
   readProjectEnvironment,
   validateEnvironmentRegistry,
@@ -18,8 +19,10 @@ function project(): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-envsets-"));
   roots.push(root);
   execFileSync("git", ["init", "-q"], { cwd: root });
-  writeFileSync(join(root, ".gitignore"), ".env*\n");
+  writeFileSync(join(root, ".gitignore"), ".env*\n!.env.example\n");
+  writeFileSync(join(root, ".env.example"), "EXAMPLE_ONLY=placeholder\n");
   execFileSync("git", ["add", ".gitignore"], { cwd: root });
+  execFileSync("git", ["add", ".env.example"], { cwd: root });
   execFileSync(
     "git",
     ["-c", "user.email=test@example.invalid", "-c", "user.name=Test", "commit", "-qm", "init"],
@@ -50,6 +53,16 @@ describe("explicit project environment files", () => {
     expect(() =>
       validateEnvironmentRegistry({ environments: [{ ...env, id: "../oops" }] }),
     ).toThrow();
+  });
+
+  it("reads tracked .env.example key names without its placeholder values", () => {
+    const root = project();
+    const result = readProjectEnvironment(root, {
+      id: "dev",
+      sources: [{ id: "local", path: ".env.local", examplePath: ".env.example" }],
+    });
+    expect(result.expectedKeys).toEqual(["EXAMPLE_ONLY"]);
+    expect(JSON.stringify(result)).not.toContain("placeholder");
   });
 
   it("round-trips quoted values and preserves comments and unrelated assignments", () => {
@@ -100,16 +113,37 @@ describe("explicit project environment files", () => {
     ).toThrow("Multiline");
     writeFileSync(join(root, "tracked.env"), "A=1\n");
     execFileSync("git", ["add", "tracked.env"], { cwd: root });
-    expect(() =>
-      readProjectEnvironment(root, {
-        id: "dev",
-        sources: [{ id: "tracked", path: "tracked.env" }],
-      }),
-    ).toThrow("Tracked");
+    expect(() => writeProjectEnvironmentValue(root, "tracked.env", "A", "2", hash)).toThrow(
+      "Tracked",
+    );
     mkdirSync(join(root, "safe"));
     symlinkSync(join(root, ".env.dev"), join(root, "safe", "link.env"));
     expect(() =>
       readProjectEnvironment(root, { id: "dev", sources: [{ id: "link", path: "safe/link.env" }] }),
     ).toThrow("symlink");
+  });
+});
+
+describe("legacy dotenv compatibility", () => {
+  it("keeps root .env parsing and process-environment precedence unchanged", () => {
+    const root = project();
+    const keys = [
+      "REPOOS_ENV_LEGACY_PLAIN",
+      "REPOOS_ENV_LEGACY_QUOTED",
+      "REPOOS_ENV_LEGACY_PRESET",
+    ];
+    try {
+      process.env.REPOOS_ENV_LEGACY_PRESET = "from-process";
+      writeFileSync(
+        join(root, ".env"),
+        '# legacy comment\nREPOOS_ENV_LEGACY_PLAIN=from-file\nREPOOS_ENV_LEGACY_QUOTED="two words"\nREPOOS_ENV_LEGACY_PRESET=from-file\n',
+      );
+      loadDotEnv(root);
+      expect(process.env.REPOOS_ENV_LEGACY_PLAIN).toBe("from-file");
+      expect(process.env.REPOOS_ENV_LEGACY_QUOTED).toBe("two words");
+      expect(process.env.REPOOS_ENV_LEGACY_PRESET).toBe("from-process");
+    } finally {
+      for (const key of keys) delete process.env[key];
+    }
   });
 });
