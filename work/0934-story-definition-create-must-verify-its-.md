@@ -2,12 +2,12 @@
 id: "0934"
 title: "Story definition create must verify its commit, retry, and surface a failure (untracked story blocked close-outs)"
 type: bug
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/story-definition-create-must-verify-its-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:40:11Z"
@@ -34,3 +34,4 @@ Same code path pattern in PATCH /api/stories/:key (commitFiles) and the Telegram
 - 2026-10-22T08:40:11Z · created · njachowski@gmail.com
 - 2026-10-22T11:21:07Z · status inbox→ready
 - 2026-10-22T11:21:12Z · cli_override, model_override
+- 2026-10-22T11:21:12Z · status ready→active, branch
