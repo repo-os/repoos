@@ -2,14 +2,14 @@
 id: "0933"
 title: Dead engineer left in the agent registry blocks the reviewer ('agent turn in progress')
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T08:22:48Z"
-updated_at: "2026-10-22T08:22:48Z"
+updated_at: "2026-10-22T10:09:06Z"
 ---
 ## Problem
 2026-10-22: after #0918's engineer was killed by hand (pid 11479), .repoos/agents.json still listed it as a running engineer. The task reached review but no reviewer started for 12 minutes, and 'repoos review again' refused with 'Task #0918 has an agent turn in progress — wait for it to finish'. Recovery needed mv active + pause + a second handoff (another ~13 min).
@@ -27,3 +27,4 @@ Related: #0921 (dead local-check slot holders), #0925 (cancel frees resources), 
 ## Activity
 
 - 2026-10-22T08:22:48Z · created · njachowski@gmail.com
+- 2026-10-22T10:09:06Z · status inbox→ready
