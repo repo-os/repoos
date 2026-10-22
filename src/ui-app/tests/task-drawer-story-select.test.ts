@@ -377,6 +377,16 @@ describe("new task panel story (#0555)", () => {
     document.body.innerHTML = "";
   });
 
+  it("renders the default screenshot picker in both New task modes (#0911)", async () => {
+    await mountNewTask();
+    expect(wrapper!.find(".shot-dropzone").exists()).toBe(true);
+    const manualTab = wrapper!.find(".drawer-tabs .tab-btn:nth-child(2)");
+    expect(manualTab.text()).toContain("Manual");
+    await manualTab.trigger("click");
+    await flush();
+    expect(wrapper!.find(".shot-dropzone").exists()).toBe(true);
+  });
+
   it("shows the preset story as visible text, in one control shared by both modes", async () => {
     await mountNewTask({ story: "Alpha slice" });
 
