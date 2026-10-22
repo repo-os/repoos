@@ -13,7 +13,7 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T18:53:04Z"
+updated_at: "2026-10-22T18:54:28Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 3b3805a62ded3d06e7724a86aa8652e967fcb27e
 ---
@@ -39,27 +39,27 @@ Implement only the user interface and its route/state/tests; consume the metadat
 ```json
 [
 {
-  "label": "Secrets inventory in light theme with missing and inherited keys",
-  "target": "default",
-  "route": "/secrets?fixture=secrets&theme=light",
-  "highlight": ".secrets-rows"
+"label": "Secrets inventory in light theme with missing and inherited keys",
+"target": "default",
+"route": "/secrets?fixture=secrets&theme=light",
+"highlight": ".secrets-rows"
 },
 {
-  "label": "Secrets removal confirmation in dark theme",
-  "target": "default",
-  "route": "/secrets?fixture=secrets&theme=dark",
-  "highlight": ".delete-confirm-modal",
-  "steps": [
-    {
-      "click": ".secrets-remove"
-    }
-  ]
+"label": "Secrets removal confirmation in dark theme",
+"target": "default",
+"route": "/secrets?fixture=secrets&theme=dark",
+"highlight": ".delete-confirm-modal",
+"steps": [
+  {
+    "click": ".secrets-remove"
+  }
+]
 },
 {
-  "label": "Secrets inventory on mobile",
-  "target": "default",
-  "route": "/secrets?fixture=secrets&theme=light",
-  "highlight": ".secrets-head"
+"label": "Secrets inventory on mobile",
+"target": "default",
+"route": "/secrets?fixture=secrets&theme=light",
+"highlight": ".secrets-head"
 }
 ]
 ```
@@ -87,3 +87,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T18:50:53Z · message_queued at 2026-10-22T18:50:53.330Z
 - 2026-10-22T18:52:19Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-22T18:53:04Z · body
+- 2026-10-22T18:54:28Z · body
