@@ -179,7 +179,7 @@ describe("agent start concurrency cap", () => {
   it("removes dead durable engineer entries before they can block a review, while live entries still block", () => {
     const fx = makeFixture();
     const runner = new AgentRunner(config(fx.bin, 1), () => {});
-    const cacheDir = join(fx.bin, "..", ".repoos");
+    const cacheDir = join(fx.bin, ".repoos");
     mkdirSync(cacheDir, { recursive: true });
     const deadWorkdir = fx.workdir("dead");
     const liveWorkdir = fx.workdir("live");
@@ -197,7 +197,7 @@ describe("agent start concurrency cap", () => {
         registryPath,
         JSON.stringify({
           entries: [
-            entry("dead", 2_000_000_000, deadWorkdir),
+            entry("dead", Number.MAX_SAFE_INTEGER, deadWorkdir),
             entry("live", process.pid, liveWorkdir),
           ],
         }),
