@@ -365,6 +365,11 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     minAvailableMemRatio: 0.08,
     maxSwapUsedRatio: 0.5,
     maxCompressorRatio: 0.35,
+    activityWindowSec: 30,
+    maxSwapIoBytesPerSec: 1024 * 1024,
+    maxPageoutBytesPerSec: 256 * 1024,
+    minMemoryFreePercent: 10,
+    maxPsiMemoryAvg10: 25,
   },
   // Attachment storage (#0659): local gitignored `.attachments/` directories by
   // default; opt-in cloud providers must be configured before they take effect.
@@ -2101,6 +2106,36 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     ) {
       cfg.pressureGuard = { ...cfg.pressureGuard, maxCompressorRatio: pgCompressor };
     }
+    const pgWindow = parsed["pressureGuard.activityWindowSec"];
+    if (
+      typeof pgWindow === "number" &&
+      Number.isFinite(pgWindow) &&
+      pgWindow >= 5 &&
+      pgWindow <= 300
+    ) {
+      cfg.pressureGuard = { ...cfg.pressureGuard, activityWindowSec: Math.floor(pgWindow) };
+    }
+    const pgSwapIo = parsed["pressureGuard.maxSwapIoBytesPerSec"];
+    if (typeof pgSwapIo === "number" && Number.isFinite(pgSwapIo) && pgSwapIo > 0) {
+      cfg.pressureGuard = { ...cfg.pressureGuard, maxSwapIoBytesPerSec: pgSwapIo };
+    }
+    const pgPageout = parsed["pressureGuard.maxPageoutBytesPerSec"];
+    if (typeof pgPageout === "number" && Number.isFinite(pgPageout) && pgPageout > 0) {
+      cfg.pressureGuard = { ...cfg.pressureGuard, maxPageoutBytesPerSec: pgPageout };
+    }
+    const pgFreePct = parsed["pressureGuard.minMemoryFreePercent"];
+    if (
+      typeof pgFreePct === "number" &&
+      Number.isFinite(pgFreePct) &&
+      pgFreePct >= 0 &&
+      pgFreePct <= 100
+    ) {
+      cfg.pressureGuard = { ...cfg.pressureGuard, minMemoryFreePercent: pgFreePct };
+    }
+    const pgPsi = parsed["pressureGuard.maxPsiMemoryAvg10"];
+    if (typeof pgPsi === "number" && Number.isFinite(pgPsi) && pgPsi > 0 && pgPsi <= 100) {
+      cfg.pressureGuard = { ...cfg.pressureGuard, maxPsiMemoryAvg10: pgPsi };
+    }
 
     // [closeOut] section — wall-clock budget for one Move-to-done attempt
     // (#0573). Invalid/negative values are clamped back to the default with a
@@ -3111,7 +3146,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: true,
       description:
-        "When memory pressure (swap use, compressor size, reclaimable memory) or load is high, delay new local checks, browser steps and engineer starts until the machine has headroom instead of piling on.",
+        "When paging activity, reclaimable memory, or load is high, delay new local checks, browser steps and engineer starts until the machine has headroom instead of piling on.",
     },
     {
       key: "pressureGuard.maxLoadPerCpu",
@@ -3141,7 +3176,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: 0.5,
       description:
-        "Block new work when swap in use exceeds this fraction of total swap. This is the primary signal on macOS, where a thrashing machine shows full swap while CPU sits idle. Default 0.5 (50%).",
+        "Warn when swap in use exceeds this fraction of total swap (occupancy alone does not block). Default 0.5 (50%).",
     },
     {
       key: "pressureGuard.maxCompressorRatio",
@@ -3151,7 +3186,57 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: 0.35,
       description:
-        "Block new work when the macOS memory compressor holds more than this fraction of total RAM. Default 0.35 (35%).",
+        "Warn when the macOS memory compressor holds more than this fraction of total RAM (occupancy alone does not block). Default 0.35 (35%).",
+    },
+    {
+      key: "pressureGuard.activityWindowSec",
+      label: "Pressure guard: activity window (seconds)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 30,
+      description:
+        "Rolling window for swap I/O and pageout rates from vm_stat or /proc/vmstat. Default 30.",
+    },
+    {
+      key: "pressureGuard.maxSwapIoBytesPerSec",
+      label: "Pressure guard: max swap I/O (bytes/s)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 1048576,
+      description:
+        "Block new work when sustained swap in+out over the activity window exceeds this rate. Default 1048576 (1 MiB/s).",
+    },
+    {
+      key: "pressureGuard.maxPageoutBytesPerSec",
+      label: "Pressure guard: max pageout rate (bytes/s)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 262144,
+      description:
+        "Block new work when sustained pageouts over the activity window exceed this rate. Default 262144 (256 KiB/s).",
+    },
+    {
+      key: "pressureGuard.minMemoryFreePercent",
+      label: "Pressure guard: minimum memory free %",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 10,
+      description:
+        "Block when macOS memory_pressure reports system-wide free memory below this percentage. Default 10.",
+    },
+    {
+      key: "pressureGuard.maxPsiMemoryAvg10",
+      label: "Pressure guard: max Linux PSI memory avg10",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 25,
+      description:
+        "Block when Linux /proc/pressure/memory some avg10 exceeds this value (0–100). Default 25.",
     },
     {
       key: "localChecks.queueTimeoutMs",
@@ -3844,6 +3929,11 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "pressureGuard.minAvailableMemRatio",
   "pressureGuard.maxSwapUsedRatio",
   "pressureGuard.maxCompressorRatio",
+  "pressureGuard.activityWindowSec",
+  "pressureGuard.maxSwapIoBytesPerSec",
+  "pressureGuard.maxPageoutBytesPerSec",
+  "pressureGuard.minMemoryFreePercent",
+  "pressureGuard.maxPsiMemoryAvg10",
   "watchdog.enabled",
   "watchdog.stalenessMs",
   "watchdog.autoTransition",

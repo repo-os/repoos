@@ -110,15 +110,21 @@ function pressureNumbers(h: RemoteHostStatusView): string {
   if (h.pressure?.availableMemRatio != null) {
     parts.push(`${Math.round(h.pressure.availableMemRatio * 100)}% memory available`);
   }
+  if (h.pressure?.compressorRatio != null) {
+    parts.push(`compressor ${Math.round(h.pressure.compressorRatio * 100)}% of RAM`);
+  }
+  if (h.pressure?.psiMemoryAvg10 != null) {
+    parts.push(`PSI ${h.pressure.psiMemoryAvg10.toFixed(1)}% avg10`);
+  }
   return parts.join(", ");
 }
 
 function pressureLimit(h: RemoteHostStatusView): string {
   const t = h.pressureThresholds;
   if (!t) return "";
-  return `limits: swap ${Math.round(t.maxSwapUsedRatio * 100)}%, memory ${Math.round(
+  return `warn above ${Math.round(t.maxSwapUsedRatio * 100)}% swap use · hold below ${Math.round(
     t.minAvailableMemRatio * 100,
-  )}%`;
+  )}% memory available`;
 }
 
 async function moveHost(index: number, offset: -1 | 1): Promise<void> {

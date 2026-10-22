@@ -1086,6 +1086,8 @@ export interface RemoteHostStatusView {
     availableMemRatio: number | null;
     totalMemBytes: number | null;
     compressorBytes: number | null;
+    compressorRatio?: number | null;
+    psiMemoryAvg10?: number | null;
     reason: string | null;
     fix: string | null;
     recheckCommand: string;
@@ -1097,6 +1099,11 @@ export interface RemoteHostStatusView {
     minAvailableMemRatio: number;
     maxSwapUsedRatio: number;
     maxCompressorRatio: number;
+    activityWindowSec: number;
+    maxSwapIoBytesPerSec: number;
+    maxPageoutBytesPerSec: number;
+    minMemoryFreePercent: number;
+    maxPsiMemoryAvg10: number;
   };
 }
 
@@ -1860,7 +1867,7 @@ export interface SystemStats {
   at: string;
 }
 
-/** Mirrors `src/core/pressure-guard.ts` (#0871). */
+/** Mirrors `src/core/pressure-guard.ts` (#0871, #0918). */
 export interface PressureSnapshot {
   level: "normal" | "warning" | "critical";
   availableMemRatio: number;
@@ -1872,6 +1879,10 @@ export interface PressureSnapshot {
   compressorRatio: number | null;
   memoryFreePercent: number | null;
   totalMemBytes: number;
+  swapIoBytesPerSec: number | null;
+  pageoutBytesPerSec: number | null;
+  activityWindowSec: number | null;
+  psiMemoryAvg10: number | null;
   source: "memory" | "load";
   reasons: string[];
   warnings: string[];

@@ -1,0 +1,38 @@
+---
+id: "0928"
+title: Add project secret management API and CLI
+type: feature
+status: inbox
+human_step_decision: agent
+human_step_decision_key: 10dfc9f8
+priority: p1
+area: [core, server, cli]
+story: Secrets and project environments
+depends_on: ["0927"]
+assigned_to: ai
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-22T08:06:03Z"
+updated_at: "2026-10-22T08:06:08Z"
+---
+## Problem
+The environment storage foundation in #0927 does not yet let an authorized user inspect or change project environment entries. Without an authenticated management surface, project values risk leaking through responses, logs, errors, or RepoOS internal credential settings.
+
+## Desired UX
+An authorized user can list environment/key metadata and explicitly add, replace, or remove a project value without ever reading an existing value back. The CLI lists metadata and accepts a new value from stdin or an interactive prompt, never from a command-line argument. Existing RepoOS provider/auth credentials keep their dedicated flows.
+
+## Acceptance criteria
+- Add authenticated, authorized server routes to list environment metadata and explicitly add, replace, and delete project entries using the storage primitives from #0927.
+- Metadata responses contain key names, status, source, visibility, and non-sensitive concurrency information only; there is no reveal or recoverable-value response.
+- Enforce role checks, origin/CSRF protection consistent with existing routes, no-store responses, and value-safe handling for errors, logs, audit events, and streamed events. Audit actor, environment, key name, action, and time without the value.
+- Reserve internal RepoOS credential names from arbitrary project writes; keep existing fixed provider key names and dedicated save routes unchanged.
+- Add CLI metadata listing and stdin/interactive add/replace/delete flows; do not accept secret values as flags or print them.
+- Tests use unique fake sentinel values and assert they do not appear in response bodies, logs, emitted events, error text, or audit records; cover denial, CSRF/origin rejection, stale edits, and successful metadata mutations.
+- No real secret, live account, or additional runtime dependency is required.
+
+## Notes for AI
+Build on the authentication/authorization, route, audit, and CLI patterns already in src/server and src/commands. Depends directly on #0927 for validated environment metadata and safe file operations. Do not implement the Secrets page or child-process environment binding here. Keep RepoOS infrastructure/provider credentials distinct from project-selected values and update directly affected API/security docs.
+
+## Activity
+
+- 2026-10-22T08:06:03Z · created · njachowski@gmail.com

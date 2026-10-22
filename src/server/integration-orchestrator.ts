@@ -822,7 +822,13 @@ export function runProcess(
   },
 ): Promise<ProcessRunResult> {
   return new Promise((resolve) => {
-    const child = spawn(cmd, args, { cwd: opts.cwd, env: opts.env });
+    // Own a process group so cancelling a CLI also stops its test/build workers.
+    // Negative-PID signals address only this detached child group.
+    const child = spawn(cmd, args, {
+      cwd: opts.cwd,
+      env: opts.env,
+      detached: process.platform !== "win32",
+    });
     const effectiveTimeout =
       opts.deadlineAt !== undefined
         ? Math.min(opts.timeout, Math.max(0, opts.deadlineAt - Date.now()))
@@ -835,12 +841,53 @@ export function runProcess(
     let settled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let cancelPoll: ReturnType<typeof setInterval> | undefined;
+    let killTimer: ReturnType<typeof setTimeout> | undefined;
+    let groupPoll: ReturnType<typeof setInterval> | undefined;
+    let childClosed = false;
+    let terminationStarted = false;
+    let terminationAt = 0;
+
+    const signalTree = (signal: NodeJS.Signals): void => {
+      if (child.pid === undefined) return;
+      try {
+        if (process.platform !== "win32") process.kill(-child.pid, signal);
+        else child.kill(signal);
+      } catch {
+        /* process group already exited */
+      }
+    };
+
+    const groupAlive = (): boolean => {
+      if (child.pid === undefined) return false;
+      if (process.platform === "win32") return !childClosed;
+      try {
+        process.kill(-child.pid, 0);
+        return true;
+      } catch (error) {
+        return (error as NodeJS.ErrnoException).code === "EPERM";
+      }
+    };
+
+    const terminateTree = (wasCancelled: boolean): void => {
+      if (terminationStarted) return;
+      terminationStarted = true;
+      terminationAt = Date.now();
+      cancelled = wasCancelled;
+      signalTree("SIGTERM");
+      // Do not clear this when the direct child exits: its descendants may
+      // ignore SIGTERM and still hold the candidate worktree/check slot.
+      killTimer = setTimeout(() => signalTree("SIGKILL"), 1500);
+    };
 
     const finish = (status: number | null): void => {
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
       if (cancelPoll) clearInterval(cancelPoll);
+      if (groupPoll) clearInterval(groupPoll);
+      // finish() is reached only once the direct child and its process group
+      // are gone (or spawn failed), so no later signal can hit a reused PID.
+      if (killTimer) clearTimeout(killTimer);
       resolve({ status, stdout, stderr, timedOut, errorCode, cancelled });
     };
 
@@ -858,20 +905,34 @@ export function runProcess(
       errorCode = err.code;
       finish(null);
     });
-    child.on("close", (code: number | null) => finish(code));
+    child.on("close", (code: number | null) => {
+      childClosed = true;
+      if (!terminationStarted || !groupAlive()) {
+        finish(code);
+        return;
+      }
+      groupPoll = setInterval(() => {
+        if (!groupAlive()) finish(code);
+        else if (Date.now() - terminationAt > 5000) {
+          // Last bounded cleanup attempt. Keep the cancel request pending
+          // until the process group can no longer hold resources.
+          signalTree("SIGKILL");
+        }
+      }, 100);
+    });
 
     if (opts.isCancelled) {
       cancelPoll = setInterval(() => {
         if (opts.isCancelled!()) {
-          cancelled = true;
-          child.kill("SIGKILL");
+          terminateTree(true);
+          if (cancelPoll) clearInterval(cancelPoll);
         }
       }, 400);
     }
 
     timer = setTimeout(() => {
       timedOut = true;
-      child.kill("SIGKILL");
+      terminateTree(false);
     }, effectiveTimeout);
   });
 }
@@ -3101,6 +3162,10 @@ export class CloseOutOrchestrator {
           REPOOS_CHECK_TASK_ID: job.taskId,
           REPOOS_CHECK_PHASE: "close-out",
           REPOOS_CHECK_STORE_ROOT: this.config.root,
+          // The close-out child is detached by runProcess; persist that fact
+          // in its local slot so a later sweep can reap its whole group if the
+          // candidate directory vanished during an interrupted shutdown.
+          REPOOS_CHECK_PROCESS_GROUP: "1",
         };
         const baseCheckArgs = spawnedRepoosCheckArgs(this.config, remoteGateOutcome);
         // #0724: a scoped run drops `--changed` for its fallback full pass; a

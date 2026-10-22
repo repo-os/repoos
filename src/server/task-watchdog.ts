@@ -90,7 +90,7 @@ import {
 } from "./handoff-failure-loop.js";
 
 const DEFAULT_STALENESS_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
-const WATCHDOG_INTERVAL_MS = 60 * 1000; // Check every 1 minute
+const WATCHDOG_INTERVAL_MS = 15 * 1000; // Reconcile agent liveness and scan tasks every 15 seconds
 
 /** Activity-log marker the watchdog writes/reads to bound surfacing once. */
 const SURFACED_ACTIVITY = /watchdog: auto-surfaced stuck task/;
@@ -527,6 +527,7 @@ export class TaskWatchdog {
     );
     this.lastWatchdogTickMs = wallNow;
     try {
+      this.runner.reconcileDeadAgents?.();
       // The `active` status is scanned for the dead/stalled ENGINEER shape
       // (#0180). The `review` status is scanned too (#0286): a task whose
       // REVIEWER session died silently sits in `review` forever with no report

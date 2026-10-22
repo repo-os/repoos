@@ -3,10 +3,10 @@
  *
  * Load average alone is a poor pressure signal on a thrashing machine: threads
  * pile up waiting on swap while the CPU sits idle, and the number says nothing
- * about the cause. Swap use and the macOS memory compressor measure the thing
- * that actually hurts — the OS reclaiming pages under duress — so they are the
- * primary inputs. Where those readings are unavailable (Linux without swap,
- * Windows) the caller falls back to load average.
+ * about the cause. Paging activity, low reclaimable memory, macOS pressure
+ * state and Linux PSI indicate the machine paying a memory cost. Swap use and
+ * the macOS compressor pool are advisory occupancy signals. If the platform
+ * has no usable memory signals, the caller falls back to load average.
  *
  * Every external command is optional and failure-tolerant: a missing tool must
  * degrade the signal, never break a start or a stats sample.
@@ -16,6 +16,8 @@ import { readFileSync } from "node:fs";
 import { cpus, loadavg, platform, totalmem } from "node:os";
 import { availableMemBytes } from "./sysmem.js";
 
+import type { MemoryPressureVmLevel } from "./memory-activity.js";
+
 export interface MemoryStatsReadings {
   swapUsedBytes: number | null;
   swapTotalBytes: number | null;
@@ -24,6 +26,14 @@ export interface MemoryStatsReadings {
   memoryFreePercent: number | null;
   /** True when the platform probe returned a usable swap/compressor reading. */
   memoryStatsAvailable: boolean;
+  /** Combined swap-in/out bytes per second over the activity window (#0918). */
+  swapIoBytesPerSec?: number | null;
+  pageoutBytesPerSec?: number | null;
+  activityWindowSec?: number | null;
+  /** macOS sysctl memory pressure level when sampled (#0918). */
+  memoryPressureLevel?: MemoryPressureVmLevel | null;
+  /** Linux PSI memory `avg10` (0–100), when `/proc/pressure/memory` exists. */
+  psiMemoryAvg10?: number | null;
 }
 
 export interface MemoryReadings extends MemoryStatsReadings {
@@ -37,7 +47,9 @@ export interface MemoryPressureProbe {
   read(): MemoryReadings;
 }
 
-function run(cmd: string, args: string[]): string | null {
+export type MemoryCommandRunner = (cmd: string, args: string[]) => string | null;
+
+export function runMemoryPressureCommand(cmd: string, args: string[]): string | null {
   try {
     return execFileSync(cmd, args, {
       encoding: "utf8",
@@ -100,14 +112,14 @@ export function parseLinuxSwap(meminfo: string): { usedBytes: number; totalBytes
  */
 export function readPlatformMemoryStats(
   p: NodeJS.Platform = platform(),
-  runCommand: (cmd: string, args: string[]) => string | null = run,
+  runCommand: MemoryCommandRunner = runMemoryPressureCommand,
 ): MemoryStatsReadings {
   if (p === "darwin") {
     const swap = runCommand("vm.swapusage", []);
     const swapParsed = swap ? parseSwapUsage(swap) : null;
     const vmStat = runCommand("vm_stat", []);
     const compressorBytes = vmStat ? parseVmStatCompressor(vmStat) : null;
-    const pressure = runCommand("memory_pressure", []);
+    const pressure = runCommand("memory_pressure", ["-Q"]);
     const memoryFreePercent = pressure ? parseMemoryPressureFreePercent(pressure) : null;
     const available = Boolean(swapParsed) || compressorBytes !== null;
     return {
@@ -144,7 +156,9 @@ export function readPlatformMemoryStats(
 }
 
 /** Real machine probe. Exported for composition, not for tests to call. */
-export function systemMemoryPressureProbe(): MemoryPressureProbe {
+export function systemMemoryPressureProbe(
+  runCommand: MemoryCommandRunner = runMemoryPressureCommand,
+): MemoryPressureProbe {
   return {
     read() {
       const totalMemBytes = totalmem();
@@ -152,7 +166,7 @@ export function systemMemoryPressureProbe(): MemoryPressureProbe {
       const load = loadavg()[0] ?? 0;
       const available = Math.max(availableMemBytes(), 0);
       return {
-        ...readPlatformMemoryStats(),
+        ...readPlatformMemoryStats(platform(), runCommand),
         loadPerCpu: load / cpuCount,
         availableMemRatio: totalMemBytes > 0 ? available / totalMemBytes : 1,
         totalMemBytes,
@@ -162,9 +176,10 @@ export function systemMemoryPressureProbe(): MemoryPressureProbe {
 }
 
 export function sampleMemoryReadings(
-  probe: MemoryPressureProbe = systemMemoryPressureProbe(),
+  probe?: MemoryPressureProbe,
+  runCommand: MemoryCommandRunner = runMemoryPressureCommand,
 ): MemoryReadings {
-  const r = probe.read();
+  const r = (probe ?? systemMemoryPressureProbe(runCommand)).read();
   return {
     ...r,
     totalMemBytes: Math.max(0, r.totalMemBytes),
