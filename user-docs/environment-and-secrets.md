@@ -50,6 +50,26 @@ only. File writes preserve unrelated lines and comments, use a stale-content
 check, and reject tracked, unsafe, or symlinked destinations. The existing
 startup loader remains unchanged for projects that have not opted in.
 
+Register environments in `.repoos/environments.json`, for example:
+
+```json
+{
+  "environments": [{
+    "id": "dev",
+    "sources": [{ "id": "local", "path": ".env.dev", "examplePath": ".env.example" }]
+  }]
+}
+```
+
+`repoos secrets list dev` shows key names, set/missing status, source,
+visibility, and a content version for safe concurrent edits. Use
+`repoos secrets add|replace|delete dev KEY`; add and replace read the value
+from stdin or a hidden terminal prompt. Values are never returned by the API
+or printed by the CLI. Management endpoints require an authenticated admin,
+reject mismatched browser origins, and write value-free audit entries to
+`.repoos/secret-audit.ndjson`. Fixed RepoOS credentials remain managed through
+their dedicated settings and provider routes.
+
 Use a gitignored `.env` at the repository root for secrets that belong to this
 codebase. It is the right home for provider keys and session secrets that should
 vary between repos.

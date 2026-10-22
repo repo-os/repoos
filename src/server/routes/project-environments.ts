@@ -1,0 +1,79 @@
+import { existsSync, readFileSync, appendFileSync, mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { readProjectEnvironment, validateEnvironmentRegistry, writeProjectEnvironmentValue } from "../../core/project-environments.js";
+import { requireAdmin } from "./auth.js";
+import { json, readBody } from "./utils.js";
+import type { RouteHandler } from "./types.js";
+
+const registryPath = ".repoos/environments.json";
+const internalNames = new Set(["OPENAI_API_KEY", "GROQ_API_KEY"]);
+
+function registry(root: string) {
+  const path = join(root, registryPath);
+  if (!existsSync(path)) return { environments: [] };
+  return validateEnvironmentRegistry(JSON.parse(readFileSync(path, "utf8")));
+}
+function send(res: Parameters<RouteHandler>[2], status: number, body: unknown) {
+  res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+  res.end(JSON.stringify(body));
+}
+function originAllowed(req: Parameters<RouteHandler>[1]) {
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  try {
+    const parsed = new URL(origin);
+    const host = req.headers.host;
+    const proto = req.headers["x-forwarded-proto"] ?? "http";
+    return !!host && parsed.host.toLowerCase() === host.toLowerCase() && parsed.protocol === `${proto}:`;
+  } catch { return false; }
+}
+function audit(root: string, actor: string, environment: string, key: string, action: string) {
+  const path = join(root, ".repoos", "secret-audit.ndjson");
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+  appendFileSync(path, `${JSON.stringify({ actor, environment, key, action, at: new Date().toISOString() })}\n`, { mode: 0o600 });
+}
+function resolveEnv(root: string, id: string) { return registry(root).environments.find((env) => env.id === id); }
+
+export const listProjectEnvironmentSecrets: RouteHandler = (ctx, req, res, params) => {
+  res.setHeader("Cache-Control", "no-store");
+  const user = requireAdmin(req, ctx.config, res); if (!user) return;
+  if (!originAllowed(req)) return send(res, 403, { error: "Request origin rejected" });
+  try {
+    const env = resolveEnv(ctx.config.root, params.param1 ?? "");
+    if (!env) return send(res, 404, { error: "Unknown project environment" });
+    const snapshot = readProjectEnvironment(ctx.config.root, env);
+    const keys = [...new Set([...snapshot.keys, ...snapshot.expectedKeys])].sort().map((name) => ({
+      name, status: snapshot.keys.includes(name) ? "set" : "missing", source: snapshot.source,
+      visibility: "server-only", version: snapshot.sha256,
+    }));
+    return send(res, 200, { environment: env.id, version: snapshot.sha256, keys });
+  } catch { return send(res, 400, { error: "Could not read project environment metadata" }); }
+};
+
+export const mutateProjectEnvironmentSecret: RouteHandler = async (ctx, req, res, params) => {
+  res.setHeader("Cache-Control", "no-store");
+  const user = requireAdmin(req, ctx.config, res); if (!user) return;
+  if (!originAllowed(req)) return send(res, 403, { error: "Request origin rejected" });
+  const body = await readBody(req) as { key?: unknown; value?: unknown; version?: unknown; action?: unknown };
+  const key = typeof body.key === "string" ? body.key : "";
+  const action = body.action;
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || key.startsWith("REPOOS_") || internalNames.has(key)) return send(res, 400, { error: "Reserved or invalid project key" });
+  if (!(action === "add" || action === "replace" || action === "delete")) return send(res, 400, { error: "Invalid action" });
+  if (action !== "delete" && typeof body.value !== "string") return send(res, 400, { error: "A value is required" });
+  if (typeof body.version !== "string") return send(res, 400, { error: "A metadata version is required" });
+  try {
+    const env = resolveEnv(ctx.config.root, params.param1 ?? "");
+    if (!env) return send(res, 404, { error: "Unknown project environment" });
+    const snapshot = readProjectEnvironment(ctx.config.root, env);
+    const exists = snapshot.keys.includes(key);
+    if ((action === "add" && exists) || (action === "replace" && !exists)) return send(res, 409, { error: "Key status changed; reload metadata" });
+    const source = env.sources[env.sources.length - 1];
+    const version = writeProjectEnvironmentValue(ctx.config.root, source.path, key, action === "delete" ? null : body.value as string, body.version);
+    audit(ctx.config.root, user.email, env.id, key, action);
+    return send(res, 200, { ok: true, environment: env.id, key, status: action === "delete" ? "missing" : "set", version });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "write failed";
+    if (message.includes("changed since")) return send(res, 409, { error: "Environment source changed; reload metadata" });
+    return send(res, 400, { error: "Could not update project environment" });
+  }
+};

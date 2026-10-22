@@ -4,6 +4,7 @@
  * Dependency-free arg routing — no commander/yargs needed for Stage 1.
  */
 import { cmdInit } from "../commands/init.js";
+import { cmdSecrets } from "../commands/secrets.js";
 import {
   cmdList,
   cmdShow,
@@ -185,6 +186,9 @@ function main(): void {
       break;
     case "support":
       void cmdSupport(rest);
+      break;
+    case "secrets":
+      void cmdSecrets(rest).then((code) => { if (code !== 0) process.exitCode = code; });
       break;
     case "show":
     case "cat":
