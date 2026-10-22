@@ -51,3 +51,4 @@ Do not start without the human. Related rule in AGENTS.md: needs-human-step task
 - 2026-10-22T02:22:33Z · body
 - 2026-10-22T02:22:33Z · body
 - 2026-10-22T02:34:08Z · status active→review
+- 2026-10-22T02:34:08Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d382e7a76) during finalization (#0734)
