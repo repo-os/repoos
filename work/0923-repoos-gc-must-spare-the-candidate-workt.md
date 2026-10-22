@@ -8,8 +8,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-22T06:06:09Z"
-updated_at: "2026-10-22T11:07:01Z"
+updated_at: "2026-10-22T11:07:05Z"
 ---
 ## Problem
 The CLI `repoos gc` (src/commands/gc.ts cmdGc) calls sweepStaleWorktrees without `activeJobIds`, so src/core/worktree-gc.ts removes every repoos/integrate/<id> candidate worktree, including one whose close-out is queued, running or recovering. Only the boot sweep passes activeJobIds. Incident 2026-10-22: Nick ran `repoos gc` while #0909's close-out was validating; its candidate worktree was deleted under the running test step, leaving an orphaned check process and a close-out that could never finish until it was cancelled.
@@ -34,3 +36,4 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 - 2026-10-22T06:06:09Z · created · njachowski@gmail.com
 - 2026-10-22T06:08:22Z · body: Desired UX (added 5, removed 1)
 - 2026-10-22T11:07:01Z · status inbox→ready
+- 2026-10-22T11:07:05Z · cli_override, model_override
