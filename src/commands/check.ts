@@ -62,6 +62,7 @@ import {
 } from "../core/check-runner.js";
 import { formatFixCommand } from "../core/check-format.js";
 import { writeCheckRun } from "../core/check-results-store.js";
+import { buildProjectConsumerEnv } from "../core/project-environments.js";
 import { extractFailedTests } from "../core/check-failure-summary.js";
 import {
   resolveCheckRunAttribution,
@@ -1074,6 +1075,7 @@ interface PkgJson {
 /** Everything one step needs to run: repo root, its own cwd, config, manifest. */
 interface StepContext {
   repoRoot: string;
+  env: NodeJS.ProcessEnv;
   /** Absolute working directory for this step. */
   cwd: string;
   cfg: RepoOSConfig;
@@ -1176,6 +1178,7 @@ async function runScript(
     command,
     cwd: ctx.cwd,
     timeoutMs: opts.timeoutMs,
+    env: ctx.env,
     echo: opts.echo,
   });
   if (res.status === "passed") return { status: "passed", command, output: res.output };
@@ -1216,7 +1219,13 @@ async function stepLockfileSync(ctx: StepContext): Promise<BuiltinOutcome> {
   // Bun repo, and the step is already skipping.
   const blocked = prereqs(ctx, ["bun"]);
   if (blocked) return { ...blocked, command };
-  const res = await runCommand({ command, cwd: ctx.cwd, timeoutMs: 60_000, echo: false });
+  const res = await runCommand({
+    command,
+    cwd: ctx.cwd,
+    timeoutMs: 60_000,
+    env: ctx.env,
+    echo: false,
+  });
   if (res.status === "passed") return { status: "passed", command };
   if (res.status === "timeout") {
     return { status: "timeout", command, detail: "timed out after 60s", output: res.output };
@@ -1577,8 +1586,8 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
   const blocked = prereqs(ctx, [runner]);
   if (blocked) return { ...blocked, command };
 
-  const workers = hasTestScript ? testPoolSize(process.env) : undefined;
-  const env = workers ? { ...process.env, REPOOS_TEST_WORKERS: String(workers) } : process.env;
+  const workers = hasTestScript ? testPoolSize(ctx.env) : undefined;
+  const env = workers ? { ...ctx.env, REPOOS_TEST_WORKERS: String(workers) } : ctx.env;
 
   // Failed-first (#0655): re-run the files that failed last time before paying
   // for the whole suite. This is an ordering optimisation, never a skip — if
@@ -1654,7 +1663,7 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
 }
 
 async function stepUiSmoke(ctx: StepContext): Promise<BuiltinOutcome> {
-  if (localBrowserGateOffloaded(process.env)) {
+  if (localBrowserGateOffloaded(ctx.env)) {
     return skipped(browserGateOffloadSkipDetail("ui-smoke"));
   }
   const smoke = resolveSmokeCommand(ctx.cfg.check?.uiSmoke, ctx.scriptPkg.scripts);
@@ -1669,7 +1678,7 @@ async function stepUiSmoke(ctx: StepContext): Promise<BuiltinOutcome> {
     smoke.source === "config" ? "repoos.toml [check] uiSmoke" : "package.json smoke script";
   const blocked = prereqs(ctx, smoke.source === "config" ? [] : [runner]);
   if (blocked) return { ...blocked, command };
-  const res = await runCommand({ command, cwd: ctx.cwd, timeoutMs: 300_000 });
+  const res = await runCommand({ command, cwd: ctx.cwd, timeoutMs: 300_000, env: ctx.env });
   if (res.status === "passed") return { status: "passed", command, detail: `ran ${origin}` };
   if (res.status === "timeout") {
     return { status: "timeout", command, detail: "timed out after 300s", output: res.output };
@@ -1700,6 +1709,7 @@ const BUILTIN_HANDLERS: Record<BuiltinCheckKind, (ctx: StepContext) => Promise<B
         command: ctx.fixCommand,
         cwd: ctx.cwd,
         timeoutMs: 120_000,
+        env: ctx.env,
         echo: false,
       });
       if (fix.status !== "passed") {
@@ -1838,6 +1848,8 @@ function statusDetail(r: StepRunResult): string {
 
 export interface RunPlanOptions {
   repoRoot: string;
+  /** Child-only environment for check steps. */
+  env?: NodeJS.ProcessEnv;
   /** Config for the repo; loaded here when not supplied. */
   cfg?: RepoOSConfig;
   profile?: string;
@@ -1893,6 +1905,9 @@ export async function runCheckPlan(
 ): Promise<StepRunResult[]> {
   const { repoRoot } = opts;
   const cfg = opts.cfg ?? loadConfig(repoRoot);
+  const env =
+    opts.env ??
+    buildProjectConsumerEnv(resolveCheckStoreRoot(repoRoot), "check:default", process.env);
   const pkg = readPkg(repoRoot);
   const selected = selectSteps(plan, {
     profile: opts.profile,
@@ -1936,7 +1951,7 @@ export async function runCheckPlan(
       continue;
     }
 
-    if (localBrowserGateOffloaded(process.env) && isBrowserGateStepName(step.name)) {
+    if (localBrowserGateOffloaded(env) && isBrowserGateStepName(step.name)) {
       push({
         name: step.name,
         status: "skipped",
@@ -1966,6 +1981,7 @@ export async function runCheckPlan(
       // on a missing tool (see `prereqs`).
       outcome = await BUILTIN_HANDLERS[step.kind]({
         repoRoot,
+        env,
         cwd,
         cfg,
         pkg,
@@ -1984,7 +2000,12 @@ export async function runCheckPlan(
         detail: prereqDetail(missingBinaries(step.requires)),
       };
     } else {
-      const res = await runCommand({ command: step.command ?? "", cwd, timeoutMs: step.timeoutMs });
+      const res = await runCommand({
+        command: step.command ?? "",
+        cwd,
+        timeoutMs: step.timeoutMs,
+        env,
+      });
       outcome = {
         status:
           res.status === "passed" ? "passed" : res.status === "timeout" ? "timeout" : "failed",
@@ -2027,6 +2048,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   // would then record into this repo's live store instead of their own tmp ones.
   const checkStoreRoot = resolveCheckStoreRoot(repoRoot);
   const cfg = loadConfig(repoRoot);
+  const checkEnv = buildProjectConsumerEnv(checkStoreRoot, "check:default", process.env);
   // One validated attribution for the WHOLE run (#0870): the history rows, the
   // failed-first preflight, and the remote dispatch all use this instead of
   // reading REPOOS_TASK_ID directly, so an inherited id from another project
@@ -2399,6 +2421,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   try {
     results = await runCheckPlan(plan, {
       repoRoot,
+      env: checkEnv,
       cfg,
       profile,
       // Narrowed above after the null check; `?? undefined` keeps the types

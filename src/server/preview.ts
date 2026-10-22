@@ -21,6 +21,10 @@ import { createServer as createTcpServer } from "node:net";
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
+import {
+  buildProjectConsumerEnv,
+  projectEnvironmentConsumer,
+} from "../core/project-environments.js";
 import { parseTaskAreas } from "../core/areas.js";
 import { readPreviewOverlayKeys } from "../core/config.js";
 import { servicePortToken, expandServiceRefs } from "../core/dev-targets.js";
@@ -1352,7 +1356,14 @@ export class PreviewManager {
           shell: true,
           detached: processGroup,
           stdio: ["ignore", "ignore", "pipe"],
-          env: { ...process.env, ...parts.env },
+          env: buildProjectConsumerEnv(
+            this.config.root,
+            projectEnvironmentConsumer("preview", target.label),
+            {
+              ...process.env,
+              ...parts.env,
+            },
+          ),
         });
       } catch (err) {
         void this.killMany(servicePids, processGroup);
@@ -1381,7 +1392,14 @@ export class PreviewManager {
         shell: true,
         detached: processGroup,
         stdio: ["ignore", "ignore", "pipe"],
-        env: { ...process.env, ...parts.env },
+        env: buildProjectConsumerEnv(
+          this.config.root,
+          projectEnvironmentConsumer("preview", target.label),
+          {
+            ...process.env,
+            ...parts.env,
+          },
+        ),
       });
     } catch (err) {
       void this.killMany(servicePids, processGroup);

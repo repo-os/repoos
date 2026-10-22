@@ -49,6 +49,10 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
 import type { RepoOSConfig, DevServiceConfig, DevTargetConfig } from "../core/types.js";
 import {
+  buildProjectConsumerEnv,
+  projectEnvironmentConsumer,
+} from "../core/project-environments.js";
+import {
   DEV_LOG_MAX_LINES,
   failureSummary,
   hasPortInUseLine,
@@ -714,7 +718,11 @@ export class DevTargetManager {
           shell: true,
           detached: processGroup,
           stdio: ["ignore", "pipe", "pipe"],
-          env: { ...process.env, ...env },
+          env: buildProjectConsumerEnv(
+            this.config.root,
+            projectEnvironmentConsumer("dev", t.name),
+            { ...process.env, ...env },
+          ),
         });
       } catch (err) {
         return failService(`could not launch service "${def.name}": ${(err as Error).message}`);
@@ -855,8 +863,10 @@ export class DevTargetManager {
         // #0843: every companion service's port is also reachable by env var,
         // the way `[[preview.services]]` passes `REPOOS_PREVIEW_*` to a target.
         env: {
-          ...process.env,
-          ...expandEnvRefs(t.env ?? {}, resolvedPort, tokens),
+          ...buildProjectConsumerEnv(this.config.root, projectEnvironmentConsumer("dev", t.name), {
+            ...process.env,
+            ...expandEnvRefs(t.env ?? {}, resolvedPort, tokens),
+          }),
           ...(Object.keys(tokens).length ? tokenEnv(tokens) : {}),
         },
       });
