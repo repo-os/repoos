@@ -75,6 +75,35 @@ validation events (and engineer self-check activity) carry the same notice;
 Queue markers live under `.repoos/queue-markers/`; stuck waiters time out with an
 actionable message (raise limits or free a stuck process).
 
+## Bundle upload timeouts and progress (#0917)
+
+Close-out uploads the merged candidate tree with `ssh host 'cat > …bundle'` (not
+`scp`, for Tailscale MTU). The transfer is **streamed** with byte-accurate
+progress on the close-out card (sent / total, rate, ETA, per-host attempt, and
+total time in the upload stage).
+
+Before a large bundle, each leased host gets a **link probe** (RTT + a 64 KiB
+test write). Hosts below the throughput floor are skipped so a wedged or
+swap-bound machine is not fed a 200 MB bundle.
+
+SSH uses **ServerAlive** options plus local guards:
+
+- `remoteValidation.bundleUploadStallSecs` (default **90**) — abort when no
+  bytes have been written for this long.
+- `remoteValidation.bundleUploadBudgetSecs` (default **180**) — wall-clock cap
+  per upload attempt.
+
+A slow ETA aborts the upload and `retryOtherHosts` tries another runner before
+`fallbackToLocal`. **Stop close-out** / cancel interrupts an in-flight upload
+via `killHungValidation`.
+
+`remoteValidation.forceLocalOnMeteredLink` skips the upload entirely and runs the
+full gate locally (auto-detect also considers link probe + estimated upload
+time).
+
+Only **one** bundle upload runs at a time from a given laptop so parallel
+close-outs do not saturate a hotspot uplink.
+
 ## Why
 
 The close-out gate (`repoos check`) ends with the full `bun run test` suite. On
