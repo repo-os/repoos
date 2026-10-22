@@ -2,7 +2,7 @@
 id: "0931"
 title: Add deployment environment bindings and production safeguards
 type: feature
-status: review
+status: ready
 priority: p2
 area: [server, web]
 story: Secrets and project environments
