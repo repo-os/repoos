@@ -11,7 +11,7 @@ branch: feat/local-check-slots-are-held-by-dead-proce
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T05:41:12Z"
-updated_at: "2026-10-22T17:24:35Z"
+updated_at: "2026-10-22T17:25:18Z"
 ---
 ## Problem
 2026-10-22 13:20-13:57: #0909's close-out checks sat 'queued · local check (position 3, 2 ahead)' because both local check slots (src/core/cross-process-slots.ts, 2 slots) were held by processes that no longer existed: slot 0 by #0918's check (pid 45795) and slot 1 by #0909's own earlier check (pid 78147, the run that was cancelled with Stop MTD). isStaleSlot() frees a slot only when the slot directory has had no heartbeat for STALE_MS = 30 minutes; the .holder file with the pid is written but never checked. A killed or cancelled check therefore blocks every later local check for up to 30 minutes. #0909 and #0914 both waited; the task card said 'queued' with no hint that the owners were dead. Manual fix used: verified both pids were not running and removed .repoos/local-check-slots/0 and /1.
@@ -63,3 +63,4 @@ Evidence: .repoos/local-check-slots/{0,1}/.holder and .meta.json at 13:40 (both 
 - 2026-10-22T17:22:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-22T17:22:16Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-22T17:24:35Z · body
+- 2026-10-22T17:25:18Z · handoff_deferred: 1 queued message(s) must be read before review
