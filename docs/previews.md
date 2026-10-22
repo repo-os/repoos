@@ -656,6 +656,13 @@ worktree's preview skips the rebuild (~0.1s) instead of paying a full one.
 
 ## Secrets in the worktree: `[worktrees] inheritEnv` (#0373)
 
+Named project environments use a separate explicit binding. Bind a preview
+target with `repoos secrets bind preview:<target> <environment> KEY ...`;
+RepoOS reads its values from the control-plane checkout and adds only granted
+keys to the preview child process. The Secrets-page selector never changes a
+preview binding. A missing granted key is removed from inherited child values,
+and preview execution never falls back to production.
+
 A preview boots *inside the task's worktree*, which is a fresh checkout cut
 from `main` — so a gitignored `.env` at the repo root is **not** present there
 by default. For most projects that's fine; a preview command with no secret

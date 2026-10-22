@@ -446,6 +446,8 @@ import {
   getModelProviderUsage,
   setModelProviderKey,
   listProjectEnvironmentSecrets,
+  getProjectEnvironmentBindings,
+  putProjectEnvironmentBinding,
   mutateProjectEnvironmentSecret,
   getModelRoutingStatus,
   getModelRoutingDecisions,
@@ -3717,6 +3719,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     /^\/api\/project-environments\/([^/]+)\/secrets$/,
     mutateProjectEnvironmentSecret,
   );
+  router.register("GET", "/api/project-environment-bindings", getProjectEnvironmentBindings);
+  router.register("PUT", "/api/project-environment-bindings", putProjectEnvironmentBinding);
   router.register("GET", "/api/model-routing/status", getModelRoutingStatus);
   router.register("GET", "/api/model-routing/decisions", getModelRoutingDecisions);
   router.register("POST", "/api/model-routing/probe", postModelRoutingProbe);

@@ -71,6 +71,8 @@ const FILE_CLI_MATCHERS: Matcher[] = [
   // `repoos secrets …` — project environment metadata and writes (values never returned).
   re("GET", /^\/api\/project-environments\/([^/]+)\/secrets$/.source),
   re("PUT", /^\/api\/project-environments\/([^/]+)\/secrets$/.source),
+  exact("GET", "/api/project-environment-bindings"),
+  exact("PUT", "/api/project-environment-bindings"),
   exact("GET", "/api/health"),
   exact("GET", "/api/tasks"),
   re("GET", /^\/api\/tasks\/([^/]+)$/.source),
