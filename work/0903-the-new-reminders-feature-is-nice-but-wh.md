@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/show-due-reminders-as-header-cards-besid
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-21T15:04:49Z"
-updated_at: "2026-10-22T01:18:53Z"
+updated_at: "2026-10-22T01:20:06Z"
 ---
 ## Problem
 
@@ -51,6 +51,19 @@ The new reminders feature is nice, but when the time comes it just shows in the 
 
 ![Screenshot-2026-10-21-at-23.00.20](/api/tasks/0903/attachments/att_b4b66eb0-eebc-42ac-b34c-d0401b273051.png)
 
+## Shots
+```json
+[
+{
+  "label": "Due reminder shown as a bright header card beside the alerts bell",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"reminder-card\"]",
+  "state": "reminders:due"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-21T15:04:49Z · created · hello@repoos.org
@@ -64,3 +77,4 @@ The new reminders feature is nice, but when the time comes it just shows in the 
 - 2026-10-22T01:15:35Z · status ready→active, branch
 - 2026-10-22T01:18:53Z · body
 - 2026-10-22T01:18:53Z · body
+- 2026-10-22T01:20:06Z · body
