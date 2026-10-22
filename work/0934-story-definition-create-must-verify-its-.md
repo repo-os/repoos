@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0934"
 title: "Story definition create must verify its commit, retry, and surface a failure (untracked story blocked close-outs)"
 type: bug
@@ -12,7 +11,8 @@ branch: feat/story-definition-create-must-verify-its-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:40:11Z"
-updated_at: "2026-10-22T11:24:30Z"
+updated_at: "2026-10-22T11:35:04Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 POST /api/stories (src/server/routes/stories.ts, createStoryDefinition) writes the story file and calls commitTaskFile, ignoring its boolean result. 2026-10-22: story #0012 'Secrets and project environments' was created at 08:02:23Z (created_by: api) and its tasks #0927-#0932 were created and committed afterwards, but the story file itself stayed untracked on main (stories/secrets-and-project-environments.md). main then had 1 uncommitted file, so every 'repoos done' refused, and nothing told anyone. This is the same fail-soft class as #0151 (task file commit lost), most likely git contention (index.lock) while many commits ran at once; the exact cause was not captured because the failure is silent.
@@ -38,4 +38,4 @@ Same code path pattern in PATCH /api/stories/:key (commitFiles) and the Telegram
 - 2026-10-22T11:21:12Z · status ready→active, branch
 - 2026-10-22T11:23:41Z · body
 - 2026-10-22T11:24:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-
+- 2026-10-22T11:35:04Z · body
