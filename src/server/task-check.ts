@@ -61,6 +61,8 @@ export interface TaskCheckRun {
   scope: string;
   /** Short hostname of the machine the check runs on (this server's). */
   machine: string;
+  stepsDone: number | null;
+  stepsTotal: number | null;
 }
 
 export type TaskCheckEventKind = "started" | "output" | "done";
@@ -121,6 +123,8 @@ export class TaskCheckManager {
       skipped: false,
       scope: meta.scope || "full",
       machine: meta.machine || localMachineName(),
+      stepsDone: null,
+      stepsTotal: null,
     };
     const list = this.runsByTask.get(taskId) ?? [];
     list.push(run);
@@ -133,6 +137,21 @@ export class TaskCheckManager {
       id,
       chunk: (text: string) => {
         const clean = stripAnsi(text);
+        for (const line of clean.split(/\r?\n/)) {
+          if (!line.startsWith("::repoos-check-progress::")) continue;
+          try {
+            const progress = JSON.parse(line.slice("::repoos-check-progress::".length)) as {
+              stepsDone?: number;
+              stepsTotal?: number;
+            };
+            if (Number.isFinite(progress.stepsDone) && Number.isFinite(progress.stepsTotal)) {
+              run.stepsDone = progress.stepsDone!;
+              run.stepsTotal = progress.stepsTotal!;
+            }
+          } catch {
+            /* ignore malformed progress records */
+          }
+        }
         run.output += clean;
         if (run.output.length > MAX_BUFFERED_CHARS) {
           run.output = run.output.slice(run.output.length - MAX_BUFFERED_CHARS);

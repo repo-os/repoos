@@ -918,6 +918,8 @@ export interface TaskCheckRun {
   scope: string;
   /** Short hostname of the machine the check runs on (#0564). */
   machine: string;
+  stepsDone?: number | null;
+  stepsTotal?: number | null;
 }
 
 /** One durable check run (#0564) — a row of the Runs tab / check history. */
@@ -945,6 +947,10 @@ export interface CheckRunRow {
   /** Informational isolation re-run label (#0655), e.g. `passed 3/3 alone`. */
   isolationNote?: string | null;
   detail: string | null;
+  stepsDone?: number | null;
+  stepsTotal?: number | null;
+  testsDone?: number | null;
+  testsTotal?: number | null;
 }
 
 /** One host's live state from `GET /api/remote-validation/status` (#0521/#0564). */
