@@ -73,6 +73,9 @@ describe("isSelectableReady", () => {
     expect(isSelectableReady(task({ id: "3", needsInput: true }))).toBe(false);
     expect(isSelectableReady(task({ id: "4", isHeld: true }))).toBe(false);
     expect(isSelectableReady(task({ id: "5", status: "active" }))).toBe(false);
+    expect(isSelectableReady(task({ id: "6", assignedTo: "human", assignee: "human" }))).toBe(
+      false,
+    );
   });
 });
 

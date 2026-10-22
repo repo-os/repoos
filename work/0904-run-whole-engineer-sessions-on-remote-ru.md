@@ -2,22 +2,22 @@
 id: "0904"
 title: "Run whole engineer sessions on remote runners, not only checks, shots and gates"
 type: feature
-status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch. Review the crash detail and either fix the environment, change the override, or resume manually."
+status: done
 priority: p1
 area: [server, core]
+merged_commit: d731c62d88549ebd3c4994cb4885a943a4ca8163
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/run-whole-engineer-sessions-on-remote-ru
-cli_override: opencode
-model_override: opencode-go/glm-5.3-flash
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-21T15:06:23Z"
-updated_at: "2026-10-22T05:48:21Z"
-engineer_stall_resume_log: "[{\"at\":\"2026-10-22T05:43:52.015Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 6
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T05:46:14.833Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T05:46:18.312Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T05:48:07.066Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-22T05:48:10.524Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-22T05:48:14.038Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-22T05:48:21.829Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-10-22T01:41:43Z"
+last_close_out_gate_ms: 147946
+last_close_out_gate_at: "2026-10-22T01:41:31.153Z"
+review_passes: 1
+last_check_failure: "repoos check at 2026-10-21T20:52:34.600Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
+dev_error_count: 7
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 ---
 ## Problem
@@ -40,6 +40,18 @@ Large; split into stories/tasks after the ADR. Depends in spirit on #0900 (tests
 
 ## ADR and split
 This increment delivers the ADR required by the task notes (docs/adr/0009-remote-engineer-sessions.md, proposed) plus the docs/setup-checklist updates and the AGENTS.md remote-worktree rule. Per the task's own guidance ("Start with the ADR; do not build before it is accepted. Large; split into stories/tasks after the ADR."), the spawn/stream/stop/resume implementation, placement Settings, fetch-back handoff wiring and failure-injection suite are split into the six follow-up tasks listed in the ADR's "Follow-up work" section and are not built in this pass. #0907 remains the human auth + real-run task.
+
+## Shots
+```json
+[
+{
+"label": "New \"Remote engineer sessions\" docs page (planned feature, what moves where, config keys, setup checklist)",
+"target": "Docs site",
+"route": "/remote-engineers",
+"highlight": ".vp-doc"
+}
+]
+```
 
 ## Activity
 
@@ -66,11 +78,38 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-21T19:44:15Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-21T19:44:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T19:44:15Z · message_delivered: 1 message(s)
-- 2026-10-22T05:43:52Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
-- 2026-10-22T05:46:14Z · agent exited with an error (opencode) · error: Go usage limit exceeded
-- 2026-10-22T05:46:14Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · error: Go usage limit exceeded
-- 2026-10-22T05:46:18Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · error: Go usage limit exceeded
-- 2026-10-22T05:48:07Z · engineer crash recovery: switched opencode + opencode-go/deepseek-v4.1-flash → opencode + opencode-go/glm-5.3-flash after 3/3 crashes in 30m · error: Go usage limit exceeded
-- 2026-10-22T05:48:10Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · error: Go usage limit exceeded
-- 2026-10-22T05:48:14Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (2/3 crashes in 30m) · error: Go usage limit exceeded
-- 2026-10-22T05:48:21Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch (3/3 crashes in 30m)
+- 2026-10-21T20:52:33Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-10-21T20:52:34Z · message_queued at 2026-10-21T20:52:34.482Z
+- 2026-10-21T20:52:35Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-21T21:25:57Z · CTO nudge: held — remote validation is running
+- 2026-10-21T23:07:50Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-21T23:51:38Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-22T01:11:24Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-22T01:11:24Z · agent exited with an error (opencode) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-10-22T01:11:24Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-10-22T01:11:25Z · message_delivered: 1 message(s)
+- 2026-10-22T01:13:15Z · body
+- 2026-10-22T01:13:15Z · body
+- 2026-10-22T01:14:01Z · body
+- 2026-10-22T01:14:35Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · error: Go usage limit exceeded
+- 2026-10-22T01:14:36Z · engineer crash recovery: switched opencode + opencode-go/deepseek-v4.1-flash → opencode + opencode-go/glm-5.3-flash after 3/3 crashes in 30m · error: Go usage limit exceeded
+- 2026-10-22T01:14:38Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · error: Go usage limit exceeded
+- 2026-10-22T01:14:40Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (2/3 crashes in 30m) · error: Go usage limit exceeded
+- 2026-10-22T01:14:41Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch (3/3 crashes in 30m)
+- 2026-10-22T01:15:54Z · needs_input
+- 2026-10-22T01:16:10Z · status active→ready
+- 2026-10-22T01:16:16Z · status ready→active
+- 2026-10-22T01:16:18Z · agent exited with an error (opencode) · error: Go usage limit exceeded
+- 2026-10-22T01:16:18Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch (4/3 crashes in 30m)
+- 2026-10-22T01:21:07Z · cli_override, model_override
+- 2026-10-22T01:21:08Z · needs_input
+- 2026-10-22T01:21:22Z · status active→ready
+- 2026-10-22T01:21:27Z · status ready→active
+- 2026-10-22T01:23:07Z · body
+- 2026-10-22T01:23:07Z · body
+- 2026-10-22T01:32:31Z · status active→review
+- 2026-10-22T01:32:31Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d731c62d8) during finalization (#0734)
+- 2026-10-22T01:32:31Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d731c62d8) during finalization (#0734)
+- 2026-10-22T01:33:15Z · note: review pass 1: good to go
+- 2026-10-22T01:41:31Z · close-out gate completed in 148s
+- 2026-10-22T01:41:43Z · status done→done, release:success

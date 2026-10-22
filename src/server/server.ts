@@ -97,6 +97,7 @@ import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types
 import type { MemoryPressureProbe } from "../core/memory-pressure.js";
 import { runnerHealthCheckEnabled } from "../core/resource-limits.js";
 import { STATUSES } from "../core/types.js";
+import { shouldRunAutomaticTaskLifecycle } from "./task-transitions.js";
 import { readBuildMeta } from "../core/build.js";
 import { injectBuildHashIntoUiIndex } from "../core/ui-index.js";
 import { createRepoOS } from "../core/repoos.js";
@@ -2694,6 +2695,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Combined status-change hook, fired for every status change by any route.
   const onStatusChange = (task: Task, prev: Status, next: Status): void => {
+    if (!shouldRunAutomaticTaskLifecycle(task)) return;
     stopPreviewIfLeft(task, prev, next);
     stopAgentIfLeftActive(task, prev, next);
     if (prev === "active" && next !== "active") runner.discardPendingHandoff(task.id);
@@ -2987,6 +2989,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
    * silently), and deferred while the task's own agent turn is still running.
    */
   const startReview = (task: Task): void => {
+    if (!shouldRunAutomaticTaskLifecycle(task)) return;
     if (!reviews.enabled()) return;
     // This task is only back in `review` because the guard put it there after
     // an agent overstepped — reviewing it again would just repeat that.
@@ -3037,9 +3040,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // review needs to hang off. The skill-suggestion pass deliberately does
     // NOT run here (#0429): its evidence gate requires a genuinely completed,
     // verified task, so it hangs off `done` only, below.
-    if (e.task.status === "review") {
+    if (e.task.status === "review" && shouldRunAutomaticTaskLifecycle(e.task)) {
       startReview(e.task);
-    } else if (e.task.status === "done") {
+    } else if (e.task.status === "done" && shouldRunAutomaticTaskLifecycle(e.task)) {
       skillSuggestions.maybeSuggest(e.task);
     }
   });

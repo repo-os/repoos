@@ -5,15 +5,15 @@ type: feature
 status: active
 priority: p2
 area: [core, server, web]
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/stop-false-needs-human-step-flags-sticky
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T19:41:23Z"
-updated_at: "2026-10-22T06:02:51Z"
-review_rounds: 2
+updated_at: "2026-10-22T06:46:39Z"
 review_passes: 3
+review_rounds: 1
 last_check_failure: "repoos check at 2026-10-22T02:27:19.227Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Needs-human-step detail shows criterion quote (target \"default\"): highlight .agent-waiting-sub matched nothing on /work?task=0909&tab=overview (http://127.0.0.1:58600/work?shotState=card:humanStep)"
 dev_error_count: 3
 ---
@@ -126,9 +126,13 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T02:47:00Z · note: review pass 2: needs some work
 - 2026-10-22T02:47:01Z · status review→active
 - 2026-10-22T02:48:02Z · body
-- 2026-10-22T03:00:58Z · status active→review
-- 2026-10-22T05:44:41Z · note: review pass 1: needs some work — clamped by automated verification: browser verification: Required UI handoff browser verification has no stored evidence — console errors were not checked.
-- 2026-10-22T05:44:41Z · status review→active
-- 2026-10-22T05:57:51Z · message_queued at 2026-10-22T05:57:51.937Z
-- 2026-10-22T05:57:52Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-22T06:02:51Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-22T02:49:55Z · body
+- 2026-10-22T02:49:55Z · body
+- 2026-10-22T02:51:20Z · note: handoff requested (ui-review)
+- 2026-10-22T02:53:21Z · CTO nudge: held — handoff gate is running
+- 2026-10-22T03:00:59Z · status active→review
+- 2026-10-22T03:00:59Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (af25ab93d) during finalization (#0734)
+- 2026-10-22T03:01:00Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (af25ab93d) during finalization (#0734)
+- 2026-10-22T03:02:09Z · note: review pass 3: good to go
+- 2026-10-22T06:44:25Z · assigned_to
+- 2026-10-22T06:46:39Z · status review→active

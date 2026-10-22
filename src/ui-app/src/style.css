@@ -6982,6 +6982,16 @@
   transition: 0.15s;
   line-height: 1.4;
 }
+/* The dropzone is a <label>; beat `.field label` without weakening real field labels (#0899). */
+.field .shot-dropzone {
+  display: flex;
+  margin-bottom: 0;
+  font-size: 12.5px;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--txt-dim);
+  font-family: inherit;
+}
 .shot-dropzone:hover {
   border-color: var(--cyan);
   color: var(--txt);

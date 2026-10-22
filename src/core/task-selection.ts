@@ -79,7 +79,13 @@ export function taskIsHeld(task: Task): boolean {
 
 /** Ready candidates eligible for auto-start, before slot/conflict ordering. */
 export function isSelectableReady(task: Task): boolean {
-  return task.status === "ready" && !task.isArchived && !task.needsInput && !taskIsHeld(task);
+  return (
+    task.status === "ready" &&
+    task.assignee !== "human" &&
+    !task.isArchived &&
+    !task.needsInput &&
+    !taskIsHeld(task)
+  );
 }
 
 /**

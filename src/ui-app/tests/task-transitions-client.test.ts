@@ -7,12 +7,21 @@
 import { describe, expect, it } from "vitest";
 import {
   isValidBoardMove,
+  isValidHumanBoardMove,
   boardMoveRejectionReason,
   GENERIC_PATCH_TARGETS,
   DRAG_ACTION_TARGETS,
 } from "../src/lib/taskTransitions";
 
 describe("isValidBoardMove", () => {
+  it("allows human tasks to move among all board columns without AI actions", () => {
+    for (const from of ["inbox", "ready", "active", "review", "done"]) {
+      for (const to of ["inbox", "ready", "active", "review", "done"]) {
+        expect(isValidHumanBoardMove(from, to)).toBe(from !== to);
+      }
+    }
+    expect(isValidHumanBoardMove("draft", "inbox")).toBe(false);
+  });
   it("rejects dropping a card back on its own column", () => {
     expect(isValidBoardMove("active", "active")).toBe(false);
   });

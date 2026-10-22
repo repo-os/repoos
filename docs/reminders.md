@@ -35,7 +35,10 @@ State is derived: done when `done_at` is set, due at `fire_at`, overdue after 24
 hours, otherwise snoozed if `snoozed_at` is set or upcoming. Snoozing replaces
 `fire_at`, clears completion and the notification occurrence. Changing a fire time
 also reopens the note. Done/delete removes the live bell notice; reading or
-dismissing ordinary notifications cannot hide an unresolved reminder.
+dismissing ordinary notifications cannot hide an unresolved reminder. A due note
+also appears as a card in the top bar (left of the bell); dismissing that card
+hides it from the header only — the reminder stays in the bell until done or
+snoozed.
 
 The control-plane server checks at boot and every 30 seconds, using scheduled
 tasks' hostile-environment guard (preview child/overrides, linked worktree,

@@ -244,7 +244,9 @@ export class AutoEngineeringOrchestrator {
     const maxActiveTasks = config.maxActiveTasks ?? 3;
     // Archived tasks are parked (#0657): they hold no slot and are never
     // picked up, even if their underlying status is `active`.
-    const activeCount = allTasks.filter((t) => t.status === "active" && !t.isArchived).length;
+    const activeCount = allTasks.filter(
+      (t) => t.status === "active" && !t.isArchived && t.assignee !== "human",
+    ).length;
     const availableSlots = Math.max(0, maxActiveTasks - activeCount);
 
     // No capacity available.
@@ -274,7 +276,10 @@ export class AutoEngineeringOrchestrator {
         .filter((task) => taskDependencyBlockers(config.root, task, allTasks).length > 0)
         .map((task) => task.id),
     );
-    const selection = selectReadyTasks(allTasks, { availableSlots, blockedIds });
+    const selection = selectReadyTasks(
+      allTasks.filter((task) => task.assignee !== "human"),
+      { availableSlots, blockedIds },
+    );
 
     // No ready tasks.
     if (selection.eligible.length === 0) {

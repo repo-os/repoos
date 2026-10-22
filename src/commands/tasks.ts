@@ -384,8 +384,9 @@ export function cmdMv(
       process.exitCode = 1;
       return;
     }
-    if (status === "review" && handoffRequestFromRunner(id)) return;
-    if (status === "review") {
+    const humanTask = existingBeforeMv?.assignee === "human";
+    if (!humanTask && status === "review" && handoffRequestFromRunner(id)) return;
+    if (!humanTask && status === "review") {
       console.error(
         c.dim(
           `  For a synchronous handoff with checks, use \`repoos review ${id}\` instead of \`repoos mv review\`.`,
@@ -395,7 +396,7 @@ export function cmdMv(
     // #0896: never reopen a task whose work already landed. A done task whose
     // branch is merged into main is finished; moving it back (as a driver once did
     // from a stale loop prompt, #0879) restarts engineers on shipped work.
-    if (status !== "done" && !opts.force) {
+    if (status !== "done" && !opts.force && existingBeforeMv?.assignee !== "human") {
       const doneTask = repoos.getTask(id);
       if (doneTask?.status === "done" && doneTask.branch) {
         const { root: doneRoot } = boardRoot();
@@ -423,7 +424,7 @@ export function cmdMv(
         }
       }
     }
-    if (status === "done" && !opts.force) {
+    if (status === "done" && !opts.force && !humanTask) {
       const existing = repoos.getTask(id);
       if (existing && existing.status !== "done" && existing.branch) {
         const { root } = boardRoot();
@@ -451,7 +452,13 @@ export function cmdMv(
         }
       }
     }
-    const t = repoos.updateStatus(id, status as Status, note);
+    const closeNote =
+      status === "done" && humanTask
+        ? [`closed by ${process.env.USER ?? process.env.USERNAME ?? "RepoOS CLI"}`, note?.trim()]
+            .filter(Boolean)
+            .join(": ")
+        : note;
+    const t = repoos.updateStatus(id, status as Status, closeNote);
     console.log(
       "  " + c.green("moved ") + c.dim("#" + t.id) + " → " + statusColor(t.status)(t.status),
     );
@@ -563,14 +570,15 @@ function shotsError(
 }
 
 /**
- * Reject a `--caption` that is not attached to exactly one `--screenshot` (#0763):
- * a single alt text cannot label several images, and a caption with nothing to
- * label is a flag mistake worth naming rather than ignoring.
+ * Reject `--caption` flags that cannot pair with `--screenshot` by position (#0763,
+ * #0899): a caption with no image is a mistake; more captions than images is too.
  */
-function screenshotFlagError(screenshots: string[], caption: string | undefined): string | null {
-  if (caption === undefined) return null;
+function screenshotFlagError(screenshots: string[], captions: string[]): string | null {
+  if (captions.length === 0) return null;
   if (screenshots.length === 0) return "--caption requires --screenshot";
-  if (screenshots.length > 1) return "--caption applies to a single --screenshot image";
+  if (captions.length > screenshots.length) {
+    return `--caption: ${captions.length} caption(s) but only ${screenshots.length} --screenshot image(s)`;
+  }
   return null;
 }
 
@@ -638,7 +646,7 @@ export function cmdUpdate(args: string[]): void {
   let pendingSectionContent: string | undefined;
   let pendingShots: string | undefined;
   const screenshots: string[] = [];
-  let caption: string | undefined;
+  const captions: string[] = [];
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     if (!a.startsWith("--")) {
@@ -655,7 +663,7 @@ export function cmdUpdate(args: string[]): void {
       patch.force = true;
       continue;
     }
-    // #0763: repeatable — every image attaches; --caption labels a single one.
+    // #0763 / #0899: repeatable — every image attaches; captions pair by position.
     if (key === "screenshot") {
       const raw = rest[++i];
       if (raw === undefined) {
@@ -668,12 +676,12 @@ export function cmdUpdate(args: string[]): void {
     }
     if (key === "caption") {
       const raw = rest[++i];
-      if (raw === undefined || caption !== undefined) {
-        console.error(c.red(`  Missing or repeated --caption value\n${usage}`));
+      if (raw === undefined) {
+        console.error(c.red(`  Missing value for --caption\n${usage}`));
         process.exitCode = 1;
         return;
       }
-      caption = raw;
+      captions.push(raw);
       continue;
     }
     if (key === "section") {
@@ -783,14 +791,14 @@ export function cmdUpdate(args: string[]): void {
     Object.keys(patch).length === 0 &&
     pendingShots === undefined &&
     screenshots.length === 0 &&
-    caption === undefined
+    captions.length === 0
   ) {
     console.error(c.red("  No fields given.\n" + usage));
     process.exitCode = 1;
     return;
   }
 
-  const captionError = screenshotFlagError(screenshots, caption);
+  const captionError = screenshotFlagError(screenshots, captions);
   if (captionError) {
     console.error(c.red(`  ${captionError}`));
     process.exitCode = 1;
@@ -901,7 +909,7 @@ export function cmdUpdate(args: string[]): void {
   // Attach after the metadata patch: numbering continues from whatever images
   // the task already has, and the URLs are printed so the caller can paste them.
   if (screenshots.length > 0) {
-    const attached = attachScreenshots(repoos.config, task, screenshots, caption);
+    const attached = attachScreenshots(repoos.config, task, screenshots, captions);
     if ("error" in attached) {
       console.error(c.red(`  failed to attach screenshot: ${attached.error}`));
       process.exitCode = 1;
@@ -980,6 +988,7 @@ export function cmdNew(args: string[]): void {
   const usage = NEW_USAGE;
   const flags: Record<string, string | boolean> = {};
   const screenshots: string[] = [];
+  const captions: string[] = [];
   const positional: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -1008,9 +1017,13 @@ export function cmdNew(args: string[]): void {
       process.exitCode = 1;
       return;
     }
-    // #0763: repeatable — collect every image, don't overwrite on the 2nd.
+    // #0763 / #0899: repeatable — collect every image and caption by position.
     if (key === "screenshot") {
       screenshots.push(raw);
+      continue;
+    }
+    if (key === "caption") {
+      captions.push(raw);
       continue;
     }
     flags[key] = (key === "body" || key === "shots") && raw === "-" ? readFileSync(0, "utf8") : raw;
@@ -1036,8 +1049,7 @@ export function cmdNew(args: string[]): void {
   let body = (flags.body as string) || "";
   // #0763: validate --caption/--screenshot BEFORE creating anything, so a bad
   // flag or a missing/oversize/unsupported image never leaves a half-made task.
-  const caption = typeof flags.caption === "string" ? flags.caption : undefined;
-  const captionError = screenshotFlagError(screenshots, caption);
+  const captionError = screenshotFlagError(screenshots, captions);
   if (captionError) {
     console.error(c.red(`  ${captionError}`));
     process.exitCode = 1;
@@ -1104,7 +1116,7 @@ export function cmdNew(args: string[]): void {
   // and extend ## Screenshots before the task file is committed. A storage
   // failure is reported loudly — never silent — and the task minus images stays.
   if (screenshots.length > 0) {
-    const attached = attachScreenshots(repoos.config, t, screenshots, caption);
+    const attached = attachScreenshots(repoos.config, t, screenshots, captions);
     if ("error" in attached) {
       console.error(c.red(`  failed to attach screenshot: ${attached.error}`));
       process.exitCode = 1;

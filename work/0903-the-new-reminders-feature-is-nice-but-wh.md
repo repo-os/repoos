@@ -2,15 +2,19 @@
 id: "0903"
 title: Show due reminders as header cards beside alerts
 type: feature
-status: ready
+status: done
 priority: p2
 area: web
+merged_commit: c2918e70fd7b843f3cf0fe132f365ec2cadae86b
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
-model_override: opencode-go/minimax-m3.1-flash-free
+branch: feat/show-due-reminders-as-header-cards-besid
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-21T15:04:49Z"
-updated_at: "2026-10-21T15:33:19Z"
+updated_at: "2026-10-22T01:47:34Z"
+last_close_out_gate_ms: 128606
+last_close_out_gate_at: "2026-10-22T01:47:11.061Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -47,6 +51,19 @@ This covers the header cards for due reminders: excerpt, bright outline, dismiss
 
 The new reminders feature is nice, but when the time comes it just shows in the alerts icon popup at the top right, which is easy to miss since there are many other alerts that go in there. What we should do instead is make a new reminders section next to that alerts icon (to the left of it) which show a bit of text about the reminder and have it very obvious, outlined in a bright color like little cards which the user can dismiss or click on to go to the reminders page to see more info about the reminder.
 
+## Shots
+```json
+[
+{
+"label": "Due reminder shown as a bright header card beside the alerts bell",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"reminder-card\"]",
+"state": "reminders:due"
+}
+]
+```
+
 ## Screenshots
 
 ![Screenshot-2026-10-21-at-23.00.20](/api/tasks/0903/attachments/att_b4b66eb0-eebc-42ac-b34c-d0401b273051.png)
@@ -58,3 +75,22 @@ The new reminders feature is nice, but when the time comes it just shows in the 
 - 2026-10-21T15:05:30Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-10-21T15:06:08Z · status inbox→ready
 - 2026-10-21T15:33:19Z · model_override
+- 2026-10-22T01:11:42Z · cli_override, model_override
+- 2026-10-22T01:11:47Z · cli_override, model_override
+- 2026-10-22T01:11:50Z · model_override
+- 2026-10-22T01:15:35Z · status ready→active, branch
+- 2026-10-22T01:18:53Z · body
+- 2026-10-22T01:18:53Z · body
+- 2026-10-22T01:20:06Z · body
+- 2026-10-22T01:21:41Z · body
+- 2026-10-22T01:21:41Z · body
+- 2026-10-22T01:24:47Z · body
+- 2026-10-22T01:24:48Z · body
+- 2026-10-22T01:26:47Z · body
+- 2026-10-22T01:26:47Z · body
+- 2026-10-22T01:43:14Z · status active→review
+- 2026-10-22T01:43:14Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (c2918e70f) during finalization (#0734)
+- 2026-10-22T01:43:16Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (c2918e70f) during finalization (#0734)
+- 2026-10-22T01:43:54Z · note: review pass 1: good to go
+- 2026-10-22T01:47:11Z · close-out gate completed in 129s
+- 2026-10-22T01:47:34Z · status done→done, release:success

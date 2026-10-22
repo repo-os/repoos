@@ -49,6 +49,14 @@ export function isValidBoardMove(from: string, to: string): boolean {
   return DRAG_ACTION_TARGETS[from]?.includes(to) ?? false;
 }
 
+export function isValidHumanBoardMove(from: string, to: string): boolean {
+  return (
+    from !== to &&
+    ["inbox", "ready", "active", "review", "done"].includes(from) &&
+    ["inbox", "ready", "active", "review", "done"].includes(to)
+  );
+}
+
 /** Which dedicated action actually performs each edge drag-drop can't do
  *  directly — for a helpful rejection message, not for validity itself. */
 const ACTION_HINTS: Record<string, string> = {

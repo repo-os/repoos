@@ -106,7 +106,7 @@ import {
 import { guardReviewTransition } from "../review-guard.js";
 import { gatherLandable } from "../landable.js";
 import { REVIEW_RUN_TRIGGERS } from "../review-automation.js";
-import { checkGenericStatusPatch } from "../task-transitions.js";
+import { checkGenericStatusPatch, checkHumanTaskStatusPatch } from "../task-transitions.js";
 import { readFileSync, existsSync, statSync, unlinkSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-release.js";
@@ -945,7 +945,8 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   if (isTaskClosingOut(config.root, config.cacheDir, existing.id)) {
     return json(res, 409, { error: closingOutRefusal(existing.id) });
   }
-  if (body.status === "done" && prevStatus !== "done") {
+  const humanTask = existing.assignee === "human";
+  if (!humanTask && body.status === "done" && prevStatus !== "done") {
     if (reviews.isRunning(existing.id)) {
       return json(res, 409, {
         error: `Task #${existing.id} is waiting for automatic review to finish`,
@@ -963,7 +964,9 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     // pair outright — including every skip-a-step jump and unreviewed
     // backward move — regardless of whether the request came from the task
     // drawer's dropdown, board drag-drop, or a direct API call.
-    const check = checkGenericStatusPatch(prevStatus, body.status);
+    const check = humanTask
+      ? checkHumanTaskStatusPatch(prevStatus, body.status)
+      : checkGenericStatusPatch(prevStatus, body.status);
     if (!check.ok) {
       return json(res, 400, {
         error: `Cannot move task #${existing.id} from ${prevStatus} to ${body.status}: ${check.reason}`,
@@ -971,7 +974,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     }
   }
 
-  if (body.status === "review" && prevStatus !== "review") {
+  if (!humanTask && body.status === "review" && prevStatus !== "review") {
     // #0507: a move into `review` is a REQUEST, not a write. It runs the same
     // scoped `repoos check` → commit/vacuity gate → `review` finalization the
     // agent's handoff signal runs, so no route can reach `review` on the
@@ -1022,6 +1025,11 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   }
 
   let updated: Task;
+  if (humanTask && body.status === "done" && prevStatus !== "done") {
+    const note = typeof body.note === "string" ? body.note.trim() : "";
+    const actor = getCurrentUser(req, config)?.email ?? "human";
+    body.note = `closed by ${actor}${note ? `: ${note}` : ""}`;
+  }
   try {
     updated = patchTaskFile(config, existing.absPath, body, {
       onStatusChange: onServerStatusChange,
@@ -1084,7 +1092,8 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     prevStatus !== "review" &&
     updated.status === "review" &&
     updated.branch &&
-    !runner.isRunning(updated.id)
+    !runner.isRunning(updated.id) &&
+    !humanTask
   ) {
     void syncTaskBranch(updated);
   }
@@ -2302,6 +2311,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   let existing = index.getTask(id);
   if (!existing) {
     return json(res, 404, { error: `Task #${id} not found` });
+  }
+  if (existing.assignee === "human" && action !== "archive" && action !== "unarchive") {
+    return json(res, 400, {
+      error: `Task #${id} is assigned to a human; change its board status directly`,
+    });
   }
 
   // Hotfix activation switches the root checkout and rewrites this task file.
@@ -3553,6 +3567,11 @@ export const reviewAgain: RouteHandler = async (ctx, req, res, params) => {
   const existing = index.getTask(id);
   if (!existing) {
     return json(res, 404, { error: `Task #${id} not found` });
+  }
+  if (existing.assignee === "human") {
+    return json(res, 400, {
+      error: `Task #${id} is assigned to a human and cannot start AI review`,
+    });
   }
   if (existing.status !== "review") {
     return json(res, 400, {
