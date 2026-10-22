@@ -12,7 +12,7 @@ branch: feat/cli-api-parity-every-mutating-api-route-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T04:47:28Z"
-updated_at: "2026-10-22T14:01:21Z"
+updated_at: "2026-10-22T14:01:51Z"
 last_close_out_gate_ms: 506168
 last_close_out_gate_at: "2026-10-22T14:01:21.354Z"
 review_passes: 2
@@ -56,4 +56,4 @@ Evidence: route count from grep of router.register in src/server/server.ts and s
 - 2026-10-22T13:20:50Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-22T13:22:36Z · note: review pass 2: good to go
 - 2026-10-22T14:01:21Z · close-out gate completed in 506s
-
+- 2026-10-22T14:01:51Z · status done→done, release:success
