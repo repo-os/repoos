@@ -13,7 +13,7 @@ branch: feat/add-deployment-environment-bindings-and-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:07:01Z"
-updated_at: "2026-10-22T22:48:28Z"
+updated_at: "2026-10-22T22:50:31Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-22T22:46:53.391Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 55c03c38 to 4d183313) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 ---
@@ -38,10 +38,11 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 ```json
 [
 {
-"label": "Deployment target environment binding",
-"target": "default",
-"route": "/deployments",
-"highlight": ".dep-env-binding"
+  "label": "Production environment binding",
+  "target": "default",
+  "route": "/deployments",
+  "highlight": ".dep-env-binding",
+  "state": "deployments:environmentBinding"
 }
 ]
 ```
@@ -67,3 +68,4 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 - 2026-10-22T22:34:54Z · body
 - 2026-10-22T22:37:01Z · body
 - 2026-10-22T22:47:47Z · note: Resuming after watchdog auto-surfaced task; rerunning stable handoff gate
+- 2026-10-22T22:50:31Z · body
