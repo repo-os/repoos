@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-22T11:52:20Z"
-review_passes: 1
+last_close_out_gate_ms: 106952
+last_close_out_gate_at: "2026-10-22T11:58:53.194Z"
 id: "0934"
 title: "Story definition create must verify its commit, retry, and surface a failure (untracked story blocked close-outs)"
 type: bug
@@ -13,6 +13,8 @@ branch: feat/story-definition-create-must-verify-its-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:40:11Z"
+updated_at: "2026-10-22T11:58:53Z"
+review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -44,4 +46,5 @@ Same code path pattern in PATCH /api/stories/:key (commitFiles) and the Telegram
 - 2026-10-22T11:50:17Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-10-22T11:50:18Z · status active→review
 - 2026-10-22T11:52:20Z · note: review pass 1: good to go
+- 2026-10-22T11:58:53Z · close-out gate completed in 107s
 
