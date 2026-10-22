@@ -11,7 +11,7 @@ branch: feat/repoos-gc-must-spare-the-candidate-workt
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:06:09Z"
-updated_at: "2026-10-22T12:09:32Z"
+updated_at: "2026-10-22T12:09:42Z"
 last_check_failure: "repoos check at 2026-10-22T12:02:48.425Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Control dashboard worktree cleanup preview (target \"default\"): highlight .gc-preview matched nothing on / (http://127.0.0.1:36317/); [missing-target] Control dashboard worktree cleanup preview (target \"default\"): selector .gc-preview matched nothing on / (http://127.0.0.1:36317/)"
 ---
 ## Problem
@@ -42,7 +42,7 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 "highlight": ".gc-preview",
 "steps": [
 {
-  "click": "button.gc-action"
+"click": "button.gc-action"
 }
 ]
 }
@@ -71,4 +71,4 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 - 2026-10-22T12:02:45Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Control dashboard worktree cleanup preview (target "default"): highlight .gc-preview matched nothing on / (http://127.0.0.1:36317/); [missing-target] Control dashboard worktree cleanup preview (target "default"): selector .gc-preview matched nothing on / (http://127.0.0.1:36317/)
 - 2026-10-22T12:03:08Z · body
 - 2026-10-22T12:04:27Z · body
-
+- 2026-10-22T12:09:42Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Control dashboard worktree cleanup preview (target "default"): highlight .gc-preview matched nothing on / (http://127.0.0.1:43707/)
