@@ -11,7 +11,7 @@ branch: feat/stop-false-needs-human-step-flags-sticky
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T19:41:23Z"
-updated_at: "2026-10-22T01:42:59Z"
+updated_at: "2026-10-22T01:43:59Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:11.193Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:12.880Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:14.431Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -31,6 +31,25 @@ A task is flagged only when verifying its acceptance criteria truly requires a h
 
 ## Notes for AI
 Order of work: sticky override first (smallest, fixes the loop), then the model check, then tags and split. Related: #0908 (human-task board pathway), #0907. Do not weaken the existing safety: a task whose criteria really need a device, account or sign-up must still be flagged.
+
+## Shots
+```json
+[
+{
+  "label": "Human-step sticky setting on Model routing",
+  "target": "default",
+  "route": "/agents?tab=routing",
+  "highlight": "[data-testid=\"routing-human-step-sticky\"]"
+},
+{
+  "label": "Needs-human-step detail shows criterion quote",
+  "target": "default",
+  "route": "/work?task=0909&tab=overview",
+  "highlight": ".agent-waiting-sub",
+  "state": "card:humanStep"
+}
+]
+```
 
 ## Activity
 
@@ -73,3 +92,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T01:40:08Z · body
 - 2026-10-22T01:42:58Z · body
 - 2026-10-22T01:42:59Z · body
+- 2026-10-22T01:43:59Z · body
