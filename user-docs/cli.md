@@ -217,6 +217,8 @@ done wait by default in human mode).
 | `repoos review <id> [--wait]` | `PATCH /api/tasks/:id` (`status: review`) |
 | `repoos review again <id>` | `POST /api/tasks/:id/review/again` |
 | `repoos done <id> [--commit-dirty] [--wait]` | `POST /api/tasks/:id/done` |
+| `repoos done <id> --cancel` (`repoos abort <id>`) | `POST /api/tasks/:id/done/cancel` |
+| `repoos api <METHOD> /api/<path> [--json body] [--port N]` | Any `/api/` route |
 | `repoos landable <id>` | `GET /api/tasks/:id/landable` — read-only landing pre-checks; exits non-zero unless the task can land (`--json` for a stable checklist shape) |
 | `repoos override <id> --cli X --model Y` | `PATCH /api/tasks/:id` |
 | `repoos preview <id> [--stop]` | `POST /api/tasks/:id/preview` (+ `/stop`) |
@@ -231,6 +233,10 @@ done wait by default in human mode).
 
 Pass `--port N` when the server is not on the default port. If the server is
 down, the CLI exits with a clear message instead of a generic fetch error.
+`repoos api` is an authenticated escape hatch for a route that has no dedicated
+CLI command yet. Prefer the named command when one exists. API parity is
+enforced by `src/cli/api-route-parity.ts`; routes intentionally unavailable to
+drivers must have a documented exemption there.
 
 ### `repoos bundle` (easter-eggs bundles)
 
