@@ -2,7 +2,7 @@
 id: "0898"
 title: "repoos doctor: warn when macOS syspolicyd/trustd slow spawn-heavy work, and name the git cause"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, docs]
 assigned_to: ai
@@ -61,4 +61,4 @@ See src/core/runtime.ts preferAppleGit, user-docs/configuration.md (Apple-signed
 - 2026-10-22T14:23:19Z · body
 - 2026-10-22T14:25:36Z · body
 - 2026-10-22T14:27:38Z · body
-- 2026-10-22T14:38:26Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-22T14:38:26Z · status active→review
