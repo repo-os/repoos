@@ -72,3 +72,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T06:17:25Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 3/3 in 30m
 - 2026-10-22T06:21:41Z · body
 - 2026-10-22T06:27:27Z · message_queued at 2026-10-22T06:27:27.426Z
+- 2026-10-22T06:27:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
