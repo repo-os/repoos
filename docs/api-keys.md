@@ -5,6 +5,12 @@ file. Keys live in the gitignored `.env` at the repo root (via
 `setDotEnvSecret`), or in a harness auth store the provider adapter already
 reads.
 
+Named **project** environments (registered in `.repoos/environments.json`) use
+a separate management API and `repoos secrets` CLI. Those routes never return
+saved values, reject `REPOOS_*` and fixed provider credential names, and keep
+provider saves on `POST /api/model-providers/:id/key` unchanged. See
+`user-docs/environment-and-secrets.md`.
+
 ## How to add a feature that needs a key
 
 1. **Register the provider** in `MODEL_PROVIDERS` (`src/core/providers/spend.ts`)

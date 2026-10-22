@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-22T16:56:10Z"
-review_passes: 2
 id: "0928"
 title: Add project secret management API and CLI
 type: feature
@@ -14,11 +12,10 @@ depends_on: ["0927"]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-project-secret-management-api-and-cl
-cli_override: cursor
-model_override: composer-2.5
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:03Z"
-review_rounds: 1
-dev_error_count: 4
+updated_at: "2026-10-22T16:39:26Z"
 ---
 ## Problem
 The environment storage foundation in #0927 does not yet let an authorized user inspect or change project environment entries. Without an authenticated management surface, project values risk leaking through responses, logs, errors, or RepoOS internal credential settings.
@@ -44,34 +41,4 @@ Build on the authentication/authorization, route, audit, and CLI patterns alread
 - 2026-10-22T15:27:50Z · status inbox→ready
 - 2026-10-22T15:27:57Z · cli_override, model_override
 - 2026-10-22T15:27:59Z · status ready→active, branch
-- 2026-10-22T15:28:04Z · message_queued at 2026-10-22T15:28:04.309Z
-- 2026-10-22T15:30:34Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-22T15:31:00Z · agent exited with an error (codex) · 2026-10-22T15:30:59.808682Z ERROR codex_core::session: failed to record rollout items: thread 01a16439-f77e-7ce3-beb4-27b20d757766 not found
-- 2026-10-22T15:31:00Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-22T15:30:59.808682Z ERROR codex_core::session: failed to record rollout items: thread 01a16439-f77e-7ce3-beb4-27b20d757766 not found
-- 2026-10-22T15:31:02Z · message_delivered: 1 message(s)
-- 2026-10-22T15:31:06Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
-- 2026-10-22T15:31:12Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
-- 2026-10-22T15:32:51Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
-- 2026-10-22T15:32:55Z · needs_input
-- 2026-10-22T15:32:55Z · cli_override, model_override
-- 2026-10-22T15:34:47Z · body
-- 2026-10-22T15:38:14Z · body
-- 2026-10-22T15:40:58Z · body
-- 2026-10-22T16:17:15Z · message_queued at 2026-10-22T16:17:15.196Z
-- 2026-10-22T16:17:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-22T16:22:15Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-22T16:25:16Z · body
-- 2026-10-22T16:25:58Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-22T16:25:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-22T16:25:58Z · message_delivered: 1 message(s)
-- 2026-10-22T16:29:57Z · body
-- 2026-10-22T16:39:27Z · status active→review
-- 2026-10-22T16:39:28Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-22T16:40:35Z · note: review pass 1: needs some work
-- 2026-10-22T16:40:35Z · status review→active
-- 2026-10-22T16:43:30Z · body
-- 2026-10-22T16:45:52Z · body
-- 2026-10-22T16:55:14Z · status active→review
-- 2026-10-22T16:55:14Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-22T16:56:10Z · note: review pass 2: good to go
-
+- 2026-10-22T16:39:26Z · status active→review

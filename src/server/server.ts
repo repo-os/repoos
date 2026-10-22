@@ -445,6 +445,8 @@ import {
   getModelProviders,
   getModelProviderUsage,
   setModelProviderKey,
+  listProjectEnvironmentSecrets,
+  mutateProjectEnvironmentSecret,
   getModelRoutingStatus,
   getModelRoutingDecisions,
   postModelRoutingProbe,
@@ -3705,6 +3707,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/model-providers", getModelProviders);
   router.register("GET", /^\/api\/model-providers\/([^/]+)\/usage$/, getModelProviderUsage);
   router.register("POST", /^\/api\/model-providers\/([^/]+)\/key$/, setModelProviderKey);
+  router.register(
+    "GET",
+    /^\/api\/project-environments\/([^/]+)\/secrets$/,
+    listProjectEnvironmentSecrets,
+  );
+  router.register(
+    "PUT",
+    /^\/api\/project-environments\/([^/]+)\/secrets$/,
+    mutateProjectEnvironmentSecret,
+  );
   router.register("GET", "/api/model-routing/status", getModelRoutingStatus);
   router.register("GET", "/api/model-routing/decisions", getModelRoutingDecisions);
   router.register("POST", "/api/model-routing/probe", postModelRoutingProbe);
