@@ -2,7 +2,7 @@
 id: "0908"
 title: "Human-assigned tasks need a real board pathway: move across columns to done without triggering AI, checks or review"
 type: feature
-status: ready
+status: active
 priority: p2
 area: [web, server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/human-assigned-tasks-need-a-real-board-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T19:22:55Z"
-updated_at: "2026-10-22T02:15:26Z"
+updated_at: "2026-10-22T02:15:33Z"
 dev_error_count: 6
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T02:06:11.110Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T02:06:13.448Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T02:06:15.613Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-22T02:06:22.060Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-22T02:06:23.912Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-22T02:06:25.795Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
@@ -48,3 +48,4 @@ Do not start without the human. Related rule in AGENTS.md: needs-human-step task
 - 2026-10-22T02:15:05Z · cli_override, model_override
 - 2026-10-22T02:15:06Z · needs_input
 - 2026-10-22T02:15:26Z · status active→ready
+- 2026-10-22T02:15:33Z · status ready→active
