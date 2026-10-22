@@ -8,10 +8,10 @@ area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/needs-human-step-banner-dedicated-split-
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-22T04:53:30Z"
-updated_at: "2026-10-22T15:32:56Z"
+updated_at: "2026-10-22T15:32:57Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-22T15:08:30.954Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Needs human step banner and dedicated PM action (target \"default\"): highlight .agent-waiting matched nothing on /work?task=0920&tab=details (http://127.0.0.1:42259/work?shotState=card:humanStep)"
@@ -73,3 +73,4 @@ Start from `NEEDS_INPUT_*` tables and `needsInputPrimaryAction` in `src/ui-app/s
 - 2026-10-22T15:16:57Z · CTO nudge: held — remote validation is running
 - 2026-10-22T15:21:03Z · body
 - 2026-10-22T15:26:33Z · body
+- 2026-10-22T15:32:57Z · cli_override, model_override
