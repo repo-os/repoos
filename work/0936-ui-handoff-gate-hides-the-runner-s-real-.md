@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-22T23:14:01Z"
-review_passes: 1
+last_close_out_gate_ms: 131788
+last_close_out_gate_at: "2026-10-22T23:17:08.943Z"
 id: "0936"
 title: UI handoff gate hides the runner's real shot failure ('runner result omitted the UI verification record')
 type: bug
@@ -13,6 +13,8 @@ branch: feat/ui-handoff-gate-hides-the-runner-s-real-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T19:57:21Z"
+updated_at: "2026-10-22T23:17:08Z"
+review_passes: 1
 ---
 ## Problem
 src/server/ui-handoff-gate.ts importRemoteVerification throws 'runner result omitted the UI verification record' whenever the runner's verification.json is missing and the result is not skipped. 2026-10-22, #0929: two handoffs failed with exactly that text, three times in the transcript, while the runner's result.detail (and partial shots) held the real failure. The engineer only saw the generic text and had to guess which of 3 declared shots broke. Each wrong guess costs a ~10 minute handoff.
@@ -42,4 +44,5 @@ Related: AGENTS.md shot hygiene (#0613, #0830) and #0866.
 - 2026-10-22T23:13:26Z · status active→review
 - 2026-10-22T23:13:26Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-22T23:14:01Z · note: review pass 1: good to go
+- 2026-10-22T23:17:08Z · close-out gate completed in 132s
 
