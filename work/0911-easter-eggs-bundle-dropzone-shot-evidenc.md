@@ -2,7 +2,7 @@
 id: "0911"
 title: "Easter eggs bundle: dropzone shot evidence (Manual tab, default picker)"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-dropzone-shot-evidenc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T01:34:32Z"
-updated_at: "2026-10-22T17:36:27Z"
+updated_at: "2026-10-22T18:11:24Z"
 ---
 ## Items
 - [ ] **E1 · Manual-tab handoff capture does not show a dropzone** (web) — #0899's declared Manual-tab shot has a click step but no recorded assertion, so the capture alone does not prove the dropzone rendered. Source: reviewer notes on #0899 (passes 4 and 5), 2026-10-22.
@@ -51,3 +51,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T17:36:22Z · status inbox→ready
 - 2026-10-22T17:36:27Z · cli_override, model_override
 - 2026-10-22T17:36:27Z · status ready→active, branch
+- 2026-10-22T18:11:24Z · status active→review
