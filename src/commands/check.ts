@@ -1905,7 +1905,9 @@ export async function runCheckPlan(
 ): Promise<StepRunResult[]> {
   const { repoRoot } = opts;
   const cfg = opts.cfg ?? loadConfig(repoRoot);
-  const env = opts.env ?? buildProjectConsumerEnv(repoRoot, "check:default", process.env);
+  const env =
+    opts.env ??
+    buildProjectConsumerEnv(resolveCheckStoreRoot(repoRoot), "check:default", process.env);
   const pkg = readPkg(repoRoot);
   const selected = selectSteps(plan, {
     profile: opts.profile,
@@ -2046,7 +2048,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   // would then record into this repo's live store instead of their own tmp ones.
   const checkStoreRoot = resolveCheckStoreRoot(repoRoot);
   const cfg = loadConfig(repoRoot);
-  const checkEnv = buildProjectConsumerEnv(repoRoot, "check:default", process.env);
+  const checkEnv = buildProjectConsumerEnv(checkStoreRoot, "check:default", process.env);
   // One validated attribution for the WHOLE run (#0870): the history rows, the
   // failed-first preflight, and the remote dispatch all use this instead of
   // reading REPOOS_TASK_ID directly, so an inherited id from another project

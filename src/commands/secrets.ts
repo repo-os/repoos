@@ -1,4 +1,5 @@
 import { RepoOsApi } from "../cli/repoos-api.js";
+import { normalizeProjectEnvironmentConsumer } from "../core/project-environments.js";
 
 async function secretInput(): Promise<string> {
   if (!process.stdin.isTTY) {
@@ -62,13 +63,14 @@ export async function cmdSecrets(args: string[]): Promise<number> {
     }
     try {
       const api = new RepoOsApi();
+      const normalizedConsumer = normalizeProjectEnvironmentConsumer(consumer);
       await api.requestOk("PUT", "/api/project-environment-bindings", {
-        consumer,
+        consumer: normalizedConsumer,
         environment: selectedEnvironment,
         keys,
       });
       console.log(
-        `Bound ${consumer} to ${selectedEnvironment} (${keys.length} granted key${keys.length === 1 ? "" : "s"})`,
+        `Bound ${normalizedConsumer} to ${selectedEnvironment} (${keys.length} granted key${keys.length === 1 ? "" : "s"})`,
       );
       return 0;
     } catch (error) {
