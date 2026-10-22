@@ -334,7 +334,7 @@ describe("RemoteValidationDrawer", () => {
       const { wrapper } = await mountDrawer({ tailscaleHosts: ["bee"], hosts: [hostRow("bee")] });
       const active = wrapper.get(".rvr-tab.active");
       expect(active.text()).toBe("Tailscale");
-      expect(wrapper.findAll('button[role="switch"]')).toHaveLength(4);
+      expect(wrapper.findAll('button[role="switch"]')).toHaveLength(5);
       expect(wrapper.text()).toContain("containerImage: repoos-ci");
       expect(wrapper.text()).not.toContain("HETZNER_API_TOKEN");
       // tailscale setup recipe, not hetzner's
@@ -353,7 +353,7 @@ describe("RemoteValidationDrawer", () => {
         .find((l) => l.text().startsWith("Retry on other hosts"));
       expect(label).toBeTruthy();
 
-      const sw = wrapper.findAll('button[role="switch"]')[3]!;
+      const sw = wrapper.findAll('button[role="switch"]')[4]!;
       // An unset form value is not an explicit `false` — with the key absent,
       // the dynamic default (true with 2+ hosts) owns it, so the control
       // renders ON exactly when the server would retry.
@@ -385,6 +385,38 @@ describe("RemoteValidationDrawer", () => {
       ).toBe(true);
     });
 
+    it("bundle upload limits (#0917): render defaults and persist changes", async () => {
+      const { wrapper, config, calls } = await mountDrawer({
+        tailscaleHosts: ["bee"],
+        hosts: [hostRow("bee")],
+      });
+
+      const numbers = wrapper.findAll('input[type="number"]');
+      expect(numbers).toHaveLength(3);
+      expect((numbers[1]!.element as HTMLInputElement).value).toBe("180");
+      expect((numbers[2]!.element as HTMLInputElement).value).toBe("90");
+
+      await numbers[1]!.setValue("240");
+      await numbers[2]!.setValue("60");
+      await flush();
+      expect(config.form["remoteValidation.bundleUploadBudgetSecs"]).toBe(240);
+      expect(config.form["remoteValidation.bundleUploadStallSecs"]).toBe(60);
+      expect(
+        calls.some(
+          (c) =>
+            c.method === "PATCH" &&
+            (c.body as Record<string, unknown>)?.["remoteValidation.bundleUploadBudgetSecs"] ===
+              240,
+        ),
+      ).toBe(true);
+
+      const metered = wrapper.find('[data-config-key="remoteValidation.forceLocalOnMeteredLink"]');
+      expect(metered.exists()).toBe(true);
+      await metered.trigger("click");
+      await flush();
+      expect(config.form["remoteValidation.forceLocalOnMeteredLink"]).toBe(true);
+    });
+
     it("hang timeout (#0729): renders the default and persists a change", async () => {
       const { wrapper, config, calls } = await mountDrawer({
         tailscaleHosts: ["bee"],
@@ -393,7 +425,7 @@ describe("RemoteValidationDrawer", () => {
 
       const label = wrapper.findAll("label").find((l) => l.text().startsWith("Hang timeout"));
       expect(label).toBeTruthy();
-      const input = wrapper.find('input[type="number"]');
+      const input = wrapper.findAll('input[type="number"]')[0]!;
       expect(input.exists()).toBe(true);
       // Unset form value falls back to the config default (5).
       expect((input.element as HTMLInputElement).value).toBe("5");
