@@ -2,7 +2,7 @@
 id: "0924"
 title: "Checks page: show % complete for a running check (steps and test files)"
 type: feature
-status: review
+status: active
 priority: p2
 area: [web, core]
 assigned_to: ai
