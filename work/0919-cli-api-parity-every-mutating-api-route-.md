@@ -2,7 +2,7 @@
 id: "0919"
 title: "CLI/API parity: every mutating API route gets a CLI command (or an explicit exemption), starting with stop-close-out, plus a generic 'repoos api' escape hatch"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -41,4 +41,4 @@ Evidence: route count from grep of router.register in src/server/server.ts and s
 - 2026-10-22T12:41:39Z · body
 - 2026-10-22T12:44:05Z · body
 - 2026-10-22T12:46:20Z · body
-- 2026-10-22T12:56:53Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-22T12:56:53Z · status active→review
