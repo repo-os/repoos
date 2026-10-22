@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-dropzone-shot-evidenc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T01:34:32Z"
-updated_at: "2026-10-22T17:44:00Z"
+updated_at: "2026-10-22T17:44:12Z"
 ---
 ## Items
 - [ ] **E1 · Manual-tab handoff capture does not show a dropzone** (web) — #0899's declared Manual-tab shot has a click step but no recorded assertion, so the capture alone does not prove the dropzone rendered. Source: reviewer notes on #0899 (passes 4 and 5), 2026-10-22.
@@ -37,61 +37,74 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 ```json
 [
 {
-"label": "Manual tab dropzone · light",
-"target": "default",
-"route": "/work",
-"highlight": ".shot-dropzone",
-"steps": [
-{
-"click": ".drawer-tabs .tab-btn:nth-child(2)"
-}
-],
-"assert": [
-{
-"selector": ".shot-dropzone",
-"label": "Screenshot dropzone is rendered"
-}
-],
-"state": "panel:defaultScreenshotPicker",
-"theme": "light"
+  "label": "Manual tab dropzone · light",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".shot-dropzone",
+  "steps": [
+    {
+      "click": ".drawer-tabs .tab-btn:nth-child(2)"
+    }
+  ],
+  "assert": [
+    {
+      "selector": ".shot-dropzone",
+      "label": "Screenshot dropzone is rendered"
+    }
+  ],
+  "state": "panel:defaultScreenshotPicker",
+  "theme": "light"
 },
 {
-"label": "Manual tab dropzone · dark",
-"target": "default",
-"route": "/work",
-"highlight": ".shot-dropzone",
-"steps": [
-{
-"click": ".drawer-tabs .tab-btn:nth-child(2)"
-}
-],
-"assert": [
-{
-"selector": ".shot-dropzone",
-"label": "Screenshot dropzone is rendered"
-}
-],
-"state": "panel:defaultScreenshotPicker",
-"theme": "dark"
+  "label": "Manual tab dropzone · dark",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".shot-dropzone",
+  "steps": [
+    {
+      "click": ".drawer-tabs .tab-btn:nth-child(2)"
+    }
+  ],
+  "assert": [
+    {
+      "selector": ".shot-dropzone",
+      "label": "Screenshot dropzone is rendered"
+    }
+  ],
+  "state": "panel:defaultScreenshotPicker",
+  "theme": "dark"
 },
 {
-"label": "Task drawer default screenshot picker",
-"target": "default",
-"route": "/work",
-"highlight": ".shot-dropzone",
-"assert": [
-{
-"selector": ".shot-dropzone",
-"label": "Default screenshot picker is rendered"
-}
-],
-"state": "panel:defaultScreenshotPicker"
+  "label": "Task drawer default screenshot picker",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".shot-dropzone",
+  "assert": [
+    {
+      "selector": ".shot-dropzone",
+      "label": "Default screenshot picker is rendered"
+    }
+  ],
+  "state": "panel:defaultScreenshotPicker"
 },
 {
-"label": "Task drawer screenshot upload failure",
-"target": "default",
-"route": "/work",
-"state": "panel:freeformFailedScreenshot"
+  "label": "Task drawer screenshot upload failure",
+  "target": "default",
+  "route": "/work",
+  "state": "panel:freeformFailedScreenshot"
+},
+{
+  "label": "Task browser work restart hint before control",
+  "target": "default",
+  "route": "/settings?tab=general&section=remote-validation",
+  "highlight": "[id=\"setting-remoteValidation.browserCaptureMode\"]",
+  "assert": [
+    {
+      "selector": "[id=\"setting-remoteValidation.browserCaptureMode\"] .restart-badge",
+      "label": "Restart hint is shown beside the setting",
+      "text": "restart required"
+    }
+  ]
 }
 ]
 ```
@@ -125,3 +138,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T17:40:45Z · message_delivered: 1 message(s)
 - 2026-10-22T17:44:00Z · body: Notes for AI (added 1, removed 1)
 - 2026-10-22T17:44:00Z · message_queued at 2026-10-22T17:44:00.340Z
+- 2026-10-22T17:44:12Z · body
