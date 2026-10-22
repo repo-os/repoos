@@ -11,7 +11,7 @@ branch: feat/task-spec-check-flags-easter-egg-bundles
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T14:52:31Z"
-updated_at: "2026-10-22T01:55:00Z"
+updated_at: "2026-10-22T02:04:14Z"
 dev_error_count: 6
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 ---
@@ -53,3 +53,4 @@ Start from `assessTaskUnderspecified` and `specSectionHeadingsForTask` in `src/c
 - 2026-10-22T01:51:19Z · status ready→active
 - 2026-10-22T01:55:00Z · body
 - 2026-10-22T01:55:00Z · body
+- 2026-10-22T02:04:14Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
