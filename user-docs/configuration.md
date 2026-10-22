@@ -1762,7 +1762,8 @@ passed a real end-to-end proof.
 | `remoteValidation.enabled` | boolean | `false` | yes | Master switch for the remote runner. |
 | `remoteValidation.provider` | string | `hetzner` | yes | Runner backend: `hetzner` (disposable cloud VM) or `tailscale` (persistent tailnet machine). |
 | `remoteValidation.tailscaleHost` | string | unset | yes | Tailscale hostname or 100.x.x.x IP of the runner machine — single-host shorthand for the pool (Tailscale provider only). |
-| `remoteValidation.tailscaleHosts` | array | unset | yes | Tailnet host pool (#0521): jobs dispatch to a host with the fewest active runs, queue only when every eligible host is at its per-host limit, and use this list's top-to-bottom order to break ties. Edit as a comma-separated host list in Settings → Remote validation or reorder plain-list hosts in Checks → Remote runners; saves update the live dispatcher without restarting. Rich `[[remoteValidation.tailscaleHosts]]` rows (`host`, plus optional `user`, `os`, `labels`, `maxConcurrent`) remain editable in `repoos.toml` and are read-only in the Remote runners tab. |
+| `remoteValidation.tailscaleHosts.engineers` | string (TOML row field) | unset | yes | Per-host on `[[remoteValidation.tailscaleHosts]]`: `engineers = ["opencode", "codex", "cursor"]` — CLIs that must be installed and signed in. Checked with `repoos runners check` and shown on the Runners tab. |
+| `remoteValidation.tailscaleHosts` | array | unset | yes | Tailnet host pool (#0521): jobs dispatch to a host with the fewest active runs, queue only when every eligible host is at its per-host limit, and use this list's top-to-bottom order to break ties. Edit as a comma-separated host list in Settings → Remote validation or reorder plain-list hosts in Checks → Remote runners; saves update the live dispatcher without restarting. Rich `[[remoteValidation.tailscaleHosts]]` rows (`host`, plus optional `user`, `os`, `labels`, `maxConcurrent`, `engineers`) remain editable in `repoos.toml` and are read-only in the Remote runners tab. |
 | `remoteValidation.tailscaleUser` | string | `root` | yes | SSH user on the tailscale host (Tailscale provider only). |
 | `remoteValidation.containerImage` | string | `repoos-ci` | yes | Docker image to run the gate in (Tailscale provider only). |
 | `remoteValidation.serverType` | string | `cax31` | yes | Hetzner server type. Must match the architecture the snapshot was built on. |
@@ -1826,7 +1827,7 @@ the shorthand does not jump ahead of it.
 
 **Rich rows** — one `[[remoteValidation.tailscaleHosts]]` block per host when
 you need per-host settings (`user`, `os`, `labels`, `maxConcurrent`,
-`runner`). Use this form when hosts differ (different SSH users, macOS vs
+`runner`, `engineers`). Use this form when hosts differ (different SSH users, macOS vs
 Linux, etc.):
 
 ```toml
@@ -1846,15 +1847,19 @@ maxConcurrent = 2          # this host can run two suites at once
 [[remoteValidation.tailscaleHosts]]
 host = "thinkpad"
 os = "linux"
+engineers = ["opencode", "codex", "cursor"]
 ```
 
 Per-host fields: `host` (required), `user`, `os` (capability label, e.g.
 `"macos"` or `"linux"`), `labels` (extra capabilities, e.g.
 `["apple-silicon"]`), `maxConcurrent` (per-host FIFO limit, default 1),
-`runner` (`"docker"` (default) or `"native"` — macOS-only).
+`runner` (`"docker"` (default) or `"native"` — macOS-only),
+`engineers` (CLIs that must be installed and signed in on the host:
+`opencode`, `codex`, `cursor` — checked with `repoos runners check`).
 
-The per-host attrs (`user`, `os`, `labels`, `maxConcurrent`, `runner`) are
-TOML-only; the Settings UI only edits the plain host-name list.
+The per-host attrs (`user`, `os`, `labels`, `maxConcurrent`, `runner`, `engineers`) are
+TOML-only; the Settings UI only edits the plain host-name list (see
+`remoteValidation.tailscaleHosts.engineers` in the table for the documented shape).
 
 The existing single-host shorthand `tailscaleHost = "mini"` still works and
 is folded into the pool as a plain entry. See

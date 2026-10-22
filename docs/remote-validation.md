@@ -262,15 +262,24 @@ transcript, chat or a bundle; keys stay on the runner.
    `ssh <host> 'cd /tmp && opencode run "say ok"'`). A CLI that needs a TTY,
    a browser callback or an OS keychain will fail here; fix it on the runner
    before starting a task.
-6. **Declare which CLIs each host can run.** Add a label per installed CLI to
-   that host's `[[remoteValidation.tailscaleHosts]]` row, e.g.
-   `labels = ["engineer-opencode", "engineer-codex"]`. Placement only sends a
-   task to a host whose labels cover its resolved CLI, so a missing login is a
-   routing skip with a visible reason instead of a crashed turn.
-7. **Optional isolation:** use a dedicated runner user for engineer sessions so
+6. **Declare which CLIs each host must have.** On that host's
+   `[[remoteValidation.tailscaleHosts]]` row set e.g.
+   `engineers = ["opencode", "codex", "cursor"]`. Run `repoos runners check`
+   (or open the Runners tab) to see install/auth per cell; `repoos runners setup
+   <host>` installs missing CLIs and prints the login line; `repoos runners setup
+   <host> --login <cli>` opens an interactive SSH session into the CLI's login
+   prompt (RepoOS never sees credentials). `just setup-bee` / `setup-thinkpad` /
+   `setup-mini` call the non-interactive setup step after Docker/CI provisioning.
+   **OpenCode auth:** do not use `opencode auth list` for checks — it fails on
+   some installs with "Could not resolve npm bin". RepoOS probes with
+   `opencode models` instead and reports provider names or a not-signed-in reason.
+7. **Capability routing (#0913):** hosts advertise only declared CLIs that pass
+   `repoos runners check`; a missing login is a routing skip with a visible fix
+   line instead of a crashed turn.
+8. **Optional isolation:** use a dedicated runner user for engineer sessions so
    a task's shell cannot read the operator's personal credentials beyond the
    CLI config directories that are deliberately mounted.
-8. **One real run per host (#0907).** Start a small task on that host, confirm
+9. **One real run per host (#0907).** Start a small task on that host, confirm
    the transcript streamed, the commits came back, and handoff/close-out
    passed. Record its before/during laptop memory and Playwright counts in
    #0907.

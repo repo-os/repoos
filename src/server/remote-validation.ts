@@ -104,6 +104,13 @@ import {
   offloadBrowserStepsEnabled,
   REPOOS_OFFLOAD_BROWSER_STEPS,
 } from "../core/browser-offload.js";
+import {
+  buildRunnerEngineerHostReport,
+  declaredEngineerClis,
+  parseRunnerEngineerProbeOutput,
+  runnerEngineerProbeCommand,
+  type RunnerEngineerHostReport,
+} from "../core/runner-engineer-clis.js";
 
 export type { CheckSummary } from "./done.js";
 export { ConcurrencyGate, QueueDeadlineError } from "../core/concurrency-gate.js";
@@ -523,6 +530,8 @@ export interface RemoteHostStatus {
   pressureCheckEnabled?: boolean;
   /** Per-host thresholds, mirrored from `pressureGuard` for the UI (#0901). */
   pressureThresholds?: PressureThresholds;
+  /** Declared engineer CLI install/auth state (#0915). */
+  engineerClis?: RunnerEngineerHostReport;
   /** Standalone / host-lock waiters with phase and queue position (#0705). */
   lockWaiters?: {
     taskId: string;
@@ -3410,6 +3419,10 @@ interface PoolHostState {
   pressureSampledAt?: number;
   /** In-flight pressure probe; repeated callers share it. */
   pressureSampling?: Promise<void>;
+  /** Latest engineer-CLI check (#0915). */
+  engineerClis?: RunnerEngineerHostReport;
+  engineerClisSampledAt?: number;
+  engineerClisSampling?: Promise<void>;
 }
 
 /** One in-flight remote run, attributed to the host executing it (#0564). */
@@ -3494,6 +3507,8 @@ const MAX_HEALTH_RETRIES = 10;
 const PRESSURE_CACHE_MS = 30_000;
 /** Bounded SSH budget for the pressure probe — it runs before dispatch. */
 const PRESSURE_PROBE_TIMEOUT_MS = 8_000;
+/** Engineer CLI probe may run several CLIs sequentially (#0915). */
+const ENGINEER_CLI_PROBE_TIMEOUT_MS = 45_000;
 
 /** Effective runner-health config for the pool (read live, so Settings applies). */
 export interface HostPressureOptions {
@@ -4177,6 +4192,7 @@ export class TailscaleHostPool {
           pressure: s.pressure,
           pressureCheckEnabled: this.pressureEnabled(),
           pressureThresholds: this.pressureOptions().thresholds,
+          engineerClis: s.engineerClis,
         },
         s.hostLock,
       ),
@@ -4378,7 +4394,48 @@ export class TailscaleHostPool {
     for (const s of this.liveHosts()) {
       if (!s.probed || !s.healthy) continue;
       void this.ensurePressure(s, opts.force === true);
+      void this.ensureEngineerClis(s, opts.force === true);
     }
+  }
+
+  private async ensureEngineerClis(s: PoolHostState, force = false): Promise<void> {
+    const declared = declaredEngineerClis(s.spec);
+    if (!declared.length) {
+      s.engineerClis = undefined;
+      return;
+    }
+    if (
+      !force &&
+      s.engineerClisSampledAt !== undefined &&
+      Date.now() - s.engineerClisSampledAt < this.pressureCacheMs
+    ) {
+      return;
+    }
+    if (s.engineerClisSampling) return s.engineerClisSampling;
+    s.engineerClisSampling = (async () => {
+      try {
+        const res = await this.exec.runRemote(
+          s.ssh,
+          runnerEngineerProbeCommand(declared),
+          () => {},
+          ENGINEER_CLI_PROBE_TIMEOUT_MS,
+        );
+        const lines =
+          res.code === 0 && !res.timedOut ? parseRunnerEngineerProbeOutput(res.output) : [];
+        s.engineerClis = buildRunnerEngineerHostReport(
+          { ...s.spec, user: s.ssh.user },
+          undefined,
+          lines,
+          new Date().toISOString(),
+        );
+        s.engineerClisSampledAt = Date.now();
+      } catch {
+        s.engineerClisSampledAt = Date.now();
+      }
+    })().finally(() => {
+      s.engineerClisSampling = undefined;
+    });
+    return s.engineerClisSampling;
   }
 
   /** Latest pressure verdict for one host (tests and failure correlation). */

@@ -498,6 +498,26 @@ function fmtAgo(iso: string): string {
             <span v-else class="rr-dim">—</span>
           </dd>
         </div>
+        <div v-if="(h.engineerClis?.cells ?? []).some((c) => c.declared)">
+          <dt>Engineer CLIs</dt>
+          <dd class="rr-wrap rr-engineer-clis">
+            <span
+              v-for="cell in (h.engineerClis?.cells ?? []).filter((c) => c.declared)"
+              :key="cell.cli"
+              class="rr-engineer-cli"
+              :class="{ 'rr-bad': !cell.ok }"
+            >
+              <span class="mono">{{ cell.cli }}</span>
+              <span v-if="cell.ok" class="rr-ok"> ready</span>
+              <span v-else-if="!cell.installed" class="rr-bad"> missing</span>
+              <span v-else-if="cell.auth === 'not-signed-in'" class="rr-bad"> not signed in</span>
+              <span v-else class="rr-bad"> unknown</span>
+              <span v-if="cell.version" class="rr-dim"> · {{ cell.version }}</span>
+              <span v-if="cell.detail" class="rr-dim"> · {{ cell.detail }}</span>
+              <span v-if="!cell.ok && cell.fix" class="rr-fix-line">fix: {{ cell.fix }}</span>
+            </span>
+          </dd>
+        </div>
         <div>
           <dt>Memory health</dt>
           <dd class="rr-wrap">
