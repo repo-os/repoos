@@ -12,6 +12,7 @@ export * from "./schedules.js";
 export * from "./stories.js";
 export * from "./models.js";
 export * from "./model-providers.js";
+export * from "./project-environments.js";
 export * from "./model-routing.js";
 export * from "./playground.js";
 export * from "./tasks.js";
