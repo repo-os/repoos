@@ -79,9 +79,13 @@ describe("sweepStaleWorktrees — full mode", () => {
         });
 
         expect(report.removedWorktrees).toHaveLength(0);
-        expect(report.keptDirty.map(({ branch, reason }) => [branch, reason])).toEqual([
-          ["repoos/integrate/0009", "task agent still active"],
+        expect(
+          report.keptDirty
+            .map(({ branch, reason }) => [branch, reason])
+            .sort(([a], [b]) => a!.localeCompare(b!)),
+        ).toEqual([
           ["feat/live", "task agent still active"],
+          ["repoos/integrate/0009", "task agent still active"],
         ]);
       } finally {
         clean();
