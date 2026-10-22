@@ -11,7 +11,7 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T14:53:30Z"
+updated_at: "2026-10-22T14:53:51Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
@@ -58,3 +58,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T14:49:26Z · status active→review
 - 2026-10-22T14:52:39Z · note: review pass 1: needs some work
 - 2026-10-22T14:53:30Z · status review→active
+- 2026-10-22T14:53:51Z · CTO nudge: held — remote validation is running
