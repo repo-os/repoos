@@ -37,10 +37,14 @@ import { spawn } from "node:child_process";
 import { writeChildStdin } from "../core/child-stdin.js";
 import {
   bundleUploadLimitsFromConfig,
+  estimateCandidateUploadBytes,
   formatBundleUploadDetail,
   linkProbeAcceptable,
+  localPressureOkForLocalGate,
   probeHostLink,
+  readLastCloseOutGateMs,
   runSshForProbe,
+  shouldPreferLocalGate,
   sshTransferArgs,
   uploadFileOverSsh,
   type BundleUploadLimits,
@@ -5546,6 +5550,19 @@ export class TailscaleRunner implements RemoteValidator {
       emit(
         `[link probe ${hostLabel}: ${link.rttMs} ms RTT, ${Math.round(link.throughputBps / 1024)} KB/s]\n`,
       );
+      const preferLocal = shouldPreferLocalGate({
+        forceMeteredLocal: rv.forceLocalOnMeteredLink === true,
+        probe: link,
+        bundleBytes: estimateCandidateUploadBytes(incrementalUpload),
+        localGateMs: readLastCloseOutGateMs(this.config.root, this.config.workDir, opts.taskId),
+        remoteGateMs: readLastCloseOutGateMs(this.config.root, this.config.workDir, opts.taskId),
+        localPressureOk: localPressureOkForLocalGate(this.config),
+      });
+      if (preferLocal.prefer) {
+        const detail = preferLocal.detail ?? "running locally";
+        emit(`[${detail}]\n`);
+        return withScope(this.infraFail(detail, { taskId: opts.taskId, host: host.ip }));
+      }
       const uploadLimits = opts.uploadLimits ?? bundleUploadLimitsFromConfig(rv);
       let upload: SuccessfulUpload | null = null;
       let run: RemoteExecResult | null = null;
@@ -5578,6 +5595,7 @@ export class TailscaleRunner implements RemoteValidator {
           },
         });
         if (!preparedUpload.ok) {
+          this.uploadAbortByTask.delete(opts.taskId);
           const detail =
             preparedUpload.stage === "bundle"
               ? `git bundle failed: ${preparedUpload.detail}`
