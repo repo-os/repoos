@@ -2,7 +2,7 @@
 id: "0923"
 title: repoos gc must spare the candidate worktree of a running close-out
 type: bug
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
@@ -75,3 +75,4 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 - 2026-10-22T12:52:12Z · status review→active
 - 2026-10-22T12:52:22Z · message_queued at 2026-10-22T12:52:22.036Z
 - 2026-10-22T12:52:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T12:52:59Z · status active→review
