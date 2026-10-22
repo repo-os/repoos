@@ -3,6 +3,8 @@ id: "0665"
 title: "Lifecycle: deletion, retention, orphan cleanup, recovery"
 type: feature
 status: inbox
+human_step_decision: agent
+human_step_decision_key: 1160349a
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 1160349a
 priority: p1
