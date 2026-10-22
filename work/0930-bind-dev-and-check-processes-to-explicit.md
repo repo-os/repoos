@@ -2,7 +2,7 @@
 id: "0930"
 title: Bind dev and check processes to explicit environments
 type: feature
-status: active
+status: review
 human_step_decision: agent
 human_step_decision_key: a1c4ab9e
 priority: p1
@@ -42,4 +42,4 @@ Depends on #0927 for the storage/environment contract and #0928 for authorized m
 - 2026-10-22T17:07:47Z · status ready→active, branch
 - 2026-10-22T17:15:37Z · body
 - 2026-10-22T17:17:19Z · body
-- 2026-10-22T17:32:20Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-22T17:32:20Z · status active→review
