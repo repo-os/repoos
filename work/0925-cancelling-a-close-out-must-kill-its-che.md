@@ -11,7 +11,7 @@ branch: feat/cancelling-a-close-out-must-kill-its-che
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:32:56Z"
-updated_at: "2026-10-22T09:46:47Z"
+updated_at: "2026-10-22T09:53:35Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist, tests/checks-page-default-tab.test.ts > IntegrationPipelineSummary (#0738) > renders the active task, stage, and queue, tests/local-resource-gates.test.ts > cross-process local check slots > reaps a detached close-out check group after its candidate disappeared on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: eb8afab324f695c49a0a9ff36d9d65337209b70b
 handoff_signal_retry_count: 2
@@ -84,3 +84,4 @@ Also fix #0921 in the same change (dead-holder detection for local check slots: 
 - 2026-10-22T09:35:46Z · body
 - 2026-10-22T09:37:06Z · body
 - 2026-10-22T09:46:47Z · handoff failed · remote validation failed: test failure: tests/local-resource-gates.test.ts > cross-process local check slots > reaps a detached close-out check group after its candidate disappeared on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-22T09:53:35Z · CTO action: restart-stalled-agent (fresh) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist, tests/checks-page-default-tab.test.ts > IntegrationPipelineSummary (#0738) > renders the active task, stage, and queue, tests/local-resource-gates.test.ts > cross-process local check slots > reaps a detached close-out check group after its candidate disappeared on mini — fix it in the feature branch and re-run the gate
