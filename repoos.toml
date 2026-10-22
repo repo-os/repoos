@@ -117,7 +117,8 @@ model_routing.mode = "shadow"
 model_routing.provider = "openrouter"
 activityAnimationSize = "24"
 model_routing.humanStepCheck = true
-remoteValidation.browserCaptureMode = "local"
+remoteValidation.browserCaptureMode = "runner-available"
+pressureGuard.enabled = false
 [[remoteValidation.tailscaleHosts]]
 host = "bee"
 user = "nick"
@@ -732,7 +733,8 @@ healthCheck.url = "http://127.0.0.1:{port}/"
 [[budget.allowlist]]
 cli = "opencode"
 models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash"]
-pausedModels = [{ model = "opencode-go/deepseek-v4.1-flash", pausedReason = "Go usage limit exceeded (429) on 2026-10-22; resume when the opencode-go quota resets" }, { model = "opencode-go/glm-5.3-flash", pausedReason = "Go usage limit exceeded (429) on 2026-10-22; resume when the opencode-go quota resets" }]
+pausedModels = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash"]
+pausedReason = "Go usage limit exceeded (429) on 2026-10-22; resume when the opencode-go quota resets"
 [[budget.allowlist]]
 cli = "github copilot"
 models = ["default"]
