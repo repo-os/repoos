@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0927"
 title: Define named project environments and file-backed storage
 type: feature
@@ -40,3 +41,4 @@ Work in the existing config/environment loading and file utility layers under sr
 - 2026-10-22T14:32:17Z · cli_override, model_override
 - 2026-10-22T14:32:18Z · status ready→active, branch
 - 2026-10-22T14:36:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
