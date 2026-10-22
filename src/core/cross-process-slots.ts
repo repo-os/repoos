@@ -11,9 +11,10 @@ import {
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
-export const STALE_MS = 90 * 1000;
-export const WEDGED_AFTER_MS = 75 * 1000;
+export const STALE_MS = 75 * 1000;
+export const WEDGED_AFTER_MS = STALE_MS;
 export const WEDGED_RECLAIM_AFTER_MS = 150 * 1000;
+const LEGACY_STALE_MS = 30 * 60 * 1000;
 const HEARTBEAT_MS = 15_000;
 
 function processIsAlive(pid: number): boolean {
@@ -141,6 +142,7 @@ function isStaleSlot(
 ): boolean {
   // A slot's recorded owner is authoritative when its process has exited;
   // heartbeat timestamps alone can leave a dead close-out blocking for 30m.
+  let kind: unknown;
   try {
     const rawPid = readFileSync(join(dir, ".holder"), "utf8").trim();
     if (/^\d+$/.test(rawPid)) {
@@ -151,6 +153,7 @@ function isStaleSlot(
           string,
           unknown
         >;
+        kind = meta.kind;
         const recorded =
           typeof meta.processStartToken === "string" ? meta.processStartToken : undefined;
         const current = processStartToken(pid);
@@ -175,29 +178,10 @@ function isStaleSlot(
       /* older slot dirs use filesystem time */
     }
     if (age > staleAfterMs) {
-      const marker = join(dir, ".wedged-since");
-      try {
-        const since = Number(readFileSync(marker, "utf8"));
-        if (Number.isFinite(since)) {
-          if (monotonicMs() - since < reclaimGraceMs) return false;
-          return terminateHolder(dir);
-        }
-      } catch {
-        try {
-          writeFileSync(marker, String(monotonicMs()), "utf8");
-        } catch {
-          /* concurrent release */
-        }
-      }
-      return false;
-    } else {
-      try {
-        rmSync(join(dir, ".wedged-since"), { force: true });
-      } catch {
-        /* best effort */
-      }
+      if (kind !== "local-check") return age > LEGACY_STALE_MS;
+      return age >= staleAfterMs + reclaimGraceMs ? terminateHolder(dir) : false;
     }
-    return age > STALE_MS;
+    return false;
   } catch {
     return true;
   }
