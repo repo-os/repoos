@@ -7,7 +7,9 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 import * as apiMod from "../src/api";
+import { useAuthStore } from "../src/stores/auth";
 import DeploymentsView from "../src/views/DeploymentsView.vue";
 
 const api = vi.spyOn(apiMod, "api");
@@ -83,8 +85,11 @@ function status(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-async function mountView(): Promise<VueWrapper> {
-  const wrapper = mount(DeploymentsView, { attachTo: document.body });
+async function mountView(role: "admin" | "member" = "admin"): Promise<VueWrapper> {
+  const pinia = createPinia();
+  setActivePinia(pinia);
+  useAuthStore().role = role;
+  const wrapper = mount(DeploymentsView, { attachTo: document.body, global: { plugins: [pinia] } });
   await flushPromises();
   return wrapper;
 }
@@ -107,6 +112,37 @@ describe("DeploymentsView matrix (#0365)", () => {
     expect(wrapper.text()).toContain("production");
     expect(wrapper.text()).toContain("Does not upload or sync variables");
     expect(api).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it("loads deployments for members without calling the admin-only environment route or exposing binding controls", async () => {
+    api.mockImplementation(async (path) => {
+      if (path === "/api/deployments")
+        return status({
+          rows: status().rows.map((row) => ({ ...row, environment: "production" })),
+        }) as never;
+      throw new Error("Admin access required");
+    });
+    const wrapper = await mountView("member");
+    expect(wrapper.find(".dep-err").exists()).toBe(false);
+    expect(wrapper.text()).toContain("Local environment: production");
+    expect(wrapper.text()).toContain("Ask an admin to change this binding");
+    expect(wrapper.find(".dep-env-binding select").exists()).toBe(false);
+    expect(api).toHaveBeenCalledTimes(1);
+    expect(api).toHaveBeenCalledWith("/api/deployments");
+    wrapper.unmount();
+  });
+
+  it("loads the admin environment list and allows an admin to bind a deployment", async () => {
+    api.mockImplementation(async (path) => {
+      if (path === "/api/deployments") return status() as never;
+      if (path === "/api/project-environments") return { environments: [{ id: "dev" }] } as never;
+      throw new Error(`Unexpected API route: ${path}`);
+    });
+    const wrapper = await mountView("admin");
+    expect(wrapper.find(".dep-env-binding select").exists()).toBe(true);
+    expect(wrapper.text()).not.toContain("Ask an admin to change this binding");
+    expect(api).toHaveBeenCalledWith("/api/project-environments");
     wrapper.unmount();
   });
 

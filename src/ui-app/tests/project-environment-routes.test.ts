@@ -303,6 +303,15 @@ describe("project environment secret routes", () => {
     const listed = fx.response();
     getProjectEnvironmentBindings(fx.ctx, fx.req(), listed.res, {});
     expect(listed.fake.payload).toEqual({ bindings: [] });
+
+    const environmentList = fx.response();
+    listProjectEnvironments(
+      fx.ctx,
+      fx.req("{}", { token: fx.memberToken }),
+      environmentList.res,
+      {},
+    );
+    expect(environmentList.fake.status).toBe(403);
   });
 
   it("rejects delete on inherited-only keys and reports accurate status after writable delete", async () => {

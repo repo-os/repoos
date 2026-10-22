@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import Button from "../components/ui/button.vue";
 import { api, JSON_OPTS } from "../api";
+import { useAuthStore } from "../stores/auth";
 import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
 
 interface DeploymentRow {
@@ -57,6 +58,8 @@ interface ServiceGroup {
 const ACCENT_VARS = ["--cyan", "--violet", "--amber", "--green"];
 
 const status = ref<DeploymentsStatus | null>(null);
+const auth = useAuthStore();
+const canBindEnvironment = computed(() => auth.role === "admin");
 const loading = ref(true);
 const error = ref("");
 const message = ref("");
@@ -171,6 +174,10 @@ async function load(): Promise<void> {
   error.value = "";
   try {
     if (readShotPreviewFixtureFromLocation(window.location) === "deployments:environmentBinding") {
+      // Screenshot-only state: the preview fixture represents an admin
+      // reviewing the binding controls. Production auth still gates every
+      // write, and this branch makes no API calls.
+      auth.role = "admin";
       status.value = {
         enabled: true,
         rows: [
@@ -208,10 +215,10 @@ async function load(): Promise<void> {
       };
       return;
     }
-    const [deployments, environments] = await Promise.all([
-      api<Omit<DeploymentsStatus, "environments">>("/api/deployments"),
-      api<{ environments: { id: string }[] }>("/api/project-environments"),
-    ]);
+    const deployments = await api<Omit<DeploymentsStatus, "environments">>("/api/deployments");
+    const environments = canBindEnvironment.value
+      ? await api<{ environments: { id: string }[] }>("/api/project-environments")
+      : { environments: [] };
     status.value = { ...deployments, environments: environments.environments };
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
@@ -439,7 +446,7 @@ onBeforeUnmount(() => {
                     on <code>{{ b.branch }}</code>
                   </template>
                 </div>
-                <label class="dep-env-binding">
+                <label v-if="canBindEnvironment" class="dep-env-binding">
                   Local environment
                   <select
                     :value="svc.cells.get(b.branch)!.environment ?? ''"
@@ -472,6 +479,10 @@ onBeforeUnmount(() => {
                     {{ svc.cells.get(b.branch)!.provider || "a provider" }}.</small
                   >
                 </label>
+                <p v-else class="dep-env-readonly">
+                  Local environment: {{ svc.cells.get(b.branch)!.environment || "not selected" }}.
+                  Ask an admin to change this binding.
+                </p>
                 <p
                   v-if="svc.cells.get(b.branch)!.environmentError"
                   class="dep-env-error"
@@ -802,6 +813,12 @@ onBeforeUnmount(() => {
   color: var(--txt-faint);
   font-size: 10px;
   font-weight: 500;
+  line-height: 1.4;
+}
+.dep-env-readonly {
+  margin: 10px 0;
+  color: var(--txt-dim);
+  font-size: 11px;
   line-height: 1.4;
 }
 .dep-env-error {
