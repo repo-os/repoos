@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T02:17:25Z"
-updated_at: "2026-10-22T02:17:36Z"
+updated_at: "2026-10-22T02:27:50Z"
 ---
 ## Problem
 2026-10-22: the opencode-go subscription hit its usage limit (429 'Go usage limit exceeded'). Every engineer on opencode-go failed instantly, dozens of times, for hours: #0910, #0909, #0904, #0908 and others made no progress while the board looked active. RepoOS only switches an engineer's model once after 3 crashes, and it refuses to switch tasks whose override is 'human-set' (pinned), which includes every override a driver sets with repoos override. Alerts exist (#0678) but nothing pauses the provider or re-routes work, and the CTO/reviewer paths that use opencode models fail the same way. A driver had to notice the pattern and run repoos agents pause by hand.
