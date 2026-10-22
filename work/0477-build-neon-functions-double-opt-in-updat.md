@@ -3,6 +3,8 @@ id: "0477"
 title: Build Neon Functions double-opt-in updates service
 type: feature
 status: inbox
+human_step_decision: human
+human_step_decision_key: ff3c7440
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: ff3c7440
 priority: p2
