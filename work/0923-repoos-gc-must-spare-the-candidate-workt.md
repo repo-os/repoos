@@ -12,7 +12,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:06:09Z"
 updated_at: "2026-10-22T12:11:20Z"
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-22T12:09:45.656Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Control dashboard worktree cleanup preview (target \"default\"): highlight .gc-preview matched nothing on / (http://127.0.0.1:43707/)"
 ---
 ## Problem
@@ -70,3 +69,4 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 - 2026-10-22T12:09:42Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Control dashboard worktree cleanup preview (target "default"): highlight .gc-preview matched nothing on / (http://127.0.0.1:43707/)
 - 2026-10-22T12:10:05Z · body
 - 2026-10-22T12:11:20Z · body
+
