@@ -2,7 +2,7 @@
 id: "0914"
 title: "Provider usage-limit failover: detect a 429 usage-limit, pause that provider everywhere, and re-route even pinned tasks"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -106,3 +106,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T07:19:23Z · body
 - 2026-10-22T07:20:00Z · body
 - 2026-10-22T07:32:11Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-10-22T07:32:11Z · status active→review
