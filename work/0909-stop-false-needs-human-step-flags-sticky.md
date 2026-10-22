@@ -11,10 +11,10 @@ area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/stop-false-needs-human-step-flags-sticky
-cli_override: opencode
-model_override: opencode-go/deepseek-v4.1-flash
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-21T19:41:23Z"
-updated_at: "2026-10-22T01:15:14Z"
+updated_at: "2026-10-22T01:16:47Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:11.193Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:12.880Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:14.431Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -61,3 +61,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T01:15:11Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · error: Go usage limit exceeded
 - 2026-10-22T01:15:12Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · error: Go usage limit exceeded
 - 2026-10-22T01:15:14Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-22T01:16:47Z · cli_override, model_override
