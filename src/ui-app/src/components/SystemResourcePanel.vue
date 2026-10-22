@@ -318,19 +318,31 @@ const serveMessage = computed(() => {
                 repoStats.worktrees === 1 ? "" : "s"
               }}</span
             >
-            <button
-              type="button"
-              class="gc-action"
-              :disabled="gcStatus?.blocked"
-              :title="
+            <span
+              class="gc-tooltip-trigger"
+              tabindex="0"
+              :data-tip="
                 gcStatus?.blocked
                   ? `Close-out active: ${gcStatus.activeCloseOutTaskIds.map((id) => `#${id}`).join(', ')}`
                   : undefined
               "
-              @click="previewWorktreeCleanup"
+              :aria-label="
+                gcStatus?.blocked
+                  ? `Clean up worktrees unavailable. Close-out active: ${gcStatus.activeCloseOutTaskIds.map((id) => `#${id}`).join(', ')}`
+                  : 'Clean up worktrees'
+              "
             >
-              {{ worktreesOverLimit ? "Run repoos gc · clean up worktrees" : "Clean up worktrees" }}
-            </button>
+              <button
+                type="button"
+                class="gc-action"
+                :disabled="gcStatus?.blocked"
+                @click="previewWorktreeCleanup"
+              >
+                {{
+                  worktreesOverLimit ? "Run repoos gc · clean up worktrees" : "Clean up worktrees"
+                }}
+              </button>
+            </span>
             <span>tracked on main · gitignored excluded</span>
           </div>
           <div v-if="gcPreview" class="gc-preview" aria-live="polite">
@@ -854,6 +866,17 @@ const serveMessage = computed(() => {
   background: var(--panel);
   cursor: pointer;
   font: inherit;
+}
+
+.gc-tooltip-trigger {
+  display: inline-flex;
+  align-self: flex-start;
+  border-radius: 5px;
+}
+
+.gc-tooltip-trigger:focus-visible {
+  outline: 2px solid var(--border-bright);
+  outline-offset: 2px;
 }
 
 .gc-action:disabled {
