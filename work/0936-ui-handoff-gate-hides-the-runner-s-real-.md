@@ -11,7 +11,7 @@ branch: feat/ui-handoff-gate-hides-the-runner-s-real-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T19:57:21Z"
-updated_at: "2026-10-22T22:56:57Z"
+updated_at: "2026-10-22T22:57:10Z"
 ---
 ## Problem
 src/server/ui-handoff-gate.ts importRemoteVerification throws 'runner result omitted the UI verification record' whenever the runner's verification.json is missing and the result is not skipped. 2026-10-22, #0929: two handoffs failed with exactly that text, three times in the transcript, while the runner's result.detail (and partial shots) held the real failure. The engineer only saw the generic text and had to guess which of 3 declared shots broke. Each wrong guess costs a ~10 minute handoff.
@@ -33,3 +33,4 @@ Related: AGENTS.md shot hygiene (#0613, #0830) and #0866.
 - 2026-10-22T22:56:49Z · status inbox→ready
 - 2026-10-22T22:56:57Z · cli_override, model_override
 - 2026-10-22T22:56:57Z · status ready→active, branch
+- 2026-10-22T22:57:10Z · message_queued at 2026-10-22T22:57:10.543Z
