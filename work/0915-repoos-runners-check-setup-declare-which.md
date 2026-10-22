@@ -15,7 +15,7 @@ branch: feat/repoos-runners-check-setup-declare-which
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T02:26:27Z"
-updated_at: "2026-10-22T15:52:44Z"
+updated_at: "2026-10-22T16:00:44Z"
 ---
 ## Problem
 Whole-engineer-sessions on runners (ADR 0009, #0913) and the existing runner pool need each runner to have the same engineer CLIs installed and signed in. Today that is checked by hand with ad-hoc ssh commands. On 2026-10-22 the state was: bee and thinkpad have opencode-go signed in; codex (ChatGPT) and cursor-agent are signed in only on thinkpad; bee has no cursor-agent and codex is not logged in; mini was not checked; opencode's own 'auth list' failed on both with 'Could not resolve npm bin'. Nothing tells a human or the scheduler which cell is wrong, and the justfile setup recipes only provision Docker and the CI image, not the engineer CLIs.
@@ -45,3 +45,4 @@ Start from scripts/remote-runner/*, the justfile _setup-runner recipe, src/serve
 - 2026-10-22T15:52:34Z · status inbox→ready
 - 2026-10-22T15:52:43Z · cli_override, model_override
 - 2026-10-22T15:52:44Z · status ready→active, branch
+- 2026-10-22T16:00:44Z · body
