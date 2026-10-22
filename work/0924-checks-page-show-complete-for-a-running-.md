@@ -11,7 +11,7 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T15:14:28Z"
+updated_at: "2026-10-22T15:15:04Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
@@ -37,25 +37,25 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 ```json
 [
 {
-"label": "Running close-out progress with test files and retry attempt",
-"target": "default",
-"route": "/work?task=9999&tab=overview",
-"highlight": "[data-test-id=\"close-out-check-progress\"]",
-"state": "closeOut:checkProgress"
+  "label": "Running close-out progress with test files and retry attempt",
+  "target": "default",
+  "route": "/work?task=9999&tab=overview",
+  "highlight": "[data-test-id=\"close-out-check-progress\"]",
+  "state": "closeOut:checkProgress"
 },
 {
-"label": "Running close-out progress with unknown test totals",
-"target": "default",
-"route": "/work?task=9999&tab=overview",
-"highlight": "[data-test-id=\"close-out-check-progress\"]",
-"state": "closeOut:checkProgressUnknown"
+  "label": "Running close-out progress with unknown test totals",
+  "target": "default",
+  "route": "/work?task=9999&tab=overview",
+  "highlight": "[data-test-id=\"close-out-check-progress\"]",
+  "state": "closeOut:checkProgressUnknown"
 },
 {
-"label": "Checks page with a running test-step progress bar",
-"target": "default",
-"route": "/checks?tab=now",
-"highlight": "[data-test-id=\"checks-page-progress\"]",
-"state": "closeOut:checkProgress"
+  "label": "Checks page with a running test-step progress bar",
+  "target": "default",
+  "route": "/checks?tab=now",
+  "highlight": "[data-test-id=\"checks-page-progress\"]",
+  "state": "checks:progress"
 }
 ]
 ```
@@ -91,3 +91,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T15:07:16Z · body
 - 2026-10-22T15:10:29Z · body
 - 2026-10-22T15:14:28Z · note: state "closeOut:checkProgress" did not render on target "default" — /checks?tab=now shows no task card
+- 2026-10-22T15:15:04Z · body
