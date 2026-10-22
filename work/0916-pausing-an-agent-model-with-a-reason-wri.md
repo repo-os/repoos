@@ -2,7 +2,7 @@
 id: "0916"
 title: Pausing an agent model with a reason writes an inline table that RepoOS's own TOML validator rejects (breaks toml-validate and release gates)
 type: feature
-status: active
+status: review
 priority: p1
 area: [core, server]
 assigned_to: ai
@@ -38,4 +38,4 @@ Look at the pause writer behind repoos agents pause and the Agents page Budget C
 - 2026-10-22T12:05:53Z · body
 - 2026-10-22T12:08:31Z · body
 - 2026-10-22T12:10:18Z · body
-- 2026-10-22T12:19:59Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-22T12:19:59Z · status active→review
