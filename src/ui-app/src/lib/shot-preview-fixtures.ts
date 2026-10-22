@@ -928,6 +928,19 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         summary: { pass: 5, warn: 0, fail: 1 },
       });
       break;
+    case "drawer:tabExpandWarnings":
+      // #0922 — compose the real landing checklist with the other two warning
+      // states that used to crowd it out of the tab viewport.
+      applyShotPreviewFixture(repo, "drawer:landable");
+      ensureFixtureTask(repo, "review", {
+        branch: "feat/shot-fixture",
+        needsInput: true,
+        needsInputReason: "review-failed",
+        needsInputDetail: "The reviewer found issues that need attention.",
+      });
+      repo.setHandoffError(SHOT_PREVIEW_FIXTURE_TASK_ID, "Fixture handoff check failed");
+      document.documentElement.setAttribute(SHOT_PREVIEW_APPLIED_ATTR, fixture);
+      break;
     case "drawer:activeRequirements": {
       // #0817 — show Update requirements on an active task without mutating
       // board status on main. Prefer the real task from `?task=` so capture

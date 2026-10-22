@@ -1957,14 +1957,29 @@ const transitioned = computed(() => !!(ui.active && repo.transitionState?.id ===
 
 // ---- Fullscreen tab (#0750) ----
 //
-// The tab strip's toggle expands the drawer to fill the viewport so the active
-// tab's contents are easier to read. It is the same dialog (not a second copy):
+// The tab strip's toggle expands the drawer to fill the viewport, hides the
+// cards above the tabs, and gives the active tab's contents more room. It is
+// the same dialog (not a second copy):
 // expanding the shell keeps chat drafts, form edits and scroll position intact,
 // and "exit" simply restores the drawer's normal width. State is per-task and
 // resets when the drawer closes or the open task changes.
 
 /** True while the drawer is expanded to fill the viewport. */
 const fullscreen = ref(false);
+
+/** Warnings hidden above the tabs remain countable while the drawer is expanded. */
+const hiddenAlertCount = computed(() => {
+  const task = ui.active;
+  if (!task) return 0;
+  return [
+    !!handoffError.value,
+    !!awaitingFreshReview.value,
+    !!(task.status === "review" && landable.value && !landable.value.landable),
+    !!task.needsInputReason,
+    !!(activeTldrSentence.value || activeTldrDiagnosing.value),
+    !!shotWarning.value,
+  ].filter(Boolean).length;
+});
 
 /** Human label for the active tab, used in the toggle's accessible name. */
 const activeTabLabel = computed(() => {
@@ -4460,618 +4475,536 @@ watch(
             <DialogDescription class="sr-only">{{
               ui.active.body || "Task details"
             }}</DialogDescription>
+            <button
+              v-if="fullscreen && hiddenAlertCount"
+              type="button"
+              class="drawer-hidden-alerts"
+              data-test-id="drawer-hidden-alerts"
+              :aria-label="`${hiddenAlertCount} hidden alert${hiddenAlertCount === 1 ? '' : 's'}; return to task details`"
+              @click="toggleFullscreen"
+            >
+              <span class="drawer-hidden-alert-dot" aria-hidden="true"></span>
+              {{ hiddenAlertCount }} alert{{ hiddenAlertCount === 1 ? "" : "s" }}
+            </button>
           </div>
           <DialogClose class="close-x">
             <X class="size-[15px]" />
           </DialogClose>
         </div>
-        <p v-if="ui.active.hotfix" class="hotfix-note hotfix-banner" role="status">
-          {{ hotfixBannerText(ui.active.hotfixTarget, ui.active.branch) }}
-        </p>
-        <!-- #0657: an archived task is parked. Show a prominent reason card
+        <div v-show="!fullscreen" class="drawer-pre-tabs">
+          <p v-if="ui.active.hotfix" class="hotfix-note hotfix-banner" role="status">
+            {{ hotfixBannerText(ui.active.hotfixTarget, ui.active.branch) }}
+          </p>
+          <!-- #0657: an archived task is parked. Show a prominent reason card
              (when one was given) and a single Unarchive action in place of
              every lifecycle control, which does not apply while archived. -->
-        <div v-if="ui.active.isArchived" class="archived-panel">
-          <div v-if="ui.active.archiveDetail" class="agent-waiting archived-reason" role="status">
-            <div>
-              <div class="agent-waiting-title">archived</div>
-              <div class="agent-waiting-sub">
-                This task is parked. Its status, branch and worktree are unchanged.
+          <div v-if="ui.active.isArchived" class="archived-panel">
+            <div v-if="ui.active.archiveDetail" class="agent-waiting archived-reason" role="status">
+              <div>
+                <div class="agent-waiting-title">archived</div>
+                <div class="agent-waiting-sub">
+                  This task is parked. Its status, branch and worktree are unchanged.
+                </div>
+                <div class="agent-waiting-detail">{{ ui.active.archiveDetail }}</div>
               </div>
-              <div class="agent-waiting-detail">{{ ui.active.archiveDetail }}</div>
             </div>
-          </div>
-          <div class="quickbar-row">
-            <Button
-              variant="default"
-              :disabled="ui.saving || unarchiveBusy"
-              @click="unarchiveActive"
-            >
-              <ActivityIndicator v-if="unarchiveBusy" />
-              <RotateCcw v-else class="size-3.5" />
-              {{ unarchiveBusy ? "Unarchiving…" : "Unarchive" }}
-            </Button>
-          </div>
-        </div>
-        <div v-else class="drawer-quickbar">
-          <div v-if="isHumanTask" class="ff-notice drawer-human-task" role="status">
-            <strong>Human task: no AI will work on this.</strong>
-            <span>Move it between board columns as the human work progresses.</span>
-            <Input
-              v-if="ui.active.status !== 'done'"
-              v-model="humanCompletionNote"
-              aria-label="Completion note (optional)"
-              placeholder="Completion note (optional)"
-            />
-            <Button
-              v-if="ui.active.status !== 'done'"
-              variant="status"
-              :disabled="ui.saving"
-              @click="setStatus('done')"
-            >
-              <CheckCheck class="size-3.5" /> Mark done
-            </Button>
-          </div>
-          <!-- #0897: the remote runner is queued or running for this task —
-               name the phase, host, elapsed time and any job ahead of it. -->
-          <div v-if="remoteActivityText" class="ff-notice drawer-remote-activity" role="status">
-            <ActivityIndicator />
-            <span>{{ remoteActivityText }}</span>
-          </div>
-          <!-- #0507: the handoff finalization is in flight. The task is still
-               `active` on purpose, so without this it would read as "nothing
-               happened" for the whole length of the check. -->
-          <div v-if="handoffBusy" class="ff-notice drawer-handoff-banner">
-            <ActivityIndicator />
-            <span>{{ handoffStepLabel }}</span>
-            <span class="drawer-handoff-sub">
-              This task stays <strong>active</strong> until the checks pass.
-            </span>
-          </div>
-          <div
-            v-else-if="awaitingFreshReview"
-            class="ff-notice drawer-handoff-banner"
-            role="status"
-          >
-            <span
-              ><strong>Awaiting a new review.</strong> The report below is from before the latest
-              engineering handoff.</span
-            >
-            <span class="drawer-handoff-sub"
-              >RepoOS should start the reviewer automatically. If it does not, use
-              <strong>Review again</strong> in the Review tab.</span
-            >
-          </div>
-          <div v-else-if="handoffError" class="ff-error drawer-handoff-banner">
-            <span>
-              <strong>Not moved to review.</strong> The handoff finalization stopped:
-              {{ handoffError }}
-            </span>
-            <span class="drawer-handoff-sub">Fix it and click Review again.</span>
-          </div>
-          <div class="quickbar-row">
-            <Select :model-value="ui.active.status" @update:model-value="(v) => setStatus(v ?? '')">
-              <SelectTrigger :disabled="ui.saving || handoffBusy">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                  <SelectItem v-for="col in selectableStatuses" :key="col.id" :value="col.id">
-                    <span class="cdot" :style="{ background: col.color }"></span>{{ col.label }}
-                  </SelectItem>
-                </SelectViewport>
-              </SelectContent>
-            </Select>
-            <span
-              v-if="taskRounds.dev > 0"
-              class="rounds-badge"
-              title="Dev and review passes for this task"
-            >
-              D{{ taskRounds.dev }} · R{{ taskRounds.review }}
-            </span>
-            <Button
-              v-if="ui.active.status === 'draft'"
-              variant="status"
-              :style="{ '--tone': statusColor('inbox') }"
-              :disabled="ui.saving"
-              @click="setStatus('inbox')"
-            >
-              <ArrowRight class="size-3.5" />
-              Move to inbox
-            </Button>
-            <Button
-              v-if="ui.active.status === 'inbox'"
-              variant="status"
-              :style="{ '--tone': statusColor('ready') }"
-              :disabled="ui.saving"
-              @click="setStatus('ready')"
-            >
-              <ArrowRight class="size-3.5" />
-              Move to ready
-            </Button>
-            <Button
-              v-if="
-                !isHumanTask &&
-                (ui.active.status === 'ready' || ui.active.status === 'active') &&
-                (ui.active.status === 'ready' || !repo.isRunning(ui.active.id))
-              "
-              data-test-id="task-drawer-start-work"
-              variant="status"
-              :style="{ '--tone': statusColor('active') }"
-              :disabled="ui.saving || startingWork"
-              @click="startWork"
-            >
-              <Play v-if="!startingWork" class="size-3.5" />
-              <ActivityIndicator v-else />
-              {{
-                startingWork
-                  ? "Starting work…"
-                  : ui.active.status === "active"
-                    ? "Restart work"
-                    : "Start work"
-              }}
-            </Button>
-            <Button
-              v-if="!isHumanTask && ui.active.status === 'active' && !repo.isRunning(ui.active.id)"
-              variant="status"
-              :style="{ '--tone': statusColor('review') }"
-              :disabled="ui.saving || handoffBusy"
-              :title="
-                handoffBusy
-                  ? 'RepoOS is already running the handoff finalization for this task'
-                  : 'Ask RepoOS to commit, run the checks, and move this task to review'
-              "
-              @click="setStatus('review')"
-            >
-              <ActivityIndicator v-if="handoffBusy" />
-              <Send v-else class="size-3.5" />
-              {{ handoffBusy ? "Running checks…" : "Review" }}
-            </Button>
-            <Button
-              v-if="!isHumanTask && ui.active.status === 'active' && repo.isRunning(ui.active.id)"
-              variant="outline"
-              :disabled="ui.saving"
-              @click="pauseWork"
-            >
-              <Pause class="size-3.5" />
-              Pause work
-            </Button>
-            <Button
-              v-if="
-                !isHumanTask && (ui.active.status === 'active' || ui.active.status === 'review')
-              "
-              variant="outline"
-              :disabled="ui.saving"
-              title="Send this task back to ready — stops the agent/review, keeps the worktree"
-              @click="abandonWork"
-            >
-              <Square class="size-3.5" />
-              Stop work
-            </Button>
-            <Button
-              v-if="!isHumanTask && ui.active.status === 'done'"
-              variant="outline"
-              :disabled="ui.saving"
-              title="Send this task back to ready with a fresh branch on the next Start work"
-              @click="reopenTask"
-            >
-              <RotateCcw class="size-3.5" />
-              Reopen
-            </Button>
-            <p
-              v-if="ui.active.status === 'review' && lastCloseOutGateLabel"
-              class="ff-notice close-out-gate-hint"
-            >
-              Last successful close-out gate: {{ lastCloseOutGateLabel }}
-            </p>
-            <Button
-              v-if="!isHumanTask && ui.active.status === 'review'"
-              variant="status"
-              :style="{ '--tone': statusColor('done') }"
-              :disabled="
-                ui.saving ||
-                review?.running ||
-                awaitingFreshReview ||
-                repo.isRunning(ui.active.id) ||
-                inPipeline
-              "
-              :title="
-                inPipeline
-                  ? 'Already in the integration pipeline — merging, building, and checking. See the pipeline bar for live progress.'
-                  : review?.running
-                    ? 'Waiting for automatic review to finish.'
-                    : awaitingFreshReview
-                      ? 'Waiting for a fresh review of the latest engineering handoff.'
-                      : repo.isRunning(ui.active.id)
-                        ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
-                        : landableFailureTitle
-              "
-              @click="moveToDone"
-            >
-              <CheckCheck v-if="!doingDone && !inPipeline" class="size-3.5" />
-              <ActivityIndicator v-else />
-              {{
-                inPipeline
-                  ? `Integrating…${pipelineStageLabel ? ` (${pipelineStageLabel})` : ""}`
-                  : doingDone
-                    ? doneProgress
-                    : "Move to done"
-              }}
-            </Button>
-            <Button
-              v-if="ui.active.status === 'review' && inPipeline"
-              variant="destructive"
-              :disabled="ui.saving || stoppingDone"
-              title="Cancel this close-out and return the task to review. Nothing is merged; the branch is left untouched."
-              @click="stopMtd"
-            >
-              <ActivityIndicator v-if="stoppingDone" />
-              <Square v-else class="size-3.5" />
-              {{ stoppingDone ? "Stopping…" : "Stop MTD" }}
-            </Button>
-          </div>
-          <div
-            v-if="ui.active.status === 'review' && landable"
-            class="ff-notice landable-checks"
-            :class="landable.landable ? 'is-landable' : 'is-blocked'"
-            aria-live="polite"
-          >
-            <div class="landable-title">
-              <strong>{{ landable.landable ? "Landable" : "Not landable yet" }}</strong>
-              <span class="landable-summary">
-                {{ landable.summary.pass }} passed · {{ landable.summary.warn }} warning{{
-                  landable.summary.warn === 1 ? "" : "s"
-                }}
-                · {{ landable.summary.fail }} failing
-              </span>
-            </div>
-            <ul class="landable-list">
-              <li v-for="check in landable.checks" :key="check.id" :class="`is-${check.status}`">
-                <span class="landable-mark" aria-hidden="true">
-                  {{ check.status === "pass" ? "✓" : check.status === "warn" ? "!" : "✗" }}
-                </span>
-                <span class="landable-body">
-                  <strong>{{ check.label }}</strong> — {{ check.detail }}
-                  <span v-if="check.nextStep" class="landable-next"
-                    >next: {{ check.nextStep }}</span
-                  >
-                </span>
-              </li>
-            </ul>
-          </div>
-          <span v-if="review?.running" class="drawer-run reviewing" role="status">
-            <ActivityIndicator variant="reviewing" label="Reviewing…" />
-            Reviewer is reviewing this task…
-          </span>
-          <span
-            v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)"
-            class="drawer-run"
-          >
-            <ActivityIndicator />
-            {{ autoRepairRetryHint ? autoRepairRetryHint.label : "agent coding" }}
-            <span
-              v-if="effectiveEngineer"
-              class="drawer-run-agent"
-              title="Effective agent for this run"
-            >
-              {{ effectiveEngineer.name }} · {{ effectiveEngineer.cli }} ·
-              {{ effectiveEngineer.model }}
-            </span>
-          </span>
-          <!-- 0381: PM at work on this task — a draft flesh-out OR a live PM
-               chat turn (the flag is the same server-side registry). Cleared
-               on every run exit path server-side. -->
-          <span v-if="repo.pmWorkingFor(ui.active.id)" class="drawer-run" role="status">
-            <ActivityIndicator activity="agent" />
-            {{
-              ui.active.status === "draft"
-                ? "PM is working on this draft…"
-                : "PM is working on this task…"
-            }}
-          </span>
-          <DoneErrorCard
-            v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
-            class="drawer-done-error"
-            mode="panel"
-            :message="repo.doneErrorFor(ui.active.id)!.message"
-            :step="repo.doneErrorFor(ui.active.id)!.step"
-            :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
-            :detail="repo.doneErrorFor(ui.active.id)!.detail"
-            :log-path="repo.doneErrorFor(ui.active.id)!.logPath"
-            :hint="repo.doneErrorFor(ui.active.id)!.hint"
-            :failed-at="repo.doneErrorFor(ui.active.id)!.failedAt"
-            :tldr="repo.doneErrorFor(ui.active.id)!.tldr"
-            :summary="repo.doneErrorFor(ui.active.id)!.summary"
-            :action="repo.doneErrorFor(ui.active.id)!.action"
-            :tldr-diagnosing="
-              !repo.doneErrorFor(ui.active.id)!.tldr && repo.debugTldrWorkingFor(ui.active.id)
-            "
-            :retry-hint="autoRepairRetryHint"
-            :task-id="ui.active.id"
-            :task-title="ui.active.title"
-            @open-debugger="openDebuggerFromError"
-            @open-support="openSupportFromError"
-            @open-conflict="openConflictFromError"
-            @dismiss="repo.dismissDoneError(ui.active.id)"
-            @refresh-install-retry="repo.refreshInstallAndRetryIntegration(ui.active.id)"
-          />
-          <div
-            v-if="
-              (ui.active.status === 'active' || ui.active.status === 'review') &&
-              ui.active.preview &&
-              !ui.active.hotfix
-            "
-            class="quickbar-row"
-          >
-            <!-- Previews are auto-launched when a task lands in review (#0198);
-                 the live URL simply appears when ready. A manual "Start preview"
-                 fallback (below) covers review tasks where that didn't happen. -->
-            <div class="preview-live">
-              <span class="preview-dot"></span>
-              <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
-                <ExternalLink class="size-3.5" />
-                {{ ui.active.preview.url }}
-              </a>
-              <!-- Which target/frontend is being served (#0379), so "a preview
-                   is running" is never the whole story. -->
-              <span v-if="ui.active.preview.label" class="preview-target-name">
-                {{ ui.active.preview.label }}
-              </span>
-            </div>
-            <span
-              v-if="isPreviewBusyForActive && previewAction === 'stop'"
-              class="preview-progress"
-              role="status"
-            >
-              <ActivityIndicator label="Stopping preview" />
-              Stopping preview…
-              <span v-if="previewElapsedMs >= 1000" class="preview-progress-elapsed">
-                {{ formatDuration(previewElapsedMs) }}
-              </span>
-            </span>
-            <Button
-              v-else
-              variant="outline"
-              :disabled="ui.saving || isPreviewBusyForActive"
-              @click="stopPreview"
-            >
-              <Square class="size-3.5" />
-              Stop preview
-            </Button>
-          </div>
-          <p
-            v-if="
-              (ui.active.status === 'active' || ui.active.status === 'review') &&
-              !ui.active.preview &&
-              !ui.active.branch &&
-              !ui.active.hotfix
-            "
-            class="preview-hint"
-          >
-            No branch yet — start work to create the worktree this previews.
-          </p>
-          <p
-            v-else-if="
-              (ui.active.status === 'active' || ui.active.status === 'review') &&
-              !ui.active.preview &&
-              !ui.active.git?.worktreeExists &&
-              !ui.active.hotfix
-            "
-            class="preview-hint"
-          >
-            No git worktree is checked out for
-            <span class="mono">{{ ui.active.branch }}</span
-            >.
-          </p>
-          <div
-            v-else-if="
-              (ui.active.status === 'active' || ui.active.status === 'review') &&
-              !ui.active.preview &&
-              !ui.active.hotfix
-            "
-            class="quickbar-row"
-          >
-            <p class="preview-hint">
-              <template v-if="previewTargetChoiceRequired">
-                Choose which preview target to serve.
-              </template>
-              <template v-else> No preview running. </template>
-            </p>
-            <!-- #0379: when several configured targets exist, make the choice
-                 explicit rather than silently serving the first one. -->
-            <Select v-if="previewTargetChoiceRequired" v-model="previewTarget">
-              <SelectTrigger
-                class="preview-target-select h-[34px] max-w-[180px] rounded-[9px] px-[11px]"
-                :disabled="ui.saving || isPreviewBusyForActive"
-                aria-label="Preview target"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                  <SelectItem v-for="t in previewTargets" :key="t.name" :value="t.name">
-                    {{ t.name }}
-                  </SelectItem>
-                </SelectViewport>
-              </SelectContent>
-            </Select>
-            <span
-              v-else-if="effectivePreviewTarget"
-              class="preview-target-name"
-              :title="`Preview target: ${effectivePreviewTarget}`"
-            >
-              {{ effectivePreviewTarget }}
-            </span>
-            <span
-              v-if="isPreviewBusyForActive && previewAction === 'start'"
-              class="preview-progress"
-              role="status"
-            >
-              <ActivityIndicator label="Starting preview" />
-              Starting preview…
-              <span v-if="previewElapsedMs >= 1000" class="preview-progress-elapsed">
-                {{ formatDuration(previewElapsedMs) }}
-              </span>
-            </span>
-            <Button
-              v-else
-              variant="outline"
-              :disabled="
-                ui.saving ||
-                isPreviewBusyForActive ||
-                (previewTargetChoiceRequired && !effectivePreviewTarget)
-              "
-              @click="startPreview"
-            >
-              <Play class="size-3.5" />
-              Start preview
-            </Button>
-          </div>
-          <p
-            v-if="
-              ui.active.hotfix && (ui.active.status === 'active' || ui.active.status === 'review')
-            "
-            class="hotfix-note"
-          >
-            Hotfix tasks run in the main checkout — no preview is served.
-          </p>
-          <p
-            v-if="ui.active && shotWarning"
-            class="preview-hint shot-warning-preview"
-            role="status"
-          >
-            {{ shotWarning }}
-          </p>
-        </div>
-        <!-- Critical status lives above the tabs so it is visible no matter
-             which tab is open — a "needs input" / "reviewer crashed" message
-             buried in one tab is a message the human never sees. -->
-        <div v-if="showAgentQuestionsBanner && ui.active" class="drawer-critical">
-          <div class="questions-for-you-banner" role="region" aria-label="Questions for you">
-            <div class="questions-for-you-head">
-              <span class="questions-for-you-badge">Questions for you</span>
-              <span class="questions-for-you-sub">{{
-                needsInputBannerText(ui.active.needsInputReason, true)
-              }}</span>
-            </div>
-            <ol class="questions-for-you-list">
-              <li v-for="(question, index) in ui.active.questions" :key="index">
-                {{ question }}
-              </li>
-            </ol>
-            <div class="questions-for-you-actions">
+            <div class="quickbar-row">
               <Button
                 variant="default"
-                size="sm"
-                class="questions-for-you-answer"
-                :disabled="!pmAgentEnabled || pmBusy || pmSubmitting"
-                @click="openPmToAnswerQuestions"
+                :disabled="ui.saving || unarchiveBusy"
+                @click="unarchiveActive"
               >
-                Answer in PM
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                :disabled="ui.saving || dismissNeedsInputBusy"
-                @click="dismissNeedsInputFlag"
-              >
-                <ActivityIndicator v-if="dismissNeedsInputBusy" />
-                {{ dismissNeedsInputBusy ? "Dismissing…" : "Dismiss" }}
+                <ActivityIndicator v-if="unarchiveBusy" />
+                <RotateCcw v-else class="size-3.5" />
+                {{ unarchiveBusy ? "Unarchiving…" : "Unarchive" }}
               </Button>
             </div>
           </div>
-        </div>
-        <div
-          v-else-if="ui.active && ui.active.needsInput && !handoffBusy && !awaitingFreshReview"
-          class="drawer-critical"
-        >
-          <div class="agent-waiting" :class="{ 'agent-waiting-static': staleNeedsInputOnReview }">
-            <span v-if="!staleNeedsInputOnReview" class="agent-waiting-dot"></span>
-            <div>
-              <div class="agent-waiting-title">
-                {{ staleNeedsInputOnReview ? "stale flag" : "waiting for you" }}
-              </div>
-              <div class="agent-waiting-sub">
-                {{
-                  staleNeedsInputOnReview
-                    ? STALE_REVIEW_DEV_ERROR_BANNER
-                    : ui.active.needsInputReason === "review-rounds-exhausted" && review?.running
-                      ? "A fresh review is running. Its result will determine whether this still needs your attention."
-                      : needsInputBannerText(
-                          ui.active.needsInputReason,
-                          activeNeedsInputQuestions,
-                          ui.active.needsInputDetail,
-                        )
-                }}
-              </div>
-              <!-- needsInputDetail for dev-error is internal skill-routing
-                   metadata — not meaningful to users, so we hide it. -->
-              <div v-if="activeNeedsInputDetailLine" class="agent-waiting-detail">
-                {{ activeNeedsInputDetailLine }}
-              </div>
-              <div
-                v-if="
-                  !staleNeedsInputOnReview &&
-                  needsInputSuggestionText(ui.active.needsInputReason, activeNeedsInputQuestions)
-                "
-                class="agent-waiting-suggestion"
+          <div v-else class="drawer-quickbar">
+            <div v-if="isHumanTask" class="ff-notice drawer-human-task" role="status">
+              <strong>Human task: no AI will work on this.</strong>
+              <span>Move it between board columns as the human work progresses.</span>
+              <Input
+                v-if="ui.active.status !== 'done'"
+                v-model="humanCompletionNote"
+                aria-label="Completion note (optional)"
+                placeholder="Completion note (optional)"
+              />
+              <Button
+                v-if="ui.active.status !== 'done'"
+                variant="status"
+                :disabled="ui.saving"
+                @click="setStatus('done')"
               >
+                <CheckCheck class="size-3.5" /> Mark done
+              </Button>
+            </div>
+            <!-- #0897: the remote runner is queued or running for this task —
+               name the phase, host, elapsed time and any job ahead of it. -->
+            <div v-if="remoteActivityText" class="ff-notice drawer-remote-activity" role="status">
+              <ActivityIndicator />
+              <span>{{ remoteActivityText }}</span>
+            </div>
+            <!-- #0507: the handoff finalization is in flight. The task is still
+               `active` on purpose, so without this it would read as "nothing
+               happened" for the whole length of the check. -->
+            <div v-if="handoffBusy" class="ff-notice drawer-handoff-banner">
+              <ActivityIndicator />
+              <span>{{ handoffStepLabel }}</span>
+              <span class="drawer-handoff-sub">
+                This task stays <strong>active</strong> until the checks pass.
+              </span>
+            </div>
+            <div
+              v-else-if="awaitingFreshReview"
+              class="ff-notice drawer-handoff-banner"
+              role="status"
+            >
+              <span
+                ><strong>Awaiting a new review.</strong> The report below is from before the latest
+                engineering handoff.</span
+              >
+              <span class="drawer-handoff-sub"
+                >RepoOS should start the reviewer automatically. If it does not, use
+                <strong>Review again</strong> in the Review tab.</span
+              >
+            </div>
+            <div v-else-if="handoffError" class="ff-error drawer-handoff-banner">
+              <span>
+                <strong>Not moved to review.</strong> The handoff finalization stopped:
+                {{ handoffError }}
+              </span>
+              <span class="drawer-handoff-sub">Fix it and click Review again.</span>
+            </div>
+            <div class="quickbar-row">
+              <Select
+                :model-value="ui.active.status"
+                @update:model-value="(v) => setStatus(v ?? '')"
+              >
+                <SelectTrigger :disabled="ui.saving || handoffBusy">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                    <SelectItem v-for="col in selectableStatuses" :key="col.id" :value="col.id">
+                      <span class="cdot" :style="{ background: col.color }"></span>{{ col.label }}
+                    </SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+              <span
+                v-if="taskRounds.dev > 0"
+                class="rounds-badge"
+                title="Dev and review passes for this task"
+              >
+                D{{ taskRounds.dev }} · R{{ taskRounds.review }}
+              </span>
+              <Button
+                v-if="ui.active.status === 'draft'"
+                variant="status"
+                :style="{ '--tone': statusColor('inbox') }"
+                :disabled="ui.saving"
+                @click="setStatus('inbox')"
+              >
+                <ArrowRight class="size-3.5" />
+                Move to inbox
+              </Button>
+              <Button
+                v-if="ui.active.status === 'inbox'"
+                variant="status"
+                :style="{ '--tone': statusColor('ready') }"
+                :disabled="ui.saving"
+                @click="setStatus('ready')"
+              >
+                <ArrowRight class="size-3.5" />
+                Move to ready
+              </Button>
+              <Button
+                v-if="
+                  !isHumanTask &&
+                  (ui.active.status === 'ready' || ui.active.status === 'active') &&
+                  (ui.active.status === 'ready' || !repo.isRunning(ui.active.id))
+                "
+                data-test-id="task-drawer-start-work"
+                variant="status"
+                :style="{ '--tone': statusColor('active') }"
+                :disabled="ui.saving || startingWork"
+                @click="startWork"
+              >
+                <Play v-if="!startingWork" class="size-3.5" />
+                <ActivityIndicator v-else />
                 {{
-                  needsInputSuggestionText(ui.active.needsInputReason, activeNeedsInputQuestions)
+                  startingWork
+                    ? "Starting work…"
+                    : ui.active.status === "active"
+                      ? "Restart work"
+                      : "Start work"
                 }}
-              </div>
-              <div class="agent-waiting-actions">
-                <Button
-                  v-if="needsInputPrimary && !staleNeedsInputOnReview"
-                  variant="outline"
-                  size="sm"
-                  :disabled="
-                    ui.saving ||
-                    startingWork ||
-                    reviewBusy ||
-                    review?.running ||
-                    dismissNeedsInputBusy ||
-                    (needsInputPrimary.kind === 'send-engineer' &&
-                      (sendingToEngineer || reviewStale || !review?.report)) ||
-                    (needsInputPrimary.kind === 'send-pm' &&
-                      (!pmAgentEnabled || pmBusy || pmSubmitting))
-                  "
-                  @click="runNeedsInputPrimaryAction"
-                >
-                  <Play
-                    v-if="needsInputPrimary.kind === 'restart' && !startingWork"
-                    class="size-3.5"
-                  />
-                  <ActivityIndicator
-                    v-else-if="needsInputPrimary.kind === 'restart' && startingWork"
-                  />
-                  <ActivityIndicator
-                    v-else-if="
-                      needsInputPrimary.kind === 'review' && (reviewBusy || review?.running)
-                    "
-                  />
-                  {{
-                    needsInputPrimary.kind === "restart" && startingWork
-                      ? "Starting work…"
-                      : needsInputPrimary.kind === "review" && (reviewBusy || review?.running)
-                        ? "Reviewing…"
-                        : needsInputPrimary.label
+              </Button>
+              <Button
+                v-if="
+                  !isHumanTask && ui.active.status === 'active' && !repo.isRunning(ui.active.id)
+                "
+                variant="status"
+                :style="{ '--tone': statusColor('review') }"
+                :disabled="ui.saving || handoffBusy"
+                :title="
+                  handoffBusy
+                    ? 'RepoOS is already running the handoff finalization for this task'
+                    : 'Ask RepoOS to commit, run the checks, and move this task to review'
+                "
+                @click="setStatus('review')"
+              >
+                <ActivityIndicator v-if="handoffBusy" />
+                <Send v-else class="size-3.5" />
+                {{ handoffBusy ? "Running checks…" : "Review" }}
+              </Button>
+              <Button
+                v-if="!isHumanTask && ui.active.status === 'active' && repo.isRunning(ui.active.id)"
+                variant="outline"
+                :disabled="ui.saving"
+                @click="pauseWork"
+              >
+                <Pause class="size-3.5" />
+                Pause work
+              </Button>
+              <Button
+                v-if="
+                  !isHumanTask && (ui.active.status === 'active' || ui.active.status === 'review')
+                "
+                variant="outline"
+                :disabled="ui.saving"
+                title="Send this task back to ready — stops the agent/review, keeps the worktree"
+                @click="abandonWork"
+              >
+                <Square class="size-3.5" />
+                Stop work
+              </Button>
+              <Button
+                v-if="!isHumanTask && ui.active.status === 'done'"
+                variant="outline"
+                :disabled="ui.saving"
+                title="Send this task back to ready with a fresh branch on the next Start work"
+                @click="reopenTask"
+              >
+                <RotateCcw class="size-3.5" />
+                Reopen
+              </Button>
+              <p
+                v-if="ui.active.status === 'review' && lastCloseOutGateLabel"
+                class="ff-notice close-out-gate-hint"
+              >
+                Last successful close-out gate: {{ lastCloseOutGateLabel }}
+              </p>
+              <Button
+                v-if="!isHumanTask && ui.active.status === 'review'"
+                variant="status"
+                :style="{ '--tone': statusColor('done') }"
+                :disabled="
+                  ui.saving ||
+                  review?.running ||
+                  awaitingFreshReview ||
+                  repo.isRunning(ui.active.id) ||
+                  inPipeline
+                "
+                :title="
+                  inPipeline
+                    ? 'Already in the integration pipeline — merging, building, and checking. See the pipeline bar for live progress.'
+                    : review?.running
+                      ? 'Waiting for automatic review to finish.'
+                      : awaitingFreshReview
+                        ? 'Waiting for a fresh review of the latest engineering handoff.'
+                        : repo.isRunning(ui.active.id)
+                          ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
+                          : landableFailureTitle
+                "
+                @click="moveToDone"
+              >
+                <CheckCheck v-if="!doingDone && !inPipeline" class="size-3.5" />
+                <ActivityIndicator v-else />
+                {{
+                  inPipeline
+                    ? `Integrating…${pipelineStageLabel ? ` (${pipelineStageLabel})` : ""}`
+                    : doingDone
+                      ? doneProgress
+                      : "Move to done"
+                }}
+              </Button>
+              <Button
+                v-if="ui.active.status === 'review' && inPipeline"
+                variant="destructive"
+                :disabled="ui.saving || stoppingDone"
+                title="Cancel this close-out and return the task to review. Nothing is merged; the branch is left untouched."
+                @click="stopMtd"
+              >
+                <ActivityIndicator v-if="stoppingDone" />
+                <Square v-else class="size-3.5" />
+                {{ stoppingDone ? "Stopping…" : "Stop MTD" }}
+              </Button>
+            </div>
+            <div
+              v-if="ui.active.status === 'review' && landable"
+              class="ff-notice landable-checks"
+              :class="landable.landable ? 'is-landable' : 'is-blocked'"
+              aria-live="polite"
+            >
+              <div class="landable-title">
+                <strong>{{ landable.landable ? "Landable" : "Not landable yet" }}</strong>
+                <span class="landable-summary">
+                  {{ landable.summary.pass }} passed · {{ landable.summary.warn }} warning{{
+                    landable.summary.warn === 1 ? "" : "s"
                   }}
-                </Button>
-                <Button
-                  v-if="ui.active.needsInputReason === 'closeout-worktree-dirty'"
-                  variant="outline"
-                  size="sm"
-                  :disabled="ui.saving || clearWorktreeBusy || dismissNeedsInputBusy"
-                  @click="clearKeptWorktree"
+                  · {{ landable.summary.fail }} failing
+                </span>
+              </div>
+              <ul class="landable-list">
+                <li v-for="check in landable.checks" :key="check.id" :class="`is-${check.status}`">
+                  <span class="landable-mark" aria-hidden="true">
+                    {{ check.status === "pass" ? "✓" : check.status === "warn" ? "!" : "✗" }}
+                  </span>
+                  <span class="landable-body">
+                    <strong>{{ check.label }}</strong> — {{ check.detail }}
+                    <span v-if="check.nextStep" class="landable-next"
+                      >next: {{ check.nextStep }}</span
+                    >
+                  </span>
+                </li>
+              </ul>
+            </div>
+            <span v-if="review?.running" class="drawer-run reviewing" role="status">
+              <ActivityIndicator variant="reviewing" label="Reviewing…" />
+              Reviewer is reviewing this task…
+            </span>
+            <span
+              v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)"
+              class="drawer-run"
+            >
+              <ActivityIndicator />
+              {{ autoRepairRetryHint ? autoRepairRetryHint.label : "agent coding" }}
+              <span
+                v-if="effectiveEngineer"
+                class="drawer-run-agent"
+                title="Effective agent for this run"
+              >
+                {{ effectiveEngineer.name }} · {{ effectiveEngineer.cli }} ·
+                {{ effectiveEngineer.model }}
+              </span>
+            </span>
+            <!-- 0381: PM at work on this task — a draft flesh-out OR a live PM
+               chat turn (the flag is the same server-side registry). Cleared
+               on every run exit path server-side. -->
+            <span v-if="repo.pmWorkingFor(ui.active.id)" class="drawer-run" role="status">
+              <ActivityIndicator activity="agent" />
+              {{
+                ui.active.status === "draft"
+                  ? "PM is working on this draft…"
+                  : "PM is working on this task…"
+              }}
+            </span>
+            <DoneErrorCard
+              v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
+              class="drawer-done-error"
+              mode="panel"
+              :message="repo.doneErrorFor(ui.active.id)!.message"
+              :step="repo.doneErrorFor(ui.active.id)!.step"
+              :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
+              :detail="repo.doneErrorFor(ui.active.id)!.detail"
+              :log-path="repo.doneErrorFor(ui.active.id)!.logPath"
+              :hint="repo.doneErrorFor(ui.active.id)!.hint"
+              :failed-at="repo.doneErrorFor(ui.active.id)!.failedAt"
+              :tldr="repo.doneErrorFor(ui.active.id)!.tldr"
+              :summary="repo.doneErrorFor(ui.active.id)!.summary"
+              :action="repo.doneErrorFor(ui.active.id)!.action"
+              :tldr-diagnosing="
+                !repo.doneErrorFor(ui.active.id)!.tldr && repo.debugTldrWorkingFor(ui.active.id)
+              "
+              :retry-hint="autoRepairRetryHint"
+              :task-id="ui.active.id"
+              :task-title="ui.active.title"
+              @open-debugger="openDebuggerFromError"
+              @open-support="openSupportFromError"
+              @open-conflict="openConflictFromError"
+              @dismiss="repo.dismissDoneError(ui.active.id)"
+              @refresh-install-retry="repo.refreshInstallAndRetryIntegration(ui.active.id)"
+            />
+            <div
+              v-if="
+                (ui.active.status === 'active' || ui.active.status === 'review') &&
+                ui.active.preview &&
+                !ui.active.hotfix
+              "
+              class="quickbar-row"
+            >
+              <!-- Previews are auto-launched when a task lands in review (#0198);
+                 the live URL simply appears when ready. A manual "Start preview"
+                 fallback (below) covers review tasks where that didn't happen. -->
+              <div class="preview-live">
+                <span class="preview-dot"></span>
+                <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
+                  <ExternalLink class="size-3.5" />
+                  {{ ui.active.preview.url }}
+                </a>
+                <!-- Which target/frontend is being served (#0379), so "a preview
+                   is running" is never the whole story. -->
+                <span v-if="ui.active.preview.label" class="preview-target-name">
+                  {{ ui.active.preview.label }}
+                </span>
+              </div>
+              <span
+                v-if="isPreviewBusyForActive && previewAction === 'stop'"
+                class="preview-progress"
+                role="status"
+              >
+                <ActivityIndicator label="Stopping preview" />
+                Stopping preview…
+                <span v-if="previewElapsedMs >= 1000" class="preview-progress-elapsed">
+                  {{ formatDuration(previewElapsedMs) }}
+                </span>
+              </span>
+              <Button
+                v-else
+                variant="outline"
+                :disabled="ui.saving || isPreviewBusyForActive"
+                @click="stopPreview"
+              >
+                <Square class="size-3.5" />
+                Stop preview
+              </Button>
+            </div>
+            <p
+              v-if="
+                (ui.active.status === 'active' || ui.active.status === 'review') &&
+                !ui.active.preview &&
+                !ui.active.branch &&
+                !ui.active.hotfix
+              "
+              class="preview-hint"
+            >
+              No branch yet — start work to create the worktree this previews.
+            </p>
+            <p
+              v-else-if="
+                (ui.active.status === 'active' || ui.active.status === 'review') &&
+                !ui.active.preview &&
+                !ui.active.git?.worktreeExists &&
+                !ui.active.hotfix
+              "
+              class="preview-hint"
+            >
+              No git worktree is checked out for
+              <span class="mono">{{ ui.active.branch }}</span
+              >.
+            </p>
+            <div
+              v-else-if="
+                (ui.active.status === 'active' || ui.active.status === 'review') &&
+                !ui.active.preview &&
+                !ui.active.hotfix
+              "
+              class="quickbar-row"
+            >
+              <p class="preview-hint">
+                <template v-if="previewTargetChoiceRequired">
+                  Choose which preview target to serve.
+                </template>
+                <template v-else> No preview running. </template>
+              </p>
+              <!-- #0379: when several configured targets exist, make the choice
+                 explicit rather than silently serving the first one. -->
+              <Select v-if="previewTargetChoiceRequired" v-model="previewTarget">
+                <SelectTrigger
+                  class="preview-target-select h-[34px] max-w-[180px] rounded-[9px] px-[11px]"
+                  :disabled="ui.saving || isPreviewBusyForActive"
+                  aria-label="Preview target"
                 >
-                  <ActivityIndicator v-if="clearWorktreeBusy" />
-                  {{ clearWorktreeBusy ? "Clearing…" : "Clear worktree" }}
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                    <SelectItem v-for="t in previewTargets" :key="t.name" :value="t.name">
+                      {{ t.name }}
+                    </SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+              <span
+                v-else-if="effectivePreviewTarget"
+                class="preview-target-name"
+                :title="`Preview target: ${effectivePreviewTarget}`"
+              >
+                {{ effectivePreviewTarget }}
+              </span>
+              <span
+                v-if="isPreviewBusyForActive && previewAction === 'start'"
+                class="preview-progress"
+                role="status"
+              >
+                <ActivityIndicator label="Starting preview" />
+                Starting preview…
+                <span v-if="previewElapsedMs >= 1000" class="preview-progress-elapsed">
+                  {{ formatDuration(previewElapsedMs) }}
+                </span>
+              </span>
+              <Button
+                v-else
+                variant="outline"
+                :disabled="
+                  ui.saving ||
+                  isPreviewBusyForActive ||
+                  (previewTargetChoiceRequired && !effectivePreviewTarget)
+                "
+                @click="startPreview"
+              >
+                <Play class="size-3.5" />
+                Start preview
+              </Button>
+            </div>
+            <p
+              v-if="
+                ui.active.hotfix && (ui.active.status === 'active' || ui.active.status === 'review')
+              "
+              class="hotfix-note"
+            >
+              Hotfix tasks run in the main checkout — no preview is served.
+            </p>
+            <p
+              v-if="ui.active && shotWarning"
+              class="preview-hint shot-warning-preview"
+              role="status"
+            >
+              {{ shotWarning }}
+            </p>
+          </div>
+          <!-- Critical status lives above the tabs so it is visible no matter
+             which tab is open — a "needs input" / "reviewer crashed" message
+             buried in one tab is a message the human never sees. -->
+          <div v-if="showAgentQuestionsBanner && ui.active" class="drawer-critical">
+            <div class="questions-for-you-banner" role="region" aria-label="Questions for you">
+              <div class="questions-for-you-head">
+                <span class="questions-for-you-badge">Questions for you</span>
+                <span class="questions-for-you-sub">{{
+                  needsInputBannerText(ui.active.needsInputReason, true)
+                }}</span>
+              </div>
+              <ol class="questions-for-you-list">
+                <li v-for="(question, index) in ui.active.questions" :key="index">
+                  {{ question }}
+                </li>
+              </ol>
+              <div class="questions-for-you-actions">
+                <Button
+                  variant="default"
+                  size="sm"
+                  class="questions-for-you-answer"
+                  :disabled="!pmAgentEnabled || pmBusy || pmSubmitting"
+                  @click="openPmToAnswerQuestions"
+                >
+                  Answer in PM
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  :disabled="ui.saving"
+                  :disabled="ui.saving || dismissNeedsInputBusy"
                   @click="dismissNeedsInputFlag"
                 >
                   <ActivityIndicator v-if="dismissNeedsInputBusy" />
@@ -5080,22 +5013,122 @@ watch(
               </div>
             </div>
           </div>
-        </div>
-        <!-- The Debugger's one-line tl;dr for the current failure (#0570):
+          <div
+            v-else-if="ui.active && ui.active.needsInput && !handoffBusy && !awaitingFreshReview"
+            class="drawer-critical"
+          >
+            <div class="agent-waiting" :class="{ 'agent-waiting-static': staleNeedsInputOnReview }">
+              <span v-if="!staleNeedsInputOnReview" class="agent-waiting-dot"></span>
+              <div>
+                <div class="agent-waiting-title">
+                  {{ staleNeedsInputOnReview ? "stale flag" : "waiting for you" }}
+                </div>
+                <div class="agent-waiting-sub">
+                  {{
+                    staleNeedsInputOnReview
+                      ? STALE_REVIEW_DEV_ERROR_BANNER
+                      : ui.active.needsInputReason === "review-rounds-exhausted" && review?.running
+                        ? "A fresh review is running. Its result will determine whether this still needs your attention."
+                        : needsInputBannerText(
+                            ui.active.needsInputReason,
+                            activeNeedsInputQuestions,
+                            ui.active.needsInputDetail,
+                          )
+                  }}
+                </div>
+                <!-- needsInputDetail for dev-error is internal skill-routing
+                   metadata — not meaningful to users, so we hide it. -->
+                <div v-if="activeNeedsInputDetailLine" class="agent-waiting-detail">
+                  {{ activeNeedsInputDetailLine }}
+                </div>
+                <div
+                  v-if="
+                    !staleNeedsInputOnReview &&
+                    needsInputSuggestionText(ui.active.needsInputReason, activeNeedsInputQuestions)
+                  "
+                  class="agent-waiting-suggestion"
+                >
+                  {{
+                    needsInputSuggestionText(ui.active.needsInputReason, activeNeedsInputQuestions)
+                  }}
+                </div>
+                <div class="agent-waiting-actions">
+                  <Button
+                    v-if="needsInputPrimary && !staleNeedsInputOnReview"
+                    variant="outline"
+                    size="sm"
+                    :disabled="
+                      ui.saving ||
+                      startingWork ||
+                      reviewBusy ||
+                      review?.running ||
+                      dismissNeedsInputBusy ||
+                      (needsInputPrimary.kind === 'send-engineer' &&
+                        (sendingToEngineer || reviewStale || !review?.report)) ||
+                      (needsInputPrimary.kind === 'send-pm' &&
+                        (!pmAgentEnabled || pmBusy || pmSubmitting))
+                    "
+                    @click="runNeedsInputPrimaryAction"
+                  >
+                    <Play
+                      v-if="needsInputPrimary.kind === 'restart' && !startingWork"
+                      class="size-3.5"
+                    />
+                    <ActivityIndicator
+                      v-else-if="needsInputPrimary.kind === 'restart' && startingWork"
+                    />
+                    <ActivityIndicator
+                      v-else-if="
+                        needsInputPrimary.kind === 'review' && (reviewBusy || review?.running)
+                      "
+                    />
+                    {{
+                      needsInputPrimary.kind === "restart" && startingWork
+                        ? "Starting work…"
+                        : needsInputPrimary.kind === "review" && (reviewBusy || review?.running)
+                          ? "Reviewing…"
+                          : needsInputPrimary.label
+                    }}
+                  </Button>
+                  <Button
+                    v-if="ui.active.needsInputReason === 'closeout-worktree-dirty'"
+                    variant="outline"
+                    size="sm"
+                    :disabled="ui.saving || clearWorktreeBusy || dismissNeedsInputBusy"
+                    @click="clearKeptWorktree"
+                  >
+                    <ActivityIndicator v-if="clearWorktreeBusy" />
+                    {{ clearWorktreeBusy ? "Clearing…" : "Clear worktree" }}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    :disabled="ui.saving"
+                    @click="dismissNeedsInputFlag"
+                  >
+                    <ActivityIndicator v-if="dismissNeedsInputBusy" />
+                    {{ dismissNeedsInputBusy ? "Dismissing…" : "Dismiss" }}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- The Debugger's one-line tl;dr for the current failure (#0570):
              the plain-language "what happened / what to do" summary, additive
              to the banner and the raw detail in the tabs below. Lives above
              the tabs so it is visible no matter which tab is open. -->
-        <div v-if="activeTldrSentence || activeTldrDiagnosing" class="drawer-critical">
-          <div class="debug-tldr" role="status">
-            <Lightbulb class="debug-tldr-icon" />
-            <div class="debug-tldr-body">
-              <div class="debug-tldr-label">tl;dr — what happened</div>
-              <div v-if="activeTldrSentence" class="debug-tldr-sentence">
-                {{ activeTldrSentence }}
-              </div>
-              <div v-else class="debug-tldr-diagnosing">
-                <ActivityIndicator label="Debugger diagnosing" />
-                Diagnosing…
+          <div v-if="activeTldrSentence || activeTldrDiagnosing" class="drawer-critical">
+            <div class="debug-tldr" role="status">
+              <Lightbulb class="debug-tldr-icon" />
+              <div class="debug-tldr-body">
+                <div class="debug-tldr-label">tl;dr — what happened</div>
+                <div v-if="activeTldrSentence" class="debug-tldr-sentence">
+                  {{ activeTldrSentence }}
+                </div>
+                <div v-else class="debug-tldr-diagnosing">
+                  <ActivityIndicator label="Debugger diagnosing" />
+                  Diagnosing…
+                </div>
               </div>
             </div>
           </div>
@@ -5192,7 +5225,9 @@ watch(
                 ? 'Exit fullscreen and return to the task'
                 : `Open the ${activeTabLabel} tab in fullscreen`
             "
-            :data-tip="fullscreen ? 'Exit fullscreen' : 'Open this tab in fullscreen'"
+            :data-tip="
+              fullscreen ? 'Return to task details' : 'Expand this tab and hide cards above it'
+            "
             @click="toggleFullscreen"
           >
             <Minimize2 v-if="fullscreen" class="tab-icon" />
