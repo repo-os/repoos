@@ -3551,7 +3551,7 @@ async function runNeedsInputPrimaryAction(): Promise<void> {
     if (!ui.active || splitHumanStepBusy.value) return;
     splitHumanStepBusy.value = true;
     try {
-      const result = await api<{ task: (typeof ui.active); humanTask: { id: string } }>(
+      const result = await api<{ task: typeof ui.active; humanTask: { id: string } }>(
         `/api/tasks/${ui.active.id}/split`,
         { method: "POST", ...JSON_OPTS },
       );
