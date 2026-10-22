@@ -3,16 +3,15 @@ id: "0327"
 title: "Add \"Model providers\" tab to Agents page"
 type: feature
 status: done
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: 1f7b1364
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/add-model-providers-tab-to-agents-page
 created_at: "2026-09-05T04:02:45Z"
-updated_at: "2026-10-06T23:48:17Z"
+updated_at: "2026-10-22T07:47:53Z"
 ---
 ## Problem
 
@@ -83,3 +82,4 @@ existing tabs are the place to add a new tab, not a new top-level route.
 - 2026-09-05T08:35:57Z · status active→review
 - 2026-09-05T09:56:00Z · status review→done, release:success
 - 2026-10-06T23:48:17Z · needs_input
+- 2026-10-22T07:47:53Z · needs_input
