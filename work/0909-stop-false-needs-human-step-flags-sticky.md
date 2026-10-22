@@ -2,7 +2,7 @@
 id: "0909"
 title: "Stop false 'needs human step' flags: sticky overrides, model check before keywords, tagged criteria with auto-split"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, server, web]
 assigned_to: ai
