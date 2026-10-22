@@ -15,7 +15,12 @@ import {
   remoteLocalFallbackMode,
 } from "./resource-limits.js";
 import { waitForPressureRelief } from "./pressure-guard.js";
-import { clearQueueMarker, writeQueueMarker, type LocalQueueKind } from "./local-queue-marker.js";
+import {
+  clearQueueMarker,
+  readQueueMarkers,
+  writeQueueMarker,
+  type LocalQueueKind,
+} from "./local-queue-marker.js";
 import { mainCheckoutRoot } from "./git.js";
 
 export { SlotQueueTimeoutError };
@@ -44,13 +49,16 @@ function markQueue(
 ): void {
   const taskId = taskIdFromEnv(env);
   if (!taskId) return;
+  const since = readQueueMarkers(repoRoot, cacheDir).find(
+    (marker) => marker.taskId === taskId && marker.kind === kind,
+  )?.since;
   writeQueueMarker(boardRoot(repoRoot), cacheDir, {
     taskId,
     kind,
     ahead,
     position,
     message,
-    since: new Date().toISOString(),
+    since: since ?? new Date().toISOString(),
   });
 }
 

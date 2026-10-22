@@ -69,7 +69,7 @@ function processGroupHasLiveMembers(pgid: number): boolean {
   }
 }
 
-function terminateManagedGroup(dir: string): boolean {
+function terminateHolder(dir: string): boolean {
   if (process.platform === "win32") return false;
   try {
     const meta = JSON.parse(readFileSync(join(dir, ".meta.json"), "utf8")) as Record<
@@ -77,27 +77,29 @@ function terminateManagedGroup(dir: string): boolean {
       unknown
     >;
     const pid = Number(readFileSync(join(dir, ".holder"), "utf8"));
-    if (meta.kind !== "local-check" || meta.processGroup !== true) return true;
+    if (meta.kind !== "local-check") return true;
     if (!Number.isInteger(pid) || pid <= 0) return false;
+    const target = meta.processGroup === true ? -pid : pid;
+    const alive = () =>
+      meta.processGroup === true ? processGroupHasLiveMembers(pid) : processIsAlive(pid);
     try {
-      process.kill(-pid, "SIGTERM");
+      process.kill(target, "SIGTERM");
     } catch {
-      return !processGroupHasLiveMembers(pid);
+      return !alive();
     }
     const wait = new Int32Array(new SharedArrayBuffer(4));
     const deadline = Date.now() + 2_000;
-    while (Date.now() < deadline && processGroupHasLiveMembers(pid)) Atomics.wait(wait, 0, 0, 100);
-    if (processGroupHasLiveMembers(pid)) {
+    while (Date.now() < deadline && alive()) Atomics.wait(wait, 0, 0, 100);
+    if (alive()) {
       try {
-        process.kill(-pid, "SIGKILL");
+        process.kill(target, "SIGKILL");
       } catch {
         /* group exited */
       }
       const killDeadline = Date.now() + 2_000;
-      while (Date.now() < killDeadline && processGroupHasLiveMembers(pid))
-        Atomics.wait(wait, 0, 0, 100);
+      while (Date.now() < killDeadline && alive()) Atomics.wait(wait, 0, 0, 100);
     }
-    return !processGroupHasLiveMembers(pid);
+    return !alive();
   } catch {
     return false;
   }
@@ -176,8 +178,9 @@ function isStaleSlot(
       const marker = join(dir, ".wedged-since");
       try {
         const since = Number(readFileSync(marker, "utf8"));
-        if (Number.isFinite(since) && monotonicMs() - since >= reclaimGraceMs) {
-          return terminateManagedGroup(dir);
+        if (Number.isFinite(since)) {
+          if (monotonicMs() - since < reclaimGraceMs) return false;
+          return terminateHolder(dir);
         }
       } catch {
         try {
@@ -186,6 +189,7 @@ function isStaleSlot(
           /* concurrent release */
         }
       }
+      return false;
     } else {
       try {
         rmSync(join(dir, ".wedged-since"), { force: true });
@@ -290,32 +294,12 @@ export function releaseLocalCheckSlot(
   if (!holder.dead && !holder.wedged)
     throw new Error(`slot ${slot} is held by live PID ${holder.pid} and is not wedged`);
   const dir = join(lockRoot, String(slot));
-  try {
-    const meta = JSON.parse(readFileSync(join(dir, ".meta.json"), "utf8")) as Record<
-      string,
-      unknown
-    >;
-    if (meta.processGroup === true && process.platform !== "win32") {
-      try {
-        process.kill(-holder.pid, "SIGTERM");
-      } catch {
-        /* already gone */
-      }
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1_500);
-      try {
-        process.kill(-holder.pid, "SIGKILL");
-      } catch {
-        /* exited */
-      }
-    } else if (holder.dead) {
-      rmSync(dir, { recursive: true, force: true });
-      return holder;
-    } else {
-      throw new Error("live holder is not a managed process group; refusing to terminate it");
-    }
-  } catch (error) {
-    if (error instanceof Error && error.message.startsWith("live holder")) throw error;
+  if (holder.dead) {
+    rmSync(dir, { recursive: true, force: true });
+    return holder;
   }
+  if (!terminateHolder(dir))
+    throw new Error("holder did not exit after SIGTERM/SIGKILL; slot retained");
   rmSync(dir, { recursive: true, force: true });
   return holder;
 }
