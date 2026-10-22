@@ -63,6 +63,10 @@ export interface TaskCheckRun {
   machine: string;
   stepsDone: number | null;
   stepsTotal: number | null;
+  testsDone: number | null;
+  testsTotal: number | null;
+  attempt: number | null;
+  attemptReason: string | null;
 }
 
 export type TaskCheckEventKind = "started" | "output" | "done";
@@ -72,6 +76,50 @@ export type TaskCheckListener = (
   event: TaskCheckEventKind,
   chunk?: string,
 ) => void;
+
+export interface CheckProgressRecord {
+  stepsDone?: number;
+  stepsTotal?: number;
+  testsDone?: number;
+  testsTotal?: number;
+  attempt?: number;
+  reason?: string;
+}
+
+export function parseCheckProgress(output: string): CheckProgressRecord | null {
+  const marker = "::repoos-check-progress::";
+  const lines = output.split(/\r?\n/).reverse();
+  for (const line of lines) {
+    const index = line.lastIndexOf(marker);
+    if (index < 0) continue;
+    try {
+      const value = JSON.parse(line.slice(index + marker.length)) as {
+        stepsDone?: unknown;
+        stepsTotal?: unknown;
+        testsDone?: unknown;
+        testsTotal?: unknown;
+        attempt?: unknown;
+        reason?: unknown;
+      };
+      const parsed: CheckProgressRecord = {};
+      for (const key of [
+        "stepsDone",
+        "stepsTotal",
+        "testsDone",
+        "testsTotal",
+        "attempt",
+      ] as const) {
+        if (Number.isInteger(value[key]) && Number(value[key]) >= 0)
+          parsed[key] = Number(value[key]);
+      }
+      if (typeof value.reason === "string") parsed.reason = value.reason;
+      if (Object.keys(parsed).length) return parsed;
+    } catch {
+      /* ignore incomplete or malformed records */
+    }
+  }
+  return null;
+}
 
 export interface TaskCheckHandle {
   readonly id: string;
@@ -125,6 +173,10 @@ export class TaskCheckManager {
       machine: meta.machine || localMachineName(),
       stepsDone: null,
       stepsTotal: null,
+      testsDone: null,
+      testsTotal: null,
+      attempt: null,
+      attemptReason: null,
     };
     const list = this.runsByTask.get(taskId) ?? [];
     list.push(run);
@@ -137,24 +189,18 @@ export class TaskCheckManager {
       id,
       chunk: (text: string) => {
         const clean = stripAnsi(text);
-        for (const line of clean.split(/\r?\n/)) {
-          if (!line.startsWith("::repoos-check-progress::")) continue;
-          try {
-            const progress = JSON.parse(line.slice("::repoos-check-progress::".length)) as {
-              stepsDone?: number;
-              stepsTotal?: number;
-            };
-            if (Number.isFinite(progress.stepsDone) && Number.isFinite(progress.stepsTotal)) {
-              run.stepsDone = progress.stepsDone!;
-              run.stepsTotal = progress.stepsTotal!;
-            }
-          } catch {
-            /* ignore malformed progress records */
-          }
-        }
         run.output += clean;
         if (run.output.length > MAX_BUFFERED_CHARS) {
           run.output = run.output.slice(run.output.length - MAX_BUFFERED_CHARS);
+        }
+        const progress = parseCheckProgress(run.output);
+        if (progress) {
+          run.stepsDone = progress.stepsDone ?? run.stepsDone;
+          run.stepsTotal = progress.stepsTotal ?? run.stepsTotal;
+          run.testsDone = progress.testsDone ?? run.testsDone;
+          run.testsTotal = progress.testsTotal ?? run.testsTotal;
+          run.attempt = progress.attempt ?? run.attempt;
+          run.attemptReason = progress.reason ?? run.attemptReason;
         }
         onEvent(run, "output", clean);
       },

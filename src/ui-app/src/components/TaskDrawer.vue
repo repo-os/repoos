@@ -151,6 +151,8 @@ import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { reportPredatesLatestHandoff, reviewSupersededByFixRound } from "../lib/reviewFreshness";
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
+import { checkProgressPercent } from "../lib/check-progress";
+import { checkProgressLabel } from "../lib/check-progress";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import { resolveEffectiveAgent } from "../lib/effective-agent";
 import CopyableNumber from "./CopyableNumber.vue";
@@ -4551,11 +4553,26 @@ watch(
             <div v-if="handoffBusy" class="ff-notice drawer-handoff-banner">
               <ActivityIndicator />
               <span>{{ handoffStepLabel }}</span>
-              <div v-if="activeCheckRun?.stepsTotal" class="check-progress" role="status">
-                <progress :value="activeCheckRun.stepsDone ?? 0" :max="activeCheckRun.stepsTotal" />
-                <span
-                  >step {{ activeCheckRun.stepsDone ?? 0 }} of {{ activeCheckRun.stepsTotal }}</span
-                >
+              <div
+                v-if="
+                  activeCheckRun &&
+                  (activeCheckRun.stepsTotal != null || activeCheckRun.testsTotal != null)
+                "
+                class="check-progress"
+                role="status"
+              >
+                <progress
+                  v-if="checkProgressPercent(activeCheckRun) !== null"
+                  :value="checkProgressPercent(activeCheckRun) ?? 0"
+                  max="100"
+                />
+                <span>{{ checkProgressLabel(activeCheckRun) }}</span>
+                <span v-if="activeCheckRun.attempt && activeCheckRun.attempt > 1">
+                  attempt {{ activeCheckRun.attempt
+                  }}<template v-if="activeCheckRun.attemptReason">
+                    · {{ activeCheckRun.attemptReason }}</template
+                  >
+                </span>
               </div>
               <span class="drawer-handoff-sub">
                 This task stays <strong>active</strong> until the checks pass.

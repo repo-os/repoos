@@ -9,11 +9,26 @@ import { rmSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { TaskCheckManager, type TaskCheckRun } from "../../server/task-check.js";
+import {
+  parseCheckProgress,
+  TaskCheckManager,
+  type TaskCheckRun,
+} from "../../server/task-check.js";
 import { CheckStore, resetCheckStore } from "../../core/check-store.js";
 import { NO_CHECK_PLAN_NOTICE } from "../../core/check-skip.js";
 
 const dirs: string[] = [];
+
+describe("machine-readable check progress", () => {
+  it("parses the latest complete progress record and ignores unknown totals", () => {
+    expect(
+      parseCheckProgress('log\n::repoos-check-progress::{"stepsDone":2,"stepsTotal":9}\n'),
+    ).toEqual({ stepsDone: 2, stepsTotal: 9 });
+    expect(
+      parseCheckProgress('::repoos-check-progress::{"stepsDone":2,"stepsTotal":null}'),
+    ).toBeNull();
+  });
+});
 afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
   resetCheckStore();

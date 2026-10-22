@@ -80,6 +80,7 @@ function resolveBun() {
 
 const VITEST = fileURLToPath(new URL("../node_modules/vitest/vitest.mjs", import.meta.url));
 const CONFIG = "src/ui-app/vite.config.ts";
+const PROGRESS_REPORTER = fileURLToPath(new URL("./vitest-progress-reporter.mjs", import.meta.url));
 
 // Basenames of suites whose assertions include an absolute latency ceiling.
 // Keep this list tight — pass 2 has no parallelism, so every file added
@@ -96,10 +97,22 @@ const vitestArgs = passthrough.filter((a) => a !== "--coverage");
 const coverageArgs = coverageRequested && !scoped ? ["--coverage"] : [];
 
 const vitest = (args, env) => {
-  const r = spawnSync(process.execPath, [VITEST, "run", "--config", CONFIG, ...args], {
-    stdio: "inherit",
-    env: { ...process.env, ...env },
-  });
+  const r = spawnSync(
+    process.execPath,
+    [
+      VITEST,
+      "run",
+      "--config",
+      CONFIG,
+      "--reporter=default",
+      `--reporter=${PROGRESS_REPORTER}`,
+      ...args,
+    ],
+    {
+      stdio: "inherit",
+      env: { ...process.env, ...env },
+    },
+  );
   return r.status ?? 1;
 };
 
