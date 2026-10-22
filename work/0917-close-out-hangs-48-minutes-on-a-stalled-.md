@@ -11,7 +11,7 @@ branch: feat/close-out-hangs-48-minutes-on-a-stalled-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T04:09:06Z"
-updated_at: "2026-10-22T11:53:07Z"
+updated_at: "2026-10-22T11:53:17Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-22T11:36:31.117Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Close-out card shows bundle upload progress (target \"default\"): state \"closeOut:uploading\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Close-out card shows bundle upload progress (target \"default\"): highlight .tc-moving matched nothing on / (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Remote validation dr… (truncated)"
@@ -110,3 +110,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T11:51:13Z · assigned_to
 - 2026-10-22T11:51:14Z · note: handoff requested (ui-review)
 - 2026-10-22T11:53:07Z · body
+- 2026-10-22T11:53:17Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: gate exit 2 on thinkpad — fix it in the feature branch and re-run the gate
