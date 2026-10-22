@@ -13,7 +13,7 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T18:37:57Z"
+updated_at: "2026-10-22T18:46:12Z"
 ---
 ## Problem
 Users have no RepoOS screen to see which project environment is selected or which expected keys are set, missing, or inherited. The metadata and write operations from #0928 need a safe, usable interface that never reveals saved values.
@@ -81,3 +81,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T18:32:55Z · handoff failed · remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-22T18:37:57Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-22T18:37:57Z · note: handoff requested (cli)
+- 2026-10-22T18:46:12Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on bee — fix it in the feature branch and re-run the gate
