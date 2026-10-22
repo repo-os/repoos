@@ -2,7 +2,7 @@
 id: "0924"
 title: "Checks page: show % complete for a running check (steps and test files)"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T15:40:21Z"
+updated_at: "2026-10-22T15:41:32Z"
 review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
@@ -109,3 +109,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T15:32:54Z · cli_override, model_override
 - 2026-10-22T15:37:37Z · body
 - 2026-10-22T15:40:21Z · body
+- 2026-10-22T15:41:32Z · status active→review
