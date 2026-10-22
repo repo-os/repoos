@@ -15096,7 +15096,7 @@
 }
 .secrets-kicker {
   margin: 0 0 8px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -15108,7 +15108,7 @@
 }
 .secrets-intro {
   margin: 8px 0 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .secrets-env-control {
   width: min(310px, 100%);
@@ -15117,7 +15117,7 @@
 }
 .secrets-label,
 .secrets-view-note {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 12px;
 }
 .secrets-view-note {
@@ -15180,7 +15180,7 @@
 }
 .secrets-empty p {
   max-width: 460px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   line-height: 1.6;
 }
 .secrets-empty code {
@@ -15196,7 +15196,7 @@
   gap: 20px;
 }
 .secrets-ledger-top p {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 13px;
   margin: 6px 0 0;
 }
@@ -15212,7 +15212,7 @@
   padding: 0 11px;
   border: 1px solid var(--border);
   border-radius: 7px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .secrets-search input {
   width: 100%;
@@ -15248,7 +15248,7 @@
 .secrets-status {
   padding: 3px 8px;
   border-radius: 99px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   background: color-mix(in srgb, var(--muted) 14%, transparent);
   font-size: 11px;
 }
@@ -15271,7 +15271,7 @@
 }
 .secrets-readonly {
   max-width: 130px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 11px;
   text-align: right;
 }
@@ -15304,11 +15304,11 @@
   display: grid;
   flex: 1;
   gap: 6px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 12px;
 }
 .secrets-no-results {
-  color: var(--muted);
+  color: var(--muted-foreground);
   padding: 28px 0;
 }
 .secrets-error,
@@ -15348,7 +15348,7 @@
   margin: 0;
 }
 .secrets-create-panel p {
-  color: var(--muted);
+  color: var(--muted-foreground);
   line-height: 1.5;
 }
 .secrets-create-actions {
