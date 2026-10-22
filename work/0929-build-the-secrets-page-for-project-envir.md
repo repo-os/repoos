@@ -2,7 +2,7 @@
 id: "0929"
 title: Build the Secrets page for project environments
 type: feature
-status: review
+status: active
 priority: p1
 area: [web, ui]
 story: Secrets and project environments
