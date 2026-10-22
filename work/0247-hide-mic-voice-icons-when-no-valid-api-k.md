@@ -3,6 +3,8 @@ id: "0247"
 title: Hide mic/voice icons when no valid API key is configured
 type: feature
 status: done
+human_step_decision: agent
+human_step_decision_key: 44b75147
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 44b75147
 priority: p2
