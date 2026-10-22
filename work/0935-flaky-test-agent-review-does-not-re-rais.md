@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 245521
-last_close_out_gate_at: "2026-10-22T14:31:16.566Z"
 id: "0935"
 title: "Flaky test: agent-review 'does not re-raise an exhausted-rounds flag dismissed during the review'"
 type: bug
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: ffb7c8942b2425af8ee1ad04cdad41586aeea0d0
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/flaky-test-agent-review-does-not-re-rais
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T14:02:13Z"
 updated_at: "2026-10-22T14:31:16Z"
+last_close_out_gate_ms: 245521
+last_close_out_gate_at: "2026-10-22T14:31:16.566Z"
 review_passes: 1
 ---
 ## Problem
