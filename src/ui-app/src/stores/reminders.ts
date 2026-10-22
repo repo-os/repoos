@@ -3,6 +3,31 @@ import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
 import type { Reminder, ReminderInput, ReminderLink } from "../../../core/reminders.js";
 
+/**
+ * Header-card dismissals (#0903): due reminders show as bright cards in the top
+ * bar. Dismissing one hides only that card — the reminder itself is untouched
+ * and still rings in the bell. The key is `id:fireAt` so snoozing a reminder
+ * and having it come due again surfaces a fresh card.
+ */
+const DISMISSED_CARDS_KEY = "repoos.reminders.dismissedCards";
+/** Cap the persisted set so a long-lived tab can never fill localStorage. */
+const MAX_DISMISSED_CARDS = 100;
+
+/** Stable test ids for the due-reminder header cards (test + review shot). */
+export const REMINDER_CARD_TEST_ID = "reminder-card";
+export const REMINDER_CARD_DISMISS_TEST_ID = "reminder-card-dismiss";
+
+function readDismissedCards(): Record<string, true> {
+  try {
+    const raw = localStorage.getItem(DISMISSED_CARDS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, true>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 export const useRemindersStore = defineStore("reminders", () => {
   const reminders = ref<Reminder[]>([]);
   const links = ref<ReminderLink[]>([]);
@@ -16,6 +41,34 @@ export const useRemindersStore = defineStore("reminders", () => {
   const due = computed(() =>
     reminders.value.filter((r) => !r.doneAt && Date.parse(r.fireAt) <= now.value),
   );
+  /** Dismissed header-card keys (`id:fireAt`) — persisted across reloads. */
+  const dismissedCards = ref<Record<string, true>>(readDismissedCards());
+  /** Stable per-due-instance key: a new fire time (snooze) gets a new card. */
+  const cardKey = (row: Reminder): string => `${row.id}:${row.fireAt}`;
+  const isCardDismissed = (row: Reminder): boolean => !!dismissedCards.value[cardKey(row)];
+  /** Due reminders still shown as header cards (dismissed ones filtered out). */
+  const dueCards = computed(() => due.value.filter((r) => !isCardDismissed(r)));
+
+  function persistDismissedCards(): void {
+    try {
+      const keys = Object.keys(dismissedCards.value);
+      if (keys.length > MAX_DISMISSED_CARDS) {
+        dismissedCards.value = Object.fromEntries(
+          keys.slice(keys.length - MAX_DISMISSED_CARDS).map((k) => [k, true as const]),
+        );
+      }
+      localStorage.setItem(DISMISSED_CARDS_KEY, JSON.stringify(dismissedCards.value));
+    } catch {
+      /* ignore quota / privacy-mode failures */
+    }
+  }
+
+  /** Hide one due reminder's header card; the reminder is not touched. */
+  function dismissCard(row: Reminder): void {
+    dismissedCards.value = { ...dismissedCards.value, [cardKey(row)]: true };
+    persistDismissedCards();
+  }
+
   const sorted = computed(() =>
     [...reminders.value].sort((a, b) => a.fireAt.localeCompare(b.fireAt)),
   );
@@ -90,6 +143,11 @@ export const useRemindersStore = defineStore("reminders", () => {
     loading,
     fixturePinned,
     due,
+    dueCards,
+    dismissedCards,
+    cardKey,
+    isCardDismissed,
+    dismissCard,
     sorted,
     refresh,
     add,
