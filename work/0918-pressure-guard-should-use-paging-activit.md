@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: opencode
 review_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-22T04:18:52Z"
-updated_at: "2026-10-22T09:24:55Z"
+updated_at: "2026-10-22T09:25:58Z"
 review_rounds: 2
 review_passes: 2
 check_retry_count: 1
@@ -110,3 +110,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T09:23:33Z · message_queued at 2026-10-22T09:23:33.888Z
 - 2026-10-22T09:23:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-22T09:24:55Z · body
+- 2026-10-22T09:25:58Z · handoff_deferred: 1 queued message(s) must be read before review
