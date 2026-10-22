@@ -2,7 +2,7 @@
 id: "0915"
 title: "repoos runners check/setup: declare which engineer CLIs each runner needs, verify installed and signed in, install missing"
 type: feature
-status: inbox
+status: ready
 human_step_decision: human
 human_step_decision_key: 71c89bbf
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T02:26:27Z"
-updated_at: "2026-10-22T07:47:35Z"
+updated_at: "2026-10-22T15:52:34Z"
 ---
 ## Problem
 Whole-engineer-sessions on runners (ADR 0009, #0913) and the existing runner pool need each runner to have the same engineer CLIs installed and signed in. Today that is checked by hand with ad-hoc ssh commands. On 2026-10-22 the state was: bee and thinkpad have opencode-go signed in; codex (ChatGPT) and cursor-agent are signed in only on thinkpad; bee has no cursor-agent and codex is not logged in; mini was not checked; opencode's own 'auth list' failed on both with 'Could not resolve npm bin'. Nothing tells a human or the scheduler which cell is wrong, and the justfile setup recipes only provision Docker and the CI image, not the engineer CLIs.
@@ -40,3 +40,4 @@ Start from scripts/remote-runner/*, the justfile _setup-runner recipe, src/serve
 - 2026-10-22T02:26:47Z · needs_input
 - 2026-10-22T04:25:32Z · needs_input
 - 2026-10-22T07:47:35Z · needs_input
+- 2026-10-22T15:52:34Z · status inbox→ready
