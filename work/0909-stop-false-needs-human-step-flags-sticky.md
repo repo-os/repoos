@@ -3,6 +3,9 @@ id: "0909"
 title: "Stop false 'needs human step' flags: sticky overrides, model check before keywords, tagged criteria with auto-split"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "error: Go usage limit exceeded"
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -11,7 +14,9 @@ branch: feat/stop-false-needs-human-step-flags-sticky
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T19:41:23Z"
-updated_at: "2026-10-22T01:11:12Z"
+updated_at: "2026-10-22T01:15:11Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:11.193Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The 'needs-human-step' detector flags tasks by keyword (credentials, accounts, device, keys…). 2026-10-22: #0904 (design/implement remote engineer sessions, proven with fakes) was flagged because its criteria merely MENTION credentials; #0904, #0905, #0908 and others were flagged repeatedly and a driver cleared the flag three times, then reworded the task to dodge the scanner. Every edit re-scans and can re-flag, new tasks get flagged on creation, and a flagged task blocks AI dispatch until someone notices. It is brittle and wastes human and driver time.
@@ -52,3 +57,5 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T01:11:06Z · status active→ready
 - 2026-10-22T01:11:11Z · status ready→active
 - 2026-10-22T01:11:12Z · message_delivered: 1 message(s)
+- 2026-10-22T01:15:11Z · agent exited with an error (opencode) · error: Go usage limit exceeded
+- 2026-10-22T01:15:11Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · error: Go usage limit exceeded
