@@ -33,6 +33,7 @@ export type NoticeKind =
   | "closeOutFailed"
   | "closeOutTimedOut"
   | "providerFailure"
+  | "providerUsageLimit"
   | "silentRun"
   | "slowRun"
   | "slowRunsRecently"
@@ -68,6 +69,7 @@ export const NOTICE_KIND_LABELS: Record<NoticeKind, string> = {
   closeOutFailed: "Move to done failed",
   closeOutTimedOut: "Move to done timed out",
   providerFailure: "Provider error",
+  providerUsageLimit: "Provider usage limit",
   silentRun: "Silent agent run",
   slowRun: "Slow check",
   slowRunsRecently: "Checks slow lately",
@@ -90,6 +92,7 @@ export const NOTICE_KIND_COLOR: Record<NoticeKind, string> = {
   // real gate failure.
   closeOutTimedOut: "var(--amber)",
   providerFailure: "var(--red)",
+  providerUsageLimit: "var(--amber)",
   silentRun: "var(--amber)",
   slowRun: "var(--amber)",
   slowRunsRecently: "var(--amber)",
@@ -110,6 +113,7 @@ const ATTENTION_NOTICE_KINDS = new Set<NoticeKind>([
   "closeOutFailed",
   "closeOutTimedOut",
   "providerFailure",
+  "providerUsageLimit",
   "silentRun",
   "slowRun",
   "slowRunsRecently",

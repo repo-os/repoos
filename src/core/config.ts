@@ -285,6 +285,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     phantomDetectMs: 3 * 60 * 1000,
     engineerCrashFailoverThreshold: DEFAULT_ENGINEER_CRASH_FAILOVER_THRESHOLD,
     engineerCrashFailoverWindowMs: DEFAULT_ENGINEER_CRASH_FAILOVER_WINDOW_MS,
+    autoPauseOnUsageLimit: true,
   },
   autoEngineeringMode: false,
   autoEngineering: {
@@ -1801,6 +1802,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof watchdogAutoTransition === "boolean") {
       cfg.watchdog = { ...cfg.watchdog, autoTransition: watchdogAutoTransition };
     }
+    const autoPauseOnUsageLimit = parsed["watchdog.autoPauseOnUsageLimit"];
+    if (typeof autoPauseOnUsageLimit === "boolean") {
+      cfg.watchdog = { ...cfg.watchdog, autoPauseOnUsageLimit };
+    }
     const phantomDetectMs = parsed["watchdog.phantomDetectMs"];
     if (typeof phantomDetectMs === "number" && phantomDetectMs >= 15_000) {
       cfg.watchdog = { ...cfg.watchdog, phantomDetectMs };
@@ -2670,6 +2675,17 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "allowlist pair. A crash alone never requests a handoff: below this threshold " +
         "the engineer is resumed. A human-set task override is never replaced; that " +
         "case is surfaced for a human instead.",
+    },
+    {
+      key: "watchdog.autoPauseOnUsageLimit",
+      label: "Pause models on usage limits",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      group: "general",
+      default: true,
+      description:
+        "When an agent reports an explicit quota or HTTP 429 usage-limit error, pause that agent+model and let active work fail over. Without a reset time, RepoOS runs a low-token probe every 10 minutes and resumes the model after a successful response.",
     },
     {
       key: "watchdog.engineerCrashFailoverWindowMs",
@@ -3783,6 +3799,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "watchdog.autoTransition",
   "watchdog.phantomDetectMs",
   "watchdog.engineerCrashFailoverThreshold",
+  "watchdog.autoPauseOnUsageLimit",
   "watchdog.engineerCrashFailoverWindowMs",
   "whisper.provider",
   "whisper.apiKey",

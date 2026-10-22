@@ -150,6 +150,27 @@ describe("engineer crash recovery policy (#0869)", () => {
       expect: { action: "surface", reason: "human-override" },
     },
     {
+      name: "a usage limit fails over immediately even when the task is pinned",
+      input: {
+        task: planTask({ cliOverride: PAIR.cli, modelOverride: PAIR.model }),
+        crashes: [{ ...recordsFor(PAIR, 1)[0]!, kind: "usage-limit" }],
+      },
+      expect: { action: "failover", to: { cli: "opencode", model: "big-pickle" } },
+    },
+    {
+      name: "a usage limit surfaces clearly when every alternative is paused",
+      input: {
+        task: planTask({ cliOverride: PAIR.cli, modelOverride: PAIR.model }),
+        crashes: [{ ...recordsFor(PAIR, 1)[0]!, kind: "usage-limit" }],
+        allowlist: [
+          { cli: PAIR.cli, models: [PAIR.model], pausedModels: [{ model: PAIR.model }] },
+          { cli: "claude code", models: ["opus"], paused: true },
+          { cli: "cursor", models: ["composer"], paused: true },
+        ],
+      },
+      expect: { action: "surface", reason: "no-allowed-pair" },
+    },
+    {
       name: "a human CLI override is surfaced, never replaced",
       input: {
         task: planTask({ cliOverride: "codex", modelOverride: "gpt-5" }),
