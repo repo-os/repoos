@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 185063
-last_close_out_gate_at: "2026-10-22T07:38:06.760Z"
 id: "0909"
 title: "Stop false 'needs human step' flags: sticky overrides, model check before keywords, tagged criteria with auto-split"
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, server, web]
+merged_commit: f7625fcebe153704e7ce3ac3d215dc630b106d7b
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/stop-false-needs-human-step-flags-sticky
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T19:41:23Z"
 updated_at: "2026-10-22T07:38:06Z"
+last_close_out_gate_ms: 185063
+last_close_out_gate_at: "2026-10-22T07:38:06.760Z"
 review_passes: 6
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-22T02:27:19.227Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Needs-human-step detail shows criterion quote (target \"default\"): highlight .agent-waiting-sub matched nothing on /work?task=0909&tab=overview (http://127.0.0.1:58600/work?shotState=card:humanStep)"

@@ -742,13 +742,13 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       ensureFixtureTask(repo, "review");
       break;
     case "card:humanStep":
-      // #0804 — the decision model blocked a start: a ready card must show the
-      // flag and its bounded explanation.
+      // #0804 / #0909 — needs-human-step: card and drawer show the quoted
+      // criterion plus the model's bounded explanation.
       ensureFixtureTask(repo, "ready", {
         needsInput: true,
         needsInputReason: "needs-human-step",
         needsInputDetail:
-          "Decision model (91%): split this into an AI task and a human task — it needs a real account, credential, or API key.",
+          'Criterion "Rotate the API keys in the dev config" — Decision model (91%): split this into an AI task and a human task — it needs a real account, credential, or API key.',
       });
       break;
     case "card:reviewRoundsExhausted": {

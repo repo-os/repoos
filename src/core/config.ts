@@ -3685,11 +3685,21 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: false,
       description:
-        "Before a ready task starts, ask the decision model whether it mixes AI steps with steps only " +
-        "a human can do; a yes means the task should be split into a separate AI task and a human task. " +
-        "Off by default. Uses the provider above; it only blocks a start when Model routing mode is " +
-        "Automatic (Shadow records the verdict without blocking), and if the provider is off, missing, " +
-        "or fails, the keyword check runs instead.",
+        "When acceptance criteria trip the keyword scan, ask the decision model whether verification truly " +
+        "requires a human — the keyword match alone never sets the flag. Off by default. Uses the provider " +
+        "above; it only blocks a start when Model routing mode is Automatic (Shadow records the verdict without " +
+        "blocking), and if the provider is off, missing, or fails, the keyword check runs instead.",
+    },
+    {
+      key: "model_routing.humanStepSticky",
+      label: "Remember cleared needs-human-step flags",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: true,
+      description:
+        "When a human clears a needs-human-step flag, record a fingerprint of the acceptance criteria so " +
+        "later edits do not re-flag until the criteria materially change. On by default.",
     },
     // [board.columns] — display-only label overrides (#0396).
     ...STATUSES.map((status) => ({
@@ -3940,6 +3950,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "model_routing.roles",
   "model_routing.timeoutMs",
   "model_routing.humanStepCheck",
+  "model_routing.humanStepSticky",
   // Close-out (Move to done) pipeline budget (#0573)
   "closeOut.timeoutMs",
   "closeOut.gate",
