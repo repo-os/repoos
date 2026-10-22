@@ -11,9 +11,9 @@ import {
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
-const STALE_MS = 30 * 60 * 1000;
-const WEDGED_AFTER_MS = 75 * 1000;
-const WEDGED_RECLAIM_AFTER_MS = 150 * 1000;
+export const STALE_MS = 90 * 1000;
+export const WEDGED_AFTER_MS = 75 * 1000;
+export const WEDGED_RECLAIM_AFTER_MS = 150 * 1000;
 const HEARTBEAT_MS = 15_000;
 
 function processIsAlive(pid: number): boolean {
@@ -33,6 +33,19 @@ function processIsAlive(pid: number): boolean {
   } catch (error) {
     return (error as NodeJS.ErrnoException).code !== "ESRCH";
   }
+}
+
+function processStartToken(pid: number): string | undefined {
+  if (process.platform === "win32") return undefined;
+  const result = spawnSync("ps", ["-o", "lstart=", "-p", String(pid)], {
+    encoding: "utf8",
+    timeout: 1_000,
+  });
+  return result.status === 0 && result.stdout.trim() ? result.stdout.trim() : undefined;
+}
+
+function monotonicMs(): number {
+  return Number(process.hrtime.bigint() / 1_000_000n);
 }
 
 function processGroupHasLiveMembers(pgid: number): boolean {
@@ -56,6 +69,40 @@ function processGroupHasLiveMembers(pgid: number): boolean {
   }
 }
 
+function terminateManagedGroup(dir: string): boolean {
+  if (process.platform === "win32") return false;
+  try {
+    const meta = JSON.parse(readFileSync(join(dir, ".meta.json"), "utf8")) as Record<
+      string,
+      unknown
+    >;
+    const pid = Number(readFileSync(join(dir, ".holder"), "utf8"));
+    if (meta.kind !== "local-check" || meta.processGroup !== true) return true;
+    if (!Number.isInteger(pid) || pid <= 0) return false;
+    try {
+      process.kill(-pid, "SIGTERM");
+    } catch {
+      return !processGroupHasLiveMembers(pid);
+    }
+    const wait = new Int32Array(new SharedArrayBuffer(4));
+    const deadline = Date.now() + 2_000;
+    while (Date.now() < deadline && processGroupHasLiveMembers(pid)) Atomics.wait(wait, 0, 0, 100);
+    if (processGroupHasLiveMembers(pid)) {
+      try {
+        process.kill(-pid, "SIGKILL");
+      } catch {
+        /* group exited */
+      }
+      const killDeadline = Date.now() + 2_000;
+      while (Date.now() < killDeadline && processGroupHasLiveMembers(pid))
+        Atomics.wait(wait, 0, 0, 100);
+    }
+    return !processGroupHasLiveMembers(pid);
+  } catch {
+    return false;
+  }
+}
+
 export class SlotQueueTimeoutError extends Error {
   constructor(message: string) {
     super(message);
@@ -71,6 +118,8 @@ export interface SlotAcquireOptions {
   meta?: Record<string, unknown>;
   onQueued?: (ahead: number, position: number) => void;
   onHeartbeat?: () => void;
+  staleAfterMs?: number;
+  reclaimGraceMs?: number;
 }
 
 function slotDirs(lockRoot: string): string[] {
@@ -83,28 +132,56 @@ function slotDirs(lockRoot: string): string[] {
   }
 }
 
-function isStaleSlot(dir: string): boolean {
+function isStaleSlot(
+  dir: string,
+  staleAfterMs = WEDGED_AFTER_MS,
+  reclaimGraceMs = WEDGED_RECLAIM_AFTER_MS,
+): boolean {
   // A slot's recorded owner is authoritative when its process has exited;
   // heartbeat timestamps alone can leave a dead close-out blocking for 30m.
   try {
     const rawPid = readFileSync(join(dir, ".holder"), "utf8").trim();
     if (/^\d+$/.test(rawPid)) {
-      if (!processIsAlive(Number(rawPid))) return true;
+      const pid = Number(rawPid);
+      if (!processIsAlive(pid)) return true;
+      try {
+        const meta = JSON.parse(readFileSync(join(dir, ".meta.json"), "utf8")) as Record<
+          string,
+          unknown
+        >;
+        const recorded =
+          typeof meta.processStartToken === "string" ? meta.processStartToken : undefined;
+        const current = processStartToken(pid);
+        if (recorded && current && recorded !== current) return true;
+      } catch {
+        /* identity metadata may be absent in older slot dirs */
+      }
     }
   } catch {
     // A slot without holder metadata may be mid-creation; use its age below.
   }
   try {
     const st = statSync(dir);
-    const age = Date.now() - st.mtimeMs;
-    if (age > WEDGED_AFTER_MS) {
+    let age = Date.now() - st.mtimeMs;
+    try {
+      const heartbeat = JSON.parse(readFileSync(join(dir, ".heartbeat.json"), "utf8")) as {
+        monotonicMs?: number;
+      };
+      if (Number.isFinite(heartbeat.monotonicMs))
+        age = Math.max(0, monotonicMs() - heartbeat.monotonicMs!);
+    } catch {
+      /* older slot dirs use filesystem time */
+    }
+    if (age > staleAfterMs) {
       const marker = join(dir, ".wedged-since");
       try {
         const since = Number(readFileSync(marker, "utf8"));
-        if (Number.isFinite(since)) return Date.now() - since >= WEDGED_RECLAIM_AFTER_MS;
+        if (Number.isFinite(since) && monotonicMs() - since >= reclaimGraceMs) {
+          return terminateManagedGroup(dir);
+        }
       } catch {
         try {
-          writeFileSync(marker, String(Date.now()), "utf8");
+          writeFileSync(marker, String(monotonicMs()), "utf8");
         } catch {
           /* concurrent release */
         }
@@ -126,6 +203,7 @@ export interface LocalSlotHolder {
   slot: number;
   pid?: number;
   ageMs: number;
+  heartbeatAgeMs: number;
   wedged: boolean;
   dead: boolean;
   meta?: Record<string, unknown>;
@@ -137,15 +215,44 @@ function holderIsDead(pid: number | undefined): boolean {
 }
 
 /** Read local slot ownership for the Checks surface and CLI diagnostics. */
-export function inspectCrossProcessSlots(lockRoot: string): LocalSlotHolder[] {
-  return slotDirs(lockRoot).map((dir) => {
+export function inspectCrossProcessSlots(
+  lockRoot: string,
+  slots?: number,
+  staleAfterMs = WEDGED_AFTER_MS,
+): LocalSlotHolder[] {
+  const dirs = new Map(
+    slotDirs(lockRoot).map((dir) => [Number(dir.slice(dir.lastIndexOf("/") + 1)), dir]),
+  );
+  const indexes =
+    slots == null
+      ? [...dirs.keys()].sort((a, b) => a - b)
+      : Array.from({ length: slots }, (_, i) => i);
+  return indexes.map((slot) => {
+    const dir = dirs.get(slot);
+    if (!dir) return { slot, ageMs: 0, heartbeatAgeMs: 0, wedged: false, dead: false };
     let pid: number | undefined;
     let meta: Record<string, unknown> | undefined;
     let ageMs = 0;
+    let heartbeatAgeMs = 0;
     try {
       pid = Number(readFileSync(join(dir, ".holder"), "utf8")) || undefined;
       meta = JSON.parse(readFileSync(join(dir, ".meta.json"), "utf8")) as Record<string, unknown>;
       ageMs = Math.max(0, Date.now() - statSync(dir).mtimeMs);
+      heartbeatAgeMs = ageMs;
+      try {
+        const heartbeat = JSON.parse(readFileSync(join(dir, ".heartbeat.json"), "utf8")) as {
+          monotonicMs?: number;
+        };
+        if (Number.isFinite(heartbeat.monotonicMs))
+          heartbeatAgeMs = Math.max(0, monotonicMs() - heartbeat.monotonicMs!);
+        const started = JSON.parse(readFileSync(join(dir, ".started.json"), "utf8")) as {
+          monotonicMs?: number;
+        };
+        if (Number.isFinite(started.monotonicMs))
+          ageMs = Math.max(0, monotonicMs() - started.monotonicMs!);
+      } catch {
+        /* old slot dirs rely on mtime */
+      }
     } catch {
       try {
         ageMs = Math.max(0, Date.now() - statSync(dir).mtimeMs);
@@ -157,11 +264,60 @@ export function inspectCrossProcessSlots(lockRoot: string): LocalSlotHolder[] {
       slot: Number(dir.slice(dir.lastIndexOf("/") + 1)),
       pid,
       ageMs,
-      dead: holderIsDead(pid),
-      wedged: !holderIsDead(pid) && ageMs > WEDGED_AFTER_MS,
+      heartbeatAgeMs,
+      dead:
+        holderIsDead(pid) ||
+        Boolean(
+          meta?.processStartToken &&
+          processStartToken(pid ?? -1) &&
+          meta.processStartToken !== processStartToken(pid ?? -1),
+        ),
+      wedged: !holderIsDead(pid) && heartbeatAgeMs > staleAfterMs,
       meta,
     };
   });
+}
+
+/** Release a named wedged slot only when the operator confirms its current PID. */
+export function releaseLocalCheckSlot(
+  lockRoot: string,
+  slot: number,
+  confirmedPid: number,
+): LocalSlotHolder {
+  const holder = inspectCrossProcessSlots(lockRoot, slot + 1).find((item) => item.slot === slot);
+  if (!holder?.pid || holder.pid !== confirmedPid)
+    throw new Error("slot holder changed; inspect slots and retry");
+  if (!holder.dead && !holder.wedged)
+    throw new Error(`slot ${slot} is held by live PID ${holder.pid} and is not wedged`);
+  const dir = join(lockRoot, String(slot));
+  try {
+    const meta = JSON.parse(readFileSync(join(dir, ".meta.json"), "utf8")) as Record<
+      string,
+      unknown
+    >;
+    if (meta.processGroup === true && process.platform !== "win32") {
+      try {
+        process.kill(-holder.pid, "SIGTERM");
+      } catch {
+        /* already gone */
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1_500);
+      try {
+        process.kill(-holder.pid, "SIGKILL");
+      } catch {
+        /* exited */
+      }
+    } else if (holder.dead) {
+      rmSync(dir, { recursive: true, force: true });
+      return holder;
+    } else {
+      throw new Error("live holder is not a managed process group; refusing to terminate it");
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("live holder")) throw error;
+  }
+  rmSync(dir, { recursive: true, force: true });
+  return holder;
 }
 
 /** Reap close-out check groups left behind after their candidate worktree vanished. */
@@ -219,12 +375,14 @@ function tryTakeSlot(
   lockRoot: string,
   slots: number,
   meta?: Record<string, unknown>,
+  staleAfterMs?: number,
+  reclaimGraceMs?: number,
 ): string | null {
   mkdirSync(lockRoot, { recursive: true });
   for (let i = 0; i < slots; i++) {
     const dir = join(lockRoot, String(i));
     if (existsSync(dir)) {
-      if (isStaleSlot(dir)) {
+      if (isStaleSlot(dir, staleAfterMs, reclaimGraceMs)) {
         try {
           rmSync(dir, { recursive: true, force: true });
         } catch {
@@ -237,9 +395,23 @@ function tryTakeSlot(
     try {
       mkdirSync(dir);
       if (meta) {
-        writeFileSync(join(dir, ".meta.json"), JSON.stringify(meta), "utf8");
+        writeFileSync(
+          join(dir, ".meta.json"),
+          JSON.stringify({ ...meta, processStartToken: processStartToken(process.pid) }),
+          "utf8",
+        );
       }
       writeFileSync(join(dir, ".holder"), String(process.pid), "utf8");
+      writeFileSync(
+        join(dir, ".heartbeat.json"),
+        JSON.stringify({ wallMs: Date.now(), monotonicMs: monotonicMs() }),
+        "utf8",
+      );
+      writeFileSync(
+        join(dir, ".started.json"),
+        JSON.stringify({ wallMs: Date.now(), monotonicMs: monotonicMs() }),
+        "utf8",
+      );
       return dir;
     } catch {
       /* contested */
@@ -248,8 +420,14 @@ function tryTakeSlot(
   return null;
 }
 
-function countActiveSlots(lockRoot: string): number {
-  return slotDirs(lockRoot).filter((d) => existsSync(d) && !isStaleSlot(d)).length;
+function countActiveSlots(
+  lockRoot: string,
+  staleAfterMs?: number,
+  reclaimGraceMs?: number,
+): number {
+  return slotDirs(lockRoot).filter(
+    (d) => existsSync(d) && !isStaleSlot(d, staleAfterMs, reclaimGraceMs),
+  ).length;
 }
 
 /**
@@ -265,9 +443,12 @@ export async function acquireCrossProcessSlot(opts: SlotAcquireOptions): Promise
   const deadline = started + Math.max(0, opts.waitTimeoutMs);
   let held: string | null = null;
   let heartbeat: ReturnType<typeof setInterval> | undefined;
+  const signalHandlers = new Map<NodeJS.Signals, () => void>();
 
   const release = (): void => {
     if (heartbeat) clearInterval(heartbeat);
+    for (const [signal, handler] of signalHandlers) process.off(signal, handler);
+    signalHandlers.clear();
     if (held) {
       try {
         rmSync(held, { recursive: true, force: true });
@@ -279,12 +460,26 @@ export async function acquireCrossProcessSlot(opts: SlotAcquireOptions): Promise
   };
 
   while (!held) {
-    held = tryTakeSlot(opts.lockRoot, slots, opts.meta);
+    held = tryTakeSlot(opts.lockRoot, slots, opts.meta, opts.staleAfterMs, opts.reclaimGraceMs);
     if (held) {
+      for (const signal of ["SIGTERM", "SIGINT"] as const) {
+        const handler = () => {
+          release();
+          process.off(signal, handler);
+          process.kill(process.pid, signal);
+        };
+        signalHandlers.set(signal, handler);
+        process.once(signal, handler);
+      }
       heartbeat = setInterval(() => {
         try {
           const now = new Date();
           utimesSync(held!, now, now);
+          writeFileSync(
+            join(held!, ".heartbeat.json"),
+            JSON.stringify({ wallMs: Date.now(), monotonicMs: monotonicMs() }),
+            "utf8",
+          );
           opts.onHeartbeat?.();
         } catch {
           /* slot gone */
@@ -293,7 +488,7 @@ export async function acquireCrossProcessSlot(opts: SlotAcquireOptions): Promise
       heartbeat.unref?.();
       return release;
     }
-    const active = countActiveSlots(opts.lockRoot);
+    const active = countActiveSlots(opts.lockRoot, opts.staleAfterMs, opts.reclaimGraceMs);
     const ahead = Math.max(0, active);
     const position = ahead + 1;
     opts.onQueued?.(ahead, position);

@@ -942,6 +942,8 @@ provider = "none"
 | `maxConcurrentAgents` | number | derived from CPU count | yes | How many agent CLI processes (start/send/chat) may run at once; extras queue. Must be 1–16. The default is computed from this machine's CPU count and capped sensibly. |
 | `localChecks.maxConcurrent` | select (1–8) | `2` | yes | Cross-process cap on local `repoos check` runs on this machine; extras queue with a visible position (#0836). |
 | `localChecks.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long a queued local check may wait for a slot before failing with an actionable timeout (minimum 60000). |
+| `localChecks.staleAfterMs` | number | `75000` | yes | Mark a silent but live local check holder as wedged after this heartbeat age (minimum 15000). |
+| `localChecks.reclaimGraceMs` | number | `150000` | yes | Grace after marking a holder wedged before reclaiming its managed process group (minimum 15000). |
 | `playwright.maxConcurrent` | select (1–4) | `1` | yes | Shared cap on headless Playwright work (smoke, contrast audit, shots, UI verification). |
 | `playwright.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long queued Playwright work may wait for the shared browser slot before timing out (minimum 60000). |
 | `pressureGuard.enabled` | boolean | `true` | yes | When on, delay new local checks, browser steps and engineer starts while paging activity, reclaimable memory, or load is high. Running engineers are never killed. |

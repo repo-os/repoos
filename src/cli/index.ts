@@ -23,6 +23,7 @@ import { cmdGc } from "../commands/gc.js";
 import { cmdMigrate } from "../commands/migrate.js";
 import { cmdOutline } from "../commands/outline.js";
 import { cmdCheck } from "../commands/check.js";
+import { cmdChecks } from "../commands/checks.js";
 import { cmdShot } from "../commands/shot.js";
 import { cmdServe, serveProcessTitle, setServeProcessTitle } from "../commands/serve.js";
 import { cmdStop } from "../commands/stop.js";
@@ -271,6 +272,9 @@ function main(): void {
       break;
     case "check":
       void cmdCheck(rest);
+      break;
+    case "checks":
+      cmdChecks(rest);
       break;
     case "start":
       void cmdStart(rest).then((code) => {
