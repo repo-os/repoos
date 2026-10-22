@@ -48,9 +48,9 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 "route": "/work?task=9999&tab=overview",
 "highlight": ".drawer-critical .agent-waiting-sub",
 "steps": [
-  {
-    "waitFor": ".drawer-critical .agent-waiting-sub"
-  }
+{
+  "waitFor": ".drawer-critical .agent-waiting-sub"
+}
 ],
 "state": "card:humanStep"
 }
@@ -114,4 +114,5 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T02:24:57Z · body
 - 2026-10-22T02:27:16Z · note: ui verification failed (1 issue(s)): [missing-target] Needs-human-step detail shows criterion quote (target "default"): highlight .agent-waiting-sub matched nothing on /work?task=0909&tab=overview (http://127.0.0.1:58600/work?shotState=card:humanStep)
 - 2026-10-22T02:28:19Z · body
+- 2026-10-22T02:30:02Z · body
 - 2026-10-22T02:30:02Z · body
