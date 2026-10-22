@@ -3,6 +3,8 @@ id: "0452"
 title: Build a polyglot real-repo adoption test matrix
 type: feature
 status: done
+human_step_decision: agent
+human_step_decision_key: 79f52fd1
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 79f52fd1
 priority: p1
