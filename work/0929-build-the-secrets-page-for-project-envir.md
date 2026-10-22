@@ -13,7 +13,10 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T20:53:45Z"
+updated_at: "2026-10-22T20:54:47Z"
+review_rounds: 2
+review_passes: 2
+last_check_failure: "repoos check at 2026-10-22T19:44:36.309Z: repoos check failed: ui verification failed: runner result omitted the UI verification record"
 ---
 ## Problem
 Users have no RepoOS screen to see which project environment is selected or which expected keys are set, missing, or inherited. The metadata and write operations from #0928 need a safe, usable interface that never reveals saved values.
@@ -33,6 +36,37 @@ A Secrets item appears in the sidebar between Dev and Agents. The page lets user
 ## Notes for AI
 Implement only the user interface and its route/state/tests; consume the metadata and mutation contracts from #0928 rather than creating alternate secret APIs. This depends on #0928. The environment selector must be view-only and must not implicitly rebind Dev, checks, or deployments. Update user-facing docs directly affected by the new page. Rebuild the UI after changes.
 
+## Shots
+```json
+[
+{
+"label": "Secrets ledger with set, inherited, and missing keys",
+"target": "default",
+"route": "/secrets",
+"highlight": ".secrets-ledger",
+"state": "secrets:populated",
+"theme": "light"
+},
+{
+"label": "Dark removal confirmation with affected consumers",
+"target": "default",
+"route": "/secrets",
+"highlight": ".delete-confirm-modal",
+"state": "secrets:removeDialog",
+"theme": "dark"
+},
+{
+"label": "Mobile Secrets ledger with inherited and missing rows",
+"target": "default",
+"route": "/secrets",
+"highlight": ".secrets-rows",
+"state": "secrets:populated",
+"theme": "light",
+"viewportWidth": 390
+}
+]
+```
+
 ## Activity
 
 - 2026-10-22T08:06:27Z · created · njachowski@gmail.com
@@ -40,10 +74,70 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T18:11:44Z · status inbox→ready
 - 2026-10-22T18:11:51Z · cli_override, model_override
 - 2026-10-22T18:11:52Z · status ready→active, branch
-- 2026-10-22T19:28:37Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
-- 2026-10-22T20:37:08Z · status ready→review
-- 2026-10-22T20:37:08Z · note: handoff requested (cli)
-- 2026-10-22T20:37:08Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
-- 2026-10-22T20:53:45Z · status ready→review
-- 2026-10-22T20:53:45Z · note: handoff requested (cli)
-- 2026-10-22T20:53:45Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
+- 2026-10-22T18:11:56Z · message_queued at 2026-10-22T18:11:56.849Z
+- 2026-10-22T18:12:19Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-22T18:12:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T18:12:40Z · message_delivered: 1 message(s)
+- 2026-10-22T18:16:08Z · body
+- 2026-10-22T18:16:55Z · body
+- 2026-10-22T18:18:41Z · body
+- 2026-10-22T18:21:00Z · body
+- 2026-10-22T18:23:21Z · body
+- 2026-10-22T18:32:55Z · handoff failed · remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-22T18:37:57Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-22T18:37:57Z · note: handoff requested (cli)
+- 2026-10-22T18:46:12Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on bee — fix it in the feature branch and re-run the gate
+- 2026-10-22T18:50:53Z · message_queued at 2026-10-22T18:50:53.330Z
+- 2026-10-22T18:52:19Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-22T18:53:04Z · body
+- 2026-10-22T18:54:28Z · body
+- 2026-10-22T18:55:13Z · body
+- 2026-10-22T18:56:07Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-22T18:56:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T18:56:07Z · message_delivered: 1 message(s)
+- 2026-10-22T18:58:46Z · body
+- 2026-10-22T19:02:23Z · body
+- 2026-10-22T19:11:07Z · handoff failed · remote validation failed: test failure: tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on mini — fix it in the feature branch and re-run the gate
+- 2026-10-22T19:14:53Z · message_queued at 2026-10-22T19:14:53.634Z
+- 2026-10-22T19:15:31Z · body
+- 2026-10-22T19:17:02Z · body
+- 2026-10-22T19:17:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-22T19:17:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T19:17:58Z · message_delivered: 1 message(s)
+- 2026-10-22T19:20:50Z · body
+- 2026-10-22T19:33:15Z · body
+- 2026-10-22T19:45:13Z · body
+- 2026-10-22T19:47:00Z · body
+- 2026-10-22T19:49:47Z · handoff failed · check failed after 2 automatic retries · ui verification failed: runner result omitted the UI verification record
+- 2026-10-22T19:50:48Z · note: handoff requested (ui-review)
+- 2026-10-22T19:52:38Z · handoff failed · ui-review handoff failed at verify · ui verification failed: runner result omitted the UI verification record
+- 2026-10-22T19:57:04Z · message_queued at 2026-10-22T19:57:04.879Z
+- 2026-10-22T19:57:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-22T19:59:34Z · body
+- 2026-10-22T20:00:57Z · body
+- 2026-10-22T20:03:24Z · body
+- 2026-10-22T20:06:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T20:06:48Z · message_delivered: 1 message(s)
+- 2026-10-22T20:07:20Z · CTO nudge: held — remote validation is running
+- 2026-10-22T20:09:06Z · note: Resuming manual verification of declared Secrets review shots
+- 2026-10-22T20:13:11Z · body
+- 2026-10-22T20:13:52Z · body
+- 2026-10-22T20:14:08Z · note: Running registered Secrets shots against managed preview
+- 2026-10-22T20:17:20Z · CTO nudge: held — remote validation is running
+- 2026-10-22T20:18:09Z · note: Managed preview shot capture in progress
+- 2026-10-22T20:19:08Z · note: Keeping task active during managed preview startup
+- 2026-10-22T20:21:15Z · note: click .secrets-row:first-child .secrets-remove: click: Timeout 5000ms exceeded. on /secrets
+- 2026-10-22T20:21:15Z · note: highlight .delete-confirm-modal matched nothing on /secrets
+- 2026-10-22T20:22:53Z · body
+- 2026-10-22T20:23:19Z · note: Verifying registered Secrets shots locally
+- 2026-10-22T20:26:44Z · body
+- 2026-10-22T20:37:08Z · status active→review
+- 2026-10-22T20:37:09Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-22T20:39:06Z · note: review pass 1: needs some work
+- 2026-10-22T20:39:07Z · status review→active
+- 2026-10-22T20:44:45Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-22T20:44:46Z · note: handoff requested (cli)
+- 2026-10-22T20:53:45Z · status active→review
+- 2026-10-22T20:53:45Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-22T20:54:47Z · note: review pass 2: needs some work
+- 2026-10-22T20:54:47Z · status review→active
