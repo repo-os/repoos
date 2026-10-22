@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-22T09:32:01Z"
+review_passes: 3
 id: "0918"
 title: "Pressure guard should use paging activity, not occupancy: macOS compressor share and swap used/total hold work on an idle laptop"
 type: feature
@@ -16,9 +18,7 @@ model_override: gpt-6-luna
 review_cli_override: opencode
 review_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-22T04:18:52Z"
-updated_at: "2026-10-22T09:32:01Z"
 review_rounds: 2
-review_passes: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-22T09:02:53.015Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
 dev_error_count: 1
@@ -118,3 +118,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T09:26:07Z · status active→review
 - 2026-10-22T09:32:01Z · note: review pass 3: needs some work
 - 2026-10-22T09:32:01Z · needs_input
+
