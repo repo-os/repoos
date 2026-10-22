@@ -43,3 +43,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T07:49:29Z · cli_override, model_override
 - 2026-10-22T07:49:30Z · status ready→active, branch
 - 2026-10-22T08:07:33Z · message_queued at 2026-10-22T08:07:33.822Z
+- 2026-10-22T08:07:33Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
