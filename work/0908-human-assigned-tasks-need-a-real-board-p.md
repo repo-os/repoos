@@ -2,14 +2,14 @@
 id: "0908"
 title: "Human-assigned tasks need a real board pathway: move across columns to done without triggering AI, checks or review"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [web, server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-21T19:22:55Z"
-updated_at: "2026-10-21T19:23:07Z"
+updated_at: "2026-10-22T02:05:52Z"
 ---
 ## Problem
 Tasks assigned to a human (for example #0864 and #0907) have no usable path to done in the UI. The only visible 'hold' signal is the assigned-to-human marker, and a task can't be moved to Done without going through active and review, which start AI work, checks, handoff gates and reviewers that make no sense for a human-only task. The only way to close one today is the CLI: repoos update <id> --hold false and repoos mv <id> done. Human steps (rebuild an image, log CLIs in on runners, record a proof, run a trial) are a normal part of the work and need to be first-class on the board.
@@ -31,3 +31,4 @@ Do not start without the human. Related rule in AGENTS.md: needs-human-step task
 ## Activity
 
 - 2026-10-21T19:22:55Z · created · njachowski@gmail.com
+- 2026-10-22T02:05:52Z · status inbox→ready
