@@ -90,6 +90,7 @@ export type NeedsInputPrimaryActionKind =
   | "send-engineer"
   | "answer"
   | "send-pm"
+  | "send-human-step-pm"
   | "split-human-step";
 
 export interface NeedsInputPrimaryAction {
@@ -137,6 +138,11 @@ const SEND_TO_PM_ACTION: NeedsInputPrimaryAction = {
 const SPLIT_HUMAN_STEP_ACTION: NeedsInputPrimaryAction = {
   kind: "split-human-step",
   label: "Split human steps into a held task",
+};
+
+const SEND_HUMAN_STEP_PM_ACTION: NeedsInputPrimaryAction = {
+  kind: "send-human-step-pm",
+  label: "Split human step into its own task",
 };
 
 export function humanStepSplitAvailable(task: Pick<Task, "body">): boolean {
@@ -248,7 +254,7 @@ export function needsInputPrimaryAction(
     case "underspecified":
       return SEND_TO_PM_ACTION;
     case "needs-human-step":
-      return ctx.humanStepSplitAvailable ? SPLIT_HUMAN_STEP_ACTION : SEND_TO_PM_ACTION;
+      return ctx.humanStepSplitAvailable ? SPLIT_HUMAN_STEP_ACTION : SEND_HUMAN_STEP_PM_ACTION;
     default:
       return null;
   }

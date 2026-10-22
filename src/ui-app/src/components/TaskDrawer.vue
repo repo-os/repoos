@@ -42,6 +42,7 @@ import {
   COLUMNS,
   columnsWithLabels,
   PM_FLESH_OUT_CANNED_MESSAGE,
+  PM_SPLIT_HUMAN_STEP_CANNED_MESSAGE,
   pmCannedMessagesFor,
   statusColor,
   useRepoStore,
@@ -3570,6 +3571,20 @@ async function runNeedsInputPrimaryAction(): Promise<void> {
     await pmSend();
     return;
   }
+  if (action.kind === "send-human-step-pm") {
+    if (!pmAgentEnabled.value) {
+      repo.onError(new Error("PM agent is not configured — enable it on the Agents page"));
+      return;
+    }
+    if (pmBusy.value) {
+      repo.onError(new Error("PM is busy — wait for the current run to finish"));
+      return;
+    }
+    ui.activeTab = "pm";
+    pmDraft.value = PM_SPLIT_HUMAN_STEP_CANNED_MESSAGE;
+    await pmSend();
+    return;
+  }
   if (action.kind === "split-human-step") {
     if (!ui.active || splitHumanStepBusy.value) return;
     splitHumanStepBusy.value = true;
@@ -5117,7 +5132,8 @@ watch(
                       dismissNeedsInputBusy ||
                       (needsInputPrimary.kind === 'send-engineer' &&
                         (sendingToEngineer || reviewStale || !review?.report)) ||
-                      (needsInputPrimary.kind === 'send-pm' &&
+                      ((needsInputPrimary.kind === 'send-pm' ||
+                        needsInputPrimary.kind === 'send-human-step-pm') &&
                         (!pmAgentEnabled || pmBusy || pmSubmitting))
                     "
                     @click="runNeedsInputPrimaryAction"
