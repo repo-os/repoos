@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-22T07:14:10Z"
-review_passes: 5
 id: "0909"
 title: "Stop false 'needs human step' flags: sticky overrides, model check before keywords, tagged criteria with auto-split"
 type: feature
@@ -10,12 +8,14 @@ needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — `repoos new` (and Telegram create) still commit before the async human-step assessment finishes; pass-4 finding unfixed…
 priority: p2
 area: [core, server, web]
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/stop-false-needs-human-step-flags-sticky
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T19:41:23Z"
+updated_at: "2026-10-22T07:15:04Z"
+review_passes: 5
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-22T02:27:19.227Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Needs-human-step detail shows criterion quote (target \"default\"): highlight .agent-waiting-sub matched nothing on /work?task=0909&tab=overview (http://127.0.0.1:58600/work?shotState=card:humanStep)"
 dev_error_count: 3
@@ -151,4 +151,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T07:12:26Z · status active→review
 - 2026-10-22T07:14:10Z · note: review pass 5: needs some work
 - 2026-10-22T07:14:10Z · needs_input
-
+- 2026-10-22T07:15:04Z · assigned_to
