@@ -89,12 +89,12 @@ function appendSection(body: string, section: string): string {
  * Create a task from a Telegram draft. Returns an error (and creates nothing)
  * when any attachment fails content validation.
  */
-export function createTelegramTask(
+export async function createTelegramTask(
   deps: TelegramTaskCreateDeps,
   draft: TelegramTaskDraft,
   attachments: readonly IncomingTelegramAttachment[],
   actor: { email: string },
-): TelegramTaskCreateResult {
+): Promise<TelegramTaskCreateResult> {
   const classified: ClassifiedIncoming[] = [];
   for (const attachment of attachments) {
     const result = classifyTelegramAttachment(attachment.bytes);
@@ -132,9 +132,9 @@ export function createTelegramTask(
   // Same "stub body" flag the HTTP create route applies, so a short Telegram
   // capture is visible as underspecified rather than silently carried.
   if (isUnderspecifiedSweepEligible(created)) {
-    void flagTaskSpecFlagsIfNeededAsync(deps.config, created).then((flagged) => {
-      if (flagged) void deps.index.applyFileChange(flagged.absPath, { guarded: true });
-    });
+    // Awaited so `needs_input` is on disk before the first commit below (#0909 review).
+    const flagged = await flagTaskSpecFlagsIfNeededAsync(deps.config, created);
+    if (flagged) void deps.index.applyFileChange(flagged.absPath, { guarded: true });
   }
 
   const images: ScreenshotMeta[] = [];

@@ -641,13 +641,13 @@ describe("Telegram attachments (#0543)", () => {
     });
   });
 
-  it("stores images under work/.attachments and never tracks them", () => {
+  it("stores images under work/.attachments and never tracks them", async () => {
     const repoos = createRepoOS(root);
     const index = {
       getTask: () => null,
       applyFileChange: () => {},
     };
-    const result = createTelegramTask(
+    const result = await createTelegramTask(
       { config: repoos.config, repoos, index, logger: new Logger({ root }) },
       {
         title: "Screenshot task",
@@ -689,7 +689,7 @@ describe("Telegram-created tasks match UI-created tasks (#0543)", () => {
       .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/g, "<ts>");
   }
 
-  it("uses the same frontmatter, body sections, activity and commit path", () => {
+  it("uses the same frontmatter, body sections, activity and commit path", async () => {
     const ui = blankRepo();
     const tg = blankRepo();
     const body = [
@@ -725,7 +725,7 @@ describe("Telegram-created tasks match UI-created tasks (#0543)", () => {
     const uiTask = ui.repoos.createTask({ ...fields, createdBy: "admin@test.com" });
     commitTaskFile(ui.root, uiTask.absPath, `docs(${uiTask.id}): add task`);
 
-    const tgResult = createTelegramTask(
+    const tgResult = await createTelegramTask(
       {
         config: tg.repoos.config,
         repoos: tg.repoos,

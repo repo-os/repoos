@@ -219,7 +219,7 @@ function main(): void {
       break;
     case "new":
     case "add":
-      cmdNew(rest);
+      void cmdNew(rest);
       break;
     case "new-doc":
       void cmdNewDoc(rest);
