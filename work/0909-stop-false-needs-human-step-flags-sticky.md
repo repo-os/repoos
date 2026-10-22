@@ -11,7 +11,7 @@ branch: feat/stop-false-needs-human-step-flags-sticky
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T19:41:23Z"
-updated_at: "2026-10-22T01:44:26Z"
+updated_at: "2026-10-22T02:01:28Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:11.193Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:12.880Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:14.431Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -94,3 +94,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T01:42:59Z · body
 - 2026-10-22T01:43:59Z · body
 - 2026-10-22T01:44:26Z · CTO nudge: held — handoff gate is running
+- 2026-10-22T02:01:28Z · handoff failed · remote validation failed: test failure: tests/model-routing-panel.test.ts > ModelRoutingPanel > labels the human-step check as mixed AI and human steps that should be split on mini — fix it in the feature branch and re-run the gate
