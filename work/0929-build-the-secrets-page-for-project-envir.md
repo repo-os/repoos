@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-22T19:31:08.149Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 4d91bb67 to ca510425) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: "0929"
 title: Build the Secrets page for project environments
 type: feature
@@ -15,7 +13,9 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T19:20:50Z"
+updated_at: "2026-10-22T19:33:15Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-22T19:31:08.149Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 4d91bb67 to ca510425) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 3b3805a62ded3d06e7724a86aa8652e967fcb27e
 ---
@@ -104,4 +104,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T19:17:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T19:17:58Z · message_delivered: 1 message(s)
 - 2026-10-22T19:20:50Z · body
-
+- 2026-10-22T19:33:15Z · body
