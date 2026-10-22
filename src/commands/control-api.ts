@@ -1008,6 +1008,14 @@ export async function cmdConfig(args: string[]): Promise<number> {
 }
 
 export async function cmdRunners(args: string[]): Promise<number> {
+  if (args[0] === "check") {
+    const { cmdRunnersCheck } = await import("./runner-engineer.js");
+    return cmdRunnersCheck(args);
+  }
+  if (args[0] === "setup") {
+    const { cmdRunnersSetup } = await import("./runner-engineer.js");
+    return cmdRunnersSetup(args);
+  }
   const { rest, opts, error } = parseCommonFlags(args);
   if (error) {
     printErr(error);

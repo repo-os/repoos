@@ -223,6 +223,34 @@ function runnersQueuedFixture(): {
           queued: 1,
           probed: true,
           healthy: true,
+          engineerClis: {
+            host: "bee",
+            user: "nick",
+            ok: false,
+            checkedAt: iso(60_000),
+            cells: [
+              {
+                cli: "opencode",
+                declared: true,
+                installed: true,
+                version: "1.2.3",
+                auth: "signed-in",
+                detail: "opencode-go",
+                fix: null,
+                ok: true,
+              },
+              {
+                cli: "codex",
+                declared: true,
+                installed: true,
+                version: "0.9.0",
+                auth: "not-signed-in",
+                detail: "login status: not signed in",
+                fix: "codex login",
+                ok: false,
+              },
+            ],
+          },
           activeRuns: [
             {
               taskId: "0892",

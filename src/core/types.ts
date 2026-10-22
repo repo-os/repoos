@@ -1323,6 +1323,11 @@ export interface RemoteValidationHost {
    * its runner, which is exactly the capability-matching bug this avoids.
    */
   runner?: "docker" | "native";
+  /**
+   * Engineer CLIs this host must have installed and signed in for whole-session
+   * remote engineers (#0915). Values: `opencode`, `codex`, `cursor`.
+   */
+  engineers?: string[];
 }
 
 /**

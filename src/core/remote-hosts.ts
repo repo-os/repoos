@@ -55,6 +55,8 @@ function hostRow(raw: unknown): RemoteValidationHost | null {
   // rejecting the row — a typo here shouldn't take a whole host offline.
   if (r.runner === "native") out.runner = "native";
   else if (r.runner === "docker") out.runner = "docker";
+  const engineers = asStringList(r.engineers);
+  if (engineers.length) out.engineers = engineers;
   return out;
 }
 

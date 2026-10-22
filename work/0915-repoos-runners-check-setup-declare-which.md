@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-22T16:27:45Z"
-review_passes: 1
 id: "0915"
 title: "repoos runners check/setup: declare which engineer CLIs each runner needs, verify installed and signed in, install missing"
 type: feature
@@ -17,6 +15,7 @@ branch: feat/repoos-runners-check-setup-declare-which
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T02:26:27Z"
+updated_at: "2026-10-22T16:25:46Z"
 ---
 ## Problem
 Whole-engineer-sessions on runners (ADR 0009, #0913) and the existing runner pool need each runner to have the same engineer CLIs installed and signed in. Today that is checked by hand with ad-hoc ssh commands. On 2026-10-22 the state was: bee and thinkpad have opencode-go signed in; codex (ChatGPT) and cursor-agent are signed in only on thinkpad; bee has no cursor-agent and codex is not logged in; mini was not checked; opencode's own 'auth list' failed on both with 'Could not resolve npm bin'. Nothing tells a human or the scheduler which cell is wrong, and the justfile setup recipes only provision Docker and the CI image, not the engineer CLIs.
@@ -36,19 +35,6 @@ Each runner host in repoos.toml can declare which engineer CLIs it should have (
 ## Notes for AI
 Start from scripts/remote-runner/*, the justfile _setup-runner recipe, src/server/remote-validation.ts host config and the runner health probe added in #0901. Related: #0907 (human setup task, depends on this), #0913 (implementation of ADR 0009), #0914 (provider usage-limit failover).
 
-## Shots
-```json
-[
-{
-"label": "Runners tab engineer CLI cells",
-"target": "default",
-"route": "/checks?tab=runners",
-"highlight": ".rr-engineer-clis",
-"state": "runners:queued"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-22T02:26:27Z · created · njachowski@gmail.com
@@ -59,12 +45,4 @@ Start from scripts/remote-runner/*, the justfile _setup-runner recipe, src/serve
 - 2026-10-22T15:52:34Z · status inbox→ready
 - 2026-10-22T15:52:43Z · cli_override, model_override
 - 2026-10-22T15:52:44Z · status ready→active, branch
-- 2026-10-22T16:00:44Z · body
-- 2026-10-22T16:03:41Z · body
-- 2026-10-22T16:06:10Z · body
-- 2026-10-22T16:11:54Z · body
-- 2026-10-22T16:14:23Z · body
-- 2026-10-22T16:25:45Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-10-22T16:25:46Z · status active→review
-- 2026-10-22T16:27:44Z · note: review pass 1: good to go
-
