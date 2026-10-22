@@ -2,10 +2,10 @@
 id: "0924"
 title: "Checks page: show % complete for a running check (steps and test files)"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Oct 23rd, 2026 12:17 AM."
+needs_input_detail: Reading additional input from stdin...
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -14,11 +14,11 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T15:32:09Z"
+updated_at: "2026-10-22T15:32:13Z"
 review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
-dev_error_count: 1
+dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-22T15:32:09.477Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -108,3 +108,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T15:32:05Z · status review→active
 - 2026-10-22T15:32:09Z · agent exited with an error (codex) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Oct 23rd, 2026 12:17 AM.
 - 2026-10-22T15:32:09Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Oct 23rd, 2026 12:17 AM.
+- 2026-10-22T15:32:13Z · status active→review
