@@ -21,6 +21,7 @@ import type {
   RemoteTaskActivity,
   RemoteValidationStatusView,
   ShotMeta,
+  SystemStats,
   Task,
   TaskLogEntry,
   UiHandoffVerificationEvidence,
@@ -93,6 +94,13 @@ const nowIso = (): string => new Date().toISOString();
  * and that runs solely on preview builds with `?shotState=` (plus tests).
  */
 let pinnedIntegration: IntegrationPipelineSnapshot | null = null;
+
+/** System resource stats pinned for the Control dashboard GC capture (#0923). */
+let pinnedSystemStats: SystemStats | null = null;
+
+export function shotFixturePinnedSystemStats(): SystemStats | null {
+  return pinnedSystemStats;
+}
 
 /** The fixture-pinned pipeline snapshot, or null when nothing is pinned (#0782). */
 export function shotFixturePinnedIntegration(): IntegrationPipelineSnapshot | null {
@@ -602,9 +610,34 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
   // Reset first: a fixture that seeds no pipeline must not leave a previous
   // pin freezing the live snapshot (#0782).
   pinnedIntegration = null;
+  pinnedSystemStats = null;
   pinnedRemoteStatus = null;
   for (const key of Object.keys(pinnedTaskRemoteActivity)) delete pinnedTaskRemoteActivity[key];
   switch (fixture) {
+    case "system:worktreeGc":
+      repo.systemStats = {
+        machine: {
+          cpuCount: 8,
+          totalMem: 16 * 1024 ** 3,
+          freeMem: 1024 ** 3,
+          availableMem: 6 * 1024 ** 3,
+          loadavg: [1.1, 1.3, 1.2],
+          platform: "darwin",
+        },
+        totals: { cpuPercent: 12, memBytes: 4 * 1024 ** 3, memPercent: 25 },
+        processes: [],
+        serve: null,
+        repo: {
+          worktrees: 27,
+          trackedFiles: 1840,
+          linesOfCode: 263_400,
+          worktreeWarnThreshold: 20,
+        },
+        serverPid: 1000,
+        at: nowIso(),
+      };
+      pinnedSystemStats = repo.systemStats;
+      break;
     case "reminders:due": {
       const reminders = useRemindersStore();
       reminders.fixturePinned = true;
