@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-22T10:14:46.588Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Local check slot diagnostics (target \"default\"): highlight .ck-local-slots matched nothing on /checks?tab=now (http://127.0.0.1:42895/checks?tab=now)"
 id: "0925"
 title: Cancelling a close-out must kill its check process tree and free its slot
 type: bug
@@ -88,3 +90,4 @@ Also fix #0921 in the same change (dead-holder detection for local check slots: 
 - 2026-10-22T09:59:50Z · body
 - 2026-10-22T10:02:18Z · body
 - 2026-10-22T10:14:43Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Local check slot diagnostics (target "default"): highlight .ck-local-slots matched nothing on /checks?tab=now (http://127.0.0.1:42895/checks?tab=now)
+
