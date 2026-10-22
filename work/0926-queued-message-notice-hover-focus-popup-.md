@@ -12,7 +12,7 @@ branch: feat/queued-message-notice-hover-focus-popup-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T06:59:28Z"
-updated_at: "2026-10-22T17:35:28Z"
+updated_at: "2026-10-22T17:36:02Z"
 last_close_out_gate_ms: 512063
 last_close_out_gate_at: "2026-10-22T17:35:28.594Z"
 review_passes: 2
@@ -84,4 +84,4 @@ Follow the AGENTS.md conventions for tooltips/popovers and body-teleported layer
 - 2026-10-22T17:22:14Z · status active→review
 - 2026-10-22T17:23:09Z · note: review pass 2: good to go
 - 2026-10-22T17:35:28Z · close-out gate completed in 512s
-
+- 2026-10-22T17:36:02Z · status done→done, release:success
