@@ -11,7 +11,7 @@ branch: feat/stop-false-needs-human-step-flags-sticky
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T19:41:23Z"
-updated_at: "2026-10-22T01:43:59Z"
+updated_at: "2026-10-22T01:44:26Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:11.193Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:12.880Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:15:14.431Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -36,17 +36,17 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 ```json
 [
 {
-  "label": "Human-step sticky setting on Model routing",
-  "target": "default",
-  "route": "/agents?tab=routing",
-  "highlight": "[data-testid=\"routing-human-step-sticky\"]"
+"label": "Human-step sticky setting on Model routing",
+"target": "default",
+"route": "/agents?tab=routing",
+"highlight": "[data-testid=\"routing-human-step-sticky\"]"
 },
 {
-  "label": "Needs-human-step detail shows criterion quote",
-  "target": "default",
-  "route": "/work?task=0909&tab=overview",
-  "highlight": ".agent-waiting-sub",
-  "state": "card:humanStep"
+"label": "Needs-human-step detail shows criterion quote",
+"target": "default",
+"route": "/work?task=0909&tab=overview",
+"highlight": ".agent-waiting-sub",
+"state": "card:humanStep"
 }
 ]
 ```
@@ -93,3 +93,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T01:42:58Z · body
 - 2026-10-22T01:42:59Z · body
 - 2026-10-22T01:43:59Z · body
+- 2026-10-22T01:44:26Z · CTO nudge: held — handoff gate is running
