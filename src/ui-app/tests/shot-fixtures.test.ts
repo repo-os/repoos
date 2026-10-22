@@ -14,7 +14,7 @@ describe("shot preview fixtures (#0743)", () => {
   it("rejects unknown fixture ids at capture URL build time", () => {
     expect(() =>
       shotCapturePageUrl("http://127.0.0.1:8000", { route: "/", state: "nope" }),
-    ).toThrow(/unknown "state" fixture "nope" — use one of: closeOut:active/u);
+    ).toThrow(/unknown "state" fixture "nope" — use one of: .*closeOut:active/u);
     // A branch-aware validator (#0786) admits ids main's compiled list lacks.
     const branch = (id: string) => id === "closeOut:stalled";
     expect(

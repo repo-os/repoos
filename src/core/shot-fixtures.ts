@@ -4,6 +4,9 @@
  * on preview builds (`isPreviewBuild`).
  */
 export const SHOT_PREVIEW_FIXTURE_IDS = [
+  // #0923 — Control dashboard Codebase data so worktree GC captures never
+  // race the live resource sampler's loading state.
+  "system:worktreeGc",
   "closeOut:active",
   // #0778 — like closeOut:active, but the attempt has been idle past the stall
   // threshold, so the task card renders the stalled Cancel/Retry actions.

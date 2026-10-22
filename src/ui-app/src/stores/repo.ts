@@ -21,6 +21,7 @@ import {
   readShotPreviewFixtureFromLocation,
   seedShotPreviewDebugLogs,
   shotFixturePinnedIntegration,
+  shotFixturePinnedSystemStats,
   shotFixturePinnedTaskRemoteActivity,
   shotPreviewSkipsTaskLogsFetch,
 } from "../lib/shot-preview-fixtures";
@@ -1866,7 +1867,7 @@ export const useRepoStore = defineStore("repo", () => {
           });
       }
     } else if (e.type === "system.stats") {
-      systemStats.value = e.stats;
+      systemStats.value = shotFixturePinnedSystemStats() ?? e.stats;
     } else if (e.type === "auto-engineering.state") {
       autoEng.value = e.state;
     } else if (e.type === "integration") {

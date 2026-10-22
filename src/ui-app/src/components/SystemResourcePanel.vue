@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { api, JSON_OPTS } from "../api";
+import { isShotPreviewCaptureActive } from "../lib/shot-preview-fixtures";
 import { useRepoStore } from "../stores/repo";
 import Card from "./ui/card.vue";
 import DeleteConfirmDialog from "./DeleteConfirmDialog.vue";
@@ -24,7 +25,37 @@ const gcConfirmOpen = ref(false);
 const gcBusy = ref(false);
 let gcStatusTimer: ReturnType<typeof setInterval> | null = null;
 
+const worktreeGcShotFixture = computed(
+  () =>
+    typeof window !== "undefined" &&
+    !!repo.health?.isPreviewBuild &&
+    isShotPreviewCaptureActive(window.location) &&
+    new URLSearchParams(window.location.search).get("shotState") === "system:worktreeGc",
+);
+
+function worktreeGcFixturePreview(): GcPreview {
+  return {
+    report: {
+      removedWorktrees: [
+        { branch: "repoos/integrate/0042", path: "../repoos-worktrees/integrate-0042" },
+      ],
+      keptDirty: [{ branch: "repoos/integrate/0043", reason: "close-out job still active" }],
+    },
+    activeCloseOutTaskIds: [],
+    blocked: false,
+  };
+}
+
+watch(
+  worktreeGcShotFixture,
+  (active) => {
+    if (active) gcStatus.value = worktreeGcFixturePreview();
+  },
+  { immediate: true },
+);
+
 async function refreshGcStatus(): Promise<void> {
+  if (worktreeGcShotFixture.value) return;
   try {
     const status = await api<GcPreview>("/api/system/worktree-gc");
     gcStatus.value = status;
@@ -43,6 +74,10 @@ onUnmounted(() => {
 });
 
 async function previewWorktreeCleanup(): Promise<void> {
+  if (worktreeGcShotFixture.value) {
+    gcPreview.value = worktreeGcFixturePreview();
+    return;
+  }
   try {
     gcPreview.value = await api<GcPreview>("/api/system/worktree-gc");
   } catch (err) {
@@ -308,12 +343,13 @@ const serveMessage = computed(() => {
           </div>
           <div class="metric-extra">
             <span
-              :class="{ 'wt-warn': worktreesOverLimit }"
-              :title="
+              tabindex="0"
+              :data-tip="
                 worktreesOverLimit
-                  ? `Over the advisory ceiling of ${repoStats.worktreeWarnThreshold}. Run \`repoos gc\` to reclaim worktrees left by done / abandoned tasks.`
-                  : 'Registered git worktrees, including the main checkout. Run `repoos gc` if this climbs.'
+                  ? `Over the advisory ceiling of ${repoStats.worktreeWarnThreshold}. Select “Run repoos gc · clean up worktrees” to preview and reclaim worktrees.`
+                  : 'Registered git worktrees, including the main checkout. Select Clean up worktrees to preview reclaimable worktrees.'
               "
+              :class="{ 'wt-warn': worktreesOverLimit }"
               >{{ repoStats.worktrees }} git worktree{{
                 repoStats.worktrees === 1 ? "" : "s"
               }}</span
