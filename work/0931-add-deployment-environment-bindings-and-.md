@@ -13,7 +13,7 @@ branch: feat/add-deployment-environment-bindings-and-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:07:01Z"
-updated_at: "2026-10-22T22:32:47Z"
+updated_at: "2026-10-22T22:33:39Z"
 ---
 ## Problem
 Deployments do not yet show or bind the project environment they consume. A local environment selection must not imply that its values were uploaded to a provider, and production must not be propagated implicitly when a deployment destination changes.
@@ -36,10 +36,10 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 ```json
 [
 {
-"label": "Deployment target environment binding",
-"target": "default",
-"route": "/deployments",
-"highlight": ".dep-env-binding"
+  "label": "Deployment target environment binding",
+  "target": "default",
+  "route": "/deployments",
+  "highlight": ".dep-env-binding"
 }
 ]
 ```
@@ -61,3 +61,4 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 - 2026-10-22T22:20:53Z · body
 - 2026-10-22T22:23:09Z · body
 - 2026-10-22T22:24:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T22:33:39Z · body
