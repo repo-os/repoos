@@ -1909,7 +1909,41 @@ export const useRepoStore = defineStore("repo", () => {
       });
     } else if (e.type === "task-check.output") {
       const run = taskChecks.value[e.taskId]?.find((r) => r.id === e.checkId);
-      if (run) run.output += e.chunk;
+      if (run) {
+        run.output += e.chunk;
+        const marker = "::repoos-check-progress::";
+        const at = run.output.lastIndexOf(marker);
+        if (at >= 0) {
+          const line = run.output.slice(at + marker.length).split(/\r?\n/, 1)[0];
+          try {
+            const p = JSON.parse(line) as {
+              stepsDone?: number;
+              stepsTotal?: number;
+              testsDone?: number;
+              testsTotal?: number;
+              testsPass?: number;
+              currentStep?: number;
+              stepName?: string | null;
+              attempt?: number;
+              reason?: string;
+            };
+            run.stepsDone = p.stepsDone ?? run.stepsDone;
+            run.stepsTotal = p.stepsTotal ?? run.stepsTotal;
+            run.testsDone = p.testsDone ?? run.testsDone;
+            run.testsTotal = p.testsTotal ?? run.testsTotal;
+            run.testsPass = p.testsPass ?? run.testsPass;
+            run.currentStep = p.currentStep ?? run.currentStep;
+            run.stepName = p.stepName ?? run.stepName;
+            if (Object.hasOwn(p, "testsDone")) run.testsDone = p.testsDone ?? null;
+            if (Object.hasOwn(p, "testsTotal")) run.testsTotal = p.testsTotal ?? null;
+            if (Object.hasOwn(p, "testsPass")) run.testsPass = p.testsPass ?? null;
+            run.attempt = p.attempt ?? run.attempt;
+            run.attemptReason = p.reason ?? run.attemptReason;
+          } catch {
+            /* record may span SSE chunks */
+          }
+        }
+      }
     } else if (e.type === "task-check.done") {
       const run = taskChecks.value[e.taskId]?.find((r) => r.id === e.checkId);
       if (run) {

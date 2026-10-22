@@ -42,7 +42,9 @@
  * `bun run --bun test` now all converge on the same runtime.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 if (
@@ -80,6 +82,7 @@ function resolveBun() {
 
 const VITEST = fileURLToPath(new URL("../node_modules/vitest/vitest.mjs", import.meta.url));
 const CONFIG = "src/ui-app/vite.config.ts";
+const PROGRESS_REPORTER = fileURLToPath(new URL("./vitest-progress-reporter.mjs", import.meta.url));
 
 // Basenames of suites whose assertions include an absolute latency ceiling.
 // Keep this list tight — pass 2 has no parallelism, so every file added
@@ -96,10 +99,22 @@ const vitestArgs = passthrough.filter((a) => a !== "--coverage");
 const coverageArgs = coverageRequested && !scoped ? ["--coverage"] : [];
 
 const vitest = (args, env) => {
-  const r = spawnSync(process.execPath, [VITEST, "run", "--config", CONFIG, ...args], {
-    stdio: "inherit",
-    env: { ...process.env, ...env },
-  });
+  const r = spawnSync(
+    process.execPath,
+    [
+      VITEST,
+      "run",
+      "--config",
+      CONFIG,
+      "--reporter=default",
+      `--reporter=${PROGRESS_REPORTER}`,
+      ...args,
+    ],
+    {
+      stdio: "inherit",
+      env: { ...process.env, ...env },
+    },
+  );
   return r.status ?? 1;
 };
 
@@ -116,26 +131,60 @@ if (failedFirstIdx !== -1) {
     console.error("[run-tests] --failed-first needs at least one test file filter");
     process.exit(1);
   }
-  process.exit(vitest(files));
+  process.exit(vitest(files, { REPOOS_TEST_PASS: "preflight" }));
+}
+
+function readProgressState(stateFile) {
+  try {
+    const value = JSON.parse(readFileSync(stateFile, "utf8"));
+    const testsDone = Number(value.testsDone);
+    const testsTotal = Number(value.testsTotal);
+    return {
+      testsDone: Number.isInteger(testsDone) && testsDone >= 0 ? testsDone : 0,
+      testsTotal: Number.isInteger(testsTotal) && testsTotal >= 0 ? testsTotal : 0,
+    };
+  } catch {
+    return { testsDone: 0, testsTotal: 0 };
+  }
 }
 
 // Pass 1 — the bulk of the suite at the configured pool size. `--exclude` takes
 // a glob relative to the vitest root; `**/` keeps it root-agnostic.
 // `--passWithNoTests` only when scoped: a full run that finds nothing is a real
 // failure.
-const bulk = vitest([
-  ...vitestArgs,
-  ...coverageArgs,
-  ...(scoped ? ["--passWithNoTests"] : []),
-  ...ISOLATED.flatMap((f) => ["--exclude", `**/${f}`]),
-]);
+const progressDir = mkdtempSync(join(tmpdir(), "repoos-test-progress-"));
+const progressStateFile = join(progressDir, "state.json");
+const sharedProgressEnv = { REPOOS_TEST_PROGRESS_STATE: progressStateFile };
+
+const bulk = vitest(
+  [
+    ...vitestArgs,
+    ...coverageArgs,
+    ...(scoped ? ["--passWithNoTests"] : []),
+    ...ISOLATED.flatMap((f) => ["--exclude", `**/${f}`]),
+  ],
+  { ...sharedProgressEnv, REPOOS_TEST_PASS: "1" },
+);
+
+const afterBulk = readProgressState(progressStateFile);
 
 // Pass 2 — the latency-sensitive suites with the machine to themselves. The
 // basenames are positional name filters (substring-matched against the path).
 // `--passWithNoTests` because a `--changed` run may touch none of them.
+// File totals accumulate across passes so the check UI never jumps backward.
 const isolated = vitest([...vitestArgs, "--passWithNoTests", "--retry", "2", ...ISOLATED], {
+  ...sharedProgressEnv,
   REPOOS_TEST_WORKERS: "1",
   REPOOS_STRICT_TIMING: "1",
+  REPOOS_TEST_PASS: "2",
+  REPOOS_TEST_BASE_DONE: String(afterBulk.testsDone),
+  REPOOS_TEST_BASE_TOTAL: String(afterBulk.testsTotal),
 });
+
+try {
+  rmSync(progressDir, { recursive: true, force: true });
+} catch {
+  /* ignore */
+}
 
 process.exit(bulk || isolated);
