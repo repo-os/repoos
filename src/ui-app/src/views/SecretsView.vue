@@ -15,6 +15,7 @@ import DialogTitle from "../components/ui/dialog/title.vue";
 import DialogDescription from "../components/ui/dialog/description.vue";
 import DialogClose from "../components/ui/dialog/close.vue";
 import { ApiError, api, JSON_OPTS } from "../api";
+import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
 
 type Environment = { id: string; sources: { id: string; path: string; examplePath?: string }[] };
 type KeyRow = {
@@ -43,7 +44,8 @@ const confirmKey = ref<KeyRow | null>(null);
 const message = ref("");
 const addOpen = ref(false);
 const restartKeys = ref(new Set<string>());
-const fixture = new URLSearchParams(location.search).get("fixture") === "secrets";
+const shotFixture = readShotPreviewFixtureFromLocation(window.location);
+const fixture = shotFixture === "secrets:populated" || shotFixture === "secrets:removeDialog";
 const visibleRows = computed(() =>
   (snapshot.value?.keys ?? [])
     .map((row) =>
@@ -212,6 +214,7 @@ onMounted(() => {
     environments.value = [{ id: "dev-nick", sources: [{ id: "local", path: ".env.dev-nick" }] }];
     selected.value = "dev-nick";
     void loadSnapshot();
+    if (shotFixture === "secrets:removeDialog") confirmKey.value = snapshot.value?.keys[0] ?? null;
     loading.value = false;
   } else void loadEnvironments();
 });

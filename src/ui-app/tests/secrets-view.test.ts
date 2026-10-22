@@ -65,9 +65,30 @@ beforeEach(() => {
 });
 afterEach(() => {
   api.mockReset();
+  window.history.replaceState({}, "", "/");
 });
 
 describe("SecretsView (#0929)", () => {
+  it("renders the registered fake shot fixture without loading project secrets", async () => {
+    window.history.replaceState({}, "", "/secrets?shotState=secrets%3Apopulated");
+    const wrapper = mountPage();
+    await flushPromises();
+    expect(wrapper.text()).toContain("DATABASE_URL");
+    expect(wrapper.text()).toContain("Defined in an earlier source");
+    expect(wrapper.text()).toContain("VITE_PUBLIC_ORIGIN");
+    expect(api).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it("opens the removal dialog from its registered fake shot fixture", async () => {
+    window.history.replaceState({}, "", "/secrets?shotState=secrets%3AremoveDialog");
+    const wrapper = mountPage();
+    await flushPromises();
+    expect(document.body.textContent).toContain("Affected consumers: Dev · web, Checks");
+    expect(document.querySelector(".delete-confirm-modal")).not.toBeNull();
+    wrapper.unmount();
+  });
+
   it("keeps Secrets reachable before an environment has been created", () => {
     const ids = navFromConfig({ dev: { targets: [{ name: "web" }] } }, true).map((item) => item.id);
     expect(ids.slice(ids.indexOf("dev") + 1, ids.indexOf("agents"))).toEqual(["secrets"]);
@@ -148,6 +169,8 @@ describe("SecretsView (#0929)", () => {
     const row = wrapper
       .findAll(".secrets-row")
       .find((item) => item.text().includes("DATABASE_URL"));
+    const shotClickTarget = wrapper.find(".secrets-row:first-child .secrets-remove");
+    expect(shotClickTarget.exists()).toBe(true);
     await row!.findAll("button").at(-1)!.trigger("click");
     expect(document.body.textContent).toContain("Affected consumers: Dev · web");
     wrapper.unmount();
