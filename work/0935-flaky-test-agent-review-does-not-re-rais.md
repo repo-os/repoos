@@ -12,7 +12,7 @@ branch: feat/flaky-test-agent-review-does-not-re-rais
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T14:02:13Z"
-updated_at: "2026-10-22T14:31:16Z"
+updated_at: "2026-10-22T14:31:49Z"
 last_close_out_gate_ms: 245521
 last_close_out_gate_at: "2026-10-22T14:31:16.566Z"
 review_passes: 1
@@ -42,4 +42,4 @@ See AGENTS.md 'Is a repoos check failure a flake or a real bug?' and the #0330 r
 - 2026-10-22T14:20:00Z · note: shots: skipped — the diff (2 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-22T14:21:08Z · note: review pass 1: good to go
 - 2026-10-22T14:31:16Z · close-out gate completed in 246s
-
+- 2026-10-22T14:31:49Z · status done→done, release:success
