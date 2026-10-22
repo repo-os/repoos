@@ -11,7 +11,7 @@ branch: feat/cancelling-a-close-out-must-kill-its-che
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:32:56Z"
-updated_at: "2026-10-22T08:14:22Z"
+updated_at: "2026-10-22T08:15:15Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -41,3 +41,4 @@ Also fix #0921 in the same change (dead-holder detection for local check slots: 
 - 2026-10-22T07:59:18Z · body
 - 2026-10-22T08:05:38Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T08:14:22Z · body
+- 2026-10-22T08:15:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
