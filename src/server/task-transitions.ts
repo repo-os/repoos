@@ -133,3 +133,16 @@ export function checkGenericStatusPatch(
   }
   return { ok: true };
 }
+
+/** Human-owned work is an inert checklist; every visible board column is a
+ * plain status and must never invoke the agent lifecycle actions. */
+export function checkHumanTaskStatusPatch(
+  from: Status,
+  to: Status,
+): { ok: true } | { ok: false; reason: string } {
+  const boardStatuses: readonly string[] = ["inbox", "ready", "active", "review", "done"];
+  if (!boardStatuses.includes(from) || !boardStatuses.includes(to)) {
+    return { ok: false, reason: "human tasks can move only among board columns" };
+  }
+  return { ok: true };
+}
