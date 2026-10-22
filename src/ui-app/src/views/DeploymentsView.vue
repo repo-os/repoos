@@ -12,6 +12,7 @@ interface DeploymentRow {
   dashboardUrl: string | null;
   subdir: string | null;
   environment: string | null;
+  environmentError: string | null;
   lastPushAt: string | null;
   lastPushSha: string | null;
   changesVsMain: { aheadOfMain: number; behindMain: number } | null;
@@ -108,6 +109,13 @@ function branchAccent(index: number): Record<string, string> {
 
 function targetCount(branch: string): number {
   return status.value?.rows.filter((r) => r.branch === branch).length ?? 0;
+}
+
+function environmentIssue(branch: string): string | null {
+  return (
+    status.value?.rows.find((row) => row.branch === branch && row.environmentError)
+      ?.environmentError ?? null
+  );
 }
 
 const PLURAL = (n: number): string => (n === 1 ? "commit" : "commits");
@@ -319,8 +327,16 @@ onBeforeUnmount(() => {
             <Button
               variant="accent"
               size="sm"
-              :disabled="!b.localExists || !!status.dirty || deploying !== null"
-              :title="status.dirty ? 'Commit or stash the checkout\'s changes first' : undefined"
+              :disabled="
+                !b.localExists ||
+                !!status.dirty ||
+                deploying !== null ||
+                !!environmentIssue(b.branch)
+              "
+              :title="
+                environmentIssue(b.branch) ??
+                (status.dirty ? 'Commit or stash the checkout\'s changes first' : undefined)
+              "
               @click="openConfirm(b.branch)"
             >
               {{ deploying === b.branch ? "Deploying…" : `Deploy ${b.branch}` }}
@@ -402,6 +418,17 @@ onBeforeUnmount(() => {
                     "
                   >
                     <option value="">Not selected</option>
+                    <option
+                      v-if="
+                        svc.cells.get(b.branch)!.environment &&
+                        !status.environments.some(
+                          (env) => env.id === svc.cells.get(b.branch)!.environment,
+                        )
+                      "
+                      :value="svc.cells.get(b.branch)!.environment!"
+                    >
+                      {{ svc.cells.get(b.branch)!.environment }} (unknown)
+                    </option>
                     <option v-for="env in status.environments" :key="env.id" :value="env.id">
                       {{ env.id }}
                     </option>
@@ -411,6 +438,13 @@ onBeforeUnmount(() => {
                     {{ svc.cells.get(b.branch)!.provider || "a provider" }}.</small
                   >
                 </label>
+                <p
+                  v-if="svc.cells.get(b.branch)!.environmentError"
+                  class="dep-env-error"
+                  role="alert"
+                >
+                  {{ svc.cells.get(b.branch)!.environmentError }}
+                </p>
                 <div v-if="serviceSyncLabel(svc.cells.get(b.branch)!, b)" class="dep-service-sync">
                   {{ serviceSyncLabel(svc.cells.get(b.branch)!, b) }}
                 </div>
@@ -418,7 +452,12 @@ onBeforeUnmount(() => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    :disabled="!b.localExists || !!status.dirty || deploying !== null"
+                    :disabled="
+                      !b.localExists ||
+                      !!status.dirty ||
+                      deploying !== null ||
+                      !!environmentIssue(b.branch)
+                    "
                     @click="openConfirm(b.branch)"
                   >
                     {{ deploying === b.branch ? "Deploying…" : "Deploy" }}
@@ -729,6 +768,12 @@ onBeforeUnmount(() => {
   color: var(--txt-faint);
   font-size: 10px;
   font-weight: 500;
+  line-height: 1.4;
+}
+.dep-env-error {
+  margin: 4px 0 8px;
+  color: var(--amber);
+  font-size: 11px;
   line-height: 1.4;
 }
 .dep-matrix-head {

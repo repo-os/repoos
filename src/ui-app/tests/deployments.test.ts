@@ -16,6 +16,7 @@ import { startServer, type ServerHandle } from "../../server/server";
 import {
   deployBranch,
   deployRoot,
+  deploymentEnvironmentIssue,
   deploymentBranches,
   getDeploymentsStatus,
   type DeployCommandRunner,
@@ -179,6 +180,12 @@ describe("getDeploymentsStatus", () => {
         ],
       }),
     );
+    writeFileSync(
+      join(root, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [{ id: "production", sources: [{ id: "local", path: ".env.production" }] }],
+      }),
+    );
     const { exec, calls } = mockGit(BASE_SPEC);
     const status = await getDeploymentsStatus(config(root, TWO_BRANCH_ROWS), exec);
     expect(status.rows.find((row) => row.name === "Landing page (prod)")?.environment).toBe(
@@ -196,6 +203,23 @@ describe("getDeploymentsStatus", () => {
           call.startsWith("log "),
       ),
     ).toBe(true);
+  });
+
+  it("blocks a branch deploy when a target has a stale environment binding", () => {
+    const root = tmpDir();
+    mkdirSync(join(root, ".repoos"), { recursive: true });
+    writeFileSync(
+      join(root, ".repoos/environment-bindings.json"),
+      JSON.stringify({
+        bindings: [
+          { consumer: "deployment:landing-page-prod", environment: "production", keys: [] },
+        ],
+      }),
+    );
+    writeFileSync(join(root, ".repoos/environments.json"), JSON.stringify({ environments: [] }));
+    expect(deploymentEnvironmentIssue(config(root, TWO_BRANCH_ROWS), "prod")).toContain(
+      'unknown environment "production"',
+    );
   });
 
   it("scopes freshness to the row's subdir with the branch as the revision", async () => {

@@ -41,6 +41,12 @@ export interface EnvironmentFileSnapshot {
 
 const identifier = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 const keyName = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const machineOwnedKeys = new Set(["PATH", "HOME", "NODE_OPTIONS", "PORT", "HOST"]);
+
+function isAllowedProjectEnvironmentGrantKey(key: string): boolean {
+  const upper = key.toUpperCase();
+  return keyName.test(key) && !upper.startsWith("REPOOS_") && !machineOwnedKeys.has(upper);
+}
 
 export function validateEnvironmentRegistry(value: unknown): ProjectEnvironmentRegistry {
   if (
@@ -286,7 +292,7 @@ export function readProjectEnvironmentBindings(root: string): ProjectEnvironment
       !row ||
       !identifier.test(row.environment) ||
       !Array.isArray(row.keys) ||
-      row.keys.some((key) => !keyName.test(key)) ||
+      row.keys.some((key) => !isAllowedProjectEnvironmentGrantKey(key)) ||
       seen.has(normalizedConsumer)
     )
       throw new Error("Invalid or duplicate environment binding");
@@ -305,14 +311,7 @@ export function writeProjectEnvironmentBinding(
   consumer = normalizeProjectEnvironmentConsumer(consumer);
   if (environment !== null && !identifier.test(environment))
     throw new Error("Invalid environment name");
-  if (
-    keys.some(
-      (key) =>
-        !keyName.test(key) ||
-        key.startsWith("REPOOS_") ||
-        ["PATH", "HOME", "NODE_OPTIONS", "PORT", "HOST"].includes(key),
-    )
-  )
+  if (keys.some((key) => !isAllowedProjectEnvironmentGrantKey(key)))
     throw new Error("Invalid or machine-owned environment key grant");
   const path = join(resolve(root), bindingFile);
   const current = readProjectEnvironmentBindings(root);
@@ -346,8 +345,7 @@ export function buildProjectConsumerEnv(
   const values = readProjectEnvironmentValues(root, selected);
   const env: NodeJS.ProcessEnv = { ...base };
   for (const key of binding.keys) {
-    if (key.startsWith("REPOOS_") || key === "PATH" || key === "HOME" || key === "NODE_OPTIONS")
-      continue;
+    if (!isAllowedProjectEnvironmentGrantKey(key)) continue;
     if (Object.hasOwn(values, key)) env[key] = values[key];
     else delete env[key];
   }
