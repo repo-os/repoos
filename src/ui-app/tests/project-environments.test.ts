@@ -1,16 +1,25 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { spawn } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadDotEnv } from "../../core/config";
+import { resolveCheckStoreRoot } from "../../core/check-store";
 import {
   buildProjectConsumerEnv,
   readProjectEnvironment,
-  writeProjectEnvironmentBinding,
   validateEnvironmentRegistry,
   writeProjectEnvironmentValue,
+  writeProjectEnvironmentBinding,
 } from "../../core/project-environments";
 
 const roots: string[] = [];
@@ -111,6 +120,28 @@ describe("explicit project environment files", () => {
     writeFileSync(join(root, ".env.dev"), "TOKEN=project-value\n");
     const childEnv = buildProjectConsumerEnv(root, "check:default", { PATH: "/bin" });
     expect(childEnv.TOKEN).toBeUndefined();
+  });
+
+  it("normalizes consumer IDs and resolves bindings from the shared root in a linked worktree", () => {
+    const root = project();
+    const worktree = join(tmpdir(), `repoos-envsets-worktree-${Date.now()}`);
+    roots.push(worktree);
+    execFileSync("git", ["-C", root, "worktree", "add", "-q", "-b", "env-task", worktree]);
+    mkdirSync(join(root, ".repoos"));
+    writeFileSync(
+      join(root, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [{ id: "dev", sources: [{ id: "local", path: ".env.dev" }] }],
+      }),
+    );
+    writeFileSync(join(root, ".env.dev"), "DATABASE_URL=shared-root-value\n");
+    const result = writeProjectEnvironmentBinding(root, "dev:Web", "dev", ["DATABASE_URL"]);
+    expect(result.bindings[0]?.consumer).toBe("dev:web");
+    const projectRoot = resolveCheckStoreRoot(worktree);
+    expect(projectRoot).toBe(realpathSync(root));
+    expect(buildProjectConsumerEnv(projectRoot, "dev:WEB", {}).DATABASE_URL).toBe(
+      "shared-root-value",
+    );
   });
   it("validates separate sets, expected names only, source precedence and duplicate keys", () => {
     const root = project();

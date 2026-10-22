@@ -219,7 +219,25 @@ export function projectEnvironmentConsumer(kind: "dev" | "preview", name: string
     .toLowerCase()
     .replace(/[^a-z0-9_.-]+/g, "-")
     .replace(/^-|-$/g, "");
-  return `${kind}:${slug || "default"}`;
+  return normalizeProjectEnvironmentConsumer(`${kind}:${slug || "default"}`);
+}
+
+/** Canonicalize IDs supplied through the CLI/API and old local binding files. */
+export function normalizeProjectEnvironmentConsumer(consumer: string): string {
+  const separator = consumer.indexOf(":");
+  const kind = consumer.slice(0, separator);
+  const name = consumer.slice(separator + 1);
+  if (separator < 1 || !["dev", "preview", "check"].includes(kind))
+    throw new Error("Invalid environment consumer");
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]+/g, "-")
+    .replace(/^-|-$/g, "");
+  const normalized = `${kind}:${slug || "default"}`;
+  if (!consumerId.test(normalized) || (kind === "check" && normalized !== "check:default"))
+    throw new Error("Invalid environment consumer");
+  return normalized;
 }
 
 export function readProjectEnvironmentBindings(root: string): ProjectEnvironmentBindings {
@@ -228,19 +246,26 @@ export function readProjectEnvironmentBindings(root: string): ProjectEnvironment
   const parsed = JSON.parse(readFileSync(path, "utf8")) as ProjectEnvironmentBindings;
   if (!parsed || !Array.isArray(parsed.bindings)) throw new Error("Invalid environment bindings");
   const seen = new Set<string>();
+  const bindings: ProjectEnvironmentBinding[] = [];
   for (const row of parsed.bindings) {
+    let normalizedConsumer: string;
+    try {
+      normalizedConsumer = normalizeProjectEnvironmentConsumer(row?.consumer ?? "");
+    } catch {
+      throw new Error("Invalid or duplicate environment binding");
+    }
     if (
       !row ||
-      !consumerId.test(row.consumer) ||
       !identifier.test(row.environment) ||
       !Array.isArray(row.keys) ||
       row.keys.some((key) => !keyName.test(key)) ||
-      seen.has(row.consumer)
+      seen.has(normalizedConsumer)
     )
       throw new Error("Invalid or duplicate environment binding");
-    seen.add(row.consumer);
+    seen.add(normalizedConsumer);
+    bindings.push({ ...row, consumer: normalizedConsumer });
   }
-  return parsed;
+  return { bindings };
 }
 
 export function writeProjectEnvironmentBinding(
@@ -249,7 +274,7 @@ export function writeProjectEnvironmentBinding(
   environment: string | null,
   keys: string[] = [],
 ): ProjectEnvironmentBindings {
-  if (!consumerId.test(consumer)) throw new Error("Invalid environment consumer");
+  consumer = normalizeProjectEnvironmentConsumer(consumer);
   if (environment !== null && !identifier.test(environment))
     throw new Error("Invalid environment name");
   if (
@@ -280,6 +305,7 @@ export function buildProjectConsumerEnv(
   consumer: string,
   base: NodeJS.ProcessEnv = process.env,
 ): NodeJS.ProcessEnv {
+  consumer = normalizeProjectEnvironmentConsumer(consumer);
   const binding = readProjectEnvironmentBindings(root).bindings.find(
     (row) => row.consumer === consumer,
   );
