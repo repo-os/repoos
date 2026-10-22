@@ -1,19 +1,19 @@
 ---
-updated_at: "2026-10-22T07:34:50Z"
-review_passes: 6
 id: "0909"
 title: "Stop false 'needs human step' flags: sticky overrides, model check before keywords, tagged criteria with auto-split"
 type: feature
 status: review
 priority: p2
 area: [core, server, web]
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/stop-false-needs-human-step-flags-sticky
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T19:41:23Z"
-review_rounds: 2
+updated_at: "2026-10-22T07:02:22Z"
+review_passes: 3
+review_rounds: 1
 last_check_failure: "repoos check at 2026-10-22T02:27:19.227Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Needs-human-step detail shows criterion quote (target \"default\"): highlight .agent-waiting-sub matched nothing on /work?task=0909&tab=overview (http://127.0.0.1:58600/work?shotState=card:humanStep)"
 dev_error_count: 3
 ---
@@ -136,24 +136,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T03:02:09Z · note: review pass 3: good to go
 - 2026-10-22T06:44:25Z · assigned_to
 - 2026-10-22T06:46:39Z · status review→active
-- 2026-10-22T06:49:59Z · assigned_to
-- 2026-10-22T06:50:00Z · note: handoff requested (ui-review)
-- 2026-10-22T07:02:21Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-10-22T07:02:22Z · status active→review
-- 2026-10-22T07:04:41Z · note: review pass 4: needs some work
-- 2026-10-22T07:04:41Z · status review→active
-- 2026-10-22T07:08:53Z · body
-- 2026-10-22T07:09:32Z · note: handoff requested (ui-review)
-- 2026-10-22T07:12:25Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
-- 2026-10-22T07:12:26Z · status active→review
-- 2026-10-22T07:14:10Z · note: review pass 5: needs some work
-- 2026-10-22T07:14:10Z · needs_input
-- 2026-10-22T07:15:04Z · assigned_to
-- 2026-10-22T07:15:14Z · status review→active
-- 2026-10-22T07:22:50Z · assigned_to
-- 2026-10-22T07:22:55Z · note: handoff requested (ui-review)
-- 2026-10-22T07:33:53Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
-- 2026-10-22T07:33:53Z · status active→review
-- 2026-10-22T07:34:50Z · note: review pass 6: good to go
-- 2026-10-22T07:34:50Z · needs_input
-
