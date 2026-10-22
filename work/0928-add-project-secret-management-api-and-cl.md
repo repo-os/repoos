@@ -12,8 +12,10 @@ depends_on: ["0927"]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:03Z"
-updated_at: "2026-10-22T15:27:50Z"
+updated_at: "2026-10-22T15:27:57Z"
 ---
 ## Problem
 The environment storage foundation in #0927 does not yet let an authorized user inspect or change project environment entries. Without an authenticated management surface, project values risk leaking through responses, logs, errors, or RepoOS internal credential settings.
@@ -37,3 +39,4 @@ Build on the authentication/authorization, route, audit, and CLI patterns alread
 
 - 2026-10-22T08:06:03Z · created · njachowski@gmail.com
 - 2026-10-22T15:27:50Z · status inbox→ready
+- 2026-10-22T15:27:57Z · cli_override, model_override
