@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0924"
 title: "Checks page: show % complete for a running check (steps and test files)"
 type: feature
@@ -40,3 +41,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T14:03:27Z · status ready→active, branch
 - 2026-10-22T14:06:51Z · body
 - 2026-10-22T14:08:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
