@@ -12,7 +12,7 @@ branch: feat/pausing-an-agent-model-with-a-reason-wri
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T03:36:47Z"
-updated_at: "2026-10-22T12:29:05Z"
+updated_at: "2026-10-22T12:29:35Z"
 last_close_out_gate_ms: 115089
 last_close_out_gate_at: "2026-10-22T12:29:05.582Z"
 review_passes: 1
@@ -46,4 +46,4 @@ Look at the pause writer behind repoos agents pause and the Agents page Budget C
 - 2026-10-22T12:19:59Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-22T12:21:14Z · note: review pass 1: good to go
 - 2026-10-22T12:29:05Z · close-out gate completed in 115s
-
+- 2026-10-22T12:29:35Z · status done→done, release:success
