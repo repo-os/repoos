@@ -102,6 +102,38 @@ function namespacedProject(): string {
 }
 
 describe("runDoctor", () => {
+  it("names an ad-hoc-signed first git when Apple git preference is disabled", async () => {
+    const root = cleanProject();
+    const bin = join(root, "fake-bin");
+    mkdirSync(bin);
+    writeFileSync(join(bin, "git"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const report = await runDoctor({
+      root,
+      probePort: 1,
+      hasBinary: tools("git", "bun"),
+      platform: "darwin",
+      env: { PATH: bin, REPOOS_PREFER_APPLE_GIT: "0" },
+      signatureProbe: () => "ad-hoc signed",
+    });
+    const diagnostic = findingById(report, "runtime.macos-git-signature");
+    expect(diagnostic?.severity).toBe("warn");
+    expect(diagnostic?.detail).toContain("preferAppleGit is inactive");
+    expect(diagnostic?.detail).toContain("ad-hoc signed");
+    expect(diagnostic?.detail).toContain("8–19 seconds");
+    expect(diagnostic?.remediation).toContain("REPOOS_PREFER_APPLE_GIT=0");
+  });
+
+  it("does not add macOS git diagnostics on other platforms", async () => {
+    const report = await runDoctor({
+      root: cleanProject(),
+      probePort: 1,
+      hasBinary: tools("git", "bun"),
+      platform: "linux",
+      signatureProbe: () => "ad-hoc signed",
+    });
+    expect(findingById(report, "runtime.macos-git-signature")).toBeUndefined();
+  });
+
   it("reports a clean, declared-plan project with no warnings or failures", async () => {
     const root = cleanProject();
     const report = await runDoctor({

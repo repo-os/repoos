@@ -190,6 +190,9 @@ then turn what's missing into work.
 Read \`AGENTS.md\` first — it's the operating loop for this repo. Base the docs
 on what the code actually does rather than what you'd expect it to; where the
 repo is silent, write down the open question instead of guessing.
+
+When investigating slow spawn-heavy work on macOS, do not benchmark with
+\`git --version\` — it is a cheap command. Measure real git commands instead.
 `;
 
 const AGENTS_MD = (workDir: string, docsDir: string) => `# AGENTS.md

@@ -17,7 +17,7 @@
  * the UI render that same report — the diagnostic logic lives only here.
  */
 import { accessSync, constants, existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { delimiter, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import {
   findRepoRoot,
   isLinkedWorktreeRoot,
@@ -56,6 +56,7 @@ import { isGitRepo } from "./git.js";
 import { checkDocsWiringAt, findMissingAgentsMdPaths } from "./project-docs.js";
 import { portListening } from "./net-probe.js";
 import { validateToml } from "./toml-validate.js";
+import { spawnSync } from "node:child_process";
 
 // ── Report shape (the stable --json contract) ───────────────────────────────
 
@@ -132,6 +133,63 @@ export interface DoctorOptions {
   hasBinary?: (tool: string) => boolean;
   /** RepoOS version string to stamp into the report. */
   version?: string | null;
+  /** Platform and environment overrides keep macOS runtime diagnostics hermetic. */
+  platform?: NodeJS.Platform;
+  env?: NodeJS.ProcessEnv;
+  /** Injectable signature probe for tests. */
+  signatureProbe?: (binary: string) => string | null;
+}
+
+function gitSignature(binary: string, probe: (path: string) => string | null): string | null {
+  return probe(binary);
+}
+
+function probeGitSignature(binary: string): string | null {
+  const result = spawnSync("codesign", ["-dv", "--verbose=4", binary], { encoding: "utf8" });
+  const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
+  if (/Signature=adhoc|flags=.*\(adhoc\)/i.test(output)) return "ad-hoc signed";
+  if (/Authority=|TeamIdentifier=/i.test(output)) return "Apple/developer signed";
+  return null;
+}
+
+function macGitFinding(opts: DoctorOptions): DoctorFinding[] {
+  if ((opts.platform ?? process.platform) !== "darwin") return [];
+  const env = opts.env ?? process.env;
+  const path = (env.PATH ?? "").split(delimiter).find((part) => existsSync(join(part, "git")));
+  if (!path) return [];
+  const git = join(path, "git");
+  const signature = gitSignature(git, opts.signatureProbe ?? probeGitSignature);
+  const appleGit =
+    existsSync("/usr/bin/git") &&
+    (existsSync("/Library/Developer/CommandLineTools/usr/bin/git") ||
+      existsSync("/Applications/Xcode.app/Contents/Developer/usr/bin/git"));
+  const active = env.REPOOS_PREFER_APPLE_GIT !== "0" && appleGit;
+  const detail = `First git on PATH: ${git} (${signature ?? "signature unknown"}). preferAppleGit is ${active ? "active" : "inactive"}${active ? "; RepoOS uses Apple's signed git" : env.REPOOS_PREFER_APPLE_GIT === "0" ? " because REPOOS_PREFER_APPLE_GIT=0" : appleGit ? "" : " because Apple's git is unavailable"}. Ad-hoc git can add about 8–19 seconds of syspolicyd CPU across 600 real git commands.`;
+  if (signature !== "ad-hoc signed" || active) {
+    return [
+      finding(
+        "runtime.macos-git-signature",
+        "runtime",
+        "pass",
+        "macOS git launch check",
+        detail,
+        null,
+      ),
+    ];
+  }
+  const remediation = appleGit
+    ? "Unset REPOOS_PREFER_APPLE_GIT=0 so RepoOS can use Apple's git"
+    : "Install the Xcode Command Line Tools with `xcode-select --install`";
+  return [
+    finding(
+      "runtime.macos-git-signature",
+      "runtime",
+      "warn",
+      "macOS may be rechecking git on every launch",
+      detail,
+      remediation,
+    ),
+  ];
 }
 
 /**
@@ -1958,6 +2016,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
     ...(await guard("config", "config.error", () => checkConfig(root, config))),
     ...(await guard("layout", "layout.error", () => checkLayout(root, config))),
     ...(await guard("runtime", "runtime.error", () => checkRuntime(root, config, hasBin, plan))),
+    ...macGitFinding(opts),
     ...(await guard("runtime", "runtime.compatibility.error", () =>
       checkAgentCompatibility(config, hasBin),
     )),
