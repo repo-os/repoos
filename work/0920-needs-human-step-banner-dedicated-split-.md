@@ -11,7 +11,7 @@ branch: feat/needs-human-step-banner-dedicated-split-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T04:53:30Z"
-updated_at: "2026-10-22T15:10:57Z"
+updated_at: "2026-10-22T15:15:14Z"
 last_check_failure: "repoos check at 2026-10-22T15:08:30.954Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Needs human step banner and dedicated PM action (target \"default\"): highlight .agent-waiting matched nothing on /work?task=0920&tab=details (http://127.0.0.1:42259/work?shotState=card:humanStep)"
 ---
 ## Problem
@@ -64,4 +64,4 @@ Start from `NEEDS_INPUT_*` tables and `needsInputPrimaryAction` in `src/ui-app/s
 - 2026-10-22T15:08:27Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Needs human step banner and dedicated PM action (target "default"): highlight .agent-waiting matched nothing on /work?task=0920&tab=details (http://127.0.0.1:42259/work?shotState=card:humanStep)
 - 2026-10-22T15:09:30Z · body
 - 2026-10-22T15:10:57Z · body
-
+- 2026-10-22T15:15:14Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
