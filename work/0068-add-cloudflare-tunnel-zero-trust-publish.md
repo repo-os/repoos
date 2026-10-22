@@ -3,6 +3,8 @@ id: "0068"
 title: Add Cloudflare Tunnel + Zero Trust publishing for local apps
 type: feature
 status: done
+human_step_decision: human
+human_step_decision_key: 687bc8cb
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 687bc8cb
 priority: p2
