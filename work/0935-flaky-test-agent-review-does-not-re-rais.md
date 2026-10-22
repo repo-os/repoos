@@ -2,7 +2,7 @@
 id: "0935"
 title: "Flaky test: agent-review 'does not re-raise an exhausted-rounds flag dismissed during the review'"
 type: bug
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -34,4 +34,4 @@ See AGENTS.md 'Is a repoos check failure a flake or a real bug?' and the #0330 r
 - 2026-10-22T14:03:02Z · cli_override, model_override
 - 2026-10-22T14:03:03Z · status ready→active, branch
 - 2026-10-22T14:09:05Z · body
-- 2026-10-22T14:20:00Z · note: shots: skipped — the diff (2 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-22T14:20:00Z · status active→review
