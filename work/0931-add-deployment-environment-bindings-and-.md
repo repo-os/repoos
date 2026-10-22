@@ -2,7 +2,7 @@
 id: "0931"
 title: Add deployment environment bindings and production safeguards
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web]
 story: Secrets and project environments
@@ -70,4 +70,4 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 - 2026-10-22T22:50:31Z · body
 - 2026-10-22T22:53:49Z · body
 - 2026-10-22T22:55:55Z · body
-- 2026-10-22T23:05:17Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-22T23:05:17Z · status active→review
