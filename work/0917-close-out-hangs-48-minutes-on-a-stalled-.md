@@ -11,7 +11,7 @@ branch: feat/close-out-hangs-48-minutes-on-a-stalled-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T04:09:06Z"
-updated_at: "2026-10-22T12:20:00Z"
+updated_at: "2026-10-22T12:22:22Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-22T11:36:31.117Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Close-out card shows bundle upload progress (target \"default\"): state \"closeOut:uploading\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Close-out card shows bundle upload progress (target \"default\"): highlight .tc-moving matched nothing on / (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Remote validation dr… (truncated)"
@@ -53,12 +53,12 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 "route": "/settings?section=remote-validation",
 "highlight": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]",
 "steps": [
-  {
-    "click": "[id=\"setting-remoteValidation.enabled\"] button"
-  },
-  {
-    "waitFor": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]"
-  }
+{
+  "click": "[id=\"setting-remoteValidation.enabled\"] button"
+},
+{
+  "waitFor": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]"
+}
 ]
 }
 ]
@@ -122,3 +122,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T12:12:23Z · CTO nudge: held — remote validation is running
 - 2026-10-22T12:13:53Z · body
 - 2026-10-22T12:20:00Z · body
+- 2026-10-22T12:22:22Z · body
