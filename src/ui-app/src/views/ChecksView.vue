@@ -90,7 +90,7 @@ const localSlotHolders = ref<
 async function loadLocalSlotHolders(): Promise<void> {
   try {
     const result = await api<{ holders: typeof localSlotHolders.value }>("/api/local-check-slots");
-    localSlotHolders.value = result.holders;
+    localSlotHolders.value = Array.isArray(result.holders) ? result.holders : [];
   } catch {
     localSlotHolders.value = [];
   }

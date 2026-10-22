@@ -4217,9 +4217,7 @@ export const cancelDone: RouteHandler = async (ctx, _req, res, params) => {
   if (job.phase === "done") {
     return json(res, 409, { error: `Task #${id} already finished close-out` });
   }
-  if (job.cancelled) {
-    return json(res, 200, { ok: true, alreadyCancelled: true });
-  }
+  const alreadyCancelled = job.cancelled;
   // Once the merge has committed, the close-out has effectively landed; all
   // that remains is bookkeeping. Refusing here is honest — cancelling would
   // not undo the merge.
@@ -4229,10 +4227,10 @@ export const cancelDone: RouteHandler = async (ctx, _req, res, params) => {
     });
   }
 
-  jobCoordinator.requestCancel(id);
+  if (!alreadyCancelled) jobCoordinator.requestCancel(id);
   // A queued job has no orchestrator watching it yet, so cancel it outright
   // rather than leaving it for a future drain to pick up and cancel.
-  if (job.phase === "queued") {
+  if (!alreadyCancelled && job.phase === "queued") {
     jobCoordinator.removeJob(id);
   }
 
