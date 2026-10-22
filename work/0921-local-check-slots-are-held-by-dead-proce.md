@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0921"
 title: "Local check slots are held by dead processes for 30 minutes: reclaim a slot as soon as its holder pid is gone"
 type: feature
@@ -67,3 +68,4 @@ Evidence: .repoos/local-check-slots/{0,1}/.holder and .meta.json at 13:40 (both 
 - 2026-10-22T17:25:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T17:25:18Z · message_delivered: 1 message(s)
 - 2026-10-22T17:25:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
