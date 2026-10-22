@@ -15,7 +15,7 @@ branch: feat/bind-dev-and-check-processes-to-explicit
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:43Z"
-updated_at: "2026-10-22T17:37:45Z"
+updated_at: "2026-10-22T17:47:15Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -48,3 +48,4 @@ Depends on #0927 for the storage/environment contract and #0928 for authorized m
 - 2026-10-22T17:32:21Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-22T17:37:45Z · note: review pass 1: needs some work
 - 2026-10-22T17:37:45Z · status review→active
+- 2026-10-22T17:47:15Z · message_queued at 2026-10-22T17:47:15.301Z
