@@ -1,6 +1,4 @@
 ---
-check_retry_count: 2
-last_check_failure: "repoos check at 2026-10-22T12:09:45.656Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Control dashboard worktree cleanup preview (target \"default\"): highlight .gc-preview matched nothing on / (http://127.0.0.1:43707/)"
 id: "0923"
 title: repoos gc must spare the candidate worktree of a running close-out
 type: bug
@@ -13,7 +11,9 @@ branch: feat/repoos-gc-must-spare-the-candidate-workt
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:06:09Z"
-updated_at: "2026-10-22T12:09:42Z"
+updated_at: "2026-10-22T12:10:05Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-22T12:09:45.656Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Control dashboard worktree cleanup preview (target \"default\"): highlight .gc-preview matched nothing on / (http://127.0.0.1:43707/)"
 ---
 ## Problem
 The CLI `repoos gc` (src/commands/gc.ts cmdGc) calls sweepStaleWorktrees without `activeJobIds`, so src/core/worktree-gc.ts removes every repoos/integrate/<id> candidate worktree, including one whose close-out is queued, running or recovering. Only the boot sweep passes activeJobIds. Incident 2026-10-22: Nick ran `repoos gc` while #0909's close-out was validating; its candidate worktree was deleted under the running test step, leaving an orphaned check process and a close-out that could never finish until it was cancelled.
@@ -37,15 +37,10 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 ```json
 [
 {
-"label": "Control dashboard worktree cleanup preview",
-"target": "default",
-"route": "/",
-"highlight": ".gc-preview",
-"steps": [
-{
-"click": "button.gc-action"
-}
-]
+  "label": "Control dashboard worktree cleanup action",
+  "target": "default",
+  "route": "/",
+  "highlight": "button.gc-action"
 }
 ]
 ```
@@ -73,4 +68,4 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 - 2026-10-22T12:03:08Z · body
 - 2026-10-22T12:04:27Z · body
 - 2026-10-22T12:09:42Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Control dashboard worktree cleanup preview (target "default"): highlight .gc-preview matched nothing on / (http://127.0.0.1:43707/)
-
+- 2026-10-22T12:10:05Z · body
