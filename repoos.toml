@@ -67,7 +67,7 @@ auth.emailProvider.fromAddress = "otp@send.repoos.org"
 # # clientSecret likewise goes in .env as REPOOS_GOOGLE_CLIENT_SECRET, not here.
 whisper.provider = "none"
 
-remoteValidation.enabled = false
+remoteValidation.enabled = true
 remoteValidation.fallbackToLocal = true
 
 worktreeWarnThreshold = 20
@@ -255,6 +255,7 @@ whenChanged = ["work/**", "inputs/**"]
 name = "tests"
 kind = "tests"
 requires = ["bun"]
+timeoutMs = 900000 # 15 min: a loaded laptop ran the full suite past the 420s default (2026-10-22, #0909)
 dependsOn = ["check-fmt:check", "check-lint"]
 
 [[check.steps]]
