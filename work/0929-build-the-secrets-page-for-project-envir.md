@@ -42,3 +42,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T18:11:52Z · status ready→active, branch
 - 2026-10-22T19:28:37Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-22T20:37:08Z · status ready→review
+- 2026-10-22T20:37:08Z · note: handoff requested (cli)
