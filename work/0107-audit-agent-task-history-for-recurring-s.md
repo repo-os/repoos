@@ -3,6 +3,8 @@ id: "0107"
 title: Audit agent task history for recurring skill gaps and propose reusable skills
 type: task
 status: done
+human_step_decision: agent
+human_step_decision_key: 968b93b4
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 968b93b4
 needs_merge: true
@@ -14,7 +16,7 @@ branch: feat/audit-agent-task-history-for-recurring-s
 cli_override: opencode
 model_override: opencode-go/qwen3.8-max
 created_at: "2026-08-11T19:49:57Z"
-updated_at: "2026-10-22T07:47:46Z"
+updated_at: "2026-10-22T07:47:47Z"
 ---
 ## Problem
 
