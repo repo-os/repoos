@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 115089
-last_close_out_gate_at: "2026-10-22T12:29:05.582Z"
 id: "0916"
 title: Pausing an agent model with a reason writes an inline table that RepoOS's own TOML validator rejects (breaks toml-validate and release gates)
 type: feature
-status: review
+status: done
 priority: p1
 area: [core, server]
+merged_commit: 2ae8b32f74f92002152fd34ef0607eaf44acbd3c
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/pausing-an-agent-model-with-a-reason-wri
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T03:36:47Z"
 updated_at: "2026-10-22T12:29:05Z"
+last_close_out_gate_ms: 115089
+last_close_out_gate_at: "2026-10-22T12:29:05.582Z"
 review_passes: 1
 ---
 ## Problem
