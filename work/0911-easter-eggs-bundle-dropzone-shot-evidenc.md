@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-dropzone-shot-evidenc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T01:34:32Z"
-updated_at: "2026-10-22T17:44:35Z"
+updated_at: "2026-10-22T17:46:09Z"
 ---
 ## Items
 - [x] **E1 · Manual-tab handoff capture does not show a dropzone** (web) — #0899’s declared Manual-tab shot lacked a recorded assertion; the light and dark captures now assert the dropzone exists. Source: reviewer notes on #0899 (passes 4 and 5), 2026-10-22.
@@ -20,7 +20,7 @@ updated_at: "2026-10-22T17:44:35Z"
 - [x] **E4 · Settings restart hint alignment** (web) — moved the restart-required hint before the control so controls keep a shared right edge, including on narrow rows.
 
 ## Problem
-#0899 landed the dropzone layout fix, but two pieces of handoff evidence are weaker than they should be: one declared shot has no assertion, and the TaskDrawer shot shows only the failure state.
+#0899 landed the dropzone layout fix, but its Manual-tab capture lacks an assertion and its TaskDrawer capture shows only the upload-failure state. Settings rows also place the restart-required hint after the control, pushing controls out of alignment.
 
 ## Desired UX
 Reviewers can see the dropzone rendered on the Manual tab and the default (non-error) picker in the TaskDrawer without extra steps.
@@ -144,3 +144,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T17:44:25Z · message_queued at 2026-10-22T17:44:25.996Z
 - 2026-10-22T17:44:35Z · body: Acceptance criteria (added 4, removed 3)
 - 2026-10-22T17:44:35Z · message_queued at 2026-10-22T17:44:35.746Z
+- 2026-10-22T17:46:09Z · body: Problem (added 1, removed 1)
