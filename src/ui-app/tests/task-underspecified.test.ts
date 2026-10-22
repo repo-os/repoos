@@ -3,6 +3,7 @@ import {
   UNDERSPECIFIED_MIN_BODY_CHARS,
   assessTaskUnderspecified,
   assessTaskNeedsHumanStep,
+  fleshOutRequirementsPrompt,
   NEEDS_HUMAN_STEP_HINT,
 } from "../../core/task-underspecified.js";
 import { needsInputClearsOnSuccessfulReview } from "../../core/needs-input.js";
@@ -36,6 +37,52 @@ function wellFormedBody(): string {
 }
 
 describe("assessTaskUnderspecified", () => {
+  const bundleBody = (omitE2Acceptance = false) => {
+    const part = (id: string) => [
+      `## ${id} · Fix ${id}`,
+      "",
+      "### Problem",
+      "",
+      SUBSTANTIVE.repeat(2),
+      "",
+      "### Desired UX",
+      "",
+      SUBSTANTIVE.repeat(2),
+      "",
+      "### Acceptance criteria",
+      "",
+      "- [ ] The behavior is covered by a focused regression test.",
+      "",
+      "### Notes for AI",
+      "",
+      SUBSTANTIVE.repeat(2),
+    ];
+    const e2 = part("E2");
+    if (omitE2Acceptance) {
+      const at = e2.indexOf("### Acceptance criteria");
+      e2.splice(at, 2);
+      e2.splice(e2.indexOf("- [ ] The behavior is covered by a focused regression test."), 1);
+    }
+    return ["## Items", "", "- [ ] E1", "- [ ] E2", "", ...part("E1"), "", ...e2].join("\n");
+  };
+
+  it("accepts the documented per-item bundle layout", () => {
+    const result = assessTaskUnderspecified(bundleBody());
+    expect(result.underspecified).toBe(false);
+    expect(result.signals).toEqual([]);
+  });
+
+  it("names the bundle item and subsection when an item is incomplete", () => {
+    const result = assessTaskUnderspecified(bundleBody(true));
+    expect(result.underspecified).toBe(true);
+    expect(result.detail).toContain("E2: missing Acceptance criteria");
+  });
+
+  it("keeps the PM instructions compatible with bundle structure", () => {
+    const prompt = fleshOutRequirementsPrompt(undefined, "core");
+    expect(prompt).toContain("do not flatten them into task-level sections");
+  });
+
   it("does not flag a well-formed task body", () => {
     const result = assessTaskUnderspecified(wellFormedBody());
     expect(result.underspecified).toBe(false);
