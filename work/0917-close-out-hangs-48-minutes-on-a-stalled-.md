@@ -2,7 +2,7 @@
 id: "0917"
 title: Close-out hangs ~48 minutes on a stalled ssh bundle upload before falling back to local; thinkpad swap full again
 type: feature
-status: review
+status: active
 priority: p1
 area: server
 assigned_to: ai
@@ -11,11 +11,9 @@ branch: feat/close-out-hangs-48-minutes-on-a-stalled-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T04:09:06Z"
-updated_at: "2026-10-22T12:10:00Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 2 on thinkpad — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: a49ecc53242fa40363f8fb874366b060556502c2
-review_rounds: 1
-review_passes: 1
+updated_at: "2026-10-22T12:13:53Z"
+review_rounds: 2
+review_passes: 2
 last_check_failure: "repoos check at 2026-10-22T11:36:31.117Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Close-out card shows bundle upload progress (target \"default\"): state \"closeOut:uploading\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Close-out card shows bundle upload progress (target \"default\"): highlight .tc-moving matched nothing on / (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Remote validation dr… (truncated)"
 ---
 ## Problem
@@ -43,25 +41,25 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 ```json
 [
 {
-"label": "Close-out card shows bundle upload progress",
-"target": "default",
-"route": "/work",
-"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-"state": "closeOut:uploading"
+  "label": "Close-out card shows bundle upload progress",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+  "state": "closeOut:uploading"
 },
 {
-"label": "Remote validation drawer bundle upload settings",
-"target": "default",
-"route": "/settings?section=remote-validation",
-"highlight": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]",
-"steps": [
-{
-"click": "[id=\"setting-remoteValidation.enabled\"] button"
-},
-{
-"waitFor": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]"
-}
-]
+  "label": "Remote validation drawer bundle upload budget",
+  "target": "default",
+  "route": "/settings?section=remote-validation",
+  "highlight": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]",
+  "steps": [
+    {
+      "click": "[id=\"setting-remoteValidation.enabled\"] button"
+    },
+    {
+      "waitFor": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]"
+    }
+  ]
 }
 ]
 ```
@@ -114,4 +112,12 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T11:53:07Z · body
 - 2026-10-22T11:53:17Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: gate exit 2 on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-22T11:55:09Z · body
+- 2026-10-22T11:57:00Z · body
+- 2026-10-22T12:09:41Z · message_queued at 2026-10-22T12:09:41.280Z
+- 2026-10-22T12:10:00Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-10-22T12:10:00Z · status active→review
+- 2026-10-22T12:12:20Z · note: review pass 2: needs some work
+- 2026-10-22T12:12:21Z · message_delivered: 1 message(s)
+- 2026-10-22T12:12:21Z · status review→active
+- 2026-10-22T12:12:23Z · CTO nudge: held — remote validation is running
+- 2026-10-22T12:13:53Z · body
