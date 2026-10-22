@@ -21,7 +21,7 @@
  * agent-specific branch-name matching is used anywhere.
  */
 import { existsSync, realpathSync, readdirSync, readFileSync } from "node:fs";
-import { relative, isAbsolute } from "node:path";
+import { join, relative, isAbsolute } from "node:path";
 import { spawnSync } from "node:child_process";
 import type { RepoOSConfig, Task } from "./types.js";
 import { worktreesDir } from "./config.js";
@@ -82,7 +82,8 @@ export interface SweepOptions {
 /** Read durable close-out records directly so every sweep caller gets the same
  * protection, including the CLI where no server coordinator is available. */
 function activeCloseOutIds(config: RepoOSConfig): Set<string> {
-  const dir = `${config.root}/${config.cacheDir ?? ".repoos"}/integration-jobs`;
+  // integration-job.ts persists here independently of the configurable cacheDir.
+  const dir = join(config.root, ".repoos", "integration-jobs");
   const active = new Set<string>();
   try {
     for (const file of readdirSync(dir)) {
@@ -216,7 +217,8 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
         report.keptDirty.push({ branch, path: w.path, reason: "close-out job still active" });
         continue;
       }
-      if (taskById.get(taskId)?.status === "active") {
+      const task = taskById.get(taskId);
+      if (task?.status === "active" || task?.status === "review") {
         report.keptDirty.push({ branch, path: w.path, reason: "task agent still active" });
         continue;
       }
@@ -243,7 +245,17 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     }
 
     const task = taskByBranch.get(branch);
-    if (task && task.status !== "done") continue; // live work — leave it
+    if (task && task.status !== "done") {
+      report.keptDirty.push({
+        branch,
+        path: w.path,
+        reason:
+          task.status === "active" || task.status === "review"
+            ? "task agent still active"
+            : `task status is ${task.status}`,
+      });
+      continue;
+    }
 
     const merged = isAncestor(root, branch, mainBranch) === true;
     const clean = worktreeClean(w.path);
