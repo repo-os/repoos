@@ -65,7 +65,7 @@ function validateRelativeSource(path: string): void {
   }
 }
 
-function resolveSafePath(root: string, relative: string): string {
+function resolveRepoPath(root: string, relative: string): string {
   validateRelativeSource(relative);
   const base = resolve(root);
   const destination = resolve(base, relative);
@@ -77,6 +77,12 @@ function resolveSafePath(root: string, relative: string): string {
     if (existsSync(current) && lstatSync(current).isSymbolicLink())
       throw new Error("Environment source path contains a symlink");
   }
+  return destination;
+}
+
+function resolveWritablePath(root: string, relative: string): string {
+  const destination = resolveRepoPath(root, relative);
+  const base = resolve(root);
   try {
     const tracked = execFileSync(
       "git",
@@ -139,19 +145,19 @@ export function readProjectEnvironment(
   const merged = new Map<string, string>();
   const expected = new Set<string>();
   for (const source of env.sources) {
-    const path = resolveSafePath(root, source.path);
+    const path = resolveRepoPath(root, source.path);
     if (existsSync(path))
       for (const [key, value] of parseDocument(readFileSync(path, "utf8")).keys)
         merged.set(key, value);
     if (source.examplePath) {
-      const examplePath = resolveSafePath(root, source.examplePath);
+      const examplePath = resolveRepoPath(root, source.examplePath);
       if (existsSync(examplePath))
         for (const key of parseDocument(readFileSync(examplePath, "utf8")).keys.keys())
           expected.add(key);
     }
   }
   const last = env.sources[env.sources.length - 1];
-  const file = resolveSafePath(root, last.path);
+  const file = resolveRepoPath(root, last.path);
   const text = existsSync(file) ? readFileSync(file, "utf8") : "";
   return {
     source: env.sources.map((s) => s.path).join(", "),
@@ -176,7 +182,7 @@ export function writeProjectEnvironmentValue(
   expectedSha256: string,
 ): string {
   if (!keyName.test(key)) throw new Error("Invalid environment key name");
-  const file = resolveSafePath(root, sourcePath);
+  const file = resolveWritablePath(root, sourcePath);
   const current = existsSync(file) ? readFileSync(file, "utf8") : "";
   const currentHash = createHash("sha256").update(current).digest("hex");
   if (currentHash !== expectedSha256)
