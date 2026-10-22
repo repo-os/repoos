@@ -11,8 +11,9 @@ branch: ""
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: opencode
+review_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-22T04:18:52Z"
-updated_at: "2026-10-22T04:34:49Z"
+updated_at: "2026-10-22T04:34:54Z"
 ---
 ## Problem
 2026-10-22 12:17: the pressure guard (#0871) held #0909's local close-out check and queued #0914's behind it with 'the memory compressor is holding 36% of RAM (8.6 GB) — holding new work until memory pressure eases', while the machine was idle: CPU 63% idle, and over a 20 s sample vm_stat showed ~186 pageouts (~3 MB), 9 swapins and 0 swapouts. The guard's signals are occupancy ratios: compressor share (limit 0.35) and swap used/total (limit 0.5). On macOS these are misleading: the compressor fills with cold pages from idle apps (Chrome tabs, Claude renderer) without any cost until they are touched, and swap total is dynamic (swap files are created on demand), so used/total sits high on a healthy machine (5.9 of 7 GB = 82% here). The guard therefore holds engineers, restarts and fallback checks for hours on a laptop that is not thrashing, and it makes the close-out local fallback wait on itself.
@@ -37,3 +38,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T04:34:40Z · cli_override
 - 2026-10-22T04:34:45Z · model_override
 - 2026-10-22T04:34:49Z · review_cli_override
+- 2026-10-22T04:34:54Z · review_model_override
