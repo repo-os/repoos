@@ -2,7 +2,7 @@
 id: "0927"
 title: Define named project environments and file-backed storage
 type: feature
-status: inbox
+status: ready
 human_step_decision: agent
 human_step_decision_key: 16ca06e1
 priority: p1
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T08:05:30Z"
-updated_at: "2026-10-22T08:05:35Z"
+updated_at: "2026-10-22T14:32:10Z"
 ---
 ## Problem
 RepoOS has legacy root-.env loading but no explicit model for multiple project secret environments. Without a shared contract and safe storage primitives, management APIs and process bindings could mix project values with RepoOS provider/auth settings or silently change legacy behavior.
@@ -34,3 +34,4 @@ Work in the existing config/environment loading and file utility layers under sr
 ## Activity
 
 - 2026-10-22T08:05:30Z · created · njachowski@gmail.com
+- 2026-10-22T14:32:10Z · status inbox→ready
