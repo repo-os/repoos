@@ -41,6 +41,7 @@ import {
   type RemoteExecDeps,
   type RemoteExecResult,
   type RemoteHost,
+  type UploadProgressInfo,
 } from "../../server/remote-validation.js";
 import type { HetznerClient, HetznerServer } from "../../server/hetzner.js";
 
@@ -1093,7 +1094,7 @@ describe("upload progress heartbeat (#0782)", () => {
     const { root, candidateSha } = makeRepo();
     try {
       const bundlePath = join(root, "candidate.bundle");
-      const progress: { bundleBytes: number; elapsedSecs: number; attempt: number }[] = [];
+      const progress: UploadProgressInfo[] = [];
       const emitted: string[] = [];
       let completed = 0;
       // A slow transfer: slower than several heartbeat ticks.
