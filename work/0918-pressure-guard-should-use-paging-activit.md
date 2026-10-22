@@ -19,7 +19,6 @@ review_passes: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-22T09:02:53.015Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-22T05:27:08.607Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 2026-10-22 12:17: the pressure guard (#0871) held #0909's local close-out check and queued #0914's behind it with 'the memory compressor is holding 36% of RAM (8.6 GB) — holding new work until memory pressure eases', while the machine was idle: CPU 63% idle, and over a 20 s sample vm_stat showed ~186 pageouts (~3 MB), 9 swapins and 0 swapouts. The guard's signals are occupancy ratios: compressor share (limit 0.35) and swap used/total (limit 0.5). On macOS these are misleading: the compressor fills with cold pages from idle apps (Chrome tabs, Claude renderer) without any cost until they are touched, and swap total is dynamic (swap files are created on demand), so used/total sits high on a healthy machine (5.9 of 7 GB = 82% here). The guard therefore holds engineers, restarts and fallback checks for hours on a laptop that is not thrashing, and it makes the close-out local fallback wait on itself.
