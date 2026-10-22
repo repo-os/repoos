@@ -14,7 +14,7 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T22:10:53Z"
+updated_at: "2026-10-22T22:11:29Z"
 last_close_out_gate_ms: 120085
 last_close_out_gate_at: "2026-10-22T22:10:53.963Z"
 review_passes: 5
@@ -176,4 +176,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T22:01:06Z · note: review pass 4: good to go
 - 2026-10-22T22:03:38Z · note: review pass 5: good to go
 - 2026-10-22T22:10:53Z · close-out gate completed in 120s
-
+- 2026-10-22T22:11:29Z · status done→done, release:success
