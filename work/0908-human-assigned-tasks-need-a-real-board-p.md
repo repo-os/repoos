@@ -3,9 +3,6 @@ id: "0908"
 title: "Human-assigned tasks need a real board pathway: move across columns to done without triggering AI, checks or review"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: the cursor agent timed out after 900s
 priority: p2
 area: [web, server, core]
 assigned_to: ai
@@ -99,3 +96,4 @@ Do not start without the human. Related rule in AGENTS.md: needs-human-step task
 - 2026-10-22T03:23:56Z · needs_input
 - 2026-10-22T03:36:01Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-22T04:27:14Z · note: review pass 4: needs some work
+- 2026-10-22T04:27:14Z · needs_input
