@@ -2,14 +2,14 @@
 id: "0926"
 title: "Queued-message notice: hover/focus popup showing the queued message text"
 type: feature
-status: inbox
+status: ready
 priority: p3
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T06:59:28Z"
-updated_at: "2026-10-22T06:59:28Z"
+updated_at: "2026-10-22T15:53:18Z"
 ---
 ## Problem
 The chat shows 'Queued — will be read when the current turn ends.' (src/ui-app/src/components/ChatQueuedNotice.vue) with no way to see WHAT is queued. Automatic board-change notes and CTO nudges queue too, so the viewer cannot tell a requirements update from a nudge. Example 2026-10-22: #0918 showed the notice for 75 min with no indication it was a harmless notes update.
@@ -29,3 +29,4 @@ Follow the AGENTS.md conventions for tooltips/popovers and body-teleported layer
 ## Activity
 
 - 2026-10-22T06:59:28Z · created · njachowski@gmail.com
+- 2026-10-22T15:53:18Z · status inbox→ready
