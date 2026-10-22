@@ -110,6 +110,9 @@ function pressureNumbers(h: RemoteHostStatusView): string {
   if (h.pressure?.availableMemRatio != null) {
     parts.push(`${Math.round(h.pressure.availableMemRatio * 100)}% memory available`);
   }
+  if (h.pressure?.compressorRatio != null) {
+    parts.push(`compressor ${Math.round(h.pressure.compressorRatio * 100)}% of RAM`);
+  }
   if (h.pressure?.psiMemoryAvg10 != null) {
     parts.push(`PSI ${h.pressure.psiMemoryAvg10.toFixed(1)}% avg10`);
   }

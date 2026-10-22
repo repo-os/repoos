@@ -106,6 +106,10 @@ function healthyReadings(): MemoryReadings {
     compressorBytes: 0,
     memoryFreePercent: 70,
     memoryStatsAvailable: true,
+    // Hermetic (#0330 class): explicit activity so the guard never samples the live host.
+    swapIoBytesPerSec: 0,
+    pageoutBytesPerSec: 0,
+    activityWindowSec: 30,
   };
 }
 
