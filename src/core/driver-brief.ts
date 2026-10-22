@@ -193,6 +193,18 @@ export interface DriverBrief {
   configChanges: BriefConfigChangeSet;
   rules: BriefRule[];
   recommendations: BriefRecommendation[];
+  localCheckSlots: {
+    holders: {
+      slot: number;
+      pid?: number;
+      ageMs: number;
+      heartbeatAgeMs: number;
+      dead: boolean;
+      wedged: boolean;
+      meta?: Record<string, unknown>;
+    }[];
+    queue: { taskId: string; position: number; since: string }[];
+  };
 }
 
 /** Input the pure builder consumes. Live collectors fill this in. */
@@ -230,6 +242,7 @@ export interface DriverBriefInput {
   slowRuns: BriefSlowRun[];
   configChanges: BriefConfigChangeSet;
   rules: BriefRule[];
+  localCheckSlots?: DriverBrief["localCheckSlots"];
 }
 
 const STATUS_ORDER: Status[] = ["draft", "inbox", "ready", "active", "review", "done"];
@@ -462,6 +475,7 @@ export function buildDriverBrief(input: DriverBriefInput): DriverBrief {
     configChanges: input.configChanges,
     rules: input.rules,
     recommendations: recommendActions(input),
+    localCheckSlots: input.localCheckSlots ?? { holders: [], queue: [] },
   };
 }
 
