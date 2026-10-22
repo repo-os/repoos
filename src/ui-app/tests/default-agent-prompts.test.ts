@@ -16,6 +16,7 @@ import {
   SUPPORTED_TOML_KEYS,
 } from "../../core/config.js";
 import type { Agent, RepoOSConfig, Task } from "../../core/types.js";
+import type { LandableResult } from "../../core/landable.js";
 import { reviewHumanFlagThreshold, reviewMission, reviewPassesSoFar } from "../../server/review.js";
 import {
   needsInputClearsOnNewEngineerRun,
@@ -179,15 +180,35 @@ const reviewer: Agent = {
 describe("shared review mission prompt (#0872)", () => {
   const root = mkdtempSync(join(tmpdir(), "repoos-review-classes-"));
 
-  it("names the earlier-report directory, the whole-class grep, evidence gaps and the merge check", () => {
-    const mission = reviewMission(task(), reviewer, root, "main", config(root));
+  it("names earlier reports and delegates mergeability to the server checklist", () => {
+    const mission = reviewMission(task(), reviewer, root, "main", config(root), {
+      landable: {
+        taskId: "0872",
+        branch: "feat/x",
+        headSha: "abc123",
+        lockSha: "abc123",
+        landable: true,
+        checks: [
+          {
+            id: "merge-conflicts",
+            label: "Merge with main",
+            status: "pass",
+            detail: "branch merges cleanly with main",
+          },
+        ],
+        summary: { pass: 1, warn: 0, fail: 0 },
+      } as unknown as LandableResult,
+    });
     expect(mission).toContain(join(root, ".repoos", "reviews", "0872"));
     expect(mission).toContain("Read the newest ones before judging this pass");
     expect(mission).toMatch(/WHOLE CLASS/);
     expect(mission).toMatch(/Never hold an\s+instance back for a later pass/);
     expect(mission).toContain("EVIDENCE-GAP-ONLY");
-    expect(mission).toContain("git merge-tree --write-tree main HEAD");
-    expect(mission).toMatch(/name the conflicting files/);
+    expect(mission).toContain("Landing checklist (server-computed — facts, do not re-run)");
+    expect(mission).toContain("Treat these as authoritative facts.");
+    expect(mission).toContain("Do NOT run `repoos landable`, `git");
+    expect(mission).toContain("merge-tree --write-tree`");
+    expect(mission).toContain("## Could not verify (environment)");
   });
 
   it("keeps the verdict and section format guarantees unchanged", () => {
