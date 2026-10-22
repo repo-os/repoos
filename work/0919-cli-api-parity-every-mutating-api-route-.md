@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0919"
 title: "CLI/API parity: every mutating API route gets a CLI command (or an explicit exemption), starting with stop-close-out, plus a generic 'repoos api' escape hatch"
 type: feature
@@ -37,3 +38,4 @@ Evidence: route count from grep of router.register in src/server/server.ts and s
 - 2026-10-22T12:30:05Z · status ready→active, branch
 - 2026-10-22T12:32:44Z · body
 - 2026-10-22T12:33:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
