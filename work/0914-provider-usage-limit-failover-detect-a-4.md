@@ -11,7 +11,7 @@ branch: feat/provider-usage-limit-failover-detect-a-4
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T02:17:25Z"
-updated_at: "2026-10-22T06:38:37Z"
+updated_at: "2026-10-22T06:41:24Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-22T05:55:25.520Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-22T06:08:25.959Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-22T06:17:25.965Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -31,6 +31,19 @@ When an agent run fails with a clear quota or usage-limit error (HTTP 429 or the
 
 ## Notes for AI
 Start from crash recovery in src/server/agents.ts (the 'surfaced instead of switching' path), the budget allowlist pause mechanism (repoos agents pause/resume) and the provider-failure scrape fixed in #0709. Do not weaken the 'never replace a human-set override' rule except for this exhausted-provider case.
+
+## Shots
+```json
+[
+{
+  "label": "Provider usage exhaustion in Budget Controls",
+  "target": "default",
+  "route": "/agents?tab=budget-controls",
+  "highlight": ".budget-controls",
+  "state": "budget:paused"
+}
+]
+```
 
 ## Activity
 
@@ -76,3 +89,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T06:32:27Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-22T06:33:07Z · body
 - 2026-10-22T06:38:37Z · body
+- 2026-10-22T06:41:24Z · body
