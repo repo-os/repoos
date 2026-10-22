@@ -12,8 +12,10 @@ renderer, WindowServer, a second RepoOS project). Load average counts threads
 what is wrong. Engineers simply stalled: gates, reviews and handoffs slowed
 until timeouts and retries piled up.
 
-The signal that matters is memory reclamation: swap in use and the macOS memory
-compressor pool. Both climb while the CPU is idle, and both explain the stall.
+The guard blocks on the machine paying a memory cost: sustained swap-in/swap-out
+or pageout activity, macOS `memory_pressure` reporting `warn`/`critical`, low
+reclaimable memory, or Linux PSI memory pressure. Swap and compressor occupancy
+can stay high while the machine is idle, so occupancy alone is advisory.
 
 ## Signals and thresholds
 
@@ -21,19 +23,27 @@ compressor pool. Both climb while the CPU is idle, and both explain the stall.
 
 | Platform | Probe | Signal |
 | --- | --- | --- |
-| macOS | `vm.swapusage` | swap used / total |
-| macOS | `vm_stat` (`Pages occupied by compressor`) | compressor bytes / RAM |
-| macOS | `memory_pressure` | free percentage (display only today) |
-| Linux | `/proc/meminfo` (`SwapTotal`/`SwapFree`) | swap used / total |
+| macOS | `vm_stat` counter deltas over the activity window | swap-ins, swap-outs and pageouts per second |
+| macOS | `memory_pressure -Q`; `sysctl kern.memorystatus_vm_pressure_level` | free percentage and normal/warn/critical pressure level |
+| macOS | `vm.swapusage`; `vm_stat` (`Pages occupied by compressor`) | swap used / total and compressor bytes / RAM (advisory only) |
+| Linux | `/proc/vmstat` (`pswpin`/`pswpout` deltas) | swap I/O bytes per second |
+| Linux | `/proc/pressure/memory` | PSI `some avg10` pressure |
+| Linux | `/proc/meminfo` (`SwapTotal`/`SwapFree`) | swap used / total (advisory only) |
 | any | `sysmem.availableMemBytes()` | reclaimable memory / RAM |
 | fallback | `os.loadavg()` | load per CPU when the memory probe is unavailable |
 
 `evaluatePressure()` in `src/core/pressure-guard.ts` is pure. A reading set is
-`critical` when any configured limit is crossed:
+`critical` when a blocking signal crosses its threshold:
 
 - `pressureGuard.minAvailableMemRatio` (default 0.08)
-- `pressureGuard.maxSwapUsedRatio` (default 0.5)
-- `pressureGuard.maxCompressorRatio` (default 0.35, macOS)
+- `pressureGuard.minMemoryFreePercent` (default 10, macOS)
+- `pressureGuard.maxSwapIoBytesPerSec` and `pressureGuard.maxPageoutBytesPerSec`
+- `pressureGuard.maxPsiMemoryAvg10` (Linux)
+- macOS memory-pressure level `warn` or `critical`
+
+`pressureGuard.maxSwapUsedRatio` (default 0.5) and
+`pressureGuard.maxCompressorRatio` (default 0.35, macOS) only control advisory
+warnings. They never block work by themselves.
 
 `pressureGuard.maxLoadPerCpu` (default 4) holds work **only** when no memory
 signal is available; with memory stats it is surfaced as a warning. A warning
