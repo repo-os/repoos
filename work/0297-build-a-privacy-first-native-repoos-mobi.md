@@ -3,9 +3,8 @@ id: "0297"
 title: Build a privacy-first native RepoOS mobile hub
 type: feature
 status: done
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: on-device verification)"
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: 3464e09f
 priority: p2
 area: mobile
 assigned_to: ai
@@ -16,7 +15,7 @@ pm_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 review_cli_override: claude code
 review_model_override: sonnet
 created_at: "2026-08-26T10:53:07Z"
-updated_at: "2026-10-06T23:48:16Z"
+updated_at: "2026-10-22T07:47:52Z"
 ---
 ## Problem
 
@@ -60,3 +59,4 @@ The server list, display names, and selection state remain on-device only. The n
 - 2026-08-26T11:57:44Z · status active→review
 - 2026-08-26T12:28:07Z · status review→done, release:success
 - 2026-10-06T23:48:16Z · needs_input
+- 2026-10-22T07:47:52Z · needs_input
