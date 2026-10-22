@@ -146,6 +146,37 @@ describe("DeploymentsView matrix (#0365)", () => {
     wrapper.unmount();
   });
 
+  it("changing a deployment environment only saves its local binding", async () => {
+    api.mockImplementation(async (path) => {
+      if (path === "/api/deployments") return status() as never;
+      if (path === "/api/project-environments")
+        return { environments: [{ id: "dev" }, { id: "production" }] } as never;
+      if (path === "/api/project-environment-bindings") return { ok: true } as never;
+      throw new Error(`Unexpected API route: ${path}`);
+    });
+    const wrapper = await mountView("admin");
+    const select = wrapper.find(".dep-env-binding select");
+    await select.setValue("production");
+    await flushPromises();
+
+    expect(api).toHaveBeenCalledWith(
+      "/api/project-environment-bindings",
+      expect.objectContaining({ method: "PUT", body: expect.any(String) }),
+    );
+    const bindingCall = api.mock.calls.find(
+      ([path]) => path === "/api/project-environment-bindings",
+    );
+    expect(bindingCall).toBeDefined();
+    const request = bindingCall?.[1] as { body: string };
+    expect(JSON.parse(request.body)).toEqual({
+      consumer: "deployment:landing-page-prod",
+      environment: "production",
+      keys: [],
+    });
+    expect(api.mock.calls.some(([path]) => path === "/api/deployments/deploy")).toBe(false);
+    wrapper.unmount();
+  });
+
   it("groups rows by service into one matrix row per service, not per (service, branch) pair", async () => {
     api.mockResolvedValue(status());
     const wrapper = await mountView();
