@@ -53,6 +53,8 @@ import {
   cmdStats,
   cmdDecisions,
   cmdApi,
+  cmdIntegration,
+  cmdAttention,
 } from "../commands/control-api.js";
 import { cmdWatch } from "../commands/watch.js";
 import { cmdDriver } from "../commands/driver.js";
@@ -295,6 +297,11 @@ function main(): void {
         if (code !== 0) process.exitCode = code;
       });
       break;
+    case "integration":
+      void cmdIntegration(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
     case "verify":
       void cmdVerify(rest).then((code) => {
         if (code !== 0) process.exitCode = code;
@@ -356,8 +363,12 @@ function main(): void {
       });
       break;
     case "decisions":
-    case "attention":
       void cmdDecisions(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "attention":
+      void cmdAttention(rest).then((code) => {
         if (code !== 0) process.exitCode = code;
       });
       break;
