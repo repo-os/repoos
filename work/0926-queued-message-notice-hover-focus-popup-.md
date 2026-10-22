@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-22T17:06:01Z"
-review_passes: 1
 id: "0926"
 title: "Queued-message notice: hover/focus popup showing the queued message text"
 type: feature
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -13,6 +11,9 @@ branch: feat/queued-message-notice-hover-focus-popup-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T06:59:28Z"
+updated_at: "2026-10-22T17:06:01Z"
+review_rounds: 1
+review_passes: 1
 last_check_failure: "repoos check at 2026-10-22T16:45:14.389Z: repoos check failed: remote validation unavailable: host thinkpad skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 ---
 ## Problem
@@ -72,4 +73,4 @@ Follow the AGENTS.md conventions for tooltips/popovers and body-teleported layer
 - 2026-10-22T17:04:53Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-10-22T17:04:54Z · status active→review
 - 2026-10-22T17:06:01Z · note: review pass 1: needs some work
-
+- 2026-10-22T17:06:01Z · status review→active
