@@ -44,3 +44,4 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 - 2026-10-22T23:05:18Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
 - 2026-10-22T23:42:10Z · status ready→review
 - 2026-10-22T23:42:10Z · note: handoff requested (cli)
+- 2026-10-22T23:42:10Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
