@@ -2,7 +2,7 @@
 id: "0924"
 title: "Checks page: show % complete for a running check (steps and test files)"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -94,3 +94,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T15:15:04Z · body
 - 2026-10-22T15:19:33Z · body
 - 2026-10-22T15:21:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T15:21:08Z · status active→review
