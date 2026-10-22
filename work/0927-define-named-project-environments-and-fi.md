@@ -11,8 +11,10 @@ story: Secrets and project environments
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-22T08:05:30Z"
-updated_at: "2026-10-22T14:32:10Z"
+updated_at: "2026-10-22T14:32:17Z"
 ---
 ## Problem
 RepoOS has legacy root-.env loading but no explicit model for multiple project secret environments. Without a shared contract and safe storage primitives, management APIs and process bindings could mix project values with RepoOS provider/auth settings or silently change legacy behavior.
@@ -35,3 +37,4 @@ Work in the existing config/environment loading and file utility layers under sr
 
 - 2026-10-22T08:05:30Z · created · njachowski@gmail.com
 - 2026-10-22T14:32:10Z · status inbox→ready
+- 2026-10-22T14:32:17Z · cli_override, model_override
