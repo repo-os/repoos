@@ -10,7 +10,7 @@ assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T01:41:09Z"
-updated_at: "2026-10-22T01:41:30Z"
+updated_at: "2026-10-22T01:41:37Z"
 ---
 ## Problem
 #0904 produced ADR 0009 (docs/adr/0009-remote-engineer-sessions.md, status: proposed). It decides that engineer sessions run in a real git worktree on a runner, synchronised with git bundles in both directions, with the local worktree staying canonical. The ADR says no implementation starts before a human accepts it.
