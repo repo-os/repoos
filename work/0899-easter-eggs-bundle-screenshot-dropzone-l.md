@@ -1,16 +1,12 @@
 ---
-updated_at: "2026-10-21T19:39:35Z"
-review_passes: 5
 id: "0899"
 title: "Easter eggs bundle: screenshot dropzone layout, CLI screenshot captions"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — clean mergeability and RepoOS landability remain unconfirmed
+status: done
 hold: true
 priority: p3
 area: [web, core]
+merged_commit: 8428c8869caf76c8ca5d503482a810e4e5c41b44
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-screenshot-dropzone-l
@@ -19,6 +15,10 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
+updated_at: "2026-10-22T04:26:35Z"
+last_close_out_gate_ms: 148327
+last_close_out_gate_at: "2026-10-22T01:33:58.206Z"
+review_passes: 5
 review_rounds: 2
 ---
 ## Items
@@ -226,4 +226,11 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:39:15Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-10-21T19:39:35Z · note: review pass 5: needs some work
 - 2026-10-21T19:39:35Z · needs_input
-
+- 2026-10-21T20:34:55Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-22T01:31:14Z · needs_input (review-rounds-exhausted) dismissed by hello@repoos.org
+- 2026-10-22T01:33:58Z · close-out gate completed in 148s
+- 2026-10-22T01:34:18Z · status done→done, release:success
+- 2026-10-22T01:39:29Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-22T01:48:05Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-22T02:15:37Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-22T04:26:35Z · message_overdue: still queued after 60m without being delivered

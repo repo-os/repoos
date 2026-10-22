@@ -13,7 +13,10 @@ import {
   reviewPredatesLatestHandoff,
   type LandableResult,
 } from "../core/landable.js";
-import { reviewReportHasBlockingBugs } from "../core/review-report-sections.js";
+import {
+  reviewReportHasBlockingBugs,
+  reviewReportIsEnvironmentOnly,
+} from "../core/review-report-sections.js";
 import { parseReviewVerdict } from "../core/review-verdict.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { ReviewReport } from "./review.js";
@@ -49,6 +52,7 @@ export async function gatherLandable(
       state: review?.state ?? null,
       verdict: review ? parseReviewVerdict(review.markdown) : null,
       blockingBugs: review ? reviewReportHasBlockingBugs(review.markdown) : false,
+      environmentOnly: review ? reviewReportIsEnvironmentOnly(review.markdown) : false,
       current: review ? !reviewPredatesLatestHandoff(task.body, review.at) : true,
     },
     worktreeDirty,

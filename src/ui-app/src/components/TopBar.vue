@@ -7,6 +7,7 @@ import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
 import SearchBar from "./SearchBar.vue";
 import NoticeBell from "./NoticeBell.vue";
+import ReminderCards from "./ReminderCards.vue";
 import { readRepoColor, writeRepoColor } from "../repo-color";
 
 const repo = useRepoStore();
@@ -351,6 +352,7 @@ watch(repoName, () => {
       <RotateCcw v-else class="size-[13px]" />
       <span>{{ restarting ? "Restarting…" : "New version available" }}</span>
     </button>
+    <ReminderCards />
     <NoticeBell />
     <button
       class="theme-toggle"

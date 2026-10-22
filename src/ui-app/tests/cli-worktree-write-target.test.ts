@@ -63,6 +63,34 @@ async function withCwd<T>(dir: string, fn: () => Promise<T> | T): Promise<T> {
 }
 
 describe("board-write commands resolve to the main checkout, not cwd (#0202)", () => {
+  it("does not flag a complete bundle after a --section edit", async () => {
+    const { root, taskPath, clean } = makeRepoWithTask();
+    const substantive =
+      "Substantive detail describing the issue and its intended resolution. ".repeat(3);
+    const item = (id: string) =>
+      `## ${id} · Fix ${id}\n\n### Problem\n\n${substantive}\n\n### Desired UX\n\n${substantive}\n\n### Acceptance criteria\n\n- [ ] A focused regression test covers the behavior.\n\n### Notes for AI\n\n${substantive}`;
+    try {
+      writeFileSync(
+        taskPath,
+        `---\nid: "0001"\ntitle: Easter eggs bundle: test\ntype: feature\nstatus: inbox\npriority: p2\narea: core\nassigned_to: ai\nbranch: feat/test\n---\n## Items\n\n- [ ] E1\n- [ ] E2\n\n${item("E1")}\n\n${item("E2")}\n`,
+      );
+      await withCwd(root, () => {
+        cmdUpdate([
+          "0001",
+          "--section",
+          "E1 · Fix E1",
+          "--section-body",
+          `### Problem\n\n${substantive}\n\n### Desired UX\n\n${substantive}\n\n### Acceptance criteria\n\n- [ ] A focused regression test covers the behavior.\n\n### Notes for AI\n\n${substantive}`,
+        ]);
+      });
+      const content = readFileSync(taskPath, "utf8");
+      expect(content).not.toMatch(/^needs_input: true$/m);
+      expect(content).not.toMatch(/^needs_input_reason: underspecified$/m);
+    } finally {
+      clean();
+    }
+  });
+
   it("cmdMv run from inside a task worktree updates the MAIN checkout's task file", async () => {
     const { root, taskPath, clean } = makeRepoWithTask();
     try {

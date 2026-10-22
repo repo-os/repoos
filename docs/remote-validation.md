@@ -169,6 +169,82 @@ and installs them through the same shot and verification stores used locally.
 The worker runs against the bundled task commit and never receives the
 control-plane process environment or dotenv contents.
 
+## Engineer sessions on runners (#0904)
+
+**Status: design only.** ADR
+[0009](adr/0009-remote-engineer-sessions.md) decides the execution model; no
+engineer session runs on a runner until that ADR is accepted and its follow-up
+tasks land. The scope covers the *engineer* process (and its follow-up turns),
+not just the gate around it. The human setup and one real end-to-end run per
+host stay in #0907.
+
+In short:
+
+- The engineer runs in a real linked git worktree on the chosen host, created
+  from the runner's per-repo bare mirror (the same mirror incremental uploads
+  already maintain, #0717). The laptop does **not** mount the worktree.
+- The runner writes commits; after each turn and before handoff, a bundle of
+  the branch tip is fetched back into the local task branch. The local worktree
+  stays canonical for review, the lock sha and close-out. A dirty remote
+  worktree becomes a labeled WIP checkpoint, never a discarded one.
+- A runner-side supervisor owns the process lifetime, writes an event log, a
+  heartbeat and an exit marker. The SSH stream is only a view: a dropped
+  connection is `connection-lost` (reconnect from the offset), never a crashed
+  agent, and adding a second engineer for the same task is forbidden.
+- Placement reuses the #0901 health probe. A pressured/unreachable host is
+  skipped; `[remoteEngineers] placement`, `maxPerHost` and
+  `heartbeatTimeoutSeconds` have Settings controls, and local remains the
+  default and the fallback.
+- Reload durability (#0288) adopts a live remote entry from the durable
+  registry; phantom healing (#0863) only clears an entry when the supervisor is
+  provably gone on a reachable host. An unreachable host is never a phantom
+  restart.
+
+The failure table (unreachable at start, mid-run disconnect, reboot, dirty
+worktree, diverged local tree) and the alternatives that were rejected live in
+the ADR.
+
+### Engineer sessions setup checklist (design; for #0907)
+
+Run this on each pool host (`bee`, `thinkpad`, `mini`) **as the user RepoOS
+SSHes in as**. Nothing here is written to `repoos.toml`, `work/*.md`, a task
+transcript, chat or a bundle; keys stay on the runner.
+
+1. **Install the CLIs the board uses.** Install `opencode`, `codex`, `cursor`
+   (its CLI), `copilot` — whichever the board's roles may select — for that
+   user, on `PATH` for a non-login SSH command. Verify with
+   `ssh <host> 'command -v opencode codex cursor copilot'`.
+2. **Log in once, per CLI, as the runner user.** Run each CLI's own login flow
+   interactively on the host (for example `opencode auth login`, `codex login`,
+   `claude login`, the Cursor CLI's login). This writes the CLI's own config
+   directory under the runner user's `$HOME` (for example `~/.local/share/opencode`,
+   `~/.codex`, `~/.claude`, `~/.cursor`). Do not copy those directories into
+   the repo or the control plane.
+3. **API-key CLIs only:** put the key in a runner-owned
+   `~/.config/repoos/engineer.env` with `chmod 600` and a `chmod 700`
+   directory. The supervisor sources that file; RepoOS never uploads it. Do not
+   put the key in `repoos.toml`, `.env` on the laptop, or a task.
+4. **Set permissions.** Credential directories `chmod 700`; env file `chmod
+   600`. A Docker host bind-mounts them read-only into the engineer container,
+   so the container can read but not modify them.
+5. **Prove non-interactive use.** From the laptop, run a one-line prompt through
+   each CLI on the host (for example
+   `ssh <host> 'cd /tmp && opencode run "say ok"'`). A CLI that needs a TTY,
+   a browser callback or an OS keychain will fail here; fix it on the runner
+   before starting a task.
+6. **Declare which CLIs each host can run.** Add a label per installed CLI to
+   that host's `[[remoteValidation.tailscaleHosts]]` row, e.g.
+   `labels = ["engineer-opencode", "engineer-codex"]`. Placement only sends a
+   task to a host whose labels cover its resolved CLI, so a missing login is a
+   routing skip with a visible reason instead of a crashed turn.
+7. **Optional isolation:** use a dedicated runner user for engineer sessions so
+   a task's shell cannot read the operator's personal credentials beyond the
+   CLI config directories that are deliberately mounted.
+8. **One real run per host (#0907).** Start a small task on that host, confirm
+   the transcript streamed, the commits came back, and handoff/close-out
+   passed. Record its before/during laptop memory and Playwright counts in
+   #0907.
+
 ## Hook points
 
 The pre-review, close-out and release gates share `runRemotePreReviewGate` (`src/server/pre-review-remote-gate.ts`); the legacy single-shot path does not:

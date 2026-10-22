@@ -2,6 +2,17 @@
 
 Written 2026-09-13, consolidating incidents from 2026-08-15 → 2026-09-03.
 
+## Reviewer sandbox cannot run landing checks (#0910)
+
+The review prompt includes the server-computed `repoos landable` checklist for
+the reviewed commit. Reviewers must rely on those facts rather than executing
+`repoos landable` or `git merge-tree --write-tree` from their sandbox. If the
+sandbox cannot reach the RepoOS server, create a temporary git file, or run a
+tool, record that under `Could not verify (environment)`. Environment-only
+reports with no code findings do not change the verdict and do not consume
+review rounds. If the server checklist itself reports a failure, that is a real
+landing gate and must be handled from the named check.
+
 `repoos check` failing on a task whose diff couldn't plausibly have caused it is
 one of the most common time sinks in this repo. This is the triage order, and
 the incidents that taught it.
