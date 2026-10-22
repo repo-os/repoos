@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 512063
-last_close_out_gate_at: "2026-10-22T17:35:28.594Z"
 id: "0926"
 title: "Queued-message notice: hover/focus popup showing the queued message text"
 type: feature
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: b1f74777b884ea07abb1d9b21cbd30467afc0f75
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/queued-message-notice-hover-focus-popup-
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T06:59:28Z"
 updated_at: "2026-10-22T17:35:28Z"
+last_close_out_gate_ms: 512063
+last_close_out_gate_at: "2026-10-22T17:35:28.594Z"
 review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-10-22T16:45:14.389Z: repoos check failed: remote validation unavailable: host thinkpad skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
