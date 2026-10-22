@@ -13,8 +13,6 @@ model_override: composer-2.5
 created_at: "2026-10-22T06:59:28Z"
 updated_at: "2026-10-22T17:04:54Z"
 last_check_failure: "repoos check at 2026-10-22T16:45:14.389Z: repoos check failed: remote validation unavailable: host thinkpad skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/chat-queued-send.test.ts > chat queued state > shows the shared queued wording while a message waits, tests/chat-queued-send.test.ts > chat queued state > lists two queued messages with source and time in the popover on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 4e1f93fc3441ed7c90bd28000251253e4eb4ce6f
 ---
 ## Problem
 The chat shows 'Queued — will be read when the current turn ends.' (src/ui-app/src/components/ChatQueuedNotice.vue) with no way to see WHAT is queued. Automatic board-change notes and CTO nudges queue too, so the viewer cannot tell a requirements update from a nudge. Example 2026-10-22: #0918 showed the notice for 75 min with no indication it was a harmless notes update.
@@ -72,3 +70,4 @@ Follow the AGENTS.md conventions for tooltips/popovers and body-teleported layer
 - 2026-10-22T16:47:09Z · body
 - 2026-10-22T17:04:53Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-10-22T17:04:54Z · status active→review
+
