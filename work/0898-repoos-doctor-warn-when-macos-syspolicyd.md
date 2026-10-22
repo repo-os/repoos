@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 415604
-last_close_out_gate_at: "2026-10-22T14:51:50.419Z"
 id: "0898"
 title: "repoos doctor: warn when macOS syspolicyd/trustd slow spawn-heavy work, and name the git cause"
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, docs]
+merged_commit: "0169768352dc69ed15bc252fe74070c18f1b7e4f"
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-doctor-warn-when-macos-syspolicyd
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:26Z"
 updated_at: "2026-10-22T14:51:50Z"
+last_close_out_gate_ms: 415604
+last_close_out_gate_at: "2026-10-22T14:51:50.419Z"
 review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 1

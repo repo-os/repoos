@@ -156,3 +156,5 @@ difference. Fix: `preferAppleGit()` in `src/core/runtime.ts` (called from
 `log stream --predicate 'process == "syspolicyd"'` while a test runs; a flood of
 `SecTrustEvaluate`/`SecKeyVerifySignature` lines is the signature. The
 remaining +5 s `syspolicyd` per run is still unexplained (bun/node suspected).
+Do not benchmark with `git --version`: it is cheap and does not reproduce the
+signature-validation cost. Measure real git commands during the workload.
