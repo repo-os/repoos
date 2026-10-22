@@ -2,16 +2,16 @@
 id: "0931"
 title: Add deployment environment bindings and production safeguards
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [server, web]
 story: Secrets and project environments
 depends_on: ["0929", "0930"]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T08:07:01Z"
-updated_at: "2026-10-22T08:07:01Z"
+updated_at: "2026-10-22T22:11:56Z"
 ---
 ## Problem
 Deployments do not yet show or bind the project environment they consume. A local environment selection must not imply that its values were uploaded to a provider, and production must not be propagated implicitly when a deployment destination changes.
@@ -33,3 +33,4 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 ## Activity
 
 - 2026-10-22T08:07:01Z · created · njachowski@gmail.com
+- 2026-10-22T22:11:56Z · status inbox→ready
