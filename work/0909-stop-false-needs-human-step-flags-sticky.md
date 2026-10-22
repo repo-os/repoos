@@ -2,7 +2,7 @@
 id: "0909"
 title: "Stop false 'needs human step' flags: sticky overrides, model check before keywords, tagged criteria with auto-split"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/stop-false-needs-human-step-flags-sticky
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T19:41:23Z"
-updated_at: "2026-10-22T07:12:25Z"
+updated_at: "2026-10-22T07:12:26Z"
 review_rounds: 2
 review_passes: 4
 last_check_failure: "repoos check at 2026-10-22T02:27:19.227Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Needs-human-step detail shows criterion quote (target \"default\"): highlight .agent-waiting-sub matched nothing on /work?task=0909&tab=overview (http://127.0.0.1:58600/work?shotState=card:humanStep)"
@@ -145,4 +145,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T07:08:53Z · body
 - 2026-10-22T07:09:32Z · note: handoff requested (ui-review)
 - 2026-10-22T07:12:25Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
-- 2026-10-22T07:12:25Z · engineer stopped by request
+- 2026-10-22T07:12:26Z · status active→review
