@@ -38,11 +38,11 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 ```json
 [
 {
-  "label": "Production environment binding",
-  "target": "default",
-  "route": "/deployments",
-  "highlight": ".dep-env-binding",
-  "state": "deployments:environmentBinding"
+"label": "Production environment binding",
+"target": "default",
+"route": "/deployments",
+"highlight": ".dep-env-binding",
+"state": "deployments:environmentBinding"
 }
 ]
 ```
