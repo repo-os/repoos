@@ -679,7 +679,10 @@ async function runHandoffFinalization(
         // #0909 review round 2: a skipped gate (no preview, Playwright missing,
         // watchdog-only `review` transition) must not reach review while the
         // mechanical console check still expects `.repoos/ui-verification/*.json`.
-        if (taskNeedsBrowserUiVerification(config, uiTask) && !readUiHandoffGateEvidence(config, task.id)) {
+        if (
+          taskNeedsBrowserUiVerification(config, uiTask) &&
+          !readUiHandoffGateEvidence(config, task.id)
+        ) {
           const detail = ui.skipped
             ? `browser verification did not run: ${ui.detail}`
             : "browser verification did not store evidence — console errors were not checked";
