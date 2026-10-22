@@ -142,8 +142,9 @@ describe("platform pressure parsers", () => {
       pswpout: 20,
     });
     expect(parseLinuxPsiMemoryAvg10("some avg10=12.50 avg60=1.00 total=100\n")).toBe(12.5);
-    expect(parseDarwinMemoryPressureLevel("2\n")).toBe("critical");
-    expect(parseDarwinMemoryPressureLevel("1\n")).toBe("warn");
+    expect(parseDarwinMemoryPressureLevel("4\n")).toBe("critical");
+    expect(parseDarwinMemoryPressureLevel("2\n")).toBe("warn");
+    expect(parseDarwinMemoryPressureLevel("1\n")).toBe("normal");
   });
 
   it("returns null when the probe text is missing", () => {
@@ -175,6 +176,39 @@ describe("activity rate window", () => {
     expect(rates.windowSec).toBe(10);
     expect(rates.pageoutBytesPerSec).toBeCloseTo((100 * 4096) / 10);
     expect(rates.swapIoBytesPerSec).toBeCloseTo((1024 * 4096) / 10);
+  });
+
+  it("uses the Linux page size for pswp counters", () => {
+    const tracker = new RollingMemoryActivityTracker(10_000);
+    const readings = readPlatformMemoryActivity(10, {
+      platform: "linux",
+      tracker,
+      now: (() => {
+        let n = 0;
+        return () => (n += 10_000);
+      })(),
+      runCommand: (cmd) => (cmd === "getconf" ? "4096\n" : null),
+      readFile: (path) =>
+        path === "/proc/vmstat"
+          ? "pswpin 100\npswpout 100\n"
+          : path === "/proc/pressure/memory"
+            ? "some avg10=0.00 avg60=0.00 avg300=0.00 total=0\n"
+            : "",
+    });
+    expect(readings.swapIoBytesPerSec).toBeNull();
+    const next = readPlatformMemoryActivity(10, {
+      platform: "linux",
+      tracker,
+      now: () => 20_000,
+      runCommand: (cmd) => (cmd === "getconf" ? "4096\n" : null),
+      readFile: (path) =>
+        path === "/proc/vmstat"
+          ? "pswpin 110\npswpout 110\n"
+          : path === "/proc/pressure/memory"
+            ? "some avg10=0.00 avg60=0.00 avg300=0.00 total=0\n"
+            : "",
+    });
+    expect(next.swapIoBytesPerSec).toBe(8192);
   });
 
   it("waits until the rolling window is half full before reporting rates", () => {
@@ -234,6 +268,16 @@ describe("evaluatePressure", () => {
     );
     expect(snapshot.level).toBe("critical");
     expect(snapshot.reason).toMatch(/available memory is low/i);
+  });
+
+  it("holds on macOS memory_pressure warn and critical", () => {
+    for (const level of ["warn", "critical"] as const) {
+      const snapshot = evaluatePressure(
+        readings({ memoryPressureLevel: level }),
+        pressureThresholds(config()),
+      );
+      expect(snapshot.reason).toMatch(/memory_pressure reports/);
+    }
   });
 
   it("holds on thrashing activity then clears when rates recover", () => {
@@ -350,6 +394,26 @@ describe("waitForPressureRelief", () => {
     });
     expect(waiting).toHaveLength(1);
     expect(waiting[0]).toMatch(/swap in\/out/i);
+  });
+
+  it("includes informational occupancy warnings in the hold message", async () => {
+    const waiting: string[] = [];
+    const fake = probe(
+      readings({
+        swapUsedBytes: 3 * GB,
+        swapTotalBytes: 4 * GB,
+        swapIoBytesPerSec: 5 * 1024 * 1024,
+        activityWindowSec: 30,
+      }),
+    );
+    await waitForPressureRelief(config(), {
+      probe: fake,
+      pollMs: 1,
+      deadlineAt: Date.now(),
+      onWaiting: (message) => waiting.push(message),
+    }).catch(() => undefined);
+    expect(waiting[0]).toMatch(/swap in\/out/i);
+    expect(waiting[0]).toMatch(/swap use is high/i);
   });
 
   it("times out with an actionable message while pressure stays critical", async () => {
