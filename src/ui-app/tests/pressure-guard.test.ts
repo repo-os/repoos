@@ -328,9 +328,7 @@ describe("evaluatePressure", () => {
 describe("waitForPressureRelief", () => {
   it("returns immediately when the guard is disabled", async () => {
     const waiting: string[] = [];
-    const fake = probe(
-      readings({ swapIoBytesPerSec: 5 * 1024 * 1024, activityWindowSec: 30 }),
-    );
+    const fake = probe(readings({ swapIoBytesPerSec: 5 * 1024 * 1024, activityWindowSec: 30 }));
     await waitForPressureRelief(config({ enabled: false }), {
       probe: fake,
       pollMs: 1,

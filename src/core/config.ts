@@ -2082,7 +2082,12 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       cfg.pressureGuard = { ...cfg.pressureGuard, maxCompressorRatio: pgCompressor };
     }
     const pgWindow = parsed["pressureGuard.activityWindowSec"];
-    if (typeof pgWindow === "number" && Number.isFinite(pgWindow) && pgWindow >= 5 && pgWindow <= 300) {
+    if (
+      typeof pgWindow === "number" &&
+      Number.isFinite(pgWindow) &&
+      pgWindow >= 5 &&
+      pgWindow <= 300
+    ) {
       cfg.pressureGuard = { ...cfg.pressureGuard, activityWindowSec: Math.floor(pgWindow) };
     }
     const pgSwapIo = parsed["pressureGuard.maxSwapIoBytesPerSec"];
@@ -2094,7 +2099,12 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       cfg.pressureGuard = { ...cfg.pressureGuard, maxPageoutBytesPerSec: pgPageout };
     }
     const pgFreePct = parsed["pressureGuard.minMemoryFreePercent"];
-    if (typeof pgFreePct === "number" && Number.isFinite(pgFreePct) && pgFreePct >= 0 && pgFreePct <= 100) {
+    if (
+      typeof pgFreePct === "number" &&
+      Number.isFinite(pgFreePct) &&
+      pgFreePct >= 0 &&
+      pgFreePct <= 100
+    ) {
       cfg.pressureGuard = { ...cfg.pressureGuard, minMemoryFreePercent: pgFreePct };
     }
     const pgPsi = parsed["pressureGuard.maxPsiMemoryAvg10"];
