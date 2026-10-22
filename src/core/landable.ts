@@ -75,6 +75,12 @@ export interface LandableFacts {
     verdict: ReviewVerdict | null;
     blockingBugs: boolean;
     /**
+     * True when the report's only non-clean reason is a
+     * `## Could not verify (environment)` note (#0910). Environment limitations
+     * never block landing when there are no code findings.
+     */
+    environmentOnly?: boolean;
+    /**
      * False when the report predates the latest `…→review` handoff (it reviewed
      * an older commit). Defaults to current when omitted.
      */
@@ -214,6 +220,15 @@ export function evaluateReviewVerdictCheck(review: LandableFacts["review"]): Lan
       status: "fail",
       detail: "the review still lists blocking bugs",
       nextStep: "Fix the findings and request a fresh review: repoos review again <id>",
+    };
+  }
+  if (review.environmentOnly) {
+    return {
+      id: "review-verdict",
+      label,
+      status: "pass",
+      detail:
+        "no code findings; sandbox limitations are listed under Could not verify (environment)",
     };
   }
   if (review.verdict !== "good to go") {
