@@ -12,7 +12,7 @@ branch: feat/dead-engineer-left-in-the-agent-registry
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:22:48Z"
-updated_at: "2026-10-22T11:11:47Z"
+updated_at: "2026-10-22T11:12:35Z"
 last_close_out_gate_ms: 255482
 last_close_out_gate_at: "2026-10-22T11:11:47.348Z"
 review_passes: 1
@@ -52,4 +52,4 @@ Related: #0921 (dead local-check slot holders), #0925 (cancel frees resources), 
 - 2026-10-22T11:03:46Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-22T11:05:13Z · note: review pass 1: good to go
 - 2026-10-22T11:11:47Z · close-out gate completed in 255s
-
+- 2026-10-22T11:12:35Z · status done→done, release:success
