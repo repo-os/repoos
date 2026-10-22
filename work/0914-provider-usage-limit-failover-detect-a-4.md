@@ -12,7 +12,7 @@ branch: feat/provider-usage-limit-failover-detect-a-4
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T02:17:25Z"
-updated_at: "2026-10-22T07:46:50Z"
+updated_at: "2026-10-22T07:47:16Z"
 last_close_out_gate_ms: 488430
 last_close_out_gate_at: "2026-10-22T07:46:50.765Z"
 review_passes: 1
@@ -111,4 +111,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T07:32:11Z · status active→review
 - 2026-10-22T07:34:27Z · note: review pass 1: good to go
 - 2026-10-22T07:46:50Z · close-out gate completed in 488s
-
+- 2026-10-22T07:47:16Z · status done→done, release:success
