@@ -169,3 +169,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T21:44:32Z · body
 - 2026-10-22T21:50:02Z · body
 - 2026-10-22T21:59:40Z · status active→review
+- 2026-10-22T21:59:40Z · note: shots: skipped — 12 shots already captured — an engineer-made capture pre-empts the automatic one
