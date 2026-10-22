@@ -2,7 +2,7 @@
 id: "0926"
 title: "Queued-message notice: hover/focus popup showing the queued message text"
 type: feature
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
