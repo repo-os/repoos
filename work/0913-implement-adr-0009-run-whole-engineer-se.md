@@ -6,11 +6,11 @@ status: inbox
 priority: p1
 area: [server, core]
 depends_on: ["0912"]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T01:41:44Z"
-updated_at: "2026-10-22T01:41:44Z"
+updated_at: "2026-10-22T01:41:56Z"
 ---
 ## Problem
 ADR 0009 (docs/adr/0009-remote-engineer-sessions.md, landed with #0904) decides the design for running engineer sessions on remote runners with bundle-in / bundle-out sync, but nothing is implemented. The laptop is still the throughput limit.
