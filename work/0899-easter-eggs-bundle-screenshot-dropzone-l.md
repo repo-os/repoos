@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 148327
-last_close_out_gate_at: "2026-10-22T01:33:58.206Z"
 id: "0899"
 title: "Easter eggs bundle: screenshot dropzone layout, CLI screenshot captions"
 type: bug
-status: review
+status: done
 hold: true
 priority: p3
 area: [web, core]
+merged_commit: 8428c8869caf76c8ca5d503482a810e4e5c41b44
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-screenshot-dropzone-l
@@ -17,6 +16,8 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
 updated_at: "2026-10-22T01:33:58Z"
+last_close_out_gate_ms: 148327
+last_close_out_gate_at: "2026-10-22T01:33:58.206Z"
 review_passes: 5
 review_rounds: 2
 ---

@@ -104,13 +104,14 @@ export function attachScreenshots(
   config: RepoOSConfig,
   task: Task,
   paths: string[],
-  caption?: string,
+  captions?: string[],
 ): { metas: ScreenshotMeta[] } | { error: string } {
   const read = readScreenshotFiles(paths);
   if ("error" in read) return { error: read.error };
-  const label = normalizeCaption(caption);
   const metas: ScreenshotMeta[] = [];
-  for (const input of read.inputs) {
+  for (let i = 0; i < read.inputs.length; i++) {
+    const input = read.inputs[i];
+    const label = normalizeCaption(captions?.[i]);
     const saved = saveScreenshot(config, task, input);
     if ("error" in saved) return { error: saved.error };
     metas.push(label ? { ...saved, name: label } : saved);
