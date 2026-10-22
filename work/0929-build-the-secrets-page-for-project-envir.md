@@ -3,6 +3,9 @@ id: "0929"
 title: Build the Secrets page for project environments
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — Secrets nav is gated off greenfield repos while the page empty-state requires sidebar discoverability; refresh review l…
 priority: p1
 area: [web, ui]
 story: Secrets and project environments
@@ -152,3 +155,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T21:13:30Z · status active→review
 - 2026-10-22T21:13:31Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-22T21:14:35Z · note: review pass 3: needs some work
+- 2026-10-22T21:14:35Z · needs_input
