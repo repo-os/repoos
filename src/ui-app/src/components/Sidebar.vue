@@ -11,6 +11,12 @@ import SidebarGitState from "./SidebarGitState.vue";
 
 const repo = useRepoStore();
 const config = useConfigStore();
+// Secrets must remain discoverable before the first environment exists, so
+// the page can provide its own empty state and creation path.
+const nav = computed(() => navFromConfig(config.data));
+function secretsChanged(): void {
+  void config.load();
+}
 const { connected, eventCount, total, health } = storeToRefs(repo);
 
 const canaryDigit = computed(() => health.value?.canaryCounter ?? 0);
@@ -41,13 +47,14 @@ onMounted(() => {
   tick = setInterval(() => {
     now.value = Date.now();
   }, 1000);
+  window.addEventListener("repoos:project-environments-changed", secretsChanged);
 });
 onBeforeUnmount(() => {
   if (tick) clearInterval(tick);
+  window.removeEventListener("repoos:project-environments-changed", secretsChanged);
 });
 
 const version = computed(() => (health.value?.version ? `v${health.value.version}` : ""));
-const nav = computed(() => navFromConfig(config.data));
 // Prefer the running server's OWN build timestamp (`serverBuildAt`), falling
 // back to `buildAt` for servers too old to report it — the same build the
 // hash/version beside it names, so the widget never mixes two different builds

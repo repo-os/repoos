@@ -53,6 +53,21 @@ describe("shot preview fixtures (#0743)", () => {
     expect(parseShotPlan(body).errors).toEqual([]);
   });
 
+  it("accepts the registered fake Secrets fixture for the Secrets page (#0929)", () => {
+    const url = shotCapturePageUrl("http://127.0.0.1:8000", {
+      route: "/secrets",
+      state: "secrets:populated",
+    });
+    expect(url).toBe("http://127.0.0.1:8000/secrets?shotState=secrets%3Apopulated");
+    const body = `## Shots\n\`\`\`json\n[{"route":"/secrets","state":"secrets:populated"}]\n\`\`\``;
+    expect(parseShotPlan(body).errors).toEqual([]);
+    expect(
+      parseShotPlan(
+        `## Shots\n\`\`\`json\n[{"route":"/secrets","state":"secrets:removeDialog"}]\n\`\`\``,
+      ).errors,
+    ).toEqual([]);
+  });
+
   it("accepts the closeOut:stalled fixture for the stalled card (#0778)", () => {
     const url = shotCapturePageUrl("http://127.0.0.1:8000", {
       route: "/",

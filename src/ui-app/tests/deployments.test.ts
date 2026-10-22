@@ -645,6 +645,7 @@ describe("navFor deployments gating", () => {
       "checks",
       "releases",
       "deployments",
+      "secrets",
       "agents",
       "repo",
       "settings",

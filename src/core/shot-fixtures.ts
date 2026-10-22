@@ -92,6 +92,10 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0801 — a started dev target beside a stopped one, so a capture can show
   // the running highlight (the same cyan glow an active remote runner uses).
   "dev:running",
+  // #0929 — deterministic, fake-only project environment rows for the
+  // Secrets page and its add/remove dialogs.
+  "secrets:populated",
+  "secrets:removeDialog",
   // #0805 — clears the configured editor so the fallback "Set editor in
   // Settings → General" hint renders instead of the "Open in editor" button.
   "editor:unconfigured",
