@@ -217,12 +217,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    v-if="active"
-    class="chat-queued-wrap"
-    @mouseenter="onEnter"
-    @mouseleave="onLeave"
-  >
+  <div v-if="active" class="chat-queued-wrap" @mouseenter="onEnter" @mouseleave="onLeave">
     <button
       ref="triggerEl"
       type="button"
