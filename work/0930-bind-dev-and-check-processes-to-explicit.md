@@ -53,3 +53,4 @@ Depends on #0927 for the storage/environment contract and #0928 for authorized m
 - 2026-10-22T17:48:17Z · message_delivered: 1 message(s)
 - 2026-10-22T17:48:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T17:48:34Z · status active→review
+- 2026-10-22T17:48:34Z · note: handoff requested (cli)
