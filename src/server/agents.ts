@@ -38,6 +38,10 @@ import type {
   Task,
 } from "../core/types.js";
 import {
+  classifyQueuedMessageSource,
+  type QueuedMessageDetail,
+} from "../core/queued-message-ui.js";
+import {
   AGENT_CLIS,
   agentsForConfig,
   defaultMaxConcurrentAgents,
@@ -6855,7 +6859,13 @@ export class AgentRunner {
    * that has not been delivered yet (#0821). `overdue` marks one that has sat
    * past the timeout.
    */
-  queuedMessageSummary(): { id: string; count: number; queuedAt: string; overdue: boolean }[] {
+  queuedMessageSummary(): {
+    id: string;
+    count: number;
+    queuedAt: string;
+    overdue: boolean;
+    items: QueuedMessageDetail[];
+  }[] {
     const nowMs = Date.now();
     return Array.from(this.queuedMessages.entries())
       .filter(([, msgs]) => msgs.length > 0)
@@ -6866,6 +6876,11 @@ export class AgentRunner {
           count: msgs.length,
           queuedAt,
           overdue: nowMs - new Date(queuedAt).getTime() > this.messageTimeoutMs,
+          items: msgs.map((m) => ({
+            text: m.text,
+            queuedAt: m.queuedAt,
+            source: classifyQueuedMessageSource(m.text, m.opts),
+          })),
         };
       });
   }

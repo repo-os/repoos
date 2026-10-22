@@ -288,7 +288,7 @@ watch(
         <button type="button" :disabled="busy" @click="openDispatch('pm')">Send to PM</button>
       </div>
 
-      <ChatQueuedNotice :active="queued" />
+      <ChatQueuedNotice :active="queued" :queue-key="CHAT_ID" />
       <form class="ai-chat-compose td-compose" @submit.prevent="send">
         <textarea
           ref="draftTextarea"
