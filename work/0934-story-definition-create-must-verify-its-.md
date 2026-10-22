@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 106952
-last_close_out_gate_at: "2026-10-22T11:58:53.194Z"
 id: "0934"
 title: "Story definition create must verify its commit, retry, and surface a failure (untracked story blocked close-outs)"
 type: bug
-status: review
+status: done
 priority: p1
 area: server
+merged_commit: 7ffea0c08e8412772972e1f96295978612a8ed9a
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/story-definition-create-must-verify-its-
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:40:11Z"
 updated_at: "2026-10-22T11:58:53Z"
+last_close_out_gate_ms: 106952
+last_close_out_gate_at: "2026-10-22T11:58:53.194Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---

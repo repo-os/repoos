@@ -142,6 +142,7 @@ import {
   updateServerRegistryEngineerCount,
 } from "../core/server-registry.js";
 import { onGitMutation } from "../core/git-activity.js";
+import { sweepOrphanedBookkeeping } from "./orphan-bookkeeping.js";
 import { createRepoStatusNotifier, isSameCheckout } from "./repo-status.js";
 import { remoteJobCapabilities, summarizeRemoteFallbackDetail } from "./pre-review-remote-gate.js";
 import {
@@ -1406,6 +1407,25 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
     }
   };
+  let orphanSweepRunning = false;
+  const runOrphanSweep = async (): Promise<void> => {
+    if (!isControlPlane || orphanSweepRunning) return;
+    orphanSweepRunning = true;
+    try {
+      const paths = await sweepOrphanedBookkeeping(config.root);
+      if (paths.length) {
+        logger.system("info", `Recovered orphaned RepoOS files: ${paths.join(", ")}`);
+        emitEvent({ type: "bookkeeping.recovered", paths, at: new Date().toISOString() });
+      }
+    } catch (err) {
+      logger.system("warn", `Orphaned bookkeeping sweep failed: ${(err as Error).message}`);
+    } finally {
+      orphanSweepRunning = false;
+    }
+  };
+  void runOrphanSweep();
+  const orphanSweepTimer = setInterval(() => void runOrphanSweep(), 60_000);
+  orphanSweepTimer.unref?.();
   const bumpAttention = (): void => {
     emitEvent({ type: "attention.updated", at: new Date().toISOString() });
   };

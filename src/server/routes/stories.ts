@@ -17,6 +17,7 @@ import { agentsForConfig } from "../../core/config.js";
 import { getCurrentUser } from "./auth.js";
 import { resolveApiCreator } from "../../core/record-creator.js";
 import { commitTaskFile, commitFiles } from "../../core/git.js";
+import { commitStoryFileWithRetry } from "../orphan-bookkeeping.js";
 import { normalizeStoryName, storyKey, storyPmSessionId } from "../../core/stories.js";
 import {
   mergeStoriesForDisplay,
@@ -154,13 +155,19 @@ export const createStoryDefinition: RouteHandler = async (ctx, req, res) => {
     const status = message.includes("already exists") ? 409 : 400;
     return json(res, status, { ok: false, reason: message });
   }
-  commitTaskFile(
+  const committed = await commitStoryFileWithRetry(
     config.root,
     join(config.root, definition.path),
     `docs(stories): add "${definition.name}"`,
   );
   emitEvent({ type: "story.definitionsChanged", at: new Date().toISOString() });
-  return json(res, 201, { ok: true, definition });
+  return json(res, 201, {
+    ok: true,
+    definition,
+    ...(!committed && {
+      warning: `Story created but could not be committed (${definition.path}). RepoOS will retry automatically; if close-out is blocked, use Commit & continue.`,
+    }),
+  });
 };
 
 /**
