@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0914"
 title: "Provider usage-limit failover: detect a 429 usage-limit, pause that provider everywhere, and re-route even pinned tasks"
 type: feature
@@ -47,3 +48,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T02:59:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T02:59:32Z · message_delivered: 1 message(s)
 - 2026-10-22T02:59:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
