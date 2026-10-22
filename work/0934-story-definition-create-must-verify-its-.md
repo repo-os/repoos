@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0934"
 title: "Story definition create must verify its commit, retry, and surface a failure (untracked story blocked close-outs)"
 type: bug
@@ -37,3 +38,4 @@ Same code path pattern in PATCH /api/stories/:key (commitFiles) and the Telegram
 - 2026-10-22T11:21:12Z · status ready→active, branch
 - 2026-10-22T11:23:41Z · body
 - 2026-10-22T11:24:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
