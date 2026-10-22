@@ -4,6 +4,7 @@
  */
 import type { RepoOSConfig, Task } from "./types.js";
 import type { SlowKindNotice, SlowRunFlag } from "./check-slowness.js";
+import { detectProviderUsageLimit } from "./provider-usage-limit.js";
 
 export interface CloseOutOutcomeFeedEvent {
   taskId: string;
@@ -28,6 +29,7 @@ export type AttentionKind =
   | "taskNeedsMerge"
   | "taskAssigned"
   | "providerFailure"
+  | "providerUsageLimit"
   | "silentRun"
   | "slowRun"
   | "slowRunsRecently"
@@ -60,7 +62,7 @@ export interface AttentionFeed {
 /** Durable attention events recorded on the server (provider failures, remote fallback). */
 export interface RecordedAttentionEvent {
   id: string;
-  kind: "providerFailure" | "remoteFallback" | "ctoAction";
+  kind: "providerFailure" | "providerUsageLimit" | "remoteFallback" | "ctoAction";
   taskId: string | null;
   message: string;
   detail: string;
@@ -133,6 +135,7 @@ const SEVERITY: Record<AttentionKind, AttentionSeverity> = {
   taskNeedsInput: "warning",
   taskNeedsMerge: "warning",
   providerFailure: "error",
+  providerUsageLimit: "warning",
   silentRun: "warning",
   slowRun: "warning",
   slowRunsRecently: "warning",
@@ -385,6 +388,7 @@ export function buildAttentionFeed(input: AttentionFeedInput): AttentionFeed {
   );
   for (const f of input.recentProviderFailures) {
     if (!isProviderFailureReason(f.errorReason)) continue;
+    if (detectProviderUsageLimit(f.errorReason ?? "")) continue;
     const id = `providerFailure:${f.sessionId}`;
     if (durableProviderIds.has(id)) continue;
     const at = f.startedAt;

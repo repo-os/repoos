@@ -2685,7 +2685,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       group: "general",
       default: true,
       description:
-        "When an agent reports an explicit quota or HTTP 429 usage-limit error, pause that agent+model and let active work fail over. Resume it from Agents → Budget Controls when usage is available again.",
+        "When an agent reports an explicit quota or HTTP 429 usage-limit error, pause that agent+model and let active work fail over. Without a reset time, RepoOS runs a low-token probe every 10 minutes and resumes the model after a successful response.",
     },
     {
       key: "watchdog.engineerCrashFailoverWindowMs",

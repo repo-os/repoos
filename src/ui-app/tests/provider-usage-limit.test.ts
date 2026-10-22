@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { detectProviderUsageLimit } from "../../core/provider-usage-limit.js";
+import { DEFAULT_CONFIG } from "../../core/config.js";
+import { probeExhaustedUsageLimitPairs } from "../../server/provider-usage-limit-probe.js";
 
 describe("detectProviderUsageLimit", () => {
   it.each([
@@ -20,5 +22,46 @@ describe("detectProviderUsageLimit", () => {
 
   it("does not classify ordinary failures", () => {
     expect(detectProviderUsageLimit("connection reset by peer")).toBeNull();
+  });
+
+  it("resumes an automatically exhausted pair after a successful cheap probe", async () => {
+    const config = {
+      ...DEFAULT_CONFIG,
+      budget: {
+        allowlist: [
+          {
+            cli: "opencode",
+            models: ["go"],
+            pausedModels: [{ model: "go", pausedReason: "out of usage since 10:30" }],
+          },
+        ],
+      },
+    };
+    const resumed = await probeExhaustedUsageLimitPairs(
+      config,
+      async () => true,
+      undefined,
+      Date.parse("2026-10-22T10:35:00Z"),
+    );
+    expect(resumed).toEqual(["opencode + go"]);
+    expect(config.budget.allowlist[0]?.pausedModels).toBeUndefined();
+  });
+
+  it("keeps an exhausted pair paused when its probe fails", async () => {
+    const config = {
+      ...DEFAULT_CONFIG,
+      budget: {
+        allowlist: [
+          {
+            cli: "opencode",
+            models: ["go"],
+            pausedModels: [{ model: "go", pausedReason: "out of usage since 10:30" }],
+          },
+        ],
+      },
+    };
+    const resumed = await probeExhaustedUsageLimitPairs(config, async () => false);
+    expect(resumed).toEqual([]);
+    expect(config.budget.allowlist[0]?.pausedModels).toHaveLength(1);
   });
 });
