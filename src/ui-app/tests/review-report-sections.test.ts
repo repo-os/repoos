@@ -12,6 +12,7 @@ import {
   extractReviewReportSections,
   isEmptyReviewSection,
   reviewReportHasBlockingBugs,
+  reviewReportIsEnvironmentOnly,
 } from "../../core/review-report-sections.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import { reviewFindingsMessage } from "../../server/review.js";
@@ -115,6 +116,39 @@ describe("reviewReportHasBlockingBugs (#0894)", () => {
     expect(reviewReportHasBlockingBugs("")).toBe(false);
     expect(reviewReportHasBlockingBugs(null)).toBe(false);
     expect(reviewReportHasBlockingBugs(undefined)).toBe(false);
+  });
+});
+
+describe("environment-only review reports (#0910)", () => {
+  it("recognizes sandbox limitations without findings", () => {
+    expect(
+      reviewReportIsEnvironmentOnly(
+        [
+          "## Verdict",
+          "needs some work",
+          "",
+          "## Bugs",
+          "None found.",
+          "",
+          "## Could not verify (environment)",
+          "repoos landable could not reach server; merge-tree temp file failed.",
+        ].join("\n"),
+      ),
+    ).toBe(true);
+  });
+
+  it("does not hide a code finding behind an environment note", () => {
+    expect(
+      reviewReportIsEnvironmentOnly(
+        [
+          "## Bugs",
+          "- Broken behavior",
+          "",
+          "## Could not verify (environment)",
+          "command failed",
+        ].join("\n"),
+      ),
+    ).toBe(false);
   });
 });
 
