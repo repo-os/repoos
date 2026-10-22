@@ -1,4 +1,5 @@
 import { RepoOsApi } from "../cli/repoos-api.js";
+import { normalizeProjectEnvironmentConsumer } from "../core/project-environments.js";
 
 async function secretInput(): Promise<string> {
   if (!process.stdin.isTTY) {
@@ -36,6 +37,47 @@ async function secretInput(): Promise<string> {
 
 export async function cmdSecrets(args: string[]): Promise<number> {
   const [action, environment, key] = args;
+  if (action === "bindings") {
+    try {
+      const result = (await new RepoOsApi().requestOk(
+        "GET",
+        "/api/project-environment-bindings",
+      )) as {
+        bindings: Array<{ consumer: string; environment: string; keys: string[] }>;
+      };
+      for (const row of result.bindings ?? [])
+        console.log(`${row.consumer}\t${row.environment}\t${row.keys.join(", ")}`);
+      return 0;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : "Could not list bindings");
+      return 1;
+    }
+  }
+  if (action === "bind") {
+    const [consumer, selectedEnvironment, ...keys] = args.slice(1);
+    if (!consumer || !selectedEnvironment) {
+      console.error(
+        "Usage: repoos secrets bind <dev:TARGET|preview:TARGET|check:default> <environment> [KEY ...]",
+      );
+      return 2;
+    }
+    try {
+      const api = new RepoOsApi();
+      const normalizedConsumer = normalizeProjectEnvironmentConsumer(consumer);
+      await api.requestOk("PUT", "/api/project-environment-bindings", {
+        consumer: normalizedConsumer,
+        environment: selectedEnvironment,
+        keys,
+      });
+      console.log(
+        `Bound ${normalizedConsumer} to ${selectedEnvironment} (${keys.length} granted key${keys.length === 1 ? "" : "s"})`,
+      );
+      return 0;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : "Binding update failed");
+      return 1;
+    }
+  }
   if (!action || !environment || !["list", "add", "replace", "delete"].includes(action)) {
     console.error(
       "Usage: repoos secrets <list|add|replace|delete> <environment> [KEY] (values come from stdin or a hidden prompt)",

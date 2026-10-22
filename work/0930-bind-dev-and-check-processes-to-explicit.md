@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-22T17:59:22Z"
-review_passes: 2
 id: "0930"
 title: Bind dev and check processes to explicit environments
 type: feature
@@ -17,7 +15,7 @@ branch: feat/bind-dev-and-check-processes-to-explicit
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:43Z"
-review_rounds: 1
+updated_at: "2026-10-22T17:32:20Z"
 ---
 ## Problem
 Named environment files are useful only if each dev target, preview, and check receives the selected values safely. Implicit inheritance or mutation of the RepoOS server process could mix two targets’ values, expose production by fallback, or change current behavior for projects that have not opted in.
@@ -42,19 +40,4 @@ Depends on #0927 for the storage/environment contract and #0928 for authorized m
 - 2026-10-22T17:07:39Z · status inbox→ready
 - 2026-10-22T17:07:46Z · cli_override, model_override
 - 2026-10-22T17:07:47Z · status ready→active, branch
-- 2026-10-22T17:15:37Z · body
-- 2026-10-22T17:17:19Z · body
 - 2026-10-22T17:32:20Z · status active→review
-- 2026-10-22T17:32:21Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-22T17:37:45Z · note: review pass 1: needs some work
-- 2026-10-22T17:37:45Z · status review→active
-- 2026-10-22T17:47:15Z · message_queued at 2026-10-22T17:47:15.301Z
-- 2026-10-22T17:47:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-22T17:48:17Z · message_delivered: 1 message(s)
-- 2026-10-22T17:48:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-22T17:48:34Z · status active→review
-- 2026-10-22T17:48:34Z · note: handoff requested (cli)
-- 2026-10-22T17:57:53Z · status active→review
-- 2026-10-22T17:57:53Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-22T17:59:22Z · note: review pass 2: good to go
-
