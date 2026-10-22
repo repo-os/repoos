@@ -4888,6 +4888,12 @@ function classifyRunOutcome(summary: CheckSummary): CheckRunOutcome {
   return "fail";
 }
 
+/** True when validate()'s host-retry loop may lease another runner (#0917). */
+export function remoteValidationMayRetryOnAnotherHost(summary: CheckSummary): boolean {
+  if (summary.ok || summary.cancelled || summary.preferLocalGate) return false;
+  return summary.transient === true;
+}
+
 /**
  * Record one remote validation run in the durable check-run history (#0564).
  *
@@ -5079,6 +5085,28 @@ export class TailscaleRunner implements RemoteValidator {
       transient: true,
       infraFailure: true,
       detail: `remote validation unavailable: ${detail}`,
+    };
+  }
+
+  /**
+   * Deliberate skip of remote upload/run — fall back locally without trying
+   * other hosts (#0917).
+   */
+  private preferLocalGateFail(detail: string, ctx: RemoteEventContext = {}): CheckSummary {
+    this.logger?.system("info", detail);
+    this.record(ctx, {
+      level: "info",
+      phase: ctx.phase ?? "dispatch",
+      message: detail,
+      infra: false,
+    });
+    return {
+      ok: false,
+      stage: "check",
+      transient: true,
+      infraFailure: true,
+      preferLocalGate: true,
+      detail,
     };
   }
 
@@ -5400,9 +5428,7 @@ export class TailscaleRunner implements RemoteValidator {
         // another host anyway. Non-transient results (a real red gate,
         // configError) are the branch's fault, not infra, and never retry.
         if (
-          !summary.ok &&
-          summary.transient &&
-          !summary.cancelled &&
+          remoteValidationMayRetryOnAnotherHost(summary) &&
           retryEnabled &&
           triedHosts.size < maxAttempts
         ) {
@@ -5561,7 +5587,13 @@ export class TailscaleRunner implements RemoteValidator {
       if (preferLocal.prefer) {
         const detail = preferLocal.detail ?? "running locally";
         emit(`[${detail}]\n`);
-        return withScope(this.infraFail(detail, { taskId: opts.taskId, host: host.ip }));
+        return withScope(
+          this.preferLocalGateFail(detail, {
+            taskId: opts.taskId,
+            host: host.ip,
+            phase: "dispatch",
+          }),
+        );
       }
       const uploadLimits = opts.uploadLimits ?? bundleUploadLimitsFromConfig(rv);
       let upload: SuccessfulUpload | null = null;
