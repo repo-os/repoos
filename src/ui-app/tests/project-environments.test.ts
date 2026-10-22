@@ -1,11 +1,14 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadDotEnv } from "../../core/config";
 import {
+  buildProjectConsumerEnv,
   readProjectEnvironment,
+  writeProjectEnvironmentBinding,
   validateEnvironmentRegistry,
   writeProjectEnvironmentValue,
 } from "../../core/project-environments";
@@ -39,6 +42,64 @@ const env = {
 };
 
 describe("explicit project environment files", () => {
+  it("isolates concurrent consumer grants and never falls back for a missing selected key", async () => {
+    const root = project();
+    mkdirSync(join(root, ".repoos"));
+    writeFileSync(
+      join(root, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [
+          { id: "dev-nick", sources: [{ id: "local", path: ".env.nick" }] },
+          { id: "dev-alice", sources: [{ id: "local", path: ".env.alice" }] },
+          { id: "dev-empty", sources: [{ id: "local", path: ".env.empty" }] },
+          { id: "production", sources: [{ id: "local", path: ".env.production" }] },
+        ],
+      }),
+    );
+    writeFileSync(join(root, ".env.nick"), "DATABASE_URL=nick-db\nSHARED=nick\n");
+    writeFileSync(join(root, ".env.alice"), "DATABASE_URL=alice-db\n");
+    writeFileSync(join(root, ".env.production"), "DATABASE_URL=prod-db\n");
+    writeProjectEnvironmentBinding(root, "dev:web-nick", "dev-nick", ["DATABASE_URL", "SHARED"]);
+    writeProjectEnvironmentBinding(root, "dev:web-alice", "dev-alice", ["DATABASE_URL", "SHARED"]);
+    const base = { ...process.env, DATABASE_URL: "machine-db", SHARED: "machine-value" };
+    const [nick, alice] = await Promise.all([
+      buildProjectConsumerEnv(root, "dev:web-nick", base),
+      buildProjectConsumerEnv(root, "dev:web-alice", base),
+    ]);
+    expect(nick.DATABASE_URL).toBe("nick-db");
+    expect(alice.DATABASE_URL).toBe("alice-db");
+    expect(nick.SHARED).toBe("nick");
+    expect(alice.SHARED).toBeUndefined();
+    expect(base.DATABASE_URL).toBe("machine-db");
+
+    const observe = (childEnv: NodeJS.ProcessEnv) => new Promise<string>((resolve, reject) => {
+      const child = spawn(process.execPath, ["-e", "process.stdout.write(JSON.stringify({db:process.env.DATABASE_URL,shared:process.env.SHARED}))"], { env: childEnv });
+      let output = "";
+      child.stdout.on("data", (chunk) => { output += chunk.toString(); });
+      child.on("error", reject);
+      child.on("close", (code) => code === 0 ? resolve(output) : reject(new Error(`child exited ${code}`)));
+    });
+    const [nickOutput, aliceOutput] = await Promise.all([observe(nick), observe(alice)]);
+    expect(JSON.parse(nickOutput)).toEqual({ db: "nick-db", shared: "nick" });
+    expect(JSON.parse(aliceOutput)).toEqual({ db: "alice-db" });
+
+    writeProjectEnvironmentBinding(root, "dev:web-nick", "dev-empty", ["DATABASE_URL"]);
+    expect(buildProjectConsumerEnv(root, "dev:web-nick", base).DATABASE_URL).toBeUndefined();
+  });
+
+  it("does not grant project values to an unbound remote consumer", () => {
+    const root = project();
+    mkdirSync(join(root, ".repoos"));
+    writeFileSync(
+      join(root, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [{ id: "dev", sources: [{ id: "local", path: ".env.dev" }] }],
+      }),
+    );
+    writeFileSync(join(root, ".env.dev"), "TOKEN=project-value\n");
+    const childEnv = buildProjectConsumerEnv(root, "check:default", { PATH: "/bin" });
+    expect(childEnv.TOKEN).toBeUndefined();
+  });
   it("validates separate sets, expected names only, source precedence and duplicate keys", () => {
     const root = project();
     writeFileSync(join(root, ".env.base"), "SHARED=base\nBASE_ONLY=1\n");

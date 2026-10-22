@@ -50,6 +50,32 @@ only. File writes preserve unrelated lines and comments, use a stale-content
 check, and reject tracked, unsafe, or symlinked destinations. The existing
 startup loader remains unchanged for projects that have not opted in.
 
+Named values reach local child processes only through an explicit binding.
+The Secrets-page selector changes the environment being viewed; it does not
+bind or switch any process. Bind a consumer and grant only the keys it needs:
+
+```sh
+repoos secrets bind dev:web dev-nick DATABASE_URL STRIPE_SECRET_KEY
+repoos secrets bind preview:web integration DATABASE_URL
+repoos secrets bind check:default integration DATABASE_URL
+```
+
+Bindings are stored in the local, gitignored
+`.repoos/environment-bindings.json` and are scoped to `dev:<target>`,
+`preview:<target>`, or `check:default`. Target names are normalized to
+lowercase hyphenated IDs. Binding or value changes require a running consumer
+to restart before it uses the new value. Unbound consumers receive no named
+project values. Granted keys missing from the selected environment are removed
+from the child's inherited environment; there is no fallback to another named
+environment, including `production`. Machine/service keys (`REPOOS_*`, `PATH`,
+`HOME`, and `NODE_OPTIONS`) cannot be granted. Named values are injected into
+child processes only; RepoOS never installs them into its own `process.env`.
+
+`repoos check` applies `check:default` to local check-step children. Remote
+validation does not receive project values from these bindings. This limits
+what RepoOS injects; it is not a security sandbox against an unrestricted local
+agent or process.
+
 Register environments in `.repoos/environments.json`, for example:
 
 ```json
