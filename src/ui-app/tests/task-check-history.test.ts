@@ -9,11 +9,82 @@ import { rmSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { TaskCheckManager, type TaskCheckRun } from "../../server/task-check.js";
+import {
+  parseCheckProgress,
+  TaskCheckManager,
+  type TaskCheckRun,
+} from "../../server/task-check.js";
 import { CheckStore, resetCheckStore } from "../../core/check-store.js";
 import { NO_CHECK_PLAN_NOTICE } from "../../core/check-skip.js";
 
 const dirs: string[] = [];
+
+describe("machine-readable check progress", () => {
+  it("parses the latest complete progress record and ignores unknown totals", () => {
+    expect(
+      parseCheckProgress(
+        'log\n::repoos-check-progress::{"stepsDone":2,"stepsTotal":9,"currentStep":3,"testsPass":2}\n',
+      ),
+    ).toEqual({ stepsDone: 2, stepsTotal: 9, currentStep: 3, testsPass: 2 });
+    expect(
+      parseCheckProgress('::repoos-check-progress::{"stepsDone":2,"stepsTotal":null}'),
+    ).toEqual({ stepsDone: 2, stepsTotal: null });
+    expect(
+      parseCheckProgress(
+        '::repoos-check-progress::{"stepName":"build","testsDone":null,"testsTotal":null,"testsPass":null}',
+      ),
+    ).toEqual({ stepName: "build", testsDone: null, testsTotal: null, testsPass: null });
+  });
+
+  it("clears file progress when the run advances to a non-test step", () => {
+    const { m } = manager();
+    let latest: TaskCheckRun | null = null;
+    const handle = m.start("0924", "handoff-finalize", (run) => {
+      latest = { ...run };
+    });
+    handle.chunk(
+      '::repoos-check-progress::{"stepsDone":4,"stepsTotal":12,"currentStep":5,"stepName":"tests","testsDone":140,"testsTotal":289,"testsPass":1}\n',
+    );
+    handle.chunk(
+      '::repoos-check-progress::{"stepsDone":4,"stepsTotal":12,"currentStep":5,"stepName":"build","testsDone":null,"testsTotal":null,"testsPass":null}\n',
+    );
+    expect(latest).toMatchObject({
+      stepName: "build",
+      testsDone: null,
+      testsTotal: null,
+      testsPass: null,
+    });
+  });
+
+  it("lists in-flight runs across tasks for the Checks page", () => {
+    const { m } = manager();
+    m.start("0924", "handoff-finalize", () => {});
+    m.start("0917", "merge-gate", () => {});
+    expect(
+      m
+        .runningRuns()
+        .map((run) => run.taskId)
+        .sort(),
+    ).toEqual(["0917", "0924"]);
+  });
+
+  it("starts a retried gate attempt at zero and carries the timeout reason", () => {
+    const { m } = manager();
+    const first = m.start("0924", "merge-gate", () => {});
+    first.chunk("tests timed out after 420s\n");
+    first.done(1);
+    let secondRun: TaskCheckRun | undefined;
+    m.start("0924", "merge-gate", (run, event) => {
+      if (event === "started") secondRun = run;
+    });
+    expect(secondRun).toMatchObject({
+      attempt: 2,
+      attemptReason: "timed out after 420s",
+      stepsDone: null,
+      testsDone: null,
+    });
+  });
+});
 afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
   resetCheckStore();

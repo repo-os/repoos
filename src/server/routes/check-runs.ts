@@ -35,5 +35,9 @@ export const getCheckRuns: RouteHandler = (ctx, req, res) => {
     /* a malformed URL just yields the default view */
   }
   const store = getCheckStore(ctx.config.root, ctx.config.cacheDir);
-  return json(res, 200, { ok: true, runs: store.list({ limit, taskId, machine, remote }) });
+  return json(res, 200, {
+    ok: true,
+    runs: store.list({ limit, taskId, machine, remote }),
+    activeRuns: ctx.taskChecks?.runningRuns() ?? [],
+  });
 };

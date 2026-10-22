@@ -151,6 +151,7 @@ import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { reportPredatesLatestHandoff, reviewSupersededByFixRound } from "../lib/reviewFreshness";
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
+import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import { resolveEffectiveAgent } from "../lib/effective-agent";
 import CopyableNumber from "./CopyableNumber.vue";
@@ -526,7 +527,7 @@ const checkChip = computed(() => {
         ? `${localQueue.label} · ${elapsed}`
         : poolQueue
           ? `${poolQueue.label} · ${elapsed}`
-          : `Checks running${machine ? ` on ${machine}` : ""} · ${elapsed}`,
+          : `Checks running${machine ? ` on ${machine}` : ""}${run.stepsDone != null || run.currentStep != null || run.stepsTotal != null || run.testsTotal != null ? ` · ${checkProgressLabel(run)}` : ""} · ${elapsed}`,
       title: localQueue
         ? localQueue.title
         : poolQueue
@@ -4551,6 +4552,31 @@ watch(
             <div v-if="handoffBusy" class="ff-notice drawer-handoff-banner">
               <ActivityIndicator />
               <span>{{ handoffStepLabel }}</span>
+              <div
+                v-if="
+                  activeCheckRun &&
+                  (activeCheckRun.stepsDone != null ||
+                    activeCheckRun.currentStep != null ||
+                    activeCheckRun.stepsTotal != null ||
+                    activeCheckRun.testsTotal != null)
+                "
+                class="check-progress"
+                data-test-id="check-progress"
+                role="status"
+              >
+                <progress
+                  v-if="checkProgressPercent(activeCheckRun) !== null"
+                  :value="checkProgressPercent(activeCheckRun) ?? 0"
+                  max="100"
+                />
+                <span>{{ checkProgressLabel(activeCheckRun) }}</span>
+                <span v-if="activeCheckRun.attempt && activeCheckRun.attempt > 1">
+                  attempt {{ activeCheckRun.attempt
+                  }}<template v-if="activeCheckRun.attemptReason">
+                    · {{ activeCheckRun.attemptReason }}</template
+                  >
+                </span>
+              </div>
               <span class="drawer-handoff-sub">
                 This task stays <strong>active</strong> until the checks pass.
               </span>
@@ -4696,6 +4722,32 @@ watch(
               >
                 Last successful close-out gate: {{ lastCloseOutGateLabel }}
               </p>
+              <div
+                v-if="
+                  inPipeline &&
+                  activeCheckRun &&
+                  (activeCheckRun.stepsDone != null ||
+                    activeCheckRun.currentStep != null ||
+                    activeCheckRun.stepsTotal != null ||
+                    activeCheckRun.testsTotal != null)
+                "
+                class="check-progress close-out-check-progress"
+                role="status"
+                data-test-id="close-out-check-progress"
+              >
+                <progress
+                  v-if="checkProgressPercent(activeCheckRun) !== null"
+                  :value="checkProgressPercent(activeCheckRun) ?? 0"
+                  max="100"
+                />
+                <span>{{ checkProgressLabel(activeCheckRun) }}</span>
+                <span v-if="activeCheckRun.attempt && activeCheckRun.attempt > 1">
+                  attempt {{ activeCheckRun.attempt
+                  }}<template v-if="activeCheckRun.attemptReason">
+                    · {{ activeCheckRun.attemptReason }}</template
+                  >
+                </span>
+              </div>
               <Button
                 v-if="!isHumanTask && ui.active.status === 'review'"
                 variant="status"
@@ -6721,6 +6773,19 @@ watch(
   background: var(--panel);
   border-radius: 8px;
   border: 1px solid var(--border);
+}
+
+.check-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(100%, 320px);
+  font-size: 12px;
+}
+
+.check-progress progress {
+  width: 120px;
+  accent-color: var(--accent);
 }
 
 .diff-stat-item {

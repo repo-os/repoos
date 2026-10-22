@@ -92,7 +92,11 @@ const SCHEMA = `
     skipped_steps TEXT,        -- JSON array of step names skipped
     detail        TEXT,
     failed_tests  TEXT,        -- JSON array of failing test names (tests step)
-    isolation_note TEXT        -- flake-triage label, e.g. "passed 3/3 alone" (#0655)
+    isolation_note TEXT,       -- flake-triage label, e.g. "passed 3/3 alone" (#0655)
+    steps_done INTEGER,
+    steps_total INTEGER,
+    tests_done INTEGER,
+    tests_total INTEGER
   );
   CREATE INDEX IF NOT EXISTS idx_check_runs_started_at ON check_runs(started_at);
   CREATE INDEX IF NOT EXISTS idx_check_runs_task_id ON check_runs(task_id);
@@ -153,6 +157,10 @@ export interface CheckRunRow {
    * `failed 3/3 alone` for each failing file. Never changes the run outcome.
    */
   isolationNote: string | null;
+  stepsDone: number | null;
+  stepsTotal: number | null;
+  testsDone: number | null;
+  testsTotal: number | null;
 }
 
 export interface RecordCheckRunInput {
@@ -172,6 +180,10 @@ export interface RecordCheckRunInput {
   detail?: string | null;
   failedTests?: string[];
   isolationNote?: string | null;
+  stepsDone?: number | null;
+  stepsTotal?: number | null;
+  testsDone?: number | null;
+  testsTotal?: number | null;
 }
 
 export interface ListCheckRunsOptions {
@@ -251,6 +263,10 @@ export class CheckStore {
     if (!cols.some((c) => c.name === "candidate_sha")) {
       this.db.exec("ALTER TABLE check_runs ADD COLUMN candidate_sha TEXT");
     }
+    for (const name of ["steps_done", "steps_total", "tests_done", "tests_total"]) {
+      if (!cols.some((c) => c.name === name))
+        this.db.exec(`ALTER TABLE check_runs ADD COLUMN ${name} INTEGER`);
+    }
   }
 
   isAvailable(): boolean {
@@ -265,8 +281,9 @@ export class CheckStore {
         .prepare(
           `INSERT INTO check_runs
              (task_id, phase, worktree, candidate_sha, machine, remote, scope, started_at, duration_ms,
-              outcome, failed_step, skipped_steps, detail, failed_tests, isolation_note)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              outcome, failed_step, skipped_steps, detail, failed_tests, isolation_note,
+              steps_done, steps_total, tests_done, tests_total)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           input.taskId ?? null,
@@ -288,6 +305,10 @@ export class CheckStore {
             ? JSON.stringify(input.failedTests)
             : null,
           input.isolationNote?.trim() || null,
+          input.stepsDone ?? null,
+          input.stepsTotal ?? null,
+          input.testsDone ?? null,
+          input.testsTotal ?? null,
         );
       // Retention: delete everything older than the newest MAX_ROWS rows.
       this.db
@@ -369,6 +390,10 @@ export class CheckStore {
       detail: r.detail ?? null,
       failedTests: jsonList(r.failed_tests),
       isolationNote: r.isolation_note ?? null,
+      stepsDone: r.steps_done == null ? null : Number(r.steps_done),
+      stepsTotal: r.steps_total == null ? null : Number(r.steps_total),
+      testsDone: r.tests_done == null ? null : Number(r.tests_done),
+      testsTotal: r.tests_total == null ? null : Number(r.tests_total),
     };
   }
 }

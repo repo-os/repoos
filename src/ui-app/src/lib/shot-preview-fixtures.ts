@@ -23,6 +23,7 @@ import type {
   ShotMeta,
   SystemStats,
   Task,
+  TaskCheckRun,
   TaskLogEntry,
   UiHandoffVerificationEvidence,
 } from "../types";
@@ -703,6 +704,67 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID);
       pinnedIntegration = repo.integration;
       break;
+    case "closeOut:checkProgress":
+    case "closeOut:checkProgressUnknown": {
+      ensureFixtureTask(repo, "review");
+      repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID);
+      pinnedIntegration = repo.integration;
+      const unknown = fixture === "closeOut:checkProgressUnknown";
+      const run: TaskCheckRun = {
+        id: "shot-check-progress",
+        taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+        kind: "merge-gate",
+        startedAt: new Date(Date.now() - 4 * 60_000 - 10_000).toISOString(),
+        finishedAt: null,
+        durationMs: null,
+        running: true,
+        passed: null,
+        code: null,
+        output: "",
+        scope: "full",
+        machine: "bee",
+        stepsDone: unknown ? 3 : 5,
+        stepsTotal: unknown ? 10 : 12,
+        currentStep: unknown ? 4 : 6,
+        stepName: "tests",
+        testsDone: unknown ? null : 140,
+        testsTotal: unknown ? null : 289,
+        testsPass: unknown ? null : 1,
+        attempt: 2,
+        attemptReason: "previous attempt timed out after 420s",
+      };
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [run];
+      break;
+    }
+    case "checks:progress": {
+      ensureFixtureTask(repo, "review");
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
+        {
+          id: "shot-check-progress-page",
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "merge-gate",
+          startedAt: new Date(Date.now() - 4 * 60_000 - 10_000).toISOString(),
+          finishedAt: null,
+          durationMs: null,
+          running: true,
+          passed: null,
+          code: null,
+          output: "",
+          scope: "full",
+          machine: "bee",
+          stepsDone: 5,
+          stepsTotal: 12,
+          currentStep: 6,
+          stepName: "tests",
+          testsDone: 140,
+          testsTotal: 289,
+          testsPass: 1,
+          attempt: 2,
+          attemptReason: "previous attempt timed out after 420s",
+        },
+      ];
+      break;
+    }
     case "integration:median15": {
       ensureFixtureTask(repo, "review");
       const startedAt = new Date(Date.now() - 4 * 60 * 1000).toISOString();
