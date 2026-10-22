@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-22T11:36:31.117Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Close-out card shows bundle upload progress (target \"default\"): state \"closeOut:uploading\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Close-out card shows bundle upload progress (target \"default\"): highlight .tc-moving matched nothing on / (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Remote validation dr… (truncated)"
 id: "0917"
 title: Close-out hangs ~48 minutes on a stalled ssh bundle upload before falling back to local; thinkpad swap full again
 type: feature
@@ -13,7 +11,9 @@ branch: feat/close-out-hangs-48-minutes-on-a-stalled-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T04:09:06Z"
-updated_at: "2026-10-22T11:36:26Z"
+updated_at: "2026-10-22T11:38:10Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-22T11:36:31.117Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Close-out card shows bundle upload progress (target \"default\"): state \"closeOut:uploading\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Close-out card shows bundle upload progress (target \"default\"): highlight .tc-moving matched nothing on / (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Remote validation dr… (truncated)"
 ---
 ## Problem
 2026-10-22: #0909's close-out (check/validating phase) started at 03:03Z and did nothing visible for 48 minutes. At 03:51:39Z the attention event 'Ran locally' recorded: 'ssh upload of candidate bundle to thinkpad failed: [stdin error: EPIPE: broken pipe, write]'. Only then did the gate start locally on the laptop (which also burns the laptop's memory, the problem remote validation is meant to avoid). thinkpad was swap-bound at the time (3579/4095 MB, 87%). The upload to a pressured or wedged host had no hard deadline short enough to fail fast, #0901's health probe did not keep the upload from going to that host, and nothing in the UI/task showed what the close-out was waiting on (the user only saw 'check', and asked why it was stuck for over an hour).
@@ -40,25 +40,25 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 ```json
 [
 {
-"label": "Close-out card shows bundle upload progress",
-"target": "default",
-"route": "/",
-"highlight": ".tc-moving",
-"state": "closeOut:uploading"
+  "label": "Close-out card shows bundle upload progress",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+  "state": "closeOut:uploading"
 },
 {
-"label": "Remote validation drawer bundle upload settings",
-"target": "default",
-"route": "/settings?section=remote-validation",
-"highlight": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]",
-"steps": [
-{
-"click": ".tunnel-setting-actions button"
-},
-{
-"waitMs": 500
-}
-]
+  "label": "Remote validation drawer bundle upload settings",
+  "target": "default",
+  "route": "/settings?section=remote-validation",
+  "highlight": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]",
+  "steps": [
+    {
+      "click": "[id=\"setting-remoteValidation.enabled\"] button"
+    },
+    {
+      "waitFor": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]"
+    }
+  ]
 }
 ]
 ```
@@ -98,4 +98,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T09:51:32Z · assigned_to
 - 2026-10-22T11:36:25Z · note: ui verification failed: ui verification failed (4 issue(s)): [missing-target] Close-out card shows bundle upload progress (target "default"): state "closeOut:uploading" did not render on target "default" — / shows no task card (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Close-out card shows bundle upload progress (target "default"): highlight .tc-moving matched nothing on / (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Remote validation
 - 2026-10-22T11:36:26Z · handoff failed · handoff recovery attempted · finalization failed
-
+- 2026-10-22T11:38:10Z · body
