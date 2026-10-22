@@ -11,7 +11,7 @@ branch: feat/cli-api-parity-every-mutating-api-route-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T04:47:28Z"
-updated_at: "2026-10-22T13:09:44Z"
+updated_at: "2026-10-22T13:20:49Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -49,3 +49,4 @@ Evidence: route count from grep of router.register in src/server/server.ts and s
 - 2026-10-22T12:59:58Z · status review→active
 - 2026-10-22T13:07:12Z · body
 - 2026-10-22T13:09:44Z · body
+- 2026-10-22T13:20:49Z · note: shots: skipped — Docs site skipped: no docs shot declared
