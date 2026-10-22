@@ -2,7 +2,7 @@
 id: "0909"
 title: "Stop false 'needs human step' flags: sticky overrides, model check before keywords, tagged criteria with auto-split"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/stop-false-needs-human-step-flags-sticky
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T19:41:23Z"
-updated_at: "2026-10-22T02:28:19Z"
+updated_at: "2026-10-22T02:44:25Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-22T02:27:19.227Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Needs-human-step detail shows criterion quote (target \"default\"): highlight .agent-waiting-sub matched nothing on /work?task=0909&tab=overview (http://127.0.0.1:58600/work?shotState=card:humanStep)"
 dev_error_count: 3
@@ -37,22 +37,22 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 ```json
 [
 {
-  "label": "Human-step sticky setting on Model routing",
-  "target": "default",
-  "route": "/agents?tab=routing",
-  "highlight": "[data-testid=\"routing-human-step-sticky\"]"
+"label": "Human-step sticky setting on Model routing",
+"target": "default",
+"route": "/agents?tab=routing",
+"highlight": "[data-testid=\"routing-human-step-sticky\"]"
 },
 {
-  "label": "Needs-human-step banner quotes criterion and model reason",
-  "target": "default",
-  "route": "/work?task=9999&tab=overview",
-  "highlight": ".drawer-critical .agent-waiting-sub",
-  "steps": [
-    {
-      "waitFor": ".drawer-critical .agent-waiting-sub"
-    }
-  ],
-  "state": "card:humanStep"
+"label": "Needs-human-step banner quotes criterion and model reason",
+"target": "default",
+"route": "/work?task=9999&tab=overview",
+"highlight": ".drawer-critical .agent-waiting-sub",
+"steps": [
+  {
+    "waitFor": ".drawer-critical .agent-waiting-sub"
+  }
+],
+"state": "card:humanStep"
 }
 ]
 ```
@@ -114,3 +114,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T02:24:57Z · body
 - 2026-10-22T02:27:16Z · note: ui verification failed (1 issue(s)): [missing-target] Needs-human-step detail shows criterion quote (target "default"): highlight .agent-waiting-sub matched nothing on /work?task=0909&tab=overview (http://127.0.0.1:58600/work?shotState=card:humanStep)
 - 2026-10-22T02:28:19Z · body
+- 2026-10-22T02:44:25Z · status active→review
