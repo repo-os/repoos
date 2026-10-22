@@ -164,3 +164,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T18:29:11Z · close-out gate completed in 500s
 - 2026-10-22T18:29:46Z · status done→done, release:success
 - 2026-10-22T20:55:27Z · note: handoff requested (cli)
+- 2026-10-22T20:55:27Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is done
