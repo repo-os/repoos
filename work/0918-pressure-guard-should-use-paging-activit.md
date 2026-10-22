@@ -3,9 +3,6 @@ id: "0918"
 title: "Pressure guard should use paging activity, not occupancy: macOS compressor share and swap used/total hold work on an idle laptop"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — RunnerHealth drops `psiMemoryAvg10` (Runners-tab PSI is dead code) and a host-pressure fixture falls through to the rea…
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -124,3 +121,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T09:56:50Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-10-22T09:56:51Z · status active→review
 - 2026-10-22T09:59:40Z · note: review pass 4: good to go
+- 2026-10-22T09:59:40Z · needs_input
