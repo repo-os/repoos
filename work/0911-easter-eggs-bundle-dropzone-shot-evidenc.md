@@ -2,7 +2,7 @@
 id: "0911"
 title: "Easter eggs bundle: dropzone shot evidence (Manual tab, default picker)"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-dropzone-shot-evidenc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T01:34:32Z"
-updated_at: "2026-10-22T18:11:23Z"
+updated_at: "2026-10-22T18:11:24Z"
 ---
 ## Items
 - [x] **E1 · Manual-tab handoff capture does not show a dropzone** (web) — #0899’s declared Manual-tab shot lacked a recorded assertion; the light and dark captures now assert the dropzone exists. Source: reviewer notes on #0899 (passes 4 and 5), 2026-10-22.
@@ -155,3 +155,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T17:58:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T17:58:54Z · message_delivered: 5 message(s)
 - 2026-10-22T18:11:23Z · note: ui verification passed: 5 of 5 shots captured with clean console
+- 2026-10-22T18:11:24Z · status active→review
