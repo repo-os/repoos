@@ -65,10 +65,13 @@ Register environments in `.repoos/environments.json`, for example:
 visibility, and a content version for safe concurrent edits. Use
 `repoos secrets add|replace|delete dev KEY`; add and replace read the value
 from stdin or a hidden terminal prompt. Values are never returned by the API
-or printed by the CLI. Management endpoints require an authenticated admin,
-reject mismatched browser origins, and write value-free audit entries to
-`.repoos/secret-audit.ndjson`. Fixed RepoOS credentials remain managed through
-their dedicated settings and provider routes.
+or printed by the CLI. Writes and deletes apply only to the **last** registered
+source file; keys that appear only from an earlier source are read-only through
+the API (delete is rejected; replace adds an override in the writable file).
+Management endpoints require an authenticated admin, reject mismatched browser
+origins, and write value-free audit entries to `.repoos/secret-audit.ndjson`.
+Fixed RepoOS credentials remain managed through their dedicated settings and
+provider routes.
 
 Use a gitignored `.env` at the repository root for secrets that belong to this
 codebase. It is the right home for provider keys and session secrets that should

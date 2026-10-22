@@ -217,5 +217,149 @@ describe("project environment secret routes", () => {
     );
     expect(del.fake.status).toBe(200);
     expect(JSON.stringify(del.fake.payload)).not.toContain(sentinel);
+
+    const finalList = fx.response();
+    listProjectEnvironmentSecrets(fx.ctx, fx.req(), finalList.res, { param1: "dev" });
+    const afterDelete = finalList.fake.payload as {
+      keys: Array<{ name: string; status: string }>;
+    };
+    expect(afterDelete.keys.find((row) => row.name === "NEW_KEY" && row.status === "set")).toBe(
+      undefined,
+    );
+  });
+
+  it("rejects delete on inherited-only keys and reports accurate status after writable delete", async () => {
+    root = mkdtempSync(join(tmpdir(), "repoos-secret-route-"));
+    execFileSync("git", ["init", "-q"], { cwd: root });
+    writeFileSync(join(root, ".gitignore"), ".env.base\n.env.dev\n");
+    mkdirSync(join(root, ".repoos"));
+    writeFileSync(
+      join(root, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [
+          {
+            id: "dev",
+            sources: [
+              { id: "base", path: ".env.base" },
+              { id: "local", path: ".env.dev" },
+            ],
+          },
+        ],
+      }),
+    );
+    writeFileSync(join(root, ".env.base"), "INHERITED=from-base\n");
+    writeFileSync(join(root, ".env.dev"), "\n");
+    const auth = getAuthStore(root)!;
+    auth.upsertUser("admin@example.test", "admin", null);
+    const token = auth.createSession("admin@example.test", "admin", 3600);
+    const ctx = { config: { root, auth: { enabled: true } } } as never;
+    const response = () => {
+      let status = 0;
+      let payload: unknown;
+      return {
+        fake: {
+          get status() {
+            return status;
+          },
+          get payload() {
+            return payload;
+          },
+        },
+        res: {
+          setHeader() {},
+          writeHead(code: number) {
+            status = code;
+          },
+          end(value: string) {
+            payload = JSON.parse(value);
+          },
+        } as unknown as ServerResponse,
+      };
+    };
+    const req = (body = "{}", origin?: string) =>
+      ({
+        headers: {
+          cookie: `${SESSION_COOKIE_NAME}=${token}`,
+          host: "localhost",
+          ...(origin ? { origin } : {}),
+        },
+        socket: {},
+        async *[Symbol.asyncIterator]() {
+          yield Buffer.from(body);
+        },
+      }) as unknown as IncomingMessage;
+
+    const list = response();
+    listProjectEnvironmentSecrets(ctx, req(), list.res, { param1: "dev" });
+    const listing = list.fake.payload as { version: string };
+
+    const inheritedDelete = response();
+    await mutateProjectEnvironmentSecret(
+      ctx,
+      req(
+        JSON.stringify({
+          action: "delete",
+          key: "INHERITED",
+          version: listing.version,
+        }),
+      ),
+      inheritedDelete.res,
+      { param1: "dev" },
+    );
+    expect(inheritedDelete.fake.status).toBe(409);
+
+    const override = response();
+    await mutateProjectEnvironmentSecret(
+      ctx,
+      req(
+        JSON.stringify({
+          action: "replace",
+          key: "INHERITED",
+          value: "FAKE_SENTINEL_0928_OVERRIDE",
+          version: listing.version,
+        }),
+      ),
+      override.res,
+      { param1: "dev" },
+    );
+    expect(override.fake.status).toBe(200);
+    expect(JSON.stringify(override.fake.payload)).not.toContain("FAKE_SENTINEL_0928_OVERRIDE");
+
+    const relist = response();
+    listProjectEnvironmentSecrets(ctx, req(), relist.res, { param1: "dev" });
+    const afterOverride = relist.fake.payload as { version: string };
+
+    const writableDelete = response();
+    await mutateProjectEnvironmentSecret(
+      ctx,
+      req(
+        JSON.stringify({
+          action: "delete",
+          key: "INHERITED",
+          version: afterOverride.version,
+        }),
+      ),
+      writableDelete.res,
+      { param1: "dev" },
+    );
+    expect(writableDelete.fake.status).toBe(200);
+    expect(writableDelete.fake.payload).toMatchObject({ status: "set" });
+
+    const mutateOrigin = response();
+    await mutateProjectEnvironmentSecret(
+      ctx,
+      req(
+        JSON.stringify({
+          action: "replace",
+          key: "INHERITED",
+          value: "x",
+          version: afterOverride.version,
+        }),
+        "http://evil.example",
+      ),
+      mutateOrigin.res,
+      { param1: "dev" },
+    );
+    expect(mutateOrigin.fake.status).toBe(403);
   });
 });

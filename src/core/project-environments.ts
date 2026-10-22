@@ -137,6 +137,17 @@ function parseDocument(text: string): { keys: Map<string, string>; lines: string
   return { keys: values, lines };
 }
 
+/** True when the given source file contains an assignment for `key`. */
+export function projectEnvironmentSourceHasKey(
+  root: string,
+  sourcePath: string,
+  key: string,
+): boolean {
+  const file = resolveRepoPath(root, sourcePath);
+  if (!existsSync(file)) return false;
+  return parseDocument(readFileSync(file, "utf8")).keys.has(key);
+}
+
 export function readProjectEnvironment(
   root: string,
   env: ProjectEnvironment,

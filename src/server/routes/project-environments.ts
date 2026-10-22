@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, appendFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
+  projectEnvironmentSourceHasKey,
   readProjectEnvironment,
   validateEnvironmentRegistry,
   writeProjectEnvironmentValue,
@@ -119,20 +120,30 @@ export const mutateProjectEnvironmentSecret: RouteHandler = async (ctx, req, res
     const exists = snapshot.keys.includes(key);
     if ((action === "add" && exists) || (action === "replace" && !exists))
       return send(res, 409, { error: "Key status changed; reload metadata" });
-    const source = env.sources[env.sources.length - 1];
+    const writable = env.sources[env.sources.length - 1];
+    if (
+      action === "delete" &&
+      !projectEnvironmentSourceHasKey(ctx.config.root, writable.path, key)
+    ) {
+      return send(res, 409, {
+        error: "Key is not defined in the writable source; reload metadata",
+      });
+    }
     const version = writeProjectEnvironmentValue(
       ctx.config.root,
-      source.path,
+      writable.path,
       key,
       action === "delete" ? null : (body.value as string),
       body.version,
     );
+    const after = readProjectEnvironment(ctx.config.root, env);
+    const stillSet = after.keys.includes(key);
     audit(ctx.config.root, user.email, env.id, key, action);
     return send(res, 200, {
       ok: true,
       environment: env.id,
       key,
-      status: action === "delete" ? "missing" : "set",
+      status: stillSet ? "set" : "missing",
       version,
     });
   } catch (err) {
