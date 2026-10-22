@@ -269,10 +269,13 @@ export const putProjectEnvironmentBinding: RouteHandler = async (ctx, req, res) 
   if (!Array.isArray(body.keys) || !body.keys.every((key) => typeof key === "string"))
     return send(res, 400, { error: "Keys must be an array of key names" });
   const keys = body.keys as string[];
-  if (!consumer || !environment)
+  if (!consumer || environment === "")
     return send(res, 400, { error: "Consumer and environment are required" });
   try {
-    if (!registry(ctx.config.root).environments.some((row) => row.id === environment))
+    if (
+      environment !== null &&
+      !registry(ctx.config.root).environments.some((row) => row.id === environment)
+    )
       return send(res, 404, { error: "Unknown project environment" });
     const result = writeProjectEnvironmentBinding(ctx.config.root, consumer, environment, keys);
     return send(res, 200, { ok: true, ...result, restartNeeded: true });

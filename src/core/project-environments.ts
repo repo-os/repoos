@@ -239,7 +239,7 @@ export function readProjectEnvironmentValues(
 }
 
 const bindingFile = ".repoos/environment-bindings.json";
-const consumerId = /^(dev|preview|check):[A-Za-z0-9_.-]{1,80}$/;
+const consumerId = /^(dev|preview|check|deployment):[A-Za-z0-9_.-]{1,80}$/;
 
 export function projectEnvironmentConsumer(kind: "dev" | "preview", name: string): string {
   const slug = name
@@ -255,7 +255,7 @@ export function normalizeProjectEnvironmentConsumer(consumer: string): string {
   const separator = consumer.indexOf(":");
   const kind = consumer.slice(0, separator);
   const name = consumer.slice(separator + 1);
-  if (separator < 1 || !["dev", "preview", "check"].includes(kind))
+  if (separator < 1 || !["dev", "preview", "check", "deployment"].includes(kind))
     throw new Error("Invalid environment consumer");
   const slug = name
     .trim()

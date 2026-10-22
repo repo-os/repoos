@@ -122,6 +122,32 @@ describe("explicit project environment files", () => {
     expect(childEnv.TOKEN).toBeUndefined();
   });
 
+  it("stores deployment environment labels without granting local secrets", () => {
+    const root = project();
+    mkdirSync(join(root, ".repoos"));
+    writeFileSync(
+      join(root, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [{ id: "production", sources: [{ id: "local", path: ".env.production" }] }],
+      }),
+    );
+    writeFileSync(join(root, ".env.production"), "DATABASE_URL=production-secret\n");
+    const result = writeProjectEnvironmentBinding(
+      root,
+      "deployment:Dashboard (prod)",
+      "production",
+      [],
+    );
+    expect(result.bindings[0]).toEqual({
+      consumer: "deployment:dashboard-prod",
+      environment: "production",
+      keys: [],
+    });
+    expect(buildProjectConsumerEnv(root, "deployment:dashboard-prod", {}).DATABASE_URL).toBe(
+      undefined,
+    );
+  });
+
   it("normalizes consumer IDs and resolves bindings from the shared root in a linked worktree", () => {
     const root = project();
     const worktree = join(tmpdir(), `repoos-envsets-worktree-${Date.now()}`);

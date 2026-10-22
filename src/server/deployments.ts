@@ -10,6 +10,7 @@
  */
 import { spawn } from "node:child_process";
 import { mainCheckoutRoot } from "../core/config.js";
+import { readProjectEnvironmentBindings } from "../core/project-environments.js";
 import type { DeploymentConfig, RepoOSConfig } from "../core/types.js";
 
 export interface DeploymentRow {
@@ -25,6 +26,8 @@ export interface DeploymentRow {
   dashboardUrl: string | null;
   /** Subdirectory the freshness lookup was scoped to, when configured. */
   subdir: string | null;
+  /** Local environment label bound to this target; does not publish values. */
+  environment: string | null;
   /** ISO timestamp of the last commit on the branch touching the subdir. */
   lastPushAt: string | null;
   /** Short SHA of that commit. */
@@ -333,6 +336,7 @@ export async function getDeploymentsStatus(
     };
   }
   const cwd = deployRoot(config);
+  const environmentBindings = readProjectEnvironmentBindings(config.root).bindings;
   const branches = deploymentBranches(rows);
   const [dirtRes, currentRes, ...summaries] = await Promise.all([
     cmd(exec, ["status", "--porcelain"], cwd),
@@ -359,6 +363,9 @@ export async function getDeploymentsStatus(
         url: row.url ?? null,
         dashboardUrl: row.dashboardUrl ?? null,
         subdir: row.subdir ?? null,
+        environment:
+          environmentBindings.find((binding) => binding.consumer === deploymentConsumer(row.name))
+            ?.environment ?? null,
         lastPushAt: f.lastPushAt,
         lastPushSha: f.lastPushSha,
         changesVsMain: f.changesVsMain,
@@ -373,6 +380,15 @@ export async function getDeploymentsStatus(
     dirty: dirtRes.code === 0 ? dirtRes.stdout.trim() !== "" : true,
     currentBranch: currentRes.code === 0 ? currentRes.stdout.trim() || null : null,
   };
+}
+
+function deploymentConsumer(name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `deployment:${slug || "default"}`;
 }
 
 /**

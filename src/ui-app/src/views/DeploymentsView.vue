@@ -11,6 +11,7 @@ interface DeploymentRow {
   url: string | null;
   dashboardUrl: string | null;
   subdir: string | null;
+  environment: string | null;
   lastPushAt: string | null;
   lastPushSha: string | null;
   changesVsMain: { aheadOfMain: number; behindMain: number } | null;
@@ -39,6 +40,7 @@ interface DeploymentsStatus {
   root: string | null;
   dirty: boolean;
   currentBranch: string | null;
+  environments: { id: string }[];
 }
 
 /** One row of the services × branches matrix: a service and its cell per branch. */
@@ -158,11 +160,37 @@ async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    status.value = await api<DeploymentsStatus>("/api/deployments");
+    const [deployments, environments] = await Promise.all([
+      api<Omit<DeploymentsStatus, "environments">>("/api/deployments"),
+      api<{ environments: { id: string }[] }>("/api/project-environments"),
+    ]);
+    status.value = { ...deployments, environments: environments.environments };
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
   } finally {
     loading.value = false;
+  }
+}
+
+async function bindEnvironment(row: DeploymentRow, environment: string | null): Promise<void> {
+  try {
+    await api(
+      "/api/project-environment-bindings",
+      JSON_OPTS("PUT", {
+        consumer: `deployment:${
+          row.name
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9_.-]+/g, "-")
+            .replace(/^-|-$/g, "") || "default"
+        }`,
+        environment,
+        keys: [],
+      }),
+    );
+    await load();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : String(err);
   }
 }
 
@@ -361,6 +389,28 @@ onBeforeUnmount(() => {
                     on <code>{{ b.branch }}</code>
                   </template>
                 </div>
+                <label class="dep-env-binding">
+                  Local environment
+                  <select
+                    :value="svc.cells.get(b.branch)!.environment ?? ''"
+                    :aria-label="`Local environment for ${svc.cells.get(b.branch)!.name} on ${b.branch}`"
+                    @change="
+                      bindEnvironment(
+                        svc.cells.get(b.branch)!,
+                        ($event.target as HTMLSelectElement).value || null,
+                      )
+                    "
+                  >
+                    <option value="">Not selected</option>
+                    <option v-for="env in status.environments" :key="env.id" :value="env.id">
+                      {{ env.id }}
+                    </option>
+                  </select>
+                  <small
+                    >Local binding only. Does not upload or sync variables to
+                    {{ svc.cells.get(b.branch)!.provider || "a provider" }}.</small
+                  >
+                </label>
                 <div v-if="serviceSyncLabel(svc.cells.get(b.branch)!, b)" class="dep-service-sync">
                   {{ serviceSyncLabel(svc.cells.get(b.branch)!, b) }}
                 </div>
@@ -656,6 +706,30 @@ onBeforeUnmount(() => {
 }
 .dep-matrix-row + .dep-matrix-row {
   border-top: 1px solid var(--border);
+}
+.dep-env-binding {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0;
+  color: var(--txt-dim);
+  font-size: 11px;
+  font-weight: 700;
+}
+.dep-env-binding select {
+  max-width: 100%;
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 4px 8px;
+  color: var(--txt);
+  background: var(--panel);
+  font: inherit;
+}
+.dep-env-binding small {
+  color: var(--txt-faint);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
 }
 .dep-matrix-head {
   background: color-mix(in srgb, var(--border) 30%, transparent);
