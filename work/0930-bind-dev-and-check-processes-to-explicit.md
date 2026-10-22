@@ -2,7 +2,7 @@
 id: "0930"
 title: Bind dev and check processes to explicit environments
 type: feature
-status: active
+status: review
 human_step_decision: agent
 human_step_decision_key: a1c4ab9e
 priority: p1
@@ -52,3 +52,4 @@ Depends on #0927 for the storage/environment contract and #0928 for authorized m
 - 2026-10-22T17:47:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-22T17:48:17Z · message_delivered: 1 message(s)
 - 2026-10-22T17:48:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T17:48:34Z · status active→review
