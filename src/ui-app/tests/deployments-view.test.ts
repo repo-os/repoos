@@ -93,9 +93,20 @@ beforeEach(() => {
 afterEach(() => {
   api.mockReset();
   vi.unstubAllGlobals();
+  window.history.replaceState({}, "", "/");
 });
 
 describe("DeploymentsView matrix (#0365)", () => {
+  it("renders the registered environment-binding capture fixture without API data", async () => {
+    window.history.replaceState({}, "", "/deployments?shotState=deployments%3AenvironmentBinding");
+    const wrapper = await mountView();
+    expect(wrapper.find(".dep-env-binding").exists()).toBe(true);
+    expect(wrapper.text()).toContain("production");
+    expect(wrapper.text()).toContain("Does not upload or sync variables");
+    expect(api).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
   it("groups rows by service into one matrix row per service, not per (service, branch) pair", async () => {
     api.mockResolvedValue(status());
     const wrapper = await mountView();

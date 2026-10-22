@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import Button from "../components/ui/button.vue";
 import { api, JSON_OPTS } from "../api";
+import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
 
 interface DeploymentRow {
   name: string;
@@ -168,6 +169,43 @@ async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
+    if (readShotPreviewFixtureFromLocation(window.location) === "deployments:environmentBinding") {
+      status.value = {
+        enabled: true,
+        rows: [
+          {
+            name: "Dashboard · production",
+            service: "Dashboard",
+            branch: "prod",
+            provider: "Cloudflare Workers",
+            url: "https://app.example.test",
+            dashboardUrl: null,
+            subdir: "app",
+            environment: "production",
+            environmentError: null,
+            lastPushAt: "2026-10-22T10:30:00.000Z",
+            lastPushSha: "a1b2c3d4",
+            changesVsMain: null,
+          },
+        ],
+        branches: [
+          {
+            branch: "prod",
+            ahead: 0,
+            behind: 0,
+            hasOrigin: true,
+            localExists: true,
+            ffFrom: null,
+            mainSync: { state: "same", aheadOfMain: 0, behindMain: 0 },
+          },
+        ],
+        root: null,
+        dirty: false,
+        currentBranch: "main",
+        environments: [{ id: "dev" }, { id: "staging" }, { id: "production" }],
+      };
+      return;
+    }
     const [deployments, environments] = await Promise.all([
       api<Omit<DeploymentsStatus, "environments">>("/api/deployments"),
       api<{ environments: { id: string }[] }>("/api/project-environments"),
