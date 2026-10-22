@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 255482
-last_close_out_gate_at: "2026-10-22T11:11:47.348Z"
 id: "0933"
 title: Dead engineer left in the agent registry blocks the reviewer ('agent turn in progress')
 type: bug
-status: review
+status: done
 priority: p1
 area: server
+merged_commit: 230562a84e60b44e920cbb29e9e5f15a050d93ec
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dead-engineer-left-in-the-agent-registry
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:22:48Z"
 updated_at: "2026-10-22T11:11:47Z"
+last_close_out_gate_ms: 255482
+last_close_out_gate_at: "2026-10-22T11:11:47.348Z"
 review_passes: 1
 ---
 ## Problem
