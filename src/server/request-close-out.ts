@@ -236,7 +236,12 @@ export async function enqueueCloseOutForTask(
     throw err;
   }
   if (dirty.length > 0) {
-    return { ok: false, reason: "main has uncommitted files" };
+    const paths = dirty.slice(0, 8).join(", ");
+    const more = dirty.length > 8 ? ", …" : "";
+    return {
+      ok: false,
+      reason: `main has uncommitted files: ${paths}${more}. Commit or stash them, or use "Commit & continue" to checkpoint RepoOS-created stories/ and work/ files, then retry.`,
+    };
   }
 
   const branch = task.branch;
