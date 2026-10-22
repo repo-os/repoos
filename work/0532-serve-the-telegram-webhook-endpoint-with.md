@@ -3,9 +3,8 @@ id: "0532"
 title: Serve the Telegram webhook endpoint with secret validation
 type: feature
 status: done
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: 53d151c2
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -14,7 +13,7 @@ created_by: ""
 branch: feat/serve-the-telegram-webhook-endpoint-with
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T07:32:19Z"
-updated_at: "2026-10-06T23:48:13Z"
+updated_at: "2026-10-22T07:47:40Z"
 ---
 ## Problem
 
@@ -52,3 +51,4 @@ So the webhook must be added to `PUBLIC_PREFIXES` — **but the middleware has n
 - 2026-09-27T23:55:56Z · status active→review
 - 2026-09-28T00:11:07Z · status review→done, release:success
 - 2026-10-06T23:48:13Z · needs_input
+- 2026-10-22T07:47:40Z · needs_input
