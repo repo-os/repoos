@@ -103,7 +103,7 @@ describe("formatTomlError", () => {
   });
 
   it("names the offending key for release-gate diagnostics", () => {
-    const result = validateToml('pausedModels = [{ model = "x" }\n');
+    const result = validateToml("pausedModels = [{ model = foo }]\n");
     expect(formatTomlError(result)).toContain("line 1 (key pausedModels)");
   });
 });
