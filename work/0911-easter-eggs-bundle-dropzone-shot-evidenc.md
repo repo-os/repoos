@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-dropzone-shot-evidenc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T01:34:32Z"
-updated_at: "2026-10-22T17:46:09Z"
+updated_at: "2026-10-22T17:46:10Z"
 ---
 ## Items
 - [x] **E1 · Manual-tab handoff capture does not show a dropzone** (web) — #0899’s declared Manual-tab shot lacked a recorded assertion; the light and dark captures now assert the dropzone exists. Source: reviewer notes on #0899 (passes 4 and 5), 2026-10-22.
@@ -145,3 +145,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T17:44:35Z · body: Acceptance criteria (added 4, removed 3)
 - 2026-10-22T17:44:35Z · message_queued at 2026-10-22T17:44:35.746Z
 - 2026-10-22T17:46:09Z · body: Problem (added 1, removed 1)
+- 2026-10-22T17:46:10Z · message_queued at 2026-10-22T17:46:10.212Z
