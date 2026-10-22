@@ -14190,14 +14190,102 @@
 /* "Queued — will be read when the current turn ends" (#0821): shown above a
  * composer while a message sent during a running turn waits its turn. Built
  * from shared tokens so it reads identically in every theme (light and dark). */
-.chat-queued-note {
+.chat-queued-wrap {
   margin: 0 12px 8px;
+}
+.chat-queued-note {
+  display: block;
+  width: 100%;
+  margin: 0;
   padding: 6px 10px;
   border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--panel);
   color: var(--txt-dim);
   font: 12px / 1.5 var(--font-sans);
+  text-align: left;
+  cursor: default;
+}
+.chat-queued-note:hover,
+.chat-queued-note:focus-visible {
+  border-color: var(--border-bright);
+  color: var(--txt);
+}
+.chat-queued-pop {
+  position: fixed;
+  z-index: 12000;
+  width: min(320px, calc(100vw - 16px));
+  max-height: min(280px, calc(100vh - 16px));
+  overflow: auto;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-solid);
+  box-shadow: var(--shadow-lg);
+  font: 12px / 1.45 var(--font-sans);
+  color: var(--txt);
+}
+.chat-queued-pop-lead {
+  margin: 0 0 8px;
+  color: var(--txt-dim);
+  font-size: 11px;
+}
+.chat-queued-pop-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.chat-queued-pop-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.chat-queued-pop-source {
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--txt);
+}
+.chat-queued-pop-time {
+  font-size: 11px;
+  color: var(--txt-dim);
+  white-space: nowrap;
+  text-align: right;
+}
+.chat-queued-pop-clock {
+  color: var(--txt-dim);
+}
+.chat-queued-pop-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--txt);
+}
+.chat-queued-pop-more {
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cyan);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.chat-queued-pop-empty {
+  margin: 0;
+  color: var(--txt-dim);
+  font-size: 11px;
+}
+.chat-queued-pop:focus {
+  outline: none;
+}
+.chat-queued-pop:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
 }
 /* The active/selected state (#0757): a bright accent border and a stronger
  * accent glow, so it is immediately obvious which chat input is focused. The
