@@ -984,7 +984,7 @@ function resolveNewAssignee(flags: Record<string, string | boolean>): {
  *
  * Accepted flags and their help are the `NEW_FLAG_HELP` map; see `--help`.
  */
-export function cmdNew(args: string[]): void {
+export async function cmdNew(args: string[]): Promise<void> {
   const usage = NEW_USAGE;
   const flags: Record<string, string | boolean> = {};
   const screenshots: string[] = [];
@@ -1130,16 +1130,18 @@ export function cmdNew(args: string[]): void {
   // #0668: `repoos new` writes the task directly (no server in the loop), so it
   // assesses the stub itself. The boot sweep is the backstop for tasks created
   // while the server was down or by another client.
-  void flagTaskSpecFlagsIfNeededAsync(repoos.config, t).then((flagged) => {
-    if (flagged) {
-      console.log(
-        "  " +
-          c.yellow("needs input ") +
-          c.dim("task body is underspecified — ") +
-          flagged.needsInputDetail,
-      );
-    }
-  });
+  // Awaited BEFORE the first commit (#0909 review): with `humanStepCheck` on the
+  // model path is async, and a fire-and-forget assessment can land after the
+  // commit, leaving `needs_input` only on disk until a later patch or the boot sweep.
+  const flagged = await flagTaskSpecFlagsIfNeededAsync(repoos.config, t);
+  if (flagged) {
+    console.log(
+      "  " +
+        c.yellow("needs input ") +
+        c.dim("task body is underspecified — ") +
+        flagged.needsInputDetail,
+    );
+  }
   const res = repoos.commitNewFile(t.absPath, `docs(${t.id}): add task ${t.title}`);
   if (res.ok) {
     console.log("  " + c.green("committed ") + c.dim(res.hash ?? ""));
