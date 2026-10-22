@@ -2,7 +2,7 @@
 id: "0925"
 title: Cancelling a close-out must kill its check process tree and free its slot
 type: bug
-status: review
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
