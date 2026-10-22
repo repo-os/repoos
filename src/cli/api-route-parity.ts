@@ -68,6 +68,9 @@ const CONTROL_API_MATCHERS: Matcher[] = [
 
 /** Routes covered by existing file-level CLI commands (not HTTP). */
 const FILE_CLI_MATCHERS: Matcher[] = [
+  // `repoos secrets …` — project environment metadata and writes (values never returned).
+  re("GET", /^\/api\/project-environments\/([^/]+)\/secrets$/.source),
+  re("PUT", /^\/api\/project-environments\/([^/]+)\/secrets$/.source),
   exact("GET", "/api/health"),
   exact("GET", "/api/tasks"),
   re("GET", /^\/api\/tasks\/([^/]+)$/.source),

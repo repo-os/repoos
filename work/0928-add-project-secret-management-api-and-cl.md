@@ -1,16 +1,15 @@
 ---
-last_close_out_gate_ms: 555356
-last_close_out_gate_at: "2026-10-22T17:06:09.935Z"
 id: "0928"
 title: Add project secret management API and CLI
 type: feature
-status: review
+status: done
 human_step_decision: agent
 human_step_decision_key: 10dfc9f8
 priority: p1
 area: [core, server, cli]
 story: Secrets and project environments
 depends_on: ["0927"]
+merged_commit: 4800ad62217a3271ef93b2672c1f413d264c1944
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-project-secret-management-api-and-cl
@@ -18,6 +17,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T08:06:03Z"
 updated_at: "2026-10-22T17:06:09Z"
+last_close_out_gate_ms: 555356
+last_close_out_gate_at: "2026-10-22T17:06:09.935Z"
 review_passes: 2
 review_rounds: 1
 dev_error_count: 4
