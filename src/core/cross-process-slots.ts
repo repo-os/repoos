@@ -11,6 +11,8 @@ import {
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 const STALE_MS = 30 * 60 * 1000;
+const WEDGED_AFTER_MS = 75 * 1000;
+const WEDGED_RECLAIM_AFTER_MS = 150 * 1000;
 const HEARTBEAT_MS = 15_000;
 
 export class SlotQueueTimeoutError extends Error {
@@ -57,10 +59,65 @@ function isStaleSlot(dir: string): boolean {
   }
   try {
     const st = statSync(dir);
-    return Date.now() - st.mtimeMs > STALE_MS;
+    const age = Date.now() - st.mtimeMs;
+    if (age > WEDGED_AFTER_MS) {
+      const marker = join(dir, ".wedged-since");
+      try {
+        const since = Number(readFileSync(marker, "utf8"));
+        if (Number.isFinite(since)) return Date.now() - since >= WEDGED_RECLAIM_AFTER_MS;
+      } catch {
+        try {
+          writeFileSync(marker, String(Date.now()), "utf8");
+        } catch {
+          /* concurrent release */
+        }
+      }
+    } else {
+      try {
+        rmSync(join(dir, ".wedged-since"), { force: true });
+      } catch {
+        /* best effort */
+      }
+    }
+    return age > STALE_MS;
   } catch {
     return true;
   }
+}
+
+export interface LocalSlotHolder {
+  slot: number;
+  pid?: number;
+  ageMs: number;
+  wedged: boolean;
+  meta?: Record<string, unknown>;
+}
+
+/** Read local slot ownership for the Checks surface and CLI diagnostics. */
+export function inspectCrossProcessSlots(lockRoot: string): LocalSlotHolder[] {
+  return slotDirs(lockRoot).map((dir) => {
+    let pid: number | undefined;
+    let meta: Record<string, unknown> | undefined;
+    let ageMs = 0;
+    try {
+      pid = Number(readFileSync(join(dir, ".holder"), "utf8")) || undefined;
+      meta = JSON.parse(readFileSync(join(dir, ".meta.json"), "utf8")) as Record<string, unknown>;
+      ageMs = Math.max(0, Date.now() - statSync(dir).mtimeMs);
+    } catch {
+      try {
+        ageMs = Math.max(0, Date.now() - statSync(dir).mtimeMs);
+      } catch {
+        /* disappeared during inspection */
+      }
+    }
+    return {
+      slot: Number(dir.slice(dir.lastIndexOf("/") + 1)),
+      pid,
+      ageMs,
+      wedged: ageMs > WEDGED_AFTER_MS,
+      meta,
+    };
+  });
 }
 
 function tryTakeSlot(

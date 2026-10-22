@@ -83,6 +83,23 @@ const profile = ref<string>("");
 const changedRef = ref("");
 const changedInput = ref("");
 const openOutput = ref<string | null>(null);
+const localSlotHolders = ref<Array<{ slot: number; pid?: number; ageMs: number; wedged: boolean }>>(
+  [],
+);
+
+async function loadLocalSlotHolders(): Promise<void> {
+  try {
+    const result = await api<{ holders: typeof localSlotHolders.value }>("/api/local-check-slots");
+    localSlotHolders.value = result.holders;
+  } catch {
+    localSlotHolders.value = [];
+  }
+}
+
+onMounted(() => {
+  void loadLocalSlotHolders();
+  window.setInterval(() => void loadLocalSlotHolders(), 5000);
+});
 
 async function load(): Promise<void> {
   loading.value = true;
@@ -252,6 +269,14 @@ const RESULT_ICON: Record<string, string> = {
     </nav>
 
     <div v-if="activeTab === 'now'" class="ck-test-suite">
+      <section v-if="localSlotHolders.length" class="ck-local-slots" aria-label="Local check slots">
+        <h2>Local check slots</h2>
+        <p v-for="holder in localSlotHolders" :key="holder.slot">
+          Slot {{ holder.slot }} · PID {{ holder.pid ?? "unknown" }} ·
+          {{ Math.round(holder.ageMs / 1000) }}s
+          <strong v-if="holder.wedged"> · possibly wedged</strong>
+        </p>
+      </section>
       <IntegrationPipelineSummary />
       <RemoteRunnersPanel />
     </div>
