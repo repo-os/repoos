@@ -12,7 +12,7 @@ branch: feat/repoos-doctor-warn-when-macos-syspolicyd
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:26Z"
-updated_at: "2026-10-22T14:52:24Z"
+updated_at: "2026-10-22T15:06:31Z"
 last_close_out_gate_ms: 415604
 last_close_out_gate_at: "2026-10-22T14:51:50.419Z"
 review_passes: 2
@@ -69,3 +69,4 @@ See src/core/runtime.ts preferAppleGit, user-docs/configuration.md (Apple-signed
 - 2026-10-22T14:39:26Z · note: review pass 2: good to go
 - 2026-10-22T14:51:50Z · close-out gate completed in 416s
 - 2026-10-22T14:52:24Z · status done→done, release:success
+- 2026-10-22T15:06:31Z · body
