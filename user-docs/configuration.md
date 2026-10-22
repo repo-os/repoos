@@ -931,11 +931,16 @@ provider = "none"
 | `localChecks.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long a queued local check may wait for a slot before failing with an actionable timeout (minimum 60000). |
 | `playwright.maxConcurrent` | select (1–4) | `1` | yes | Shared cap on headless Playwright work (smoke, contrast audit, shots, UI verification). |
 | `playwright.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long queued Playwright work may wait for the shared browser slot before timing out (minimum 60000). |
-| `pressureGuard.enabled` | boolean | `true` | yes | When on, delay new local checks, browser steps and engineer starts while memory pressure (swap, compressor, reclaimable memory) or load is high. Running engineers are never killed. |
+| `pressureGuard.enabled` | boolean | `true` | yes | When on, delay new local checks, browser steps and engineer starts while paging activity, reclaimable memory, or load is high. Running engineers are never killed. |
 | `pressureGuard.maxLoadPerCpu` | number | `4` | yes | Load average per CPU used as the pressure signal when swap/compressor readings are unavailable; when memory stats are available it is shown as a warning only. |
 | `pressureGuard.minAvailableMemRatio` | number | `0.08` | yes | Block starts when reclaimable memory falls below this fraction of total RAM. |
-| `pressureGuard.maxSwapUsedRatio` | number | `0.5` | yes | Block starts and browser steps when swap in use exceeds this fraction of total swap. Primary signal on macOS. |
-| `pressureGuard.maxCompressorRatio` | number | `0.35` | yes | Block starts and browser steps when the macOS memory compressor holds more than this fraction of total RAM. |
+| `pressureGuard.maxSwapUsedRatio` | number | `0.5` | yes | Warn when swap in use exceeds this fraction of total swap (occupancy alone does not block — see activity rates below). |
+| `pressureGuard.maxCompressorRatio` | number | `0.35` | yes | Warn when the macOS memory compressor holds more than this fraction of total RAM (occupancy alone does not block). |
+| `pressureGuard.activityWindowSec` | number | `30` | yes | Rolling window for swap I/O and pageout rates from `vm_stat` (macOS) or `/proc/vmstat` (Linux). |
+| `pressureGuard.maxSwapIoBytesPerSec` | number | `1048576` | yes | Block when sustained swap in+out over the activity window exceeds this rate (bytes/s). Default 1 MiB/s. |
+| `pressureGuard.maxPageoutBytesPerSec` | number | `262144` | yes | Block when sustained pageouts over the activity window exceed this rate (bytes/s). Default 256 KiB/s. |
+| `pressureGuard.minMemoryFreePercent` | number | `10` | yes | Block when macOS `memory_pressure -Q` reports system-wide free memory below this percentage. |
+| `pressureGuard.maxPsiMemoryAvg10` | number | `25` | yes | Block when Linux `/proc/pressure/memory` `some avg10` exceeds this value (0–100). |
 | `remoteValidation.offloadBrowserSteps` | boolean | `false` | yes | Opt-in: run browser gate steps on a runner when feasible; otherwise local under the Playwright cap. |
 | `remoteValidation.localFallback` | select | `serialize` | yes | When remote validation falls back locally: `serialize` (one suite at a time), `allow` (use `localChecks.maxConcurrent`), or `off` (refuse fallback). |
 | `remoteValidation.healthCheck` | boolean | `true` | yes | Read runner swap and available memory before leasing a host, using the `pressureGuard` thresholds. Pressured hosts are skipped; if every host is pressured the run queues with the reason and the exact fix instead of failing the branch's tests. Docker on macOS reads the Linux VM's numbers, not the Mac's swap. |

@@ -1104,10 +1104,26 @@ export interface PressureGuardConfig {
   maxLoadPerCpu?: number;
   /** Block when available memory falls below this fraction of RAM. Default 0.08. */
   minAvailableMemRatio?: number;
-  /** Block when swap in use exceeds this fraction of total swap. Default 0.5. */
+  /**
+   * Warn (not block) when swap in use exceeds this fraction of total swap.
+   * Default 0.5. Blocking uses paging activity (#0918).
+   */
   maxSwapUsedRatio?: number;
-  /** Block when the macOS memory compressor holds more than this fraction of RAM. Default 0.35. */
+  /**
+   * Warn (not block) when the macOS compressor holds more than this fraction of RAM.
+   * Default 0.35.
+   */
   maxCompressorRatio?: number;
+  /** Seconds of vm_stat/vmstat deltas for activity rates. Default 30. */
+  activityWindowSec?: number;
+  /** Block when sustained swap in+out exceeds this (bytes/s). Default 1 MiB/s. */
+  maxSwapIoBytesPerSec?: number;
+  /** Block when sustained pageouts exceed this (bytes/s). Default 256 KiB/s. */
+  maxPageoutBytesPerSec?: number;
+  /** Block when `memory_pressure` free percentage is below this. Default 10. */
+  minMemoryFreePercent?: number;
+  /** Block when Linux PSI memory `avg10` exceeds this (0–100). Default 25. */
+  maxPsiMemoryAvg10?: number;
 }
 
 export interface RemoteValidationConfig {

@@ -84,7 +84,7 @@ describe("parseHostPressureSample + evaluateRunnerHealth", () => {
     const health = evaluateRunnerHealth(sample, thresholds);
     expect(health.state).toBe("pressured");
     expect(health.level).toBe("critical");
-    expect(health.reason).toContain("swap is nearly full");
+    expect(health.reason).toMatch(/available memory is low/i);
     expect(health.fix).toContain("sudo swapoff -a && sudo swapon -a");
     expect(health.recheckCommand).toContain("repoos runners");
   });
