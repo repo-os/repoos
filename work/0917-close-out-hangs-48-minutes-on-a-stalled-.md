@@ -2,7 +2,7 @@
 id: "0917"
 title: Close-out hangs ~48 minutes on a stalled ssh bundle upload before falling back to local; thinkpad swap full again
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -117,3 +117,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T11:57:00Z · body
 - 2026-10-22T12:09:41Z · message_queued at 2026-10-22T12:09:41.280Z
 - 2026-10-22T12:10:00Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-10-22T12:10:00Z · status active→review
