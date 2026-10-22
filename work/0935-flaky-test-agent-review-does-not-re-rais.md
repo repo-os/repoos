@@ -11,7 +11,7 @@ branch: feat/flaky-test-agent-review-does-not-re-rais
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T14:02:13Z"
-updated_at: "2026-10-22T14:03:03Z"
+updated_at: "2026-10-22T14:09:05Z"
 ---
 ## Problem
 tests/agent-review.test.ts > 'agent review before human sign-off (#0101) > does not re-raise an exhausted-rounds flag dismissed during the review' failed on a remote runner twice on 2026-10-22: #0933 pre-review handoff (10:47Z) and #0923 close-out attempt 2 on thinkpad (13:27Z, a 16-minute run). Both times a retry passed, with no change to the code under test. By AGENTS.md triage this should reproduce in isolation if it is a real bug; the pattern (only on remote runners, only under load) points to a timing race in the test or in the review/flag code (dismissal landing before or after the exhausted-rounds raise).
@@ -33,3 +33,4 @@ See AGENTS.md 'Is a repoos check failure a flake or a real bug?' and the #0330 r
 - 2026-10-22T14:02:56Z · status inbox→ready
 - 2026-10-22T14:03:02Z · cli_override, model_override
 - 2026-10-22T14:03:03Z · status ready→active, branch
+- 2026-10-22T14:09:05Z · body
