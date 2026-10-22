@@ -199,8 +199,8 @@ runner.
 Two supported shapes, chosen per runner:
 
 1. **Native runner (`runner = "native"`)**: the engineer CLI is installed and
-   logged in once as the runner user. Its existing config directory
-   (`~/.config/opencode`, `~/.codex`, `~/.claude`, `~/.cursor`, …) is the
+   logged in once as the runner user. Its own config/data directories
+   (`~/.local/share/opencode`, `~/.codex`, `~/.claude`, `~/.cursor`, …) are the
    credential source. No copy or mount is needed.
 2. **Docker runner (`runner = "docker"`, the default)**: the same directories
    are bind-mounted **read-only** into the engineer container at the same
