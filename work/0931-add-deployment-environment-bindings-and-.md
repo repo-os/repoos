@@ -89,3 +89,4 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 - 2026-10-22T23:30:03Z · body
 - 2026-10-22T23:32:08Z · body
 - 2026-10-22T23:42:10Z · status active→review
+- 2026-10-22T23:42:10Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
