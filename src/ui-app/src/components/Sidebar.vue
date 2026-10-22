@@ -13,7 +13,7 @@ const repo = useRepoStore();
 const config = useConfigStore();
 // Secrets must remain discoverable before the first environment exists, so
 // the page can provide its own empty state and creation path.
-const nav = computed(() => navFromConfig(config.data, true));
+const nav = computed(() => navFromConfig(config.data));
 function secretsChanged(): void {
   void config.load();
 }
