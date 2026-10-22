@@ -13,7 +13,7 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T19:11:07Z"
+updated_at: "2026-10-22T19:14:50Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 3b3805a62ded3d06e7724a86aa8652e967fcb27e
 ---
