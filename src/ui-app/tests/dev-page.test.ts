@@ -135,9 +135,9 @@ describe("Dev nav gating (#0748)", () => {
     );
   });
 
-  it("shows Secrets only for configured project environments and keeps it after Dev", () => {
-    expect(navFor(false, false).map((n) => n.id)).not.toContain("secrets");
-    expect(navFromConfig({}).map((n) => n.id)).not.toContain("secrets");
+  it("keeps Secrets discoverable and places it between Dev and Agents", () => {
+    expect(navFor(false, false).map((n) => n.id)).toContain("secrets");
+    expect(navFromConfig({}).map((n) => n.id)).toContain("secrets");
     const justSecrets = navFor(false, false, false, false, true).map((n) => n.id);
     expect(justSecrets.indexOf("secrets")).toBe(justSecrets.indexOf("agents") - 1);
     const devAndSecrets = navFor(false, false, false, true, true).map((n) => n.id);
@@ -145,9 +145,7 @@ describe("Dev nav gating (#0748)", () => {
       devAndSecrets.slice(devAndSecrets.indexOf("dev"), devAndSecrets.indexOf("agents") + 1),
     ).toEqual(["dev", "secrets", "agents"]);
     expect(navFromConfig({ projectSecretsEnabled: true }).map((n) => n.id)).toContain("secrets");
-    expect(navFromConfig({ projectSecretsEnabled: false }).map((n) => n.id)).not.toContain(
-      "secrets",
-    );
+    expect(navFromConfig({ projectSecretsEnabled: false }).map((n) => n.id)).toContain("secrets");
   });
 
   it("places Dev just before Agents, regardless of the other opt-ins", () => {
