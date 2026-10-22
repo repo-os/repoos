@@ -2,14 +2,14 @@
 id: "0922"
 title: "Task drawer: expanding a tab hides the cards between title and tabs"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T05:45:27Z"
-updated_at: "2026-10-22T05:45:36Z"
+updated_at: "2026-10-22T12:51:08Z"
 ---
 ## Problem
 The task drawer stacks a lot between the title and the tab strip: the handoff-failure banner, the status row (status picker, Stop work, Move to done), the "Not landable yet" checklist, the preview control, and the "Waiting for you" needs-input card. On a task with several warnings (see the attached #0908 screenshots: handoff failure, landability checklist, reviewer-failed card) these push the tab strip down and leave only a thin strip of vertical space for the tab's content (Review, Changes, Dev, ...).
@@ -43,3 +43,4 @@ Start from the `fullscreen` ref, `toggleFullscreen`, `onEscapeKeyDown` and the `
 
 - 2026-10-22T05:45:27Z · created · njachowski@gmail.com
 - 2026-10-22T05:45:36Z · screenshots
+- 2026-10-22T12:51:08Z · status inbox→ready
