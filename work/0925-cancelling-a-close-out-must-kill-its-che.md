@@ -97,3 +97,4 @@ Also fix #0921 in the same change (dead-holder detection for local check slots: 
 - 2026-10-22T10:38:03Z · body
 - 2026-10-22T10:38:42Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-22T10:38:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T10:38:43Z · message_delivered: 1 message(s)
