@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-22T23:06:45Z"
+review_passes: 1
 id: "0931"
 title: Add deployment environment bindings and production safeguards
 type: feature
@@ -13,7 +15,6 @@ branch: feat/add-deployment-environment-bindings-and-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:07:01Z"
-updated_at: "2026-10-22T23:06:45Z"
 last_check_failure: "repoos check at 2026-10-22T22:46:53.391Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 55c03c38 to 4d183313) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 ---
 ## Problem
@@ -73,3 +74,4 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 - 2026-10-22T23:05:17Z · status active→review
 - 2026-10-22T23:05:18Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-22T23:06:45Z · note: review pass 1: needs some work
+
