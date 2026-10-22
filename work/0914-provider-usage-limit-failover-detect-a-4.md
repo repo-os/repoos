@@ -58,3 +58,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T04:40:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T04:45:32Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
 - 2026-10-22T04:55:31Z · message_queued at 2026-10-22T04:55:31.102Z
+- 2026-10-22T04:55:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
