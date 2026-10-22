@@ -13,7 +13,7 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T18:16:08Z"
+updated_at: "2026-10-22T18:16:55Z"
 ---
 ## Problem
 Users have no RepoOS screen to see which project environment is selected or which expected keys are set, missing, or inherited. The metadata and write operations from #0928 need a safe, usable interface that never reveals saved values.
@@ -37,29 +37,26 @@ Implement only the user interface and its route/state/tests; consume the metadat
 ```json
 [
 {
-  "label": "Secrets inventory with missing, inherited, and public keys",
+  "label": "Secrets inventory in light theme with missing and inherited keys",
   "target": "default",
-  "route": "/secrets?fixture=secrets",
+  "route": "/secrets?fixture=secrets&theme=light",
   "highlight": ".secrets-rows"
 },
 {
-  "label": "Secrets environment creation dialog",
+  "label": "Secrets removal confirmation in dark theme",
   "target": "default",
-  "route": "/secrets?fixture=secrets",
-  "highlight": ".secrets-create-panel",
+  "route": "/secrets?fixture=secrets&theme=dark",
+  "highlight": ".delete-confirm-modal",
   "steps": [
     {
-      "click": ".secrets-picker"
-    },
-    {
-      "click": ".secrets-create-option"
+      "click": ".secrets-remove"
     }
   ]
 },
 {
   "label": "Secrets inventory on mobile",
   "target": "default",
-  "route": "/secrets?fixture=secrets",
+  "route": "/secrets?fixture=secrets&theme=light",
   "highlight": ".secrets-head"
 }
 ]
@@ -77,3 +74,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T18:12:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T18:12:40Z · message_delivered: 1 message(s)
 - 2026-10-22T18:16:08Z · body
+- 2026-10-22T18:16:55Z · body
