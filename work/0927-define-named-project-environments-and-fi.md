@@ -1,0 +1,36 @@
+---
+id: "0927"
+title: Define named project environments and file-backed storage
+type: feature
+status: inbox
+human_step_decision: agent
+human_step_decision_key: 16ca06e1
+priority: p1
+area: [core, server, docs]
+story: Secrets and project environments
+assigned_to: ai
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-22T08:05:30Z"
+updated_at: "2026-10-22T08:05:35Z"
+---
+## Problem
+RepoOS has legacy root-.env loading but no explicit model for multiple project secret environments. Without a shared contract and safe storage primitives, management APIs and process bindings could mix project values with RepoOS provider/auth settings or silently change legacy behavior.
+
+## Desired UX
+A project can register named environment scopes and explicit source-file mappings; existing projects continue using today’s root-.env behavior until they opt in. RepoOS can report a scope’s expected key names, source, and effective metadata without returning values. File updates preserve unrelated text and fail clearly when the source changes concurrently or is unsafe.
+
+## Acceptance criteria
+- Add an ADR defining environment identifiers, source mappings, precedence, duplicate-key behavior, legacy compatibility, project-versus-RepoOS credential boundaries, visibility classification, and the allowed consumer/grant model.
+- Implement validated metadata and file-backed read/write primitives for explicitly registered sources; do not recursively discover .env* files or infer an environment from filenames or NODE_ENV.
+- Preserve comments and unrelated entries; support tested round-trip quoting for spaces, quotes, equals signs, and hash characters, and reject unsupported syntax and multiline values explicitly.
+- Writes are atomic and permission-restricted, detect stale concurrent edits, and refuse tracked destinations, unsafe paths, and symlinks.
+- .env.example contributes expected key names only, never values; test separate environment sets, source precedence, duplicate keys, safe-path refusals, round trips, concurrent edits, and unchanged legacy loading.
+- Add no runtime dependencies; no real secret or external account is needed for tests.
+
+## Notes for AI
+Work in the existing config/environment loading and file utility layers under src/core and src/server; inspect the current dotenv parser and legacy loading tests before designing compatibility. Keep this slice to the contract and storage foundation: do not add management routes, UI, or process injection. Update the ADR and directly affected environment/secrets documentation. Never read or expose real values in test output.
+
+## Activity
+
+- 2026-10-22T08:05:30Z · created · njachowski@gmail.com
