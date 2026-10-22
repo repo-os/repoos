@@ -451,6 +451,8 @@ import {
   getModelProviderUsage,
   setModelProviderKey,
   listProjectEnvironmentSecrets,
+  listProjectEnvironments,
+  createProjectEnvironment,
   getProjectEnvironmentBindings,
   putProjectEnvironmentBinding,
   mutateProjectEnvironmentSecret,
@@ -3603,6 +3605,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       return json(res, 200, { ok: false, error: (e as Error).message });
     }
   });
+  router.register("GET", "/api/project-environments", listProjectEnvironments);
+  router.register("POST", "/api/project-environments", createProjectEnvironment);
   router.register(
     "GET",
     /^\/api\/tasks\/([^/]+)\/remote-validation\/log$/,

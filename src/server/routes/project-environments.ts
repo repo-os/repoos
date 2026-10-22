@@ -1,5 +1,13 @@
-import { existsSync, readFileSync, appendFileSync, mkdirSync } from "node:fs";
+import {
+  existsSync,
+  readFileSync,
+  appendFileSync,
+  mkdirSync,
+  writeFileSync,
+  chmodSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
+import { execFileSync } from "node:child_process";
 import {
   projectEnvironmentSourceHasKey,
   readProjectEnvironment,
@@ -82,20 +90,86 @@ export const listProjectEnvironmentSecrets: RouteHandler = (ctx, req, res, param
     if (!env) return send(res, 404, { error: "Unknown project environment" });
     const snapshot = readProjectEnvironment(ctx.config.root, env);
     const bindings = readProjectEnvironmentBindings(ctx.config.root).bindings;
-    const keys = [...new Set([...snapshot.keys, ...snapshot.expectedKeys])].sort().map((name) => ({
-      name,
-      status: snapshot.keys.includes(name) ? "set" : "missing",
-      source: snapshot.source,
-      visibility: "server-only",
-      version: snapshot.sha256,
-      consumers: bindings
-        .filter((row) => row.environment === env.id && row.keys.includes(name))
-        .map((row) => row.consumer),
-      restartNeeded: false,
-    }));
+    const keys = [...new Set([...snapshot.keys, ...snapshot.expectedKeys])]
+      .filter((name) => !isReservedProjectKey(name))
+      .sort()
+      .map((name) => ({
+        name,
+        status: snapshot.keys.includes(name) ? "set" : "missing",
+        source: snapshot.source,
+        inherited:
+          snapshot.keys.includes(name) &&
+          !projectEnvironmentSourceHasKey(ctx.config.root, env.sources.at(-1)!.path, name),
+        visibility: /^(VITE_|NEXT_PUBLIC_|PUBLIC_)/.test(name) ? "public" : "server-only",
+        version: snapshot.sha256,
+        consumers: bindings
+          .filter((row) => row.environment === env.id && row.keys.includes(name))
+          .map((row) => row.consumer),
+        restartNeeded: false,
+      }));
     return send(res, 200, { environment: env.id, version: snapshot.sha256, keys });
   } catch {
     return send(res, 400, { error: "Could not read project environment metadata" });
+  }
+};
+
+/** Environment labels and registered source paths only; never return values. */
+export const listProjectEnvironments: RouteHandler = (ctx, req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  if (!requireAdmin(req, ctx.config, res)) return;
+  if (!originAllowed(req)) return send(res, 403, { error: "Request origin rejected" });
+  try {
+    return send(res, 200, registry(ctx.config.root));
+  } catch {
+    return send(res, 400, { error: "Could not read project environments" });
+  }
+};
+
+/** Create an empty, ignored environment source and register it. */
+export const createProjectEnvironment: RouteHandler = async (ctx, req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  if (!requireAdmin(req, ctx.config, res)) return;
+  if (!originAllowed(req)) return send(res, 403, { error: "Request origin rejected" });
+  const body = (await readBody(req)) as { name?: unknown };
+  const id = typeof body.name === "string" ? body.name.trim() : "";
+  if (!/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(id))
+    return send(res, 400, {
+      error: "Use a name starting with a letter, followed by letters, numbers, _ or -.",
+    });
+  try {
+    const current = registry(ctx.config.root);
+    if (current.environments.some((env) => env.id.toLowerCase() === id.toLowerCase()))
+      return send(res, 409, { error: "That environment already exists" });
+    const sourcePath = `.env.${id}`;
+    const source = join(ctx.config.root, sourcePath);
+    execFileSync("git", ["-C", ctx.config.root, "check-ignore", "-q", "--", sourcePath], {
+      stdio: "ignore",
+    });
+    if (existsSync(source))
+      return send(res, 409, { error: "The environment source file already exists" });
+    mkdirSync(dirname(source), { recursive: true, mode: 0o700 });
+    writeFileSync(source, "", { mode: 0o600, flag: "wx" });
+    chmodSync(source, 0o600);
+    current.environments.push({
+      id,
+      sources: [{ id: "local", path: sourcePath, examplePath: ".env.example" }],
+    });
+    const path = join(ctx.config.root, registryPath);
+    mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+    writeFileSync(path, `${JSON.stringify(validateEnvironmentRegistry(current), null, 2)}\n`, {
+      mode: 0o600,
+    });
+    chmodSync(path, 0o600);
+    return send(res, 201, {
+      environment: {
+        id,
+        sources: [{ id: "local", path: sourcePath, examplePath: ".env.example" }],
+      },
+    });
+  } catch {
+    return send(res, 400, {
+      error: "Could not create project environment. Check that its source file is ignored by git.",
+    });
   }
 };
 

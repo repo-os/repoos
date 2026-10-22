@@ -23,6 +23,7 @@ export const router = createRouter({
     { path: "/stories", name: "stories", component: () => import("./views/StoriesView.vue") },
     { path: "/checks", name: "checks", component: () => import("./views/ChecksView.vue") },
     { path: "/dev", name: "dev", component: () => import("./views/DevView.vue") },
+    { path: "/secrets", name: "secrets", component: () => import("./views/SecretsView.vue") },
     { path: "/releases", name: "releases", component: () => import("./views/ReleasesView.vue") },
     {
       path: "/deployments",

@@ -54,6 +54,14 @@ Named values reach local child processes only through an explicit binding.
 The Secrets-page selector changes the environment being viewed; it does not
 bind or switch any process. Bind a consumer and grant only the keys it needs:
 
+In the **Secrets** page, create an environment to make an empty ignored source
+file, then add or replace values through masked inputs and an explicit Save.
+The page shows expected names from `.env.example`, source, consumers, visibility,
+and whether a restart is needed; it never reads example values into the form or
+reveals saved values. Keys provided only by an earlier source are read-only in
+the page because writes and removals apply to the final writable source. A
+concurrent file edit requires reloading the inventory before retrying.
+
 ```sh
 repoos secrets bind dev:web dev-nick DATABASE_URL STRIPE_SECRET_KEY
 repoos secrets bind preview:web integration DATABASE_URL
