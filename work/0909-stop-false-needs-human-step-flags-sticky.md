@@ -49,9 +49,9 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 "route": "/work?task=9999&tab=overview",
 "highlight": ".drawer-critical .agent-waiting-sub",
 "steps": [
-  {
-    "waitFor": ".drawer-critical .agent-waiting-sub"
-  }
+{
+  "waitFor": ".drawer-critical .agent-waiting-sub"
+}
 ],
 "state": "card:humanStep"
 }
@@ -126,4 +126,5 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T02:47:00Z · note: review pass 2: needs some work
 - 2026-10-22T02:47:01Z · status review→active
 - 2026-10-22T02:48:02Z · body
+- 2026-10-22T02:49:55Z · body
 - 2026-10-22T02:49:55Z · body
