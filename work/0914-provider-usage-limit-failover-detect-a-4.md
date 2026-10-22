@@ -45,3 +45,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T02:49:44Z · body
 - 2026-10-22T02:49:44Z · body
 - 2026-10-22T02:59:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T02:59:32Z · message_delivered: 1 message(s)
