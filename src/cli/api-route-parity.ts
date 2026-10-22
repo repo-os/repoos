@@ -133,6 +133,7 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   exact("GET", "/api/decisions"),
   exact("GET", "/api/check-runs"),
   exact("GET", "/api/local-check-slots"),
+  re("POST", /^\/api\/local-check-slots\/(\d+)\/release\/(\d+)$/.source),
   exact("GET", "/api/resource-queues"),
   exact("GET", "/api/close-out/outcomes"),
   re("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/.source),

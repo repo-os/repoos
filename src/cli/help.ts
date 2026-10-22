@@ -312,6 +312,12 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--profile <name> · --changed <ref> · --print-plan · --local-tests",
       },
       {
+        name: "checks slots",
+        usage: "checks slots [--release SLOT --confirm PID]",
+        desc: "Inspect local check slot holders and queue; explicitly release a wedged holder",
+        flags: "--release SLOT · --confirm PID",
+      },
+      {
         name: "doctor",
         usage: "doctor [--json] [--verbose] [--probe <cli>] [--binary <path>]",
         desc: "Readiness preflight: config, layout, tools, server and secrets",

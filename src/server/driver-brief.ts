@@ -25,6 +25,8 @@ import {
   type DriverBrief,
 } from "../core/driver-brief.js";
 import { getCheckStore } from "../core/check-store.js";
+import { inspectCrossProcessSlots, localCheckLockRoot } from "../core/cross-process-slots.js";
+import { readQueueMarkers } from "../core/local-queue-marker.js";
 import { runGit } from "../core/git.js";
 import { extractTaskId } from "../core/repo-log.js";
 import type { RepoOSConfig } from "../core/types.js";
@@ -425,6 +427,16 @@ export async function assembleDriverBrief(deps: DriverBriefDeps): Promise<Driver
     slowRuns: runs.slowRuns,
     configChanges,
     rules,
+    localCheckSlots: {
+      holders: inspectCrossProcessSlots(
+        localCheckLockRoot(config.root, config.cacheDir ?? ".repoos"),
+        config.localChecks?.maxConcurrent ?? 2,
+        config.localChecks?.staleAfterMs,
+      ),
+      queue: readQueueMarkers(config.root, config.cacheDir ?? ".repoos")
+        .filter((marker) => marker.kind === "local-check")
+        .sort((a, b) => a.position - b.position),
+    },
     generatedAt: new Date().toISOString(),
   });
 }

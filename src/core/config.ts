@@ -355,6 +355,8 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   localChecks: {
     maxConcurrent: 2,
     queueTimeoutMs: 45 * 60 * 1000,
+    staleAfterMs: 75_000,
+    reclaimGraceMs: 150_000,
   },
   playwright: {
     maxConcurrent: 1,
@@ -2074,6 +2076,15 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof lcTimeout === "number" && Number.isFinite(lcTimeout) && lcTimeout >= 60_000) {
       cfg.localChecks = { ...cfg.localChecks, queueTimeoutMs: Math.floor(lcTimeout) };
     }
+    for (const key of ["localChecks.staleAfterMs", "localChecks.reclaimGraceMs"] as const) {
+      const value = parsed[key];
+      if (typeof value === "number" && Number.isFinite(value) && value >= 15_000) {
+        cfg.localChecks = {
+          ...cfg.localChecks,
+          [key.endsWith("staleAfterMs") ? "staleAfterMs" : "reclaimGraceMs"]: Math.floor(value),
+        };
+      }
+    }
     const pwMax = parsed["playwright.maxConcurrent"];
     if (typeof pwMax === "number" && Number.isInteger(pwMax) && pwMax >= 1 && pwMax <= 4) {
       cfg.playwright = { ...cfg.playwright, maxConcurrent: pwMax };
@@ -3250,6 +3261,26 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "How long a queued local `repoos check` waits for a slot before failing with an actionable timeout. Default 45 minutes (2_700_000 ms).",
     },
     {
+      key: "localChecks.staleAfterMs",
+      label: "Local check heartbeat timeout (ms)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 75_000,
+      description:
+        "Show a silent local check holder as wedged after this interval. Default 75 seconds.",
+    },
+    {
+      key: "localChecks.reclaimGraceMs",
+      label: "Local check reclaim grace (ms)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 150_000,
+      description:
+        "Wait this long after marking a live holder wedged before terminating its managed process group. Default 150 seconds.",
+    },
+    {
       key: "playwright.queueTimeoutMs",
       label: "Playwright queue timeout (ms)",
       type: "number",
@@ -3935,6 +3966,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "maxConcurrentAgents",
   "localChecks.maxConcurrent",
   "localChecks.queueTimeoutMs",
+  "localChecks.staleAfterMs",
+  "localChecks.reclaimGraceMs",
   "playwright.maxConcurrent",
   "playwright.queueTimeoutMs",
   "pressureGuard.enabled",
