@@ -70,3 +70,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T08:15:22Z · body
 - 2026-10-22T08:17:38Z · body
 - 2026-10-22T08:18:13Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-22T08:18:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
