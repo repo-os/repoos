@@ -122,10 +122,10 @@ describe("resolveReviewerForTask", () => {
       reviewModelOverride: "sonnet",
     });
 
-    cfg.budget.allowlist = [
+    cfg.budget = { ...cfg.budget, allowlist: [
       { cli: "claude code", models: ["sonnet"] },
       { cli: "codex", models: ["gpt-5"] },
-    ];
+    ] };
     expect(resolveReviewerForTask(cfg, pinned)).toMatchObject({
       cli: "claude code",
       model: "sonnet",

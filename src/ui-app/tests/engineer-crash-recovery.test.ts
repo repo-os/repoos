@@ -163,7 +163,7 @@ describe("engineer crash recovery policy (#0869)", () => {
         task: planTask({ cliOverride: PAIR.cli, modelOverride: PAIR.model }),
         crashes: [{ ...recordsFor(PAIR, 1)[0]!, kind: "usage-limit" }],
         allowlist: [
-          { cli: PAIR.cli, models: [PAIR.model], pausedModels: [PAIR.model] },
+          { cli: PAIR.cli, models: [PAIR.model], pausedModels: [{ model: PAIR.model }] },
           { cli: "claude code", models: ["opus"], paused: true },
           { cli: "cursor", models: ["composer"], paused: true },
         ],
