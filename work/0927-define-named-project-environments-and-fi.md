@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "0927"
 title: Define named project environments and file-backed storage
 type: feature
@@ -17,7 +18,6 @@ created_at: "2026-10-22T08:05:30Z"
 updated_at: "2026-10-22T14:56:48Z"
 review_rounds: 1
 review_passes: 1
-handoff_signal_retry_count: 1
 ---
 ## Problem
 RepoOS has legacy root-.env loading but no explicit model for multiple project secret environments. Without a shared contract and safe storage primitives, management APIs and process bindings could mix project values with RepoOS provider/auth settings or silently change legacy behavior.
@@ -54,3 +54,4 @@ Work in the existing config/environment loading and file utility layers under sr
 - 2026-10-22T14:54:52Z · note: review pass 1: needs some work
 - 2026-10-22T14:54:53Z · status review→active
 - 2026-10-22T14:56:48Z · body
+
