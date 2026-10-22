@@ -2,7 +2,7 @@
 id: "0931"
 title: Add deployment environment bindings and production safeguards
 type: feature
-status: ready
+status: review
 priority: p2
 area: [server, web]
 story: Secrets and project environments
@@ -13,7 +13,7 @@ branch: feat/add-deployment-environment-bindings-and-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:07:01Z"
-updated_at: "2026-10-22T22:42:48Z"
+updated_at: "2026-10-22T23:05:17Z"
 ---
 ## Problem
 Deployments do not yet show or bind the project environment they consume. A local environment selection must not imply that its values were uploaded to a provider, and production must not be propagated implicitly when a deployment destination changes.
@@ -39,3 +39,4 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 - 2026-10-22T22:12:02Z · cli_override, model_override
 - 2026-10-22T22:12:03Z · status ready→active, branch
 - 2026-10-22T22:42:48Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-22T23:05:17Z · status ready→review
