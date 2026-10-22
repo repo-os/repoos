@@ -93,6 +93,37 @@ export function specSectionHeadingsForTask(area: string | null | undefined): rea
   return TASK_SPEC_SECTION_HEADINGS.filter((h) => h !== "## Desired UX");
 }
 
+interface BundleSpecSection {
+  id: string;
+  body: string;
+}
+
+/** Collect only explicit `## E<n> · Title` bundle item sections. */
+function bundleSpecSections(body: string): BundleSpecSection[] {
+  const lines = body.split("\n");
+  const items: BundleSpecSection[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const match = /^##\s+(E\d+)\s+·\s+.+\s*$/.exec(lines[i]);
+    if (!match) continue;
+    let end = i + 1;
+    while (end < lines.length && !/^##\s+/.test(lines[end])) end++;
+    items.push({ id: match[1], body: lines.slice(i + 1, end).join("\n") });
+    i = end - 1;
+  }
+  return items;
+}
+
+function bundleSubsectionContent(itemBody: string, name: string): string | null {
+  const lines = itemBody.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim() !== `### ${name}`) continue;
+    let end = i + 1;
+    while (end < lines.length && !/^#{1,3}\s+/.test(lines[end])) end++;
+    return lines.slice(i + 1, end).join("\n");
+  }
+  return null;
+}
+
 /** Stub lines the PM scaffold leaves behind — not prose that mentions TODO/TBD. */
 function hasUnfilledPlaceholderMarkers(text: string): boolean {
   const withoutInlineCode = text.replace(/`[^`]*`/g, "");
@@ -241,25 +272,35 @@ export function assessTaskUnderspecified(
   }
   const signals: string[] = [];
   const trimmed = body.trim();
-  const headings = specSectionHeadingsForTask(opts?.area);
-
-  const missing: string[] = [];
-  const empty: string[] = [];
-  for (const heading of headings) {
-    const section = extractSection(trimmed, heading);
-    const shortName = heading.replace(/^##\s+/, "");
-    if (!section) {
-      missing.push(shortName);
-      continue;
+  const items = bundleSpecSections(trimmed);
+  if (items.length > 0) {
+    const headings = TASK_SPEC_SECTION_HEADINGS.map((h) => h.replace(/^##\s+/, ""));
+    for (const item of items) {
+      const missing: string[] = [];
+      const empty: string[] = [];
+      for (const name of headings) {
+        const section = bundleSubsectionContent(item.body, name);
+        if (section === null) missing.push(name);
+        else if (!stripTemplatePlaceholderLines(section)) empty.push(name);
+      }
+      if (missing.length) signals.push(`${item.id}: missing ${missing.join(", ")}`);
+      if (empty.length) signals.push(`${item.id}: empty ${empty.join(", ")}`);
     }
-    const content = stripTemplatePlaceholderLines(sectionContent(section));
-    if (!content) empty.push(shortName);
-  }
-  if (missing.length) {
-    signals.push(`missing sections: ${missing.join(", ")}`);
-  }
-  if (empty.length) {
-    signals.push(`empty sections: ${empty.join(", ")}`);
+  } else {
+    const missing: string[] = [];
+    const empty: string[] = [];
+    for (const heading of specSectionHeadingsForTask(opts?.area)) {
+      const section = extractSection(trimmed, heading);
+      const shortName = heading.replace(/^##\s+/, "");
+      if (!section) {
+        missing.push(shortName);
+        continue;
+      }
+      const content = stripTemplatePlaceholderLines(sectionContent(section));
+      if (!content) empty.push(shortName);
+    }
+    if (missing.length) signals.push(`missing sections: ${missing.join(", ")}`);
+    if (empty.length) signals.push(`empty sections: ${empty.join(", ")}`);
   }
 
   const outsideOriginal = bodyWithoutPreservedSections(trimmed);
@@ -314,6 +355,7 @@ export function fleshOutRequirementsPrompt(
     "To count as fully specified, the task body must have ALL of these sections, each with real content (not placeholders):",
     ...headings.map((h) => `- ${h}`),
     desiredUxNote,
+    "For an Easter eggs bundle, keep each `## E<n> · Title` item and its `### Problem`, `### Desired UX`, `### Acceptance criteria`, and `### Notes for AI` subsections; the checker validates those per item, so do not flatten them into task-level sections.",
     "",
     `Rules: use these exact headings; if a section doesn't apply, keep the heading and say so in a sentence (except \`## Desired UX\` on non-UI tasks, which may be omitted); leave no bare TODO/TBD/<placeholder> lines; the body outside "## Original prompt" must be at least ${UNDERSPECIFIED_MIN_BODY_CHARS} characters. Keep the existing "## Original prompt", "## Screenshots" and "## Activity" sections untouched. Update the task through the repoos commands/API, never by editing work/*.md directly.`,
     ...storyLine,
