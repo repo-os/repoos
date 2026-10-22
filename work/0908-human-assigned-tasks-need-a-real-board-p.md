@@ -11,7 +11,7 @@ branch: feat/human-assigned-tasks-need-a-real-board-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T19:22:55Z"
-updated_at: "2026-10-22T02:42:58Z"
+updated_at: "2026-10-22T02:48:22Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 review_passes: 2
@@ -60,3 +60,4 @@ Do not start without the human. Related rule in AGENTS.md: needs-human-step task
 - 2026-10-22T02:37:10Z · note: review pass 2: needs some work
 - 2026-10-22T02:37:11Z · status review→active
 - 2026-10-22T02:42:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T02:48:22Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
