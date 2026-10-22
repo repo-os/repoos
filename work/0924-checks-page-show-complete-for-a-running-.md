@@ -16,7 +16,6 @@ review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-22T15:32:09.477Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 A running check (engineer self-check, handoff, close-out) shows only elapsed time and a log tail. Nick cannot tell whether a 40-minute run is 10% or 90% done, or whether it is looping (incident 2026-10-22, #0909: the test step timed out at 420s twice and restarted, invisible from the UI).
