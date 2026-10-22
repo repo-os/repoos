@@ -11,7 +11,7 @@ branch: feat/provider-usage-limit-failover-detect-a-4
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T02:17:25Z"
-updated_at: "2026-10-22T06:41:24Z"
+updated_at: "2026-10-22T06:41:31Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-22T05:55:25.520Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-22T06:08:25.959Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-22T06:17:25.965Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -36,11 +36,11 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 ```json
 [
 {
-  "label": "Provider usage exhaustion in Budget Controls",
-  "target": "default",
-  "route": "/agents?tab=budget-controls",
-  "highlight": ".budget-controls",
-  "state": "budget:paused"
+"label": "Provider usage exhaustion in Budget Controls",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": ".budget-controls",
+"state": "budget:paused"
 }
 ]
 ```
@@ -90,3 +90,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T06:33:07Z · body
 - 2026-10-22T06:38:37Z · body
 - 2026-10-22T06:41:24Z · body
+- 2026-10-22T06:41:31Z · handoff_deferred: 1 queued message(s) must be read before review
