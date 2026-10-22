@@ -330,6 +330,27 @@ describe("evaluatePressure", () => {
     expect(snapshot.reason).toMatch(/load is high/i);
   });
 
+  it("uses PSI as a memory signal on a swap-less Linux host", () => {
+    const snapshot = evaluatePressure(
+      {
+        loadPerCpu: 9,
+        availableMemRatio: 0.5,
+        totalMemBytes: 16 * GB,
+        swapUsedBytes: null,
+        swapTotalBytes: null,
+        compressorBytes: null,
+        memoryFreePercent: null,
+        memoryStatsAvailable: false,
+        psiMemoryAvg10: 40,
+      },
+      pressureThresholds(config()),
+    );
+    expect(snapshot.source).toBe("memory");
+    expect(snapshot.level).toBe("critical");
+    expect(snapshot.reason).toMatch(/PSI memory pressure avg10/i);
+    expect(snapshot.warnings.join(" ")).toMatch(/load is high/i);
+  });
+
   it("respects configured swap I/O threshold", () => {
     const strict = config({ maxSwapIoBytesPerSec: 100_000 });
     expect(

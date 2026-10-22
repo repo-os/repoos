@@ -107,11 +107,10 @@ grep -E '^(SwapTotal|SwapFree|MemAvailable):' /proc/meminfo
 **What keeps it from recurring:** fixtures that start engineers set
 `pressureGuard.enabled = false` unless the guard is the subject. The guard's
 suite injects samples (`pressure-guard.test.ts`, `agent-pressure-guard.test.ts`);
-`agent-start-host-pressure.test.ts` proves high occupancy without thrashing
-activity does not block when the guard is on; its fixture includes high swap
-I/O, so the idle-but-full case is covered by `pressure-guard.test.ts`.
-**Never lower activity thresholds
-just to green a test** on a machine that is actually paging hard.
+`pressure-guard.test.ts` covers idle-but-full occupancy without paging activity;
+`agent-start-host-pressure.test.ts` covers the host guard with a fixture that
+also includes high swap I/O. **Never lower activity thresholds just to green a
+test** on a machine that is actually paging hard.
 
 ## Counter-example: when it looked identical but wasn't
 

@@ -8,7 +8,9 @@
  * `sudo swapoff -a && sudo swapon -a`, found by hand.
  *
  * So before leasing a host, RepoOS reads its pressure and skips hosts over the
- * `pressureGuard` thresholds. The numbers have to come from the right place:
+ * `pressureGuard` thresholds. Paging activity and Linux PSI identify active
+ * pressure; quiet swap occupancy is informational. The numbers come from the
+ * right place:
  *
  * - Native Linux (and Docker on Linux): `/proc/meminfo` on the host. Containers
  *   there see the host's swap, so the host reading is the container reading.
@@ -31,6 +33,7 @@ import {
   type PressureThresholds,
 } from "./pressure-guard.js";
 import { parseLinuxSwap, parseSwapUsage, parseVmStatCompressor } from "./memory-pressure.js";
+import { parseLinuxPsiMemoryAvg10 } from "./memory-activity.js";
 
 /** Printed first by the probe command so a fake/test can recognise it. */
 export const HOST_HEALTH_PROBE_TOKEN = "__REPOOS_HOST_HEALTH__";
@@ -46,6 +49,8 @@ export interface HostPressureSample {
   availableMemRatio: number | null;
   totalMemBytes: number | null;
   compressorBytes?: number | null;
+  /** Linux PSI memory `some avg10` (0–100). */
+  psiMemoryAvg10?: number | null;
   sampledAt?: string;
 }
 
@@ -109,10 +114,16 @@ export function hostPressureProbeCommand(
       `docker run --rm --network none ${image} cat /proc/meminfo 2>/dev/null || true; ` +
       `else cat /proc/meminfo 2>/dev/null || true; fi`
     : "cat /proc/meminfo 2>/dev/null || true";
+  const psi = docker
+    ? `if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then ` +
+      `docker run --rm --network none ${image} cat /proc/pressure/memory 2>/dev/null || true; ` +
+      `else cat /proc/pressure/memory 2>/dev/null || true; fi`
+    : "cat /proc/pressure/memory 2>/dev/null || true";
   return [
     `printf '${HOST_HEALTH_PROBE_TOKEN}\\n'`,
     "printf '__UNAME__\\n'; uname -s 2>/dev/null || true",
     `printf '\\n__MEMINFO__\\n'; ${meminfo}`,
+    `printf '\\n__PSI__\\n'; ${psi}`,
     "printf '\\n__SWAP__\\n'; vm.swapusage 2>/dev/null || true",
     "printf '\\n__VMSTAT__\\n'; vm_stat 2>/dev/null || true",
     "printf '\\n__MEMSIZE__\\n'; sysctl -n hw.memsize 2>/dev/null || true",
@@ -189,6 +200,7 @@ export function parseHostPressureSample(
   const sections = splitLabelledSections(output);
   const uname = sections.get("UNAME").trim().toLowerCase();
   const isDarwin = uname === "darwin" || (!uname && opts.declaredOs?.toLowerCase() === "macos");
+  const psiMemoryAvg10 = parseLinuxPsiMemoryAvg10(sections.get("PSI"));
   const meminfo = parseRunnerMeminfo(sections.get("MEMINFO"));
 
   if (meminfo.totalBytes !== null) {
@@ -203,6 +215,7 @@ export function parseHostPressureSample(
           : null,
       totalMemBytes: meminfo.totalBytes,
       compressorBytes: null,
+      psiMemoryAvg10,
       sampledAt: opts.sampledAt,
     };
   }
@@ -222,6 +235,33 @@ export function parseHostPressureSample(
           : null,
       totalMemBytes: Number.isFinite(totalMemBytes) && totalMemBytes > 0 ? totalMemBytes : null,
       compressorBytes,
+      psiMemoryAvg10: null,
+      sampledAt: opts.sampledAt,
+    };
+  }
+
+  if (isDarwin && opts.runner === "docker") {
+    return {
+      source: "macos-vm",
+      swapUsedBytes: null,
+      swapTotalBytes: null,
+      availableMemRatio: null,
+      totalMemBytes: null,
+      compressorBytes: null,
+      psiMemoryAvg10,
+      sampledAt: opts.sampledAt,
+    };
+  }
+
+  if (!isDarwin && (uname === "linux" || opts.declaredOs?.toLowerCase() === "linux")) {
+    return {
+      source: "linux",
+      swapUsedBytes: null,
+      swapTotalBytes: null,
+      availableMemRatio: null,
+      totalMemBytes: null,
+      compressorBytes: null,
+      psiMemoryAvg10,
       sampledAt: opts.sampledAt,
     };
   }
@@ -233,14 +273,21 @@ export function parseHostPressureSample(
     availableMemRatio: null,
     totalMemBytes: null,
     compressorBytes: null,
+    psiMemoryAvg10: null,
     sampledAt: opts.sampledAt,
   };
 }
 
 /** The exact human fix for the OS whose memory the runner actually uses. */
-export function runnerPressureFix(source: HostPressureSource): string | null {
+export function runnerPressureFix(
+  source: HostPressureSource,
+  reason?: string | null,
+): string | null {
   switch (source) {
     case "linux":
+      if (reason?.includes("PSI memory pressure")) {
+        return "free memory or move work off this host; inspect `cat /proc/pressure/memory` and `vmstat 1`";
+      }
       return (
         "run `sudo swapoff -a && sudo swapon -a` on the runner " +
         "(it needs enough free RAM to hold the swapped pages — reboot instead if it does not)"
@@ -290,6 +337,7 @@ export function evaluateRunnerHealth(
       swapUsedBytes: sample.swapUsedBytes,
       swapTotalBytes: sample.swapTotalBytes,
       compressorBytes: sample.compressorBytes ?? null,
+      psiMemoryAvg10: sample.psiMemoryAvg10 ?? null,
       loadPerCpu: 0,
     },
     thresholds,
@@ -301,7 +349,7 @@ export function evaluateRunnerHealth(
     level: snapshot.level,
     swapUsedRatio: snapshot.swapUsedRatio ?? base.swapUsedRatio,
     reason: pressured ? snapshot.reason : null,
-    fix: pressured ? runnerPressureFix(sample.source) : null,
+    fix: pressured ? runnerPressureFix(sample.source, snapshot.reason) : null,
   };
 }
 

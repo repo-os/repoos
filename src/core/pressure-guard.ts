@@ -24,9 +24,11 @@ import {
   pressureMinMemoryFreePercent,
 } from "./resource-limits.js";
 import {
+  runMemoryPressureCommand,
   sampleMemoryReadings,
   type MemoryPressureProbe,
   type MemoryReadings,
+  type MemoryCommandRunner,
 } from "./memory-pressure.js";
 
 export type PressureLevel = "normal" | "warning" | "critical";
@@ -48,7 +50,7 @@ export interface PressureSnapshot {
   pageoutBytesPerSec: number | null;
   activityWindowSec: number | null;
   psiMemoryAvg10: number | null;
-  /** `memory` when swap/compressor readings drove the verdict, else `load`. */
+  /** `memory` when memory readings are available, else `load`. */
   source: "memory" | "load";
   /** Critical reasons only — non-empty means new work is held. */
   reasons: string[];
@@ -108,16 +110,20 @@ export function pressureThresholds(config?: RepoOSConfig): PressureThresholds {
 
 /** True when the caller gave us (or the probe reported) real memory signals. */
 function hasMemorySignals(sample: Partial<PressureSnapshot> & Partial<MemoryReadings>): boolean {
-  if (typeof sample.memoryStatsAvailable === "boolean") return sample.memoryStatsAvailable;
+  if (sample.memoryStatsAvailable === true) return true;
+  // A swap-less host can still have meaningful activity/pressure signals such
+  // as PSI, so the probe's lack of occupancy stats must not mask those.
+  if (sample.memoryPressureLevel !== undefined && sample.memoryPressureLevel !== null) return true;
+  if (sample.psiMemoryAvg10 !== undefined && sample.psiMemoryAvg10 !== null) return true;
+  if (sample.swapIoBytesPerSec !== undefined && sample.swapIoBytesPerSec !== null) return true;
+  if (sample.pageoutBytesPerSec !== undefined && sample.pageoutBytesPerSec !== null) return true;
+  if (sample.memoryFreePercent !== undefined && sample.memoryFreePercent !== null) return true;
+  if (sample.memoryStatsAvailable === false) return false;
   if (sample.swapUsedBytes !== undefined && sample.swapUsedBytes !== null) return true;
   if (sample.swapTotalBytes !== undefined && sample.swapTotalBytes !== null) return true;
   if (sample.compressorBytes !== undefined && sample.compressorBytes !== null) return true;
   if (sample.swapUsedRatio !== undefined && sample.swapUsedRatio !== null) return true;
   if (sample.compressorRatio !== undefined && sample.compressorRatio !== null) return true;
-  if (sample.memoryPressureLevel !== undefined && sample.memoryPressureLevel !== null) return true;
-  if (sample.psiMemoryAvg10 !== undefined && sample.psiMemoryAvg10 !== null) return true;
-  if (sample.swapIoBytesPerSec !== undefined && sample.swapIoBytesPerSec !== null) return true;
-  if (sample.pageoutBytesPerSec !== undefined && sample.pageoutBytesPerSec !== null) return true;
   return false;
 }
 
@@ -288,12 +294,16 @@ export function evaluatePressure(
   };
 }
 
-function mergeActivityReadings(readings: MemoryReadings, config?: RepoOSConfig): MemoryReadings {
+function mergeActivityReadings(
+  readings: MemoryReadings,
+  config?: RepoOSConfig,
+  runCommand?: MemoryCommandRunner,
+): MemoryReadings {
   if (readings.swapIoBytesPerSec !== undefined || readings.pageoutBytesPerSec !== undefined) {
     return readings;
   }
   const windowSec = config ? pressureActivityWindowSec(config) : 30;
-  const activity = readPlatformMemoryActivity(windowSec);
+  const activity = readPlatformMemoryActivity(windowSec, { runCommand });
   return {
     ...readings,
     swapIoBytesPerSec: activity.swapIoBytesPerSec,
@@ -310,7 +320,17 @@ export function pressureSnapshot(
   config?: RepoOSConfig,
   probe?: MemoryPressureProbe,
 ): PressureSnapshot {
-  const readings = mergeActivityReadings(sampleMemoryReadings(probe), config);
+  const commandCache = new Map<string, string | null>();
+  const runCommand: MemoryCommandRunner = (cmd, args) => {
+    const key = JSON.stringify([cmd, args]);
+    if (!commandCache.has(key)) commandCache.set(key, runMemoryPressureCommand(cmd, args));
+    return commandCache.get(key) ?? null;
+  };
+  const readings = mergeActivityReadings(
+    sampleMemoryReadings(probe, runCommand),
+    config,
+    runCommand,
+  );
   return evaluatePressure(readings, pressureThresholds(config));
 }
 
