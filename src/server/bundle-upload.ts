@@ -175,8 +175,7 @@ async function doUploadFileOverSsh(
     const elapsedMs = Date.now() - startedAt;
     const rateBps = elapsedMs > 0 ? Math.round((bytesSent * 1000) / elapsedMs) : 0;
     const remaining = totalBytes - bytesSent;
-    const etaMs =
-      rateBps > 0 && remaining > 0 ? Math.round((remaining * 1000) / rateBps) : null;
+    const etaMs = rateBps > 0 && remaining > 0 ? Math.round((remaining * 1000) / rateBps) : null;
     opts.onProgress?.({ bytesSent, totalBytes, elapsedMs, rateBps, etaMs });
     if (
       opts.abortWhenEtaExceedsBudget &&
@@ -196,10 +195,7 @@ async function doUploadFileOverSsh(
     if (settled) return;
     if (bytesSent >= totalBytes) return;
     if (Date.now() - lastProgressAt >= opts.limits.stallMs) {
-      abort(
-        "stall",
-        `upload stalled (no progress for ${Math.round(opts.limits.stallMs / 1000)}s)`,
-      );
+      abort("stall", `upload stalled (no progress for ${Math.round(opts.limits.stallMs / 1000)}s)`);
     }
   }, 1000);
   stallWatch.unref?.();
@@ -322,7 +318,9 @@ export function formatBundleUploadDetail(params: {
         ? `${Math.round(params.rateBps / 1024)} KB/s`
         : `${params.rateBps} B/s`;
   const eta =
-    params.etaSecs !== null && params.etaSecs > 0 ? ` · ~${formatSecsShort(params.etaSecs)} left` : "";
+    params.etaSecs !== null && params.etaSecs > 0
+      ? ` · ~${formatSecsShort(params.etaSecs)} left`
+      : "";
   const kind = params.fullBundleNote
     ? ` · ${params.fullBundleNote}`
     : params.partial

@@ -2165,9 +2165,7 @@ export function defaultRemoteExec(): RemoteExecDeps {
       return res.code === 0 ? { ok: true } : { ok: false, detail: tail(res.output) };
     },
     async uploadFile(host, localPath, remotePath, uploadOpts) {
-      const limits =
-        uploadOpts?.limits ??
-        bundleUploadLimitsFromConfig(undefined);
+      const limits = uploadOpts?.limits ?? bundleUploadLimitsFromConfig(undefined);
       const res = await uploadFileOverSsh(host, localPath, remotePath, {
         limits,
         abortWhenEtaExceedsBudget: uploadOpts?.abortWhenEtaExceedsBudget ?? true,
@@ -5008,9 +5006,7 @@ export class TailscaleRunner implements RemoteValidator {
     // Injected exec doubles cannot reach a real host — stub a fast link (#0917).
     this.linkProbe =
       deps?.linkProbe ??
-      (deps?.exec
-        ? async () => ({ ok: true, rttMs: 5, throughputBps: 5_000_000 })
-        : undefined);
+      (deps?.exec ? async () => ({ ok: true, rttMs: 5, throughputBps: 5_000_000 }) : undefined);
     this.timings = { ...DEFAULT_TIMINGS, ...deps?.timings };
     this.keyPath = process.env.REPOOS_REMOTE_SSH_KEY ?? "";
     this.pool = new TailscaleHostPool(config.remoteValidation, {
