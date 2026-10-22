@@ -14,7 +14,7 @@ model_override: gpt-6-luna
 review_cli_override: opencode
 review_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-22T04:18:52Z"
-updated_at: "2026-10-22T10:06:11Z"
+updated_at: "2026-10-22T10:06:53Z"
 last_close_out_gate_ms: 187168
 last_close_out_gate_at: "2026-10-22T10:06:11.417Z"
 review_passes: 4
@@ -126,4 +126,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T09:59:40Z · note: review pass 4: good to go
 - 2026-10-22T09:59:40Z · needs_input
 - 2026-10-22T10:06:11Z · close-out gate completed in 187s
-
+- 2026-10-22T10:06:53Z · status done→done, release:success
