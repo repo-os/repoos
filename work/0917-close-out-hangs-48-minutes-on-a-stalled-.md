@@ -2,14 +2,14 @@
 id: "0917"
 title: Close-out hangs ~48 minutes on a stalled ssh bundle upload before falling back to local; thinkpad swap full again
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T04:09:06Z"
-updated_at: "2026-10-22T04:51:35Z"
+updated_at: "2026-10-22T07:49:12Z"
 ---
 ## Problem
 2026-10-22: #0909's close-out (check/validating phase) started at 03:03Z and did nothing visible for 48 minutes. At 03:51:39Z the attention event 'Ran locally' recorded: 'ssh upload of candidate bundle to thinkpad failed: [stdin error: EPIPE: broken pipe, write]'. Only then did the gate start locally on the laptop (which also burns the laptop's memory, the problem remote validation is meant to avoid). thinkpad was swap-bound at the time (3579/4095 MB, 87%). The upload to a pressured or wedged host had no hard deadline short enough to fail fast, #0901's health probe did not keep the upload from going to that host, and nothing in the UI/task showed what the close-out was waiting on (the user only saw 'check', and asked why it was stuck for over an hour).
@@ -37,3 +37,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T04:09:06Z · created · njachowski@gmail.com
 - 2026-10-22T04:33:52Z · body: Acceptance criteria (added 4)
 - 2026-10-22T04:51:35Z · body: Acceptance criteria (added 3, removed 2)
+- 2026-10-22T07:49:12Z · status inbox→ready
