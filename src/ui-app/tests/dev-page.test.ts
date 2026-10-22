@@ -145,7 +145,9 @@ describe("Dev nav gating (#0748)", () => {
       devAndSecrets.slice(devAndSecrets.indexOf("dev"), devAndSecrets.indexOf("agents") + 1),
     ).toEqual(["dev", "secrets", "agents"]);
     expect(navFromConfig({ projectSecretsEnabled: true }).map((n) => n.id)).toContain("secrets");
-    expect(navFromConfig({ projectSecretsEnabled: false }).map((n) => n.id)).not.toContain("secrets");
+    expect(navFromConfig({ projectSecretsEnabled: false }).map((n) => n.id)).not.toContain(
+      "secrets",
+    );
   });
 
   it("places Dev just before Agents, regardless of the other opt-ins", () => {
