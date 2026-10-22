@@ -109,3 +109,12 @@ branch health belong to the checkout the user manages.
   HTTP 409 and a human-readable refusal in **both** `output` and `error` (the
   browser's `api()` wrapper only surfaces `body.error` on a non-2xx, so the
   full git refusal would otherwise reach the user as the bare word "Conflict").
+
+Each configured target can also have a local project environment binding,
+stored as `deployment:<target-name>` in `.repoos/environment-bindings.json`.
+This is metadata describing the intended environment only: it does not inject
+values into a deployment process, change the provider destination, or publish
+variables. Deployments currently use Git pushes and RepoOS has no provider
+variable publish/sync adapter. Configure provider-managed variables through
+the provider's own tools. An invalid or removed environment binding is shown
+on the target and blocks a push until it is repaired or cleared.
