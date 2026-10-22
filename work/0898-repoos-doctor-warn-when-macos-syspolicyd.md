@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0898"
 title: "repoos doctor: warn when macOS syspolicyd/trustd slow spawn-heavy work, and name the git cause"
 type: feature
@@ -12,7 +11,8 @@ branch: feat/repoos-doctor-warn-when-macos-syspolicyd
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:26Z"
-updated_at: "2026-10-22T13:30:58Z"
+updated_at: "2026-10-22T13:38:35Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 On macOS, an ad-hoc-signed git (Homebrew, mise) makes every real git command cost extra syspolicyd/trustd CPU. Measured 2026-10-21 on a MacBook Air: 600 real git commands took 16-29 s with Homebrew git and 6-8 s with Apple's (syspolicyd +8..19 s vs +0..5 s); a 289-test run took ~160 s vs ~80 s. RepoOS now prefers Apple's git automatically (preferAppleGit), but a user whose Command Line Tools are missing, who set REPOOS_PREFER_APPLE_GIT=0, or who runs other ad-hoc-signed tooling gets no signal about why their machine is slow.
@@ -38,4 +38,4 @@ See src/core/runtime.ts preferAppleGit, user-docs/configuration.md (Apple-signed
 - 2026-10-22T13:26:44Z · body
 - 2026-10-22T13:29:50Z · body
 - 2026-10-22T13:30:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-
+- 2026-10-22T13:38:35Z · message_queued at 2026-10-22T13:38:35.513Z
