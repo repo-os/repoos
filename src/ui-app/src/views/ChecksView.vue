@@ -269,8 +269,9 @@ const RESULT_ICON: Record<string, string> = {
     </nav>
 
     <div v-if="activeTab === 'now'" class="ck-test-suite">
-      <section v-if="localSlotHolders.length" class="ck-local-slots" aria-label="Local check slots">
+      <section class="ck-local-slots" aria-label="Local check slots">
         <h2>Local check slots</h2>
+        <p v-if="!localSlotHolders.length">No local check slots are currently in use.</p>
         <p v-for="holder in localSlotHolders" :key="holder.slot">
           Slot {{ holder.slot }} · PID {{ holder.pid ?? "unknown" }} ·
           {{ Math.round(holder.ageMs / 1000) }}s
