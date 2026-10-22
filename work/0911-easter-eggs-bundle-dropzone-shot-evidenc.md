@@ -35,6 +35,7 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 
 ![E3: Runner memory pressure red card has no inner padding (Debug tab)](/api/tasks/0911/attachments/att_6deb50f6-503c-49bf-9f05-c276f45e03a6.png)
 ![E4: restart required badge sits right of the control; move it left so controls are flush right](/api/tasks/0911/attachments/att_014c0836-9186-4e54-b605-03d73b0520d0.webp)
+![E3: red and yellow cards in the Debug tab have no inner padding](/api/tasks/0911/attachments/att_ce2dc653-63e6-440e-94e9-53389721ead8.webp)
 
 ## Activity
 
@@ -44,3 +45,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T04:25:26Z · body: Items (added 1)
 - 2026-10-22T04:25:31Z · screenshots
 - 2026-10-22T05:03:27Z · body: Items (added 1, removed 1)
+- 2026-10-22T05:03:39Z · screenshots
