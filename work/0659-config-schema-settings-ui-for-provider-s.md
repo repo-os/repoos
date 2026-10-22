@@ -3,6 +3,8 @@ id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
 status: done
+human_step_decision: agent
+human_step_decision_key: 600dc9a2
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 600dc9a2
 priority: p1
