@@ -3391,8 +3391,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Tailnet hosts validation jobs may run on, comma-separated. Each entry is a hostname, 100.x.x.x IP, or user@host (e.g. nick@bee). " +
         "Jobs dispatch to an idle eligible host and queue only when every one is at its per-host limit. " +
         "A Settings save updates the live dispatcher immediately (no restart). " +
-        "For per-host OS, labels or concurrency, declare [[remoteValidation.tailscaleHosts]] " +
+        "For per-host OS, labels, engineer CLIs or concurrency, declare [[remoteValidation.tailscaleHosts]] " +
         "rows in repoos.toml instead — see docs/remote-validation.md.",
+    },
+    {
+      key: "remoteValidation.tailscaleHosts.engineers",
+      label: "Remote validation: per-host engineer CLIs",
+      type: "string",
+      tier: "restart",
+      restartRequired: true,
+      default: "",
+      description:
+        "On each [[remoteValidation.tailscaleHosts]] row, set engineers = [\"opencode\", \"codex\", \"cursor\"] " +
+        "for the CLIs that host must have installed and signed in. RepoOS checks with `repoos runners check` " +
+        "and shows results on the Runners tab. Login stays a human step (`repoos runners setup <host> --login <cli>`).",
     },
     {
       key: "remoteValidation.tailscaleUser",
@@ -4137,6 +4149,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "remoteValidation.provider",
   "remoteValidation.tailscaleHost",
   "remoteValidation.tailscaleHosts",
+  "remoteValidation.tailscaleHosts.engineers",
   "remoteValidation.tailscaleUser",
   "remoteValidation.containerImage",
   "remoteValidation.serverType",

@@ -251,6 +251,9 @@ function hostHealth(remoteValidator: RemoteValidator | undefined): BriefHostHeal
     pressureRecheck: h.pressure?.recheckCommand ?? null,
     swapUsedRatio: h.pressure?.swapUsedRatio ?? null,
     availableMemRatio: h.pressure?.availableMemRatio ?? null,
+    engineerCliIssues: (h.engineerClis?.cells ?? [])
+      .filter((c) => c.declared && !c.ok)
+      .map((c) => ({ cli: c.cli, fix: c.fix })),
   }));
 }
 
