@@ -14,7 +14,7 @@ branch: feat/add-deployment-environment-bindings-and-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:07:01Z"
-updated_at: "2026-10-22T23:48:35Z"
+updated_at: "2026-10-22T23:49:02Z"
 last_close_out_gate_ms: 214570
 last_close_out_gate_at: "2026-10-22T23:48:35.750Z"
 review_passes: 2
@@ -95,4 +95,4 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 - 2026-10-22T23:42:10Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-22T23:43:04Z · note: review pass 2: good to go
 - 2026-10-22T23:48:35Z · close-out gate completed in 215s
-
+- 2026-10-22T23:49:02Z · status done→done, release:success
