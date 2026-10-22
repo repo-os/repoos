@@ -30,7 +30,12 @@ Reviewers can see the dropzone rendered on the Manual tab and the default (non-e
 ## Notes for AI
 See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots to declare shots. Easter-eggs bundle (one open bundle at a time); keep it to these two items.
 
+## Screenshots
+
+![E3: Runner memory pressure red card has no inner padding (Debug tab)](/api/tasks/0911/attachments/att_6deb50f6-503c-49bf-9f05-c276f45e03a6.png)
+
 ## Activity
 
 - 2026-10-22T01:34:32Z · created · njachowski@gmail.com
 - 2026-10-22T04:13:48Z · body: Items (added 1)
+- 2026-10-22T04:13:54Z · screenshots
