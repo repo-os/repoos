@@ -13,8 +13,6 @@ model_override: gpt-6-luna
 created_at: "2026-10-22T06:32:56Z"
 updated_at: "2026-10-22T10:49:24Z"
 last_check_failure: "repoos check at 2026-10-22T10:14:46.588Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Local check slot diagnostics (target \"default\"): highlight .ck-local-slots matched nothing on /checks?tab=now (http://127.0.0.1:42895/checks?tab=now)"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist, tests/checks-page-default-tab.test.ts > IntegrationPipelineSummary (#0738) > renders the active task, stage, and queue, tests/local-resource-gates.test.ts > cross-process local check slots > reaps a detached close-out check group after its candidate disappeared on thinkpad — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: eb8afab324f695c49a0a9ff36d9d65337209b70b
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-22T08:20:35.105Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-22T08:39:33.891Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -99,3 +97,4 @@ Also fix #0921 in the same change (dead-holder detection for local check slots: 
 - 2026-10-22T10:38:43Z · message_delivered: 1 message(s)
 - 2026-10-22T10:49:23Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-10-22T10:49:24Z · status active→review
+
