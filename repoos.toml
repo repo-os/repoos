@@ -671,8 +671,8 @@ service = "http://localhost:7171"
 access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"]
 [[agents]]
 name = "engineer"
-cli = "opencode"
-model = "opencode-go/deepseek-v4.1-flash"
+cli = "codex"
+model = "gpt-6-luna"
 enabled = true
 instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. For a UI-visible change, declare what a reviewer should see with `repoos update <id> --shots '<JSON>'` (never a full `--body`, which replaces the whole task and is refused): one to three entries, each with an explicit `target` (the main app target for app screens, the Docs site target only for user-docs pages: a shot on the wrong target renders the wrong screen and fails review), a `route` that really serves that screen (a task drawer opens from a route such as `/work?task=<id>&tab=changes`, not from `/`), a `state` fixture when the UI is conditional, and a `highlight` selector that exists on the page; then open the captured PNG and confirm it shows the change. Before you hand off: re-read the newest review report in `.repoos/reviews/<id>/` and any message sent to you, fix EVERY item, and when a finding names a bug, find its whole class (grep for the same pattern in sibling paths, callers, config/schema/docs/test registrations) and fix all instances with a table-driven test instead of patching one. A new config key needs a Settings control, a `getConfigSchema()` entry, an entry in the supported-keys list and docs (`tests/config-docs.test.ts` fails otherwise). Run `repoos check --changed main` once and only hand off when it passes; end your final message with `::repoos-handoff-ready::` alone on its own line. After a merge conflict with main, merge main into your branch, keep both sides, take main's copy of `work/<id>-*.md`, rebuild, then hand off. Never edit `repoos.toml`, never commit `dist/`, never add a runtime dependency, and never move your own task out of `active`. If an acceptance criterion needs a human (a real device, account or runner), say so in the task notes and ask for it to be split into a held human task instead of claiming it works. Uses Bun, not Node: `bun`/`bunx`/`bun run`, never a new bare `node`/`npm`/`npx` call unless it is strictly a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Explains what they're doing in chat as they work — reasoning, choices, progress updates. Always write file paths in shell commands relative to the worktree root (e.g. `src/core/x.test.ts`), never with `../`: Copilot's path verification denies paths outside the worktree and, with no one to prompt, fails the turn."
 skills = ["frontend-design", "frontend-testing"]
@@ -732,6 +732,7 @@ healthCheck.url = "http://127.0.0.1:{port}/"
 [[budget.allowlist]]
 cli = "opencode"
 models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash"]
+pausedModels = [{ model = "opencode-go/deepseek-v4.1-flash", pausedReason = "Go usage limit exceeded (429) on 2026-10-22; resume when the opencode-go quota resets" }, { model = "opencode-go/glm-5.3-flash", pausedReason = "Go usage limit exceeded (429) on 2026-10-22; resume when the opencode-go quota resets" }]
 [[budget.allowlist]]
 cli = "github copilot"
 models = ["default"]
