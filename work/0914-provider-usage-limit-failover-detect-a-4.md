@@ -11,7 +11,7 @@ branch: feat/provider-usage-limit-failover-detect-a-4
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T02:17:25Z"
-updated_at: "2026-10-22T04:45:32Z"
+updated_at: "2026-10-22T04:55:31Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -57,3 +57,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T04:20:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T04:40:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T04:45:32Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-10-22T04:55:31Z · message_queued at 2026-10-22T04:55:31.102Z
