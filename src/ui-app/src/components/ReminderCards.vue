@@ -35,7 +35,7 @@ function openCard(id: string): void {
 </script>
 
 <template>
-  <div v-if="cards.length" class="reminder-cards" aria-label="Due reminders">
+  <div v-if="cards.length" class="reminder-cards" role="group" aria-label="Due reminders">
     <div
       v-for="row in cards"
       :key="store.cardKey(row)"
