@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-22T15:43:30Z"
+review_passes: 3
 id: "0924"
 title: "Checks page: show % complete for a running check (steps and test files)"
 type: feature
@@ -11,9 +13,7 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T15:43:30Z"
 review_rounds: 1
-review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 2
 ---
@@ -111,3 +111,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T15:41:32Z · status active→review
 - 2026-10-22T15:41:33Z · note: shots: skipped — 9 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-22T15:43:30Z · note: review pass 3: good to go
+
