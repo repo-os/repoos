@@ -57,7 +57,9 @@ worktree over sshfs/SFTP/NFS.
   from that mirror:
   `git -C <mirror> worktree add -B <branch> ~/.repoos-engineers/<repo>/<task> <sha>`.
   The worktree lives outside the control plane's tree, under the runner user's
-  home (the same place `validate.sh` already keeps its work tree and mirror).
+  home (`~/.repoos-engineers/…`, alongside the `~/.repoos-cache` mirror and
+  `~/.repoos-validate.*` trees `validate.sh` already uses), never inside a
+  bundle or the control plane's checkout.
 - **Outbound:** after each engineer turn, and again immediately before a
   handoff, the runner writes a bundle of the branch tip
   (`git bundle create - <branch> --not <base>` when the local side has the
