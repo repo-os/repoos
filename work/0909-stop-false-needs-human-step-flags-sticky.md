@@ -119,3 +119,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T02:33:55Z · body
 - 2026-10-22T02:44:26Z · status active→review
 - 2026-10-22T02:44:26Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (ccfe06c26) during finalization (#0734)
+- 2026-10-22T02:44:26Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (ccfe06c26) during finalization (#0734)
