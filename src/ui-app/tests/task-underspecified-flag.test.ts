@@ -784,10 +784,10 @@ describe("underspecified boot sweep (#0668)", () => {
     };
   }
 
-  it("flags existing underspecified non-terminal tasks and skips done/review/archived", () => {
+  it("flags existing underspecified non-terminal tasks and skips done/review/archived", async () => {
     const fx = makeSweepFixture();
     try {
-      const changed = sweepUnderspecifiedTasks(fx.config, fx.tasks);
+      const changed = await sweepUnderspecifiedTasks(fx.config, fx.tasks);
       expect(changed.map((t) => t.id).sort()).toEqual(["0558"]);
 
       const read = (id: string) => {
@@ -818,10 +818,10 @@ describe("underspecified boot sweep (#0668)", () => {
     }
   });
 
-  it("is idempotent — a second sweep makes no changes", () => {
+  it("is idempotent — a second sweep makes no changes", async () => {
     const fx = makeSweepFixture();
     try {
-      expect(sweepUnderspecifiedTasks(fx.config, fx.tasks).length).toBe(1);
+      expect((await sweepUnderspecifiedTasks(fx.config, fx.tasks)).length).toBe(1);
       const before = fx.tasks.map((t) => readFileSync(t.absPath, "utf8"));
       // Re-read after the first sweep so the sweep sees the flagged state, as
       // a second boot would.
@@ -834,7 +834,7 @@ describe("underspecified boot sweep (#0668)", () => {
           defaultAssignee: fx.config.defaultAssignee,
         }),
       );
-      expect(sweepUnderspecifiedTasks(fx.config, fresh)).toEqual([]);
+      expect(await sweepUnderspecifiedTasks(fx.config, fresh)).toEqual([]);
       expect(fx.tasks.map((t) => readFileSync(t.absPath, "utf8"))).toEqual(before);
     } finally {
       fx.clean();

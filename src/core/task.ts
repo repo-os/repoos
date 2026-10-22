@@ -26,6 +26,8 @@ const KEY_ORDER = [
   "human_step_decision",
   "human_step_decision_key",
   "human_step_override",
+  "human_step_override_key",
+  "human_step_override_by",
   "debug_tldr",
   "debug_tldr_at",
   "debug_tldr_key",
@@ -483,6 +485,14 @@ export function parseTask(args: ParseTaskArgs): Task {
       typeof data.human_step_override === "string" && data.human_step_override.trim()
         ? data.human_step_override
         : undefined,
+    humanStepOverrideKey:
+      typeof data.human_step_override_key === "string" && data.human_step_override_key.trim()
+        ? data.human_step_override_key
+        : undefined,
+    humanStepOverrideBy:
+      typeof data.human_step_override_by === "string" && data.human_step_override_by.trim()
+        ? data.human_step_override_by
+        : undefined,
     debugTldr: typeof data.debug_tldr === "string" ? data.debug_tldr : undefined,
     debugTldrAt: typeof data.debug_tldr_at === "string" ? data.debug_tldr_at : undefined,
     debugTldrKey:
@@ -593,7 +603,11 @@ export function serializeTask(task: Task): string {
   }
   // #0815: the explicit human override reason persists independently of the
   // flag it cleared, so the decision stays legible in the file and activity log.
+  // #0909: its fingerprint and the clearing actor ride along so a later scan can
+  // tell whether the criteria it was made on still hold.
   if (task.humanStepOverride) data.human_step_override = task.humanStepOverride;
+  if (task.humanStepOverrideKey) data.human_step_override_key = task.humanStepOverrideKey;
+  if (task.humanStepOverrideBy) data.human_step_override_by = task.humanStepOverrideBy;
   if (task.needsMerge) data.needs_merge = true;
   if (task.noSourceChange) data.no_source_change = true;
   // #0657: `is_archived` is orthogonal to status. Only ever write the flag

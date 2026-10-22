@@ -1,4 +1,5 @@
 import type { Task } from "../../../core/types.js";
+import { hasAiTaggedCriteria, hasHumanTaggedCriteria } from "../../../core/human-step-tags.js";
 import { MAX_AUTO_REVIEW_ROUNDS, needsInputSuppressedOnReview } from "../../../core/needs-input.js";
 import { stripReviewVerdictPrefix } from "../../../core/review-verdict.js";
 
@@ -88,7 +89,8 @@ export type NeedsInputPrimaryActionKind =
   | "review"
   | "send-engineer"
   | "answer"
-  | "send-pm";
+  | "send-pm"
+  | "split-human-step";
 
 export interface NeedsInputPrimaryAction {
   kind: NeedsInputPrimaryActionKind;
@@ -99,6 +101,7 @@ export interface NeedsInputPrimaryAction {
 export interface NeedsInputActionContext {
   status: string;
   agentRunning: boolean;
+  humanStepSplitAvailable?: boolean;
 }
 
 const REVIEW_AGAIN_ACTION: NeedsInputPrimaryAction = {
@@ -131,6 +134,15 @@ const SEND_TO_PM_ACTION: NeedsInputPrimaryAction = {
   label: "Send to PM (fleshes this out)",
 };
 
+const SPLIT_HUMAN_STEP_ACTION: NeedsInputPrimaryAction = {
+  kind: "split-human-step",
+  label: "Split human steps into a held task",
+};
+
+export function humanStepSplitAvailable(task: Pick<Task, "body">): boolean {
+  return hasHumanTaggedCriteria(task.body) && hasAiTaggedCriteria(task.body);
+}
+
 function canRestartWork(ctx: NeedsInputActionContext): boolean {
   return ctx.status === "ready" || (ctx.status === "active" && !ctx.agentRunning);
 }
@@ -153,8 +165,13 @@ export function needsInputStatusLabel(reason: string | undefined, hasQuestions =
   return (key && NEEDS_INPUT_STATUS_LABELS[key]) || "Needs your input";
 }
 
-export function needsInputBannerText(reason: string | undefined, hasQuestions = false): string {
+export function needsInputBannerText(
+  reason: string | undefined,
+  hasQuestions = false,
+  detail?: string,
+): string {
   const key = resolveNeedsInputReasonKey(reason, hasQuestions);
+  if (key === "needs-human-step" && detail?.trim()) return detail.trim();
   return (
     (key && NEEDS_INPUT_BANNER_LABELS[key]) ||
     "The agent needs your input — use the actions below to continue."
@@ -231,7 +248,7 @@ export function needsInputPrimaryAction(
     case "underspecified":
       return SEND_TO_PM_ACTION;
     case "needs-human-step":
-      return SEND_TO_PM_ACTION;
+      return ctx.humanStepSplitAvailable ? SPLIT_HUMAN_STEP_ACTION : SEND_TO_PM_ACTION;
     default:
       return null;
   }
