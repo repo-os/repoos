@@ -3,6 +3,8 @@ id: "0340"
 title: Add a Deployments page (distinct from Releases)
 type: feature
 status: done
+human_step_decision: agent
+human_step_decision_key: 80c4ad7b
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 80c4ad7b
 priority: p3
