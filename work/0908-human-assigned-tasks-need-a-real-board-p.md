@@ -3,6 +3,9 @@ id: "0908"
 title: "Human-assigned tasks need a real board pathway: move across columns to done without triggering AI, checks or review"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the cursor agent timed out after 900s
 priority: p2
 area: [web, server, core]
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/human-assigned-tasks-need-a-real-board-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T19:22:55Z"
-updated_at: "2026-10-22T03:23:55Z"
+updated_at: "2026-10-22T03:23:56Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 review_passes: 2
@@ -91,3 +94,4 @@ Do not start without the human. Related rule in AGENTS.md: needs-human-step task
 - 2026-10-22T03:04:35Z · status active→review
 - 2026-10-22T03:04:55Z · note: highlight .drawer-human-task matched nothing on /work?task=0908
 - 2026-10-22T03:23:55Z · note: review pass 3: failed — no usable report
+- 2026-10-22T03:23:56Z · needs_input
