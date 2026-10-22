@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-22T12:21:14Z"
-review_passes: 1
 id: "0916"
 title: Pausing an agent model with a reason writes an inline table that RepoOS's own TOML validator rejects (breaks toml-validate and release gates)
 type: feature
@@ -13,6 +11,7 @@ branch: feat/pausing-an-agent-model-with-a-reason-wri
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T03:36:47Z"
+updated_at: "2026-10-22T12:19:59Z"
 ---
 ## Problem
 2026-10-22: pausing opencode-go models from the CLI with --reason (repoos agents pause opencode --model <m> --reason ...) wrote this into repoos.toml: pausedModels = [{ model = "...", pausedReason = "..." }, ...]. RepoOS's own TOML subset parser and validateToml reject inline tables ('inline tables aren't supported', line 735), so tests/toml-validate.test.ts 'accepts the repository's own repoos.toml' failed and the release gate (which validates on a remote runner, committed files only) failed with 'fix the invalid TOML on the release branch'. The same write path is used by the Agents page Pause dialog (per-model reason/date), so the UI can produce an invalid config too. The server kept running, so nothing flagged the broken file until a release.
@@ -35,11 +34,4 @@ Look at the pause writer behind repoos agents pause and the Agents page Budget C
 - 2026-10-22T05:03:37Z · status inbox→ready
 - 2026-10-22T12:00:22Z · cli_override, model_override
 - 2026-10-22T12:00:24Z · status ready→active, branch
-- 2026-10-22T12:03:21Z · body
-- 2026-10-22T12:05:53Z · body
-- 2026-10-22T12:08:31Z · body
-- 2026-10-22T12:10:18Z · body
 - 2026-10-22T12:19:59Z · status active→review
-- 2026-10-22T12:19:59Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-22T12:21:14Z · note: review pass 1: good to go
-

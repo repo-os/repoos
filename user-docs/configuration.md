@@ -31,8 +31,9 @@ and the safe `.env.example` — is in
 `repoos.toml` is deliberately small and flat. Nested sections use `[section]`
 headers and arrays of tables use `[[section]]` rows. The parser supports any
 valid TOML scalar string form: basic (`"..."`), literal (`'...'`), multi-line
-basic (`"""..."""`), and multi-line literal (`'''...'''`). Multi-line arrays
-and inline tables are not accepted; the only place the parser accepts both
+basic (`"""..."""`), and multi-line literal (`'''...'''`). Inline tables and
+single-line arrays are supported, including inline tables nested in arrays.
+Multi-line arrays are not accepted; the only place the parser accepts both
 `[check]` and `[checks]` spellings is the `[check]` section, kept for backwards
 compatibility.
 
