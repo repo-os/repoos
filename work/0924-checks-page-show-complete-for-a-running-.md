@@ -42,3 +42,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T14:06:51Z · body
 - 2026-10-22T14:08:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T14:17:03Z · message_queued at 2026-10-22T14:17:03.349Z
+- 2026-10-22T14:17:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
