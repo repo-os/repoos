@@ -307,7 +307,7 @@ defineExpose({ focusDraft });
       </div>
     </div>
 
-    <ChatQueuedNotice :active="queued" />
+    <ChatQueuedNotice :active="queued" :queue-key="chatId" />
 
     <form class="ai-chat-compose" @submit.prevent="emit('send')">
       <label

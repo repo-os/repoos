@@ -10,13 +10,22 @@
  *  - every chat surface renders the shared notice, and its send control is no
  *    longer disabled merely because the agent is busy.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { flushPromises, mount } from "@vue/test-utils";
 import { nextTick, ref } from "vue";
-import { mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import ChatQueuedNotice from "../src/components/ChatQueuedNotice.vue";
 import { useQueuedSend } from "../src/composables/useQueuedSend";
+
+vi.mock("../src/api", () => ({
+  api: vi.fn(async () => ({ tasks: [], messages: [] })),
+}));
+
+beforeEach(() => {
+  setActivePinia(createPinia());
+});
 
 const COMPONENTS_DIR = resolve(__dirname, "../src/components");
 
@@ -34,13 +43,57 @@ const QUEUED_CHATS = [
 
 describe("chat queued state", () => {
   it("shows the shared queued wording while a message waits", () => {
-    const active = mount(ChatQueuedNotice, { props: { active: true } });
+    const active = mount(ChatQueuedNotice, { props: { active: true }, attachTo: document.body });
     expect(active.text()).toContain("Queued — will be read when the current turn ends.");
     expect(active.find('[data-test-id="chat-queued-note"]').exists()).toBe(true);
+    active.unmount();
 
-    const idle = mount(ChatQueuedNotice, { props: { active: false } });
+    const idle = mount(ChatQueuedNotice, { props: { active: false }, attachTo: document.body });
     expect(idle.text()).toBe("");
     expect(idle.find('[data-test-id="chat-queued-note"]').exists()).toBe(false);
+    idle.unmount();
+  });
+
+  it("lists two queued messages with source and time in the popover", async () => {
+    const items = [
+      {
+        text: "Your follow-up",
+        queuedAt: "2026-10-22T10:00:00.000Z",
+        source: "you" as const,
+      },
+      {
+        text: "Requirements for #0918 were updated on the board.",
+        queuedAt: "2026-10-22T10:05:00.000Z",
+        source: "board-update" as const,
+      },
+    ];
+    const wrapper = mount(ChatQueuedNotice, {
+      props: { active: true, items },
+      attachTo: document.body,
+    });
+    const trigger = wrapper.find('[data-test-id="chat-queued-note"]');
+    (trigger.element as HTMLButtonElement).focus();
+    await flushPromises();
+
+    const pop = document.querySelector('[data-test-id="chat-queued-popover"]');
+    expect(pop).not.toBeNull();
+    expect(pop?.textContent).toContain("You");
+    expect(pop?.textContent).toContain("Board update");
+    expect(pop?.textContent).toContain("Your follow-up");
+    expect(pop?.textContent).toContain("Requirements for #0918");
+
+    expect(document.activeElement).toBe(
+      document.querySelector('[data-test-id="chat-queued-popover"]'),
+    );
+
+    await new Promise((r) => setTimeout(r, 250));
+    await flushPromises();
+    expect(document.querySelector('[data-test-id="chat-queued-popover"]')).not.toBeNull();
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    await flushPromises();
+    expect(document.querySelector('[data-test-id="chat-queued-popover"]')).toBeNull();
+    wrapper.unmount();
   });
 
   it("latches on a queued send and clears when the turn ends", async () => {
