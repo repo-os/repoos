@@ -4,6 +4,7 @@ import {
   assessTaskUnderspecified,
   assessTaskNeedsHumanStep,
   fleshOutRequirementsPrompt,
+  splitHumanStepRequirementsPrompt,
   NEEDS_HUMAN_STEP_HINT,
 } from "../../core/task-underspecified.js";
 import { needsInputClearsOnSuccessfulReview } from "../../core/needs-input.js";
@@ -37,6 +38,14 @@ function wellFormedBody(): string {
 }
 
 describe("assessTaskUnderspecified", () => {
+  it("builds explicit instructions for splitting or overriding human steps", () => {
+    const prompt = splitHumanStepRequirementsPrompt();
+    expect(prompt).toContain("--human-step-override");
+    expect(prompt).toContain("--depends-on <id>");
+    expect(prompt).toContain("--assigned-to human --hold true");
+    expect(prompt).toContain("Never hand-edit task files");
+    expect(prompt).toContain("fakes or fixtures");
+  });
   const bundleBody = (omitE2Acceptance = false) => {
     const part = (id: string) => [
       `## ${id} · Fix ${id}`,

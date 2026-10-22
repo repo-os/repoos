@@ -404,6 +404,17 @@ export function assessTaskUnderspecified(
 
 /** The PM chat's canned "flesh this out" message (mirrors the UI's `PM_FLESH_OUT_CANNED_MESSAGE`). */
 export const PM_FLESH_OUT_MESSAGE = "Can you flesh this out?";
+export const PM_SPLIT_HUMAN_STEP_MESSAGE = "Review and resolve the human-only steps in this task.";
+
+/** Server-side instructions for deciding whether human-only work needs splitting. */
+export function splitHumanStepRequirementsPrompt(): string {
+  return [
+    "Review the acceptance criteria and decide which truly require a human: a real device, account or credentials, or a third-party sign-up. Criteria an agent can satisfy with fakes or fixtures do not count.",
+    'If none require a human, record the false-positive override with `repoos update <id> --human-step-override "<reason>"` and explain why. Do not split.',
+    'Otherwise create the human part with `repoos new "<title>" --depends-on <id>`, then run `repoos update <new> --assigned-to human --hold true`. Narrow the original task acceptance criteria to agent-doable work and keep the original `needs_input` cleared.',
+    "Use only repoos commands. Never hand-edit task files under work/.",
+  ].join("\n\n");
+}
 
 /**
  * Appended server-side to the canned flesh-out message so the PM knows exactly
