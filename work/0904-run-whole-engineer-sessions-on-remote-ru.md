@@ -12,7 +12,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T15:06:23Z"
 updated_at: "2026-10-22T01:23:07Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T20:52:34.600Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 7
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
@@ -104,3 +103,4 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-22T01:21:27Z · status ready→active
 - 2026-10-22T01:23:07Z · body
 - 2026-10-22T01:23:07Z · body
+
