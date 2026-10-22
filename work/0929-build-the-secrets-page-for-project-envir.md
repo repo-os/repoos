@@ -13,7 +13,7 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T21:13:30Z"
+updated_at: "2026-10-22T21:13:31Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-22T19:44:36.309Z: repoos check failed: ui verification failed: runner result omitted the UI verification record"
@@ -149,3 +149,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T20:59:37Z · message_delivered: 1 message(s)
 - 2026-10-22T21:13:30Z · status ready→review
 - 2026-10-22T21:13:30Z · note: handoff requested (cli)
+- 2026-10-22T21:13:31Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
