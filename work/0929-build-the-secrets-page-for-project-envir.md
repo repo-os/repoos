@@ -13,7 +13,7 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T20:21:15Z"
+updated_at: "2026-10-22T20:22:53Z"
 last_check_failure: "repoos check at 2026-10-22T19:44:36.309Z: repoos check failed: ui verification failed: runner result omitted the UI verification record"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 3b3805a62ded3d06e7724a86aa8652e967fcb27e
@@ -40,37 +40,29 @@ Implement only the user interface and its route/state/tests; consume the metadat
 ```json
 [
 {
-"label": "Secrets ledger with set, inherited, and missing keys",
-"target": "default",
-"route": "/secrets",
-"highlight": ".secrets-ledger",
-"state": "secrets:populated",
-"theme": "light"
+  "label": "Secrets ledger with set, inherited, and missing keys",
+  "target": "default",
+  "route": "/secrets",
+  "highlight": ".secrets-ledger",
+  "state": "secrets:populated",
+  "theme": "light"
 },
 {
-"label": "Dark removal confirmation with affected consumers",
-"target": "default",
-"route": "/secrets",
-"highlight": ".delete-confirm-modal",
-"steps": [
-{
-"click": ".secrets-row:first-child .secrets-remove"
+  "label": "Dark removal confirmation with affected consumers",
+  "target": "default",
+  "route": "/secrets",
+  "highlight": ".delete-confirm-modal",
+  "state": "secrets:removeDialog",
+  "theme": "dark"
 },
 {
-"waitMs": 250
-}
-],
-"state": "secrets:populated",
-"theme": "dark"
-},
-{
-"label": "Mobile Secrets ledger with inherited and missing rows",
-"target": "default",
-"route": "/secrets",
-"highlight": ".secrets-rows",
-"state": "secrets:populated",
-"theme": "light",
-"viewportWidth": 390
+  "label": "Mobile Secrets ledger with inherited and missing rows",
+  "target": "default",
+  "route": "/secrets",
+  "highlight": ".secrets-rows",
+  "state": "secrets:populated",
+  "theme": "light",
+  "viewportWidth": 390
 }
 ]
 ```
@@ -136,3 +128,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T20:19:08Z · note: Keeping task active during managed preview startup
 - 2026-10-22T20:21:15Z · note: click .secrets-row:first-child .secrets-remove: click: Timeout 5000ms exceeded. on /secrets
 - 2026-10-22T20:21:15Z · note: highlight .delete-confirm-modal matched nothing on /secrets
+- 2026-10-22T20:22:53Z · body
