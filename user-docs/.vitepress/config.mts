@@ -121,6 +121,7 @@ export default defineConfig({
           { text: "Running with AI agents", link: "/running-with-agents" },
           { text: "Notices and notifications", link: "/notifications" },
           { text: "Checks before merge", link: "/check" },
+          { text: "Remote engineer sessions (planned)", link: "/remote-engineers" },
           { text: "Tunnels", link: "/tunnels" },
           { text: "Dev targets", link: "/dev-targets" },
         ],
