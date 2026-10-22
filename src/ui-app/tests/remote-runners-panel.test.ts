@@ -296,6 +296,8 @@ describe("RemoteRunnersPanel", () => {
     expect(banner.text()).toContain("repoos runners --probe");
     expect(wrapper.find('[data-test-id="runner-pressure-badge"]').exists()).toBe(true);
     expect(wrapper.text()).toContain("Memory health");
+    expect(wrapper.text()).toContain("warn above 50% swap use");
+    expect(wrapper.text()).toContain("hold below 8% memory available");
     wrapper.unmount();
   });
 });

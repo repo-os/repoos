@@ -1,23 +1,21 @@
 ---
-updated_at: "2026-10-22T09:59:40Z"
-review_passes: 4
 id: "0918"
 title: "Pressure guard should use paging activity, not occupancy: macOS compressor share and swap used/total hold work on an idle laptop"
 type: feature
 status: review
 priority: p1
 area: [server, core]
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/pressure-guard-should-use-paging-activit
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-22T04:18:52Z"
-review_rounds: 2
-last_check_failure: "repoos check at 2026-10-22T09:02:53.015Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
+updated_at: "2026-10-22T08:10:19Z"
 dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-22T05:27:08.607Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 2026-10-22 12:17: the pressure guard (#0871) held #0909's local close-out check and queued #0914's behind it with 'the memory compressor is holding 36% of RAM (8.6 GB) — holding new work until memory pressure eases', while the machine was idle: CPU 63% idle, and over a 20 s sample vm_stat showed ~186 pageouts (~3 MB), 9 swapins and 0 swapouts. The guard's signals are occupancy ratios: compressor share (limit 0.35) and swap used/total (limit 0.5). On macOS these are misleading: the compressor fills with cold pages from idle apps (Chrome tabs, Claude renderer) without any cost until they are touched, and swap total is dynamic (swap files are created on demand), so used/total sits high on a healthy machine (5.9 of 7 GB = 82% here). The guard therefore holds engineers, restarts and fallback checks for hours on a laptop that is not thrashing, and it makes the close-out local fallback wait on itself.
@@ -72,54 +70,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T07:50:25Z · engineer stopped by request
 - 2026-10-22T07:50:25Z · needs_input
 - 2026-10-22T07:50:33Z · assigned_to
-- 2026-10-22T07:57:05Z · assigned_to
-- 2026-10-22T07:57:06Z · note: handoff requested (ui-review)
-- 2026-10-22T08:10:18Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-10-22T08:10:19Z · status active→review
-- 2026-10-22T08:22:05Z · status review→active
-- 2026-10-22T08:22:14Z · note: handoff requested (ui-review)
-- 2026-10-22T08:25:24Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
-- 2026-10-22T08:25:25Z · status active→review
-- 2026-10-22T08:33:29Z · status review→active
-- 2026-10-22T08:33:51Z · status active→ready
-- 2026-10-22T08:33:56Z · cli_override, model_override
-- 2026-10-22T08:34:19Z · status ready→active
-- 2026-10-22T08:34:39Z · status active→ready
-- 2026-10-22T08:34:39Z · note: task abandoned
-- 2026-10-22T08:35:13Z · status ready→active
-- 2026-10-22T08:39:01Z · note: handoff requested (ui-review)
-- 2026-10-22T08:39:39Z · message_overdue: still queued after 60m without being delivered
-- 2026-10-22T08:42:11Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
-- 2026-10-22T08:42:11Z · status active→review
-- 2026-10-22T08:44:59Z · note: review pass 1: needs some work
-- 2026-10-22T08:45:00Z · message_delivered: 1 message(s)
-- 2026-10-22T08:45:00Z · status review→active
-- 2026-10-22T08:50:01Z · body
-- 2026-10-22T08:52:19Z · body
-- 2026-10-22T08:53:14Z · note: handoff requested (ui-review)
-- 2026-10-22T08:53:34Z · CTO nudge: held — handoff gate is running
-- 2026-10-22T09:03:33Z · CTO nudge: held — remote validation is running
-- 2026-10-22T09:04:34Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
-- 2026-10-22T09:04:35Z · status active→review
-- 2026-10-22T09:07:09Z · note: review pass 2: needs some work
-- 2026-10-22T09:07:09Z · status review→active
-- 2026-10-22T09:07:11Z · CTO nudge: held — remote validation is running
-- 2026-10-22T09:14:55Z · body
-- 2026-10-22T09:23:33Z · message_queued at 2026-10-22T09:23:33.888Z
-- 2026-10-22T09:23:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-22T09:24:55Z · body
-- 2026-10-22T09:25:58Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-22T09:25:58Z · message_delivered: 1 message(s)
-- 2026-10-22T09:26:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-22T09:26:07Z · status active→review
-- 2026-10-22T09:32:01Z · note: review pass 3: needs some work
-- 2026-10-22T09:32:01Z · needs_input
-- 2026-10-22T09:33:10Z · assigned_to
-- 2026-10-22T09:33:19Z · status review→active
-- 2026-10-22T09:44:59Z · assigned_to
-- 2026-10-22T09:44:59Z · note: handoff requested (ui-review)
-- 2026-10-22T09:56:50Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
-- 2026-10-22T09:56:51Z · status active→review
-- 2026-10-22T09:59:40Z · note: review pass 4: good to go
-- 2026-10-22T09:59:40Z · needs_input
-
