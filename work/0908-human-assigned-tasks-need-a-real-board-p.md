@@ -11,7 +11,7 @@ branch: feat/human-assigned-tasks-need-a-real-board-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T19:22:55Z"
-updated_at: "2026-10-22T03:01:01Z"
+updated_at: "2026-10-22T03:02:21Z"
 handoff_signal_retry_count: 1
 review_rounds: 1
 review_passes: 2
@@ -80,3 +80,4 @@ Do not start without the human. Related rule in AGENTS.md: needs-human-step task
 - 2026-10-22T02:58:21Z · message_queued at 2026-10-22T02:58:21.312Z
 - 2026-10-22T02:58:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-22T03:01:01Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-22T03:02:21Z · body
