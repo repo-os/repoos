@@ -85,3 +85,4 @@ The new reminders feature is nice, but when the time comes it just shows in the 
 - 2026-10-22T01:26:47Z · body
 - 2026-10-22T01:26:47Z · body
 - 2026-10-22T01:43:14Z · status active→review
+- 2026-10-22T01:43:14Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (c2918e70f) during finalization (#0734)
