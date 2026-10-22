@@ -71,6 +71,7 @@ export const NAV: NavItem[] = [
     label: "Checks",
     icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M9 6h10M9 12h10M9 18h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   },
+  SECRETS_NAV,
   {
     id: "agents",
     path: "/agents",
@@ -105,7 +106,7 @@ export function navFor(
   deploymentsEnabled = false,
   storiesEnabled = false,
   devEnabled = false,
-  secretsEnabled = false,
+  _secretsEnabled = true,
 ): NavItem[] {
   const items = [...NAV];
   let at = 4; // after Work + Checks
@@ -126,10 +127,6 @@ export function navFor(
     const agentsAt = items.findIndex((n) => n.id === "agents");
     items.splice(agentsAt < 0 ? items.length : agentsAt, 0, DEV_NAV);
   }
-  if (secretsEnabled) {
-    const agentsAt = items.findIndex((n) => n.id === "agents");
-    items.splice(agentsAt < 0 ? items.length : agentsAt, 0, SECRETS_NAV);
-  }
   return items;
 }
 
@@ -138,7 +135,8 @@ export function navFor(
  * read from the same shape the server ships it in: `release.enabled`,
  * a non-empty `deployments` array, `stories.enabled`, and a non-empty
  * `dev.targets` array. A missing or malformed section reads as disabled, so a
- * repo that never configures these gets exactly the default NAV.
+ * repo that never configures these still gets the Secrets entry so it can
+ * create its first environment; that selector never changes process bindings.
  */
 export function navFromConfig(
   config: Record<string, unknown> | null | undefined,
@@ -152,6 +150,6 @@ export function navFromConfig(
     Array.isArray(config?.deployments) && (config?.deployments as unknown[]).length > 0,
     stories?.enabled === true,
     Array.isArray(dev?.targets) && dev.targets.length > 0,
-    secretsEnabled ?? config?.projectSecretsEnabled === true,
+    true,
   );
 }
