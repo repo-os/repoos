@@ -165,3 +165,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T21:20:09Z · message_delivered: 1 message(s)
 - 2026-10-22T21:31:23Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-22T21:59:39Z · status active→review
+- 2026-10-22T21:59:39Z · note: handoff requested (cli)
