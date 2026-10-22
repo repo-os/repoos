@@ -5896,7 +5896,37 @@ export class AgentRunner {
   }
 
   isRunning(taskId: string): boolean {
-    return this.entries.has(taskId);
+    this.reconcileDeadAgents();
+    if (this.entries.has(taskId)) return true;
+    return readRegistry(this.cacheDir).entries.some((entry) => entry.taskId === taskId);
+  }
+
+  /** Drop dead or worktree-less engineer turns before they can fence a new run. */
+  reconcileDeadAgents(): string[] {
+    const registry = readRegistry(this.cacheDir);
+    const stale = new Set<string>();
+    for (const rec of registry.entries) {
+      if (rec.kind === "review") continue;
+      const cwdGone = !existsSync(rec.workdir);
+      const processAlive =
+        pidAlive(rec.pid) || livePidsInRecordedGroup(rec.processGroupLeader ?? rec.pid).length > 0;
+      if (cwdGone || !processAlive) stale.add(rec.taskId);
+    }
+    for (const [taskId, entry] of this.entries) {
+      if (entry.review) continue;
+      const cwdGone = Boolean(entry.workdir && !existsSync(entry.workdir));
+      const pid = entry.proc?.pid ?? entry.adoptedPid;
+      const processAlive =
+        (pid !== undefined && pidAlive(pid)) ||
+        (entry.processGroupLeader !== undefined &&
+          livePidsInRecordedGroup(entry.processGroupLeader).length > 0);
+      if (cwdGone || !processAlive) stale.add(taskId);
+    }
+    for (const taskId of stale) {
+      if (this.entries.has(taskId)) this.cleanup(taskId, false);
+      else this.removeRegistryEntry(taskId);
+    }
+    return [...stale];
   }
 
   /**
