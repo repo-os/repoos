@@ -12,7 +12,7 @@ branch: feat/cancelling-a-close-out-must-kill-its-che
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:32:56Z"
-updated_at: "2026-10-22T11:00:46Z"
+updated_at: "2026-10-22T11:02:27Z"
 last_close_out_gate_ms: 491456
 last_close_out_gate_at: "2026-10-22T11:00:46.168Z"
 review_passes: 1
@@ -103,4 +103,4 @@ Also fix #0921 in the same change (dead-holder detection for local check slots: 
 - 2026-10-22T10:49:24Z · status active→review
 - 2026-10-22T10:51:17Z · note: review pass 1: good to go
 - 2026-10-22T11:00:46Z · close-out gate completed in 491s
-
+- 2026-10-22T11:02:27Z · status done→done, release:success
