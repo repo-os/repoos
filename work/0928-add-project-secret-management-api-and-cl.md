@@ -3,6 +3,9 @@ id: "0928"
 title: Add project secret management API and CLI
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-10-22T15:30:59.808682Z ERROR codex_core::session: failed to record rollout items: thread 01a16439-f77e-7ce3-beb4-27b20d757766 not found"
 human_step_decision: agent
 human_step_decision_key: 10dfc9f8
 priority: p1
@@ -15,7 +18,9 @@ branch: feat/add-project-secret-management-api-and-cl
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:03Z"
-updated_at: "2026-10-22T15:30:34Z"
+updated_at: "2026-10-22T15:31:00Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-22T15:31:00.218Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The environment storage foundation in #0927 does not yet let an authorized user inspect or change project environment entries. Without an authenticated management surface, project values risk leaking through responses, logs, errors, or RepoOS internal credential settings.
@@ -43,3 +48,5 @@ Build on the authentication/authorization, route, audit, and CLI patterns alread
 - 2026-10-22T15:27:59Z · status ready→active, branch
 - 2026-10-22T15:28:04Z · message_queued at 2026-10-22T15:28:04.309Z
 - 2026-10-22T15:30:34Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-22T15:31:00Z · agent exited with an error (codex) · 2026-10-22T15:30:59.808682Z ERROR codex_core::session: failed to record rollout items: thread 01a16439-f77e-7ce3-beb4-27b20d757766 not found
+- 2026-10-22T15:31:00Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-22T15:30:59.808682Z ERROR codex_core::session: failed to record rollout items: thread 01a16439-f77e-7ce3-beb4-27b20d757766 not found
