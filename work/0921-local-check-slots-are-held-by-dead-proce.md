@@ -64,3 +64,4 @@ Evidence: .repoos/local-check-slots/{0,1}/.holder and .meta.json at 13:40 (both 
 - 2026-10-22T17:22:16Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-22T17:24:35Z · body
 - 2026-10-22T17:25:18Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-22T17:25:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
