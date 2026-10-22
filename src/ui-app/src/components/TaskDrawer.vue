@@ -5649,7 +5649,7 @@ watch(
               Latest
             </button>
           </div>
-          <ChatQueuedNotice :active="taskMsgQueuedVisible" />
+          <ChatQueuedNotice :active="taskMsgQueuedVisible" :queue-key="ui.active?.id" />
           <form class="ai-chat-compose agent-compose" @submit.prevent="sendTurn">
             <textarea
               ref="draftMsgTextarea"

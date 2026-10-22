@@ -246,7 +246,7 @@ watch(
       </button>
     </div>
 
-    <ChatQueuedNotice :active="queued" />
+    <ChatQueuedNotice :active="queued" queue-key="cto" />
     <form class="ai-chat-compose" @submit.prevent="send">
       <textarea
         ref="draftTextarea"

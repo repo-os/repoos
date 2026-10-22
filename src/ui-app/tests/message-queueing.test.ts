@@ -309,7 +309,9 @@ describe("message queueing", () => {
       const restored = second["queuedMessages"].get("persist-test");
       expect(restored?.length).toBe(1);
       expect(restored?.[0].text).toBe("survive the restart");
-      expect(second.queuedMessageSummary()[0]).toMatchObject({ id: "persist-test", count: 1 });
+      const summary = second.queuedMessageSummary()[0];
+      expect(summary).toMatchObject({ id: "persist-test", count: 1 });
+      expect(summary.items[0]).toMatchObject({ text: "survive the restart", source: "you" });
     } finally {
       second.dispose();
       fx.clean();

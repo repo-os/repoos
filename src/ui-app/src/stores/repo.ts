@@ -737,9 +737,17 @@ export const useRepoStore = defineStore("repo", () => {
    * keyed by task id or chat session key. Hydrated from `/api/agents/queued` so
    * a queued send that outlives the turn it was waiting on stays visible.
    */
-  const queuedMessages = ref<Record<string, { count: number; queuedAt: string; overdue: boolean }>>(
-    {},
-  );
+  const queuedMessages = ref<
+    Record<
+      string,
+      {
+        count: number;
+        queuedAt: string;
+        overdue: boolean;
+        items: import("../../../core/queued-message-ui.js").QueuedMessageDetail[];
+      }
+    >
+  >({});
   /** Server-authoritative start time for a live agent turn, keyed by task id. */
   const runningSince = ref<Record<string, string>>({});
   /** Most recent streamed agent output, keyed by task id (a useful "really active" cue). */
@@ -3514,7 +3522,13 @@ export const useRepoStore = defineStore("repo", () => {
           reason?: "pressure" | "slot";
           detail?: string;
         }[];
-        messages?: { id: string; count: number; queuedAt: string; overdue: boolean }[];
+        messages?: {
+          id: string;
+          count: number;
+          queuedAt: string;
+          overdue: boolean;
+          items?: import("../../../core/queued-message-ui.js").QueuedMessageDetail[];
+        }[];
       }>("/api/agents/queued");
       queuedIds.value = r.tasks.map((t) => t.id);
       queuedAgentMeta.value = Object.fromEntries(
@@ -3525,7 +3539,12 @@ export const useRepoStore = defineStore("repo", () => {
       queuedMessages.value = Object.fromEntries(
         (r.messages ?? []).map((m) => [
           m.id,
-          { count: m.count, queuedAt: m.queuedAt, overdue: m.overdue },
+          {
+            count: m.count,
+            queuedAt: m.queuedAt,
+            overdue: m.overdue,
+            items: m.items ?? [],
+          },
         ]),
       );
       const rq = await api<{

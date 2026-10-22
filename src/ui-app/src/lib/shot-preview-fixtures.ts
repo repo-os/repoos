@@ -917,9 +917,21 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         repo.runningIds = [...repo.runningIds, drawerId];
       }
       repo.agentActivityAt = { ...repo.agentActivityAt, [drawerId]: nowIso() };
+      const queuedAt = nowIso();
       repo.queuedMessages = {
         ...repo.queuedMessages,
-        [drawerId]: { count: 1, queuedAt: nowIso(), overdue: false },
+        [drawerId]: {
+          count: 1,
+          queuedAt,
+          overdue: false,
+          items: [
+            {
+              text: "Please review the updated acceptance criteria when this turn ends.",
+              queuedAt,
+              source: "board-update",
+            },
+          ],
+        },
       };
       break;
     }
