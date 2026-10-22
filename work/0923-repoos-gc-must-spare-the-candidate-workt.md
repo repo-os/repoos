@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-22T12:02:48.425Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Control dashboard worktree cleanup preview (target \"default\"): highlight .gc-preview matched nothing on / (http://127.0.0.1:36317/); [missing-target] Control dashboard worktree cleanup preview (target \"default\"): selector .gc-preview matched nothing on / (http://127.0.0.1:36317/)"
 id: "0923"
 title: repoos gc must spare the candidate worktree of a running close-out
 type: bug
@@ -72,3 +74,4 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 - 2026-10-22T11:48:17Z · body
 - 2026-10-22T11:50:49Z · body
 - 2026-10-22T12:02:45Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Control dashboard worktree cleanup preview (target "default"): highlight .gc-preview matched nothing on / (http://127.0.0.1:36317/); [missing-target] Control dashboard worktree cleanup preview (target "default"): selector .gc-preview matched nothing on / (http://127.0.0.1:36317/)
+
