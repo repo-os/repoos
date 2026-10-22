@@ -270,6 +270,26 @@ export async function cmdReview(args: string[]): Promise<number> {
   if (args[0] === "again") {
     return cmdReviewAgain(args.slice(1));
   }
+  if (args[0] === "cancel") {
+    const { rest, opts, error } = parseCommonFlags(args.slice(1));
+    const id = rest[0];
+    if (error || !id) {
+      printErr(error ?? "Usage: repoos review cancel <id> [--json] [--port N]");
+      return 1;
+    }
+    try {
+      const api = new RepoOsApi({ port: opts.port });
+      await ensureServer(api);
+      const data = await api.requestOk("PATCH", `/api/tasks/${id}`, { status: "active" });
+      if (opts.json) printJson(data);
+      else
+        console.log(c.green("  ✓ ") + c.dim(`review/handoff cancelled for #${id}; task is active`));
+      return 0;
+    } catch (e) {
+      printErr((e as RepoOsApiError).message);
+      return 1;
+    }
+  }
   const { rest, opts, error } = parseCommonFlags(args);
   if (error) {
     printErr(error);
@@ -319,6 +339,78 @@ export async function cmdReview(args: string[]): Promise<number> {
     if (opts.json) printJson({ ok: true, task: result });
     else console.log(c.green("  ✓ ") + c.dim(`#${id} is in review`));
     return 0;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
+export async function cmdIntegration(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const action = rest[0] ?? "list";
+  const id = rest[1];
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const path =
+      action === "get" && id
+        ? `/api/tasks/${id}/integration-job`
+        : action === "retry" && id
+          ? `/api/integration/pipeline/retry/${id}`
+          : action === "refresh-install" && id
+            ? `/api/integration/pipeline/refresh-install/${id}`
+            : action === "list"
+              ? "/api/integration-jobs"
+              : action === "pipeline"
+                ? "/api/integration/pipeline"
+                : "";
+    if (!path) {
+      printErr(
+        "Usage: repoos integration list|pipeline|get <id>|retry <id>|refresh-install <id> [--json] [--port N]",
+      );
+      return 1;
+    }
+    const result = await api.request(
+      action === "retry" || action === "refresh-install" ? "POST" : "GET",
+      path,
+      action === "retry" || action === "refresh-install" ? {} : undefined,
+    );
+    if (opts.json) printJson({ status: result.status, ...result.body });
+    else if (result.status >= 200 && result.status < 300) printJson(result.body);
+    else printErr(result.body.error ?? `HTTP ${result.status}`);
+    return result.status >= 200 && result.status < 300 ? 0 : 1;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
+export async function cmdAttention(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const action = rest[0] ?? "list";
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    let result: { status: number; body: ApiJson };
+    if (action === "list") result = await api.request("GET", "/api/attention");
+    else if (action === "dismiss" && rest[1])
+      result = await api.request("POST", `/api/tasks/${rest[1]}/needs-input/dismiss`, {});
+    else {
+      printErr("Usage: repoos attention list|dismiss <task-id> [--json] [--port N]");
+      return 1;
+    }
+    if (opts.json) printJson({ status: result.status, ...result.body });
+    else if (result.status >= 200 && result.status < 300) printJson(result.body);
+    else printErr(result.body.error ?? `HTTP ${result.status}`);
+    return result.status >= 200 && result.status < 300 ? 0 : 1;
   } catch (e) {
     printErr((e as RepoOsApiError).message);
     return 1;
@@ -417,20 +509,38 @@ export async function cmdDone(args: string[]): Promise<number> {
     return 1;
   }
   let commitDirty = false;
+  let cancel = false;
   const idParts: string[] = [];
   for (const a of rest) {
     if (a === "--commit-dirty") commitDirty = true;
+    else if (a === "--cancel") cancel = true;
     else idParts.push(a);
   }
   const id = idParts[0];
   if (!id) {
-    printErr("Usage: repoos done <id> [--commit-dirty] [--wait] [--json] [--port N]");
+    printErr("Usage: repoos done <id> [--cancel] [--commit-dirty] [--wait] [--json] [--port N]");
     return 1;
   }
   const wait = opts.wait || !opts.json;
   const api = new RepoOsApi({ port: opts.port });
   try {
     await ensureServer(api);
+    if (cancel) {
+      const result = await api.request("POST", `/api/tasks/${id}/done/cancel`, {});
+      const message =
+        result.body.error ??
+        (result.status === 409
+          ? "close-out is still shutting down; check again shortly"
+          : result.status >= 200 && result.status < 300
+            ? `close-out cancellation returned HTTP ${result.status}`
+            : `HTTP ${result.status}`);
+      if (opts.json) printJson({ status: result.status, ...result.body });
+      else
+        console.log(
+          `${result.status >= 200 && result.status < 300 ? c.green("  ✓ ") : c.yellow("  · ")}${message} (HTTP ${result.status})`,
+        );
+      return (result.status >= 200 && result.status < 300) || result.status === 409 ? 0 : 1;
+    }
     const started = await api.request("POST", `/api/tasks/${id}/done`, { commitDirty });
     if (started.status === 409 && started.body.needsCommit) {
       throw new RepoOsApiError(
@@ -517,6 +627,51 @@ export async function cmdDone(args: string[]): Promise<number> {
     if (opts.json) printJson(jobResult);
     else console.log(c.green("  ✓ ") + c.dim(`#${id} moved to done`));
     return 0;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
+export async function cmdApi(args: string[]): Promise<number> {
+  const method = args.shift()?.toUpperCase();
+  const path = args.shift();
+  let rawBody: string | undefined;
+  let port: number | undefined;
+  while (args.length) {
+    const flag = args.shift();
+    if (flag === "--json") rawBody = args.shift();
+    else if (flag === "--port") {
+      const value = Number(args.shift());
+      if (!Number.isInteger(value) || value <= 0) {
+        printErr("--port requires a positive integer");
+        return 1;
+      }
+      port = value;
+    } else {
+      printErr(`Unknown option: ${flag}`);
+      return 1;
+    }
+  }
+  if (!method || !path || !/^\/(?:api)(?:\/|$)/.test(path)) {
+    printErr("Usage: repoos api <METHOD> /api/<path> [--json body] [--port N]");
+    return 1;
+  }
+  let body: unknown;
+  if (rawBody !== undefined) {
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      printErr("--json must be valid JSON");
+      return 1;
+    }
+  }
+  try {
+    const api = new RepoOsApi({ port });
+    await ensureServer(api);
+    const result = await api.request(method, path, body);
+    printJson({ status: result.status, ...result.body });
+    return result.status >= 200 && result.status < 300 ? 0 : 1;
   } catch (e) {
     printErr((e as RepoOsApiError).message);
     return 1;

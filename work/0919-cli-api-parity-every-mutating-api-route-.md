@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 506168
-last_close_out_gate_at: "2026-10-22T14:01:21.354Z"
 id: "0919"
 title: "CLI/API parity: every mutating API route gets a CLI command (or an explicit exemption), starting with stop-close-out, plus a generic 'repoos api' escape hatch"
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, server]
+merged_commit: aa6a3bddcfff186f04f10ecb090b0c93e3bee09b
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/cli-api-parity-every-mutating-api-route-
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T04:47:28Z"
 updated_at: "2026-10-22T14:01:21Z"
+last_close_out_gate_ms: 506168
+last_close_out_gate_at: "2026-10-22T14:01:21.354Z"
 review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 1
