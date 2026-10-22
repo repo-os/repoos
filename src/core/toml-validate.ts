@@ -17,10 +17,10 @@
  * hatch stricter than the loader it feeds.
  *
  * Crucially, it rejects the *valid TOML* shapes that `parseFlatToml`
- * (`config.ts`) cannot read: multi-line arrays and inline tables (multi-line
+ * (`config.ts`) cannot read: multi-line arrays (multi-line
  * strings are supported by both). Those would otherwise sail through a save and
  * then be silently misread (the first line of a multi-line array parses as the
- * string `"["`, an inline table as a plain string), so a whole save could take
+ * string `"["`), so a whole save could take
  * no effect with no error — the exact silent-config failure this gate exists to
  * stop.
  */
@@ -31,6 +31,8 @@ export interface TomlValidationResult {
   error?: string;
   /** 1-based line the problem was found on. Present when `ok` is false. */
   line?: number;
+  /** Assignment key on the offending line, when the error is in a value. */
+  key?: string;
 }
 
 class TomlSyntaxError extends Error {
@@ -330,6 +332,27 @@ function readArray(sc: TomlScanner): void {
   }
 }
 
+function readInlineTable(sc: TomlScanner): void {
+  sc.advance(); // {
+  sc.skipInlineWhitespace();
+  while (sc.peek() !== "}") {
+    parseKey(sc);
+    sc.skipInlineWhitespace();
+    if (sc.peek() !== "=") sc.fail("expected '=' after inline-table key");
+    sc.advance();
+    sc.skipInlineWhitespace();
+    readValue(sc);
+    sc.skipInlineWhitespace();
+    if (sc.peek() === "}") break;
+    if (sc.peek() !== ",") sc.fail("expected ',' or '}' in inline table");
+    sc.advance();
+    sc.skipInlineWhitespace();
+    if (sc.peek() === "}") sc.fail("trailing comma in inline table");
+  }
+  if (sc.peek() !== "}") sc.fail("unterminated inline table");
+  sc.advance();
+}
+
 function readBareValue(sc: TomlScanner): void {
   let token = "";
   while (!sc.eof()) {
@@ -375,9 +398,8 @@ function readValue(sc: TomlScanner): boolean {
     return false;
   }
   if (ch === "{") {
-    sc.fail(
-      "inline tables aren't supported — use a [section] or [[array-of-tables]] block instead",
-    );
+    readInlineTable(sc);
+    return false;
   }
   readBareValue(sc);
   return false;
@@ -447,7 +469,9 @@ export function validateToml(source: string): TomlValidationResult {
     return { ok: true };
   } catch (err) {
     if (err instanceof TomlSyntaxError) {
-      return { ok: false, error: err.message, line: err.line };
+      const line = source.replace(/\r\n/g, "\n").split("\n")[err.line - 1] ?? "";
+      const key = line.match(/^\s*([A-Za-z0-9_.-]+)\s*=/)?.[1];
+      return { ok: false, error: err.message, line: err.line, ...(key ? { key } : {}) };
     }
     throw err;
   }
@@ -460,5 +484,5 @@ export function validateToml(source: string): TomlValidationResult {
  */
 export function formatTomlError(result: TomlValidationResult): string {
   if (result.ok) return "";
-  return `Invalid TOML on line ${result.line}: ${result.error}`;
+  return `Invalid TOML on line ${result.line}${result.key ? ` (key ${result.key})` : ""}: ${result.error}`;
 }
