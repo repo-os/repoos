@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-22T17:42:31Z"
-review_passes: 1
+last_close_out_gate_ms: 405403
+last_close_out_gate_at: "2026-10-22T17:51:38.917Z"
 id: "0921"
 title: "Local check slots are held by dead processes for 30 minutes: reclaim a slot as soon as its holder pid is gone"
 type: feature
@@ -13,6 +13,8 @@ branch: feat/local-check-slots-are-held-by-dead-proce
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T05:41:12Z"
+updated_at: "2026-10-22T17:51:38Z"
+review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -72,4 +74,5 @@ Evidence: .repoos/local-check-slots/{0,1}/.holder and .meta.json at 13:40 (both 
 - 2026-10-22T17:41:12Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-10-22T17:41:13Z · status active→review
 - 2026-10-22T17:42:30Z · note: review pass 1: good to go
+- 2026-10-22T17:51:38Z · close-out gate completed in 405s
 
