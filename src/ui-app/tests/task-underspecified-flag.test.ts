@@ -12,6 +12,10 @@ import { parseTask } from "../../core/task.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import { createTask, patchTask, pmMessage, taskAction } from "../../server/routes/tasks.js";
 import {
+  PM_SPLIT_HUMAN_STEP_MESSAGE,
+  splitHumanStepRequirementsPrompt,
+} from "../../core/task-underspecified.js";
+import {
   flagNeedsHumanStepIfNeeded,
   flagTaskSpecFlagsIfNeeded,
   flagUnderspecifiedIfNeeded,
@@ -461,6 +465,24 @@ describe("pmMessage underspecified clear (#0558)", () => {
       expect(fake.status).toBe(200);
       const onDisk = readTaskFile(fx);
       expect(onDisk.needsInput).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("sends the dedicated human-step prompt and leaves its flag until resolution", async () => {
+    const fx = makeFixture("inbox", "needs_input: true\nneeds_input_reason: needs-human-step\n");
+    try {
+      const { res, fake } = makeRes();
+      const ctx = makeCtx(fx);
+      await pmMessage(ctx, makeReq({ text: PM_SPLIT_HUMAN_STEP_MESSAGE }), res, {
+        param1: "0558",
+      });
+      expect(fake.status).toBe(200);
+      const sentMessage = (ctx.runner.startChat as ReturnType<typeof vi.fn>).mock.calls[0]?.[1];
+      expect(sentMessage).toContain(splitHumanStepRequirementsPrompt());
+      expect(sentMessage).not.toContain("Can you flesh this out?");
+      expect(readTaskFile(fx).needsInput).toBe(true);
     } finally {
       fx.clean();
     }

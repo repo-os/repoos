@@ -56,9 +56,18 @@ export function splitHumanStepTask(
     humanTask.absPath,
     `docs(${humanTask.id}): split human steps from #${source.id}`,
   );
-  const patched = patchTaskFile(config, source.absPath, { body: nextBody }, { actor });
-  return flagTaskSpecFlagsIfNeededAsync(config, patched).then((flagged) => ({
-    source: flagged ?? patched,
-    humanTask,
-  }));
+  const patched = patchTaskFile(
+    config,
+    source.absPath,
+    { body: nextBody, needsInput: false },
+    { actor },
+  );
+  return flagTaskSpecFlagsIfNeededAsync(config, patched).then((flagged) => {
+    const resolved = flagged ?? patched;
+    const sourceTask =
+      resolved.needsInputReason === "needs-human-step"
+        ? patchTaskFile(config, resolved.absPath, { needsInput: false }, { actor })
+        : resolved;
+    return { source: sourceTask, humanTask };
+  });
 }

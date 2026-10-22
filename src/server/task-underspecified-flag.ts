@@ -376,9 +376,5 @@ export function sweepUnderspecifiedTasksSync(config: RepoOSConfig, tasks: Iterab
 }
 
 export function needsInputClearsOnPmMessage(reason: string | undefined): boolean {
-  return (
-    reason === "cto-escalation" ||
-    reason === UNDERSPECIFIED_NEEDS_INPUT_REASON ||
-    reason === NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON
-  );
+  return reason === "cto-escalation" || reason === UNDERSPECIFIED_NEEDS_INPUT_REASON;
 }

@@ -302,6 +302,7 @@ export const statusColor = (s: string): string => STATUS_COLORS[s] ?? "#566081";
  */
 /** Canned PM prompt for stub tasks — shared by the PM tab chips and needs-input banner. */
 export const PM_FLESH_OUT_CANNED_MESSAGE = "Can you flesh this out?";
+export { PM_SPLIT_HUMAN_STEP_MESSAGE as PM_SPLIT_HUMAN_STEP_CANNED_MESSAGE } from "../../../core/task-underspecified.js";
 
 export const PM_CANNED_MESSAGES: Partial<Record<Status, string[]>> = {
   draft: [PM_FLESH_OUT_CANNED_MESSAGE, "Suggest how to turn this stub into a complete task."],
