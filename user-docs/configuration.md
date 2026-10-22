@@ -425,17 +425,21 @@ task body normally includes these headings (each with real prose, not placeholde
 The body outside `## Original prompt` should be at least ~400 characters. The PM
 "flesh this out" flow and `repoos new` / task PATCH paths run the same check.
 
-RepoOS also flags `needs_input` / `needs-human-step` when `## Acceptance criteria`
-mention real devices, physical hardware, accounts, credentials, or third-party
-registrations — a hint to split that verification into a human-only task.
+RepoOS also flags `needs_input` / `needs-human-step` when acceptance criteria
+need a real device, account, or third-party sign-up. A keyword scan is only a
+tripwire: when **Model routing → Check for mixed AI and human steps** is on,
+the decision model must agree before the flag is set, and `needs_input_detail`
+quotes the matched criterion plus the model's bounded reason. Clearing the flag
+(or `repoos update --human-step-override "<reason>"`) is **sticky** by default
+(**Remember cleared needs-human-step flags**): RepoOS stores a fingerprint of
+the acceptance criteria so later edits do not re-flag until the criteria
+materially change. Prefix criteria with `[human]` or `[ai]`; when both tags are
+present, `repoos split <id>` (or **Split human steps** in the drawer) moves the
+`[human]` lines to a held human task that depends on the AI task.
 
 Both checks are agent-oriented. A task assigned to a human (`--assigned-to
 human`) is the human's own checklist: it skips both, `## Notes for AI` is
-optional for it, and its acceptance criteria are still shown. An AI task that
-trips the `needs-human-step` keyword check by accident can be cleared on purpose
-with a recorded reason — `repoos new/update --human-step-override "<reason>"` —
-which stores the reason on the task and writes it to the activity log. The
-matched keywords stay listed in `needs_input_detail` until that override is set.
+optional for it, and its acceptance criteria are still shown.
 
 Constraints: a label is a string of at most 40 characters; blank labels,
 duplicates of another column's label, or over-length values fall back to that

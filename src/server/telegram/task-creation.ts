@@ -26,7 +26,7 @@ import { commitTaskFile } from "../../core/git.js";
 import { saveScreenshot, type ScreenshotMeta } from "../attachments.js";
 import { patchTaskFile } from "../write.js";
 import {
-  flagTaskSpecFlagsIfNeeded,
+  flagTaskSpecFlagsIfNeededAsync,
   isUnderspecifiedSweepEligible,
 } from "../task-underspecified-flag.js";
 import {
@@ -132,11 +132,9 @@ export function createTelegramTask(
   // Same "stub body" flag the HTTP create route applies, so a short Telegram
   // capture is visible as underspecified rather than silently carried.
   if (isUnderspecifiedSweepEligible(created)) {
-    const flagged = flagTaskSpecFlagsIfNeeded(deps.config, created);
-    if (flagged) {
-      created = flagged;
-      void deps.index.applyFileChange(created.absPath, { guarded: true });
-    }
+    void flagTaskSpecFlagsIfNeededAsync(deps.config, created).then((flagged) => {
+      if (flagged) void deps.index.applyFileChange(flagged.absPath, { guarded: true });
+    });
   }
 
   const images: ScreenshotMeta[] = [];

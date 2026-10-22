@@ -2179,10 +2179,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // preview child or worktree-rooted server must never rewrite the board, and a
   // vitest boot must not touch the live board (mirrors the area migration).
   const runUnderspecifiedSweep = (): void => {
+    void (async () => {
     try {
       if (!isControlPlane) return;
       if (process.env.VITEST === "true") return;
-      const changed = sweepUnderspecifiedTasks(config, index.getTasks());
+      const changed = await sweepUnderspecifiedTasks(config, index.getTasks());
       if (changed.length === 0) return;
       commitFiles(
         config.root,
@@ -2195,6 +2196,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     } catch {
       /* best-effort: a failed sweep must never block boot */
     }
+    })();
   };
   void indexReady.then(runUnderspecifiedSweep, runUnderspecifiedSweep).catch(() => {});
 
@@ -3600,7 +3602,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   );
   router.register(
     "POST",
-    /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen|archive|unarchive)$/,
+    /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen|archive|unarchive|split)$/,
     taskAction,
   );
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);

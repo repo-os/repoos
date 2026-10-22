@@ -157,9 +157,14 @@ async function toggleRole(role: string, enabled: boolean): Promise<void> {
 }
 
 const humanStepCheck = computed(() => config.data?.["model_routing.humanStepCheck"] === true);
+const humanStepSticky = computed(() => config.data?.["model_routing.humanStepSticky"] !== false);
 
 async function setHumanStepCheck(enabled: boolean): Promise<void> {
   await patch({ "model_routing.humanStepCheck": enabled });
+}
+
+async function setHumanStepSticky(enabled: boolean): Promise<void> {
+  await patch({ "model_routing.humanStepSticky": enabled });
 }
 
 async function runProbe(live: boolean): Promise<void> {
@@ -498,10 +503,27 @@ onMounted(() => {
         Check for mixed AI and human steps, and suggest splitting the task
       </label>
       <p class="agent-desc" style="margin: 6px 0 0">
-        Off by default. Uses the provider above. A yes means the task should be split into a
-        separate AI task and a human task. It only blocks a start when Mode is Automatic; in Shadow
-        it records the verdict without blocking, and if the provider is unavailable or fails, the
-        keyword check runs instead.
+        Off by default. When the keyword scan matches, the model decides whether verification truly
+        needs a human — the keyword alone never sets the flag. It only blocks a start when Mode is
+        Automatic; in Shadow it records the verdict without blocking, and if the provider is
+        unavailable or fails, the keyword check runs instead.
+      </p>
+      <label
+        class="mr-role-chip"
+        style="margin-top: 6px"
+        data-test-id="routing-human-step-sticky-row"
+      >
+        <input
+          type="checkbox"
+          :checked="humanStepSticky"
+          data-testid="routing-human-step-sticky"
+          @change="(e) => void setHumanStepSticky((e.target as HTMLInputElement).checked)"
+        />
+        Remember cleared needs-human-step flags
+      </label>
+      <p class="agent-desc" style="margin: 6px 0 0">
+        On by default. When you clear a needs-human-step flag, RepoOS records a fingerprint of the
+        acceptance criteria so later edits do not re-flag until the criteria materially change.
       </p>
     </div>
 

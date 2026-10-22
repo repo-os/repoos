@@ -81,7 +81,7 @@ function recordDecisionUsage(
  */
 export async function runHumanStepDecisionCheck(
   config: RepoOSConfig,
-  task: Pick<Task, "id" | "title" | "body">,
+  task: Pick<Task, "id" | "title" | "body"> & { matchedSentence?: string },
   deps: { provider?: RoutingDecisionProvider | null; recordUsage?: boolean } = {},
 ): Promise<HumanStepCheckResult> {
   if (config.modelRouting?.humanStepCheck !== true) return { outcome: "off" };
@@ -93,7 +93,7 @@ export async function runHumanStepDecisionCheck(
   const startedAt = Date.now();
   const result = await decideHumanStep({
     provider,
-    brief: { title: task.title, body: task.body },
+    brief: { title: task.title, body: task.body, matchedSentence: task.matchedSentence },
     timeoutMs: effective.timeoutMs,
   });
   if (result.status === "unavailable") return { outcome: "unavailable" };
