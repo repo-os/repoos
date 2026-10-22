@@ -2,7 +2,7 @@
 id: "0909"
 title: "Stop false 'needs human step' flags: sticky overrides, model check before keywords, tagged criteria with auto-split"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — `repoos new` (and Telegram create) still commit before the async human-step assessment finishes; pass-4 finding unfixed…
@@ -156,3 +156,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T07:22:50Z · assigned_to
 - 2026-10-22T07:22:55Z · note: handoff requested (ui-review)
 - 2026-10-22T07:33:53Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-10-22T07:33:53Z · status active→review
