@@ -11,7 +11,7 @@ branch: feat/close-out-hangs-48-minutes-on-a-stalled-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T04:09:06Z"
-updated_at: "2026-10-22T08:10:26Z"
+updated_at: "2026-10-22T08:11:38Z"
 ---
 ## Problem
 2026-10-22: #0909's close-out (check/validating phase) started at 03:03Z and did nothing visible for 48 minutes. At 03:51:39Z the attention event 'Ran locally' recorded: 'ssh upload of candidate bundle to thinkpad failed: [stdin error: EPIPE: broken pipe, write]'. Only then did the gate start locally on the laptop (which also burns the laptop's memory, the problem remote validation is meant to avoid). thinkpad was swap-bound at the time (3579/4095 MB, 87%). The upload to a pressured or wedged host had no hard deadline short enough to fail fast, #0901's health probe did not keep the upload from going to that host, and nothing in the UI/task showed what the close-out was waiting on (the user only saw 'check', and asked why it was stuck for over an hour).
@@ -34,6 +34,25 @@ A stalled upload fails within about 60-90 s, the close-out retries on another he
 ## Notes for AI
 Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallback event in .repoos/attention-events.json. Related: #0897, #0901, #0910, #0916.
 
+## Shots
+```json
+[
+{
+  "label": "Close-out card shows streaming bundle upload progress",
+  "target": "default",
+  "route": "/",
+  "highlight": ".integration-pipeline-hint",
+  "state": "closeOut:uploading"
+},
+{
+  "label": "Settings: bundle upload stall and budget controls",
+  "target": "default",
+  "route": "/settings",
+  "highlight": "#setting-remoteValidation.bundleUploadStallSecs"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-22T04:09:06Z · created · njachowski@gmail.com
@@ -47,3 +66,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T08:07:47Z · body
 - 2026-10-22T08:10:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-22T08:10:26Z · body
+- 2026-10-22T08:11:38Z · body
