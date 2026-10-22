@@ -89,6 +89,10 @@ function criticalReadings(swapRatio = 0.73): MemoryReadings {
     compressorBytes: Math.round(totalMemBytes * 0.4),
     memoryFreePercent: 60,
     memoryStatsAvailable: true,
+    // Occupancy alone no longer blocks (#0918); thrashing activity does.
+    swapIoBytesPerSec: 5 * 1024 * 1024,
+    pageoutBytesPerSec: 512 * 1024,
+    activityWindowSec: 30,
   };
 }
 
@@ -102,6 +106,10 @@ function healthyReadings(): MemoryReadings {
     compressorBytes: 0,
     memoryFreePercent: 70,
     memoryStatsAvailable: true,
+    // Hermetic (#0330 class): explicit activity so the guard never samples the live host.
+    swapIoBytesPerSec: 0,
+    pageoutBytesPerSec: 0,
+    activityWindowSec: 30,
   };
 }
 

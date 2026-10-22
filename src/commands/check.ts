@@ -90,6 +90,7 @@ import {
   REPOOS_CHECK_GATE_NOTE,
 } from "../server/pre-review-remote-gate.js";
 import { acquireLocalCheckSlot, SlotQueueTimeoutError } from "../core/local-gates.js";
+import { inspectCrossProcessSlots, localCheckLockRoot } from "../core/cross-process-slots.js";
 import { remoteLocalFallbackMode } from "../core/resource-limits.js";
 import {
   browserGateOffloadSkipDetail,
@@ -2344,6 +2345,16 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     const msg =
       e instanceof SlotQueueTimeoutError ? e.message : e instanceof Error ? e.message : String(e);
     console.log(c.red(`\n  ✗ ${msg}\n`));
+    const holders = inspectCrossProcessSlots(
+      localCheckLockRoot(repoRoot, cfg.cacheDir ?? ".repoos"),
+    );
+    for (const holder of holders) {
+      console.log(
+        c.dim(
+          `  slot ${holder.slot}: pid ${holder.pid ?? "unknown"}, ${Math.round(holder.ageMs / 1000)}s${holder.dead ? " (dead; reclaiming)" : holder.wedged ? " (possibly wedged)" : ""}`,
+        ),
+      );
+    }
     process.exit(1);
   }
 

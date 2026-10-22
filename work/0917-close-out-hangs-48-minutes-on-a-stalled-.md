@@ -2,17 +2,16 @@
 id: "0917"
 title: Close-out hangs ~48 minutes on a stalled ssh bundle upload before falling back to local; thinkpad swap full again
 type: feature
-status: review
+status: active
 priority: p1
 area: server
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/close-out-hangs-48-minutes-on-a-stalled-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T04:09:06Z"
-updated_at: "2026-10-22T11:44:41Z"
-check_retry_count: 1
+updated_at: "2026-10-22T11:45:19Z"
 last_check_failure: "repoos check at 2026-10-22T11:36:31.117Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Close-out card shows bundle upload progress (target \"default\"): state \"closeOut:uploading\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Close-out card shows bundle upload progress (target \"default\"): highlight .tc-moving matched nothing on / (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Remote validation dr… (truncated)"
 ---
 ## Problem
@@ -52,12 +51,12 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 "route": "/settings?section=remote-validation",
 "highlight": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]",
 "steps": [
-  {
-    "click": "[id=\"setting-remoteValidation.enabled\"] button"
-  },
-  {
-    "waitFor": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]"
-  }
+{
+"click": "[id=\"setting-remoteValidation.enabled\"] button"
+},
+{
+"waitFor": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]"
+}
 ]
 }
 ]
@@ -101,4 +100,7 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T11:38:10Z · body
 - 2026-10-22T11:39:42Z · body
 - 2026-10-22T11:40:42Z · body
+- 2026-10-22T11:44:41Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-10-22T11:44:41Z · status active→review
+- 2026-10-22T11:45:10Z · assigned_to
+- 2026-10-22T11:45:19Z · status review→active

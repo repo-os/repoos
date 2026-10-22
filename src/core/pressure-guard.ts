@@ -1,28 +1,34 @@
 /**
- * Pressure guard (#0836, #0871).
+ * Pressure guard (#0836, #0871, #0918).
  *
- * The guard holds new work when the machine cannot absorb it. Memory pressure
- * — swap use, the macOS compressor pool, reclaimable memory — is the primary
- * signal; load average is only a fallback for platforms where those readings
- * are unavailable. A thrashing box can sit at load 300 with an idle CPU, and a
- * busy-but-healthy box can sit at load 12 with memory to spare; load alone
- * cannot tell them apart.
+ * The guard holds new work when the machine is paying a memory cost: sustained
+ * swap I/O or pageout rates, low reclaimable memory, macOS memory-pressure
+ * warnings, or Linux PSI — not merely high but quiet swap/compressor occupancy.
+ * Load average is only a fallback when memory readings are unavailable.
  *
  * Running engineers are never killed. The guard only defers *starts* and
  * browser steps, with a reason the UI and queue markers can show.
  */
 import type { RepoOSConfig } from "./types.js";
+import { readPlatformMemoryActivity } from "./memory-activity.js";
 import {
+  pressureActivityWindowSec,
   pressureGuardEnabled,
   pressureMaxCompressorRatio,
   pressureMaxLoadPerCpu,
+  pressureMaxPageoutBytesPerSec,
+  pressureMaxPsiMemoryAvg10,
+  pressureMaxSwapIoBytesPerSec,
   pressureMaxSwapUsedRatio,
   pressureMinAvailableMemRatio,
+  pressureMinMemoryFreePercent,
 } from "./resource-limits.js";
 import {
+  runMemoryPressureCommand,
   sampleMemoryReadings,
   type MemoryPressureProbe,
   type MemoryReadings,
+  type MemoryCommandRunner,
 } from "./memory-pressure.js";
 
 export type PressureLevel = "normal" | "warning" | "critical";
@@ -40,7 +46,11 @@ export interface PressureSnapshot {
   compressorRatio: number | null;
   memoryFreePercent: number | null;
   totalMemBytes: number;
-  /** `memory` when swap/compressor readings drove the verdict, else `load`. */
+  swapIoBytesPerSec: number | null;
+  pageoutBytesPerSec: number | null;
+  activityWindowSec: number | null;
+  psiMemoryAvg10: number | null;
+  /** `memory` when memory readings are available, else `load`. */
   source: "memory" | "load";
   /** Critical reasons only — non-empty means new work is held. */
   reasons: string[];
@@ -55,15 +65,29 @@ export interface PressureThresholds {
   minAvailableMemRatio: number;
   maxSwapUsedRatio: number;
   maxCompressorRatio: number;
+  activityWindowSec: number;
+  maxSwapIoBytesPerSec: number;
+  maxPageoutBytesPerSec: number;
+  minMemoryFreePercent: number;
+  maxPsiMemoryAvg10: number;
 }
 
 /** Near a threshold (75% of the way) is worth surfacing before it bites. */
 const WARNING_FACTOR = 0.75;
 
+const ACTIVITY_DIAG =
+  "Check Activity Monitor (Memory tab), `vm_stat 1`, or `memory_pressure -Q` on macOS; " +
+  "`/proc/pressure/memory` and `vmstat 1` on Linux.";
+
 function fmtBytes(bytes: number): string {
   if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
-  if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(0)} MB`;
-  return `${(bytes / 1024).toFixed(0)} KB`;
+  if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${bytes.toFixed(0)} B`;
+}
+
+function fmtBytesPerSec(bytesPerSec: number): string {
+  return `${fmtBytes(bytesPerSec)}/s`;
 }
 
 function fmtPct(ratio: number): string {
@@ -76,12 +100,25 @@ export function pressureThresholds(config?: RepoOSConfig): PressureThresholds {
     minAvailableMemRatio: config ? pressureMinAvailableMemRatio(config) : 0.08,
     maxSwapUsedRatio: config ? pressureMaxSwapUsedRatio(config) : 0.5,
     maxCompressorRatio: config ? pressureMaxCompressorRatio(config) : 0.35,
+    activityWindowSec: config ? pressureActivityWindowSec(config) : 30,
+    maxSwapIoBytesPerSec: config ? pressureMaxSwapIoBytesPerSec(config) : 1024 * 1024,
+    maxPageoutBytesPerSec: config ? pressureMaxPageoutBytesPerSec(config) : 256 * 1024,
+    minMemoryFreePercent: config ? pressureMinMemoryFreePercent(config) : 10,
+    maxPsiMemoryAvg10: config ? pressureMaxPsiMemoryAvg10(config) : 25,
   };
 }
 
 /** True when the caller gave us (or the probe reported) real memory signals. */
 function hasMemorySignals(sample: Partial<PressureSnapshot> & Partial<MemoryReadings>): boolean {
-  if (typeof sample.memoryStatsAvailable === "boolean") return sample.memoryStatsAvailable;
+  if (sample.memoryStatsAvailable === true) return true;
+  // A swap-less host can still have meaningful activity/pressure signals such
+  // as PSI, so the probe's lack of occupancy stats must not mask those.
+  if (sample.memoryPressureLevel !== undefined && sample.memoryPressureLevel !== null) return true;
+  if (sample.psiMemoryAvg10 !== undefined && sample.psiMemoryAvg10 !== null) return true;
+  if (sample.swapIoBytesPerSec !== undefined && sample.swapIoBytesPerSec !== null) return true;
+  if (sample.pageoutBytesPerSec !== undefined && sample.pageoutBytesPerSec !== null) return true;
+  if (sample.memoryFreePercent !== undefined && sample.memoryFreePercent !== null) return true;
+  if (sample.memoryStatsAvailable === false) return false;
   if (sample.swapUsedBytes !== undefined && sample.swapUsedBytes !== null) return true;
   if (sample.swapTotalBytes !== undefined && sample.swapTotalBytes !== null) return true;
   if (sample.compressorBytes !== undefined && sample.compressorBytes !== null) return true;
@@ -93,6 +130,11 @@ function hasMemorySignals(sample: Partial<PressureSnapshot> & Partial<MemoryRead
 function ratioOf(used: number | null, total: number | null): number | null {
   if (used === null || total === null || total <= 0) return null;
   return Math.max(0, Math.min(1, used / total));
+}
+
+function activityWindowLabel(windowSec: number | null | undefined, fallback: number): string {
+  const sec = windowSec ?? fallback;
+  return `${sec} s`;
 }
 
 /**
@@ -115,6 +157,12 @@ export function evaluatePressure(
     (compressorBytes !== null && totalMemBytes > 0 ? compressorBytes / totalMemBytes : null);
   const memoryStatsAvailable = hasMemorySignals(sample);
   const source: "memory" | "load" = memoryStatsAvailable ? "memory" : "load";
+  const memoryFreePercent = sample.memoryFreePercent ?? null;
+  const swapIoBytesPerSec = sample.swapIoBytesPerSec ?? null;
+  const pageoutBytesPerSec = sample.pageoutBytesPerSec ?? null;
+  const activityWindowSec = sample.activityWindowSec ?? null;
+  const psiMemoryAvg10 = sample.psiMemoryAvg10 ?? null;
+  const memoryPressureLevel = sample.memoryPressureLevel ?? null;
 
   const reasons: string[] = [];
   const warnings: string[] = [];
@@ -131,15 +179,63 @@ export function evaluatePressure(
     );
   }
 
+  if (memoryFreePercent !== null && memoryFreePercent < thresholds.minMemoryFreePercent) {
+    reasons.push(
+      `system-wide free memory is ${memoryFreePercent}% (below ${thresholds.minMemoryFreePercent}%) — ` +
+        `holding new work until memory pressure eases. ${ACTIVITY_DIAG}`,
+    );
+  }
+
+  if (memoryPressureLevel === "warn" || memoryPressureLevel === "critical") {
+    reasons.push(
+      `macOS memory_pressure reports ${memoryPressureLevel} — holding new work until memory pressure eases. ${ACTIVITY_DIAG}`,
+    );
+  }
+
+  if (psiMemoryAvg10 !== null && psiMemoryAvg10 > thresholds.maxPsiMemoryAvg10) {
+    reasons.push(
+      `Linux PSI memory pressure avg10 is ${psiMemoryAvg10.toFixed(1)}% (limit ` +
+        `${thresholds.maxPsiMemoryAvg10}%) — holding new work until memory pressure eases`,
+    );
+  }
+
+  const windowLabel = activityWindowLabel(activityWindowSec, thresholds.activityWindowSec);
+
+  if (swapIoBytesPerSec !== null && swapIoBytesPerSec >= thresholds.maxSwapIoBytesPerSec) {
+    reasons.push(
+      `swap in/out ${fmtBytesPerSec(swapIoBytesPerSec)} over ${windowLabel} (limit ` +
+        `${fmtBytesPerSec(thresholds.maxSwapIoBytesPerSec)}) — holding new work until paging eases. ${ACTIVITY_DIAG}`,
+    );
+  } else if (
+    swapIoBytesPerSec !== null &&
+    swapIoBytesPerSec >= thresholds.maxSwapIoBytesPerSec * WARNING_FACTOR
+  ) {
+    warnings.push(
+      `swap I/O is elevated (${fmtBytesPerSec(swapIoBytesPerSec)} over ${windowLabel})`,
+    );
+  }
+
+  if (pageoutBytesPerSec !== null && pageoutBytesPerSec >= thresholds.maxPageoutBytesPerSec) {
+    reasons.push(
+      `pageouts ${fmtBytesPerSec(pageoutBytesPerSec)} over ${windowLabel} (limit ` +
+        `${fmtBytesPerSec(thresholds.maxPageoutBytesPerSec)}) — holding new work until paging eases. ${ACTIVITY_DIAG}`,
+    );
+  } else if (
+    pageoutBytesPerSec !== null &&
+    pageoutBytesPerSec >= thresholds.maxPageoutBytesPerSec * WARNING_FACTOR
+  ) {
+    warnings.push(
+      `pageout rate is elevated (${fmtBytesPerSec(pageoutBytesPerSec)} over ${windowLabel})`,
+    );
+  }
+
   if (swapUsedRatio !== null) {
     if (swapUsedRatio >= thresholds.maxSwapUsedRatio) {
       const amount =
         swapUsedBytes !== null && swapTotalBytes !== null
           ? ` (${fmtBytes(swapUsedBytes)} of ${fmtBytes(swapTotalBytes)} swap, ${fmtPct(swapUsedRatio)})`
           : ` (${fmtPct(swapUsedRatio)} of swap)`;
-      reasons.push(
-        `swap is nearly full${amount} — the machine is thrashing, holding new work until it recovers`,
-      );
+      warnings.push(`swap use is high${amount} — not holding on occupancy alone`);
     } else if (swapUsedRatio >= thresholds.maxSwapUsedRatio * WARNING_FACTOR) {
       warnings.push(
         `swap use is climbing (${fmtPct(swapUsedRatio)}, limit ${fmtPct(thresholds.maxSwapUsedRatio)})`,
@@ -150,9 +246,9 @@ export function evaluatePressure(
   if (compressorRatio !== null) {
     if (compressorRatio >= thresholds.maxCompressorRatio) {
       const amount = compressorBytes !== null ? ` (${fmtBytes(compressorBytes)} of RAM)` : "";
-      reasons.push(
-        `the memory compressor is holding ${fmtPct(compressorRatio)} of RAM${amount} — ` +
-          "holding new work until memory pressure eases",
+      warnings.push(
+        `memory compressor is holding ${fmtPct(compressorRatio)} of RAM${amount} — ` +
+          "not holding on occupancy alone",
       );
     } else if (compressorRatio >= thresholds.maxCompressorRatio * WARNING_FACTOR) {
       warnings.push(
@@ -167,7 +263,6 @@ export function evaluatePressure(
       `system load is high (${loadPerCpu.toFixed(1)}× per CPU, limit ` +
       `${thresholds.maxLoadPerCpu}×)`;
     if (source === "load") {
-      // Memory readings unavailable: load is the only pressure signal we have.
       reasons.push(`${detail} — waiting for headroom before starting more work`);
     } else {
       warnings.push(`${detail}, but memory pressure is normal — not holding starts`);
@@ -186,12 +281,37 @@ export function evaluatePressure(
     swapUsedRatio,
     compressorBytes,
     compressorRatio,
-    memoryFreePercent: sample.memoryFreePercent ?? null,
+    memoryFreePercent,
     totalMemBytes,
+    swapIoBytesPerSec,
+    pageoutBytesPerSec,
+    activityWindowSec,
+    psiMemoryAvg10,
     source,
     reasons,
     warnings,
     reason,
+  };
+}
+
+function mergeActivityReadings(
+  readings: MemoryReadings,
+  config?: RepoOSConfig,
+  runCommand?: MemoryCommandRunner,
+): MemoryReadings {
+  if (readings.swapIoBytesPerSec !== undefined || readings.pageoutBytesPerSec !== undefined) {
+    return readings;
+  }
+  const windowSec = config ? pressureActivityWindowSec(config) : 30;
+  const activity = readPlatformMemoryActivity(windowSec, { runCommand });
+  return {
+    ...readings,
+    swapIoBytesPerSec: activity.swapIoBytesPerSec,
+    pageoutBytesPerSec: activity.pageoutBytesPerSec,
+    activityWindowSec: activity.activityWindowSec,
+    memoryFreePercent: activity.memoryFreePercent ?? readings.memoryFreePercent,
+    memoryPressureLevel: activity.memoryPressureLevel,
+    psiMemoryAvg10: activity.psiMemoryAvg10,
   };
 }
 
@@ -200,7 +320,17 @@ export function pressureSnapshot(
   config?: RepoOSConfig,
   probe?: MemoryPressureProbe,
 ): PressureSnapshot {
-  const readings = sampleMemoryReadings(probe);
+  const commandCache = new Map<string, string | null>();
+  const runCommand: MemoryCommandRunner = (cmd, args) => {
+    const key = JSON.stringify([cmd, args]);
+    if (!commandCache.has(key)) commandCache.set(key, runMemoryPressureCommand(cmd, args));
+    return commandCache.get(key) ?? null;
+  };
+  const readings = mergeActivityReadings(
+    sampleMemoryReadings(probe, runCommand),
+    config,
+    runCommand,
+  );
   return evaluatePressure(readings, pressureThresholds(config));
 }
 
@@ -253,14 +383,14 @@ export async function waitForPressureRelief(
     probe?: MemoryPressureProbe;
   } = {},
 ): Promise<void> {
-  // The switch means "do not hold new work", and this is a hold. Without this
-  // early return, `enabled = false` silently stopped nothing here: the wait
-  // loop read `pressureSnapshot`, which ignores the switch (#0905).
   if (!pressureGuardEnabled(config)) return;
   const poll = Math.max(500, opts.pollMs ?? 2000);
   while (true) {
     const snapshot = pressureSnapshot(config, opts.probe);
-    const reason = snapshot.reason;
+    const reason =
+      snapshot.reason && snapshot.warnings.length > 0
+        ? `${snapshot.reason}; additional signals: ${snapshot.warnings.join("; ")}`
+        : snapshot.reason;
     if (!reason) return;
     opts.onWaiting?.(reason);
     if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {

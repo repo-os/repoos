@@ -154,7 +154,7 @@ activity log (`CTO nudge: held — …`) instead of sending it:
 | Review turn running | `ReviewManager.isRunning` | review is running |
 | Remote-validation run active | `RemoteValidator.activeRemoteRuns()` | remote validation is running |
 | Undelivered message queued | `hasQueuedMessages` | an undelivered message is already queued |
-| Machine memory pressure | `pressureReason` from `src/core/pressure-guard.ts` (#0871) | swap/compressor/available-memory reading |
+| Machine memory pressure | `pressureReason` from `src/core/pressure-guard.ts` (#0871, #0918) | paging activity, OS pressure, PSI, or low available memory; occupancy is advisory |
 | Cooldown or idle window not reached | nudge marker in the task body, `updated_at` | no log, just wait |
 
 The harness process itself being alive is *not* a reason to hold the nudge — a
