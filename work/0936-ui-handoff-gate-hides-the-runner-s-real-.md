@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 131788
-last_close_out_gate_at: "2026-10-22T23:17:08.943Z"
 id: "0936"
 title: UI handoff gate hides the runner's real shot failure ('runner result omitted the UI verification record')
 type: bug
-status: review
+status: done
 priority: p2
 area: server
+merged_commit: e4b5ebff864b131817ef49aa253682fa9acc8103
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/ui-handoff-gate-hides-the-runner-s-real-
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T19:57:21Z"
 updated_at: "2026-10-22T23:17:08Z"
+last_close_out_gate_ms: 131788
+last_close_out_gate_at: "2026-10-22T23:17:08.943Z"
 review_passes: 1
 ---
 ## Problem
