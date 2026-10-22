@@ -342,7 +342,10 @@ describe("split human-step tasks (#0909)", () => {
     execFileSync("git", ["config", "user.email", "t@t.com"], { cwd: root });
     execFileSync("git", ["config", "user.name", "T"], { cwd: root });
     const path = join(work, "0909e.md");
-    writeFileSync(path, taskFile("0909e", "", mixedBody));
+    writeFileSync(
+      path,
+      taskFile("0909e", "needs_input: true\nneeds_input_reason: needs-human-step\n", mixedBody),
+    );
     const config = baseConfig(root);
     try {
       const task = parseTask({
@@ -357,6 +360,7 @@ describe("split human-step tasks (#0909)", () => {
       expect(result.humanTask.assignee).toBe("human");
       expect(result.humanTask.dependsOn).toEqual(["0909e"]);
       expect(result.source.body).not.toContain("[human]");
+      expect(result.source.needsInput).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
