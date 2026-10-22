@@ -2,7 +2,7 @@
 id: "0927"
 title: Define named project environments and file-backed storage
 type: feature
-status: active
+status: review
 human_step_decision: agent
 human_step_decision_key: 16ca06e1
 priority: p1
@@ -54,4 +54,4 @@ Work in the existing config/environment loading and file utility layers under sr
 - 2026-10-22T14:54:52Z · note: review pass 1: needs some work
 - 2026-10-22T14:54:53Z · status review→active
 - 2026-10-22T14:56:48Z · body
-- 2026-10-22T15:18:08Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-22T15:18:08Z · status active→review
