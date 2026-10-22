@@ -17,8 +17,13 @@ export function detectProviderUsageLimit(output: string): ProviderUsageLimit | n
   const text = output.replace(/\u0000/g, " ").trim();
   if (!text || !LIMIT_PATTERNS.some((pattern) => pattern.test(text))) return null;
   const retry = text.match(
-    /(?:retry[- ]after|reset(?:s|s at| time)?|resets? at)\s*[:=]?\s*(\d{4}-\d\d-\d\d[T ]\d\d:\d\d(?::\d\d)?(?:\.\d+)?Z?)/i,
+    /(?:retry[- ]after|reset(?:s|s at| time)?|resets? at)\s*[:=]?\s*(\d{4}-\d\d-\d\d[T ]\d\d:\d\d(?::\d\d)?(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)?|\d{1,10})/i,
   );
-  const retryAt = retry?.[1] ? new Date(retry[1]).toISOString() : undefined;
+  let retryAt: string | undefined;
+  if (retry?.[1]) {
+    const raw = retry[1];
+    const timestamp = /^\d{1,10}$/.test(raw) ? Date.now() + Number(raw) * 1000 : Date.parse(raw);
+    if (Number.isFinite(timestamp)) retryAt = new Date(timestamp).toISOString();
+  }
   return { reason: text.slice(0, 500), ...(retryAt ? { retryAt } : {}) };
 }
