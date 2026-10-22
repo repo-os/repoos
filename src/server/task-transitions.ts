@@ -28,7 +28,12 @@
  * does. Landing reopen on `ready` reuses that machinery instead of
  * duplicating it.
  */
-import type { Status } from "../core/types.js";
+import type { Status, Task } from "../core/types.js";
+
+/** Human-owned tasks are board-only records and never enter automated lifecycle work. */
+export function shouldRunAutomaticTaskLifecycle(task: Pick<Task, "assignee">): boolean {
+  return task.assignee !== "human";
+}
 
 export interface TransitionEdge {
   /** Human-readable one-liner: what happens when this edge fires. */
@@ -130,6 +135,19 @@ export function checkGenericStatusPatch(
       ok: false,
       reason: `"${from}" → "${to}" requires ${suggestion ?? `the ${edge.via.replace("action:", "")} action`}, not a direct status write`,
     };
+  }
+  return { ok: true };
+}
+
+/** Human-owned work is an inert checklist; every visible board column is a
+ * plain status and must never invoke the agent lifecycle actions. */
+export function checkHumanTaskStatusPatch(
+  from: Status,
+  to: Status,
+): { ok: true } | { ok: false; reason: string } {
+  const boardStatuses: readonly string[] = ["inbox", "ready", "active", "review", "done"];
+  if (!boardStatuses.includes(from) || !boardStatuses.includes(to)) {
+    return { ok: false, reason: "human tasks can move only among board columns" };
   }
   return { ok: true };
 }

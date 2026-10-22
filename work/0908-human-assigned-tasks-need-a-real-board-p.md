@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 540701
-last_close_out_gate_at: "2026-10-22T06:38:40.925Z"
 id: "0908"
 title: "Human-assigned tasks need a real board pathway: move across columns to done without triggering AI, checks or review"
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, server, core]
+merged_commit: 27324bdc4a0e6dbe41c65a25ccb6e61441c68654
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/human-assigned-tasks-need-a-real-board-p
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T19:22:55Z"
 updated_at: "2026-10-22T06:38:40Z"
+last_close_out_gate_ms: 540701
+last_close_out_gate_at: "2026-10-22T06:38:40.925Z"
 review_passes: 3
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 27324bdc4a0e6dbe41c65a25ccb6e61441c68654
