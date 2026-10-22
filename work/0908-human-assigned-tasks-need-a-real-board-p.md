@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-22T02:37:10Z"
+review_passes: 2
 id: "0908"
 title: "Human-assigned tasks need a real board pathway: move across columns to done without triggering AI, checks or review"
 type: feature
@@ -11,8 +13,6 @@ branch: feat/human-assigned-tasks-need-a-real-board-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T19:22:55Z"
-updated_at: "2026-10-22T02:37:10Z"
-review_passes: 1
 dev_error_count: 6
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 ---
@@ -56,3 +56,4 @@ Do not start without the human. Related rule in AGENTS.md: needs-human-step task
 - 2026-10-22T02:34:08Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d382e7a76) during finalization (#0734)
 - 2026-10-22T02:35:10Z · note: review pass 1: needs some work
 - 2026-10-22T02:37:10Z · note: review pass 2: needs some work
+
