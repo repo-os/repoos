@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-22T17:37:45Z"
+review_passes: 1
 id: "0930"
 title: Bind dev and check processes to explicit environments
 type: feature
@@ -15,7 +17,6 @@ branch: feat/bind-dev-and-check-processes-to-explicit
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:43Z"
-updated_at: "2026-10-22T17:37:45Z"
 ---
 ## Problem
 Named environment files are useful only if each dev target, preview, and check receives the selected values safely. Implicit inheritance or mutation of the RepoOS server process could mix two targets’ values, expose production by fallback, or change current behavior for projects that have not opted in.
@@ -45,3 +46,4 @@ Depends on #0927 for the storage/environment contract and #0928 for authorized m
 - 2026-10-22T17:32:20Z · status active→review
 - 2026-10-22T17:32:21Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-22T17:37:45Z · note: review pass 1: needs some work
+
