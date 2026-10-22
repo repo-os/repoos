@@ -15,7 +15,7 @@ branch: feat/bind-dev-and-check-processes-to-explicit
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:43Z"
-updated_at: "2026-10-22T17:15:37Z"
+updated_at: "2026-10-22T17:17:19Z"
 ---
 ## Problem
 Named environment files are useful only if each dev target, preview, and check receives the selected values safely. Implicit inheritance or mutation of the RepoOS server process could mix two targets’ values, expose production by fallback, or change current behavior for projects that have not opted in.
@@ -41,3 +41,4 @@ Depends on #0927 for the storage/environment contract and #0928 for authorized m
 - 2026-10-22T17:07:46Z · cli_override, model_override
 - 2026-10-22T17:07:47Z · status ready→active, branch
 - 2026-10-22T17:15:37Z · body
+- 2026-10-22T17:17:19Z · body
