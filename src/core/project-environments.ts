@@ -247,7 +247,10 @@ export function readProjectEnvironmentValues(
 const bindingFile = ".repoos/environment-bindings.json";
 const consumerId = /^(dev|preview|check|deployment):[A-Za-z0-9_.-]{1,80}$/;
 
-export function projectEnvironmentConsumer(kind: "dev" | "preview", name: string): string {
+export function projectEnvironmentConsumer(
+  kind: "dev" | "preview" | "deployment",
+  name: string,
+): string {
   const slug = name
     .trim()
     .toLowerCase()

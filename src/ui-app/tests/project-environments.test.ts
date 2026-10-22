@@ -16,6 +16,7 @@ import { loadDotEnv } from "../../core/config";
 import { resolveCheckStoreRoot } from "../../core/check-store";
 import {
   buildProjectConsumerEnv,
+  projectEnvironmentConsumer,
   readProjectEnvironment,
   validateEnvironmentRegistry,
   writeProjectEnvironmentValue,
@@ -51,6 +52,14 @@ const env = {
 };
 
 describe("explicit project environment files", () => {
+  it.each([
+    ["Dashboard · Production", "deployment:dashboard-production"],
+    ["  Landing page (prod)  ", "deployment:landing-page-prod"],
+    ["!!!", "deployment:default"],
+  ])("normalizes %s to the shared consumer ID %s", (name, consumer) => {
+    expect(projectEnvironmentConsumer("deployment", name)).toBe(consumer);
+  });
+
   it("isolates concurrent consumer grants and never falls back for a missing selected key", async () => {
     const root = project();
     mkdirSync(join(root, ".repoos"));

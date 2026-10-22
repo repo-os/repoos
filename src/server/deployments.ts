@@ -13,6 +13,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { mainCheckoutRoot } from "../core/config.js";
 import {
+  projectEnvironmentConsumer,
   readProjectEnvironmentBindings,
   validateEnvironmentRegistry,
 } from "../core/project-environments.js";
@@ -31,6 +32,8 @@ export interface DeploymentRow {
   dashboardUrl: string | null;
   /** Subdirectory the freshness lookup was scoped to, when configured. */
   subdir: string | null;
+  /** Canonical local environment consumer ID for this target. */
+  environmentConsumer: string;
   /** Local environment label bound to this target; does not publish values. */
   environment: string | null;
   /** A stale binding is shown and prevents a deployment push until repaired. */
@@ -108,7 +111,9 @@ export function deploymentEnvironmentIssue(config: RepoOSConfig, branch: string)
   if (!rows.length) return null;
   const bindings = readProjectEnvironmentBindings(config.root).bindings;
   const targetBindings = rows.flatMap((row) => {
-    const binding = bindings.find((item) => item.consumer === deploymentConsumer(row.name));
+    const binding = bindings.find(
+      (item) => item.consumer === projectEnvironmentConsumer("deployment", row.name),
+    );
     return binding ? [{ row, binding }] : [];
   });
   if (!targetBindings.length) return null;
@@ -399,12 +404,17 @@ export async function getDeploymentsStatus(
         url: row.url ?? null,
         dashboardUrl: row.dashboardUrl ?? null,
         subdir: row.subdir ?? null,
+        environmentConsumer: projectEnvironmentConsumer("deployment", row.name),
         environment:
-          environmentBindings.find((binding) => binding.consumer === deploymentConsumer(row.name))
+          environmentBindings.find(
+            (binding) =>
+              binding.consumer === projectEnvironmentConsumer("deployment", row.name),
+          )
             ?.environment ?? null,
         environmentError: (() => {
           const binding = environmentBindings.find(
-            (item) => item.consumer === deploymentConsumer(row.name),
+            (item) =>
+              item.consumer === projectEnvironmentConsumer("deployment", row.name),
           );
           return binding && !knownEnvironments.has(binding.environment)
             ? `Unknown project environment "${binding.environment}". Repair or clear this binding before deploying.`
@@ -424,15 +434,6 @@ export async function getDeploymentsStatus(
     dirty: dirtRes.code === 0 ? dirtRes.stdout.trim() !== "" : true,
     currentBranch: currentRes.code === 0 ? currentRes.stdout.trim() || null : null,
   };
-}
-
-function deploymentConsumer(name: string): string {
-  const slug = name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_.-]+/g, "-")
-    .replace(/^-|-$/g, "");
-  return `deployment:${slug || "default"}`;
 }
 
 /**
