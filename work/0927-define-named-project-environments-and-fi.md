@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-22T14:54:52Z"
-review_passes: 1
 id: "0927"
 title: Define named project environments and file-backed storage
 type: feature
-status: review
+status: active
 human_step_decision: agent
 human_step_decision_key: 16ca06e1
 priority: p1
@@ -16,6 +14,9 @@ branch: feat/define-named-project-environments-and-fi
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:05:30Z"
+updated_at: "2026-10-22T14:54:53Z"
+review_rounds: 1
+review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -51,4 +52,4 @@ Work in the existing config/environment loading and file utility layers under sr
 - 2026-10-22T14:53:48Z · status active→review
 - 2026-10-22T14:53:48Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-22T14:54:52Z · note: review pass 1: needs some work
-
+- 2026-10-22T14:54:53Z · status review→active
