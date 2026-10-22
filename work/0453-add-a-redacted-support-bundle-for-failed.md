@@ -3,6 +3,8 @@ id: "0453"
 title: Add a redacted support bundle for failed setups
 type: feature
 status: done
+human_step_decision: agent
+human_step_decision_key: 7efe7b08
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 7efe7b08
 priority: p2
