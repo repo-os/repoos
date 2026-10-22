@@ -14254,6 +14254,10 @@
   font-size: 11px;
   color: var(--txt-dim);
   white-space: nowrap;
+  text-align: right;
+}
+.chat-queued-pop-clock {
+  color: var(--txt-dim);
 }
 .chat-queued-pop-text {
   white-space: pre-wrap;

@@ -124,7 +124,10 @@ async function show(opts: { moveFocus?: boolean } = {}): Promise<void> {
   void repo.fetchQueued();
   await nextTick();
   measure();
-  if (opts.moveFocus) popupEl.value?.focus({ preventScroll: true });
+  if (opts.moveFocus) {
+    popupEl.value?.focus({ preventScroll: true });
+    cancelClose();
+  }
 }
 
 function onEnter(): void {
@@ -170,6 +173,20 @@ function onDocPointerDown(event: Event): void {
 
 function onDocKeydown(event: KeyboardEvent): void {
   if (event.key === "Escape") closeNow();
+}
+
+/** Ignore focus leaving the trigger when it moved into the teleported popover. */
+function onTriggerFocusOut(event: FocusEvent): void {
+  const next = event.relatedTarget as Node | null;
+  if (next && popupEl.value?.contains(next)) return;
+  scheduleClose();
+}
+
+/** Close when focus leaves the popover unless it returned to the trigger. */
+function onPopupFocusOut(event: FocusEvent): void {
+  const next = event.relatedTarget as Node | null;
+  if (next && triggerEl.value?.contains(next)) return;
+  scheduleClose();
 }
 
 watch(open, (isOpen) => {
@@ -229,7 +246,7 @@ onBeforeUnmount(() => {
       aria-label="Queued message — show what is waiting"
       @pointerdown="notePointer"
       @focus="onFocus"
-      @focusout="scheduleClose()"
+      @focusout="onTriggerFocusOut"
       @click.stop="onClick"
     >
       Queued — will be read when the current turn ends.
@@ -250,18 +267,19 @@ onBeforeUnmount(() => {
       :style="popupStyle"
       @mouseenter="cancelClose"
       @mouseleave="scheduleClose"
+      @focusin="cancelClose"
+      @focusout="onPopupFocusOut"
     >
       <p class="chat-queued-pop-lead">Waiting for the current turn to end</p>
       <ul v-if="resolvedItems.length" class="chat-queued-pop-list">
         <li v-for="(item, index) in resolvedItems" :key="`${item.queuedAt}-${index}`">
           <div class="chat-queued-pop-meta">
             <span class="chat-queued-pop-source">{{ queuedMessageSourceLabel(item.source) }}</span>
-            <time
-              class="chat-queued-pop-time"
-              :datetime="item.queuedAt"
-              :title="fmtTime(item.queuedAt)"
-            >
+            <time class="chat-queued-pop-time" :datetime="item.queuedAt">
               {{ relTime(item.queuedAt, new Date(now)) }}
+              <span v-if="fmtTime(item.queuedAt)" class="chat-queued-pop-clock">
+                ({{ fmtTime(item.queuedAt) }})
+              </span>
             </time>
           </div>
           <div class="chat-queued-pop-text">{{ previewText(item.text, index) }}</div>

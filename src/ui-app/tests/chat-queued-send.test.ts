@@ -82,6 +82,14 @@ describe("chat queued state", () => {
     expect(pop?.textContent).toContain("Your follow-up");
     expect(pop?.textContent).toContain("Requirements for #0918");
 
+    expect(document.activeElement).toBe(
+      document.querySelector('[data-test-id="chat-queued-popover"]'),
+    );
+
+    await new Promise((r) => setTimeout(r, 250));
+    await flushPromises();
+    expect(document.querySelector('[data-test-id="chat-queued-popover"]')).not.toBeNull();
+
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     await flushPromises();
     expect(document.querySelector('[data-test-id="chat-queued-popover"]')).toBeNull();
