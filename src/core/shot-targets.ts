@@ -38,6 +38,7 @@ export const APP_ROUTE_PREFIXES = [
   "/stories",
   "/checks",
   "/dev",
+  "/secrets",
   "/releases",
   "/deployments",
   "/inputs",

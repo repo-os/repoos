@@ -173,6 +173,9 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   exact("GET", "/api/model-routing/status"),
   exact("GET", "/api/model-routing/decisions"),
   exact("POST", "/api/model-routing/probe"),
+  // Secrets page: list safe environment labels and create an empty source; no CLI flow exists.
+  exact("GET", "/api/project-environments"),
+  exact("POST", "/api/project-environments"),
   exact("GET", "/api/agents/queued"),
   exact("GET", "/api/agents/detect"),
   exact("GET", "/api/agents/detect/stream"),

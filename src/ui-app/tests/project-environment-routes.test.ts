@@ -7,6 +7,8 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { getAuthStore, resetAuthStoreInstance } from "../../core/auth-store";
 import { SESSION_COOKIE_NAME } from "../../core/auth";
 import {
+  createProjectEnvironment,
+  listProjectEnvironments,
   listProjectEnvironmentSecrets,
   mutateProjectEnvironmentSecret,
 } from "../../server/routes/project-environments";
@@ -127,6 +129,31 @@ describe("project environment secret routes", () => {
     const reread = fx.response();
     listProjectEnvironmentSecrets(fx.ctx, fx.req(), reread.res, { param1: "dev" });
     expect(JSON.stringify(reread.fake.payload)).not.toContain(sentinel);
+  });
+
+  it("lists environment metadata and creates an empty ignored source without values", async () => {
+    const fx = makeFixture();
+    root = fx.root;
+    writeFileSync(join(root, ".gitignore"), ".env.dev\n.env.integration\n");
+    const list = fx.response();
+    listProjectEnvironments(fx.ctx, fx.req(), list.res, {});
+    expect(list.fake.status).toBe(200);
+    expect(JSON.stringify(list.fake.payload)).not.toContain("initial");
+    expect(JSON.stringify(list.fake.payload)).toContain("dev");
+
+    const created = fx.response();
+    await createProjectEnvironment(
+      fx.ctx,
+      fx.req(JSON.stringify({ name: "integration" })),
+      created.res,
+      {},
+    );
+    expect(created.fake.status).toBe(201);
+    expect(JSON.stringify(created.fake.payload)).not.toContain("initial");
+    expect(readFileSync(join(root, ".env.integration"), "utf8")).toBe("");
+    const reread = fx.response();
+    listProjectEnvironments(fx.ctx, fx.req(), reread.res, {});
+    expect(JSON.stringify(reread.fake.payload)).toContain("integration");
   });
 
   it("rejects non-admin callers, mismatched origins, and reserved RepoOS keys", async () => {

@@ -643,6 +643,11 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
   pinnedRemoteStatus = null;
   for (const key of Object.keys(pinnedTaskRemoteActivity)) delete pinnedTaskRemoteActivity[key];
   switch (fixture) {
+    case "secrets:populated":
+    case "secrets:removeDialog":
+      // SecretsView reads this registered fixture and seeds fake metadata
+      // locally, without fetching a project's actual environment data.
+      break;
     case "system:worktreeGc":
       repo.systemStats = {
         machine: {
