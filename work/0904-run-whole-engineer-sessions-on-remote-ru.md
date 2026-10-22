@@ -3,14 +3,19 @@ id: "0904"
 title: "Run whole engineer sessions on remote runners, not only checks, shots and gates"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "error: Go usage limit exceeded"
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/run-whole-engineer-sessions-on-remote-ru
 created_at: "2026-10-21T15:06:23Z"
-updated_at: "2026-10-22T05:43:52Z"
+updated_at: "2026-10-22T05:46:14Z"
 engineer_stall_resume_log: "[{\"at\":\"2026-10-22T05:43:52.015Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T05:46:14.833Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Remote runners (bee, thinkpad, mini) today run only validation: self-checks, handoff and close-out gates, and (#0854/#0874) browser shots. The engineer and reviewer agents themselves still run on the laptop. The laptop is a fanless MacBook Air under constant memory pressure (compressor 35-38% of RAM, pressure guard holding new starts, 3 engineers + gates + browsers at once), which is now the main throughput limit: engineers are held, tests time out, and gates fall back to the laptop.
@@ -59,3 +64,5 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-21T19:44:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-21T19:44:15Z · message_delivered: 1 message(s)
 - 2026-10-22T05:43:52Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-22T05:46:14Z · agent exited with an error (opencode) · error: Go usage limit exceeded
+- 2026-10-22T05:46:14Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · error: Go usage limit exceeded
