@@ -13,7 +13,7 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T18:11:56Z"
+updated_at: "2026-10-22T18:12:19Z"
 ---
 ## Problem
 Users have no RepoOS screen to see which project environment is selected or which expected keys are set, missing, or inherited. The metadata and write operations from #0928 need a safe, usable interface that never reveals saved values.
@@ -41,3 +41,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T18:11:51Z · cli_override, model_override
 - 2026-10-22T18:11:52Z · status ready→active, branch
 - 2026-10-22T18:11:56Z · message_queued at 2026-10-22T18:11:56.849Z
+- 2026-10-22T18:12:19Z · CTO nudge: held — an undelivered message is already queued
