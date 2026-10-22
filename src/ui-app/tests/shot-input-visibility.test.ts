@@ -28,6 +28,12 @@ describe("screenshot file input visibility (#0642)", () => {
     return match?.[0] ?? "";
   }
 
+  it("keeps the dropzone flex layout inside .field (#0899)", () => {
+    const body = rule(".field .shot-dropzone");
+    expect(body).toMatch(/display:\s*flex/);
+    expect(body).toMatch(/text-transform:\s*none/);
+  });
+
   it("keeps the dropzone file input rendered and clickable", () => {
     const body = rule(".shot-dropzone .shot-input");
     expect(body, "display:none blocks the picker in WKWebView PWAs").not.toMatch(/display:\s*none/);
