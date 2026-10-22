@@ -11,7 +11,7 @@ branch: feat/close-out-hangs-48-minutes-on-a-stalled-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T04:09:06Z"
-updated_at: "2026-10-22T11:39:42Z"
+updated_at: "2026-10-22T11:40:42Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-22T11:36:31.117Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Close-out card shows bundle upload progress (target \"default\"): state \"closeOut:uploading\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Close-out card shows bundle upload progress (target \"default\"): highlight .tc-moving matched nothing on / (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Remote validation dr… (truncated)"
 ---
@@ -40,25 +40,25 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 ```json
 [
 {
-"label": "Close-out card shows bundle upload progress",
-"target": "default",
-"route": "/work",
-"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-"state": "closeOut:uploading"
+  "label": "Close-out card shows bundle upload progress",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+  "state": "closeOut:uploading"
 },
 {
-"label": "Remote validation drawer bundle upload settings",
-"target": "default",
-"route": "/settings?section=remote-validation",
-"highlight": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]",
-"steps": [
-  {
-    "click": "[id=\"setting-remoteValidation.enabled\"] button"
-  },
-  {
-    "waitFor": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]"
-  }
-]
+  "label": "Remote validation drawer bundle upload settings",
+  "target": "default",
+  "route": "/settings?section=remote-validation",
+  "highlight": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]",
+  "steps": [
+    {
+      "click": "[id=\"setting-remoteValidation.enabled\"] button"
+    },
+    {
+      "waitFor": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]"
+    }
+  ]
 }
 ]
 ```
@@ -100,3 +100,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T11:36:26Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-22T11:38:10Z · body
 - 2026-10-22T11:39:42Z · body
+- 2026-10-22T11:40:42Z · body
