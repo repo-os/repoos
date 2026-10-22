@@ -156,6 +156,16 @@ export class TaskCheckManager {
     onEvent: TaskCheckListener,
     meta: { scope?: string; machine?: string } = {},
   ): TaskCheckHandle {
+    const history = this.runsByTask.get(taskId) ?? [];
+    const previousAttempts = history.filter((candidate) => candidate.kind === kind);
+    const attempt = previousAttempts.length + 1;
+    const previousOutput = previousAttempts.at(-1)?.output ?? "";
+    const attemptReason =
+      attempt > 1
+        ? (previousOutput.match(/timed out[^\r\n]*/i)?.[0] ??
+          previousOutput.match(/(?:failed|failure)[^\r\n]*/i)?.[0] ??
+          "the previous check attempt did not pass")
+        : null;
     const id = `${taskId}-${kind}-${++this.seq}`;
     const run: TaskCheckRun = {
       id,
@@ -175,10 +185,10 @@ export class TaskCheckManager {
       stepsTotal: null,
       testsDone: null,
       testsTotal: null,
-      attempt: null,
-      attemptReason: null,
+      attempt,
+      attemptReason,
     };
-    const list = this.runsByTask.get(taskId) ?? [];
+    const list = history;
     list.push(run);
     while (list.length > MAX_RUNS_PER_TASK) list.shift();
     this.runsByTask.set(taskId, list);

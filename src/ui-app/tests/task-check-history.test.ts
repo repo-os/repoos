@@ -28,6 +28,23 @@ describe("machine-readable check progress", () => {
       parseCheckProgress('::repoos-check-progress::{"stepsDone":2,"stepsTotal":null}'),
     ).toEqual({ stepsDone: 2 });
   });
+
+  it("starts a retried gate attempt at zero and carries the timeout reason", () => {
+    const { m } = manager();
+    const first = m.start("0924", "merge-gate", () => {});
+    first.chunk("tests timed out after 420s\n");
+    first.done(1);
+    let secondRun: TaskCheckRun | undefined;
+    m.start("0924", "merge-gate", (run, event) => {
+      if (event === "started") secondRun = run;
+    });
+    expect(secondRun).toMatchObject({
+      attempt: 2,
+      attemptReason: "timed out after 420s",
+      stepsDone: null,
+      testsDone: null,
+    });
+  });
 });
 afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
