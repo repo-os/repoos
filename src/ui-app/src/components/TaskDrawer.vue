@@ -4559,6 +4559,7 @@ watch(
                   (activeCheckRun.stepsTotal != null || activeCheckRun.testsTotal != null)
                 "
                 class="check-progress"
+                data-test-id="check-progress"
                 role="status"
               >
                 <progress
@@ -4719,6 +4720,22 @@ watch(
               >
                 Last successful close-out gate: {{ lastCloseOutGateLabel }}
               </p>
+              <div
+                v-if="inPipeline && activeCheckRun && (activeCheckRun.stepsTotal != null || activeCheckRun.testsTotal != null)"
+                class="check-progress close-out-check-progress"
+                role="status"
+                data-test-id="close-out-check-progress"
+              >
+                <progress
+                  v-if="checkProgressPercent(activeCheckRun) !== null"
+                  :value="checkProgressPercent(activeCheckRun) ?? 0"
+                  max="100"
+                />
+                <span>{{ checkProgressLabel(activeCheckRun) }}</span>
+                <span v-if="activeCheckRun.attempt && activeCheckRun.attempt > 1">
+                  attempt {{ activeCheckRun.attempt }}<template v-if="activeCheckRun.attemptReason"> · {{ activeCheckRun.attemptReason }}</template>
+                </span>
+              </div>
               <Button
                 v-if="!isHumanTask && ui.active.status === 'review'"
                 variant="status"
