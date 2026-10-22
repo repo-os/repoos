@@ -12,7 +12,7 @@ branch: feat/needs-human-step-banner-dedicated-split-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T04:53:30Z"
-updated_at: "2026-10-22T16:13:47Z"
+updated_at: "2026-10-22T16:14:40Z"
 last_close_out_gate_ms: 576332
 last_close_out_gate_at: "2026-10-22T16:13:47.776Z"
 review_passes: 3
@@ -89,4 +89,4 @@ Start from `NEEDS_INPUT_*` tables and `needsInputPrimaryAction` in `src/ui-app/s
 - 2026-10-22T15:57:23Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (b130b74eb) during finalization (#0734)
 - 2026-10-22T15:57:47Z · note: review pass 3: good to go
 - 2026-10-22T16:13:47Z · close-out gate completed in 576s
-
+- 2026-10-22T16:14:40Z · status done→done, release:success
