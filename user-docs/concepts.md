@@ -160,6 +160,13 @@ works locally, in CI, and inside RepoOS's own close-out pipeline.
 
 ## Humans hold the merge
 
+Human-assigned tasks follow a separate, inert board pathway. They can move
+between Inbox, Ready, Active, Review and Done without starting AI work or
+running checks, review or close-out. The drawer identifies them as human work
+and offers **Mark done** with an optional completion note. `hold` is not
+required for a human-assigned task. AI agents may change its board status only
+when the human explicitly asks them to.
+
 An agent that finishes a task asks for it to move to `review` and **stops**. It
 does not merge its own branch, and it can't — the merge happens only when a
 human moves the task to `done`.

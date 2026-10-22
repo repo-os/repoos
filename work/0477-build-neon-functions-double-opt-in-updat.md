@@ -3,9 +3,10 @@ id: "0477"
 title: Build Neon Functions double-opt-in updates service
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+human_step_decision: human
+human_step_decision_key: ff3c7440
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: ff3c7440
 priority: p2
 area: infra
 story: Email subscriber list
@@ -13,7 +14,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-21T12:07:13Z"
-updated_at: "2026-10-06T23:48:10Z"
+updated_at: "2026-10-22T07:47:34Z"
 ---
 ## Problem
 
@@ -48,3 +49,4 @@ Run before the landing-page signup task. A human must provision the Neon project
 - 2026-09-21T12:07:13Z · created · unknown
 - 2026-09-21T20:11:12Z · story
 - 2026-10-06T23:48:10Z · needs_input
+- 2026-10-22T07:47:34Z · needs_input

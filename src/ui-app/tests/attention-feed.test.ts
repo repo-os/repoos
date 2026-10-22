@@ -88,6 +88,14 @@ describe("buildAttentionFeed", () => {
       releaseNotesRun: null,
       recordedEvents: [
         {
+          id: "providerUsageLimit:opencode:go:2026-10-22T02:30:00.000Z",
+          kind: "providerUsageLimit",
+          taskId: null,
+          message: "opencode-go out of usage since 10:30",
+          detail: "Resume with: repoos agents resume opencode --model go",
+          at: "2026-10-22T02:30:00.000Z",
+        },
+        {
           id: "remoteFallback:0042:2026",
           kind: "remoteFallback",
           taskId: "0042",
@@ -116,6 +124,7 @@ describe("buildAttentionFeed", () => {
     });
     const kinds = new Set(feed.items.map((i) => i.kind));
     expect(kinds.has("providerFailure")).toBe(true);
+    expect(kinds.has("providerUsageLimit")).toBe(true);
     expect(kinds.has("spendThreshold")).toBe(true);
     expect(kinds.has("silentRun")).toBe(true);
     expect(kinds.has("remoteFallback")).toBe(true);

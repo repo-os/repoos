@@ -133,6 +133,12 @@ export function interpretHumanStepAnswers(
 export interface HumanStepBrief {
   title?: string;
   body: string;
+  /**
+   * The criterion line the keyword scan matched (#0909). Quoted to the model so
+   * it judges the sentence that actually tripped the tripwire, not the whole
+   * task in the abstract.
+   */
+  matchedSentence?: string;
 }
 
 /** Build the bounded state brief. Task text is data, never instructions. */
@@ -140,10 +146,23 @@ export function buildHumanStepBrief(brief: HumanStepBrief): string {
   const parts: string[] = [];
   if (brief.title?.trim()) parts.push(`Task: ${brief.title.trim()}`);
   if (brief.body.trim()) parts.push(brief.body.trim());
+  if (brief.matchedSentence?.trim()) {
+    parts.push(`Keyword scan matched this acceptance criterion: "${brief.matchedSentence.trim()}"`);
+  }
   const text = parts.join("\n\n");
   return text.length > MAX_HUMAN_STEP_BRIEF_CHARS
     ? `${text.slice(0, MAX_HUMAN_STEP_BRIEF_CHARS)}\n… (brief truncated)`
     : text;
+}
+
+/**
+ * Flag detail that names the exact criterion and the model's bounded one-line
+ * reason (#0909). Never model free text — `explanation` is assembled from the
+ * structured answer.
+ */
+export function humanStepFlagDetail(sentence: string | undefined, explanation: string): string {
+  if (!sentence?.trim()) return explanation;
+  return `Criterion "${sentence.trim()}" — ${explanation}`;
 }
 
 export type HumanStepDecisionResult =

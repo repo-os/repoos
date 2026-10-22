@@ -2,6 +2,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { commitTaskFile } from "../core/git.js";
+import { NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON } from "../core/task-underspecified.js";
+import { stickyHumanStepClearFields } from "../core/human-step-override.js";
 import { WriteError } from "./write.js";
 
 /** Activity line written by {@link dismissNeedsInputOnTask}. */
@@ -47,6 +49,14 @@ export function dismissNeedsInputOnTask(
     throw new WriteError("Task is not waiting for input");
   }
   const dismissedReason = current.needsInputReason;
+  if (dismissedReason === NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON) {
+    const sticky = stickyHumanStepClearFields(config, current, dismissedBy);
+    if (sticky) {
+      current.humanStepOverride = sticky.humanStepOverride;
+      current.humanStepOverrideKey = sticky.humanStepOverrideKey;
+      if (sticky.humanStepOverrideBy) current.humanStepOverrideBy = sticky.humanStepOverrideBy;
+    }
+  }
   current.needsInput = false;
   current.needsInputReason = undefined;
   current.needsInputDetail = undefined;

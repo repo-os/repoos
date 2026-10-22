@@ -207,6 +207,31 @@ describe("decision-model start gate (#0804)", () => {
     }
   });
 
+  it("starts without needs_input in shadow mode when the model says human", async () => {
+    vi.mocked(runHumanStepDecisionCheck).mockResolvedValue({
+      outcome: "shadow",
+      detail:
+        "Decision model (91%): split this into an AI task and a human task — it needs a real account, credential, or API key.",
+      decision: {
+        needsHumanStep: true,
+        probability: 0.91,
+        reason: "account",
+        explanation: "",
+      },
+    });
+    const fx = makeFixture();
+    try {
+      const { res } = makeRes();
+      await taskAction(fx.ctx, makeReq(), res, { param1: "0804", param2: "start" });
+      const onDisk = fx.read();
+      expect(onDisk.status).toBe("active");
+      expect(onDisk.needsInput).toBe(false);
+      expect(onDisk.humanStepDecision).toBe("human");
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("falls back to the keyword check when the model call fails", async () => {
     vi.mocked(runHumanStepDecisionCheck).mockResolvedValue({
       outcome: "failed",

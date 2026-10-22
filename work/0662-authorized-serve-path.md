@@ -3,9 +3,10 @@ id: "0662"
 title: Authorized serve path
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+human_step_decision: agent
+human_step_decision_key: 4919576a
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: 4919576a
 priority: p1
 area: server
 story: Cloud attachment storage
@@ -14,7 +15,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T08:29:09Z"
-updated_at: "2026-10-06T23:48:10Z"
+updated_at: "2026-10-22T07:47:32Z"
 ---
 Slice 5: Private bucket, live authz check per request, short-lived download URLs, cross-repo/cross-instance isolation. Negative tests must fail if checks removed.
 
@@ -47,3 +48,4 @@ This is Slice 5 of the Cloud attachment storage story. Do not implement without 
 - 2026-10-05T12:05:18Z · needs_input
 - 2026-10-05T12:06:49Z · body
 - 2026-10-06T23:48:10Z · needs_input
+- 2026-10-22T07:47:32Z · needs_input

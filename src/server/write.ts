@@ -43,6 +43,8 @@ import { taskPriorityError, taskTypeError } from "../core/task-fields.js";
 import { appendScreenshotsSection, type ScreenshotMeta } from "./attachments.js";
 import { storiesDirOf } from "../core/story-definition-files.js";
 import { summarizeRequirementsChange } from "../core/task-body-diff.js";
+import { NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON } from "../core/task-underspecified.js";
+import { stickyHumanStepClearFields } from "../core/human-step-override.js";
 
 /**
  * Body sections that are user-owned or append-only: they live in the task body
@@ -166,6 +168,10 @@ export interface TaskPatch {
    * null to clear the override. Recorded in the task file and activity log.
    */
   humanStepOverride?: string | null;
+  /** Fingerprint of the criteria the override was cleared against (#0909). */
+  humanStepOverrideKey?: string | null;
+  /** Who cleared the flag (email or CLI actor), #0909. */
+  humanStepOverrideBy?: string | null;
   /** Clear (false) or set (true) the branch-drifted flag. */
   needsMerge?: boolean;
   /**
@@ -256,6 +262,11 @@ export interface PatchTaskOptions {
   skipStatusActivity?: boolean;
   /** Drop the last activity entry if it matches this transition before writing. */
   stripStatusActivity?: { from: Status; to: Status };
+  /**
+   * Who is making this write (email, `cli`, `driver`, …). Used to record who
+   * cleared a `needs-human-step` flag for the sticky override (#0909).
+   */
+  actor?: string;
 }
 
 export class WriteError extends Error {}
@@ -344,6 +355,17 @@ export function patchTaskFile(
     // it anyway (only written while needsInput is true), but clearing it here
     // too keeps the in-memory Task consistent with what gets written.
     if (!patch.needsInput) {
+      if (
+        current.needsInputReason === NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON &&
+        patch.humanStepOverride === undefined
+      ) {
+        const sticky = stickyHumanStepClearFields(config, current, opts.actor);
+        if (sticky) {
+          current.humanStepOverride = sticky.humanStepOverride;
+          current.humanStepOverrideKey = sticky.humanStepOverrideKey;
+          if (sticky.humanStepOverrideBy) current.humanStepOverrideBy = sticky.humanStepOverrideBy;
+        }
+      }
       current.needsInputReason = undefined;
       current.needsInputDetail = undefined;
       current.questions = undefined;
@@ -382,6 +404,22 @@ export function patchTaskFile(
   if (patch.humanStepOverride !== undefined) {
     current.humanStepOverride = patch.humanStepOverride
       ? String(patch.humanStepOverride)
+      : undefined;
+    // A cleared override takes its fingerprint and actor with it, so a later
+    // scan cannot mistake them for a still-valid sticky clearance (#0909).
+    if (!patch.humanStepOverride) {
+      current.humanStepOverrideKey = undefined;
+      current.humanStepOverrideBy = undefined;
+    }
+  }
+  if (patch.humanStepOverrideKey !== undefined) {
+    current.humanStepOverrideKey = patch.humanStepOverrideKey
+      ? String(patch.humanStepOverrideKey)
+      : undefined;
+  }
+  if (patch.humanStepOverrideBy !== undefined) {
+    current.humanStepOverrideBy = patch.humanStepOverrideBy
+      ? String(patch.humanStepOverrideBy)
       : undefined;
   }
   if (patch.needsMerge !== undefined) {

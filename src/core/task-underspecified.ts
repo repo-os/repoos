@@ -6,6 +6,7 @@ import {
   extractSection,
   removeSection,
 } from "./task.js";
+import { hasHumanTaggedCriteria, humanTaggedCriteria, taggedCriteria } from "./human-step-tags.js";
 
 /** Machine-readable `needs_input_reason` when a task body looks like an unfinished stub. */
 export const UNDERSPECIFIED_NEEDS_INPUT_REASON = "underspecified";
@@ -181,6 +182,10 @@ export interface NeedsHumanStepAssessment {
   /** Human-readable signals joined for `needs_input_detail`. */
   detail: string;
   signals: string[];
+  /** The criterion line (or sentence) the keyword scan matched, for the flag detail. */
+  sentence?: string;
+  /** True when a `[human]`-tagged criterion is the reason, not a keyword/model verdict. */
+  taggedHuman?: boolean;
 }
 
 const HUMAN_STEP_ACCEPTANCE_PATTERNS: { re: RegExp; label: string }[] = [
@@ -206,8 +211,39 @@ const HUMAN_STEP_ACCEPTANCE_PATTERNS: { re: RegExp; label: string }[] = [
 ];
 
 /**
+ * Pull the sentence around the first regex match in `text`, so a flag can quote
+ * exactly what tripped the scan rather than a whole paragraph.
+ */
+export function sentenceAroundMatch(text: string, re: RegExp): string | null {
+  const match = re.exec(text);
+  if (!match || match.index === undefined) return null;
+  const start = Math.max(
+    text.lastIndexOf(". ", match.index),
+    text.lastIndexOf("; ", match.index),
+    text.lastIndexOf("\n", match.index),
+  );
+  const ends = [text.indexOf(". ", match.index), text.indexOf("; ", match.index)].filter(
+    (i) => i !== -1,
+  );
+  const end = ends.length ? Math.min(...ends) : text.length;
+  return text
+    .slice(start === -1 ? 0 : start + 1, end === text.length ? end : end + 1)
+    .replace(/^[\s;.-]+/, "")
+    .trim();
+}
+
+/** Strip the leading bullet/checkbox from a criterion line for quoting. */
+function criterionText(line: string): string {
+  return line.replace(/^\s*[-*]\s+(?:\[[ xX]\]\s*)?/, "").trim();
+}
+
+/**
  * True when `## Acceptance criteria` (or the whole body if that section is missing)
  * mentions work only a human can perform on real hardware, accounts, or external systems.
+ *
+ * `[ai]`-tagged criteria are never scanned (the tag says an agent can verify
+ * them) and any `[human]`-tagged criterion is authoritative — it needs a human
+ * without waiting for the keyword or model check (#0909).
  */
 export function assessTaskNeedsHumanStep(
   body: string,
@@ -219,19 +255,48 @@ export function assessTaskNeedsHumanStep(
   }
   const trimmed = body.trim();
   const acSection = extractSection(trimmed, "## Acceptance criteria");
-  const scanText = acSection
-    ? stripTemplatePlaceholderLines(sectionContent(acSection))
-    : stripTemplatePlaceholderLines(bodyForLengthCheck(trimmed));
+  const humanLines = acSection ? humanTaggedCriteria(trimmed) : [];
+  if (humanLines.length > 0) {
+    const sentence = humanLines[0];
+    return {
+      needsHumanStep: true,
+      detail: `${NEEDS_HUMAN_STEP_HINT} (tagged [human]: "${sentence}")`,
+      signals: ["[human] tagged criterion"],
+      sentence,
+      taggedHuman: true,
+    };
+  }
+  // Only untagged criteria are candidates for the keyword scan; `[ai]` lines
+  // explicitly say an agent verifies them.
+  const scanLines = acSection
+    ? taggedCriteria(trimmed)
+        .filter((c) => c.tag === undefined)
+        .map((c) => criterionText(c.raw))
+    : stripTemplatePlaceholderLines(bodyForLengthCheck(trimmed)).split("\n");
+  const scanText = scanLines.join("\n");
   const signals: string[] = [];
+  let sentence: string | undefined;
   for (const { re, label } of HUMAN_STEP_ACCEPTANCE_PATTERNS) {
-    if (re.test(scanText)) signals.push(label);
+    if (!re.test(scanText)) continue;
+    signals.push(label);
+    if (!sentence) {
+      for (const line of scanLines) {
+        const hit = sentenceAroundMatch(line, re);
+        if (hit) {
+          sentence = hit;
+          break;
+        }
+      }
+    }
   }
   const uniqueSignals = [...new Set(signals)];
   if (uniqueSignals.length === 0) {
     return { needsHumanStep: false, detail: "", signals: [] };
   }
-  const detail = `${NEEDS_HUMAN_STEP_HINT} (matched: ${uniqueSignals.join(", ")})`;
-  return { needsHumanStep: true, detail, signals: uniqueSignals };
+  const detail = `${NEEDS_HUMAN_STEP_HINT} (matched: ${uniqueSignals.join(", ")}${
+    sentence ? ` — "${sentence}"` : ""
+  })`;
+  return { needsHumanStep: true, detail, signals: uniqueSignals, sentence };
 }
 
 /**
@@ -251,6 +316,10 @@ function fingerprint(text: string): string {
  * Fingerprint of the acceptance-criteria text the human-step keyword or model
  * decision is made on (#0804). Same scan text the keyword check reads, so a
  * body edit that adds or removes criteria invalidates a stored verdict.
+ *
+ * Whitespace-only edits are not material (#0909): each non-empty line is
+ * trimmed and blank lines are dropped, so reflowing a paragraph in `## Problem`
+ * cannot undo a sticky override while a real criteria change still does.
  */
 export function needsHumanStepFingerprint(body: string): string {
   const trimmed = body.trim();
@@ -258,7 +327,12 @@ export function needsHumanStepFingerprint(body: string): string {
   const scanText = acSection
     ? stripTemplatePlaceholderLines(sectionContent(acSection))
     : stripTemplatePlaceholderLines(bodyForLengthCheck(trimmed));
-  return fingerprint(scanText);
+  const material = scanText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n");
+  return fingerprint(material);
 }
 
 export function assessTaskUnderspecified(

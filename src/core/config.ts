@@ -285,6 +285,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     phantomDetectMs: 3 * 60 * 1000,
     engineerCrashFailoverThreshold: DEFAULT_ENGINEER_CRASH_FAILOVER_THRESHOLD,
     engineerCrashFailoverWindowMs: DEFAULT_ENGINEER_CRASH_FAILOVER_WINDOW_MS,
+    autoPauseOnUsageLimit: true,
   },
   autoEngineeringMode: false,
   autoEngineering: {
@@ -1806,6 +1807,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof watchdogAutoTransition === "boolean") {
       cfg.watchdog = { ...cfg.watchdog, autoTransition: watchdogAutoTransition };
     }
+    const autoPauseOnUsageLimit = parsed["watchdog.autoPauseOnUsageLimit"];
+    if (typeof autoPauseOnUsageLimit === "boolean") {
+      cfg.watchdog = { ...cfg.watchdog, autoPauseOnUsageLimit };
+    }
     const phantomDetectMs = parsed["watchdog.phantomDetectMs"];
     if (typeof phantomDetectMs === "number" && phantomDetectMs >= 15_000) {
       cfg.watchdog = { ...cfg.watchdog, phantomDetectMs };
@@ -2705,6 +2710,17 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "allowlist pair. A crash alone never requests a handoff: below this threshold " +
         "the engineer is resumed. A human-set task override is never replaced; that " +
         "case is surfaced for a human instead.",
+    },
+    {
+      key: "watchdog.autoPauseOnUsageLimit",
+      label: "Pause models on usage limits",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      group: "general",
+      default: true,
+      description:
+        "When an agent reports an explicit quota or HTTP 429 usage-limit error, pause that agent+model and let active work fail over. Without a reset time, RepoOS runs a low-token probe every 10 minutes and resumes the model after a successful response.",
     },
     {
       key: "watchdog.engineerCrashFailoverWindowMs",
@@ -3770,11 +3786,21 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: false,
       description:
-        "Before a ready task starts, ask the decision model whether it mixes AI steps with steps only " +
-        "a human can do; a yes means the task should be split into a separate AI task and a human task. " +
-        "Off by default. Uses the provider above; it only blocks a start when Model routing mode is " +
-        "Automatic (Shadow records the verdict without blocking), and if the provider is off, missing, " +
-        "or fails, the keyword check runs instead.",
+        "When acceptance criteria trip the keyword scan, ask the decision model whether verification truly " +
+        "requires a human — the keyword match alone never sets the flag. Off by default. Uses the provider " +
+        "above; it only blocks a start when Model routing mode is Automatic (Shadow records the verdict without " +
+        "blocking), and if the provider is off, missing, or fails, the keyword check runs instead.",
+    },
+    {
+      key: "model_routing.humanStepSticky",
+      label: "Remember cleared needs-human-step flags",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: true,
+      description:
+        "When a human clears a needs-human-step flag, record a fingerprint of the acceptance criteria so " +
+        "later edits do not re-flag until the criteria materially change. On by default.",
     },
     // [board.columns] — display-only label overrides (#0396).
     ...STATUSES.map((status) => ({
@@ -3863,6 +3889,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "watchdog.autoTransition",
   "watchdog.phantomDetectMs",
   "watchdog.engineerCrashFailoverThreshold",
+  "watchdog.autoPauseOnUsageLimit",
   "watchdog.engineerCrashFailoverWindowMs",
   "whisper.provider",
   "whisper.apiKey",
@@ -4030,6 +4057,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "model_routing.roles",
   "model_routing.timeoutMs",
   "model_routing.humanStepCheck",
+  "model_routing.humanStepSticky",
   // Close-out (Move to done) pipeline budget (#0573)
   "closeOut.timeoutMs",
   "closeOut.gate",

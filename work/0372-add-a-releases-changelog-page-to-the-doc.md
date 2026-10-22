@@ -3,16 +3,17 @@ id: "0372"
 title: Add a Releases/Changelog page to the docs.repoos.org VitePress site
 type: feature
 status: done
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+human_step_decision: agent
+human_step_decision_key: 2510cc85
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: 2510cc85
 priority: p3
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-a-releases-changelog-page-to-the-doc
 created_at: "2026-09-16T06:55:11Z"
-updated_at: "2026-10-06T23:48:19Z"
+updated_at: "2026-10-22T07:48:01Z"
 ---
 ## Problem
 
@@ -89,3 +90,4 @@ warn instead.
 - 2026-09-16T07:49:08Z · status active→review
 - 2026-09-16T16:54:54Z · status review→done, release:success
 - 2026-10-06T23:48:19Z · needs_input
+- 2026-10-22T07:48:01Z · needs_input

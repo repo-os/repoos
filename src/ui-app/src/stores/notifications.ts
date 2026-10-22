@@ -28,6 +28,7 @@ export type NotificationType =
   | "closeOutFailed"
   | "closeOutTimedOut"
   | "providerFailure"
+  | "providerUsageLimit"
   | "silentRun"
   | "slowRun"
   | "slowRunsRecently"
@@ -51,6 +52,7 @@ export const NOTIFICATION_TYPES: NotificationType[] = [
   "closeOutFailed",
   "closeOutTimedOut",
   "providerFailure",
+  "providerUsageLimit",
   "silentRun",
   "slowRun",
   "slowRunsRecently",
@@ -243,6 +245,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   closeOutFailed: "Move to done failed",
   closeOutTimedOut: "Move to done timed out",
   providerFailure: "Provider or credit error",
+  providerUsageLimit: "Provider out of usage",
   silentRun: "Agent output went quiet",
   slowRun: "Check or close-out running slow",
   slowRunsRecently: "Checks slow lately",
@@ -268,6 +271,7 @@ export const NOTIFICATION_TYPE_DESCRIPTIONS: Record<NotificationType, string> = 
   closeOutFailed: "A task's Move to done failed; the task stays in review.",
   closeOutTimedOut: "A task's Move to done ran past its time budget and was stopped.",
   providerFailure: "An agent hit a provider credit, auth, or model error.",
+  providerUsageLimit: "An agent provider exhausted its usage allowance and was paused.",
   silentRun: "A running agent stopped producing output while the process is still alive.",
   slowRun:
     "A check, handoff gate, close-out stage, or bundle upload exceeded its typical duration.",

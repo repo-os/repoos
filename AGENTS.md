@@ -146,13 +146,20 @@ need a real device, account, credentials or third-party sign-up. Before
 human (the tests use fakes and nothing depends on that human step); if a
 criterion does, file that part first —
 `repoos new "<title>" --depends-on <id>`, then
-`repoos update <new> --assigned-to human --hold true` (`repoos new` defaults to
-`assigned_to: ai`, so the reassignment is required) — narrow the original task
+`repoos update <new> --assigned-to human` (`repoos new` defaults to
+`assigned_to: ai`, so the reassignment is required), or use `repoos split <id>`
+when the task already tags mixed `[human]` / `[ai]` criteria — narrow the original task
 to the agent-doable scope, and only then close out. If the human part cannot be
 separated from the code, do not close out; report it to the human. Applies to
 interactive sessions and the CTO/driver path alike. Incident: #0660 was closed
 out while it carried the flag (2026-10-14) and the human-only verification was
 split out afterwards, as #0784 — the wrong order.
+
+Human-assigned tasks (`assigned_to: human`) are inert board work and may move
+through inbox, ready, active, review and done as plain status changes. They do
+not start agents, checks, review, worktree creation or close-out. Do not require
+`hold` to keep them out of AI dispatch. AI agents may move their status only
+when the human explicitly asked them to update that task's board status.
 
 ### Integration conflicts: narrow resolution vs full cycle
 

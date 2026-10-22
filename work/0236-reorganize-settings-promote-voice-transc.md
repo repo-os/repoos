@@ -3,16 +3,17 @@ id: "0236"
 title: "Reorganize Settings: promote voice transcription, simplify Advanced"
 type: feature
 status: done
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+human_step_decision: agent
+human_step_decision_key: b81fca6a
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: b81fca6a
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/reorganize-settings-promote-voice-transc
 created_at: "2026-08-16T14:58:04Z"
-updated_at: "2026-10-06T23:48:15Z"
+updated_at: "2026-10-22T07:47:49Z"
 review_rounds: 1
 ---
 ## Context
@@ -57,3 +58,4 @@ Voice transcription (Whisper / vibe coding) is a user-facing feature that requir
 - 2026-08-18T02:27:04Z · status active→review
 - 2026-08-18T03:03:47Z · status review→done, release:success
 - 2026-10-06T23:48:15Z · needs_input
+- 2026-10-22T07:47:49Z · needs_input
