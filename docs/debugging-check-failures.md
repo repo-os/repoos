@@ -275,3 +275,13 @@ The detector recognizes explicit usage/quota limit and HTTP 429 wording from
 the supported CLI output. Generic network errors are still handled by ordinary
 crash recovery. Set `watchdog.autoPauseOnUsageLimit = false` to disable
 automatic pauses.
+# A check is stuck at “queued · local check”
+
+Local check slots are shared across the checkout. Open **Checks → Now** or run
+`repoos checks slots` to see each slot, its holder PID, task, heartbeat age, and
+the wait queue. A dead holder is reclaimed on the next queue poll; a live holder
+with no heartbeat is marked wedged and gets the configured reclaim grace.
+For a wedged managed close-out, release it explicitly with
+`repoos checks slots --release <slot> --confirm <pid>` after checking the holder
+shown by the listing. The PID confirmation prevents releasing a slot whose
+owner changed between inspection and action.

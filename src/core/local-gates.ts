@@ -3,6 +3,7 @@ import {
   acquireCrossProcessSlot,
   acquireLocalFallbackSerializeSlot,
   localCheckLockRoot,
+  inspectCrossProcessSlots,
   playwrightLockRoot,
   SlotQueueTimeoutError,
 } from "./cross-process-slots.js";
@@ -138,8 +139,17 @@ export async function acquireLocalCheckSlot(opts: AcquireLocalCheckSlotOpts): Pr
         worktree: process.cwd(),
         processGroup: opts.env.REPOOS_CHECK_PROCESS_GROUP === "1",
       },
+      staleAfterMs: opts.config.localChecks?.staleAfterMs,
+      reclaimGraceMs: opts.config.localChecks?.reclaimGraceMs,
       onQueued: (ahead, position) => {
-        const title = `waiting for a local check slot (${ahead} ahead, position ${position})`;
+        const blockers = inspectCrossProcessSlots(
+          localCheckLockRoot(board, cacheDir),
+          limit,
+        ).filter((holder) => holder.pid);
+        const blockerText = blockers.length
+          ? `; waiting behind ${blockers.map((holder) => `#${String(holder.meta?.taskId ?? "unknown")} check (pid ${holder.pid}, ${holder.dead ? "dead, reclaiming" : holder.wedged ? "wedged" : "alive"})`).join(", ")}`
+          : "";
+        const title = `waiting for a local check slot (${ahead} ahead, position ${position})${blockerText}`;
         const label = position > 1 ? `queued #${position}` : "queued";
         emit(`[queue] ${label}`);
         markQueue(board, cacheDir, opts.env, "local-check", ahead, position, title);

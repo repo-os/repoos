@@ -1096,6 +1096,10 @@ export interface LocalChecksConfig {
   maxConcurrent?: number;
   /** Ms to wait in queue before failing with an actionable timeout. Default 45 min. */
   queueTimeoutMs?: number;
+  /** Silence before a live check holder is shown as wedged. Default 75 seconds. */
+  staleAfterMs?: number;
+  /** Grace after marking a holder wedged before reclaim. Default 150 seconds. */
+  reclaimGraceMs?: number;
 }
 
 /** Shared cap on headless Playwright work (#0836). */

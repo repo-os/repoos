@@ -79,6 +79,74 @@ describe("cross-process local check slots", () => {
     release();
   });
 
+  it("treats a reused PID as dead when the process start token changed", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-reused-pid-slot-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    writeFileSync(join(slot, ".holder"), String(process.pid));
+    writeFileSync(
+      join(slot, ".meta.json"),
+      JSON.stringify({ processStartToken: "a process incarnation that cannot match" }),
+    );
+    expect(inspectCrossProcessSlots(lockRoot)[0]).toMatchObject({ dead: true });
+  });
+
+  it("recognizes the current live process as a slot holder", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-live-slot-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    writeFileSync(join(slot, ".holder"), String(process.pid));
+    writeFileSync(join(slot, ".meta.json"), JSON.stringify({ processStartToken: "" }));
+    expect(inspectCrossProcessSlots(lockRoot)[0]).toMatchObject({ dead: false, wedged: false });
+  });
+
+  it("makes a cancelled check release its slot before the queued check acquires it", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-cancel-slot-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const releaseCancelled = await acquireCrossProcessSlot({
+      slots: 1,
+      lockRoot,
+      waitTimeoutMs: 100,
+    });
+    let acquired = false;
+    const waiting = acquireCrossProcessSlot({ slots: 1, lockRoot, waitTimeoutMs: 2_000 }).then(
+      (release) => {
+        acquired = true;
+        release();
+      },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    releaseCancelled();
+    await waiting;
+    expect(acquired).toBe(true);
+  });
+
+  it("uses the monotonic heartbeat when the wall clock and directory time jump", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-slot-clock-jump-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    writeFileSync(join(slot, ".holder"), String(process.pid));
+    writeFileSync(join(slot, ".meta.json"), JSON.stringify({ processStartToken: "" }));
+    writeFileSync(
+      join(slot, ".heartbeat.json"),
+      JSON.stringify({ wallMs: 0, monotonicMs: Number(process.hrtime.bigint() / 1_000_000n) }),
+    );
+    writeFileSync(
+      join(slot, ".started.json"),
+      JSON.stringify({ wallMs: 0, monotonicMs: Number(process.hrtime.bigint() / 1_000_000n) }),
+    );
+    const old = new Date(0);
+    utimesSync(slot, old, old);
+    expect(inspectCrossProcessSlots(lockRoot)[0]).toMatchObject({ dead: false, wedged: false });
+  });
+
   it("marks and reclaims a live silent holder after its reclaim grace", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-wedged-slot-"));
     dirs.push(root);
