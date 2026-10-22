@@ -12,7 +12,7 @@ branch: feat/local-check-slots-are-held-by-dead-proce
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T05:41:12Z"
-updated_at: "2026-10-22T17:51:38Z"
+updated_at: "2026-10-22T17:52:12Z"
 last_close_out_gate_ms: 405403
 last_close_out_gate_at: "2026-10-22T17:51:38.917Z"
 review_passes: 1
@@ -76,4 +76,4 @@ Evidence: .repoos/local-check-slots/{0,1}/.holder and .meta.json at 13:40 (both 
 - 2026-10-22T17:41:13Z · status active→review
 - 2026-10-22T17:42:30Z · note: review pass 1: good to go
 - 2026-10-22T17:51:38Z · close-out gate completed in 405s
-
+- 2026-10-22T17:52:12Z · status done→done, release:success
