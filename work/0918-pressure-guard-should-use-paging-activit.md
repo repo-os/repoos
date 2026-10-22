@@ -75,3 +75,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T08:10:18Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-10-22T08:10:19Z · status active→review
 - 2026-10-22T08:22:05Z · status review→active
+- 2026-10-22T08:22:14Z · note: handoff requested (ui-review)
