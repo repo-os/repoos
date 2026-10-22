@@ -2,7 +2,7 @@
 id: "0914"
 title: "Provider usage-limit failover: detect a 429 usage-limit, pause that provider everywhere, and re-route even pinned tasks"
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
