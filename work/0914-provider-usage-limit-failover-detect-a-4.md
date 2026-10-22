@@ -92,3 +92,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T06:41:24Z · body
 - 2026-10-22T06:41:31Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-22T06:41:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T06:41:31Z · message_delivered: 1 message(s)
