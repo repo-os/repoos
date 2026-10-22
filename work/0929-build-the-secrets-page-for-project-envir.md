@@ -2,7 +2,7 @@
 id: "0929"
 title: Build the Secrets page for project environments
 type: feature
-status: active
+status: review
 priority: p1
 area: [web, ui]
 story: Secrets and project environments
@@ -149,4 +149,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T20:59:37Z · message_delivered: 1 message(s)
 - 2026-10-22T21:02:29Z · body
 - 2026-10-22T21:04:15Z · body
-- 2026-10-22T21:13:30Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-22T21:13:30Z · status active→review
