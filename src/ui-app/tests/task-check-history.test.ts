@@ -26,7 +26,7 @@ describe("machine-readable check progress", () => {
     ).toEqual({ stepsDone: 2, stepsTotal: 9 });
     expect(
       parseCheckProgress('::repoos-check-progress::{"stepsDone":2,"stepsTotal":null}'),
-    ).toBeNull();
+    ).toEqual({ stepsDone: 2 });
   });
 });
 afterEach(() => {
