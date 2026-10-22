@@ -42,15 +42,15 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 "route": "/work",
 "highlight": ".shot-dropzone",
 "steps": [
-  {
-    "click": ".drawer-tabs .tab-btn:nth-child(2)"
-  }
+{
+  "click": ".drawer-tabs .tab-btn:nth-child(2)"
+}
 ],
 "assert": [
-  {
-    "selector": ".shot-dropzone",
-    "label": "Screenshot dropzone is rendered"
-  }
+{
+  "selector": ".shot-dropzone",
+  "label": "Screenshot dropzone is rendered"
+}
 ],
 "state": "panel:defaultScreenshotPicker",
 "theme": "light"
@@ -61,15 +61,15 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 "route": "/work",
 "highlight": ".shot-dropzone",
 "steps": [
-  {
-    "click": ".drawer-tabs .tab-btn:nth-child(2)"
-  }
+{
+  "click": ".drawer-tabs .tab-btn:nth-child(2)"
+}
 ],
 "assert": [
-  {
-    "selector": ".shot-dropzone",
-    "label": "Screenshot dropzone is rendered"
-  }
+{
+  "selector": ".shot-dropzone",
+  "label": "Screenshot dropzone is rendered"
+}
 ],
 "state": "panel:defaultScreenshotPicker",
 "theme": "dark"
@@ -80,10 +80,10 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 "route": "/work",
 "highlight": ".shot-dropzone",
 "assert": [
-  {
-    "selector": ".shot-dropzone",
-    "label": "Default screenshot picker is rendered"
-  }
+{
+  "selector": ".shot-dropzone",
+  "label": "Default screenshot picker is rendered"
+}
 ],
 "state": "panel:defaultScreenshotPicker"
 },
@@ -99,11 +99,11 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 "route": "/settings?tab=general&section=remote-validation",
 "highlight": "[id=\"setting-remoteValidation.browserCaptureMode\"]",
 "assert": [
-  {
-    "selector": "[id=\"setting-remoteValidation.browserCaptureMode\"] .restart-badge",
-    "label": "Restart hint is shown beside the setting",
-    "text": "restart required"
-  }
+{
+  "selector": "[id=\"setting-remoteValidation.browserCaptureMode\"] .restart-badge",
+  "label": "Restart hint is shown beside the setting",
+  "text": "restart required"
+}
 ]
 }
 ]
@@ -140,3 +140,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T17:44:00Z · message_queued at 2026-10-22T17:44:00.340Z
 - 2026-10-22T17:44:12Z · body
 - 2026-10-22T17:44:25Z · body: Items (added 4, removed 4)
+- 2026-10-22T17:44:25Z · message_queued at 2026-10-22T17:44:25.996Z
