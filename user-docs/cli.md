@@ -109,7 +109,7 @@ command's flag table, so a flag cannot be added without appearing in `--help`.
 | `--human-step-override` | A reason that clears a `needs-human-step` keyword match on an AI task (see below). |
 | `--shots` | Raw JSON list declaring the `## Shots` section; pass `-` to read from stdin. |
 | `--screenshot` | Attach a local image file to the task's `## Screenshots` section. Repeatable (`--screenshot a.png --screenshot b.png`). |
-| `--caption` | Alt text for a single `--screenshot` image. |
+| `--caption` | Alt text for a `--screenshot` image. Repeatable; the Nth caption labels the Nth screenshot. |
 
 `--priority` and `--type` are validated on every write: a value outside the
 sets above is rejected with the field, the bad value and the full list of valid
@@ -298,11 +298,14 @@ repoos new "Fix the login redirect loop" --screenshot before.png --screenshot af
 repoos update 0763 --screenshot repro.png --caption "crash on save"
 ```
 
-`--caption` sets the alt text for a single `--screenshot` image (it cannot label
-several). A missing, unsupported, empty, or oversize file is rejected with a
-clear error before any change is written. Nothing under `work/` is staged — the
-images are gitignored and served by the running server from disk; only the
-`## Screenshots` markdown lands in the task file.
+`--caption` sets alt text for `--screenshot` images by position: repeat both flags
+(`--screenshot a.png --caption "before" --screenshot b.png --caption "after"`).
+Fewer captions than screenshots is fine (the rest keep default alt text). More
+captions than screenshots is an error that names both counts. A missing,
+unsupported, empty, or oversize file is rejected with a clear error before any
+change is written. Nothing under `work/` is staged — the images are gitignored
+and served by the running server from disk; only the `## Screenshots` markdown
+lands in the task file.
 
 To replace any other single `## Section` (create it if absent), use
 `--section "<heading>" --section-body "..."`. A `Shots` section written this way

@@ -6,7 +6,7 @@ status: review
 hold: true
 priority: p3
 area: [web, core]
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-screenshot-dropzone-l
 cli_override: cursor
@@ -14,8 +14,8 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-22T01:31:14Z"
-review_passes: 5
+updated_at: "2026-10-21T19:38:03Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Items
@@ -213,15 +213,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:27:05Z · status review→active
 - 2026-10-21T19:27:09Z · needs_input
 - 2026-10-21T19:27:12Z · assigned_to
-- 2026-10-21T19:28:18Z · assigned_to
-- 2026-10-21T19:28:22Z · note: handoff requested (ui-review)
 - 2026-10-21T19:38:03Z · status active→review
-- 2026-10-21T19:38:03Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
-- 2026-10-21T19:38:04Z · note: shots: skipped — 6 handoff shots already captured for this exact plan (8428c8869) during finalization (#0734)
-- 2026-10-21T19:38:30Z · note: review pass 4: needs some work
-- 2026-10-21T19:38:30Z · needs_input
-- 2026-10-21T19:39:15Z · needs_input (review-rounds-exhausted) cleared for review again by human
-- 2026-10-21T19:39:35Z · note: review pass 5: needs some work
-- 2026-10-21T19:39:35Z · needs_input
-- 2026-10-21T20:34:55Z · message_overdue: still queued after 60m without being delivered
-- 2026-10-22T01:31:14Z · needs_input (review-rounds-exhausted) dismissed by hello@repoos.org
