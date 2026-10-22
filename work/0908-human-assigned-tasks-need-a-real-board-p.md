@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0908"
 title: "Human-assigned tasks need a real board pathway: move across columns to done without triggering AI, checks or review"
 type: feature
@@ -58,3 +59,4 @@ Do not start without the human. Related rule in AGENTS.md: needs-human-step task
 - 2026-10-22T02:35:10Z · note: review pass 1: needs some work
 - 2026-10-22T02:37:10Z · note: review pass 2: needs some work
 - 2026-10-22T02:37:11Z · status review→active
+
