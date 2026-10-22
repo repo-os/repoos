@@ -3,9 +3,6 @@ id: "0918"
 title: "Pressure guard should use paging activity, not occupancy: macOS compressor share and swap used/total hold work on an idle laptop"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Connection stalled repeatedly"
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -71,3 +68,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T07:48:39Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-22T07:48:50Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-22T07:50:25Z · engineer stopped by request
+- 2026-10-22T07:50:25Z · needs_input
