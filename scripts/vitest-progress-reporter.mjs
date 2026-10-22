@@ -1,27 +1,24 @@
 /** Machine-readable per-file progress consumed by RepoOS's live check stream. */
 export default class RepoOSProgressReporter {
-  #files = new Set();
   #completed = new Set();
+  #total = 0;
 
-  onCollected(files) {
-    for (const file of files) this.#files.add(file.id);
+  onTestRunStart(specifications) {
+    this.#total = specifications.length;
     this.#emit();
   }
 
-  onTaskUpdate(packs) {
-    for (const [id, result] of packs) {
-      if (this.#files.has(id) && (result?.state === "pass" || result?.state === "fail")) {
-        this.#completed.add(id);
-        this.#emit();
-      }
-    }
+  onTestModuleEnd(module) {
+    if (this.#completed.has(module.id)) return;
+    this.#completed.add(module.id);
+    this.#emit();
   }
 
   #emit() {
     process.stdout.write(
       `::repoos-check-progress::${JSON.stringify({
         testsDone: this.#completed.size,
-        testsTotal: this.#files.size,
+        testsTotal: this.#total ?? 0,
       })}\n`,
     );
   }
