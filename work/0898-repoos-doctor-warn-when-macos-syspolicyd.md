@@ -52,3 +52,4 @@ See src/core/runtime.ts preferAppleGit, user-docs/configuration.md (Apple-signed
 - 2026-10-22T14:05:18Z · body
 - 2026-10-22T14:07:42Z · body
 - 2026-10-22T14:17:22Z · status active→review
+- 2026-10-22T14:17:22Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
