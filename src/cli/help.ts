@@ -121,7 +121,7 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "review",
-        usage: "review <id> [--wait] [--json] [--port N]",
+        usage: "review <id> [--wait] [--json] [--port N] · review cancel <id> · review again <id>",
         desc: "Request review synchronously (PATCH status=review; waits for handoff)",
         flags: "--wait · --json · --port",
       },
@@ -192,6 +192,19 @@ const GROUPS: readonly CommandGroup[] = [
         usage: "runners [--probe] [--json] [--port N]",
         desc: "Remote validation runner status (and optional probe)",
         flags: "--probe · --json · --port",
+      },
+      {
+        name: "integration",
+        usage:
+          "integration list|pipeline|get <id>|retry <id>|refresh-install <id> [--json] [--port N]",
+        desc: "Inspect and retry integration jobs",
+        flags: "--json · --port",
+      },
+      {
+        name: "attention",
+        usage: "attention list|dismiss <task-id> [--json] [--port N]",
+        desc: "List attention items or dismiss a task's needs-input notice",
+        flags: "--json · --port",
       },
       {
         name: "agents",

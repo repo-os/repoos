@@ -270,6 +270,26 @@ export async function cmdReview(args: string[]): Promise<number> {
   if (args[0] === "again") {
     return cmdReviewAgain(args.slice(1));
   }
+  if (args[0] === "cancel") {
+    const { rest, opts, error } = parseCommonFlags(args.slice(1));
+    const id = rest[0];
+    if (error || !id) {
+      printErr(error ?? "Usage: repoos review cancel <id> [--json] [--port N]");
+      return 1;
+    }
+    try {
+      const api = new RepoOsApi({ port: opts.port });
+      await ensureServer(api);
+      const data = await api.requestOk("PATCH", `/api/tasks/${id}`, { status: "active" });
+      if (opts.json) printJson(data);
+      else
+        console.log(c.green("  ✓ ") + c.dim(`review/handoff cancelled for #${id}; task is active`));
+      return 0;
+    } catch (e) {
+      printErr((e as RepoOsApiError).message);
+      return 1;
+    }
+  }
   const { rest, opts, error } = parseCommonFlags(args);
   if (error) {
     printErr(error);
@@ -319,6 +339,78 @@ export async function cmdReview(args: string[]): Promise<number> {
     if (opts.json) printJson({ ok: true, task: result });
     else console.log(c.green("  ✓ ") + c.dim(`#${id} is in review`));
     return 0;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
+export async function cmdIntegration(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const action = rest[0] ?? "list";
+  const id = rest[1];
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const path =
+      action === "get" && id
+        ? `/api/tasks/${id}/integration-job`
+        : action === "retry" && id
+          ? `/api/integration/pipeline/retry/${id}`
+          : action === "refresh-install" && id
+            ? `/api/integration/pipeline/refresh-install/${id}`
+            : action === "list"
+              ? "/api/integration-jobs"
+              : action === "pipeline"
+                ? "/api/integration/pipeline"
+                : "";
+    if (!path) {
+      printErr(
+        "Usage: repoos integration list|pipeline|get <id>|retry <id>|refresh-install <id> [--json] [--port N]",
+      );
+      return 1;
+    }
+    const result = await api.request(
+      action === "retry" || action === "refresh-install" ? "POST" : "GET",
+      path,
+      action === "retry" || action === "refresh-install" ? {} : undefined,
+    );
+    if (opts.json) printJson({ status: result.status, ...result.body });
+    else if (result.status >= 200 && result.status < 300) printJson(result.body);
+    else printErr(result.body.error ?? `HTTP ${result.status}`);
+    return result.status >= 200 && result.status < 300 ? 0 : 1;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
+export async function cmdAttention(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const action = rest[0] ?? "list";
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    let result: { status: number; body: ApiJson };
+    if (action === "list") result = await api.request("GET", "/api/attention");
+    else if (action === "dismiss" && rest[1])
+      result = await api.request("POST", `/api/tasks/${rest[1]}/needs-input/dismiss`, {});
+    else {
+      printErr("Usage: repoos attention list|dismiss <task-id> [--json] [--port N]");
+      return 1;
+    }
+    if (opts.json) printJson({ status: result.status, ...result.body });
+    else if (result.status >= 200 && result.status < 300) printJson(result.body);
+    else printErr(result.body.error ?? `HTTP ${result.status}`);
+    return result.status >= 200 && result.status < 300 ? 0 : 1;
   } catch (e) {
     printErr((e as RepoOsApiError).message);
     return 1;
