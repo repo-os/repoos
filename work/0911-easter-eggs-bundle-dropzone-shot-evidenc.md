@@ -52,3 +52,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T17:36:27Z · cli_override, model_override
 - 2026-10-22T17:36:27Z · status ready→active, branch
 - 2026-10-22T17:36:30Z · message_queued at 2026-10-22T17:36:30.597Z
+- 2026-10-22T17:36:30Z · CTO nudge: held — an undelivered message is already queued
