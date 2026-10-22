@@ -53,3 +53,4 @@ Start from `assessTaskUnderspecified` and `specSectionHeadingsForTask` in `src/c
 - 2026-10-22T01:51:14Z · status active→ready
 - 2026-10-22T01:51:19Z · status ready→active
 - 2026-10-22T01:55:00Z · body
+- 2026-10-22T01:55:00Z · body
