@@ -438,6 +438,12 @@ materially change. Prefix criteria with `[human]` or `[ai]`; when both tags are
 present, `repoos split <id>` (or **Split human steps** in the drawer) moves the
 `[human]` lines to a held human task that depends on the AI task.
 
+When the **needs human step** banner appears, its primary action asks the PM to
+check whether any criteria truly require a person. The PM either records a
+human-step override for a false positive or creates a held human task and
+narrowly scopes the original; use **Split human steps** to apply explicit
+`[human]` / `[ai]` tags directly.
+
 Both checks are agent-oriented. A task assigned to a human (`--assigned-to
 human`) is the human's own checklist: it skips both, `## Notes for AI` is
 optional for it, and its acceptance criteria are still shown.

@@ -170,6 +170,7 @@ import { findStoryDefinitionByKey } from "../../core/story-definition-files.js";
 import { storyKey } from "../../core/stories.js";
 import {
   PM_FLESH_OUT_MESSAGE,
+  splitHumanStepRequirementsPrompt,
   assessTaskUnderspecified,
   fleshOutRequirementsPrompt,
 } from "../../core/task-underspecified.js";
@@ -3827,7 +3828,9 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
   const messageText =
     text === PM_FLESH_OUT_MESSAGE
       ? `${baseMessageText}\n\n${fleshOutRequirementsPrompt(storyContextFor(config, existing.story), existing.area)}`
-      : baseMessageText;
+      : text === "Review and resolve the human-only steps in this task."
+        ? `${baseMessageText}\n\n${splitHumanStepRequirementsPrompt()}`
+        : baseMessageText;
 
   // Build a one-shot agent override for this PM request. Falls back to the
   // task's persisted PM overrides (set via the PM tab's selector) when the
