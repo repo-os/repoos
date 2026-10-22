@@ -39,3 +39,4 @@ Related: AGENTS.md shot hygiene (#0613, #0830) and #0866.
 - 2026-10-22T23:02:28Z · message_delivered: 1 message(s)
 - 2026-10-22T23:03:55Z · body
 - 2026-10-22T23:13:26Z · status active→review
+- 2026-10-22T23:13:26Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
