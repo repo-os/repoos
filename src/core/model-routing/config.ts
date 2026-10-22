@@ -111,6 +111,13 @@ export function parseModelRouting(raw: unknown): ModelRoutingParseResult {
         "[model_routing] humanStepCheck must be true or false — using off (the keyword check)",
       );
   }
+  if (r.humanStepSticky !== undefined) {
+    if (typeof r.humanStepSticky === "boolean") config.humanStepSticky = r.humanStepSticky;
+    else
+      warnings.push(
+        "[model_routing] humanStepSticky must be true or false — using on (remember cleared flags)",
+      );
+  }
   if (r.timeoutMs !== undefined) {
     const n = Number(r.timeoutMs);
     if (Number.isFinite(n) && n >= MIN_ROUTING_TIMEOUT_MS && n <= MAX_ROUTING_TIMEOUT_MS) {

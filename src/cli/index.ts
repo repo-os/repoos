@@ -13,6 +13,7 @@ import {
   cmdNew,
   cmdIndex,
   cmdNote,
+  cmdSplit,
 } from "../commands/tasks.js";
 import { cmdDocs, cmdNewDoc } from "../commands/docs.js";
 import { cmdStory } from "../commands/stories.js";
@@ -207,6 +208,9 @@ function main(): void {
       break;
     case "update":
       cmdUpdate(rest);
+      break;
+    case "split":
+      void cmdSplit(rest).then(() => {});
       break;
     case "bundle":
       void cmdBundle(rest).then((code) => {
