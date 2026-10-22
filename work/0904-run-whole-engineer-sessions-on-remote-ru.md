@@ -3,6 +3,9 @@ id: "0904"
 title: "Run whole engineer sessions on remote runners, not only checks, shots and gates"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -12,6 +15,8 @@ created_at: "2026-10-21T15:06:23Z"
 updated_at: "2026-10-22T01:11:24Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T20:52:34.600Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:11:24.755Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Remote runners (bee, thinkpad, mini) today run only validation: self-checks, handoff and close-out gates, and (#0854/#0874) browser shots. The engineer and reviewer agents themselves still run on the laptop. The laptop is a fanless MacBook Air under constant memory pressure (compressor 35-38% of RAM, pressure guard holding new starts, 3 engineers + gates + browsers at once), which is now the main throughput limit: engineers are held, tests time out, and gates fall back to the laptop.
@@ -66,3 +71,5 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-21T23:07:50Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-21T23:51:38Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-22T01:11:24Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-22T01:11:24Z · agent exited with an error (opencode) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-10-22T01:11:24Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
