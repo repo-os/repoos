@@ -3,6 +3,8 @@ id: "0236"
 title: "Reorganize Settings: promote voice transcription, simplify Advanced"
 type: feature
 status: done
+human_step_decision: agent
+human_step_decision_key: b81fca6a
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: b81fca6a
 priority: p2
