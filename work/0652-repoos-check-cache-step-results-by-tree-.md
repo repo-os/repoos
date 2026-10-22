@@ -10,10 +10,12 @@ area: core
 assigned_to: ai
 created_by: ""
 branch: feat/repoos-check-cache-step-results-by-tree-
+cli_override: codex
+model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-04T16:32:02Z"
-updated_at: "2026-10-05T08:03:38Z"
+updated_at: "2026-10-22T22:57:08Z"
 review_passes: 3
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-04T23:41:37.441Z: server-side finalization timed out (deadline exceeded)"
@@ -79,3 +81,4 @@ error: script "test" exited with code 1
 - 2026-10-05T04:46:09Z · status review→ready, needs_input
 - 2026-10-05T04:46:09Z · note: task abandoned
 - 2026-10-05T08:03:38Z · archived: Parked 2026-10-05, no work lost. Three review rounds each found another input the cache key misses (--fix, env/modes/symlinks/resolved --changed ref, ignored dist/node_modules for the tests step), so the key can't be proven complete. The safe steps it could cache (format, lint, lockfile, staleness) take about 1.4s of a 172–225s run, so a narrowed version saves under 1%. Superseded by #0651 (failed-steps summary and single-step rerun hint) and #0655 (re-run failed tests first). Revisit only if, after #0651 ships, a large share of check runs still repeat on an unchanged tree. If so, don't build a general key. Cache only steps whose full inputs are tracked files, or key the tests step on a hash of dist/ and node_modules too. Branch and worktree are kept.
+- 2026-10-22T22:57:08Z · cli_override, model_override
