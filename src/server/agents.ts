@@ -5897,8 +5897,7 @@ export class AgentRunner {
 
   isRunning(taskId: string): boolean {
     this.reconcileDeadAgents();
-    if (this.entries.has(taskId)) return true;
-    return readRegistry(this.cacheDir).entries.some((entry) => entry.taskId === taskId);
+    return this.entries.has(taskId);
   }
 
   /** Drop dead or worktree-less engineer turns before they can fence a new run. */

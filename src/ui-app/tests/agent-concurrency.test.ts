@@ -209,7 +209,12 @@ describe("agent start concurrency cap", () => {
           (row: { taskId: string }) => row.taskId,
         ),
       ).toEqual(["live"]);
-      expect(runner.isRunning("live")).toBe(true);
+      expect(runner.reconcileDeadAgents()).toEqual([]);
+      expect(
+        JSON.parse(readFileSync(registryPath, "utf8")).entries.map(
+          (row: { taskId: string }) => row.taskId,
+        ),
+      ).toEqual(["live"]);
     } finally {
       runner.dispose();
       fx.clean();
