@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/notifications.test.ts > notifications store defaults + persistence > defaults everything to off (task types + release kinds, 0606), tests/notifications.test.ts > NOTIFICATION_TYPE_LABELS > covers every monitorable type — task attention, release kinds (0606) and close-out kinds (#0640) on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 8c522e3a8437089da15ae9b8a5ba6478c5ae0f8c
 id: "0914"
 title: "Provider usage-limit failover: detect a 429 usage-limit, pause that provider everywhere, and re-route even pinned tasks"
 type: feature
@@ -98,3 +100,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T06:58:30Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/notifications.test.ts > notifications store defaults + persistence > defaults everything to off (task types + release kinds, 0606), tests/notifications.test.ts > NOTIFICATION_TYPE_LABELS > covers every monitorable type — task attention, release kinds (0606) and close-out kinds (#0640) on mini — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-22T06:58:30Z · note: handoff requested (cli)
 - 2026-10-22T07:07:08Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/notifications.test.ts > notifications store defaults + persistence > defaults everything to off (task types + release kinds, 0606), tests/notifications.test.ts > NOTIFICATION_TYPE_LABELS > covers every monitorable type — task attention, release kinds (0606) and close-out kinds (#0640) on bee — fix it in the feature branch and re-run the gate
+
