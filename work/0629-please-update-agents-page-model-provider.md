@@ -3,6 +3,8 @@ id: "0629"
 title: Revert GitHub Copilot provider to external link only
 type: refactor
 status: done
+human_step_decision: agent
+human_step_decision_key: 7227d258
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 7227d258
 priority: p2
