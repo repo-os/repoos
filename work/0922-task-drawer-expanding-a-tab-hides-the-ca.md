@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 151500
-last_close_out_gate_at: "2026-10-22T13:17:38.727Z"
 id: "0922"
 title: "Task drawer: expanding a tab hides the cards between title and tabs"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 4e308f4c384bb9be4029ba0296f20cbda098ae2e
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-drawer-expanding-a-tab-hides-the-ca
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T05:45:27Z"
 updated_at: "2026-10-22T13:17:38Z"
+last_close_out_gate_ms: 151500
+last_close_out_gate_at: "2026-10-22T13:17:38.727Z"
 review_passes: 1
 ---
 ## Problem

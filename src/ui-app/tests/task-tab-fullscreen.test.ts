@@ -2,8 +2,8 @@
  * Fullscreen toggle on the selected task tab (#0750).
  *
  * The toggle lives in the task tab strip, expands the drawer to fill the
- * viewport (`.drawer-fullscreen`) so the active tab's contents are easier to
- * read, and collapses back to the task. Escape leaves fullscreen instead of
+ * viewport (`.drawer-fullscreen`), hides the controls and alerts above the
+ * tabs, and collapses back to the task. Escape leaves fullscreen instead of
  * closing the drawer.
  */
 import { readFileSync } from "node:fs";
@@ -119,6 +119,70 @@ describe("task tab fullscreen toggle (#0750)", () => {
     await flush();
     expect(drawerShell().classList.contains("drawer-fullscreen")).toBe(false);
     expect(toggleButton().getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("hides the pre-tab controls without unmounting the active tab", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    stubApi(makeTask());
+
+    wrapper = await mountDrawer(pinia, makeTask());
+    const ui = useUiStore();
+    ui.activeTab = "agent";
+    await flush();
+    const preTabs = document.body.querySelector<HTMLElement>(".drawer-pre-tabs");
+    const tabPanel = document.body.querySelector<HTMLElement>(".drawer-body");
+    const draft = document.body.querySelector<HTMLTextAreaElement>(
+      '.ai-chat-compose textarea[aria-label="Follow up with the task\'s agent"]',
+    );
+    expect(preTabs).toBeTruthy();
+    expect(tabPanel).toBeTruthy();
+    expect(draft).toBeTruthy();
+    draft!.value = "keep this draft";
+    draft!.dispatchEvent(new Event("input", { bubbles: true }));
+    tabPanel!.scrollTop = 64;
+
+    toggleButton().click();
+    await flush();
+    expect(preTabs!.style.display).toBe("none");
+    expect(document.body.querySelector(".drawer-tabs")).toBeTruthy();
+    expect(document.body.querySelector(".drawer-body")).toBe(tabPanel);
+    expect(tabPanel!.scrollTop).toBe(64);
+    expect(document.body.querySelector(".ai-chat-compose textarea")).toBe(draft);
+    expect(draft!.value).toBe("keep this draft");
+    expect(document.body.querySelector('[data-test-id="drawer-hidden-alerts"]')).toBeNull();
+
+    toggleButton().click();
+    await flush();
+    expect(preTabs!.style.display).not.toBe("none");
+    expect(document.body.querySelector(".drawer-body")).toBe(tabPanel);
+    expect(tabPanel!.scrollTop).toBe(64);
+    expect(document.body.querySelector(".ai-chat-compose textarea")).toBe(draft);
+    expect(draft!.value).toBe("keep this draft");
+  });
+
+  it("shows a compact return control only when hidden alerts exist", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    const task = makeTask();
+    stubApi(task);
+
+    wrapper = await mountDrawer(pinia, task);
+    const active = useUiStore().active!;
+    active.needsInputReason = "review-failed";
+    toggleButton().click();
+    await flush();
+
+    const indicator = document.body.querySelector<HTMLButtonElement>(
+      '[data-test-id="drawer-hidden-alerts"]',
+    );
+    expect(indicator?.textContent).toContain("alert");
+    indicator!.click();
+    await flush();
+    expect(drawerShell().classList.contains("drawer-fullscreen")).toBe(false);
+    expect(document.body.querySelector('[data-test-id="drawer-hidden-alerts"]')).toBeNull();
   });
 
   it("names the currently selected tab in the toggle's accessible label", async () => {

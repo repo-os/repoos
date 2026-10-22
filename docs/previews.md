@@ -407,6 +407,8 @@ fixture the preview applies before capture (preview builds only, via
 - `settings:booSwoop` — seeded to **Boo swoop** (#0833)
 - `settings:pumpkinSpell` — seeded to **Pumpkin spell** (#0833)
 - `board:withReviewTask` — board shows a review-column fixture card
+- `drawer:tabExpandWarnings` — task drawer with a failed handoff, blocked
+  landing checklist and needs-input card, for normal and expanded tab captures.
 - `board:cardChips` — multi-area human-assigned card with seeded diff stats,
   so the area, human and file chips all render (#0776, #0795)
 - `card:noChanges` — ready human-assigned card with a branch and zero diff
