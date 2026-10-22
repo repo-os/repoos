@@ -118,6 +118,21 @@ const cases: Case[] = [
     status: "pass",
     detail: 'latest review pass is "good to go"',
   },
+  {
+    name: "environment-only report does not block an otherwise clean review",
+    facts: {
+      review: {
+        present: true,
+        state: "ok",
+        verdict: "needs some work",
+        blockingBugs: false,
+        environmentOnly: true,
+      },
+    },
+    id: "review-verdict",
+    status: "pass",
+    detail: "no code findings; sandbox limitations are listed under Could not verify (environment)",
+  },
 
   // review-lock
   {

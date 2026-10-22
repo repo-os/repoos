@@ -87,6 +87,14 @@ A reviewer must not report `good to go` while this command exits non-zero — sa
 which check failed and what the next step is. The drawer shows the same
 checklist, and the Move to done button's tooltip names the first failing check.
 
+The reviewer receives this server-computed checklist for the reviewed commit
+in its prompt and must rely on it instead of re-running `repoos landable` or
+`git merge-tree` in its sandbox. Sandbox failures (server unreachable, temp-file
+creation denied, missing tool) belong under `Could not verify (environment)`;
+they do not count as findings or review rounds. With no code findings, such a
+report is treated as `good to go`; actual failing checklist facts remain
+authoritative and still block landing.
+
 ## Running the control-plane server: choose one owner
 
 There are two supported ways to run the server on port 7171. **Use exactly one at a

@@ -837,6 +837,41 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
     });
   }, 90_000);
 
+  it("does not exhaust rounds for a reviewer that only reports sandbox limits (#0910)", async () => {
+    const environmentReport = [
+      "## Verdict",
+      "needs some work — I could not confirm landability.",
+      "",
+      "## Bugs",
+      "None found.",
+      "",
+      "## Could not verify (environment)",
+      "repoos landable could not reach the server; git merge-tree could not create a temp file.",
+    ].join("\n");
+    const fx = makeFixture(`process.stdout.write(${JSON.stringify(environmentReport)} + "\\n");`);
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Sandbox-only review issue");
+      writeFileSync(
+        task.absPath,
+        readFileSync(task.absPath, "utf8").replace(/^---\n/, "---\nreview_rounds: 2\n"),
+      );
+      await requestReview(server, task.id, task.absPath);
+      await waitFor(
+        () => existsSync(join(fx.root, ".repoos", "reviews", `${task.id}.md`)),
+        "the environment-only report is written",
+      );
+      await waitForReviewRunning(server, task.id, false);
+
+      const stored = readFileSync(join(fx.root, ".repoos", "reviews", `${task.id}.md`), "utf8");
+      const taskFile = readFileSync(task.absPath, "utf8");
+      expect(stored).toMatch(/good to go/i);
+      expect(stored).toContain("Could not verify (environment)");
+      expect(taskFile).toMatch(/^review_rounds: 2$/m);
+      expect(taskFile).not.toContain("review-rounds-exhausted");
+      expect(taskFile).toMatch(/^status: review$/m);
+    });
+  }, 90_000);
+
   it("does not re-raise an exhausted-rounds flag dismissed during the review", async () => {
     const needsWorkReport = [
       "## Verdict",

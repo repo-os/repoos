@@ -53,9 +53,15 @@ import {
   parseReviewVerdict as parseVerdictLabel,
   parseReviewRelevance,
   reviewVerdictSection,
+  setReviewVerdictLine,
   verdictSummaryForNeedsInput,
 } from "../core/review-verdict.js";
-import { extractReviewReportSections } from "../core/review-report-sections.js";
+import {
+  extractReviewReportSections,
+  reviewReportIsEnvironmentOnly,
+} from "../core/review-report-sections.js";
+import type { LandableResult } from "../core/landable.js";
+import { gatherLandable } from "./landable.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
 import {
   deterministicSessionId,
@@ -134,6 +140,12 @@ export interface ReviewReport {
   clampReason?: string;
   /** `headSha:evidenceIdentity` reviewed (#0865). */
   treeIdentity?: string | null;
+  /**
+   * True when the report's only non-clean reason was an environment limitation
+   * under `## Could not verify (environment)` (#0910). Such a pass is excluded
+   * from auto-bounce and the review-rounds counter.
+   */
+  environmentOnly?: boolean;
 }
 
 export interface ReviewRunResult {
@@ -264,6 +276,13 @@ export interface ReviewMissionOptions {
    * feature review at `deltaSinceApprovedSha` stays tied to that commit.
    */
   deltaSinceApprovedSha?: string;
+  /**
+   * Server-computed landing checklist for the reviewed commit (#0910). The
+   * reviewer relies on these facts instead of running `repoos landable` or
+   * `git merge-tree` in its sandbox, which may have no server access or temp
+   * space. `null` means the server could not compute it for this pass.
+   */
+  landable?: LandableResult | null;
 }
 
 /** One-line provenance for a command-target capture (#0765), for the mission summary. */
@@ -366,6 +385,58 @@ function uiVerificationEvidenceSection(
 }
 
 /**
+ * The server-computed landing checklist handed to the reviewer (#0910).
+ *
+ * The reviewer runs in a sandbox with no guaranteed network, server access or
+ * `/tmp` writability, so `repoos landable` and `git merge-tree --write-tree`
+ * fail there for reasons that say nothing about the code. The server can run
+ * exactly the same read-only preflight, so it does — and the prompt presents the
+ * result as facts the reviewer must rely on instead of re-running the commands.
+ *
+ * The `review-verdict` check is intentionally omitted: it describes the report
+ * the reviewer is about to write, not the commit under review.
+ */
+export function landablePromptSection(
+  taskId: string,
+  landable: LandableResult | null | undefined,
+): string[] {
+  if (!landable) {
+    return [
+      "## Landing checklist (could not be computed)",
+      "",
+      "The server could not compute the landing checklist for this pass. Do NOT try",
+      `to reproduce it by running \`repoos landable ${taskId}\`, \`git merge-tree\`, or any`,
+      "other landing command: a sandbox that cannot reach the RepoOS server or create",
+      "a git temp file is an environment limitation, not a code defect. Record it",
+      "under `## Could not verify (environment)`; that note never changes your verdict",
+      "and never blocks sign-off.",
+    ];
+  }
+  const facts = landable.checks.filter((check) => check.id !== "review-verdict");
+  return [
+    "## Landing checklist (server-computed — facts, do not re-run)",
+    "",
+    `For commit \`${landable.headSha ?? "unknown"}\` on branch \`${landable.branch ?? "(none)"}\`, the server already ran the same`,
+    `read-only preflight as \`repoos landable ${taskId}\`:`,
+    "",
+    ...facts.map(
+      (check) =>
+        `- **${check.label}: ${check.status.toUpperCase()}** — ${check.detail}${
+          check.nextStep ? ` Next step: ${check.nextStep}` : ""
+        }`,
+    ),
+    "",
+    `Overall: **${landable.landable ? "landable" : "not landable"}** (${landable.summary.pass} pass, ${landable.summary.warn} warn, ${landable.summary.fail} fail).`,
+    "Treat these as authoritative facts. Do NOT run `repoos landable`, `git",
+    "merge-tree --write-tree`, or any other landing command yourself — the server",
+    "already did, and a sandbox that cannot reach the RepoOS server or write a git",
+    "temp file is an environment limitation, not a code defect. If a check above",
+    "fails for an environmental reason only, record that under",
+    "`## Could not verify (environment)` instead of turning it into `needs some work`.",
+  ];
+}
+
+/**
  * The mission handed to the review agent. Deliberately narrow: what to look
  * at, what to write, and a hard boundary on what it may not touch.
  */
@@ -448,6 +519,8 @@ export function reviewMission(
           })(),
         ]),
     "",
+    ...landablePromptSection(task.id, options.landable),
+    "",
     "## How to inspect it",
     "",
     `- \`git diff ${baseBranch}...HEAD\` and \`git log ${baseBranch}..HEAD --oneline\` in the`,
@@ -501,14 +574,12 @@ export function reviewMission(
     "  and check that each declared shot's target and route can really render its",
     "  declared state (a drawer route or state fixture on the wrong target is an",
     "  evidence gap, not a code bug).",
-    "- Before `good to go`, confirm the branch still merges cleanly with its base:",
-    `  \`git merge-tree --write-tree ${baseBranch} HEAD\`. A source conflict is`,
-    "  `needs some work` even when the code is fine; name the conflicting files.",
-    `- Run \`repoos landable ${task.id}\` — the same read-only preflight the task`,
-    "  drawer and Move to done use (review verdict, lock sha vs HEAD, clean worktree,",
-    "  merge conflicts, task scope, clean main). If it exits non-zero, say which",
-    "  check failed and give `needs some work`; never approve a branch that cannot",
-    "  land.",
+    "- Mergeability, the review lock, worktree cleanliness and task scope come from",
+    "  the server-computed landing checklist above. Do not re-run those commands.",
+    "- Anything you cannot check because of your sandbox (RepoOS server unreachable,",
+    "  a temp-file error, no network, a missing tool) goes under",
+    "  `## Could not verify (environment)`. It is not a bug, must not change the",
+    "  verdict, and must not hold back `good to go` when the code is sound.",
     ...(repeatedClasses
       ? [
           "",
@@ -1054,9 +1125,11 @@ export class ReviewManager {
     });
     this.appendMarker(task.id, `review started — ${agent.name} (${agent.cli})`);
 
+    const landable = await gatherLandable(this.config, task, this.read(task.id));
     const missionBase = reviewMission(task, agent, workdir, baseBranch, this.config, {
       handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
       uiVerification: taskUiVerificationMode(this.config, task),
+      landable,
     });
     const uiNote = await this.uiVerificationSummary(task);
     const mission = uiNote
@@ -1127,10 +1200,12 @@ export class ReviewManager {
       `checkpoint delta review started — since ${approvedSha.slice(0, 8)}`,
     );
 
+    const landable = await gatherLandable(this.config, task, this.read(task.id));
     const missionBase = reviewMission(task, agent, workdir, baseBranch, this.config, {
       handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
       uiVerification: taskUiVerificationMode(this.config, task),
       deltaSinceApprovedSha: approvedSha,
+      landable,
     });
     const uiNote = await this.uiVerificationSummary(task);
     const mission = uiNote
@@ -1422,6 +1497,10 @@ export class ReviewManager {
       reportText = applied.markdown;
       clampReason = applied.clampReason;
     }
+    const environmentOnly = hasReport && reviewReportIsEnvironmentOnly(reportText);
+    if (environmentOnly) {
+      reportText = setReviewVerdictLine(reportText, "good to go");
+    }
     const verdict = hasReport ? parseVerdict(reportText) : null;
     const state: ReviewReport["state"] = !hasReport ? "failed" : verdict ? "ok" : "incomplete";
     const body = !hasReport
@@ -1439,6 +1518,7 @@ export class ReviewManager {
       markdown: body.slice(0, REPORT_CHARS),
       ...(clampReason ? { clampReason } : {}),
       ...(treeIdentity ? { treeIdentity } : {}),
+      ...(environmentOnly ? { environmentOnly: true } : {}),
     };
     this.write(report, task);
     const marker =
@@ -1518,7 +1598,13 @@ export class ReviewManager {
     // `review-rounds-exhausted` backstop: it counts every completed pass
     // (manual "Review again" included) rather than auto-bounces, and it fires
     // earlier so a human can decide before the loop burns another pass.
-    if (state === "ok" && verdict && verdict !== "good to go" && !checkpointDelta) {
+    if (
+      state === "ok" &&
+      verdict &&
+      verdict !== "good to go" &&
+      !checkpointDelta &&
+      !environmentOnly
+    ) {
       this.flagRepeatedReviewClasses(task);
     }
 
@@ -1539,7 +1625,7 @@ export class ReviewManager {
       shouldAutoRefreshStaleEvidence(this.config, reportText, verdict) &&
       !!this.onStaleEvidenceRefresh;
     const evidenceGapOnly = isEvidenceGapOnlyReview(reportText, verdict);
-    if (state === "ok" && verdict) {
+    if (state === "ok" && verdict && !environmentOnly) {
       if (verdict !== "good to go") {
         if (checkpointDelta) {
           void this.onCheckpointDeltaReviewVerdict?.(task, report, verdict);
@@ -1568,7 +1654,7 @@ export class ReviewManager {
     // See review_rounds
     // (auto-bounce bookkeeping, capped at MAX_AUTO_REVIEW_ROUNDS) vs
     // review_passes (all successful passes).
-    if (state === "ok") this.bumpReviewPasses(task);
+    if (state === "ok" && !environmentOnly) this.bumpReviewPasses(task);
 
     // Automatic stale-only recovery (#0772). Deferred to the next macrotask so
     // the review-completion path (SSE, session recording) finishes first and
