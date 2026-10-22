@@ -13,7 +13,7 @@ branch: feat/add-deployment-environment-bindings-and-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:07:01Z"
-updated_at: "2026-10-22T22:12:03Z"
+updated_at: "2026-10-22T22:12:07Z"
 ---
 ## Problem
 Deployments do not yet show or bind the project environment they consume. A local environment selection must not imply that its values were uploaded to a provider, and production must not be propagated implicitly when a deployment destination changes.
@@ -38,3 +38,4 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 - 2026-10-22T22:11:56Z · status inbox→ready
 - 2026-10-22T22:12:02Z · cli_override, model_override
 - 2026-10-22T22:12:03Z · status ready→active, branch
+- 2026-10-22T22:12:07Z · message_queued at 2026-10-22T22:12:07.618Z
