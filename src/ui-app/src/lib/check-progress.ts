@@ -33,11 +33,7 @@ export function checkProgressLabel(progress: CheckProgress): string {
     progress.stepsTotal == null
       ? `step ${stepNumber ?? "—"}`
       : `step ${stepNumber ?? "—"} of ${progress.stepsTotal}`;
-  if (
-    progress.testsDone == null ||
-    progress.testsTotal == null ||
-    progress.testsTotal <= 0
-  ) {
+  if (progress.testsDone == null || progress.testsTotal == null || progress.testsTotal <= 0) {
     return step;
   }
   return `${step} · tests ${progress.testsDone}/${progress.testsTotal} files`;
