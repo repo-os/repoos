@@ -4,7 +4,7 @@ import { navFromConfig } from "../nav";
 import { useConfigStore } from "../stores/config";
 
 const config = useConfigStore();
-const nav = computed(() => navFromConfig(config.data));
+const nav = computed(() => navFromConfig(config.data, true));
 </script>
 
 <template>

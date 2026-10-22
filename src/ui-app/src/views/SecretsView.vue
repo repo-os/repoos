@@ -49,7 +49,12 @@ const visibleRows = computed(() =>
     .map((row) =>
       row.inherited && row.status === "set" ? { ...row, status: "inherited" as const } : row,
     )
-    .filter((row) => row.name.toLowerCase().includes(query.value.toLowerCase())),
+    .filter((row) =>
+      [row.name, row.status, row.source, row.visibility, ...row.consumers]
+        .join(" ")
+        .toLowerCase()
+        .includes(query.value.trim().toLowerCase()),
+    ),
 );
 const rowVisibility = (row: KeyRow) =>
   row.visibility === "public" ? "Public · exposed to client builds" : "Server only";
@@ -318,11 +323,7 @@ onMounted(() => {
           <div class="secrets-key-cell">
             <strong>{{ row.name }}</strong
             ><span class="secrets-status" :class="`is-${row.status}`">{{
-              row.status === "set"
-                ? "Set"
-                : row.status === "inherited"
-                  ? "Inherited · read only"
-                  : "Missing"
+              row.status === "set" ? "Set" : row.status === "inherited" ? "Inherited" : "Missing"
             }}</span>
           </div>
           <dl class="kv-rows secrets-kv">
@@ -350,14 +351,20 @@ onMounted(() => {
             </div>
           </dl>
           <div class="secrets-row-actions">
-            <template v-if="row.status !== 'inherited'"
+            <template
               ><Button
                 variant="outline"
                 @click="
                   keyDraft = row.name;
                   valueDraft = '';
                 "
-                >{{ row.status === "missing" ? "Set value" : "Replace" }}</Button
+                >{{
+                  row.status === "missing"
+                    ? "Set value"
+                    : row.status === "inherited"
+                      ? "Add override"
+                      : "Replace"
+                }}</Button
               ><Button
                 v-if="row.status === 'set'"
                 variant="outline"
@@ -365,7 +372,9 @@ onMounted(() => {
                 @click="confirmKey = row"
                 >Remove</Button
               ></template
-            ><span v-else class="secrets-readonly">Defined in an earlier source</span>
+            ><span v-if="row.status === 'inherited'" class="secrets-readonly"
+              >Defined in an earlier source</span
+            >
           </div>
           <div v-if="keyDraft === row.name" class="secrets-inline-form">
             <label class="sr-only" :for="`secret-${row.name}`">New value for {{ row.name }}</label

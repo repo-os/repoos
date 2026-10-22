@@ -3,6 +3,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import * as apiMod from "../src/api";
 import Select from "../src/components/ui/select/root.vue";
 import SecretsView from "../src/views/SecretsView.vue";
+import { navFromConfig } from "../src/nav";
 
 const api = vi.spyOn(apiMod, "api");
 const envs = {
@@ -67,6 +68,10 @@ afterEach(() => {
 });
 
 describe("SecretsView (#0929)", () => {
+  it("keeps Secrets reachable before an environment has been created", () => {
+    const ids = navFromConfig({ dev: { targets: [{ name: "web" }] } }, true).map((item) => item.id);
+    expect(ids.slice(ids.indexOf("dev") + 1, ids.indexOf("agents"))).toEqual(["secrets"]);
+  });
   it("shows a clear empty-project state and environment creation affordance", async () => {
     api.mockImplementation(async (path: string) =>
       path === "/api/project-environments" ? ({ environments: [] } as never) : ({} as never),
@@ -91,13 +96,37 @@ describe("SecretsView (#0929)", () => {
     const wrapper = mountPage();
     await flushPromises();
     expect(wrapper.text()).toContain("Missing");
-    expect(wrapper.text()).toContain("Inherited · read only");
+    expect(wrapper.text()).toContain("Inherited");
     expect(wrapper.get(".secrets-row").text()).toContain("Replace");
     const inherited = wrapper
       .findAll(".secrets-row")
       .find((row) => row.text().includes("STRIPE_SECRET_KEY"));
+    expect(inherited?.text()).toContain("Add override");
     expect(inherited?.text()).toContain("Defined in an earlier source");
     expect(inherited?.text()).not.toContain("Remove");
+    wrapper.unmount();
+  });
+  it("adds a local override for inherited values and searches safe metadata", async () => {
+    const wrapper = mountPage();
+    await flushPromises();
+    await wrapper.get('[aria-label="Search keys"]').setValue("Checks");
+    expect(wrapper.findAll(".secrets-row")).toHaveLength(1);
+    expect(wrapper.get(".secrets-row").text()).toContain("STRIPE_SECRET_KEY");
+    await wrapper.get('[aria-label="Search keys"]').setValue("");
+    const inherited = wrapper
+      .findAll(".secrets-row")
+      .find((row) => row.text().includes("STRIPE_SECRET_KEY"));
+    await inherited!.get("button").trigger("click");
+    await wrapper.get(".secrets-inline-form input").setValue("fake-override-value");
+    await wrapper.get(".secrets-inline-form button").trigger("click");
+    await flushPromises();
+    const put = api.mock.calls.find(([, opts]) => opts?.method === "PUT");
+    expect(JSON.parse(String(put?.[1]?.body))).toMatchObject({
+      action: "replace",
+      key: "STRIPE_SECRET_KEY",
+      value: "fake-override-value",
+    });
+    expect(wrapper.html()).not.toContain("fake-override-value");
     wrapper.unmount();
   });
   it("uses masked inputs and clears the entered value after explicit save", async () => {

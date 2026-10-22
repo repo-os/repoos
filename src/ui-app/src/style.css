@@ -15142,7 +15142,10 @@
 }
 .secrets-picker:focus-visible,
 .secrets-picker-menu button:focus-visible,
-.secrets-search input:focus-visible {
+.secrets-search input:focus-visible,
+.secrets-inline-form input:focus-visible,
+.secrets-add-row input:focus-visible,
+.secrets-create-panel input:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 2px;
 }
@@ -15245,7 +15248,7 @@
   padding: 3px 8px;
   border-radius: 99px;
   color: var(--muted);
-  background: var(--muted);
+  background: color-mix(in srgb, var(--muted) 14%, transparent);
   font-size: 11px;
 }
 .secrets-status.is-set {
