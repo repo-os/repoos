@@ -3,6 +3,8 @@ id: "0531"
 title: Add the local Telegram adapter and Bring Your Own Bot Token support
 type: feature
 status: done
+human_step_decision: human
+human_step_decision_key: 7b9f43ec
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 7b9f43ec
 priority: p1
@@ -16,7 +18,7 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-27T07:32:10Z"
-updated_at: "2026-10-22T07:47:39Z"
+updated_at: "2026-10-22T07:47:40Z"
 merge_conflict_retry_count: 1
 review_passes: 3
 review_rounds: 2
