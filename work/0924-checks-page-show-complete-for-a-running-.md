@@ -11,7 +11,7 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T14:58:47Z"
+updated_at: "2026-10-22T15:07:16Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
@@ -37,18 +37,18 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 ```json
 [
 {
-  "label": "Running check progress with test files and retry attempt",
-  "target": "default",
-  "route": "/work?task=9999&tab=overview",
-  "highlight": "[data-test-id=\"close-out-check-progress\"]",
-  "state": "closeOut:checkProgress"
+"label": "Running check progress with test files and retry attempt",
+"target": "default",
+"route": "/work?task=9999&tab=overview",
+"highlight": "[data-test-id=\"close-out-check-progress\"]",
+"state": "closeOut:checkProgress"
 },
 {
-  "label": "Running check progress with unknown test totals",
-  "target": "default",
-  "route": "/work?task=9999&tab=overview",
-  "highlight": "[data-test-id=\"close-out-check-progress\"]",
-  "state": "closeOut:checkProgressUnknown"
+"label": "Running check progress with unknown test totals",
+"target": "default",
+"route": "/work?task=9999&tab=overview",
+"highlight": "[data-test-id=\"close-out-check-progress\"]",
+"state": "closeOut:checkProgressUnknown"
 }
 ]
 ```
@@ -81,3 +81,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T14:53:51Z · CTO nudge: held — remote validation is running
 - 2026-10-22T14:54:26Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-10-22T14:58:47Z · body
+- 2026-10-22T15:07:16Z · body
