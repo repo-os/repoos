@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-22T01:34:32Z"
-updated_at: "2026-10-22T17:36:22Z"
+updated_at: "2026-10-22T17:36:27Z"
 ---
 ## Items
 - [ ] **E1 · Manual-tab handoff capture does not show a dropzone** (web) — #0899's declared Manual-tab shot has a click step but no recorded assertion, so the capture alone does not prove the dropzone rendered. Source: reviewer notes on #0899 (passes 4 and 5), 2026-10-22.
@@ -47,3 +49,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T05:03:27Z · body: Items (added 1, removed 1)
 - 2026-10-22T05:03:39Z · screenshots
 - 2026-10-22T17:36:22Z · status inbox→ready
+- 2026-10-22T17:36:27Z · cli_override, model_override
