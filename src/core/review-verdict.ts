@@ -120,6 +120,21 @@ export function verdictSummaryForNeedsInput(markdown: string): string | undefine
 }
 
 /**
+ * Replace the whole body of a report's `## Verdict` section with one line
+ * (#0910). Used when an environment-only report's negative verdict has no code
+ * finding behind it: keeping the old "why" would contradict the new label.
+ */
+export function setReviewVerdictLine(markdown: string, line: string): string {
+  const heading = /^#{1,6}\s+verdict\s*$/im.exec(markdown);
+  if (!heading) return markdown;
+  const start = (heading.index ?? 0) + heading[0].length;
+  const rest = markdown.slice(start);
+  const nextHeading = /^#{1,6}\s+/m.exec(rest);
+  const sectionEnd = nextHeading ? start + (nextHeading.index ?? 0) : markdown.length;
+  return `${markdown.slice(0, start)}\n${line}\n\n${markdown.slice(sectionEnd)}`;
+}
+
+/**
  * Replace the verdict label in a report's `## Verdict` section (#0714 mechanical
  * clamp). Leaves the rest of the section intact.
  */

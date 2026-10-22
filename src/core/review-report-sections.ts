@@ -4,6 +4,14 @@
  * report carries blocking bugs.
  */
 
+/**
+ * Report section for environmental verification limits (#0910). It is kept
+ * separate from Bugs on purpose: a sandbox that cannot reach the RepoOS server
+ * or hit an ephemeral git temp-file error has not found a defect, so this
+ * section must never lower the verdict or consume a review round.
+ */
+export const ENVIRONMENT_VERIFY_HEADING = "Could not verify (environment)";
+
 /** Complete section bodies that mean "nothing to report", after normalization. */
 const NONE_STATEMENTS = new Set([
   "none",
@@ -138,12 +146,21 @@ function sectionContent(sectionLines: Record<string, string[]>): Record<string, 
   return sections;
 }
 
-/** Extract Relevance, Bugs, Edge cases, and Suggestions (same rules as review auto-bounce). */
+/**
+ * Heading for the non-blocking sandbox-limitations section (#0910). The word
+ * "environment" is optional so a reviewer that writes only "Could not verify"
+ * still lands here instead of in Bugs.
+ */
+const ENVIRONMENT_HEADING = /^##\s+could not verify(?:\s*\(environment\))?\s*$/i;
+
+/** Extract Relevance, Bugs, Edge cases, Suggestions, Evidence and environment notes. */
 export function extractReviewReportSections(markdown: string): {
   relevance?: string;
   bugs?: string;
   edgeCases?: string;
   suggestions?: string;
+  evidence?: string;
+  couldNotVerify?: string;
 } {
   const lines = markdown.split("\n");
   let currentSection: string | null = null;
@@ -163,6 +180,12 @@ export function extractReviewReportSections(markdown: string): {
     } else if (trimmed === "## Suggestions") {
       currentSection = "suggestions";
       sectionLines.suggestions = [];
+    } else if (trimmed === "## Evidence") {
+      currentSection = "evidence";
+      sectionLines.evidence = [];
+    } else if (ENVIRONMENT_HEADING.test(trimmed)) {
+      currentSection = "couldNotVerify";
+      sectionLines.couldNotVerify = [];
     } else if (trimmed.startsWith("## ") && currentSection) {
       currentSection = null;
     } else if (currentSection && sectionLines[currentSection]) {
@@ -176,6 +199,8 @@ export function extractReviewReportSections(markdown: string): {
     bugs: sections.bugs,
     edgeCases: sections.edgeCases,
     suggestions: sections.suggestions,
+    evidence: sections.evidence,
+    couldNotVerify: sections.couldNotVerify,
   };
 }
 
@@ -183,4 +208,20 @@ export function extractReviewReportSections(markdown: string): {
 export function reviewReportHasBlockingBugs(markdown: string | null | undefined): boolean {
   if (!markdown?.trim()) return false;
   return !!extractReviewReportSections(markdown).bugs;
+}
+
+/**
+ * True when the only reason a report is not clean is that the reviewer could
+ * not run something in its sandbox (#0910): it recorded a
+ * `## Could not verify (environment)` note and listed no code findings.
+ *
+ * Environment limitations must never produce `needs some work`, bounce the
+ * engineer, or burn review rounds. Edge cases and evidence gaps are excluded:
+ * those are real follow-up work, not sandbox limitations. Suggestions are
+ * deliberately ignored — they are non-blocking review chatter.
+ */
+export function reviewReportIsEnvironmentOnly(markdown: string | null | undefined): boolean {
+  if (!markdown?.trim()) return false;
+  const sections = extractReviewReportSections(markdown);
+  return !!sections.couldNotVerify && !sections.bugs && !sections.edgeCases && !sections.evidence;
 }
