@@ -7,13 +7,13 @@ priority: p1
 area: [web, ui]
 story: Secrets and project environments
 depends_on: ["0928", "0930"]
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T20:54:47Z"
+updated_at: "2026-10-22T20:56:59Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-22T19:44:36.309Z: repoos check failed: ui verification failed: runner result omitted the UI verification record"
@@ -141,3 +141,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T20:53:45Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-22T20:54:47Z · note: review pass 2: needs some work
 - 2026-10-22T20:54:47Z · status review→active
+- 2026-10-22T20:56:59Z · assigned_to
