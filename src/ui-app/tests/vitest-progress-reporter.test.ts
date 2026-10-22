@@ -1,3 +1,4 @@
+// @ts-nocheck — imports the plain-JS vitest reporter from scripts/
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
