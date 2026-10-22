@@ -40,3 +40,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T02:33:21Z · body
 - 2026-10-22T02:33:21Z · body
 - 2026-10-22T02:43:21Z · message_queued at 2026-10-22T02:43:21.266Z
+- 2026-10-22T02:43:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
