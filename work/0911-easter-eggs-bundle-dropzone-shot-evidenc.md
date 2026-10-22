@@ -152,3 +152,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T17:47:47Z · body
 - 2026-10-22T17:58:11Z · body
 - 2026-10-22T17:58:53Z · handoff_deferred: 5 queued message(s) must be read before review
+- 2026-10-22T17:58:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
