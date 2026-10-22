@@ -2,12 +2,12 @@
 id: "0911"
 title: "Easter eggs bundle: dropzone shot evidence (Manual tab, default picker)"
 type: feature
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/easter-eggs-bundle-dropzone-shot-evidenc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T01:34:32Z"
@@ -50,3 +50,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T05:03:39Z · screenshots
 - 2026-10-22T17:36:22Z · status inbox→ready
 - 2026-10-22T17:36:27Z · cli_override, model_override
+- 2026-10-22T17:36:27Z · status ready→active, branch
