@@ -2,7 +2,7 @@
 id: "0898"
 title: "repoos doctor: warn when macOS syspolicyd/trustd slow spawn-heavy work, and name the git cause"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, docs]
 assigned_to: ai
@@ -51,4 +51,4 @@ See src/core/runtime.ts preferAppleGit, user-docs/configuration.md (Apple-signed
 - 2026-10-22T14:03:01Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/doctor.test.ts > runDoctor > names an ad-hoc-signed first git when Apple git preference is disabled on bee — fix it in the feature branch and re-run the gate
 - 2026-10-22T14:05:18Z · body
 - 2026-10-22T14:07:42Z · body
-- 2026-10-22T14:17:22Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-22T14:17:22Z · status active→review
