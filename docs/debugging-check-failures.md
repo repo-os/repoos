@@ -245,6 +245,14 @@ failure is retryable unless `remoteValidation.fallbackToLocal`.
 
 Off by default; needs `HETZNER_API_TOKEN` and `REPOOS_REMOTE_SSH_KEY` plus a
 prebuilt snapshot. See `remote-validation.md`.
+
+If close-out sits on **check** with no card detail for tens of minutes, check
+whether the runner is uploading a large bundle: the card should now show per-byte
+progress, and uploads abort after `remoteValidation.bundleUploadStallSecs` (no
+progress) or `bundleUploadBudgetSecs` (wall clock) instead of waiting for an
+SSH broken pipe. A host at high swap is skipped before upload (#0901 / #0917);
+see the Runners tab or `Ran locally` attention events for the skip reason.
+
 ## Agent provider usage limits
 
 An explicit provider quota message or HTTP 429 is classified separately from an
