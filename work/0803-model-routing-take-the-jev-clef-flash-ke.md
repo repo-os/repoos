@@ -3,6 +3,8 @@ id: "0803"
 title: "Model routing: take the Jev / Clef-Flash key the same way Model providers does"
 type: bug
 status: done
+human_step_decision: agent
+human_step_decision_key: e42ab167
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: e42ab167
 priority: p1
