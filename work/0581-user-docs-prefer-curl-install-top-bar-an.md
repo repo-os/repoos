@@ -3,9 +3,8 @@ id: "0581"
 title: "User docs: prefer curl install, top bar and mobile menu fixes"
 type: feature
 status: done
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: named mobile hardware)"
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: b0d388df
 priority: p2
 area: general
 assigned_to: ai
@@ -14,7 +13,7 @@ branch: feat/user-docs-prefer-curl-install-top-bar-an
 model_override: opencode-go/mimo-v2.6-flash
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-29T09:55:42Z"
-updated_at: "2026-10-06T23:48:17Z"
+updated_at: "2026-10-22T07:47:56Z"
 ---
 ## Goal
 
@@ -93,3 +92,4 @@ edge to edge.
 - 2026-09-29T10:54:29Z · status active→review
 - 2026-09-29T11:09:49Z · status review→done, release:success
 - 2026-10-06T23:48:17Z · needs_input
+- 2026-10-22T07:47:56Z · needs_input
