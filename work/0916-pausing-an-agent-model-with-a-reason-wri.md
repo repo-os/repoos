@@ -5,11 +5,11 @@ type: feature
 status: inbox
 priority: p1
 area: [core, server]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T03:36:47Z"
-updated_at: "2026-10-22T03:36:47Z"
+updated_at: "2026-10-22T03:36:55Z"
 ---
 ## Problem
 2026-10-22: pausing opencode-go models from the CLI with --reason (repoos agents pause opencode --model <m> --reason ...) wrote this into repoos.toml: pausedModels = [{ model = "...", pausedReason = "..." }, ...]. RepoOS's own TOML subset parser and validateToml reject inline tables ('inline tables aren't supported', line 735), so tests/toml-validate.test.ts 'accepts the repository's own repoos.toml' failed and the release gate (which validates on a remote runner, committed files only) failed with 'fix the invalid TOML on the release branch'. The same write path is used by the Agents page Pause dialog (per-model reason/date), so the UI can produce an invalid config too. The server kept running, so nothing flagged the broken file until a release.
