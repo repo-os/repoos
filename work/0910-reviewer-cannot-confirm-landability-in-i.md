@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-22T01:57:02Z"
+review_passes: 1
 id: "0910"
 title: "Reviewer cannot confirm landability in its sandbox and returns 'needs some work' with no bugs: feed it the landing checklist"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/reviewer-cannot-confirm-landability-in-i
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T19:45:25Z"
-updated_at: "2026-10-22T01:57:02Z"
 dev_error_count: 3
 ---
 ## Problem
@@ -66,3 +67,4 @@ Reproduce with .repoos/reviews/0899/1.md to 5.md. The reviewer for those passes 
 - 2026-10-22T01:56:07Z · status active→review
 - 2026-10-22T01:56:07Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-22T01:57:02Z · note: review pass 1: good to go
+
