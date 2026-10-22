@@ -6,13 +6,16 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
+debug_tldr: "Handoff deferred due to unread queued messages about ADR/split requirements—read them in the task thread, update the work, then request review again."
+debug_tldr_at: "2026-10-22T01:12:03Z"
+debug_tldr_key: "dev-error|✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/run-whole-engineer-sessions-on-remote-ru
 created_at: "2026-10-21T15:06:23Z"
-updated_at: "2026-10-22T01:11:25Z"
+updated_at: "2026-10-22T01:12:03Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T20:52:34.600Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
