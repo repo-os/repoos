@@ -90,3 +90,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T18:54:28Z · body
 - 2026-10-22T18:55:13Z · body
 - 2026-10-22T18:56:07Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-22T18:56:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
