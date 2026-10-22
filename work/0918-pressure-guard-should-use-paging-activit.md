@@ -121,3 +121,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T09:33:10Z · assigned_to
 - 2026-10-22T09:33:19Z · status review→active
 - 2026-10-22T09:44:59Z · assigned_to
+- 2026-10-22T09:44:59Z · note: handoff requested (ui-review)
