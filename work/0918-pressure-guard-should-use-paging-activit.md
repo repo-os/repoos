@@ -2,7 +2,7 @@
 id: "0918"
 title: "Pressure guard should use paging activity, not occupancy: macOS compressor share and swap used/total hold work on an idle laptop"
 type: feature
-status: active
+status: ready
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: opencode
 review_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-22T04:18:52Z"
-updated_at: "2026-10-22T08:34:31Z"
+updated_at: "2026-10-22T08:34:39Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-22T05:27:08.607Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -82,3 +82,5 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T08:33:51Z · status active→ready
 - 2026-10-22T08:33:56Z · cli_override, model_override
 - 2026-10-22T08:34:19Z · status ready→active
+- 2026-10-22T08:34:39Z · status active→ready
+- 2026-10-22T08:34:39Z · note: task abandoned
