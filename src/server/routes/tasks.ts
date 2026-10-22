@@ -4203,7 +4203,7 @@ export const discardWorktreeHandoff: RouteHandler = async (ctx, _req, res, param
   return json(res, 200, { ok: true });
 };
 
-export const cancelDone: RouteHandler = (ctx, _req, res, params) => {
+export const cancelDone: RouteHandler = async (ctx, _req, res, params) => {
   const { jobCoordinator, index, config } = ctx;
   const id = params.param1;
   const task = index.getTask(id);
@@ -4234,6 +4234,13 @@ export const cancelDone: RouteHandler = (ctx, _req, res, params) => {
   // rather than leaving it for a future drain to pick up and cancel.
   if (job.phase === "queued") {
     jobCoordinator.removeJob(id);
+  }
+
+  // Keep the close-out fence in place until the orchestrator has observed the
+  // cancellation, reaped its process group, removed the candidate, and dropped
+  // this attempt. This prevents a retry from racing the old check's slot lease.
+  while (jobCoordinator.getJob(id)?.attempt === job.attempt) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   // A cancelled attempt must never leave the `closing-out` write fence behind,
