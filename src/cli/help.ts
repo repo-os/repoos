@@ -318,6 +318,11 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--json · --verbose · --probe <cli> · --binary <path>",
       },
       {
+        name: "secrets",
+        usage: "secrets <list|add|replace|delete> <environment> [KEY]",
+        desc: "List project environment key metadata; add/replace/delete read values from stdin or a hidden prompt",
+      },
+      {
         name: "certify",
         usage: "certify <cli> [--yes] [--json] [--force] [--binary <path>]",
         desc: "Run the adapter contract suite and record certification evidence",

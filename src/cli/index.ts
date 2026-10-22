@@ -188,7 +188,9 @@ function main(): void {
       void cmdSupport(rest);
       break;
     case "secrets":
-      void cmdSecrets(rest).then((code) => { if (code !== 0) process.exitCode = code; });
+      void cmdSecrets(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
       break;
     case "show":
     case "cat":
