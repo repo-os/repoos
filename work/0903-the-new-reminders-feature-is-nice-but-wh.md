@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/show-due-reminders-as-header-cards-besid
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-21T15:04:49Z"
-updated_at: "2026-10-22T01:15:35Z"
+updated_at: "2026-10-22T01:18:53Z"
 ---
 ## Problem
 
@@ -62,3 +62,4 @@ The new reminders feature is nice, but when the time comes it just shows in the 
 - 2026-10-22T01:11:47Z · cli_override, model_override
 - 2026-10-22T01:11:50Z · model_override
 - 2026-10-22T01:15:35Z · status ready→active, branch
+- 2026-10-22T01:18:53Z · body
