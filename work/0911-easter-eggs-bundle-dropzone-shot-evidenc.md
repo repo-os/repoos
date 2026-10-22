@@ -5,15 +5,16 @@ type: feature
 status: inbox
 priority: p3
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T01:34:32Z"
-updated_at: "2026-10-22T01:34:32Z"
+updated_at: "2026-10-22T04:13:48Z"
 ---
 ## Items
 - [ ] **E1 · Manual-tab handoff capture does not show a dropzone** (web) — #0899's declared Manual-tab shot has a click step but no recorded assertion, so the capture alone does not prove the dropzone rendered. Source: reviewer notes on #0899 (passes 4 and 5), 2026-10-22.
 - [ ] **E2 · TaskDrawer handoff shot shows the upload-failure state, not the default picker** (web) — the declared TaskDrawer fixture lands on the failure state; add a shot of the default upload picker beside it. Source: same reviewer notes.
+- [ ] **E3 · 'Runner memory pressure' red card has no padding** (web) — in the task drawer Debug tab (#0901's banner) the card's heading ('Runner memory pressure'), the host name (thinkpad) and the body text sit flush against the red border with no inner padding, and the card is not aligned with the other cards' spacing; the Fix line repeats the same text twice. Fix the padding (use the shared card spacing) and show the fix line once. Source: user screenshot, 2026-10-22.
 
 ## Problem
 #0899 landed the dropzone layout fix, but two pieces of handoff evidence are weaker than they should be: one declared shot has no assertion, and the TaskDrawer shot shows only the failure state.
@@ -32,3 +33,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 ## Activity
 
 - 2026-10-22T01:34:32Z · created · njachowski@gmail.com
+- 2026-10-22T04:13:48Z · body: Items (added 1)
