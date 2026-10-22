@@ -89,6 +89,8 @@ export interface BriefHostHealth {
   pressureRecheck?: string | null;
   swapUsedRatio?: number | null;
   availableMemRatio?: number | null;
+  /** Declared engineer CLIs that are missing or not signed in (#0915). */
+  engineerCliIssues?: { cli: string; fix: string | null }[];
 }
 
 /** A host skipped because its memory is over the pressureGuard thresholds (#0901). */
@@ -321,6 +323,20 @@ export function recommendActions(input: DriverBriefInput): BriefRecommendation[]
       }${h.pressureRecheck ? ` Re-check: ${h.pressureRecheck}` : ""}`,
       taskId: null,
     });
+  }
+
+  for (const h of input.hosts) {
+    for (const issue of h.engineerCliIssues ?? []) {
+      push({
+        id: `runner-engineer-cli:${h.host}:${issue.cli}`,
+        owner: "human",
+        title: `Fix ${issue.cli} on runner ${h.host}`,
+        detail: issue.fix
+          ? `${issue.fix} (or repoos runners setup ${h.host} --login ${issue.cli})`
+          : `Run repoos runners check — ${issue.cli} is not ready on ${h.host}`,
+        taskId: null,
+      });
+    }
   }
 
   // Failed close-outs: retry (CTO for env failures, otherwise a human).

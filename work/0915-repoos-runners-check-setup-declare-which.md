@@ -1,16 +1,15 @@
 ---
-last_close_out_gate_ms: 501587
-last_close_out_gate_at: "2026-10-22T16:41:15.304Z"
 id: "0915"
 title: "repoos runners check/setup: declare which engineer CLIs each runner needs, verify installed and signed in, install missing"
 type: feature
-status: review
+status: done
 human_step_decision: human
 human_step_decision_key: 71c89bbf
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 71c89bbf
 priority: p2
 area: [server, core, web]
+merged_commit: 928baaddd6ceff2141d0039afd71ec2250f5e5f8
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-runners-check-setup-declare-which
@@ -18,6 +17,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T02:26:27Z"
 updated_at: "2026-10-22T16:41:15Z"
+last_close_out_gate_ms: 501587
+last_close_out_gate_at: "2026-10-22T16:41:15.304Z"
 review_passes: 1
 ---
 ## Problem
