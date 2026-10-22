@@ -175,7 +175,10 @@ describe("project environment secret routes", () => {
     const fx = makeFixture();
     root = fx.root;
     const sentinel = "FAKE_SENTINEL_0932_PUBLIC_VALUE";
-    writeFileSync(join(root, ".env.dev"), `PUBLIC_CLIENT_TOKEN=${sentinel}\nSERVER_TOKEN=server-fake\n`);
+    writeFileSync(
+      join(root, ".env.dev"),
+      `PUBLIC_CLIENT_TOKEN=${sentinel}\nSERVER_TOKEN=server-fake\n`,
+    );
     const response = fx.response();
     listProjectEnvironmentSecrets(fx.ctx, fx.req(), response.res, { param1: "dev" });
     expect(response.fake.headers["cache-control"]).toBe("no-store");
