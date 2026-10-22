@@ -12,7 +12,7 @@ branch: feat/close-out-hangs-48-minutes-on-a-stalled-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T04:09:06Z"
-updated_at: "2026-10-22T12:49:44Z"
+updated_at: "2026-10-22T12:51:04Z"
 last_close_out_gate_ms: 639466
 last_close_out_gate_at: "2026-10-22T12:49:44.243Z"
 review_passes: 3
@@ -130,4 +130,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T12:34:18Z · status active→review
 - 2026-10-22T12:35:46Z · note: review pass 3: good to go
 - 2026-10-22T12:49:44Z · close-out gate completed in 639s
-
+- 2026-10-22T12:51:04Z · status done→done, release:success
