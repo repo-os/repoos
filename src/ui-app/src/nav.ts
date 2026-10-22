@@ -39,6 +39,12 @@ export const DEV_NAV: NavItem = {
   label: "Dev",
   icon: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 9l2.5 2L8 13M12.5 14H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 21h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
 };
+export const SECRETS_NAV: NavItem = {
+  id: "secrets",
+  path: "/secrets",
+  label: "Secrets",
+  icon: '<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 118 0v3M12 14v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+};
 
 export const NAV: NavItem[] = [
   {
@@ -119,6 +125,8 @@ export function navFor(
     const agentsAt = items.findIndex((n) => n.id === "agents");
     items.splice(agentsAt < 0 ? items.length : agentsAt, 0, DEV_NAV);
   }
+  const agentsAt = items.findIndex((n) => n.id === "agents");
+  items.splice(agentsAt < 0 ? items.length : agentsAt, 0, SECRETS_NAV);
   return items;
 }
 
