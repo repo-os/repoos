@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 369156
-last_close_out_gate_at: "2026-10-22T15:51:13.664Z"
 id: "0924"
 title: "Checks page: show % complete for a running check (steps and test files)"
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, core]
+merged_commit: ddc1981dba675eb59e83360081b4dc7497d3a0ea
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/checks-page-show-complete-for-a-running-
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T06:08:54Z"
 updated_at: "2026-10-22T15:51:13Z"
+last_close_out_gate_ms: 369156
+last_close_out_gate_at: "2026-10-22T15:51:13.664Z"
 review_passes: 3
 review_rounds: 1
 handoff_signal_retry_count: 1

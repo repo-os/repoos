@@ -156,6 +156,12 @@ describe("task drawer check chip (#0564)", () => {
         output: "",
         scope: "full",
         machine: "macbook",
+        stepsDone: 4,
+        stepsTotal: 12,
+        currentStep: 5,
+        testsDone: 140,
+        testsTotal: 289,
+        testsPass: 1,
       },
     ];
 
@@ -164,6 +170,7 @@ describe("task drawer check chip (#0564)", () => {
     expect(chip().exists()).toBe(true);
     expect(chip().classes()).toContain("ck-chip-running");
     expect(chip().text()).toContain("Checks running on macbook");
+    expect(chip().text()).toContain("step 5 of 12 · tests 140/289 files");
 
     // The remote half completes mid-gate and lands in the durable history.
     checkRunsPayload = [

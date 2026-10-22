@@ -31,7 +31,7 @@ import {
   type CheckStep,
   type RepoMarkers,
 } from "../../core/check-plan.js";
-import { parseCheckArgs } from "../../commands/check.js";
+import { parseCheckArgs, runCheckPlan } from "../../commands/check.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -469,6 +469,54 @@ describe("selectSteps — profiles and changed paths", () => {
       ["backend", undefined],
     ]);
     expect(selected[0].skip?.detail).toMatch(/not selected by --step/);
+  });
+});
+
+describe("runCheckPlan progress", () => {
+  it("announces the current step at start and excludes skipped steps", async () => {
+    const root = tmpRepo();
+    const starts: Array<{ stepsDone: number; stepsTotal: number; currentStep: number }> = [];
+    const plan = {
+      version: 1,
+      defaultProfile: "default",
+      source: "declared" as const,
+      warnings: [],
+      errors: [],
+      steps: [
+        step({ name: "skip", command: "true", profiles: ["full"] }),
+        step({ name: "first", command: "true" }),
+        step({ name: "second", command: "true" }),
+      ],
+    };
+    await runCheckPlan(plan, {
+      repoRoot: root,
+      cfg: {} as never,
+      profile: "default",
+      echo: false,
+      onStart: (_step, progress) => {
+        if (progress) starts.push(progress);
+      },
+    });
+    expect(starts).toEqual([
+      {
+        stepsDone: 0,
+        stepsTotal: 2,
+        currentStep: 1,
+        stepName: "first",
+        testsDone: null,
+        testsTotal: null,
+        testsPass: null,
+      },
+      {
+        stepsDone: 1,
+        stepsTotal: 2,
+        currentStep: 2,
+        stepName: "second",
+        testsDone: null,
+        testsTotal: null,
+        testsPass: null,
+      },
+    ]);
   });
 });
 
