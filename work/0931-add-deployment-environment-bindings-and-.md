@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-22T23:43:04Z"
-review_passes: 2
 id: "0931"
 title: Add deployment environment bindings and production safeguards
 type: feature
-status: review
+status: ready
 priority: p2
 area: [server, web]
 story: Secrets and project environments
@@ -15,7 +13,7 @@ branch: feat/add-deployment-environment-bindings-and-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:07:01Z"
-last_check_failure: "repoos check at 2026-10-22T22:46:53.391Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 55c03c38 to 4d183313) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+updated_at: "2026-10-22T23:42:10Z"
 ---
 ## Problem
 Deployments do not yet show or bind the project environment they consume. A local environment selection must not imply that its values were uploaded to a provider, and production must not be propagated implicitly when a deployment destination changes.
@@ -34,61 +32,16 @@ A deployment clearly displays and explicitly selects its named environment. User
 ## Notes for AI
 Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Inspect current deployment targets/providers before choosing a UI or adapter. Keep explicit publish/sync distinct from local process injection; never silently send values to external systems. Update deployment documentation and tests.
 
-## Shots
-```json
-[
-{
-"label": "Production deployment environment binding",
-"target": "default",
-"route": "/deployments",
-"highlight": ".dep-env-binding",
-"state": "deployments:environmentBinding"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-22T08:07:01Z · created · njachowski@gmail.com
 - 2026-10-22T22:11:56Z · status inbox→ready
 - 2026-10-22T22:12:02Z · cli_override, model_override
 - 2026-10-22T22:12:03Z · status ready→active, branch
-- 2026-10-22T22:12:07Z · message_queued at 2026-10-22T22:12:07.618Z
-- 2026-10-22T22:12:20Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-22T22:14:41Z · body
-- 2026-10-22T22:16:33Z · body
-- 2026-10-22T22:16:45Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-22T22:16:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-22T22:16:45Z · message_delivered: 1 message(s)
-- 2026-10-22T22:20:31Z · note: selector .dep-env-binding matched nothing on /deployments
-- 2026-10-22T22:20:53Z · body
-- 2026-10-22T22:23:09Z · body
-- 2026-10-22T22:24:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-22T22:33:39Z · body
-- 2026-10-22T22:34:54Z · body
-- 2026-10-22T22:37:01Z · body
-- 2026-10-22T22:47:47Z · note: Resuming after watchdog auto-surfaced task; rerunning stable handoff gate
-- 2026-10-22T22:50:31Z · body
-- 2026-10-22T22:53:49Z · body
-- 2026-10-22T22:55:55Z · body
-- 2026-10-22T23:05:17Z · status active→review
-- 2026-10-22T23:05:18Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
-- 2026-10-22T23:06:45Z · note: review pass 1: needs some work
-- 2026-10-22T23:09:10Z · status review→active
-- 2026-10-22T23:09:19Z · message_queued at 2026-10-22T23:09:19.452Z
-- 2026-10-22T23:10:31Z · body
-- 2026-10-22T23:12:21Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-22T23:13:33Z · body
-- 2026-10-22T23:15:25Z · body
-- 2026-10-22T23:16:33Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-22T23:16:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-22T23:16:33Z · message_delivered: 1 message(s)
-- 2026-10-22T23:21:23Z · body
-- 2026-10-22T23:23:34Z · body
-- 2026-10-22T23:24:28Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-22T23:30:03Z · body
-- 2026-10-22T23:32:08Z · body
-- 2026-10-22T23:42:10Z · status active→review
-- 2026-10-22T23:42:10Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
-- 2026-10-22T23:43:04Z · note: review pass 2: good to go
-
+- 2026-10-22T22:42:48Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-22T23:05:17Z · status ready→review
+- 2026-10-22T23:05:17Z · note: handoff requested (cli)
+- 2026-10-22T23:05:18Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
+- 2026-10-22T23:42:10Z · status ready→review
+- 2026-10-22T23:42:10Z · note: handoff requested (cli)
+- 2026-10-22T23:42:10Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready

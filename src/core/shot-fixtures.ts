@@ -96,6 +96,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // Secrets page and its add/remove dialogs.
   "secrets:populated",
   "secrets:removeDialog",
+  // #0931 — fake deployment target and environment metadata for a fresh
+  // Deployments-page capture; never fetches project secrets or provider data.
+  "deployments:environmentBinding",
   // #0805 — clears the configured editor so the fallback "Set editor in
   // Settings → General" hint renders instead of the "Open in editor" button.
   "editor:unconfigured",

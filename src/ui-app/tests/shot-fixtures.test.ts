@@ -68,6 +68,21 @@ describe("shot preview fixtures (#0743)", () => {
     ).toEqual([]);
   });
 
+  it("accepts the fake deployments environment-binding fixture (#0931)", () => {
+    const url = shotCapturePageUrl("http://127.0.0.1:8000", {
+      route: "/deployments",
+      state: "deployments:environmentBinding",
+    });
+    expect(url).toBe(
+      "http://127.0.0.1:8000/deployments?shotState=deployments%3AenvironmentBinding",
+    );
+    expect(
+      parseShotPlan(
+        `## Shots\n\`\`\`json\n[{"route":"/deployments","state":"deployments:environmentBinding"}]\n\`\`\``,
+      ).errors,
+    ).toEqual([]);
+  });
+
   it("accepts the closeOut:stalled fixture for the stalled card (#0778)", () => {
     const url = shotCapturePageUrl("http://127.0.0.1:8000", {
       route: "/",
