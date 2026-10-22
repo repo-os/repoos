@@ -20,8 +20,8 @@
  * live outside that directory and are never RepoOS-managed — so no
  * agent-specific branch-name matching is used anywhere.
  */
-import { existsSync, realpathSync } from "node:fs";
-import { relative, isAbsolute } from "node:path";
+import { existsSync, realpathSync, readdirSync, readFileSync } from "node:fs";
+import { join, relative, isAbsolute } from "node:path";
 import { spawnSync } from "node:child_process";
 import type { RepoOSConfig, Task } from "./types.js";
 import { worktreesDir } from "./config.js";
@@ -68,7 +68,8 @@ export interface SweepOptions {
   dryRun?: boolean;
   /**
    * Task ids whose `repoos/integrate/<id>` candidate must be spared — a job is
-   * still queued/running/recovering for them. The boot sweep passes this.
+   * still queued/running/recovering for them. When omitted, records are read
+   * from the durable integration-job store so callers cannot forget the guard.
    */
   activeJobIds?: Set<string>;
   /**
@@ -76,6 +77,34 @@ export interface SweepOptions {
    * from a fresh `buildIndex`. `mode: "integrate-only"` never looks at tasks.
    */
   tasks?: Task[];
+}
+
+/** Read durable close-out records directly so every sweep caller gets the same
+ * protection, including the CLI where no server coordinator is available. */
+function activeCloseOutIds(config: RepoOSConfig): Set<string> {
+  // integration-job.ts persists here independently of the configurable cacheDir.
+  const dir = join(config.root, ".repoos", "integration-jobs");
+  const active = new Set<string>();
+  try {
+    for (const file of readdirSync(dir)) {
+      if (!file.endsWith(".json")) continue;
+      try {
+        const job = JSON.parse(readFileSync(`${dir}/${file}`, "utf8")) as {
+          taskId?: unknown;
+          phase?: unknown;
+        };
+        if (typeof job.taskId === "string" && job.phase !== "done" && job.phase !== "failed") {
+          active.add(job.taskId);
+        }
+      } catch {
+        // A malformed job record cannot establish that its candidate is safe.
+        active.add(file.slice(0, -5));
+      }
+    }
+  } catch {
+    // No job directory means no recorded close-outs.
+  }
+  return active;
 }
 
 /**
@@ -135,15 +164,14 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
 
   const wtDir = worktreesDir(root);
   const mainBranch = currentBranch(root) ?? "main";
-  const activeJobIds = opts.activeJobIds ?? new Set<string>();
+  const activeJobIds = opts.activeJobIds ?? activeCloseOutIds(config);
 
   // branch -> task, for the "is this worktree still live" check (full mode only).
   const taskByBranch = new Map<string, Task>();
+  const tasks = opts.tasks ?? buildIndex(config).tasks;
+  const taskById = new Map(tasks.map((t) => [t.id, t]));
   if (opts.mode === "full") {
-    const tasks = opts.tasks ?? buildIndex(config).tasks;
-    for (const t of tasks) {
-      if (t.branch) taskByBranch.set(t.branch, t);
-    }
+    for (const t of tasks) if (t.branch) taskByBranch.set(t.branch, t);
   }
 
   const scoped = listWorktrees(root).filter(
@@ -189,6 +217,11 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
         report.keptDirty.push({ branch, path: w.path, reason: "close-out job still active" });
         continue;
       }
+      const task = taskById.get(taskId);
+      if (task?.status === "active" || task?.status === "review") {
+        report.keptDirty.push({ branch, path: w.path, reason: "task agent still active" });
+        continue;
+      }
       remove(branch, w.path, /* forceBranch */ true, /* forceWorktree */ true);
       continue;
     }
@@ -212,7 +245,17 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     }
 
     const task = taskByBranch.get(branch);
-    if (task && task.status !== "done") continue; // live work — leave it
+    if (task && task.status !== "done") {
+      report.keptDirty.push({
+        branch,
+        path: w.path,
+        reason:
+          task.status === "active" || task.status === "review"
+            ? "task agent still active"
+            : `task status is ${task.status}`,
+      });
+      continue;
+    }
 
     const merged = isAncestor(root, branch, mainBranch) === true;
     const clean = worktreeClean(w.path);

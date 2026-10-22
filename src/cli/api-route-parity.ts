@@ -105,6 +105,9 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   exact("GET", "/api/stats/by-type"),
   exact("GET", "/api/stats/daily"),
   exact("POST", "/api/system/kill-process"),
+  // Control page worktree cleanup preview and apply action.
+  exact("GET", "/api/system/worktree-gc"),
+  exact("POST", "/api/system/worktree-gc"),
   exact("GET", "/api/system/run-tests"),
   exact("POST", "/api/system/run-tests"),
   exact("GET", "/api/attention"),
