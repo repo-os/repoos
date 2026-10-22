@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-dropzone-shot-evidenc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T01:34:32Z"
-updated_at: "2026-10-22T18:29:11Z"
+updated_at: "2026-10-22T18:29:46Z"
 last_close_out_gate_ms: 499942
 last_close_out_gate_at: "2026-10-22T18:29:11.686Z"
 review_passes: 1
@@ -162,4 +162,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T18:11:24Z · status active→review
 - 2026-10-22T18:12:44Z · note: review pass 1: good to go
 - 2026-10-22T18:29:11Z · close-out gate completed in 500s
-
+- 2026-10-22T18:29:46Z · status done→done, release:success
