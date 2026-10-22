@@ -2,16 +2,16 @@
 id: "0925"
 title: Cancelling a close-out must kill its check process tree and free its slot
 type: bug
-status: ready
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/cancelling-a-close-out-must-kill-its-che
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:32:56Z"
-updated_at: "2026-10-22T07:48:43Z"
+updated_at: "2026-10-22T07:48:44Z"
 ---
 ## Problem
 POST /api/tasks/:id/done/cancel returns ok but does not stop the close-out's check process. 2026-10-22: after cancelling #0908 the 'bun src/cli/index.ts check --profile full' (pid 36175, cwd integrate/0908) kept running as an orphan (ppid 1) for 7 more minutes, still holding local check slot 1. Retrying Move to done returned 'previous close-out attempt was stopped but is still shutting down' the whole time. Also a vitest worker (pid 29031) from #0909's cancelled run stayed behind idle for 33 min. Each cancel therefore needs hand-killing by pid.
@@ -35,3 +35,4 @@ Also fix #0921 in the same change (dead-holder detection for local check slots: 
 - 2026-10-22T07:47:39Z · body: Scope addition (added)
 - 2026-10-22T07:48:36Z · status inbox→ready
 - 2026-10-22T07:48:43Z · cli_override, model_override
+- 2026-10-22T07:48:44Z · status ready→active, branch
