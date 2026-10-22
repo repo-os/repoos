@@ -7,6 +7,7 @@ import { ensureWorktree, listWorktrees, removeWorktree } from "../../core/git.js
 import { worktreesDir } from "../../core/config.js";
 import { sweepStaleWorktrees, sweepAndWarn, countWorktrees } from "../../core/worktree-gc.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
+import { createJobCoordinator } from "../../server/integration-job.js";
 
 function git(root: string, args: string[]): string {
   return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
@@ -63,6 +64,35 @@ function branches(root: string): Set<string> {
 }
 
 describe("sweepStaleWorktrees — full mode", () => {
+  it.each(["active", "review"])(
+    "reports candidate and feature worktrees kept for %s tasks",
+    (status) => {
+      const { root, clean } = makeRepo();
+      try {
+        ensureWorktree(root, "repoos/integrate/0009");
+        ensureWorktree(root, "feat/live");
+
+        const report = sweepStaleWorktrees(cfg(root), {
+          mode: "full",
+          dryRun: true,
+          tasks: [task("0009", "feat/live", status)],
+        });
+
+        expect(report.removedWorktrees).toHaveLength(0);
+        expect(
+          report.keptDirty
+            .map(({ branch, reason }) => [branch, reason])
+            .sort(([a], [b]) => a!.localeCompare(b!)),
+        ).toEqual([
+          ["feat/live", "task agent still active"],
+          ["repoos/integrate/0009", "task agent still active"],
+        ]);
+      } finally {
+        clean();
+      }
+    },
+  );
+
   it("removes done/absent/integrate/half-deleted worktrees, keeps live and unmerged", () => {
     const { root, main, clean } = makeRepo();
     try {
@@ -143,6 +173,47 @@ describe("sweepStaleWorktrees — full mode", () => {
 });
 
 describe("sweepStaleWorktrees — integrate-only mode", () => {
+  it("derives validating close-out jobs and keeps their candidates by default", () => {
+    const { root, clean } = makeRepo();
+    try {
+      ensureWorktree(root, "repoos/integrate/0009");
+      const coordinator = createJobCoordinator(root);
+      const activeTask = task("0009", "feat/0009", "done");
+      coordinator.enqueue(activeTask);
+      coordinator.updateJob("0009", { phase: "validating" });
+
+      for (const mode of ["integrate-only", "full"] as const) {
+        for (const dryRun of [false, true]) {
+          const report = sweepStaleWorktrees(cfg(root), { mode, dryRun });
+          expect(report.removedWorktrees).toHaveLength(0);
+          expect(report.keptDirty).toContainEqual(
+            expect.objectContaining({
+              branch: "repoos/integrate/0009",
+              reason: "close-out job still active",
+            }),
+          );
+          expect(branches(root).has("repoos/integrate/0009")).toBe(true);
+        }
+      }
+    } finally {
+      clean();
+    }
+  });
+
+  it.each(["done", "failed"] as const)("removes a candidate whose job is %s", (phase) => {
+    const { root, clean } = makeRepo();
+    try {
+      ensureWorktree(root, "repoos/integrate/0009");
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue(task("0009", "feat/0009", "done"));
+      coordinator.updateJob("0009", { phase });
+      const report = sweepStaleWorktrees(cfg(root), { mode: "integrate-only" });
+      expect(report.removedWorktrees.map((w) => w.branch)).toEqual(["repoos/integrate/0009"]);
+    } finally {
+      clean();
+    }
+  });
+
   it("removes only repoos/integrate/* and leaves every feature worktree", () => {
     const { root, main, clean } = makeRepo();
     try {

@@ -131,7 +131,7 @@ import {
   tuneRepoForScale,
   runGit,
 } from "../core/git.js";
-import { sweepAndWarn } from "../core/worktree-gc.js";
+import { sweepAndWarn, sweepStaleWorktrees } from "../core/worktree-gc.js";
 import {
   checkServerRegistryPortConflict,
   logServerRegistryError,
@@ -3278,6 +3278,25 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/stats/daily", getDailyTotals);
 
   // System resource routes
+  router.register("GET", "/api/system/worktree-gc", (_ctx, _req, res) => {
+    const jobs = jobCoordinator.allJobs().filter((j) => j.phase !== "done" && j.phase !== "failed");
+    const report = sweepStaleWorktrees(config, { mode: "full", dryRun: true });
+    return json(res, 200, {
+      report,
+      activeCloseOutTaskIds: jobs.map((j) => j.taskId),
+      blocked: closeOutLock.closingOut() || jobs.length > 0,
+    });
+  });
+  router.register("POST", "/api/system/worktree-gc", (_ctx, _req, res) => {
+    const jobs = jobCoordinator.allJobs().filter((j) => j.phase !== "done" && j.phase !== "failed");
+    if (closeOutLock.closingOut() || jobs.length > 0) {
+      const ids = jobs.map((j) => `#${j.taskId}`);
+      return json(res, 409, {
+        error: `Worktree cleanup is paused while a close-out is active${ids.length ? `: ${ids.join(", ")}` : ""}.`,
+      });
+    }
+    return json(res, 200, sweepStaleWorktrees(config, { mode: "full" }));
+  });
   router.register("POST", "/api/system/kill-process", async (_ctx, req, res) => {
     const body = (await readBody(req)) as { pid?: unknown };
     const pid = body.pid;
