@@ -101,6 +101,40 @@ describe("resolveReviewerForTask", () => {
     expect(resolveReviewerForTask(disabled, task({ reviewAgentOverride: "codex" }))).toBeNull();
   });
 
+  it("temporarily routes a pinned reviewer off an exhausted pair and restores the pin", () => {
+    const cfg: RepoOSConfig = {
+      ...config([baseReviewer, codex]),
+      budget: {
+        allowlist: [
+          {
+            cli: "claude code",
+            models: ["sonnet"],
+            pausedModels: [{ model: "sonnet", pausedReason: "out of usage since 10:30" }],
+          },
+          { cli: "codex", models: ["gpt-5"] },
+        ],
+      },
+    };
+    const pinned = task({ reviewCliOverride: "claude code", reviewModelOverride: "sonnet" });
+    expect(resolveReviewerForTask(cfg, pinned)).toMatchObject({ cli: "codex", model: "gpt-5" });
+    expect(pinned).toMatchObject({
+      reviewCliOverride: "claude code",
+      reviewModelOverride: "sonnet",
+    });
+
+    cfg.budget = {
+      ...cfg.budget,
+      allowlist: [
+        { cli: "claude code", models: ["sonnet"] },
+        { cli: "codex", models: ["gpt-5"] },
+      ],
+    };
+    expect(resolveReviewerForTask(cfg, pinned)).toMatchObject({
+      cli: "claude code",
+      model: "sonnet",
+    });
+  });
+
   it(
     '#0271 follow-up: reviewModelOverride: "default" keeps the configured reviewer model, ' +
       'never overwrites it with the literal string "default"',

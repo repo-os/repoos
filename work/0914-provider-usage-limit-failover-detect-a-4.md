@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 488430
-last_close_out_gate_at: "2026-10-22T07:46:50.765Z"
 id: "0914"
 title: "Provider usage-limit failover: detect a 429 usage-limit, pause that provider everywhere, and re-route even pinned tasks"
 type: feature
-status: review
+status: done
 priority: p1
 area: [server, core]
+merged_commit: 5f931b134179589ddb5c82a9ccecee6d0d98616e
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/provider-usage-limit-failover-detect-a-4
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T02:17:25Z"
 updated_at: "2026-10-22T07:46:50Z"
+last_close_out_gate_ms: 488430
+last_close_out_gate_at: "2026-10-22T07:46:50.765Z"
 review_passes: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-22T05:55:25.520Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-22T06:08:25.959Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-22T06:17:25.965Z\",\"reason\":\"clean-exit-without-handoff\"}]"
