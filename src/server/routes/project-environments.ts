@@ -119,7 +119,22 @@ export const listProjectEnvironments: RouteHandler = (ctx, req, res) => {
   if (!requireAdmin(req, ctx.config, res)) return;
   if (!originAllowed(req)) return send(res, 403, { error: "Request origin rejected" });
   try {
-    return send(res, 200, registry(ctx.config.root));
+    const environments = registry(ctx.config.root).environments;
+    // The page is useful before a named set exists when the project already
+    // documents project keys in .env.example or its legacy root .env.
+    let hasExpectedKeys = false;
+    try {
+      const snapshot = readProjectEnvironment(ctx.config.root, {
+        id: "secrets-nav-probe",
+        sources: [{ id: "probe", path: ".env", examplePath: ".env.example" }],
+      });
+      hasExpectedKeys = [...snapshot.keys, ...snapshot.expectedKeys].some(
+        (key) => !isReservedProjectKey(key),
+      );
+    } catch {
+      // A malformed legacy file must not make sidebar navigation fail.
+    }
+    return send(res, 200, { environments, enabled: environments.length > 0 || hasExpectedKeys });
   } catch {
     return send(res, 400, { error: "Could not read project environments" });
   }

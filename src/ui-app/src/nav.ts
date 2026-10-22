@@ -105,6 +105,7 @@ export function navFor(
   deploymentsEnabled = false,
   storiesEnabled = false,
   devEnabled = false,
+  secretsEnabled = false,
 ): NavItem[] {
   const items = [...NAV];
   let at = 4; // after Work + Checks
@@ -125,8 +126,10 @@ export function navFor(
     const agentsAt = items.findIndex((n) => n.id === "agents");
     items.splice(agentsAt < 0 ? items.length : agentsAt, 0, DEV_NAV);
   }
-  const agentsAt = items.findIndex((n) => n.id === "agents");
-  items.splice(agentsAt < 0 ? items.length : agentsAt, 0, SECRETS_NAV);
+  if (secretsEnabled) {
+    const agentsAt = items.findIndex((n) => n.id === "agents");
+    items.splice(agentsAt < 0 ? items.length : agentsAt, 0, SECRETS_NAV);
+  }
   return items;
 }
 
@@ -137,7 +140,10 @@ export function navFor(
  * `dev.targets` array. A missing or malformed section reads as disabled, so a
  * repo that never configures these gets exactly the default NAV.
  */
-export function navFromConfig(config: Record<string, unknown> | null | undefined): NavItem[] {
+export function navFromConfig(
+  config: Record<string, unknown> | null | undefined,
+  secretsEnabled = false,
+): NavItem[] {
   const release = config?.release as { enabled?: unknown } | undefined;
   const stories = config?.stories as { enabled?: unknown } | undefined;
   const dev = config?.dev as { targets?: unknown } | undefined;
@@ -146,5 +152,6 @@ export function navFromConfig(config: Record<string, unknown> | null | undefined
     Array.isArray(config?.deployments) && (config?.deployments as unknown[]).length > 0,
     stories?.enabled === true,
     Array.isArray(dev?.targets) && dev.targets.length > 0,
+    secretsEnabled,
   );
 }
