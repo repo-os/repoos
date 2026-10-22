@@ -585,7 +585,8 @@ provider = "jev"             # jev | openrouter
 model = "jev-latest"         # or a pinned id such as "jev-1.13.0"
 roles = ["engineer", "reviewer", "pm"]
 timeoutMs = 8000             # 500–60000
-humanStepCheck = false       # ask before a ready task starts (default off)
+humanStepCheck = false       # model check when keywords trip (default off)
+humanStepSticky = true       # remember cleared flags (default on)
 ```
 
 | Key | Default | Meaning |
@@ -596,7 +597,8 @@ humanStepCheck = false       # ask before a ready task starts (default off)
 | `model_routing.baseUrl` | — | Retained so an existing `[model_routing]` table with the self-hosted adapter still parses. It has no UI and is not a selectable provider. |
 | `model_routing.roles` | all three | Which runs consult the router. A role left out keeps its configured agent. |
 | `model_routing.timeoutMs` | `8000` | One decision call's ceiling. A timeout falls back; it never blocks the run. |
-| `model_routing.humanStepCheck` | `false` | Before a `ready` task starts, ask the decision model whether it needs steps only a human can do and should be split into an AI task and a human task. Uses the same provider as routing. It only blocks a start when `mode = "automatic"`; in `shadow` it records the verdict without blocking, and when the provider is off, unavailable, or fails, the existing keyword check runs instead — a failure never blocks a task on its own. |
+| `model_routing.humanStepCheck` | `false` | When acceptance criteria trip the keyword scan, ask the decision model whether verification truly requires a human — the keyword alone never sets the flag. Uses the same provider as routing. It only blocks a start when `mode = "automatic"`; in `shadow` it records the verdict without blocking, and when the provider is off, unavailable, or fails, the keyword check runs instead. |
+| `model_routing.humanStepSticky` | `true` | When a human clears a `needs-human-step` flag, record a fingerprint of the acceptance criteria so later rescans skip the flag until the criteria materially change. |
 
 ### Choosing a provider
 
