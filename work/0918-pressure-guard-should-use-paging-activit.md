@@ -8,12 +8,12 @@ area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/pressure-guard-should-use-paging-activit
-cli_override: cursor
-model_override: composer-2.5
+cli_override: codex
+model_override: gpt-6-luna
 review_cli_override: opencode
 review_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-22T04:18:52Z"
-updated_at: "2026-10-22T08:33:51Z"
+updated_at: "2026-10-22T08:33:56Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-22T05:27:08.607Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -80,3 +80,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T08:25:25Z · status active→review
 - 2026-10-22T08:33:29Z · status review→active
 - 2026-10-22T08:33:51Z · status active→ready
+- 2026-10-22T08:33:56Z · cli_override, model_override
