@@ -35,3 +35,4 @@ Related: #0921 (dead local-check slot holders), #0925 (cancel frees resources), 
 - 2026-10-22T10:12:56Z · body
 - 2026-10-22T10:17:28Z · body
 - 2026-10-22T10:23:34Z · message_queued at 2026-10-22T10:23:34.675Z
+- 2026-10-22T10:23:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
