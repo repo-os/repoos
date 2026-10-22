@@ -138,7 +138,14 @@ function sectionContent(sectionLines: Record<string, string[]>): Record<string, 
     if (!content) continue;
     // Relevance is a one-line label, not a findings list: keep any substantive
     // text and only drop an explicit "none" value.
-    const empty = key === "relevance" ? isNoneStatement(content) : isEmptyReviewSection(content);
+    // Environment notes are explanatory prose, not a findings list. Preserve
+    // them even when they do not use bullets or other finding markers.
+    const empty =
+      key === "couldNotVerify"
+        ? false
+        : key === "relevance"
+          ? isNoneStatement(content)
+          : isEmptyReviewSection(content);
     if (!empty) {
       sections[key] = content;
     }
