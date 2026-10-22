@@ -3402,7 +3402,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: true,
       default: "",
       description:
-        "On each [[remoteValidation.tailscaleHosts]] row, set engineers = [\"opencode\", \"codex\", \"cursor\"] " +
+        'On each [[remoteValidation.tailscaleHosts]] row, set engineers = ["opencode", "codex", "cursor"] ' +
         "for the CLIs that host must have installed and signed in. RepoOS checks with `repoos runners check` " +
         "and shows results on the Runners tab. Login stays a human step (`repoos runners setup <host> --login <cli>`).",
     },

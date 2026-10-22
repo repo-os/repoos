@@ -211,7 +211,7 @@ export function buildRunnerEngineerHostReport(
   const ok = declared.length === 0 || declared.every((id) => cells.find((c) => c.cli === id)?.ok);
   return {
     host: host.host,
-    user: rv ? remoteHostUser(rv, host) : host.user ?? "root",
+    user: rv ? remoteHostUser(rv, host) : (host.user ?? "root"),
     cells,
     ok,
     checkedAt,
@@ -219,7 +219,9 @@ export function buildRunnerEngineerHostReport(
 }
 
 /** CLIs on a host that are declared and fully ready (for #0913 placement). */
-export function hostAdvertisedEngineerClis(report: RunnerEngineerHostReport): RunnerEngineerCliId[] {
+export function hostAdvertisedEngineerClis(
+  report: RunnerEngineerHostReport,
+): RunnerEngineerCliId[] {
   return report.cells.filter((c) => c.declared && c.ok).map((c) => c.cli);
 }
 
@@ -237,7 +239,10 @@ const PROBE_EMIT_HELPER = [
 
 export function runnerEngineerProbeCommand(clis: RunnerEngineerCliId[]): string {
   const uniq = [...new Set(clis)];
-  const parts: string[] = [PROBE_EMIT_HELPER, `printf '%s\\n' ${shellQuote(RUNNER_ENGINEER_CLI_PROBE_TOKEN)}`];
+  const parts: string[] = [
+    PROBE_EMIT_HELPER,
+    `printf '%s\\n' ${shellQuote(RUNNER_ENGINEER_CLI_PROBE_TOKEN)}`,
+  ];
   for (const cli of uniq) {
     parts.push(probeCliFragment(cli));
   }
@@ -336,7 +341,9 @@ export function runnerEngineerLoginSshCommand(
 }
 
 /** Map runner engineer id to Agents-page known agent (for version hints). */
-export function knownAgentForRunnerCli(id: RunnerEngineerCliId): (typeof KNOWN_AGENTS)[number] | undefined {
+export function knownAgentForRunnerCli(
+  id: RunnerEngineerCliId,
+): (typeof KNOWN_AGENTS)[number] | undefined {
   const map: Record<RunnerEngineerCliId, string> = {
     opencode: "opencode",
     codex: "codex",
@@ -346,7 +353,10 @@ export function knownAgentForRunnerCli(id: RunnerEngineerCliId): (typeof KNOWN_A
 }
 
 /** Parse cursor JSON auth locally (shared with remote node one-liner semantics). */
-export function parseCursorAuthJson(text: string): { auth: RunnerEngineerAuthState; detail: string | null } {
+export function parseCursorAuthJson(text: string): {
+  auth: RunnerEngineerAuthState;
+  detail: string | null;
+} {
   const auth = parseAuthState(text);
   if (auth === true) {
     try {
