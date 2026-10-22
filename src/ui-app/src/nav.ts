@@ -142,7 +142,7 @@ export function navFor(
  */
 export function navFromConfig(
   config: Record<string, unknown> | null | undefined,
-  secretsEnabled = false,
+  secretsEnabled?: boolean,
 ): NavItem[] {
   const release = config?.release as { enabled?: unknown } | undefined;
   const stories = config?.stories as { enabled?: unknown } | undefined;
@@ -152,6 +152,6 @@ export function navFromConfig(
     Array.isArray(config?.deployments) && (config?.deployments as unknown[]).length > 0,
     stories?.enabled === true,
     Array.isArray(dev?.targets) && dev.targets.length > 0,
-    secretsEnabled,
+    secretsEnabled ?? config?.projectSecretsEnabled === true,
   );
 }
