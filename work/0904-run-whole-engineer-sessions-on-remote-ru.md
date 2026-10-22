@@ -78,3 +78,4 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-22T01:11:24Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-10-22T01:11:25Z · message_delivered: 1 message(s)
 - 2026-10-22T01:13:15Z · body
+- 2026-10-22T01:13:15Z · body
