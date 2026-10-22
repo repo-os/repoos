@@ -42,15 +42,15 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 "route": "/work",
 "highlight": ".shot-dropzone",
 "steps": [
-  {
-    "click": ".drawer-tabs .tab-btn:nth-child(2)"
-  }
+{
+  "click": ".drawer-tabs .tab-btn:nth-child(2)"
+}
 ],
 "assert": [
-  {
-    "selector": ".shot-dropzone",
-    "label": "Screenshot dropzone is rendered"
-  }
+{
+  "selector": ".shot-dropzone",
+  "label": "Screenshot dropzone is rendered"
+}
 ],
 "state": "panel:defaultScreenshotPicker",
 "theme": "light"
@@ -61,15 +61,15 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 "route": "/work",
 "highlight": ".shot-dropzone",
 "steps": [
-  {
-    "click": ".drawer-tabs .tab-btn:nth-child(2)"
-  }
+{
+  "click": ".drawer-tabs .tab-btn:nth-child(2)"
+}
 ],
 "assert": [
-  {
-    "selector": ".shot-dropzone",
-    "label": "Screenshot dropzone is rendered"
-  }
+{
+  "selector": ".shot-dropzone",
+  "label": "Screenshot dropzone is rendered"
+}
 ],
 "state": "panel:defaultScreenshotPicker",
 "theme": "dark"
@@ -80,10 +80,10 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 "route": "/work",
 "highlight": ".shot-dropzone",
 "assert": [
-  {
-    "selector": ".shot-dropzone",
-    "label": "Default screenshot picker is rendered"
-  }
+{
+  "selector": ".shot-dropzone",
+  "label": "Default screenshot picker is rendered"
+}
 ],
 "state": "panel:defaultScreenshotPicker"
 },
@@ -121,3 +121,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T17:40:25Z · body
 - 2026-10-22T17:40:42Z · body
 - 2026-10-22T17:40:45Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-22T17:40:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
