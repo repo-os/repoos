@@ -10,6 +10,7 @@ import {
   parseLinuxPsiMemoryAvg10,
   parseLinuxVmstatCounters,
   parseVmStatCounters,
+  readPlatformMemoryActivity,
   resetDefaultActivityTracker,
   RollingMemoryActivityTracker,
   type MemoryActivitySample,
