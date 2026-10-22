@@ -39,3 +39,4 @@ Look at the pause writer behind repoos agents pause and the Agents page Budget C
 - 2026-10-22T12:08:31Z · body
 - 2026-10-22T12:10:18Z · body
 - 2026-10-22T12:19:59Z · status active→review
+- 2026-10-22T12:19:59Z · note: shots: skipped — Docs site skipped: no docs shot declared
