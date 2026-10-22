@@ -55,3 +55,4 @@ Depends on #0927 for the storage/environment contract and #0928 for authorized m
 - 2026-10-22T17:48:34Z · status active→review
 - 2026-10-22T17:48:34Z · note: handoff requested (cli)
 - 2026-10-22T17:57:53Z · status active→review
+- 2026-10-22T17:57:53Z · note: shots: skipped — Docs site skipped: no docs shot declared
