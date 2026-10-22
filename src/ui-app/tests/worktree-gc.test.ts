@@ -153,16 +153,18 @@ describe("sweepStaleWorktrees — integrate-only mode", () => {
       coordinator.enqueue(activeTask);
       coordinator.updateJob("0009", { phase: "validating" });
 
-      for (const dryRun of [false, true]) {
-        const report = sweepStaleWorktrees(cfg(root), { mode: "integrate-only", dryRun });
-        expect(report.removedWorktrees).toHaveLength(0);
-        expect(report.keptDirty).toContainEqual(
-          expect.objectContaining({
-            branch: "repoos/integrate/0009",
-            reason: "close-out job still active",
-          }),
-        );
-        expect(branches(root).has("repoos/integrate/0009")).toBe(true);
+      for (const mode of ["integrate-only", "full"] as const) {
+        for (const dryRun of [false, true]) {
+          const report = sweepStaleWorktrees(cfg(root), { mode, dryRun });
+          expect(report.removedWorktrees).toHaveLength(0);
+          expect(report.keptDirty).toContainEqual(
+            expect.objectContaining({
+              branch: "repoos/integrate/0009",
+              reason: "close-out job still active",
+            }),
+          );
+          expect(branches(root).has("repoos/integrate/0009")).toBe(true);
+        }
       }
     } finally {
       clean();
