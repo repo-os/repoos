@@ -12,7 +12,7 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T15:51:13Z"
+updated_at: "2026-10-22T15:52:05Z"
 last_close_out_gate_ms: 369156
 last_close_out_gate_at: "2026-10-22T15:51:13.664Z"
 review_passes: 3
@@ -115,4 +115,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T15:41:33Z · note: shots: skipped — 9 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-22T15:43:30Z · note: review pass 3: good to go
 - 2026-10-22T15:51:13Z · close-out gate completed in 369s
-
+- 2026-10-22T15:52:05Z · status done→done, release:success
