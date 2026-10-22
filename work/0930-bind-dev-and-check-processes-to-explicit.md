@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-22T17:59:22Z"
-review_passes: 2
+last_close_out_gate_ms: 480359
+last_close_out_gate_at: "2026-10-22T18:10:51.993Z"
 id: "0930"
 title: Bind dev and check processes to explicit environments
 type: feature
@@ -17,6 +17,8 @@ branch: feat/bind-dev-and-check-processes-to-explicit
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:43Z"
+updated_at: "2026-10-22T18:10:51Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -57,4 +59,5 @@ Depends on #0927 for the storage/environment contract and #0928 for authorized m
 - 2026-10-22T17:57:53Z · status active→review
 - 2026-10-22T17:57:53Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-22T17:59:22Z · note: review pass 2: good to go
+- 2026-10-22T18:10:51Z · close-out gate completed in 480s
 
