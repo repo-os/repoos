@@ -30,9 +30,10 @@ controls:
   browser gate steps on a runner when feasible; otherwise they stay local under
   the Playwright cap.
 - `pressureGuard` — delays new local checks, browser steps and engineer starts
-  while memory pressure (swap use and the macOS compressor pool, plus
-  reclaimable memory) exceeds configured thresholds. Load average is used only
-  as a fallback when memory readings are unavailable. See
+  while paging activity, macOS memory-pressure state, Linux PSI, or low
+  reclaimable memory exceeds configured thresholds. Swap and compressor
+  occupancy are advisory only. Load average is used as a fallback when memory
+  readings are unavailable. See
   `docs/memory-pressure-guard.md`.
 
 ## Runner memory health (#0901)
