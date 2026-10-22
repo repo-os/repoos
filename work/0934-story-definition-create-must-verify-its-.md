@@ -12,7 +12,7 @@ branch: feat/story-definition-create-must-verify-its-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:40:11Z"
-updated_at: "2026-10-22T11:58:53Z"
+updated_at: "2026-10-22T11:59:42Z"
 last_close_out_gate_ms: 106952
 last_close_out_gate_at: "2026-10-22T11:58:53.194Z"
 review_passes: 1
@@ -48,4 +48,4 @@ Same code path pattern in PATCH /api/stories/:key (commitFiles) and the Telegram
 - 2026-10-22T11:50:18Z · status active→review
 - 2026-10-22T11:52:20Z · note: review pass 1: good to go
 - 2026-10-22T11:58:53Z · close-out gate completed in 107s
-
+- 2026-10-22T11:59:42Z · status done→done, release:success
