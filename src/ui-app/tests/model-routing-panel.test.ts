@@ -225,7 +225,7 @@ describe("ModelRoutingPanel", () => {
     expect(label?.textContent).toContain(
       "Check for mixed AI and human steps, and suggest splitting the task",
     );
-    expect(wrapper.text()).toContain("split into a separate AI task and a human task");
+    expect(wrapper.text()).toContain("whether verification truly requires a human");
     expect(wrapper.text()).toContain("keyword check runs instead");
     wrapper.unmount();
   });
