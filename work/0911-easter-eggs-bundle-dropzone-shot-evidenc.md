@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-dropzone-shot-evidenc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T01:34:32Z"
-updated_at: "2026-10-22T17:39:01Z"
+updated_at: "2026-10-22T17:40:25Z"
 ---
 ## Items
 - [ ] **E1 · Manual-tab handoff capture does not show a dropzone** (web) — #0899's declared Manual-tab shot has a click step but no recorded assertion, so the capture alone does not prove the dropzone rendered. Source: reviewer notes on #0899 (passes 4 and 5), 2026-10-22.
@@ -37,55 +37,62 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 ```json
 [
 {
-"label": "Manual tab dropzone · light",
-"target": "default",
-"route": "/work",
-"highlight": ".shot-dropzone",
-"steps": [
-  {
-    "click": ".drawer-tabs .tab-btn:nth-child(2)"
-  }
-],
-"assert": [
-  {
-    "selector": ".shot-dropzone",
-    "label": "Screenshot dropzone is rendered"
-  }
-],
-"state": "panel:defaultScreenshotPicker",
-"theme": "light"
+  "label": "Manual tab dropzone · light",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".shot-dropzone",
+  "steps": [
+    {
+      "click": ".drawer-tabs .tab-btn:nth-child(2)"
+    }
+  ],
+  "assert": [
+    {
+      "selector": ".shot-dropzone",
+      "label": "Screenshot dropzone is rendered"
+    }
+  ],
+  "state": "panel:defaultScreenshotPicker",
+  "theme": "light"
 },
 {
-"label": "Manual tab dropzone · dark",
-"target": "default",
-"route": "/work",
-"highlight": ".shot-dropzone",
-"steps": [
-  {
-    "click": ".drawer-tabs .tab-btn:nth-child(2)"
-  }
-],
-"assert": [
-  {
-    "selector": ".shot-dropzone",
-    "label": "Screenshot dropzone is rendered"
-  }
-],
-"state": "panel:defaultScreenshotPicker",
-"theme": "dark"
+  "label": "Manual tab dropzone · dark",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".shot-dropzone",
+  "steps": [
+    {
+      "click": ".drawer-tabs .tab-btn:nth-child(2)"
+    }
+  ],
+  "assert": [
+    {
+      "selector": ".shot-dropzone",
+      "label": "Screenshot dropzone is rendered"
+    }
+  ],
+  "state": "panel:defaultScreenshotPicker",
+  "theme": "dark"
 },
 {
-"label": "Task drawer default screenshot picker",
-"target": "default",
-"route": "/work",
-"highlight": ".shot-dropzone",
-"assert": [
-  {
-    "selector": ".shot-dropzone",
-    "label": "Default screenshot picker is rendered"
-  }
-],
-"state": "panel:defaultScreenshotPicker"
+  "label": "Task drawer default screenshot picker",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".shot-dropzone",
+  "assert": [
+    {
+      "selector": ".shot-dropzone",
+      "label": "Default screenshot picker is rendered"
+    }
+  ],
+  "state": "panel:defaultScreenshotPicker"
+},
+{
+  "label": "Task drawer screenshot upload failure",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".shot-upload-error",
+  "state": "panel:freeformFailedScreenshot"
 }
 ]
 ```
@@ -112,3 +119,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T17:36:30Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-22T17:37:23Z · body
 - 2026-10-22T17:39:01Z · body
+- 2026-10-22T17:40:25Z · body
