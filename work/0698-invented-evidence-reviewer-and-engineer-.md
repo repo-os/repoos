@@ -3,6 +3,8 @@ id: "0698"
 title: "Invented evidence: reviewer and engineer defaults should catch claims an agent cannot have produced; flag human-only acceptance criteria"
 type: feature
 status: done
+human_step_decision: human
+human_step_decision_key: d654b98a
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: d654b98a
 priority: p1
