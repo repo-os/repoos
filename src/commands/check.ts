@@ -1862,7 +1862,10 @@ export interface RunPlanOptions {
    * extraction) then sees phantom test failures (#0777 handoff mask).
    */
   echo?: boolean;
-  onStart?: (step: CheckStep) => void;
+  onStart?: (
+    step: CheckStep,
+    progress?: { stepsDone: number; stepsTotal: number; currentStep: number },
+  ) => void;
   onResult?: (result: StepRunResult, progress?: { stepsDone: number; stepsTotal: number }) => void;
 }
 
@@ -1899,8 +1902,6 @@ export async function runCheckPlan(
 
   for (const { step, skip } of selected) {
     const cwd = stepCwd(repoRoot, step) ?? repoRoot;
-    opts.onStart?.(step);
-
     if (skip) {
       push({
         name: step.name,
@@ -1937,6 +1938,9 @@ export async function runCheckPlan(
       });
       continue;
     }
+
+    const stepsDone = results.filter((x) => x.status !== "skipped").length;
+    opts.onStart?.(step, { stepsDone, stepsTotal, currentStep: stepsDone + 1 });
 
     const started = Date.now();
     let outcome: BuiltinOutcome;
@@ -2389,9 +2393,10 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       stepNames: opts.steps,
       previousFailedTests,
       isolationRuns: cfg.check?.isolationRuns,
-      onStart: (step) => {
+      onStart: (step, progress) => {
         heading(step.name);
         console.log(c.dim(`  · ${describeStep(step)}`));
+        if (progress) console.log(`::repoos-check-progress::${JSON.stringify(progress)}`);
       },
       onResult: (r, progress) => {
         finalProgress = progress;
@@ -2504,9 +2509,14 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
           const value = JSON.parse(records.at(-1)![1]!) as {
             testsDone?: number;
             testsTotal?: number;
+            testsPass?: number;
           };
           return Number.isInteger(value.testsDone) && Number.isInteger(value.testsTotal)
-            ? { testsDone: value.testsDone, testsTotal: value.testsTotal }
+            ? {
+                testsDone: value.testsDone,
+                testsTotal: value.testsTotal,
+                testsPass: value.testsPass,
+              }
             : null;
         } catch {
           return null;

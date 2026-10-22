@@ -19,6 +19,7 @@ export default class RepoOSProgressReporter {
       `::repoos-check-progress::${JSON.stringify({
         testsDone: this.#completed.size,
         testsTotal: this.#total ?? 0,
+        testsPass: Number(process.env.REPOOS_TEST_PASS) || undefined,
       })}\n`,
     );
   }

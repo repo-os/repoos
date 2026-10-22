@@ -22,8 +22,10 @@ const dirs: string[] = [];
 describe("machine-readable check progress", () => {
   it("parses the latest complete progress record and ignores unknown totals", () => {
     expect(
-      parseCheckProgress('log\n::repoos-check-progress::{"stepsDone":2,"stepsTotal":9}\n'),
-    ).toEqual({ stepsDone: 2, stepsTotal: 9 });
+      parseCheckProgress(
+        'log\n::repoos-check-progress::{"stepsDone":2,"stepsTotal":9,"currentStep":3,"testsPass":2}\n',
+      ),
+    ).toEqual({ stepsDone: 2, stepsTotal: 9, currentStep: 3, testsPass: 2 });
     expect(
       parseCheckProgress('::repoos-check-progress::{"stepsDone":2,"stepsTotal":null}'),
     ).toEqual({ stepsDone: 2 });

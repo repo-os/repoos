@@ -129,19 +129,22 @@ if (failedFirstIdx !== -1) {
     console.error("[run-tests] --failed-first needs at least one test file filter");
     process.exit(1);
   }
-  process.exit(vitest(files));
+  process.exit(vitest(files, { REPOOS_TEST_PASS: "preflight" }));
 }
 
 // Pass 1 — the bulk of the suite at the configured pool size. `--exclude` takes
 // a glob relative to the vitest root; `**/` keeps it root-agnostic.
 // `--passWithNoTests` only when scoped: a full run that finds nothing is a real
 // failure.
-const bulk = vitest([
-  ...vitestArgs,
-  ...coverageArgs,
-  ...(scoped ? ["--passWithNoTests"] : []),
-  ...ISOLATED.flatMap((f) => ["--exclude", `**/${f}`]),
-]);
+const bulk = vitest(
+  [
+    ...vitestArgs,
+    ...coverageArgs,
+    ...(scoped ? ["--passWithNoTests"] : []),
+    ...ISOLATED.flatMap((f) => ["--exclude", `**/${f}`]),
+  ],
+  { REPOOS_TEST_PASS: "1" },
+);
 
 // Pass 2 — the latency-sensitive suites with the machine to themselves. The
 // basenames are positional name filters (substring-matched against the path).
@@ -149,6 +152,7 @@ const bulk = vitest([
 const isolated = vitest([...vitestArgs, "--passWithNoTests", "--retry", "2", ...ISOLATED], {
   REPOOS_TEST_WORKERS: "1",
   REPOOS_STRICT_TIMING: "1",
+  REPOOS_TEST_PASS: "2",
 });
 
 process.exit(bulk || isolated);

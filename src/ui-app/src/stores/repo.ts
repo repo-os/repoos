@@ -1921,6 +1921,8 @@ export const useRepoStore = defineStore("repo", () => {
               stepsTotal?: number;
               testsDone?: number;
               testsTotal?: number;
+              testsPass?: number;
+              currentStep?: number;
               attempt?: number;
               reason?: string;
             };
@@ -1928,6 +1930,8 @@ export const useRepoStore = defineStore("repo", () => {
             run.stepsTotal = p.stepsTotal ?? run.stepsTotal;
             run.testsDone = p.testsDone ?? run.testsDone;
             run.testsTotal = p.testsTotal ?? run.testsTotal;
+            run.testsPass = p.testsPass ?? run.testsPass;
+            run.currentStep = p.currentStep ?? run.currentStep;
             run.attempt = p.attempt ?? run.attempt;
             run.attemptReason = p.reason ?? run.attemptReason;
           } catch {

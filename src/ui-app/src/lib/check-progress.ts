@@ -1,13 +1,15 @@
 export interface CheckProgress {
-  stepsDone: number;
+  stepsDone: number | null;
   stepsTotal: number | null;
+  currentStep?: number | null;
   testsDone?: number | null;
   testsTotal?: number | null;
+  testsPass?: number | null;
 }
 
 /** Return null for an indeterminate run; callers must not invent a percentage. */
 export function checkProgressPercent(progress: CheckProgress): number | null {
-  if (progress.stepsTotal != null && progress.stepsTotal > 0) {
+  if (progress.stepsTotal != null && progress.stepsTotal > 0 && progress.stepsDone != null) {
     return Math.min(100, Math.max(0, Math.round((progress.stepsDone / progress.stepsTotal) * 100)));
   }
   if (progress.testsDone != null && progress.testsTotal != null && progress.testsTotal > 0) {
@@ -17,10 +19,12 @@ export function checkProgressPercent(progress: CheckProgress): number | null {
 }
 
 export function checkProgressLabel(progress: CheckProgress): string {
+  const stepNumber = progress.currentStep ?? progress.stepsDone;
   const step =
     progress.stepsTotal == null
-      ? `step ${progress.stepsDone}`
-      : `step ${progress.stepsDone} of ${progress.stepsTotal}`;
+      ? `step ${stepNumber ?? "—"}`
+      : `step ${stepNumber ?? "—"} of ${progress.stepsTotal}`;
   if (progress.testsDone == null || progress.testsTotal == null) return step;
-  return `${step} · tests ${progress.testsDone}/${progress.testsTotal} files`;
+  const pass = progress.testsPass == null ? "" : `pass ${progress.testsPass} · `;
+  return `${step} · ${pass}tests ${progress.testsDone}/${progress.testsTotal} files`;
 }
