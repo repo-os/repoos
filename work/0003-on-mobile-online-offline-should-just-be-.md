@@ -3,15 +3,16 @@ id: "0003"
 title: On mobile online/offline should just be a colored dot
 type: chore
 status: done
+human_step_decision: agent
+human_step_decision_key: 43305369
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
-human_step_override_key: 43305369
 priority: p3
 area: mobile
 assigned_to: ai
 created_by: ""
 branch: feat/on-mobile-online-offline-should-just-be-
 created_at: "2026-05-29T00:00:00Z"
-updated_at: "2026-10-22T07:47:58Z"
+updated_at: "2026-10-22T07:47:59Z"
 ---
 ## Problem
 
