@@ -39,3 +39,4 @@ See src/core/runtime.ts preferAppleGit, user-docs/configuration.md (Apple-signed
 - 2026-10-22T13:29:50Z · body
 - 2026-10-22T13:30:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T13:38:35Z · message_queued at 2026-10-22T13:38:35.513Z
+- 2026-10-22T13:38:35Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
