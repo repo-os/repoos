@@ -2,7 +2,7 @@
 id: "0920"
 title: "Needs-human-step banner: dedicated split action instead of generic PM flesh-out"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -75,3 +75,4 @@ Start from `NEEDS_INPUT_*` tables and `needsInputPrimaryAction` in `src/ui-app/s
 - 2026-10-22T15:26:33Z · body
 - 2026-10-22T15:32:57Z · cli_override, model_override
 - 2026-10-22T15:39:41Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-10-22T15:39:41Z · status active→review
