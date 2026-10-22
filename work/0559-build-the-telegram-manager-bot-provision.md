@@ -3,6 +3,8 @@ id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
 status: done
+human_step_decision: human
+human_step_decision_key: be7732ed
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: be7732ed
 priority: p1
