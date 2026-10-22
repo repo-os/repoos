@@ -111,3 +111,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T09:23:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-22T09:24:55Z · body
 - 2026-10-22T09:25:58Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-22T09:25:58Z · message_delivered: 1 message(s)
