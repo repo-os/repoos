@@ -899,6 +899,20 @@ function fmtAgo(iso: string): string {
 .rr-bad {
   color: var(--red);
 }
+.rr-engineer-clis {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rr-engineer-cli {
+  display: block;
+}
+.rr-fix-line {
+  display: block;
+  color: var(--amber);
+  font-size: 11.5px;
+  padding-left: 2px;
+}
 .rr-slow-badge {
   margin-left: 6px;
   padding: 0 5px;
