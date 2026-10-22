@@ -3,9 +3,8 @@ id: "0453"
 title: Add a redacted support bundle for failed setups
 type: feature
 status: done
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: 7efe7b08
 priority: p2
 area: core
 assigned_to: ai
@@ -15,7 +14,7 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/hy3
 created_at: "2026-09-19T16:43:47Z"
-updated_at: "2026-10-06T23:48:17Z"
+updated_at: "2026-10-22T07:47:55Z"
 ---
 ## Outcome
 
@@ -78,3 +77,4 @@ P2 — Add a redacted support bundle for failed real-world setups.
 - 2026-09-20T00:20:28Z · status active→review
 - 2026-09-20T01:17:33Z · status review→done, release:success
 - 2026-10-06T23:48:17Z · needs_input
+- 2026-10-22T07:47:55Z · needs_input
