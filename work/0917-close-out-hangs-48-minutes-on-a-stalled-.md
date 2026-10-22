@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 2 on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: a49ecc53242fa40363f8fb874366b060556502c2
 id: "0917"
 title: Close-out hangs ~48 minutes on a stalled ssh bundle upload before falling back to local; thinkpad swap full again
 type: feature
@@ -111,3 +113,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T11:51:14Z · note: handoff requested (ui-review)
 - 2026-10-22T11:53:07Z · body
 - 2026-10-22T11:53:17Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: gate exit 2 on thinkpad — fix it in the feature branch and re-run the gate
+
