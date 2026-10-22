@@ -1207,7 +1207,10 @@ export async function importRemoteVerification(
     if (result.skipped) {
       return importSuffix ? { ...result, detail: `${result.detail}${importSuffix}` } : result;
     }
-    throw new Error(`runner result omitted the UI verification record${importSuffix}`);
+    const failureDetail = !result.ok && result.detail.trim() ? `: ${result.detail}` : "";
+    throw new Error(
+      `runner result omitted the UI verification record${failureDetail}${importSuffix}`,
+    );
   }
   let evidenceJson: unknown;
   try {

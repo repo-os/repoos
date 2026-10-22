@@ -168,6 +168,70 @@ describe("UI handoff verification gate (#0680)", () => {
     expect(shotStore.localShotStore(config, task.id).list()).toHaveLength(1);
   });
 
+  it("surfaces the runner's per-shot failure when verification evidence is missing", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-missing-record-detail-"));
+    temps.push(root);
+    const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+    const task = {
+      id: "missing-record-detail",
+      title: "t",
+      path: "work/missing-record-detail.md",
+      absPath: join(root, "work/missing-record-detail.md"),
+      status: "review",
+      branch: "feat/missing-record-detail",
+      area: "web",
+      body: "",
+    } as Task;
+    await expect(
+      importRemoteVerification(
+        config,
+        task,
+        {
+          version: 1,
+          taskId: task.id,
+          ok: false,
+          detail: "runner verification failed",
+          results: {
+            verification: { ok: false, detail: "shot 2: .delete-confirm-modal matched nothing" },
+          },
+          files: [],
+        },
+        vi.fn(),
+      ),
+    ).rejects.toThrow("shot 2: .delete-confirm-modal matched nothing");
+  });
+
+  it("keeps the omitted-record wording when a failed runner has no detail", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-missing-record-empty-"));
+    temps.push(root);
+    const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+    const task = {
+      id: "missing-record-empty",
+      title: "t",
+      path: "work/missing-record-empty.md",
+      absPath: join(root, "work/missing-record-empty.md"),
+      status: "review",
+      branch: "feat/missing-record-empty",
+      area: "web",
+      body: "",
+    } as Task;
+    await expect(
+      importRemoteVerification(
+        config,
+        task,
+        {
+          version: 1,
+          taskId: task.id,
+          ok: false,
+          detail: "runner verification failed",
+          results: { verification: { ok: false, detail: "" } },
+          files: [],
+        },
+        vi.fn(),
+      ),
+    ).rejects.toThrow("runner result omitted the UI verification record");
+  });
+
   it("reserves the task capture lock during remote UI verification", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-uigate-remote-lock-"));
     temps.push(root);
