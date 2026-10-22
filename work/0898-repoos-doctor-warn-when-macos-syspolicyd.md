@@ -11,7 +11,7 @@ branch: feat/repoos-doctor-warn-when-macos-syspolicyd
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:26Z"
-updated_at: "2026-10-22T14:18:36Z"
+updated_at: "2026-10-22T14:19:02Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
