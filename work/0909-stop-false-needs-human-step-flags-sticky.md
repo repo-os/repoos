@@ -45,3 +45,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-21T23:51:38Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-21T23:51:39Z · message_delivered: 1 message(s)
 - 2026-10-22T00:07:15Z · message_queued at 2026-10-22T00:07:15.281Z
+- 2026-10-22T00:07:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
