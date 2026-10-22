@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-22T01:43:54Z"
-review_passes: 1
+last_close_out_gate_ms: 128606
+last_close_out_gate_at: "2026-10-22T01:47:11.061Z"
 id: "0903"
 title: Show due reminders as header cards beside alerts
 type: feature
@@ -12,6 +12,8 @@ created_by: hello@repoos.org
 branch: feat/show-due-reminders-as-header-cards-besid
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-21T15:04:49Z"
+updated_at: "2026-10-22T01:47:11Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -89,4 +91,5 @@ The new reminders feature is nice, but when the time comes it just shows in the 
 - 2026-10-22T01:43:14Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (c2918e70f) during finalization (#0734)
 - 2026-10-22T01:43:16Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (c2918e70f) during finalization (#0734)
 - 2026-10-22T01:43:54Z · note: review pass 1: good to go
+- 2026-10-22T01:47:11Z · close-out gate completed in 129s
 
