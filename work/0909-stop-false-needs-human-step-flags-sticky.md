@@ -131,3 +131,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T02:51:20Z · note: handoff requested (ui-review)
 - 2026-10-22T02:53:21Z · CTO nudge: held — handoff gate is running
 - 2026-10-22T03:00:59Z · status active→review
+- 2026-10-22T03:00:59Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (af25ab93d) during finalization (#0734)
