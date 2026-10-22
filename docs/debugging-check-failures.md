@@ -1,5 +1,12 @@
 # Debugging `repoos check` failures
 
+## Remote UI handoff shot failures
+
+If a remote UI handoff reports that the runner omitted the UI verification
+record, read the runner's per-shot failure detail in the task's Activity entry
+and in the handoff-failed note. It names the shot and the missing selector or
+step; partial captures are also kept with the task's shot evidence when present.
+
 Written 2026-09-13, consolidating incidents from 2026-08-15 → 2026-09-03.
 
 ## Reviewer sandbox cannot run landing checks (#0910)
