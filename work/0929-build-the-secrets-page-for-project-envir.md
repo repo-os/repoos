@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 3b3805a62ded3d06e7724a86aa8652e967fcb27e
 id: "0929"
 title: Build the Secrets page for project environments
 type: feature
@@ -82,3 +84,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T18:37:57Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-22T18:37:57Z · note: handoff requested (cli)
 - 2026-10-22T18:46:12Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on bee — fix it in the feature branch and re-run the gate
+
