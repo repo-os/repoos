@@ -11,7 +11,9 @@ import SidebarGitState from "./SidebarGitState.vue";
 
 const repo = useRepoStore();
 const config = useConfigStore();
-const nav = computed(() => navFromConfig(config.data, config.data?.projectSecretsEnabled === true));
+// Secrets must remain discoverable before the first environment exists, so
+// the page can provide its own empty state and creation path.
+const nav = computed(() => navFromConfig(config.data, true));
 function secretsChanged(): void {
   void config.load();
 }
