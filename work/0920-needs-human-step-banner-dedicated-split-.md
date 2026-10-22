@@ -2,14 +2,14 @@
 id: "0920"
 title: "Needs-human-step banner: dedicated split action instead of generic PM flesh-out"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T04:53:30Z"
-updated_at: "2026-10-22T04:53:30Z"
+updated_at: "2026-10-22T14:52:43Z"
 ---
 ## Problem
 A task flagged `needs_input: needs-human-step` shows the banner "Waiting for you" with the primary button **Send to PM (fleshes this out)**. That button is shared with `underspecified` (`needsInputPrimaryAction` in `src/ui-app/src/lib/needs-input-ui.ts`, both cases return `SEND_TO_PM_ACTION`). Clicking it runs `runNeedsInputPrimaryAction` in `src/ui-app/src/components/TaskDrawer.vue` (~line 3532), which sends the PM chat the canned message `PM_FLESH_OUT_CANNED_MESSAGE` ("Can you flesh this out?", `src/ui-app/src/stores/repo.ts:303`). Nothing in that message asks the PM to split the task, so the PM just replies in chat and usually no second task is created. The label is wrong for this reason, and the user has no confidence in what the click does (reported 2026-10-22 on #0915).
@@ -40,3 +40,4 @@ Start from `NEEDS_INPUT_*` tables and `needsInputPrimaryAction` in `src/ui-app/s
 ## Activity
 
 - 2026-10-22T04:53:30Z · created · njachowski@gmail.com
+- 2026-10-22T14:52:43Z · status inbox→ready
