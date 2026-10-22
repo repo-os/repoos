@@ -9,8 +9,13 @@
  * build succeeded is deliberately out of scope for v1.
  */
 import { spawn } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { mainCheckoutRoot } from "../core/config.js";
-import { readProjectEnvironmentBindings } from "../core/project-environments.js";
+import {
+  readProjectEnvironmentBindings,
+  validateEnvironmentRegistry,
+} from "../core/project-environments.js";
 import type { DeploymentConfig, RepoOSConfig } from "../core/types.js";
 
 export interface DeploymentRow {
@@ -28,6 +33,8 @@ export interface DeploymentRow {
   subdir: string | null;
   /** Local environment label bound to this target; does not publish values. */
   environment: string | null;
+  /** A stale binding is shown and prevents a deployment push until repaired. */
+  environmentError: string | null;
   /** ISO timestamp of the last commit on the branch touching the subdir. */
   lastPushAt: string | null;
   /** Short SHA of that commit. */
@@ -93,6 +100,27 @@ export interface DeploymentsStatus {
 export interface DeployResult {
   ok: boolean;
   output: string;
+}
+
+/** Fail closed when a configured deployment binding points at a missing environment. */
+export function deploymentEnvironmentIssue(config: RepoOSConfig, branch: string): string | null {
+  const rows = configuredDeployments(config).filter((row) => row.branch === branch);
+  if (!rows.length) return null;
+  const bindings = readProjectEnvironmentBindings(config.root).bindings;
+  const targetBindings = rows.flatMap((row) => {
+    const binding = bindings.find((item) => item.consumer === deploymentConsumer(row.name));
+    return binding ? [{ row, binding }] : [];
+  });
+  if (!targetBindings.length) return null;
+  const path = join(config.root, ".repoos/environments.json");
+  if (!existsSync(path))
+    return `Cannot deploy ${branch}: a deployment environment binding exists, but the environment registry is missing.`;
+  const registry = validateEnvironmentRegistry(JSON.parse(readFileSync(path, "utf8")));
+  const known = new Set(registry.environments.map((environment) => environment.id));
+  const invalid = targetBindings.find(({ binding }) => !known.has(binding.environment));
+  return invalid
+    ? `Cannot deploy ${branch}: ${invalid.row.name} is bound to unknown environment "${invalid.binding.environment}". Repair or clear the binding first.`
+    : null;
 }
 
 interface CommandResult {
@@ -337,6 +365,14 @@ export async function getDeploymentsStatus(
   }
   const cwd = deployRoot(config);
   const environmentBindings = readProjectEnvironmentBindings(config.root).bindings;
+  const registryPath = join(config.root, ".repoos/environments.json");
+  const knownEnvironments = existsSync(registryPath)
+    ? new Set(
+        validateEnvironmentRegistry(
+          JSON.parse(readFileSync(registryPath, "utf8")),
+        ).environments.map((environment) => environment.id),
+      )
+    : new Set<string>();
   const branches = deploymentBranches(rows);
   const [dirtRes, currentRes, ...summaries] = await Promise.all([
     cmd(exec, ["status", "--porcelain"], cwd),
@@ -366,6 +402,14 @@ export async function getDeploymentsStatus(
         environment:
           environmentBindings.find((binding) => binding.consumer === deploymentConsumer(row.name))
             ?.environment ?? null,
+        environmentError: (() => {
+          const binding = environmentBindings.find(
+            (item) => item.consumer === deploymentConsumer(row.name),
+          );
+          return binding && !knownEnvironments.has(binding.environment)
+            ? `Unknown project environment "${binding.environment}". Repair or clear this binding before deploying.`
+            : null;
+        })(),
         lastPushAt: f.lastPushAt,
         lastPushSha: f.lastPushSha,
         changesVsMain: f.changesVsMain,

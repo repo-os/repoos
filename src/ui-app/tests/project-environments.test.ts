@@ -148,6 +148,28 @@ describe("explicit project environment files", () => {
     );
   });
 
+  it.each(["REPOOS_TOKEN", "path", "HOME", "NODE_OPTIONS", "PORT", "HOST"])(
+    "rejects reserved grant %s when reading and writing bindings",
+    (key) => {
+      const root = project();
+      mkdirSync(join(root, ".repoos"));
+      writeFileSync(
+        join(root, ".repoos/environment-bindings.json"),
+        JSON.stringify({ bindings: [{ consumer: "dev:web", environment: "dev", keys: [key] }] }),
+      );
+      expect(() => buildProjectConsumerEnv(root, "dev:web", {})).toThrow(
+        "Invalid or duplicate environment binding",
+      );
+      writeFileSync(
+        join(root, ".repoos/environment-bindings.json"),
+        JSON.stringify({ bindings: [] }),
+      );
+      expect(() => writeProjectEnvironmentBinding(root, "dev:web", "dev", [key])).toThrow(
+        "Invalid or machine-owned environment key grant",
+      );
+    },
+  );
+
   it("normalizes consumer IDs and resolves bindings from the shared root in a linked worktree", () => {
     const root = project();
     const worktree = join(tmpdir(), `repoos-envsets-worktree-${Date.now()}`);
