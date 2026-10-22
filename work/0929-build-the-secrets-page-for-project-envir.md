@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-22T22:03:38Z"
-review_passes: 5
+last_close_out_gate_ms: 120085
+last_close_out_gate_at: "2026-10-22T22:10:53.963Z"
 id: "0929"
 title: Build the Secrets page for project environments
 type: feature
@@ -15,6 +15,8 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
+updated_at: "2026-10-22T22:10:53Z"
+review_passes: 5
 last_check_failure: "repoos check at 2026-10-22T21:43:27.302Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 2c4d92b6 to fd8c6add) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 ---
@@ -172,4 +174,5 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T21:59:40Z · note: shots: skipped — 12 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-22T22:01:06Z · note: review pass 4: good to go
 - 2026-10-22T22:03:38Z · note: review pass 5: good to go
+- 2026-10-22T22:10:53Z · close-out gate completed in 120s
 
