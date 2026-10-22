@@ -43,3 +43,4 @@ See src/core/runtime.ts preferAppleGit, user-docs/configuration.md (Apple-signed
 - 2026-10-22T13:38:50Z · body
 - 2026-10-22T13:40:56Z · body
 - 2026-10-22T13:41:35Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-22T13:41:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
