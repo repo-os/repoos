@@ -8,10 +8,10 @@ area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/checks-page-show-complete-for-a-running-
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T15:32:53Z"
+updated_at: "2026-10-22T15:32:54Z"
 review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
@@ -106,3 +106,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T15:32:09Z · agent exited with an error (codex) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Oct 23rd, 2026 12:17 AM.
 - 2026-10-22T15:32:09Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Oct 23rd, 2026 12:17 AM.
 - 2026-10-22T15:32:53Z · needs_input
+- 2026-10-22T15:32:54Z · cli_override, model_override
