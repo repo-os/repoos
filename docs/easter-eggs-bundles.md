@@ -143,6 +143,10 @@ live bundle):
 
 Do **not** put the first item only under top-level Problem / Desired UX / … and
 later items under ad hoc headings — that was the old shape and it does not scan.
+This per-item layout satisfies RepoOS's task spec check: each `E<n>` is checked
+for all four non-empty `###` subsections, and an incomplete item is identified
+by its stable id. Editing a complete bundle with `repoos update --section`
+therefore does not mark it underspecified.
 
 **Editing:** use `repoos update <id> --section "Items" --section-body "…"` or
 `--section "E2 · Title" --section-body "…"` (or `--section "Desired UX"` inside
