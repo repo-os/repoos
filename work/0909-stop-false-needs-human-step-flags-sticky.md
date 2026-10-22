@@ -145,3 +145,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T07:08:53Z · body
 - 2026-10-22T07:09:32Z · note: handoff requested (ui-review)
 - 2026-10-22T07:12:25Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-10-22T07:12:25Z · engineer stopped by request
