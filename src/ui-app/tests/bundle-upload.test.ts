@@ -76,9 +76,7 @@ describe("shouldPreferLocalGate (#0917)", () => {
 });
 
 describe("uploadFileOverSsh stall (#0917)", () => {
-  it(
-    "aborts when ssh accepts the session then backpressures the write path",
-    async () => {
+  it("aborts when ssh accepts the session then backpressures the write path", async () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-bu-"));
     const bundlePath = join(dir, "candidate.bundle");
     writeFileSync(bundlePath, Buffer.alloc(2 * 1024 * 1024));
@@ -121,9 +119,7 @@ describe("uploadFileOverSsh stall (#0917)", () => {
     expect(result.ok).toBe(false);
     expect(result.aborted).toBe(true);
     expect(result.reason).toBe("stall");
-    },
-    15_000,
-  );
+  }, 15_000);
 });
 
 describe("readLastCloseOutGateMs (#0917)", () => {
