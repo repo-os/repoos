@@ -3,6 +3,8 @@ id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
 status: done
+human_step_decision: agent
+human_step_decision_key: 3a709585
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 3a709585
 priority: p2
