@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-22T15:19:22Z"
-review_passes: 2
 id: "0927"
 title: Define named project environments and file-backed storage
 type: feature
@@ -16,8 +14,7 @@ branch: feat/define-named-project-environments-and-fi
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:05:30Z"
-handoff_signal_retry_count: 2
-review_rounds: 1
+updated_at: "2026-10-22T14:53:47Z"
 ---
 ## Problem
 RepoOS has legacy root-.env loading but no explicit model for multiple project secret environments. Without a shared contract and safe storage primitives, management APIs and process bindings could mix project values with RepoOS provider/auth settings or silently change legacy behavior.
@@ -42,19 +39,4 @@ Work in the existing config/environment loading and file utility layers under sr
 - 2026-10-22T14:32:10Z · status inbox→ready
 - 2026-10-22T14:32:17Z · cli_override, model_override
 - 2026-10-22T14:32:18Z · status ready→active, branch
-- 2026-10-22T14:36:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-22T14:42:03Z · message_queued at 2026-10-22T14:42:03.494Z
-- 2026-10-22T14:42:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-22T14:42:51Z · body
-- 2026-10-22T14:43:47Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-22T14:43:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-22T14:43:48Z · message_delivered: 1 message(s)
-- 2026-10-22T14:53:48Z · status active→review
-- 2026-10-22T14:53:48Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-22T14:54:52Z · note: review pass 1: needs some work
-- 2026-10-22T14:54:53Z · status review→active
-- 2026-10-22T14:56:48Z · body
-- 2026-10-22T15:18:08Z · status active→review
-- 2026-10-22T15:18:09Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-22T15:19:21Z · note: review pass 2: good to go
-
+- 2026-10-22T14:53:47Z · status active→review
