@@ -8794,6 +8794,7 @@
 }
 .setting-input {
   flex-shrink: 0;
+  margin-left: auto;
 }
 .setting-input input[type="text"],
 .setting-input select {
