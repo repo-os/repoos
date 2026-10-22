@@ -138,6 +138,8 @@ export interface DoctorOptions {
   env?: NodeJS.ProcessEnv;
   /** Injectable signature probe for tests. */
   signatureProbe?: (binary: string) => string | null;
+  /** Injectable short-window syspolicyd CPU delta in seconds. */
+  syspolicydCpuProbe?: () => Promise<number | null>;
 }
 
 function gitSignature(binary: string, probe: (path: string) => string | null): string | null {
@@ -152,20 +154,57 @@ function probeGitSignature(binary: string): string | null {
   return null;
 }
 
-function macGitFinding(opts: DoctorOptions): DoctorFinding[] {
+function cpuSeconds(raw: string): number | null {
+  const match = raw.trim().match(/^(?:(\d+)-)?(?:(\d+):)?(\d+):(\d+(?:\.\d+)?)$/);
+  if (!match) return null;
+  return (
+    Number(match[1] ?? 0) * 86400 +
+    Number(match[2] ?? 0) * 3600 +
+    Number(match[3] ?? 0) * 60 +
+    Number(match[4])
+  );
+}
+
+function syspolicydCpuTime(): number | null {
+  const result = spawnSync("ps", ["-A", "-o", "comm=", "-o", "time="], { encoding: "utf8" });
+  if (result.status !== 0) return null;
+  let total = 0;
+  let found = false;
+  for (const line of (result.stdout ?? "").split("\n")) {
+    if (!/\/syspolicyd$/.test(line.trim().split(/\s+/)[0] ?? "")) continue;
+    const value = cpuSeconds(line.trim().split(/\s+/).slice(1).join(" "));
+    if (value !== null) {
+      total += value;
+      found = true;
+    }
+  }
+  return found ? total : null;
+}
+
+async function sampleSyspolicydCpu(): Promise<number | null> {
+  const before = syspolicydCpuTime();
+  if (before === null) return null;
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  const after = syspolicydCpuTime();
+  return after === null ? null : Math.max(0, after - before);
+}
+
+async function macGitFinding(opts: DoctorOptions): Promise<DoctorFinding[]> {
   if ((opts.platform ?? process.platform) !== "darwin") return [];
   const env = opts.env ?? process.env;
   const path = (env.PATH ?? "").split(delimiter).find((part) => existsSync(join(part, "git")));
   if (!path) return [];
   const git = join(path, "git");
   const signature = gitSignature(git, opts.signatureProbe ?? probeGitSignature);
+  const cpuDelta = await (opts.syspolicydCpuProbe ?? sampleSyspolicydCpu)();
   const appleGit =
     existsSync("/usr/bin/git") &&
     (existsSync("/Library/Developer/CommandLineTools/usr/bin/git") ||
       existsSync("/Applications/Xcode.app/Contents/Developer/usr/bin/git"));
   const active = env.REPOOS_PREFER_APPLE_GIT !== "0" && appleGit;
-  const detail = `First git on PATH: ${git} (${signature ?? "signature unknown"}). preferAppleGit is ${active ? "active" : "inactive"}${active ? "; RepoOS uses Apple's signed git" : env.REPOOS_PREFER_APPLE_GIT === "0" ? " because REPOOS_PREFER_APPLE_GIT=0" : appleGit ? "" : " because Apple's git is unavailable"}. Ad-hoc git can add about 8–19 seconds of syspolicyd CPU across 600 real git commands.`;
-  if (signature !== "ad-hoc signed" || active) {
+  const elevatedCpu = cpuDelta !== null && cpuDelta >= 0.4;
+  const detail = `First git on PATH: ${git} (${signature ?? "signature unknown"}). preferAppleGit is ${active ? "active" : "inactive"}${active ? "; RepoOS uses Apple's signed git" : env.REPOOS_PREFER_APPLE_GIT === "0" ? " because REPOOS_PREFER_APPLE_GIT=0" : appleGit ? "" : " because Apple's git is unavailable"}. Ad-hoc git can add about 8–19 seconds of syspolicyd CPU across 600 real git commands.${cpuDelta === null ? " syspolicyd CPU was unavailable to sample." : ` syspolicyd used ${cpuDelta.toFixed(1)} CPU seconds in a 0.5-second sample.`}`;
+  if ((signature !== "ad-hoc signed" || active) && !elevatedCpu) {
     return [
       finding(
         "runtime.macos-git-signature",
@@ -177,15 +216,20 @@ function macGitFinding(opts: DoctorOptions): DoctorFinding[] {
       ),
     ];
   }
-  const remediation = appleGit
-    ? "Unset REPOOS_PREFER_APPLE_GIT=0 so RepoOS can use Apple's git"
-    : "Install the Xcode Command Line Tools with `xcode-select --install`";
+  const remediation =
+    signature === "ad-hoc signed" && !active
+      ? appleGit
+        ? "Unset REPOOS_PREFER_APPLE_GIT=0 so RepoOS can use Apple's git"
+        : "Install the Xcode Command Line Tools with `xcode-select --install`"
+      : "Measure real git commands during the spawn-heavy workload to identify the signed tool causing validation.";
   return [
     finding(
       "runtime.macos-git-signature",
       "runtime",
       "warn",
-      "macOS may be rechecking git on every launch",
+      elevatedCpu
+        ? "syspolicyd is using substantial CPU during spawn-heavy work"
+        : "macOS may be rechecking git on every launch",
       detail,
       remediation,
     ),
@@ -2016,7 +2060,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
     ...(await guard("config", "config.error", () => checkConfig(root, config))),
     ...(await guard("layout", "layout.error", () => checkLayout(root, config))),
     ...(await guard("runtime", "runtime.error", () => checkRuntime(root, config, hasBin, plan))),
-    ...macGitFinding(opts),
+    ...(await guard("runtime", "runtime.macos-diagnostic.error", async () => macGitFinding(opts))),
     ...(await guard("runtime", "runtime.compatibility.error", () =>
       checkAgentCompatibility(config, hasBin),
     )),

@@ -114,6 +114,7 @@ describe("runDoctor", () => {
       platform: "darwin",
       env: { PATH: bin, REPOOS_PREFER_APPLE_GIT: "0" },
       signatureProbe: () => "ad-hoc signed",
+      syspolicydCpuProbe: async () => 0,
     });
     const diagnostic = findingById(report, "runtime.macos-git-signature");
     expect(diagnostic?.severity).toBe("warn");
@@ -130,8 +131,29 @@ describe("runDoctor", () => {
       hasBinary: tools("git", "bun"),
       platform: "linux",
       signatureProbe: () => "ad-hoc signed",
+      syspolicydCpuProbe: async () => 9,
     });
     expect(findingById(report, "runtime.macos-git-signature")).toBeUndefined();
+  });
+
+  it("warns when a short macOS syspolicyd sample shows high CPU during doctor", async () => {
+    const root = cleanProject();
+    const bin = join(root, "fake-bin");
+    mkdirSync(bin);
+    writeFileSync(join(bin, "git"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const report = await runDoctor({
+      root,
+      probePort: 1,
+      hasBinary: tools("git", "bun"),
+      platform: "darwin",
+      env: { PATH: bin },
+      signatureProbe: () => "Apple/developer signed",
+      syspolicydCpuProbe: async () => 0.7,
+    });
+    const diagnostic = findingById(report, "runtime.macos-git-signature");
+    expect(diagnostic?.severity).toBe("warn");
+    expect(diagnostic?.title).toContain("syspolicyd");
+    expect(diagnostic?.detail).toContain("0.7 CPU seconds");
   });
 
   it("reports a clean, declared-plan project with no warnings or failures", async () => {
