@@ -154,14 +154,28 @@ export const createStoryDefinition: RouteHandler = async (ctx, req, res) => {
     const status = message.includes("already exists") ? 409 : 400;
     return json(res, status, { ok: false, reason: message });
   }
-  commitTaskFile(
+  const committed = await commitWithRetry(
     config.root,
     join(config.root, definition.path),
     `docs(stories): add "${definition.name}"`,
   );
   emitEvent({ type: "story.definitionsChanged", at: new Date().toISOString() });
-  return json(res, 201, { ok: true, definition });
+  return json(res, 201, {
+    ok: true,
+    definition,
+    ...(!committed && {
+      warning: `Story created but could not be committed (${definition.path}). RepoOS will retry automatically; if close-out is blocked, use Commit & continue.`,
+    }),
+  });
 };
+
+async function commitWithRetry(root: string, path: string, message: string): Promise<boolean> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (commitTaskFile(root, path, message)) return true;
+    if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1)));
+  }
+  return false;
+}
 
 /**
  * `PATCH /api/stories/:key` (#0696): rename and/or rewrite a registered story's
