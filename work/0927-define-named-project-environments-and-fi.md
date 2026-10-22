@@ -2,7 +2,7 @@
 id: "0927"
 title: Define named project environments and file-backed storage
 type: feature
-status: active
+status: review
 human_step_decision: agent
 human_step_decision_key: 16ca06e1
 priority: p1
@@ -47,4 +47,4 @@ Work in the existing config/environment loading and file utility layers under sr
 - 2026-10-22T14:43:47Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-22T14:43:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T14:43:48Z · message_delivered: 1 message(s)
-- 2026-10-22T14:53:48Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-22T14:53:48Z · status active→review
