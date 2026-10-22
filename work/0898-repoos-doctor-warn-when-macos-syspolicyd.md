@@ -2,7 +2,7 @@
 id: "0898"
 title: "repoos doctor: warn when macOS syspolicyd/trustd slow spawn-heavy work, and name the git cause"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, docs]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repoos-doctor-warn-when-macos-syspolicyd
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:26Z"
-updated_at: "2026-10-22T13:55:30Z"
+updated_at: "2026-10-22T13:55:31Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
