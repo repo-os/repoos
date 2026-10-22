@@ -133,6 +133,16 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(ui.pendingScreenshots[0]?.uploadError).toContain("Upload failed");
   });
 
+  it("opens a clean New task panel for the default picker shot (#0911)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    applyShotPreviewFixture(repo, "panel:defaultScreenshotPicker");
+    expect(ui.isNew).toBe(true);
+    expect(ui.pendingScreenshots).toHaveLength(0);
+  });
+
   it("leaves other config fixtures untouched (#0805)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);

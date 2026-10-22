@@ -117,4 +117,25 @@ describe("Settings — remote validation offload rows (#0836)", () => {
     ).toContain("Serialize");
     wrapper.unmount();
   });
+
+  it("renders the restart hint before the Task browser work control", async () => {
+    const config = useConfigStore();
+    await config.load();
+    const wrapper = mount(SettingsView, {
+      attachTo: document.body,
+      global: { plugins: [pinia] },
+    });
+    await flushPromises();
+
+    const row = wrapper.get('[id="setting-remoteValidation.browserCaptureMode"]');
+    const badge = row.get(".restart-badge");
+    const control = row.get(".setting-input");
+    expect(badge.text()).toBe("restart required");
+    expect(badge.attributes("title")).toBe("Changes require restarting RepoOS");
+    expect(badge.attributes("aria-label")).toBe("Restart required");
+    expect(Array.from(row.element.children).indexOf(badge.element)).toBeLessThan(
+      Array.from(row.element.children).indexOf(control.element),
+    );
+    wrapper.unmount();
+  });
 });
