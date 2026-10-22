@@ -1361,6 +1361,10 @@ export const useRepoStore = defineStore("repo", () => {
       void refresh();
       return;
     }
+    if (e.type === "bookkeeping.recovered") {
+      pushToast(`Recovered and committed ${e.paths.join(", ")}`, "success");
+      return;
+    }
     if (e.type === "input.enriched") {
       // Background PM enrichment (#0628): the POST returned the raw input and
       // the PM wrote title/type/area afterwards — swap it in place so the
@@ -3948,6 +3952,7 @@ export const useRepoStore = defineStore("repo", () => {
       pending?: boolean;
       definition?: StoryDefinitionRecord;
       reason?: string;
+      warning?: string;
     }>("/api/stories/freeform", JSON_OPTS("POST", body));
     if (!r.ok) {
       throw new Error(r.reason ?? "could not create story");
@@ -3961,6 +3966,7 @@ export const useRepoStore = defineStore("repo", () => {
     } else {
       await refresh();
     }
+    if (r.warning) pushToast(r.warning, "error");
     return r;
   }
 

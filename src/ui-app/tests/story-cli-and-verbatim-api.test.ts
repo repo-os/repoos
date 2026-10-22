@@ -147,7 +147,11 @@ describe("POST /api/stories — verbatim create, no PM (#0696)", () => {
       await createStoryDefinition({ config: cfg, emitEvent: () => {} } as never, req, res, {});
 
       expect(capture.status).toBe(201);
-      const body = capture.body as { ok: boolean; definition: { number: string; path: string } };
+      const body = capture.body as {
+        ok: boolean;
+        warning?: string;
+        definition: { number: string; path: string };
+      };
       expect(body.ok).toBe(true);
       expect(body.definition.number).toBe("0001");
       expect(existsSync(join(root, body.definition.path))).toBe(true);
@@ -158,6 +162,7 @@ describe("POST /api/stories — verbatim create, no PM (#0696)", () => {
       expect(fleshOutStory).not.toHaveBeenCalled();
       // Never a `pending` field on the verbatim path.
       expect((capture.body as { pending?: boolean }).pending).toBeUndefined();
+      expect(body.warning).toContain(body.definition.path);
     } finally {
       rmFixture(root);
     }
