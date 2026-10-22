@@ -10,6 +10,7 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "closeOut:active",
   "closeOut:checkProgress",
   "closeOut:checkProgressUnknown",
+  "checks:progress",
   // #0778 — like closeOut:active, but the attempt has been idle past the stall
   // threshold, so the task card renders the stalled Cancel/Retry actions.
   "closeOut:stalled",

@@ -527,7 +527,7 @@ const checkChip = computed(() => {
         ? `${localQueue.label} · ${elapsed}`
         : poolQueue
           ? `${poolQueue.label} · ${elapsed}`
-          : `Checks running${machine ? ` on ${machine}` : ""}${run.stepsTotal != null || run.testsTotal != null ? ` · ${checkProgressLabel(run)}` : ""} · ${elapsed}`,
+          : `Checks running${machine ? ` on ${machine}` : ""}${run.stepsDone != null || run.currentStep != null || run.stepsTotal != null || run.testsTotal != null ? ` · ${checkProgressLabel(run)}` : ""} · ${elapsed}`,
       title: localQueue
         ? localQueue.title
         : poolQueue
@@ -4555,7 +4555,10 @@ watch(
               <div
                 v-if="
                   activeCheckRun &&
-                  (activeCheckRun.stepsTotal != null || activeCheckRun.testsTotal != null)
+                  (activeCheckRun.stepsDone != null ||
+                    activeCheckRun.currentStep != null ||
+                    activeCheckRun.stepsTotal != null ||
+                    activeCheckRun.testsTotal != null)
                 "
                 class="check-progress"
                 data-test-id="check-progress"
@@ -4723,7 +4726,10 @@ watch(
                 v-if="
                   inPipeline &&
                   activeCheckRun &&
-                  (activeCheckRun.stepsTotal != null || activeCheckRun.testsTotal != null)
+                  (activeCheckRun.stepsDone != null ||
+                    activeCheckRun.currentStep != null ||
+                    activeCheckRun.stepsTotal != null ||
+                    activeCheckRun.testsTotal != null)
                 "
                 class="check-progress close-out-check-progress"
                 role="status"

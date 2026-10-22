@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { api } from "../api";
@@ -14,7 +14,12 @@ import SelectItem from "../components/ui/select/item.vue";
 import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
-import type { CheckPlanStepView, CheckPlanView, RemoteValidationStatusView } from "../types";
+import type {
+  CheckPlanStepView,
+  CheckPlanView,
+  RemoteValidationStatusView,
+  TaskCheckRun,
+} from "../types";
 import NoCheckPlanReminder from "../components/NoCheckPlanReminder.vue";
 import { isGenuinelyEmptyPlan } from "../lib/check-setup";
 import {
@@ -25,11 +30,12 @@ import {
   resolveChecksDefaultTab,
 } from "../lib/checks-page";
 import { useRepoStore } from "../stores/repo";
+import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
 
 const route = useRoute();
 const router = useRouter();
 const repo = useRepoStore();
-const { testRun } = storeToRefs(repo);
+const { testRun, taskChecks } = storeToRefs(repo);
 
 const explicitTab = computed(() => parseChecksTab(route.query.tab));
 const activeTab = computed<ChecksTab>(() => explicitTab.value ?? "runs");
@@ -86,6 +92,25 @@ const openOutput = ref<string | null>(null);
 const localSlotHolders = ref<
   Array<{ slot: number; pid?: number; ageMs: number; wedged: boolean; dead: boolean }>
 >([]);
+const activeCheckRuns = ref<TaskCheckRun[]>([]);
+let activeCheckPoll: number | undefined;
+
+async function loadActiveChecks(): Promise<void> {
+  try {
+    const result = await api<{ activeRuns?: TaskCheckRun[] }>("/api/check-runs?limit=1");
+    activeCheckRuns.value = result.activeRuns ?? [];
+  } catch {
+    activeCheckRuns.value = [];
+  }
+}
+
+onMounted(() => {
+  void loadActiveChecks();
+  activeCheckPoll = window.setInterval(() => void loadActiveChecks(), 3000);
+});
+onBeforeUnmount(() => {
+  if (activeCheckPoll !== undefined) window.clearInterval(activeCheckPoll);
+});
 
 async function loadLocalSlotHolders(): Promise<void> {
   try {
@@ -140,6 +165,17 @@ function clearChanged(): void {
 const steps = computed(() => plan.value?.steps ?? []);
 const selectedCount = computed(() => steps.value.filter((s) => s.selected).length);
 const lastRun = computed(() => plan.value?.lastRun ?? null);
+const activeChecks = computed(() => {
+  const byId = new Map(activeCheckRuns.value.map((run) => [run.id, run]));
+  for (const run of Object.values(taskChecks.value).flat()) byId.set(run.id, run);
+  return [...byId.values()]
+    .filter((run) => run.running)
+    .sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt));
+});
+
+function progressPercent(run: TaskCheckRun): number | null {
+  return checkProgressPercent(run);
+}
 
 const SOURCE_LABEL: Record<CheckPlanView["source"], string> = {
   declared: "Declared in repoos.toml",
@@ -269,6 +305,28 @@ const RESULT_ICON: Record<string, string> = {
     </nav>
 
     <div v-if="activeTab === 'now'" class="ck-test-suite">
+      <section v-if="activeChecks.length" class="ck-live-checks" aria-label="Running checks">
+        <h2>Running checks</h2>
+        <article v-for="run in activeChecks" :key="run.id" class="ck-live-check" role="status">
+          <div class="ck-live-check-heading">
+            <a :href="`/work?task=${encodeURIComponent(run.taskId)}`">Task #{{ run.taskId }}</a>
+            <span>{{ run.kind === "handoff-finalize" ? "Handoff" : "Close-out" }}</span>
+            <span v-if="run.machine">on {{ run.machine }}</span>
+          </div>
+          <div class="check-progress" data-test-id="checks-page-progress">
+            <progress
+              v-if="progressPercent(run) !== null"
+              :value="progressPercent(run) ?? 0"
+              max="100"
+            />
+            <span>{{ checkProgressLabel(run) }}</span>
+            <span v-if="run.attempt && run.attempt > 1">
+              attempt {{ run.attempt
+              }}<template v-if="run.attemptReason"> · {{ run.attemptReason }}</template>
+            </span>
+          </div>
+        </article>
+      </section>
       <section class="ck-local-slots" aria-label="Local check slots">
         <h2>Local check slots</h2>
         <p v-if="!localSlotHolders.length">No local check slots are currently in use.</p>
@@ -495,6 +553,51 @@ const RESULT_ICON: Record<string, string> = {
 }
 .ck-test-suite {
   margin-top: 4px;
+}
+.ck-live-checks {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cyan);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+.ck-live-checks h2 {
+  margin: 0;
+  font-size: 14px;
+}
+.ck-live-check {
+  display: grid;
+  gap: 7px;
+}
+.ck-live-check-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--txt-dim);
+  font-size: 12px;
+}
+.ck-live-check-heading a {
+  color: var(--txt);
+  text-decoration: none;
+}
+.ck-live-check-heading a:hover {
+  text-decoration: underline;
+}
+.ck-live-check .check-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--txt-dim);
+  font-size: 12px;
+}
+.ck-live-check progress {
+  width: min(220px, 100%);
+  height: 7px;
+  accent-color: var(--cyan);
 }
 .ck-head {
   display: flex;

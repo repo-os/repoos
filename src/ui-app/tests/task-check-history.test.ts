@@ -28,7 +28,44 @@ describe("machine-readable check progress", () => {
     ).toEqual({ stepsDone: 2, stepsTotal: 9, currentStep: 3, testsPass: 2 });
     expect(
       parseCheckProgress('::repoos-check-progress::{"stepsDone":2,"stepsTotal":null}'),
-    ).toEqual({ stepsDone: 2 });
+    ).toEqual({ stepsDone: 2, stepsTotal: null });
+    expect(
+      parseCheckProgress(
+        '::repoos-check-progress::{"stepName":"build","testsDone":null,"testsTotal":null,"testsPass":null}',
+      ),
+    ).toEqual({ stepName: "build", testsDone: null, testsTotal: null, testsPass: null });
+  });
+
+  it("clears file progress when the run advances to a non-test step", () => {
+    const { m } = manager();
+    let latest: TaskCheckRun | null = null;
+    const handle = m.start("0924", "handoff-finalize", (run) => {
+      latest = { ...run };
+    });
+    handle.chunk(
+      '::repoos-check-progress::{"stepsDone":4,"stepsTotal":12,"currentStep":5,"stepName":"tests","testsDone":140,"testsTotal":289,"testsPass":1}\n',
+    );
+    handle.chunk(
+      '::repoos-check-progress::{"stepsDone":4,"stepsTotal":12,"currentStep":5,"stepName":"build","testsDone":null,"testsTotal":null,"testsPass":null}\n',
+    );
+    expect(latest).toMatchObject({
+      stepName: "build",
+      testsDone: null,
+      testsTotal: null,
+      testsPass: null,
+    });
+  });
+
+  it("lists in-flight runs across tasks for the Checks page", () => {
+    const { m } = manager();
+    m.start("0924", "handoff-finalize", () => {});
+    m.start("0917", "merge-gate", () => {});
+    expect(
+      m
+        .runningRuns()
+        .map((run) => run.taskId)
+        .sort(),
+    ).toEqual(["0917", "0924"]);
   });
 
   it("starts a retried gate attempt at zero and carries the timeout reason", () => {

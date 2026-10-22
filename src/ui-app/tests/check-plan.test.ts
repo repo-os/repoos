@@ -498,8 +498,24 @@ describe("runCheckPlan progress", () => {
       },
     });
     expect(starts).toEqual([
-      { stepsDone: 0, stepsTotal: 2, currentStep: 1 },
-      { stepsDone: 1, stepsTotal: 2, currentStep: 2 },
+      {
+        stepsDone: 0,
+        stepsTotal: 2,
+        currentStep: 1,
+        stepName: "first",
+        testsDone: null,
+        testsTotal: null,
+        testsPass: null,
+      },
+      {
+        stepsDone: 1,
+        stepsTotal: 2,
+        currentStep: 2,
+        stepName: "second",
+        testsDone: null,
+        testsTotal: null,
+        testsPass: null,
+      },
     ]);
   });
 });

@@ -67,6 +67,7 @@ export interface TaskCheckRun {
   testsTotal: number | null;
   testsPass: number | null;
   currentStep: number | null;
+  stepName: string | null;
   attempt: number | null;
   attemptReason: string | null;
 }
@@ -80,12 +81,13 @@ export type TaskCheckListener = (
 ) => void;
 
 export interface CheckProgressRecord {
-  stepsDone?: number;
-  stepsTotal?: number;
-  testsDone?: number;
-  testsTotal?: number;
-  testsPass?: number;
-  currentStep?: number;
+  stepsDone?: number | null;
+  stepsTotal?: number | null;
+  testsDone?: number | null;
+  testsTotal?: number | null;
+  testsPass?: number | null;
+  currentStep?: number | null;
+  stepName?: string | null;
   attempt?: number;
   reason?: string;
 }
@@ -104,6 +106,7 @@ export function parseCheckProgress(output: string): CheckProgressRecord | null {
         testsTotal?: unknown;
         testsPass?: unknown;
         currentStep?: unknown;
+        stepName?: unknown;
         attempt?: unknown;
         reason?: unknown;
       };
@@ -117,9 +120,12 @@ export function parseCheckProgress(output: string): CheckProgressRecord | null {
         "currentStep",
         "attempt",
       ] as const) {
-        if (Number.isInteger(value[key]) && Number(value[key]) >= 0)
+        if (key !== "attempt" && value[key] === null) parsed[key] = null;
+        else if (Number.isInteger(value[key]) && Number(value[key]) >= 0)
           parsed[key] = Number(value[key]);
       }
+      if (typeof value.stepName === "string" || value.stepName === null)
+        parsed.stepName = value.stepName;
       if (typeof value.reason === "string") parsed.reason = value.reason;
       if (Object.keys(parsed).length) return parsed;
     } catch {
@@ -195,6 +201,7 @@ export class TaskCheckManager {
       testsTotal: null,
       testsPass: null,
       currentStep: null,
+      stepName: null,
       attempt,
       attemptReason,
     };
@@ -221,6 +228,10 @@ export class TaskCheckManager {
           run.testsTotal = progress.testsTotal ?? run.testsTotal;
           run.testsPass = progress.testsPass ?? run.testsPass;
           run.currentStep = progress.currentStep ?? run.currentStep;
+          run.stepName = progress.stepName ?? run.stepName;
+          if (Object.hasOwn(progress, "testsDone")) run.testsDone = progress.testsDone ?? null;
+          if (Object.hasOwn(progress, "testsTotal")) run.testsTotal = progress.testsTotal ?? null;
+          if (Object.hasOwn(progress, "testsPass")) run.testsPass = progress.testsPass ?? null;
           run.attempt = progress.attempt ?? run.attempt;
           run.attemptReason = progress.reason ?? run.attemptReason;
         }

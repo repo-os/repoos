@@ -924,6 +924,7 @@ export interface TaskCheckRun {
   testsTotal?: number | null;
   testsPass?: number | null;
   currentStep?: number | null;
+  stepName?: string | null;
   attempt?: number | null;
   attemptReason?: string | null;
 }
