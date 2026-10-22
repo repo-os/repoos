@@ -3,9 +3,10 @@ id: "0111"
 title: Publish evidence-based agent and model recommendations for RepoOS tasks
 type: feature
 status: done
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+human_step_decision: agent
+human_step_decision_key: 89f99adf
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: 89f99adf
 priority: p2
 area: agent
 assigned_to: AI
@@ -14,7 +15,7 @@ branch: feat/publish-evidence-based-agent-and-model-r
 cli_override: opencode
 model_override: openai/gpt-5.6-sol
 created_at: "2026-08-12T03:44:24Z"
-updated_at: "2026-10-06T23:48:15Z"
+updated_at: "2026-10-22T07:47:47Z"
 ---
 ## Problem
 
@@ -64,3 +65,4 @@ Start with repository evidence, including task metadata, persisted transcripts w
 - 2026-08-12T11:49:58Z · status ready→review, branch
 - 2026-08-12T13:33:44Z · status review→done, release:success
 - 2026-10-06T23:48:15Z · needs_input
+- 2026-10-22T07:47:47Z · needs_input

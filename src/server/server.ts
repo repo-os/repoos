@@ -97,6 +97,7 @@ import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types
 import type { MemoryPressureProbe } from "../core/memory-pressure.js";
 import { runnerHealthCheckEnabled } from "../core/resource-limits.js";
 import { STATUSES } from "../core/types.js";
+import { shouldRunAutomaticTaskLifecycle } from "./task-transitions.js";
 import { readBuildMeta } from "../core/build.js";
 import { injectBuildHashIntoUiIndex } from "../core/ui-index.js";
 import { createRepoOS } from "../core/repoos.js";
@@ -289,6 +290,7 @@ import {
 } from "./notifications/index.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
+import { startProviderUsageLimitProbes } from "./provider-usage-limit-probe.js";
 import {
   bootstrapTelegramAtBoot,
   getTelegramProvider,
@@ -2056,6 +2058,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       },
     },
   );
+  const stopProviderUsageLimitProbes = startProviderUsageLimitProbes(config, logger);
 
   // Adopt any agent children that survived a server restart (0214).
   // Reads the durable registry, checks PID aliveness, and re-attaches
@@ -2179,22 +2182,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // preview child or worktree-rooted server must never rewrite the board, and a
   // vitest boot must not touch the live board (mirrors the area migration).
   const runUnderspecifiedSweep = (): void => {
-    try {
-      if (!isControlPlane) return;
-      if (process.env.VITEST === "true") return;
-      const changed = sweepUnderspecifiedTasks(config, index.getTasks());
-      if (changed.length === 0) return;
-      commitFiles(
-        config.root,
-        changed.map((task) => task.absPath),
-        "docs: flag underspecified tasks (#0668)",
-      );
-      // The index holds pre-sweep parses; refresh so boards see needs_input now.
-      index.refreshAll();
-      logger.system("info", `underspecified sweep: flagged ${changed.length} task(s)`);
-    } catch {
-      /* best-effort: a failed sweep must never block boot */
-    }
+    void (async () => {
+      try {
+        if (!isControlPlane) return;
+        if (process.env.VITEST === "true") return;
+        const changed = await sweepUnderspecifiedTasks(config, index.getTasks());
+        if (changed.length === 0) return;
+        commitFiles(
+          config.root,
+          changed.map((task) => task.absPath),
+          "docs: flag underspecified tasks (#0668)",
+        );
+        // The index holds pre-sweep parses; refresh so boards see needs_input now.
+        index.refreshAll();
+        logger.system("info", `underspecified sweep: flagged ${changed.length} task(s)`);
+      } catch {
+        /* best-effort: a failed sweep must never block boot */
+      }
+    })();
   };
   void indexReady.then(runUnderspecifiedSweep, runUnderspecifiedSweep).catch(() => {});
 
@@ -2692,6 +2697,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Combined status-change hook, fired for every status change by any route.
   const onStatusChange = (task: Task, prev: Status, next: Status): void => {
+    if (!shouldRunAutomaticTaskLifecycle(task)) return;
     stopPreviewIfLeft(task, prev, next);
     stopAgentIfLeftActive(task, prev, next);
     if (prev === "active" && next !== "active") runner.discardPendingHandoff(task.id);
@@ -2985,6 +2991,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
    * silently), and deferred while the task's own agent turn is still running.
    */
   const startReview = (task: Task): void => {
+    if (!shouldRunAutomaticTaskLifecycle(task)) return;
     if (!reviews.enabled()) return;
     // This task is only back in `review` because the guard put it there after
     // an agent overstepped — reviewing it again would just repeat that.
@@ -3035,9 +3042,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // review needs to hang off. The skill-suggestion pass deliberately does
     // NOT run here (#0429): its evidence gate requires a genuinely completed,
     // verified task, so it hangs off `done` only, below.
-    if (e.task.status === "review") {
+    if (e.task.status === "review" && shouldRunAutomaticTaskLifecycle(e.task)) {
       startReview(e.task);
-    } else if (e.task.status === "done") {
+    } else if (e.task.status === "done" && shouldRunAutomaticTaskLifecycle(e.task)) {
       skillSuggestions.maybeSuggest(e.task);
     }
   });
@@ -3600,7 +3607,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   );
   router.register(
     "POST",
-    /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen|archive|unarchive)$/,
+    /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen|archive|unarchive|split)$/,
     taskAction,
   );
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);
@@ -4262,6 +4269,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             });
           }
           clearInterval(systemSampleTimer);
+          stopProviderUsageLimitProbes();
           if (engineerCountTimer) clearInterval(engineerCountTimer);
           if (reapTimer) clearInterval(reapTimer);
           clearInterval(worktreeSweepTimer);

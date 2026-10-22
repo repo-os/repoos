@@ -136,6 +136,10 @@ export interface TaskFrontmatter {
   assigned_to?: string;
   /** Explicit reason clearing the `needs-human-step` keyword check (#0815). */
   human_step_override?: string;
+  /** Fingerprint of the acceptance criteria the override was cleared against (#0909). */
+  human_step_override_key?: string;
+  /** Who cleared the flag (#0909). */
+  human_step_override_by?: string;
   created_by?: string;
   branch?: string;
   created_at?: string; // ISO-8601 UTC timestamp
@@ -197,8 +201,16 @@ export interface Task {
    * --human-step-override`, it suppresses the keyword check for the task and
    * is recorded in the activity log, so a false positive is cleared on
    * purpose rather than by rewording the criteria.
+   *
+   * Since #0909 this is sticky: `humanStepOverrideKey` records the acceptance
+   * criteria it was cleared against. A material criteria edit invalidates it
+   * and the task is re-evaluated; unrelated edits keep the override.
    */
   humanStepOverride?: string;
+  /** Fingerprint of the acceptance criteria the override was cleared against. */
+  humanStepOverrideKey?: string;
+  /** Who cleared the flag (session email, CLI actor, or `human`). */
+  humanStepOverrideBy?: string;
   /**
    * One-line AI tl;dr for the current failure — root cause + next action,
    * produced by the task's Debugger agent and shown as a callout above the
@@ -1863,6 +1875,8 @@ export interface WatchdogConfig {
    * Default 3. Minimum 1.
    */
   engineerCrashFailoverThreshold?: number;
+  /** Pause an exhausted agent+model immediately on a provider quota error. Default true. */
+  autoPauseOnUsageLimit?: boolean;
   /**
    * Window the crash count is measured in (#0869), in milliseconds.
    * Default 30 minutes. Minimum 1 minute.
@@ -2081,6 +2095,13 @@ export interface ModelRoutingConfig {
    * keyword check.
    */
   humanStepCheck?: boolean;
+  /**
+   * Remember a cleared `needs-human-step` flag (#0909) against a fingerprint of
+   * the acceptance criteria, so the next scan does not raise it again until the
+   * criteria materially change. Default: on. The explicit
+   * `--human-step-override` reason keeps working either way.
+   */
+  humanStepSticky?: boolean;
 }
 
 /** Close-out (Move to done) pipeline budget (#0573). */

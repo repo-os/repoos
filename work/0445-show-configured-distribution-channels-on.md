@@ -3,9 +3,10 @@ id: "0445"
 title: Show configured distribution channels on Releases
 type: feature
 status: done
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+human_step_decision: agent
+human_step_decision_key: ff693ad1
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: ff693ad1
 priority: p1
 area: release
 assigned_to: ai
@@ -14,7 +15,7 @@ branch: feat/show-configured-distribution-channels-on
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-19T10:56:32Z"
-updated_at: "2026-10-06T23:48:12Z"
+updated_at: "2026-10-22T07:47:36Z"
 ---
 ## Problem
 
@@ -108,3 +109,4 @@ viewing historical releases offline.
 - 2026-09-19T11:50:18Z · status active→review
 - 2026-09-19T12:40:27Z · status review→done, release:success
 - 2026-10-06T23:48:12Z · needs_input
+- 2026-10-22T07:47:36Z · needs_input

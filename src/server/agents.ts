@@ -73,6 +73,7 @@ import { buildStoryContext, storyContextSummary } from "../core/story-context.js
 import { unresolvedReviewFindingsBlock } from "../core/review-findings.js";
 import { needsInputClearsOnNewEngineerRun } from "../core/needs-input.js";
 import { ENGINEER_STOPPED_ACTIVITY } from "../core/engineer-crash-recovery.js";
+import { detectProviderUsageLimit } from "../core/provider-usage-limit.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 import { stripAnsi } from "./done.js";
 import type { Logger } from "../core/logger.js";
@@ -2924,7 +2925,11 @@ export function resolveReviewerForTask(config: RepoOSConfig, task: Task): Agent 
   const baseName = task.reviewAgentOverride || "reviewer";
   const base = list.find((a) => a.enabled && matchesRole(a, baseName)) ?? null;
   if (!base) return null;
-  return mergeAgentOverride(base, task.reviewCliOverride, task.reviewModelOverride);
+  const pinned = mergeAgentOverride(base, task.reviewCliOverride, task.reviewModelOverride);
+  const pause = pairPauseInfo(config.budget?.allowlist ?? [], pinned.cli, pinned.model);
+  if (pause.paused && pause.reason?.startsWith("out of usage since "))
+    return resolveReviewer(config);
+  return pinned;
 }
 
 export function resolveCto(config: RepoOSConfig): Agent | null {
@@ -3022,7 +3027,12 @@ export function resolveAgentForTask(
   // An explicit override is kept even when paused: an agent driver's attempt
   // to set one is refused up front (overrideRefusal), so anything persisted
   // here was chosen by a human in the UI and must keep working.
-  return mergeAgentOverride(base, task.cliOverride, task.modelOverride);
+  const pinned = mergeAgentOverride(base, task.cliOverride, task.modelOverride);
+  const pause = pairPauseInfo(config.budget?.allowlist ?? [], pinned.cli, pinned.model);
+  if (pause.paused && pause.reason?.startsWith("out of usage since ")) {
+    return resolveRoleAgent(config, task.agentOverride || role);
+  }
+  return pinned;
 }
 
 /** Configured (non-fallback) agent+pair for a task, used to explain a fallback. */
@@ -8863,8 +8873,14 @@ export class AgentRunner {
     // not honored), and ask the server to resume — or fail over once the
     // bounded crash threshold is reached. A deliberate stop, a paused task, a
     // review turn, and a turn that requested its own handoff are excluded.
-    const crashKind =
-      abortKind === "provider-failure"
+    const crashKind = detectProviderUsageLimit(
+      session?.providerFailureDetail ??
+        entry.degenerateDetail ??
+        this.lastFailureLine(session) ??
+        "",
+    )
+      ? "usage-limit"
+      : abortKind === "provider-failure"
         ? "provider-failure"
         : abortKind === "degenerate-output"
           ? "degenerate-output"

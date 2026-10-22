@@ -3,9 +3,10 @@ id: "0629"
 title: Revert GitHub Copilot provider to external link only
 type: refactor
 status: done
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+human_step_decision: agent
+human_step_decision_key: 7227d258
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: 7227d258
 priority: p2
 area: web
 merged_commit: da15c3aefe949083967b90603fde3b40c5947534
@@ -13,7 +14,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/revert-github-copilot-provider-to-extern
 created_at: "2026-10-02T17:37:54Z"
-updated_at: "2026-10-06T23:48:18Z"
+updated_at: "2026-10-22T07:47:57Z"
 ---
 ## Problem
 
@@ -74,3 +75,4 @@ Instructions:
 - 2026-10-02T19:04:37Z · status active→review
 - 2026-10-03T06:25:34Z · status review→done, release:success
 - 2026-10-06T23:48:18Z · needs_input
+- 2026-10-22T07:47:57Z · needs_input

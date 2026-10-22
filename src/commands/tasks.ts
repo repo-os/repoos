@@ -13,7 +13,9 @@ import { boardRoot, loadConfig, resolveColumnLabels } from "../core/config.js";
 import { STATUSES, type Status, type Task } from "../core/types.js";
 import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
-import { flagTaskSpecFlagsIfNeeded } from "../server/task-underspecified-flag.js";
+import { flagTaskSpecFlagsIfNeededAsync } from "../server/task-underspecified-flag.js";
+import { needsHumanStepFingerprint } from "../core/task-underspecified.js";
+import { splitHumanStepTask, HumanStepSplitError } from "../server/human-step-split.js";
 import { writeHandoffRequest, type HandoffRequest } from "../server/handoff-request.js";
 import { closingOutRefusal, isTaskClosingOut } from "../server/close-out-lock.js";
 import { isAncestor, worktreePathForBranch } from "../core/git.js";
@@ -382,8 +384,9 @@ export function cmdMv(
       process.exitCode = 1;
       return;
     }
-    if (status === "review" && handoffRequestFromRunner(id)) return;
-    if (status === "review") {
+    const humanTask = existingBeforeMv?.assignee === "human";
+    if (!humanTask && status === "review" && handoffRequestFromRunner(id)) return;
+    if (!humanTask && status === "review") {
       console.error(
         c.dim(
           `  For a synchronous handoff with checks, use \`repoos review ${id}\` instead of \`repoos mv review\`.`,
@@ -393,7 +396,7 @@ export function cmdMv(
     // #0896: never reopen a task whose work already landed. A done task whose
     // branch is merged into main is finished; moving it back (as a driver once did
     // from a stale loop prompt, #0879) restarts engineers on shipped work.
-    if (status !== "done" && !opts.force) {
+    if (status !== "done" && !opts.force && existingBeforeMv?.assignee !== "human") {
       const doneTask = repoos.getTask(id);
       if (doneTask?.status === "done" && doneTask.branch) {
         const { root: doneRoot } = boardRoot();
@@ -421,7 +424,7 @@ export function cmdMv(
         }
       }
     }
-    if (status === "done" && !opts.force) {
+    if (status === "done" && !opts.force && !humanTask) {
       const existing = repoos.getTask(id);
       if (existing && existing.status !== "done" && existing.branch) {
         const { root } = boardRoot();
@@ -449,7 +452,13 @@ export function cmdMv(
         }
       }
     }
-    const t = repoos.updateStatus(id, status as Status, note);
+    const closeNote =
+      status === "done" && humanTask
+        ? [`closed by ${process.env.USER ?? process.env.USERNAME ?? "RepoOS CLI"}`, note?.trim()]
+            .filter(Boolean)
+            .join(": ")
+        : note;
+    const t = repoos.updateStatus(id, status as Status, closeNote);
     console.log(
       "  " + c.green("moved ") + c.dim("#" + t.id) + " → " + statusColor(t.status)(t.status),
     );
@@ -834,6 +843,8 @@ export function cmdUpdate(args: string[]): void {
         patch.needsInputDetail = null;
       }
       patch.humanStepOverride = reason;
+      patch.humanStepOverrideKey = needsHumanStepFingerprint(task.body);
+      patch.humanStepOverrideBy = resolveCliCreator() ?? "cli";
       patch.note = `human-step override: ${reason}`;
     } else {
       patch.humanStepOverride = null;
@@ -973,7 +984,7 @@ function resolveNewAssignee(flags: Record<string, string | boolean>): {
  *
  * Accepted flags and their help are the `NEW_FLAG_HELP` map; see `--help`.
  */
-export function cmdNew(args: string[]): void {
+export async function cmdNew(args: string[]): Promise<void> {
   const usage = NEW_USAGE;
   const flags: Record<string, string | boolean> = {};
   const screenshots: string[] = [];
@@ -1119,7 +1130,10 @@ export function cmdNew(args: string[]): void {
   // #0668: `repoos new` writes the task directly (no server in the loop), so it
   // assesses the stub itself. The boot sweep is the backstop for tasks created
   // while the server was down or by another client.
-  const flagged = flagTaskSpecFlagsIfNeeded(repoos.config, t);
+  // Awaited BEFORE the first commit (#0909 review): with `humanStepCheck` on the
+  // model path is async, and a fire-and-forget assessment can land after the
+  // commit, leaving `needs_input` only on disk until a later patch or the boot sweep.
+  const flagged = await flagTaskSpecFlagsIfNeededAsync(repoos.config, t);
   if (flagged) {
     console.log(
       "  " +
@@ -1133,6 +1147,39 @@ export function cmdNew(args: string[]): void {
     console.log("  " + c.green("committed ") + c.dim(res.hash ?? ""));
   } else {
     console.log("  " + c.yellow("warning: ") + c.dim("file left uncommitted — ") + res.reason);
+  }
+}
+
+export const SPLIT_USAGE = "  Usage: repoos split <id>";
+
+/** `repoos split <id>` — move `[human]` acceptance criteria to a held human task (#0909). */
+export async function cmdSplit(args: string[]): Promise<void> {
+  const id = args[0]?.trim();
+  if (!id || args.length > 1) {
+    console.error(c.red(SPLIT_USAGE));
+    process.exitCode = 1;
+    return;
+  }
+  const repoos = boardRepoOS();
+  const task = repoos.getTask(id);
+  if (!task) {
+    console.error(c.red(`  Task #${id} not found.`));
+    process.exitCode = 1;
+    return;
+  }
+  try {
+    const actor = resolveCliCreator() ?? "cli";
+    const result = await splitHumanStepTask(repoos.config, task, actor);
+    console.log(
+      "  " +
+        c.green("split ") +
+        c.dim(`#${result.source.id} — human steps → `) +
+        c.cyan(`#${result.humanTask.id}`),
+    );
+  } catch (err) {
+    const message = err instanceof HumanStepSplitError ? err.message : (err as Error).message;
+    console.error(c.red(`  ${message}`));
+    process.exitCode = 1;
   }
 }
 

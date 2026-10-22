@@ -759,6 +759,7 @@ const IN_PIPELINE: CardAction = {
  *  demotes to `ready` — the running-agent set (repo.isRunning) is the signal. */
 const action = computed<CardAction | null>(() => {
   const t = props.task;
+  if (t.assignee === "human") return null;
   if (
     t.status === "review" &&
     inPipeline.value &&
@@ -1058,6 +1059,7 @@ async function openDebuggerFromError(): Promise<void> {
       reviewing: task.status === 'review' && !inPipeline && repo.reviewFor(task.id)?.running,
       'moving-to-done': task.status === 'review' && inPipeline,
       'waiting-for-human':
+        task.assignee !== 'human' &&
         task.status === 'review' &&
         !inPipeline &&
         !awaitingFreshReview &&

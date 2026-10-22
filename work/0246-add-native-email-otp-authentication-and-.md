@@ -3,9 +3,10 @@ id: "0246"
 title: Add native email OTP authentication and admin user allowlist
 type: feature
 status: done
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+human_step_decision: agent
+human_step_decision_key: 12ff50f5
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: 12ff50f5
 priority: p2
 area: web
 assigned_to: unassigned
@@ -14,7 +15,7 @@ branch: feat/add-native-email-otp-authentication-and-
 model_override: default
 pm_model_override: default
 created_at: "2026-08-17T11:01:34Z"
-updated_at: "2026-10-06T23:48:16Z"
+updated_at: "2026-10-22T07:47:50Z"
 ---
 ## Problem
 
@@ -59,3 +60,4 @@ Admins manage members, roles, and auth settings from Settings. Cloudflare Tunnel
 - 2026-08-18T13:48:01Z · status active→review
 - 2026-08-19T07:41:35Z · status review→done, release:success
 - 2026-10-06T23:48:16Z · needs_input
+- 2026-10-22T07:47:50Z · needs_input

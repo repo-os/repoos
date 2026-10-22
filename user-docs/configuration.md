@@ -425,17 +425,21 @@ task body normally includes these headings (each with real prose, not placeholde
 The body outside `## Original prompt` should be at least ~400 characters. The PM
 "flesh this out" flow and `repoos new` / task PATCH paths run the same check.
 
-RepoOS also flags `needs_input` / `needs-human-step` when `## Acceptance criteria`
-mention real devices, physical hardware, accounts, credentials, or third-party
-registrations — a hint to split that verification into a human-only task.
+RepoOS also flags `needs_input` / `needs-human-step` when acceptance criteria
+need a real device, account, or third-party sign-up. A keyword scan is only a
+tripwire: when **Model routing → Check for mixed AI and human steps** is on,
+the decision model must agree before the flag is set, and `needs_input_detail`
+quotes the matched criterion plus the model's bounded reason. Clearing the flag
+(or `repoos update --human-step-override "<reason>"`) is **sticky** by default
+(**Remember cleared needs-human-step flags**): RepoOS stores a fingerprint of
+the acceptance criteria so later edits do not re-flag until the criteria
+materially change. Prefix criteria with `[human]` or `[ai]`; when both tags are
+present, `repoos split <id>` (or **Split human steps** in the drawer) moves the
+`[human]` lines to a held human task that depends on the AI task.
 
 Both checks are agent-oriented. A task assigned to a human (`--assigned-to
 human`) is the human's own checklist: it skips both, `## Notes for AI` is
-optional for it, and its acceptance criteria are still shown. An AI task that
-trips the `needs-human-step` keyword check by accident can be cleared on purpose
-with a recorded reason — `repoos new/update --human-step-override "<reason>"` —
-which stores the reason on the task and writes it to the activity log. The
-matched keywords stay listed in `needs_input_detail` until that override is set.
+optional for it, and its acceptance criteria are still shown.
 
 Constraints: a label is a string of at most 40 characters; blank labels,
 duplicates of another column's label, or over-length values fall back to that
@@ -581,7 +585,8 @@ provider = "jev"             # jev | openrouter
 model = "jev-latest"         # or a pinned id such as "jev-1.13.0"
 roles = ["engineer", "reviewer", "pm"]
 timeoutMs = 8000             # 500–60000
-humanStepCheck = false       # ask before a ready task starts (default off)
+humanStepCheck = false       # model check when keywords trip (default off)
+humanStepSticky = true       # remember cleared flags (default on)
 ```
 
 | Key | Default | Meaning |
@@ -592,7 +597,8 @@ humanStepCheck = false       # ask before a ready task starts (default off)
 | `model_routing.baseUrl` | — | Retained so an existing `[model_routing]` table with the self-hosted adapter still parses. It has no UI and is not a selectable provider. |
 | `model_routing.roles` | all three | Which runs consult the router. A role left out keeps its configured agent. |
 | `model_routing.timeoutMs` | `8000` | One decision call's ceiling. A timeout falls back; it never blocks the run. |
-| `model_routing.humanStepCheck` | `false` | Before a `ready` task starts, ask the decision model whether it needs steps only a human can do and should be split into an AI task and a human task. Uses the same provider as routing. It only blocks a start when `mode = "automatic"`; in `shadow` it records the verdict without blocking, and when the provider is off, unavailable, or fails, the existing keyword check runs instead — a failure never blocks a task on its own. |
+| `model_routing.humanStepCheck` | `false` | When acceptance criteria trip the keyword scan, ask the decision model whether verification truly requires a human — the keyword alone never sets the flag. Uses the same provider as routing. It only blocks a start when `mode = "automatic"`; in `shadow` it records the verdict without blocking, and when the provider is off, unavailable, or fails, the keyword check runs instead. |
+| `model_routing.humanStepSticky` | `true` | When a human clears a `needs-human-step` flag, record a fingerprint of the acceptance criteria so later rescans skip the flag until the criteria materially change. |
 
 ### Choosing a provider
 
@@ -962,6 +968,7 @@ agent is running, the task is paused, or its worktree has recent activity.
 | `watchdog.autoTransition` | boolean | `true` | yes | Whether a stuck task auto-transitions out of `active` — to `review` when its worktree holds work, else back to `ready`. When false, it is only flagged `needsInput`. |
 | `watchdog.phantomDetectMs` | number | `180000` (3 min) | yes | How long a runner entry may have no live engineer process and no live child before it is cleared and the same agent restarted. A live child (check, test, remote-validation wait) is never touched. Minimum `15000`; smaller values are ignored. Automatic restarts are limited to 3 per task per hour and written to the activity log and the Debug tab. `repoos start` on a phantom entry clears it immediately and starts. |
 | `watchdog.engineerCrashFailoverThreshold` | number | `3` | yes | Crashes or usage/auth failures for the same agent+model inside the failover window before RepoOS switches the task to the next unpaused `[[budget.allowlist]]` pair. Below it the engineer is resumed and the task stays `active`. Minimum `1`; a crash never requests a handoff by itself. A human-set task override is never replaced — that case is surfaced for a human. |
+| `watchdog.autoPauseOnUsageLimit` | boolean | `true` | yes | Immediately pause an agent+model after explicit quota/HTTP 429 output, then fail the active task over even when it has a human pin. An advertised reset time is used as the pause expiry; without one, a low-token probe runs every 10 minutes and resumes the model after a successful response. Turn off to treat quota failures as ordinary provider failures. |
 | `watchdog.engineerCrashFailoverWindowMs` | number | `1800000` (30 min) | yes | How far back RepoOS counts engineer crashes for the failover threshold. A clean turn clears the count. Minimum `60000`; smaller values are ignored. |
 | `whisper.provider` | select | `none` | yes | Voice-to-text provider for text areas: `none`, `groq`, or `openai`. |
 | `whisper.apiKey` | string | `""` | **exception** | API key for the selected whisper provider. Accepted here, but a secret — prefer `REPOOS_WHISPER_KEY` in `.env`. |
