@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/show-due-reminders-as-header-cards-besid
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-21T15:04:49Z"
-updated_at: "2026-10-22T01:20:06Z"
+updated_at: "2026-10-22T01:21:41Z"
 ---
 ## Problem
 
@@ -47,22 +47,22 @@ This covers the header cards for due reminders: excerpt, bright outline, dismiss
 
 The new reminders feature is nice, but when the time comes it just shows in the alerts icon popup at the top right, which is easy to miss since there are many other alerts that go in there. What we should do instead is make a new reminders section next to that alerts icon (to the left of it) which show a bit of text about the reminder and have it very obvious, outlined in a bright color like little cards which the user can dismiss or click on to go to the reminders page to see more info about the reminder.
 
-## Screenshots
-
-![Screenshot-2026-10-21-at-23.00.20](/api/tasks/0903/attachments/att_b4b66eb0-eebc-42ac-b34c-d0401b273051.png)
-
 ## Shots
 ```json
 [
 {
-  "label": "Due reminder shown as a bright header card beside the alerts bell",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=\"reminder-card\"]",
-  "state": "reminders:due"
+"label": "Due reminder shown as a bright header card beside the alerts bell",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"reminder-card\"]",
+"state": "reminders:due"
 }
 ]
 ```
+
+## Screenshots
+
+![Screenshot-2026-10-21-at-23.00.20](/api/tasks/0903/attachments/att_b4b66eb0-eebc-42ac-b34c-d0401b273051.png)
 
 ## Activity
 
@@ -78,3 +78,4 @@ The new reminders feature is nice, but when the time comes it just shows in the 
 - 2026-10-22T01:18:53Z · body
 - 2026-10-22T01:18:53Z · body
 - 2026-10-22T01:20:06Z · body
+- 2026-10-22T01:21:41Z · body
