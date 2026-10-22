@@ -691,7 +691,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       ensureFixtureTask(repo, "review");
       repo.integration = activePipeline(
         SHOT_PREVIEW_FIXTURE_TASK_ID,
-        "uploading bundle 27 MB · 45s",
+        "uploading bundle to thinkpad · 45 MB / 201 MB (22%) · 1.2 MB/s · ~2m left · attempt 1 · 95s in stage · full bundle (mirror empty)",
       );
       pinnedIntegration = repo.integration;
       break;
