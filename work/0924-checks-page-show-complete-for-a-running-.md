@@ -52,3 +52,4 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T14:38:33Z · body
 - 2026-10-22T14:39:11Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-22T14:39:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T14:39:11Z · message_delivered: 1 message(s)
