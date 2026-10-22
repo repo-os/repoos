@@ -1864,7 +1864,15 @@ export interface RunPlanOptions {
   echo?: boolean;
   onStart?: (
     step: CheckStep,
-    progress?: { stepsDone: number; stepsTotal: number; currentStep: number },
+    progress?: {
+      stepsDone: number;
+      stepsTotal: number;
+      currentStep: number;
+      stepName: string;
+      testsDone: null;
+      testsTotal: null;
+      testsPass: null;
+    },
   ) => void;
   onResult?: (result: StepRunResult, progress?: { stepsDone: number; stepsTotal: number }) => void;
 }
@@ -1940,7 +1948,15 @@ export async function runCheckPlan(
     }
 
     const stepsDone = results.filter((x) => x.status !== "skipped").length;
-    opts.onStart?.(step, { stepsDone, stepsTotal, currentStep: stepsDone + 1 });
+    opts.onStart?.(step, {
+      stepsDone,
+      stepsTotal,
+      currentStep: stepsDone + 1,
+      stepName: step.name,
+      testsDone: null,
+      testsTotal: null,
+      testsPass: null,
+    });
 
     const started = Date.now();
     let outcome: BuiltinOutcome;

@@ -18,12 +18,13 @@ describe("check progress display", () => {
     const progress = {
       stepsDone: 4,
       currentStep: 5,
+      stepName: "tests",
       stepsTotal: 12,
       testsDone: 140,
       testsTotal: 289,
       testsPass: 1,
     };
-    expect(checkProgressPercent(progress)).toBe(33);
+    expect(checkProgressPercent(progress)).toBe(48);
     expect(checkProgressLabel(progress)).toBe("step 5 of 12 · pass 1 · tests 140/289 files");
   });
 
@@ -31,5 +32,17 @@ describe("check progress display", () => {
     const progress = { stepsDone: null, stepsTotal: 12 };
     expect(checkProgressPercent(progress)).toBeNull();
     expect(checkProgressLabel(progress)).toBe("step — of 12");
+  });
+
+  it("uses step progress outside the tests step", () => {
+    expect(
+      checkProgressPercent({
+        stepsDone: 5,
+        stepsTotal: 12,
+        stepName: "build",
+        testsDone: 140,
+        testsTotal: 289,
+      }),
+    ).toBe(42);
   });
 });

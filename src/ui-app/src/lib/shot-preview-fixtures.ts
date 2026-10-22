@@ -726,6 +726,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         stepsDone: unknown ? 3 : 5,
         stepsTotal: unknown ? 10 : 12,
         currentStep: unknown ? 4 : 6,
+        stepName: "tests",
         testsDone: unknown ? null : 140,
         testsTotal: unknown ? null : 289,
         testsPass: unknown ? null : 1,
@@ -733,6 +734,35 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         attemptReason: "previous attempt timed out after 420s",
       };
       repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [run];
+      break;
+    }
+    case "checks:progress": {
+      ensureFixtureTask(repo, "review");
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
+        {
+          id: "shot-check-progress-page",
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "merge-gate",
+          startedAt: new Date(Date.now() - 4 * 60_000 - 10_000).toISOString(),
+          finishedAt: null,
+          durationMs: null,
+          running: true,
+          passed: null,
+          code: null,
+          output: "",
+          scope: "full",
+          machine: "bee",
+          stepsDone: 5,
+          stepsTotal: 12,
+          currentStep: 6,
+          stepName: "tests",
+          testsDone: 140,
+          testsTotal: 289,
+          testsPass: 1,
+          attempt: 2,
+          attemptReason: "previous attempt timed out after 420s",
+        },
+      ];
       break;
     }
     case "integration:median15": {

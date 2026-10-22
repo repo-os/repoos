@@ -2,6 +2,7 @@ export interface CheckProgress {
   stepsDone: number | null;
   stepsTotal: number | null;
   currentStep?: number | null;
+  stepName?: string | null;
   testsDone?: number | null;
   testsTotal?: number | null;
   testsPass?: number | null;
@@ -9,6 +10,14 @@ export interface CheckProgress {
 
 /** Return null for an indeterminate run; callers must not invent a percentage. */
 export function checkProgressPercent(progress: CheckProgress): number | null {
+  if (
+    progress.stepName?.toLowerCase() === "tests" &&
+    progress.testsDone != null &&
+    progress.testsTotal != null &&
+    progress.testsTotal > 0
+  ) {
+    return Math.min(100, Math.max(0, Math.round((progress.testsDone / progress.testsTotal) * 100)));
+  }
   if (progress.stepsTotal != null && progress.stepsTotal > 0 && progress.stepsDone != null) {
     return Math.min(100, Math.max(0, Math.round((progress.stepsDone / progress.stepsTotal) * 100)));
   }
