@@ -11,7 +11,7 @@ branch: feat/task-drawer-expanding-a-tab-hides-the-ca
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T05:45:27Z"
-updated_at: "2026-10-22T12:51:15Z"
+updated_at: "2026-10-22T12:54:22Z"
 ---
 ## Problem
 The task drawer stacks a lot between the title and the tab strip: the handoff-failure banner, the status row (status picker, Stop work, Move to done), the "Not landable yet" checklist, the preview control, and the "Waiting for you" needs-input card. On a task with several warnings (see the attached #0908 screenshots: handoff failure, landability checklist, reviewer-failed card) these push the tab strip down and leave only a thin strip of vertical space for the tab's content (Review, Changes, Dev, ...).
@@ -41,6 +41,49 @@ Start from the `fullscreen` ref, `toggleFullscreen`, `onEscapeKeyDown` and the `
 ![6](/api/tasks/0922/attachments/att_8dab3f32-c540-4f73-832f-f1f36f7589a0.webp)
 ![7](/api/tasks/0922/attachments/att_fd12dcf6-ab59-4573-af86-ff6bf09eac49.webp)
 
+## Shots
+```json
+[
+{
+  "label": "Desktop drawer with warnings above tabs",
+  "target": "default",
+  "route": "/work?task=9999&tab=review",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:tabExpandWarnings",
+  "theme": "light",
+  "viewportWidth": 1280
+},
+{
+  "label": "Expanded desktop drawer with warnings hidden",
+  "target": "default",
+  "route": "/work?task=9999&tab=review",
+  "highlight": ".drawer-tabs",
+  "steps": [
+    {
+      "click": "button[data-test-id=\"task-tab-fullscreen\"]"
+    }
+  ],
+  "state": "drawer:tabExpandWarnings",
+  "theme": "dark",
+  "viewportWidth": 1280
+},
+{
+  "label": "Expanded phone drawer with warnings hidden",
+  "target": "default",
+  "route": "/work?task=9999&tab=review",
+  "highlight": ".drawer-tabs",
+  "steps": [
+    {
+      "click": "button[data-test-id=\"task-tab-fullscreen\"]"
+    }
+  ],
+  "state": "drawer:tabExpandWarnings",
+  "theme": "light",
+  "viewportWidth": 390
+}
+]
+```
+
 ## Activity
 
 - 2026-10-22T05:45:27Z · created · njachowski@gmail.com
@@ -48,3 +91,4 @@ Start from the `fullscreen` ref, `toggleFullscreen`, `onEscapeKeyDown` and the `
 - 2026-10-22T12:51:08Z · status inbox→ready
 - 2026-10-22T12:51:14Z · cli_override, model_override
 - 2026-10-22T12:51:15Z · status ready→active, branch
+- 2026-10-22T12:54:22Z · body
