@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0925"
 title: Cancelling a close-out must kill its check process tree and free its slot
 type: bug
@@ -37,3 +38,4 @@ Also fix #0921 in the same change (dead-holder detection for local check slots: 
 - 2026-10-22T07:48:43Z · cli_override, model_override
 - 2026-10-22T07:48:44Z · status ready→active, branch
 - 2026-10-22T07:50:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
