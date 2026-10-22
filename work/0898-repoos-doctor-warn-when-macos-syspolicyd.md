@@ -2,12 +2,12 @@
 id: "0898"
 title: "repoos doctor: warn when macOS syspolicyd/trustd slow spawn-heavy work, and name the git cause"
 type: feature
-status: ready
+status: active
 priority: p2
 area: [core, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/repoos-doctor-warn-when-macos-syspolicyd
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:26Z"
@@ -33,3 +33,4 @@ See src/core/runtime.ts preferAppleGit, user-docs/configuration.md (Apple-signed
 - 2026-10-21T13:43:26Z · created · njachowski@gmail.com
 - 2026-10-21T14:01:32Z · status inbox→ready
 - 2026-10-22T13:19:16Z · cli_override, model_override
+- 2026-10-22T13:19:16Z · status ready→active, branch
