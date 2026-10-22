@@ -3,6 +3,9 @@ id: "0924"
 title: "Checks page: show % complete for a running check (steps and test files)"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Oct 23rd, 2026 12:17 AM."
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -11,10 +14,12 @@ branch: feat/checks-page-show-complete-for-a-running-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:08:54Z"
-updated_at: "2026-10-22T15:32:05Z"
+updated_at: "2026-10-22T15:32:09Z"
 review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-22T15:32:09.477Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 A running check (engineer self-check, handoff, close-out) shows only elapsed time and a log tail. Nick cannot tell whether a 40-minute run is 10% or 90% done, or whether it is looping (incident 2026-10-22, #0909: the test step timed out at 420s twice and restarted, invisible from the UI).
@@ -101,3 +106,5 @@ Shorten the local-slot queue message. The banner already says 'queued', so 'wait
 - 2026-10-22T15:30:32Z · note: shots: skipped — 9 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-22T15:32:04Z · note: review pass 2: needs some work
 - 2026-10-22T15:32:05Z · status review→active
+- 2026-10-22T15:32:09Z · agent exited with an error (codex) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Oct 23rd, 2026 12:17 AM.
+- 2026-10-22T15:32:09Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Oct 23rd, 2026 12:17 AM.
