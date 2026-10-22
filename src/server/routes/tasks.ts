@@ -53,14 +53,20 @@ import { resolveApiCreator } from "../../core/record-creator.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
 import { needsInputClearsOnNewEngineerRun } from "../../core/needs-input.js";
 import {
-  flagTaskSpecFlagsIfNeeded,
+  flagTaskSpecFlagsIfNeededAsync,
   isUnderspecifiedSweepEligible,
   needsInputClearsOnPmMessage,
   NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
   UNDERSPECIFIED_NEEDS_INPUT_REASON,
 } from "../task-underspecified-flag.js";
-import { needsHumanStepFingerprint } from "../../core/task-underspecified.js";
+import {
+  assessTaskNeedsHumanStep,
+  needsHumanStepFingerprint,
+} from "../../core/task-underspecified.js";
+import { humanStepOverrideSuppresses } from "../../core/human-step-override.js";
+import { humanStepFlagDetail } from "../../core/human-step-decision.js";
 import { runHumanStepDecisionCheck } from "../human-step-decision.js";
+import { HumanStepSplitError, splitHumanStepTask } from "../human-step-split.js";
 import {
   answeringQuestionsMatchTask,
   wrapPmMessageWithQuestionContext,
@@ -321,7 +327,7 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
   // flagged the moment it exists — not only after a later PATCH or PM run.
   // `flagTaskSpecFlagsIfNeeded` preserves any unrelated reason the caller set.
   if (isUnderspecifiedSweepEligible(created)) {
-    const flagged = flagTaskSpecFlagsIfNeeded(config, created);
+    const flagged = await flagTaskSpecFlagsIfNeededAsync(config, created);
     if (flagged) {
       created = flagged;
       logger.task(created.id, "warn", "Task body is underspecified at creation", {
@@ -441,8 +447,9 @@ export function finalizeFreeformRun(
       });
       const afterFailure = index.getTask(taskId);
       if (afterFailure) {
-        const flagged = flagTaskSpecFlagsIfNeeded(config, afterFailure);
-        if (flagged) index.applyFileChange(flagged.absPath);
+        void flagTaskSpecFlagsIfNeededAsync(config, afterFailure).then((flagged) => {
+          if (flagged) index.applyFileChange(flagged.absPath);
+        });
       }
       return;
     }
@@ -473,8 +480,9 @@ export function finalizeFreeformRun(
     index.applyFileChange(updated.absPath);
     const afterPromote = index.getTask(taskId);
     if (afterPromote) {
-      const flagged = flagTaskSpecFlagsIfNeeded(config, afterPromote);
-      if (flagged) index.applyFileChange(flagged.absPath);
+      void flagTaskSpecFlagsIfNeededAsync(config, afterPromote).then((flagged) => {
+        if (flagged) index.applyFileChange(flagged.absPath);
+      });
     }
     logger.task(taskId, "info", "PM agent fleshed out draft task", {
       title: updated.title,
@@ -999,7 +1007,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     if (rest.body !== undefined || rest.section !== undefined) {
       const current = index.getTask(updated.id);
       if (current) {
-        const flagged = flagTaskSpecFlagsIfNeeded(config, current);
+        const flagged = await flagTaskSpecFlagsIfNeededAsync(config, current);
         if (flagged) index.applyFileChange(flagged.absPath, { guarded: true });
       }
     }
@@ -1025,6 +1033,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   try {
     updated = patchTaskFile(config, existing.absPath, body, {
       onStatusChange: onServerStatusChange,
+      actor: getCurrentUser(req, config)?.email ?? "human",
     });
   } catch (error) {
     if (error instanceof DependencyValidationError) return json(res, 400, { error: error.message });
@@ -1066,7 +1075,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   if (body.body !== undefined || body.section !== undefined || body.assignedTo !== undefined) {
     const current = index.getTask(updated.id);
     if (current) {
-      const flagged = flagTaskSpecFlagsIfNeeded(config, current);
+      const flagged = await flagTaskSpecFlagsIfNeededAsync(config, current);
       if (flagged) index.applyFileChange(flagged.absPath, { guarded: true });
     }
   }
@@ -1074,7 +1083,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   if (prevStatus === "draft" && updated.status !== "draft") {
     const current = index.getTask(updated.id);
     if (current) {
-      const flagged = flagTaskSpecFlagsIfNeeded(config, current);
+      const flagged = await flagTaskSpecFlagsIfNeededAsync(config, current);
       if (flagged) index.applyFileChange(flagged.absPath, { guarded: true });
     }
   }
@@ -2373,44 +2382,94 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // unavailable and failed all fall through to the keyword check below, so a
     // model outage can never block a task on its own.
     let humanStepOverride: "agent" | "human" | undefined;
-    // #0815: human-assigned tasks and tasks carrying an explicit human
-    // override never run the agent-oriented keyword/model human-step check.
+    let humanStepShadowRecord: "human" | undefined;
+    // #0815 / #0909: human-assigned tasks and sticky overrides skip the check.
+    // The model runs only when the keyword tripwire or a [human] tag fires.
     if (
       existing.status === "ready" &&
       existing.assignee !== "human" &&
-      !existing.humanStepOverride
+      !humanStepOverrideSuppresses(config, existing)
     ) {
-      const check = await runHumanStepDecisionCheck(config, existing);
-      if (check.outcome === "shadow") {
-        logger.task(id, "info", "Human-step decision recorded (shadow mode)", {
-          needsHumanStep: check.decision?.needsHumanStep ?? null,
-          detail: check.detail,
+      const tripwire = assessTaskNeedsHumanStep(existing.body, {
+        area: existing.area,
+        assignee: existing.assignee,
+      });
+      if (tripwire.needsHumanStep) {
+        if (tripwire.taggedHuman) {
+          const detail = tripwire.detail;
+          const flagged = patchTaskFile(config, existing.absPath, {
+            needsInput: true,
+            needsInputReason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
+            needsInputDetail: detail,
+          });
+          index.applyFileChange(flagged.absPath, { guarded: true });
+          logger.task(id, "warn", "Task needs a human-only step — not started", { detail });
+          return json(res, 409, {
+            ok: false,
+            error: detail,
+            reason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
+            needsInput: true,
+            detail,
+          });
+        }
+        const check = await runHumanStepDecisionCheck(config, {
+          id: existing.id,
+          title: existing.title,
+          body: existing.body,
+          matchedSentence: tripwire.sentence,
         });
-      } else if (check.outcome === "failed") {
-        logger.task(id, "warn", "Human-step decision check failed — using the keyword check", {
-          error: check.error,
-        });
-      } else if (check.outcome === "human") {
-        const detail =
-          check.detail ?? "The decision model says this task needs a step only a human can do.";
-        const flagged = patchTaskFile(config, existing.absPath, {
-          needsInput: true,
-          needsInputReason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
-          needsInputDetail: detail,
-          humanStepDecision: "human",
-          humanStepDecisionKey: needsHumanStepFingerprint(existing.body),
-        });
-        index.applyFileChange(flagged.absPath, { guarded: true });
-        logger.task(id, "warn", "Task needs a human-only step — not started", { detail });
-        return json(res, 409, {
-          ok: false,
-          error: detail,
-          reason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
-          needsInput: true,
-          detail,
-        });
-      } else if (check.outcome === "agent") {
-        humanStepOverride = "agent";
+        if (check.outcome === "shadow") {
+          logger.task(id, "info", "Human-step decision recorded (shadow mode)", {
+            needsHumanStep: check.decision?.needsHumanStep ?? null,
+            detail: check.detail,
+          });
+          if (check.decision?.needsHumanStep) {
+            humanStepShadowRecord = "human";
+          } else if (check.decision) {
+            humanStepOverride = "agent";
+          }
+        } else if (check.outcome === "failed") {
+          logger.task(id, "warn", "Human-step decision check failed — using the keyword check", {
+            error: check.error,
+          });
+        } else if (check.outcome === "human") {
+          const detail = humanStepFlagDetail(
+            tripwire.sentence,
+            check.detail ?? check.decision?.explanation ?? tripwire.detail,
+          );
+          const flagged = patchTaskFile(config, existing.absPath, {
+            needsInput: true,
+            needsInputReason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
+            needsInputDetail: detail,
+            humanStepDecision: "human",
+            humanStepDecisionKey: needsHumanStepFingerprint(existing.body),
+          });
+          index.applyFileChange(flagged.absPath, { guarded: true });
+          logger.task(id, "warn", "Task needs a human-only step — not started", { detail });
+          return json(res, 409, {
+            ok: false,
+            error: detail,
+            reason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
+            needsInput: true,
+            detail,
+          });
+        } else if (check.outcome === "agent") {
+          humanStepOverride = "agent";
+        } else if (config.modelRouting?.humanStepCheck !== true) {
+          const flagged = patchTaskFile(config, existing.absPath, {
+            needsInput: true,
+            needsInputReason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
+            needsInputDetail: tripwire.detail,
+          });
+          index.applyFileChange(flagged.absPath, { guarded: true });
+          return json(res, 409, {
+            ok: false,
+            error: tripwire.detail,
+            reason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
+            needsInput: true,
+            detail: tripwire.detail,
+          });
+        }
       }
     }
     // Phantom heal sits after the refusal gates above (#0804 human-step, deps,
@@ -2492,6 +2551,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       patch.humanStepDecision = "agent";
       patch.humanStepDecisionKey = needsHumanStepFingerprint(existing.body);
     }
+    if (humanStepShadowRecord === "human") {
+      patch.humanStepDecision = "human";
+      patch.humanStepDecisionKey = needsHumanStepFingerprint(existing.body);
+    }
     if (!existing.branch) patch.branch = branch;
     // Patch (and commit) the task file in main BEFORE forking the worktree's
     // branch — ensureWorktree forks from main's current committed HEAD, so
@@ -2517,7 +2580,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         area: startedTask.area,
         assignee: startedTask.assignee,
       });
-      const flagged = flagTaskSpecFlagsIfNeeded(config, startedTask, {
+      const flagged = await flagTaskSpecFlagsIfNeededAsync(config, startedTask, {
         humanStepDecision: humanStepOverride,
       });
       if (flagged) {
@@ -3356,6 +3419,26 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       branch,
       hotfixTarget,
     });
+  }
+
+  if (action === "split") {
+    const actor = getCurrentUser(req, config)?.email ?? "human";
+    try {
+      const result = await splitHumanStepTask(config, existing, actor);
+      index.applyFileChange(result.source.absPath, { guarded: true });
+      index.applyFileChange(result.humanTask.absPath);
+      logger.task(id, "info", "Split human-step acceptance criteria", {
+        humanTaskId: result.humanTask.id,
+      });
+      return json(res, 200, {
+        ok: true,
+        task: index.getTask(result.source.id) ?? result.source,
+        humanTask: result.humanTask,
+      });
+    } catch (err) {
+      if (err instanceof HumanStepSplitError) return json(res, 400, { error: err.message });
+      throw err;
+    }
   }
 
   return json(res, 400, { error: `Unknown action: ${action}` });

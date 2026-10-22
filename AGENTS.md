@@ -147,7 +147,8 @@ human (the tests use fakes and nothing depends on that human step); if a
 criterion does, file that part first —
 `repoos new "<title>" --depends-on <id>`, then
 `repoos update <new> --assigned-to human` (`repoos new` defaults to
-`assigned_to: ai`, so the reassignment is required) — narrow the original task
+`assigned_to: ai`, so the reassignment is required), or use `repoos split <id>`
+when the task already tags mixed `[human]` / `[ai]` criteria — narrow the original task
 to the agent-doable scope, and only then close out. If the human part cannot be
 separated from the code, do not close out; report it to the human. Applies to
 interactive sessions and the CTO/driver path alike. Incident: #0660 was closed

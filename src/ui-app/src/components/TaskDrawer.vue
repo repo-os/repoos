@@ -65,6 +65,7 @@ import {
   needsInputSuggestionText,
   needsInputSuppressedOnReview,
   needsInputSurfaces,
+  humanStepSplitAvailable,
   resolveNeedsInputReasonKey,
   STALE_REVIEW_DEV_ERROR_BANNER,
 } from "../lib/needs-input-ui";
@@ -3479,8 +3480,11 @@ const needsInputPrimary = computed(() => {
   return needsInputPrimaryAction(ui.active.needsInputReason, activeNeedsInputQuestions.value, {
     status: ui.active.status,
     agentRunning: repo.isRunning(ui.active.id),
+    humanStepSplitAvailable: humanStepSplitAvailable(ui.active),
   });
 });
+
+const splitHumanStepBusy = ref(false);
 
 const dismissNeedsInputBusy = ref(false);
 
@@ -3548,6 +3552,22 @@ async function runNeedsInputPrimaryAction(): Promise<void> {
     ui.activeTab = "pm";
     pmDraft.value = PM_FLESH_OUT_CANNED_MESSAGE;
     await pmSend();
+    return;
+  }
+  if (action.kind === "split-human-step") {
+    if (!ui.active || splitHumanStepBusy.value) return;
+    splitHumanStepBusy.value = true;
+    try {
+      const result = await api<{ task: typeof ui.active; humanTask: { id: string } }>(
+        `/api/tasks/${ui.active.id}/split`,
+        { method: "POST", ...JSON_OPTS },
+      );
+      ui.syncActive(result.task);
+    } catch (err) {
+      repo.onError(err);
+    } finally {
+      splitHumanStepBusy.value = false;
+    }
     return;
   }
   if (ui.active.questions?.length) {
@@ -4977,7 +4997,11 @@ watch(
                     ? STALE_REVIEW_DEV_ERROR_BANNER
                     : ui.active.needsInputReason === "review-rounds-exhausted" && review?.running
                       ? "A fresh review is running. Its result will determine whether this still needs your attention."
-                      : needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)
+                      : needsInputBannerText(
+                          ui.active.needsInputReason,
+                          activeNeedsInputQuestions,
+                          ui.active.needsInputDetail,
+                        )
                 }}
               </div>
               <!-- needsInputDetail for dev-error is internal skill-routing
