@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-22T01:33:15Z"
+review_passes: 1
 id: "0904"
 title: "Run whole engineer sessions on remote runners, not only checks, shots and gates"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/run-whole-engineer-sessions-on-remote-ru
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T15:06:23Z"
-updated_at: "2026-10-22T01:33:15Z"
 last_check_failure: "repoos check at 2026-10-21T20:52:34.600Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 7
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
@@ -107,3 +108,4 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-22T01:32:31Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d731c62d8) during finalization (#0734)
 - 2026-10-22T01:32:31Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d731c62d8) during finalization (#0734)
 - 2026-10-22T01:33:15Z · note: review pass 1: good to go
+
