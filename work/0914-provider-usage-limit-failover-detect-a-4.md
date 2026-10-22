@@ -53,3 +53,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T03:56:01Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-22T04:00:36Z · body
 - 2026-10-22T04:06:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T04:06:58Z · message_delivered: 1 message(s)
