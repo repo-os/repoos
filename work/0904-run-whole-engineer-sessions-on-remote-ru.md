@@ -5,7 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "error: Go usage limit exceeded"
+needs_input_detail: "engineer keeps crashing (3 in 30m): RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -14,10 +14,10 @@ branch: feat/run-whole-engineer-sessions-on-remote-ru
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-21T15:06:23Z"
-updated_at: "2026-10-22T05:48:14Z"
+updated_at: "2026-10-22T05:48:21Z"
 engineer_stall_resume_log: "[{\"at\":\"2026-10-22T05:43:52.015Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 5
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T05:46:14.833Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T05:46:18.312Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T05:48:07.066Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-22T05:48:10.524Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-22T05:48:14.038Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 6
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T05:46:14.833Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T05:46:18.312Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T05:48:07.066Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-22T05:48:10.524Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-22T05:48:14.038Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-10-22T05:48:21.829Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 ---
 ## Problem
@@ -73,3 +73,4 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-22T05:48:07Z · engineer crash recovery: switched opencode + opencode-go/deepseek-v4.1-flash → opencode + opencode-go/glm-5.3-flash after 3/3 crashes in 30m · error: Go usage limit exceeded
 - 2026-10-22T05:48:10Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · error: Go usage limit exceeded
 - 2026-10-22T05:48:14Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (2/3 crashes in 30m) · error: Go usage limit exceeded
+- 2026-10-22T05:48:21Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch (3/3 crashes in 30m)
