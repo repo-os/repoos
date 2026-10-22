@@ -186,3 +186,12 @@ all.
 Both surfaces read from the **primary checkout**, even when the server is serving a
 preview from a task worktree, because branch health and dirty state belong to the
 checkout you actually manage.
+
+Each configured target also has a **Local environment** selector. This saves a
+`deployment:<target-name>` binding in RepoOS's local environment metadata; it
+does not inject values into the RepoOS server, change a provider destination,
+or upload/synchronize variables. The selected name is a record of which
+project environment the deployment is intended to consume. RepoOS currently
+has no provider variable publish/sync operation, so provider-managed variables
+must be configured in that provider's own tools. Selecting `production` never
+propagates production values.
