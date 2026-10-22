@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T04:09:06Z"
-updated_at: "2026-10-22T04:09:14Z"
+updated_at: "2026-10-22T04:33:52Z"
 ---
 ## Problem
 2026-10-22: #0909's close-out (check/validating phase) started at 03:03Z and did nothing visible for 48 minutes. At 03:51:39Z the attention event 'Ran locally' recorded: 'ssh upload of candidate bundle to thinkpad failed: [stdin error: EPIPE: broken pipe, write]'. Only then did the gate start locally on the laptop (which also burns the laptop's memory, the problem remote validation is meant to avoid). thinkpad was swap-bound at the time (3579/4095 MB, 87%). The upload to a pressured or wedged host had no hard deadline short enough to fail fast, #0901's health probe did not keep the upload from going to that host, and nothing in the UI/task showed what the close-out was waiting on (the user only saw 'check', and asked why it was stuck for over an hour).
@@ -19,6 +19,10 @@ A stalled upload fails within about 60-90 s, the close-out retries on another he
 
 ## Acceptance criteria
 - Hard deadline on candidate bundle upload and the remote probe (ssh ServerAlive options and a wall-clock cap), with a test using a fake host that accepts the connection and then stalls.
+- Real upload progress, not just size and elapsed: the card shows bytes sent / total, percent, current rate and ETA (read bytes written to the ssh/scp stream, not only a heartbeat), per host and per attempt, plus total time in the stage across all attempts. Today the card says 'uploading bundle 201 MB · 10s' from a 5 s heartbeat with no progress, and each of the 3 attempts restarts the clock.
+- Abort when slower than normal: if the measured rate or ETA means the upload cannot finish within a budget (default a few minutes, Settings control), cancel it and retry on another healthy host, or fall back, instead of waiting for the broken pipe; a hard 'abort close-out stage' button on the card and a CLI command (repoos done --abort / repoos abort <id>) that stops the current stage cleanly and records why.
+- Link quality is measured before sending a big bundle: a short probe of round-trip time and a small test transfer per host; a host with RTT over about 1 s (bufferbloat from parallel uploads) or throughput under a floor is skipped or deferred, and uploads to different hosts from the same laptop are serialized or rate-shared so they do not saturate the uplink.
+- Incremental upload is expected to be kilobytes (#0717): when a bundle is large (for example 201 MB), record why (missing mirror base on that host, mirror cleared, full-history bundle) and refresh the host mirror once so later runs are small; show 'full bundle (mirror empty)' in the card.
 - On upload failure or timeout, retry on the next healthy host before local fallback; local fallback only when every eligible host failed.
 - #0901's pressure probe also gates the upload: a host at or above the swap limit is skipped before any bytes are sent; add a test for 87% swap.
 - Close-out phase detail (current host, bytes sent, elapsed, reason a host was skipped) is recorded in the integration job and shown in the drawer/close-out card (see #0897 for queue visibility).
@@ -30,3 +34,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 ## Activity
 
 - 2026-10-22T04:09:06Z · created · njachowski@gmail.com
+- 2026-10-22T04:33:52Z · body: Acceptance criteria (added 4)
