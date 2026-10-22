@@ -2,7 +2,7 @@
 id: "0923"
 title: repoos gc must spare the candidate worktree of a running close-out
 type: bug
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repoos-gc-must-spare-the-candidate-workt
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:06:09Z"
-updated_at: "2026-10-22T13:13:34Z"
+updated_at: "2026-10-22T13:16:46Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-22T12:09:45.656Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Control dashboard worktree cleanup preview (target \"default\"): highlight .gc-preview matched nothing on / (http://127.0.0.1:43707/)"
 ---
@@ -105,3 +105,4 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 - 2026-10-22T12:56:56Z · CTO nudge: held — remote validation is running
 - 2026-10-22T13:13:34Z · message_queued at 2026-10-22T13:13:34.692Z
 - 2026-10-22T13:13:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-22T13:16:46Z · status active→review
