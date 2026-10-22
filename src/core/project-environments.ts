@@ -195,6 +195,34 @@ export function readProjectEnvironment(
   };
 }
 
+/** Safe boolean for UI navigation; reports no names, paths, or values. */
+export function hasConfiguredProjectEnvironmentSecrets(root: string): boolean {
+  let hasRegistered = false;
+  const registryFile = join(resolve(root), ".repoos", "environments.json");
+  try {
+    if (existsSync(registryFile)) {
+      const parsed = validateEnvironmentRegistry(JSON.parse(readFileSync(registryFile, "utf8")));
+      hasRegistered = parsed.environments.length > 0;
+    }
+  } catch {
+    // An invalid registry cannot enable project-secret navigation.
+  }
+  try {
+    const snapshot = readProjectEnvironment(root, {
+      id: "secrets-nav-probe",
+      sources: [{ id: "probe", path: ".env", examplePath: ".env.example" }],
+    });
+    return (
+      hasRegistered ||
+      [...snapshot.keys, ...snapshot.expectedKeys].some(
+        (key) => !key.toUpperCase().startsWith("REPOOS_"),
+      )
+    );
+  } catch {
+    return hasRegistered;
+  }
+}
+
 /** Read values for child-process construction. Never return this from an API. */
 export function readProjectEnvironmentValues(
   root: string,

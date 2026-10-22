@@ -8,22 +8,12 @@ import { relTime } from "../lib/time";
 import { CANARY_PROMPT } from "../../../core/canary.js";
 import CanaryConfirmDialog from "./CanaryConfirmDialog.vue";
 import SidebarGitState from "./SidebarGitState.vue";
-import { api } from "../api";
 
 const repo = useRepoStore();
 const config = useConfigStore();
-const secretsEnabled = ref(false);
-async function refreshSecretsAvailability(): Promise<void> {
-  try {
-    const response = await api<{ enabled: boolean }>("/api/project-environments");
-    secretsEnabled.value = response.enabled === true;
-  } catch {
-    secretsEnabled.value = false;
-  }
-}
-const nav = computed(() => navFromConfig(config.data, secretsEnabled.value));
+const nav = computed(() => navFromConfig(config.data, config.data?.projectSecretsEnabled === true));
 function secretsChanged(): void {
-  void refreshSecretsAvailability();
+  void config.load();
 }
 const { connected, eventCount, total, health } = storeToRefs(repo);
 
@@ -56,7 +46,6 @@ onMounted(() => {
     now.value = Date.now();
   }, 1000);
   window.addEventListener("repoos:project-environments-changed", secretsChanged);
-  void refreshSecretsAvailability();
 });
 onBeforeUnmount(() => {
   if (tick) clearInterval(tick);
