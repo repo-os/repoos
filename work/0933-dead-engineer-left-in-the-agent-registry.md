@@ -11,7 +11,7 @@ branch: feat/dead-engineer-left-in-the-agent-registry
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:22:48Z"
-updated_at: "2026-10-22T10:39:08Z"
+updated_at: "2026-10-22T10:39:55Z"
 ---
 ## Problem
 2026-10-22: after #0918's engineer was killed by hand (pid 11479), .repoos/agents.json still listed it as a running engineer. The task reached review but no reviewer started for 12 minutes, and 'repoos review again' refused with 'Task #0918 has an agent turn in progress — wait for it to finish'. Recovery needed mv active + pause + a second handoff (another ~13 min).
@@ -38,3 +38,4 @@ Related: #0921 (dead local-check slot holders), #0925 (cancel frees resources), 
 - 2026-10-22T10:23:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-22T10:28:34Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-22T10:39:08Z · body
+- 2026-10-22T10:39:55Z · handoff_deferred: 1 queued message(s) must be read before review
