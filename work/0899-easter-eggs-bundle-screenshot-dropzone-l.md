@@ -3,9 +3,6 @@ id: "0899"
 title: "Easter eggs bundle: screenshot dropzone layout, CLI screenshot captions"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — clean mergeability and RepoOS landability remain unconfirmed
 hold: true
 priority: p3
 area: [web, core]
@@ -17,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-21T20:34:55Z"
+updated_at: "2026-10-22T01:31:14Z"
 review_passes: 5
 review_rounds: 2
 ---
@@ -227,3 +224,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-21T19:39:35Z · note: review pass 5: needs some work
 - 2026-10-21T19:39:35Z · needs_input
 - 2026-10-21T20:34:55Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-22T01:31:14Z · needs_input (review-rounds-exhausted) dismissed by hello@repoos.org
