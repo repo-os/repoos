@@ -64,3 +64,4 @@ Reproduce with .repoos/reviews/0899/1.md to 5.md. The reviewer for those passes 
 - 2026-10-22T01:45:26Z · body
 - 2026-10-22T01:45:26Z · body
 - 2026-10-22T01:56:07Z · status active→review
+- 2026-10-22T01:56:07Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
