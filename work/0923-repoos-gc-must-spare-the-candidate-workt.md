@@ -2,7 +2,7 @@
 id: "0923"
 title: repoos gc must spare the candidate worktree of a running close-out
 type: bug
-status: review
+status: active
 priority: p1
 area: core
 assigned_to: ai
