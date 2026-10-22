@@ -76,3 +76,4 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 - 2026-10-22T12:52:22Z · message_queued at 2026-10-22T12:52:22.036Z
 - 2026-10-22T12:52:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T12:52:59Z · status active→review
+- 2026-10-22T12:52:59Z · message_delivered: 1 message(s)
