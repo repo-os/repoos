@@ -12,7 +12,7 @@ branch: feat/ui-handoff-gate-hides-the-runner-s-real-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T19:57:21Z"
-updated_at: "2026-10-22T23:17:08Z"
+updated_at: "2026-10-22T23:18:21Z"
 last_close_out_gate_ms: 131788
 last_close_out_gate_at: "2026-10-22T23:17:08.943Z"
 review_passes: 1
@@ -46,4 +46,4 @@ Related: AGENTS.md shot hygiene (#0613, #0830) and #0866.
 - 2026-10-22T23:13:26Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-22T23:14:01Z · note: review pass 1: good to go
 - 2026-10-22T23:17:08Z · close-out gate completed in 132s
-
+- 2026-10-22T23:18:21Z · status done→done, release:success
