@@ -11,7 +11,7 @@ branch: feat/task-drawer-expanding-a-tab-hides-the-ca
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T05:45:27Z"
-updated_at: "2026-10-22T13:09:02Z"
+updated_at: "2026-10-22T13:09:13Z"
 ---
 ## Problem
 The task drawer stacks a lot between the title and the tab strip: the handoff-failure banner, the status row (status picker, Stop work, Move to done), the "Not landable yet" checklist, the preview control, and the "Waiting for you" needs-input card. On a task with several warnings (see the attached #0908 screenshots: handoff failure, landability checklist, reviewer-failed card) these push the tab strip down and leave only a thin strip of vertical space for the tab's content (Review, Changes, Dev, ...).
@@ -55,7 +55,7 @@ Start from the `fullscreen` ref, `toggleFullscreen`, `onEscapeKeyDown` and the `
 "highlight": ".drawer-tabs",
 "steps": [
 {
-  "click": "button[data-test-id=\"task-tab-fullscreen\"]"
+"click": "button[data-test-id=\"task-tab-fullscreen\"]"
 }
 ],
 "state": "drawer:tabExpandWarnings",
@@ -69,7 +69,7 @@ Start from the `fullscreen` ref, `toggleFullscreen`, `onEscapeKeyDown` and the `
 "highlight": ".drawer-tabs",
 "steps": [
 {
-  "click": "button[data-test-id=\"task-tab-fullscreen\"]"
+"click": "button[data-test-id=\"task-tab-fullscreen\"]"
 }
 ],
 "state": "drawer:tabExpandWarnings",
@@ -93,3 +93,4 @@ Start from the `fullscreen` ref, `toggleFullscreen`, `onEscapeKeyDown` and the `
 - 2026-10-22T12:51:15Z · status ready→active, branch
 - 2026-10-22T12:54:22Z · body
 - 2026-10-22T12:56:23Z · body
+- 2026-10-22T13:09:13Z · message_queued at 2026-10-22T13:09:13.610Z
