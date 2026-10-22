@@ -11,7 +11,7 @@ branch: feat/queued-message-notice-hover-focus-popup-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T06:59:28Z"
-updated_at: "2026-10-22T16:32:17Z"
+updated_at: "2026-10-22T16:39:26Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/chat-queued-send.test.ts > chat queued state > shows the shared queued wording while a message waits, tests/chat-queued-send.test.ts > chat queued state > lists two queued messages with source and time in the popover on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 4e1f93fc3441ed7c90bd28000251253e4eb4ce6f
 ---
@@ -65,3 +65,4 @@ Follow the AGENTS.md conventions for tooltips/popovers and body-teleported layer
 - 2026-10-22T16:16:20Z · note: handoff requested (cli)
 - 2026-10-22T16:24:40Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/chat-queued-send.test.ts > chat queued state > shows the shared queued wording while a message waits, tests/chat-queued-send.test.ts > chat queued state > lists two queued messages with source and time in the popover on bee — fix it in the feature branch and re-run the gate
 - 2026-10-22T16:32:17Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/chat-queued-send.test.ts > chat queued state > shows the shared queued wording while a message waits, tests/chat-queued-send.test.ts > chat queued state > lists two queued messages with source and time in the popover on bee — fix it in the feature branch and re-run the gate
+- 2026-10-22T16:39:26Z · body
