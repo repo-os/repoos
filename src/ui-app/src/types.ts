@@ -1086,6 +1086,7 @@ export interface RemoteHostStatusView {
     availableMemRatio: number | null;
     totalMemBytes: number | null;
     compressorBytes: number | null;
+    compressorRatio?: number | null;
     psiMemoryAvg10?: number | null;
     reason: string | null;
     fix: string | null;

@@ -67,6 +67,10 @@ export interface RunnerHealth {
   availableMemRatio: number | null;
   totalMemBytes: number | null;
   compressorBytes: number | null;
+  /** Compressor share of RAM (0..1), when the host reports it. */
+  compressorRatio?: number | null;
+  /** Linux PSI memory avg10 (%), when the host reports it. */
+  psiMemoryAvg10?: number | null;
   /** Non-empty when critical — the reason work is being held. */
   reason: string | null;
   /** The exact human fix for this host's OS, when pressured. */
@@ -136,7 +140,9 @@ interface LabelledSections {
 
 function splitLabelledSections(output: string): LabelledSections {
   const sections = new Map<string, string>();
-  const marker = /(?:^|\n)__([A-Z_]+)__\n/g;
+  // Line-start lookbehind, not `(?:^|\n)`: an EMPTY section (`__MEMINFO__\n__PSI__\n`)
+  // must not swallow the newline the next marker needs (#0918).
+  const marker = /(?<![^\n])__([A-Z_]+)__\n/g;
   let current = "";
   let previous = 0;
   for (const match of output.matchAll(marker)) {
@@ -323,6 +329,11 @@ export function evaluateRunnerHealth(
     availableMemRatio: sample.availableMemRatio,
     totalMemBytes: sample.totalMemBytes,
     compressorBytes: sample.compressorBytes ?? null,
+    compressorRatio:
+      sample.compressorBytes != null && sample.totalMemBytes != null && sample.totalMemBytes > 0
+        ? sample.compressorBytes / sample.totalMemBytes
+        : null,
+    psiMemoryAvg10: sample.psiMemoryAvg10 ?? null,
     reason: null,
     fix: null,
     recheckCommand: HOST_HEALTH_REMINDER,

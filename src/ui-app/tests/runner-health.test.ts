@@ -177,6 +177,25 @@ __MEMSIZE__
     expect(health.state).toBe("pressured");
     expect(health.reason).toMatch(/PSI memory pressure avg10/i);
     expect(health.fix).toMatch(/cat \/proc\/pressure\/memory/);
+    // #0918 review: the DTO must carry the PSI reading to the Runners tab.
+    expect(health.psiMemoryAvg10).toBe(40);
+  });
+
+  it("carries the compressor share of RAM on the runner health DTO", () => {
+    const health = evaluateRunnerHealth(
+      {
+        source: "macos-host",
+        swapUsedBytes: 0,
+        swapTotalBytes: 4 * 1024 ** 3,
+        availableMemRatio: 0.5,
+        totalMemBytes: 16 * 1024 ** 3,
+        compressorBytes: 4 * 1024 ** 3,
+        psiMemoryAvg10: null,
+        sampledAt: "2026-10-22T00:00:00.000Z",
+      },
+      thresholds,
+    );
+    expect(health.compressorRatio).toBeCloseTo(0.25, 5);
   });
 
   it("still recognizes PSI if a Linux runner has no readable meminfo", () => {
