@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-22T02:04:54Z"
-review_passes: 1
+last_close_out_gate_ms: 349899
+last_close_out_gate_at: "2026-10-22T02:12:51.334Z"
 id: "0902"
 title: Task spec check flags easter-egg bundles as underspecified
 type: bug
@@ -13,6 +13,8 @@ branch: feat/task-spec-check-flags-easter-egg-bundles
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T14:52:31Z"
+updated_at: "2026-10-22T02:12:51Z"
+review_passes: 1
 dev_error_count: 6
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 ---
@@ -57,4 +59,5 @@ Start from `assessTaskUnderspecified` and `specSectionHeadingsForTask` in `src/c
 - 2026-10-22T02:04:14Z · status active→review
 - 2026-10-22T02:04:15Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-22T02:04:54Z · note: review pass 1: good to go
+- 2026-10-22T02:12:51Z · close-out gate completed in 350s
 
