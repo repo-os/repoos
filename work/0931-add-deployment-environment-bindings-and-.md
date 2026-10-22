@@ -55,3 +55,4 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 - 2026-10-22T22:14:41Z · body
 - 2026-10-22T22:16:33Z · body
 - 2026-10-22T22:16:45Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-22T22:16:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
