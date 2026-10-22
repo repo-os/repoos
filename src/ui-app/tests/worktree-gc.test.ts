@@ -64,6 +64,31 @@ function branches(root: string): Set<string> {
 }
 
 describe("sweepStaleWorktrees — full mode", () => {
+  it.each(["active", "review"])(
+    "reports candidate and feature worktrees kept for %s tasks",
+    (status) => {
+      const { root, clean } = makeRepo();
+      try {
+        ensureWorktree(root, "repoos/integrate/0009");
+        ensureWorktree(root, "feat/live");
+
+        const report = sweepStaleWorktrees(cfg(root), {
+          mode: "full",
+          dryRun: true,
+          tasks: [task("0009", "feat/live", status)],
+        });
+
+        expect(report.removedWorktrees).toHaveLength(0);
+        expect(report.keptDirty.map(({ branch, reason }) => [branch, reason])).toEqual([
+          ["repoos/integrate/0009", "task agent still active"],
+          ["feat/live", "task agent still active"],
+        ]);
+      } finally {
+        clean();
+      }
+    },
+  );
+
   it("removes done/absent/integrate/half-deleted worktrees, keeps live and unmerged", () => {
     const { root, main, clean } = makeRepo();
     try {
