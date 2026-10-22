@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 27324bdc4a0e6dbe41c65a25ccb6e61441c68654
 id: "0908"
 title: "Human-assigned tasks need a real board pathway: move across columns to done without triggering AI, checks or review"
 type: feature
@@ -96,3 +98,4 @@ Do not start without the human. Related rule in AGENTS.md: needs-human-step task
 - 2026-10-22T03:23:55Z · note: review pass 3: failed — no usable report
 - 2026-10-22T03:23:56Z · needs_input
 - 2026-10-22T03:36:01Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
