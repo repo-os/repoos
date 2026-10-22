@@ -128,7 +128,7 @@ describe("checkRunnerEngineerClis with fake remote", () => {
     const root = tmpRoot();
     writeFileSync(
       join(root, "repoos.toml"),
-      "[remoteValidation]\nprovider = \"tailscale\"\n\n" +
+      '[remoteValidation]\nprovider = "tailscale"\n\n' +
         "[[remoteValidation.tailscaleHosts]]\n" +
         'host = "bee"\n' +
         'engineers = ["opencode"]\n',

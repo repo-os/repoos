@@ -67,11 +67,7 @@ export type RunRemoteFn = (
 export function defaultRunRemote(): RunRemoteFn {
   return (host, command, timeoutMs) =>
     new Promise((resolve) => {
-      const args = [
-        ...sshTransferArgs(host),
-        `${host.user}@${host.ip}`,
-        command,
-      ];
+      const args = [...sshTransferArgs(host), `${host.user}@${host.ip}`, command];
       const child = spawn("ssh", args, { stdio: ["ignore", "pipe", "pipe"] });
       let output = "";
       let settled = false;
@@ -140,16 +136,8 @@ export async function checkRunnerEngineerClis(opts: {
     if (!declared.length) continue;
     const ssh = sshHostFor(rv, spec, keyPath);
     const res = await runRemote(ssh, runnerEngineerProbeCommand(declared), PROBE_TIMEOUT_MS);
-    const lines =
-      res.code === 0 && !res.timedOut
-        ? parseRunnerEngineerProbeOutput(res.output)
-        : [];
-    const report = buildRunnerEngineerHostReport(
-      spec,
-      rv,
-      lines,
-      new Date().toISOString(),
-    );
+    const lines = res.code === 0 && !res.timedOut ? parseRunnerEngineerProbeOutput(res.output) : [];
+    const report = buildRunnerEngineerHostReport(spec, rv, lines, new Date().toISOString());
     if (!report.ok) ok = false;
     if (res.timedOut) {
       ok = false;

@@ -189,8 +189,7 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "runners",
-        usage:
-          "runners [check | setup <host> [--login <cli>]] [--probe] [--json] [--port N]",
+        usage: "runners [check | setup <host> [--login <cli>]] [--probe] [--json] [--port N]",
         desc: "Remote validation runner status (and optional probe)",
         flags: "--probe · --json · --port",
       },
