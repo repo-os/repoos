@@ -3,9 +3,8 @@ id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
 status: done
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: be7732ed
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -16,7 +15,7 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-10-06T23:48:13Z"
+updated_at: "2026-10-22T07:47:42Z"
 merge_conflict_retry_count: 1
 review_passes: 7
 review_rounds: 2
@@ -144,3 +143,4 @@ rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-shm
 - 2026-09-28T13:09:08Z · needs_input
 - 2026-09-28T13:17:42Z · status review→done, release:success
 - 2026-10-06T23:48:13Z · needs_input
+- 2026-10-22T07:47:42Z · needs_input
