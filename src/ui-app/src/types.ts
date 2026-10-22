@@ -920,6 +920,10 @@ export interface TaskCheckRun {
   machine: string;
   stepsDone?: number | null;
   stepsTotal?: number | null;
+  testsDone?: number | null;
+  testsTotal?: number | null;
+  attempt?: number | null;
+  attemptReason?: string | null;
 }
 
 /** One durable check run (#0564) — a row of the Runs tab / check history. */

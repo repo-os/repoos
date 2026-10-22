@@ -2375,6 +2375,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     phase: preflightContext.phase,
   });
   let results: StepRunResult[];
+  let finalProgress: { stepsDone: number; stepsTotal: number } | undefined;
   try {
     results = await runCheckPlan(plan, {
       repoRoot,
@@ -2393,6 +2394,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         console.log(c.dim(`  · ${describeStep(step)}`));
       },
       onResult: (r, progress) => {
+        finalProgress = progress;
         if (progress) console.log(`::repoos-check-progress::${JSON.stringify(progress)}`);
         const secs = r.durationMs >= 1000 ? ` (${(r.durationMs / 1000).toFixed(1)}s)` : "";
         if (r.status === "passed") {
@@ -2492,6 +2494,25 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   // Persist the run for the Checks surface (#0447) before exiting. Fail-soft:
   // visibility only, never a reason to fail an otherwise-green gate.
   const finishedAt = new Date();
+  const testProgress =
+    [...results]
+      .reverse()
+      .map((r) => {
+        const records = [...(r.output ?? "").matchAll(/::repoos-check-progress::([^\r\n]+)/g)];
+        if (!records.length) return null;
+        try {
+          const value = JSON.parse(records.at(-1)![1]!) as {
+            testsDone?: number;
+            testsTotal?: number;
+          };
+          return Number.isInteger(value.testsDone) && Number.isInteger(value.testsTotal)
+            ? { testsDone: value.testsDone, testsTotal: value.testsTotal }
+            : null;
+        } catch {
+          return null;
+        }
+      })
+      .find(Boolean) ?? null;
   writeCheckRun(
     repoRoot,
     {
@@ -2532,6 +2553,10 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     outcome: gatingFailures.length === 0 ? "pass" : "fail",
     failedStep: gatingFailures[0]?.name ?? null,
     skippedSteps: results.filter((r) => r.status === "skipped").map((r) => r.name),
+    stepsDone: finalProgress?.stepsDone ?? null,
+    stepsTotal: finalProgress?.stepsTotal ?? null,
+    testsDone: testProgress?.testsDone ?? null,
+    testsTotal: testProgress?.testsTotal ?? null,
     detail: (() => {
       const fallback = process.env[REPOOS_REMOTE_FALLBACK_DETAIL]?.trim();
       const stepDetail = gatingFailures[0]?.detail ?? null;
@@ -2606,6 +2631,10 @@ function recordRunHistoryRow(row: {
   detail: string | null;
   failedTests?: string[];
   isolationNote?: string | null;
+  stepsDone?: number | null;
+  stepsTotal?: number | null;
+  testsDone?: number | null;
+  testsTotal?: number | null;
 }): void {
   try {
     const { taskId, phase } = row.attribution;
@@ -2624,6 +2653,10 @@ function recordRunHistoryRow(row: {
       detail: row.detail,
       failedTests: row.failedTests,
       isolationNote: row.isolationNote,
+      stepsDone: row.stepsDone,
+      stepsTotal: row.stepsTotal,
+      testsDone: row.testsDone,
+      testsTotal: row.testsTotal,
     });
   } catch {
     /* never fail the gate on a history write */

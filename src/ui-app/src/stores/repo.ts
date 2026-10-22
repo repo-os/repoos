@@ -1916,11 +1916,20 @@ export const useRepoStore = defineStore("repo", () => {
         if (at >= 0) {
           const line = run.output.slice(at + marker.length).split(/\r?\n/, 1)[0];
           try {
-            const p = JSON.parse(line) as { stepsDone?: number; stepsTotal?: number };
-            if (Number.isFinite(p.stepsDone) && Number.isFinite(p.stepsTotal)) {
-              run.stepsDone = p.stepsDone;
-              run.stepsTotal = p.stepsTotal;
-            }
+            const p = JSON.parse(line) as {
+              stepsDone?: number;
+              stepsTotal?: number;
+              testsDone?: number;
+              testsTotal?: number;
+              attempt?: number;
+              reason?: string;
+            };
+            run.stepsDone = p.stepsDone ?? run.stepsDone;
+            run.stepsTotal = p.stepsTotal ?? run.stepsTotal;
+            run.testsDone = p.testsDone ?? run.testsDone;
+            run.testsTotal = p.testsTotal ?? run.testsTotal;
+            run.attempt = p.attempt ?? run.attempt;
+            run.attemptReason = p.reason ?? run.attemptReason;
           } catch {
             /* record may span SSE chunks */
           }
