@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-22T15:08:30.954Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Needs human step banner and dedicated PM action (target \"default\"): highlight .agent-waiting matched nothing on /work?task=0920&tab=details (http://127.0.0.1:42259/work?shotState=card:humanStep)"
 id: "0920"
 title: "Needs-human-step banner: dedicated split action instead of generic PM flesh-out"
 type: feature
@@ -61,3 +63,4 @@ Start from `NEEDS_INPUT_*` tables and `needsInputPrimaryAction` in `src/ui-app/s
 - 2026-10-22T14:54:52Z · body
 - 2026-10-22T14:56:11Z · body
 - 2026-10-22T15:08:27Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Needs human step banner and dedicated PM action (target "default"): highlight .agent-waiting matched nothing on /work?task=0920&tab=details (http://127.0.0.1:42259/work?shotState=card:humanStep)
+
