@@ -5,11 +5,11 @@ type: feature
 status: inbox
 priority: p2
 area: [core, server]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T04:47:28Z"
-updated_at: "2026-10-22T04:47:28Z"
+updated_at: "2026-10-22T04:47:36Z"
 ---
 ## Problem
 2026-10-22: stopping an in-flight Move to done had no CLI path. The UI Stop MTD button calls POST /api/tasks/:id/done/cancel (src/server/server.ts line ~3595), and repoos done only starts one. A driver had to write a one-off script around RepoOsApi to cancel it. The server registers about 230 API routes (about 119 of them POST/PATCH/DELETE/PUT) while the CLI has roughly 50 commands and subcommands, so many operations a human or agent driver can click have no CLI equivalent. AGENTS.md tells drivers to 'drive the running server from the CLI, not ad-hoc curl', which only works if the CLI covers what the UI can do. (Auth was not the blocker: the CLI's own client already handles loopback token/stored session; only the missing command was.)
