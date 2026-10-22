@@ -12,7 +12,7 @@ branch: feat/run-whole-engineer-sessions-on-remote-ru
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T15:06:23Z"
-updated_at: "2026-10-22T01:41:31Z"
+updated_at: "2026-10-22T01:41:43Z"
 last_close_out_gate_ms: 147946
 last_close_out_gate_at: "2026-10-22T01:41:31.153Z"
 review_passes: 1
@@ -112,4 +112,4 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-22T01:32:31Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d731c62d8) during finalization (#0734)
 - 2026-10-22T01:33:15Z · note: review pass 1: good to go
 - 2026-10-22T01:41:31Z · close-out gate completed in 148s
-
+- 2026-10-22T01:41:43Z · status done→done, release:success
