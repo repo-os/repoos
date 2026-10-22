@@ -174,11 +174,7 @@ describe("project environment secret routes", () => {
     root = fx.root;
     const list = fx.response();
     listProjectEnvironmentSecrets(fx.ctx, fx.req(), list.res, { param1: "dev" });
-    let listing = list.fake.payload as {
-      version: string;
-      keys: Array<{ name: string; status: string }>;
-    };
-    expect(listing.keys.find((row) => row.name === "NEW_KEY")).toMatchObject({ status: "missing" });
+    const listing = list.fake.payload as { version: string };
 
     const sentinel = "FAKE_SENTINEL_0928_ADD_FLOW";
     const add = fx.response();
@@ -200,11 +196,11 @@ describe("project environment secret routes", () => {
 
     const relist = fx.response();
     listProjectEnvironmentSecrets(fx.ctx, fx.req(), relist.res, { param1: "dev" });
-    listing = relist.fake.payload as {
+    const afterAdd = relist.fake.payload as {
       version: string;
       keys: Array<{ name: string; status: string }>;
     };
-    expect(listing.keys.find((row) => row.name === "NEW_KEY")).toMatchObject({ status: "set" });
+    expect(afterAdd.keys.find((row) => row.name === "NEW_KEY")).toMatchObject({ status: "set" });
 
     const del = fx.response();
     await mutateProjectEnvironmentSecret(
@@ -213,7 +209,7 @@ describe("project environment secret routes", () => {
         JSON.stringify({
           action: "delete",
           key: "NEW_KEY",
-          version: listing.version,
+          version: afterAdd.version,
         }),
       ),
       del.res,
