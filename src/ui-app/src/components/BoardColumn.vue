@@ -13,7 +13,11 @@ import {
   isColumnCollapsed,
   toggleColumnCollapsed,
 } from "../lib/boardCollapse";
-import { isValidBoardMove, boardMoveRejectionReason } from "../lib/taskTransitions";
+import {
+  isValidBoardMove,
+  isValidHumanBoardMove,
+  boardMoveRejectionReason,
+} from "../lib/taskTransitions";
 
 const GENZ_EMPTY: Record<string, string> = {
   draft: "no drafts yet — agent ideas land here",
@@ -127,6 +131,8 @@ let dragDepth = 0;
 const dropCheck = computed<{ valid: boolean; reason: string | null } | null>(() => {
   const t = repo.draggingTask;
   if (!t || t.status === props.col.id) return null;
+  if (t.assignee === "human")
+    return { valid: isValidHumanBoardMove(t.status, props.col.id), reason: null };
   if (props.col.id === "done") {
     if (t.status !== "review")
       return { valid: false, reason: "Only review tasks can be moved to done." };
@@ -219,6 +225,11 @@ async function onDrop(e: DragEvent): Promise<void> {
   const task = repo.tasks.find((t) => t.id === id);
   if (!task || task.status === props.col.id) return;
   try {
+    if (task.assignee === "human") {
+      await repo.setStatus(task, props.col.id);
+      if (isColumnCollapsed(props.col.id)) toggle();
+      return;
+    }
     if (props.col.id === "done") {
       // Done is never an ordinary board status transition: its endpoint owns
       // the review-running 409, merge, check, and worktree cleanup. This also
