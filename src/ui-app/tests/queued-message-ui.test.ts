@@ -15,14 +15,14 @@ describe("classifyQueuedMessageSource", () => {
   });
 
   it("labels CTO idle nudges", () => {
-    expect(classifyQueuedMessageSource("CTO check-in: this task has had no worktree activity")).toBe(
-      "cto-nudge",
-    );
+    expect(
+      classifyQueuedMessageSource("CTO check-in: this task has had no worktree activity"),
+    ).toBe("cto-nudge");
   });
 
   it("labels other automated sends as system", () => {
-    expect(classifyQueuedMessageSource("Handoff repair message", { skipBoardDivergence: true })).toBe(
-      "system",
-    );
+    expect(
+      classifyQueuedMessageSource("Handoff repair message", { skipBoardDivergence: true }),
+    ).toBe("system");
   });
 });
