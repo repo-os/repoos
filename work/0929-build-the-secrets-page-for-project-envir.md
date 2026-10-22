@@ -135,3 +135,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T20:18:09Z · note: Managed preview shot capture in progress
 - 2026-10-22T20:19:08Z · note: Keeping task active during managed preview startup
 - 2026-10-22T20:21:15Z · note: click .secrets-row:first-child .secrets-remove: click: Timeout 5000ms exceeded. on /secrets
+- 2026-10-22T20:21:15Z · note: highlight .delete-confirm-modal matched nothing on /secrets
