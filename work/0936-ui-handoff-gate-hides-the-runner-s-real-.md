@@ -2,12 +2,12 @@
 id: "0936"
 title: UI handoff gate hides the runner's real shot failure ('runner result omitted the UI verification record')
 type: bug
-status: ready
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/ui-handoff-gate-hides-the-runner-s-real-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T19:57:21Z"
@@ -32,3 +32,4 @@ Related: AGENTS.md shot hygiene (#0613, #0830) and #0866.
 - 2026-10-22T19:57:21Z · created · njachowski@gmail.com
 - 2026-10-22T22:56:49Z · status inbox→ready
 - 2026-10-22T22:56:57Z · cli_override, model_override
+- 2026-10-22T22:56:57Z · status ready→active, branch
