@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 147946
-last_close_out_gate_at: "2026-10-22T01:41:31.153Z"
 id: "0904"
 title: "Run whole engineer sessions on remote runners, not only checks, shots and gates"
 type: feature
-status: review
+status: done
 priority: p1
 area: [server, core]
+merged_commit: d731c62d88549ebd3c4994cb4885a943a4ca8163
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/run-whole-engineer-sessions-on-remote-ru
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T15:06:23Z"
 updated_at: "2026-10-22T01:41:31Z"
+last_close_out_gate_ms: 147946
+last_close_out_gate_at: "2026-10-22T01:41:31.153Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-21T20:52:34.600Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 7
