@@ -2,7 +2,7 @@
 id: "0929"
 title: Build the Secrets page for project environments
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: [web, ui]
 story: Secrets and project environments
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T08:09:21Z"
+updated_at: "2026-10-22T18:11:44Z"
 ---
 ## Problem
 Users have no RepoOS screen to see which project environment is selected or which expected keys are set, missing, or inherited. The metadata and write operations from #0928 need a safe, usable interface that never reveals saved values.
@@ -35,3 +35,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 
 - 2026-10-22T08:06:27Z · created · njachowski@gmail.com
 - 2026-10-22T08:09:21Z · depends_on
+- 2026-10-22T18:11:44Z · status inbox→ready
