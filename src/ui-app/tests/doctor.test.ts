@@ -114,6 +114,7 @@ describe("runDoctor", () => {
       platform: "darwin",
       env: { PATH: bin, REPOOS_PREFER_APPLE_GIT: "0" },
       signatureProbe: () => "ad-hoc signed",
+      appleGitProbe: () => true,
       syspolicydCpuProbe: async () => 0,
     });
     const diagnostic = findingById(report, "runtime.macos-git-signature");
