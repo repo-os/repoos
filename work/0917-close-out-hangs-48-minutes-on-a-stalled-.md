@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 639466
-last_close_out_gate_at: "2026-10-22T12:49:44.243Z"
 id: "0917"
 title: Close-out hangs ~48 minutes on a stalled ssh bundle upload before falling back to local; thinkpad swap full again
 type: feature
-status: review
+status: done
 priority: p1
 area: server
+merged_commit: 73b37704a5ba5544e45296291f3c04770dc77392
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-hangs-48-minutes-on-a-stalled-
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T04:09:06Z"
 updated_at: "2026-10-22T12:49:44Z"
+last_close_out_gate_ms: 639466
+last_close_out_gate_at: "2026-10-22T12:49:44.243Z"
 review_passes: 3
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-22T11:36:31.117Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Close-out card shows bundle upload progress (target \"default\"): state \"closeOut:uploading\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Close-out card shows bundle upload progress (target \"default\"): highlight .tc-moving matched nothing on / (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Remote validation dr… (truncated)"

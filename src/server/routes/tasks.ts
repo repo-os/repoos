@@ -4228,6 +4228,7 @@ export const cancelDone: RouteHandler = async (ctx, _req, res, params) => {
   }
 
   if (!alreadyCancelled) jobCoordinator.requestCancel(id);
+  void ctx.remoteValidator?.killHungValidation?.(id);
   // A queued job has no orchestrator watching it yet, so cancel it outright
   // rather than leaving it for a future drain to pick up and cancel.
   if (!alreadyCancelled && job.phase === "queued") {

@@ -2033,6 +2033,26 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         browserCaptureMode: rvBrowserCaptureMode,
       };
     }
+    const rvUploadBudget = parsed["remoteValidation.bundleUploadBudgetSecs"];
+    if (
+      typeof rvUploadBudget === "number" &&
+      Number.isInteger(rvUploadBudget) &&
+      rvUploadBudget >= 30
+    ) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, bundleUploadBudgetSecs: rvUploadBudget };
+    }
+    const rvUploadStall = parsed["remoteValidation.bundleUploadStallSecs"];
+    if (
+      typeof rvUploadStall === "number" &&
+      Number.isInteger(rvUploadStall) &&
+      rvUploadStall >= 10
+    ) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, bundleUploadStallSecs: rvUploadStall };
+    }
+    const rvMetered = parsed["remoteValidation.forceLocalOnMeteredLink"];
+    if (typeof rvMetered === "boolean") {
+      cfg.remoteValidation = { ...cfg.remoteValidation, forceLocalOnMeteredLink: rvMetered };
+    }
     const rvLocalFallback = parsed["remoteValidation.localFallback"];
     if (
       rvLocalFallback === "serialize" ||
@@ -3537,6 +3557,36 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Read each runner's swap and available memory before leasing it, using the same thresholds as the local pressure guard. A host over the limit is skipped; if every host is pressured the run queues with the reason and the exact fix instead of failing the branch's tests. Docker on macOS reads the Linux VM's numbers, not the Mac's swap.",
     },
     {
+      key: "remoteValidation.bundleUploadBudgetSecs",
+      label: "Remote validation: bundle upload budget (seconds)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 180,
+      description:
+        "Wall-clock cap for one candidate bundle upload attempt during close-out. A stalled or slow transfer is aborted and retried on another runner (or falls back locally) instead of hanging until SSH fails. Default 180.",
+    },
+    {
+      key: "remoteValidation.bundleUploadStallSecs",
+      label: "Remote validation: bundle upload stall timeout (seconds)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 90,
+      description:
+        "Abort an upload when no bytes have been written for this long. Catches wedged hosts before a multi-minute broken pipe. Default 90.",
+    },
+    {
+      key: "remoteValidation.forceLocalOnMeteredLink",
+      label: "Remote validation: force local gate on slow or metered link",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description:
+        "Skip uploading the candidate bundle and run the full gate locally when you are on a slow uplink or metered hotspot. Auto-detect also runs when link probing shows a long upload.",
+    },
+    {
       key: "check.isolationRuns",
       label: "Isolation re-runs after a test failure",
       type: "number",
@@ -4103,6 +4153,9 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "remoteValidation.localFallback",
   "remoteValidation.retryOtherHosts",
   "remoteValidation.healthCheck",
+  "remoteValidation.bundleUploadBudgetSecs",
+  "remoteValidation.bundleUploadStallSecs",
+  "remoteValidation.forceLocalOnMeteredLink",
   "remoteValidation.engineerSelfCheckRemote",
   "remoteValidation.useForReleases",
 ];
