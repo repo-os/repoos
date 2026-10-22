@@ -56,3 +56,4 @@ Evidence: .repoos/local-check-slots/{0,1}/.holder and .meta.json at 13:40 (both 
 - 2026-10-22T17:09:34Z · body
 - 2026-10-22T17:10:31Z · body
 - 2026-10-22T17:10:43Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-22T17:10:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
