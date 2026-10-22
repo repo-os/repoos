@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-22T13:12:00Z"
-review_passes: 1
 id: "0922"
 title: "Task drawer: expanding a tab hides the cards between title and tabs"
 type: feature
@@ -13,6 +11,7 @@ branch: feat/task-drawer-expanding-a-tab-hides-the-ca
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T05:45:27Z"
+updated_at: "2026-10-22T13:10:07Z"
 ---
 ## Problem
 The task drawer stacks a lot between the title and the tab strip: the handoff-failure banner, the status row (status picker, Stop work, Move to done), the "Not landable yet" checklist, the preview control, and the "Waiting for you" needs-input card. On a task with several warnings (see the attached #0908 screenshots: handoff failure, landability checklist, reviewer-failed card) these push the tab strip down and leave only a thin strip of vertical space for the tab's content (Review, Changes, Dev, ...).
@@ -37,49 +36,6 @@ The tab strip's expand button (#0750, `fullscreen` ref and `toggleFullscreen` in
 ## Notes for AI
 Start from the `fullscreen` ref, `toggleFullscreen`, `onEscapeKeyDown` and the `drawer-fullscreen` class (around lines 1950-1995 and 4030) and the tab-strip button near line 5131 of `TaskDrawer.vue`. The cards between the title and tabs are the template blocks above the tab strip; gate them on `!fullscreen`. The `.drawer-fullscreen` CSS lives in `src/ui-app/src/style.css` (drawer content is body-teleported). Follow the repo UI conventions: styled tooltip, no native `title`. Reported by the user on #0908, 2026-10-22, with two screenshots attached.
 
-## Shots
-```json
-[
-{
-"label": "Desktop drawer with warnings above tabs",
-"target": "default",
-"route": "/work?task=9999&tab=review",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:tabExpandWarnings",
-"theme": "light",
-"viewportWidth": 1280
-},
-{
-"label": "Expanded desktop drawer with warnings hidden",
-"target": "default",
-"route": "/work?task=9999&tab=review",
-"highlight": ".drawer-tabs",
-"steps": [
-{
-"click": "button[data-test-id=\"task-tab-fullscreen\"]"
-}
-],
-"state": "drawer:tabExpandWarnings",
-"theme": "dark",
-"viewportWidth": 1280
-},
-{
-"label": "Expanded phone drawer with warnings hidden",
-"target": "default",
-"route": "/work?task=9999&tab=review",
-"highlight": ".drawer-tabs",
-"steps": [
-{
-"click": "button[data-test-id=\"task-tab-fullscreen\"]"
-}
-],
-"state": "drawer:tabExpandWarnings",
-"theme": "light",
-"viewportWidth": 390
-}
-]
-```
-
 ## Screenshots
 
 ![6](/api/tasks/0922/attachments/att_8dab3f32-c540-4f73-832f-f1f36f7589a0.webp)
@@ -92,10 +48,4 @@ Start from the `fullscreen` ref, `toggleFullscreen`, `onEscapeKeyDown` and the `
 - 2026-10-22T12:51:08Z · status inbox→ready
 - 2026-10-22T12:51:14Z · cli_override, model_override
 - 2026-10-22T12:51:15Z · status ready→active, branch
-- 2026-10-22T12:54:22Z · body
-- 2026-10-22T12:56:23Z · body
-- 2026-10-22T13:09:13Z · message_queued at 2026-10-22T13:09:13.610Z
-- 2026-10-22T13:10:07Z · note: ui verification passed: 3 of 3 shots captured with clean console
-- 2026-10-22T13:10:08Z · status active→review
-- 2026-10-22T13:12:00Z · note: review pass 1: good to go
-
+- 2026-10-22T13:10:07Z · status active→review

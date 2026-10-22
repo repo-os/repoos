@@ -402,6 +402,20 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(landable?.checks.find((c) => c.id === "merge-conflicts")?.status).toBe("fail");
   });
 
+  it("composes the warning states needed for expanded task-tab shots (#0922)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "drawer:tabExpandWarnings");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task?.needsInputReason).toBe("review-failed");
+    expect(repo.handoffErrorFor(SHOT_PREVIEW_FIXTURE_TASK_ID)).toContain("Fixture handoff");
+    expect(repo.landableFor(SHOT_PREVIEW_FIXTURE_TASK_ID)?.landable).toBe(false);
+    expect(document.documentElement.getAttribute("data-repoos-shot-state")).toBe(
+      "drawer:tabExpandWarnings",
+    );
+  });
+
   it("seeds a pending handoff conflict for the modal shot (#0810)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
