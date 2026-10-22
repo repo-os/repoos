@@ -96,6 +96,7 @@ import { fileURLToPath } from "node:url";
 import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import type { MemoryPressureProbe } from "../core/memory-pressure.js";
 import { runnerHealthCheckEnabled } from "../core/resource-limits.js";
+import { inspectCrossProcessSlots, localCheckLockRoot } from "../core/cross-process-slots.js";
 import { STATUSES } from "../core/types.js";
 import { shouldRunAutomaticTaskLifecycle } from "./task-transitions.js";
 import { readBuildMeta } from "../core/build.js";
@@ -3590,6 +3591,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/decisions", getDecisions);
   router.register("GET", "/api/driver/brief", getDriverBrief);
   router.register("GET", "/api/check-plan", getCheckPlan);
+  router.register("GET", "/api/local-check-slots", (_ctx, _req, res) => {
+    const root = config.root;
+    const cache = config.cacheDir ?? ".repoos";
+    return json(res, 200, {
+      ok: true,
+      holders: inspectCrossProcessSlots(localCheckLockRoot(root, cache)),
+    });
+  });
   // Durable check-run history across all tasks (#0564) — the Runs tab.
   router.register("GET", "/api/check-runs", getCheckRuns);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
