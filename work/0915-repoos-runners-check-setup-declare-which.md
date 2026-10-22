@@ -16,7 +16,7 @@ branch: feat/repoos-runners-check-setup-declare-which
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T02:26:27Z"
-updated_at: "2026-10-22T16:41:15Z"
+updated_at: "2026-10-22T16:41:46Z"
 last_close_out_gate_ms: 501587
 last_close_out_gate_at: "2026-10-22T16:41:15.304Z"
 review_passes: 1
@@ -71,4 +71,4 @@ Start from scripts/remote-runner/*, the justfile _setup-runner recipe, src/serve
 - 2026-10-22T16:25:46Z · status active→review
 - 2026-10-22T16:27:44Z · note: review pass 1: good to go
 - 2026-10-22T16:41:15Z · close-out gate completed in 502s
-
+- 2026-10-22T16:41:46Z · status done→done, release:success
