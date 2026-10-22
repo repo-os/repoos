@@ -12,8 +12,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T04:09:06Z"
 updated_at: "2026-10-22T12:10:00Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 2 on thinkpad — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: a49ecc53242fa40363f8fb874366b060556502c2
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-22T11:36:31.117Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Close-out card shows bundle upload progress (target \"default\"): state \"closeOut:uploading\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Close-out card shows bundle upload progress (target \"default\"): highlight .tc-moving matched nothing on / (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Remote validation dr… (truncated)"
@@ -118,3 +116,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T12:09:41Z · message_queued at 2026-10-22T12:09:41.280Z
 - 2026-10-22T12:10:00Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-10-22T12:10:00Z · status active→review
+
