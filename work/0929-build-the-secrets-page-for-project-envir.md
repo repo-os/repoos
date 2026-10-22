@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-22T19:31:08.149Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 4d91bb67 to ca510425) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: "0929"
 title: Build the Secrets page for project environments
 type: feature
@@ -102,3 +104,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T19:17:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T19:17:58Z · message_delivered: 1 message(s)
 - 2026-10-22T19:20:50Z · body
+
