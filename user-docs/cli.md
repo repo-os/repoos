@@ -226,8 +226,8 @@ done wait by default in human mode).
 | `repoos dev [list]` · `repoos dev <name> start\|stop\|restart\|status\|logs` | `GET`/`POST /api/dev/targets` |
 | `repoos config get\|set <key> [value]` | `GET` / `PATCH /api/config` |
 | `repoos runners [--probe]` | remote-validation status + test |
-| `repoos integration list|pipeline|get <id>|retry <id>|refresh-install <id>` | Integration job inspection and retry routes |
-| `repoos attention list|dismiss <id>` | `GET /api/attention` and needs-input dismissal |
+| `repoos integration list\|pipeline\|get <id>\|retry <id>\|refresh-install <id>` | Integration job inspection and retry routes |
+| `repoos attention list\|dismiss <id>` | `GET /api/attention` and needs-input dismissal |
 | `repoos agents` | `GET /api/agents/running` |
 | `repoos agents pause\|resume <agent> [--model M] [--until <date>] [--reason "…"]` | `PATCH /api/config` — pause/resume an allowlist agent or model (#0850) |
 | `repoos stats` | `GET /api/stats/board` + `GET /api/system` — board spend, pressure, and top CPU/memory processes labeled RepoOS vs other (`--json` includes both under `system`) |
