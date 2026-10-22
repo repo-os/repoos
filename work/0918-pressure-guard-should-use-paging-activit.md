@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-22T09:02:53.015Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
 id: "0918"
 title: "Pressure guard should use paging activity, not occupancy: macOS compressor share and swap used/total hold work on an idle laptop"
 type: feature
@@ -98,3 +100,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T08:52:19Z · body
 - 2026-10-22T08:53:14Z · note: handoff requested (ui-review)
 - 2026-10-22T08:53:34Z · CTO nudge: held — handoff gate is running
+
