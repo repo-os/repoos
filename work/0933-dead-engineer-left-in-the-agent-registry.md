@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-22T11:05:13Z"
+review_passes: 1
 id: "0933"
 title: Dead engineer left in the agent registry blocks the reviewer ('agent turn in progress')
 type: bug
@@ -11,7 +13,6 @@ branch: feat/dead-engineer-left-in-the-agent-registry
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:22:48Z"
-updated_at: "2026-10-22T11:05:13Z"
 ---
 ## Problem
 2026-10-22: after #0918's engineer was killed by hand (pid 11479), .repoos/agents.json still listed it as a running engineer. The task reached review but no reviewer started for 12 minutes, and 'repoos review again' refused with 'Task #0918 has an agent turn in progress — wait for it to finish'. Recovery needed mv active + pause + a second handoff (another ~13 min).
@@ -47,3 +48,4 @@ Related: #0921 (dead local-check slot holders), #0925 (cancel frees resources), 
 - 2026-10-22T11:03:46Z · status active→review
 - 2026-10-22T11:03:46Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-22T11:05:13Z · note: review pass 1: good to go
+
