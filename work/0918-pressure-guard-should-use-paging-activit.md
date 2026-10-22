@@ -53,3 +53,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T05:27:08Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection stalled repeatedly
 - 2026-10-22T05:27:13Z · message_delivered: 1 message(s)
 - 2026-10-22T05:42:14Z · body: Notes for AI (added 1, removed 1)
+- 2026-10-22T05:42:14Z · message_queued at 2026-10-22T05:42:14.464Z
