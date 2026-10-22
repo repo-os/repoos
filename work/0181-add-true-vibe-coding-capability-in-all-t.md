@@ -3,6 +3,8 @@ id: "0181"
 title: Add true vibe-coding capability in all text areas like th…
 type: feature
 status: done
+human_step_decision: human
+human_step_decision_key: 1457bc4c
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 1457bc4c
 priority: p2
