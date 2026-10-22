@@ -11,7 +11,7 @@ branch: feat/cancelling-a-close-out-must-kill-its-che
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:32:56Z"
-updated_at: "2026-10-22T08:32:23Z"
+updated_at: "2026-10-22T08:32:33Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-22T08:20:35.105Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -48,3 +48,4 @@ Also fix #0921 in the same change (dead-holder detection for local check slots: 
 - 2026-10-22T08:27:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-22T08:29:52Z · body
 - 2026-10-22T08:32:23Z · body
+- 2026-10-22T08:32:33Z · CTO nudge: held — an undelivered message is already queued
