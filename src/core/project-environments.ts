@@ -1,5 +1,13 @@
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, lstatSync, readFileSync, renameSync, writeFileSync, chmodSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+  chmodSync,
+} from "node:fs";
 import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 import { execFileSync } from "node:child_process";
 
@@ -14,6 +22,15 @@ export interface ProjectEnvironment {
 }
 export interface ProjectEnvironmentRegistry {
   environments: ProjectEnvironment[];
+}
+/** A durable, least-privilege binding for one local process consumer. */
+export interface ProjectEnvironmentBinding {
+  consumer: string;
+  environment: string;
+  keys: string[];
+}
+export interface ProjectEnvironmentBindings {
+  bindings: ProjectEnvironmentBinding[];
 }
 export interface EnvironmentFileSnapshot {
   source: string;
@@ -176,6 +193,137 @@ export function readProjectEnvironment(
     expectedKeys: [...expected],
     sha256: createHash("sha256").update(text).digest("hex"),
   };
+}
+
+/** Read values for child-process construction. Never return this from an API. */
+export function readProjectEnvironmentValues(
+  root: string,
+  env: ProjectEnvironment,
+): Record<string, string> {
+  validateEnvironmentRegistry({ environments: [env] });
+  const merged: Record<string, string> = {};
+  for (const source of env.sources) {
+    const path = resolveRepoPath(root, source.path);
+    if (!existsSync(path)) continue;
+    for (const [key, value] of parseDocument(readFileSync(path, "utf8")).keys) merged[key] = value;
+  }
+  return merged;
+}
+
+const bindingFile = ".repoos/environment-bindings.json";
+const consumerId = /^(dev|preview|check):[A-Za-z0-9_.-]{1,80}$/;
+
+export function projectEnvironmentConsumer(kind: "dev" | "preview", name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return normalizeProjectEnvironmentConsumer(`${kind}:${slug || "default"}`);
+}
+
+/** Canonicalize IDs supplied through the CLI/API and old local binding files. */
+export function normalizeProjectEnvironmentConsumer(consumer: string): string {
+  const separator = consumer.indexOf(":");
+  const kind = consumer.slice(0, separator);
+  const name = consumer.slice(separator + 1);
+  if (separator < 1 || !["dev", "preview", "check"].includes(kind))
+    throw new Error("Invalid environment consumer");
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]+/g, "-")
+    .replace(/^-|-$/g, "");
+  const normalized = `${kind}:${slug || "default"}`;
+  if (!consumerId.test(normalized) || (kind === "check" && normalized !== "check:default"))
+    throw new Error("Invalid environment consumer");
+  return normalized;
+}
+
+export function readProjectEnvironmentBindings(root: string): ProjectEnvironmentBindings {
+  const path = join(resolve(root), bindingFile);
+  if (!existsSync(path)) return { bindings: [] };
+  const parsed = JSON.parse(readFileSync(path, "utf8")) as ProjectEnvironmentBindings;
+  if (!parsed || !Array.isArray(parsed.bindings)) throw new Error("Invalid environment bindings");
+  const seen = new Set<string>();
+  const bindings: ProjectEnvironmentBinding[] = [];
+  for (const row of parsed.bindings) {
+    let normalizedConsumer: string;
+    try {
+      normalizedConsumer = normalizeProjectEnvironmentConsumer(row?.consumer ?? "");
+    } catch {
+      throw new Error("Invalid or duplicate environment binding");
+    }
+    if (
+      !row ||
+      !identifier.test(row.environment) ||
+      !Array.isArray(row.keys) ||
+      row.keys.some((key) => !keyName.test(key)) ||
+      seen.has(normalizedConsumer)
+    )
+      throw new Error("Invalid or duplicate environment binding");
+    seen.add(normalizedConsumer);
+    bindings.push({ ...row, consumer: normalizedConsumer });
+  }
+  return { bindings };
+}
+
+export function writeProjectEnvironmentBinding(
+  root: string,
+  consumer: string,
+  environment: string | null,
+  keys: string[] = [],
+): ProjectEnvironmentBindings {
+  consumer = normalizeProjectEnvironmentConsumer(consumer);
+  if (environment !== null && !identifier.test(environment))
+    throw new Error("Invalid environment name");
+  if (
+    keys.some(
+      (key) =>
+        !keyName.test(key) ||
+        key.startsWith("REPOOS_") ||
+        ["PATH", "HOME", "NODE_OPTIONS", "PORT", "HOST"].includes(key),
+    )
+  )
+    throw new Error("Invalid or machine-owned environment key grant");
+  const path = join(resolve(root), bindingFile);
+  const current = readProjectEnvironmentBindings(root);
+  const bindings = current.bindings.filter((row) => row.consumer !== consumer);
+  if (environment !== null) bindings.push({ consumer, environment, keys: [...new Set(keys)] });
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+  const temporary = `${path}.${randomUUID()}.tmp`;
+  const output = `${JSON.stringify({ bindings }, null, 2)}\n`;
+  writeFileSync(temporary, output, { encoding: "utf8", mode: 0o600, flag: "wx" });
+  chmodSync(temporary, 0o600);
+  renameSync(temporary, path);
+  return { bindings };
+}
+
+/** Per-child env merge. A granted-but-missing value is deleted from the base. */
+export function buildProjectConsumerEnv(
+  root: string,
+  consumer: string,
+  base: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+  consumer = normalizeProjectEnvironmentConsumer(consumer);
+  const binding = readProjectEnvironmentBindings(root).bindings.find(
+    (row) => row.consumer === consumer,
+  );
+  if (!binding) return { ...base };
+  const registryPath = join(resolve(root), ".repoos/environments.json");
+  if (!existsSync(registryPath)) throw new Error(`Unknown environment "${binding.environment}"`);
+  const registry = validateEnvironmentRegistry(JSON.parse(readFileSync(registryPath, "utf8")));
+  const selected = registry.environments.find((row) => row.id === binding.environment);
+  if (!selected) throw new Error(`Unknown environment "${binding.environment}"`);
+  const values = readProjectEnvironmentValues(root, selected);
+  const env: NodeJS.ProcessEnv = { ...base };
+  for (const key of binding.keys) {
+    if (key.startsWith("REPOOS_") || key === "PATH" || key === "HOME" || key === "NODE_OPTIONS")
+      continue;
+    if (Object.hasOwn(values, key)) env[key] = values[key];
+    else delete env[key];
+  }
+  return env;
 }
 
 function encodeValue(value: string): string {

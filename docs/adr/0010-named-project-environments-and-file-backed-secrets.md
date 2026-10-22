@@ -12,7 +12,7 @@ Sources are read in listed order; later sources override earlier values. Repeate
 
 Until a project opts into this registry, the existing root `.env` startup loader remains authoritative and unchanged: already-present process values win, and its historical minimal parsing behavior is preserved. Named project values are a separate data plane. They must never be copied into RepoOS provider, auth, or infrastructure process settings. Those credentials retain their fixed names and dedicated storage paths.
 
-Visibility is metadata attached by the eventual consumer contract: server-only is the default; public values may be exposed only when an explicitly declared consumer marks a key public. A consumer must be registered with a narrow purpose and environment binding. Grants are explicit and least-privilege, scoped to a consumer and environment. No implicit inheritance or branch access is granted; value copying requires a separately authorized privileged operation. This foundation stores source metadata and values but does not itself grant access or inject values into processes.
+Visibility is metadata attached by the consumer contract: server-only is the default. A binding stored in local `.repoos/environment-bindings.json` selects one named environment and an explicit list of granted keys. Values are read only for child-process construction and are never installed into the RepoOS server's `process.env`. A granted key missing from the selected environment is removed from the child's inherited environment; there is no fallback to another environment. No implicit inheritance or branch access is granted. The grant constrains RepoOS injection but is not a security sandbox for an unrestricted local agent.
 
 ## Storage safety
 
