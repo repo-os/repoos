@@ -72,13 +72,25 @@ describe("explicit project environment files", () => {
     expect(alice.SHARED).toBeUndefined();
     expect(base.DATABASE_URL).toBe("machine-db");
 
-    const observe = (childEnv: NodeJS.ProcessEnv) => new Promise<string>((resolve, reject) => {
-      const child = spawn(process.execPath, ["-e", "process.stdout.write(JSON.stringify({db:process.env.DATABASE_URL,shared:process.env.SHARED}))"], { env: childEnv });
-      let output = "";
-      child.stdout.on("data", (chunk) => { output += chunk.toString(); });
-      child.on("error", reject);
-      child.on("close", (code) => code === 0 ? resolve(output) : reject(new Error(`child exited ${code}`)));
-    });
+    const observe = (childEnv: NodeJS.ProcessEnv) =>
+      new Promise<string>((resolve, reject) => {
+        const child = spawn(
+          process.execPath,
+          [
+            "-e",
+            "process.stdout.write(JSON.stringify({db:process.env.DATABASE_URL,shared:process.env.SHARED}))",
+          ],
+          { env: childEnv },
+        );
+        let output = "";
+        child.stdout.on("data", (chunk) => {
+          output += chunk.toString();
+        });
+        child.on("error", reject);
+        child.on("close", (code) =>
+          code === 0 ? resolve(output) : reject(new Error(`child exited ${code}`)),
+        );
+      });
     const [nickOutput, aliceOutput] = await Promise.all([observe(nick), observe(alice)]);
     expect(JSON.parse(nickOutput)).toEqual({ db: "nick-db", shared: "nick" });
     expect(JSON.parse(aliceOutput)).toEqual({ db: "alice-db" });
