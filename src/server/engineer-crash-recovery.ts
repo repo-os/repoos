@@ -39,6 +39,8 @@ import type { Logger } from "../core/logger.js";
 import { stripNulBytes } from "../core/spawn-args.js";
 import { pauseAllowlistEntry, pairPauseInfo } from "../core/budget-allowlist.js";
 import { detectProviderUsageLimit } from "../core/provider-usage-limit.js";
+import { applyReloadedConfig, patchTomlConfig } from "../core/config.js";
+import { configTomlMutationPath, loadConfigAfterServerWrite } from "./preview-config-isolation.js";
 import { resolveAgentForTask, type AgentRunner, type EngineerCrashInfo } from "./agents.js";
 import { isTaskClosingOut } from "./close-out-lock.js";
 import { relaunchEngineerOnActiveTask, type EngineerLaunchResult } from "./engineer-launch.js";
@@ -190,7 +192,16 @@ export async function recoverEngineerAfterCrash(
         ...(usageLimit.retryAt ? { until: usageLimit.retryAt } : {}),
         reason: `out of usage since ${nowIso}: ${reason.slice(0, 240)}`,
       });
-      if ("rows" in paused) config.budget.allowlist = paused.rows;
+      if ("rows" in paused) {
+        if (!wasPaused) {
+          patchTomlConfig(configTomlMutationPath(config.root, config.cacheDir), {
+            "budget.allowlist": paused.rows,
+          });
+          applyReloadedConfig({ config }, loadConfigAfterServerWrite(config.root, config.cacheDir));
+        } else {
+          config.budget.allowlist = paused.rows;
+        }
+      }
       if (!wasPaused) {
         logger.task(taskId, "warn", "agent model paused after provider usage limit", {
           cli: pair.cli,
@@ -253,8 +264,13 @@ export async function recoverEngineerAfterCrash(
         : resumeInstruction(plan, reason);
 
     if (plan.action === "failover") {
-      task.cliOverride = plan.to.cli;
-      task.modelOverride = plan.to.model;
+      // Keep any human pin intact for quota outages. The exhausted pair is
+      // paused in the shared config, so task/reviewer resolvers temporarily
+      // choose the role fallback; clearing the pause restores the saved pin.
+      if (!usageLimit) {
+        task.cliOverride = plan.to.cli;
+        task.modelOverride = plan.to.model;
+      }
       task.extra = {
         ...task.extra,
         [ENGINEER_FAILOVER_KEY]: failoverMarker(plan.to),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectProviderUsageLimit } from "./provider-usage-limit.js";
+import { detectProviderUsageLimit } from "../../core/provider-usage-limit.js";
 
 describe("detectProviderUsageLimit", () => {
   it.each([

@@ -6,6 +6,7 @@ export interface ProviderUsageLimit {
 
 const LIMIT_PATTERNS = [
   /\b(?:usage|rate|request|quota)\s+limit\s+(?:has\s+been\s+)?(?:exceeded|reached)\b/i,
+  /\b(?:exceeded|reached)\b.*\b(?:usage|quota)\s+limit\b/i,
   /\b(?:out of|exceeded|reached)\s+(?:your\s+)?(?:usage|credits?|quota)\b/i,
   /\b429\s*(?:too many requests|rate.?limit|quota|usage)?\b/i,
   /\bHTTP\s+429\b/i,
