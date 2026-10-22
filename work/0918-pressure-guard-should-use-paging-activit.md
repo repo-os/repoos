@@ -39,10 +39,10 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 ```json
 [
 {
-  "label": "Pressure guard paging-activity thresholds",
-  "target": "default",
-  "route": "/settings?tab=performance",
-  "highlight": "[data-settings-section=\"performance\"]"
+"label": "Pressure guard paging-activity thresholds",
+"target": "default",
+"route": "/settings?tab=performance",
+"highlight": "[data-settings-section=\"performance\"]"
 }
 ]
 ```
