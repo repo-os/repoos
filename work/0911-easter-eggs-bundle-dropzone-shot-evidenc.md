@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-dropzone-shot-evidenc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T01:34:32Z"
-updated_at: "2026-10-22T17:40:45Z"
+updated_at: "2026-10-22T17:44:00Z"
 ---
 ## Items
 - [ ] **E1 · Manual-tab handoff capture does not show a dropzone** (web) — #0899's declared Manual-tab shot has a click step but no recorded assertion, so the capture alone does not prove the dropzone rendered. Source: reviewer notes on #0899 (passes 4 and 5), 2026-10-22.
@@ -31,7 +31,7 @@ Reviewers can see the dropzone rendered on the Manual tab and the default (non-e
 - Both pass a handoff capture with zero console errors.
 
 ## Notes for AI
-See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots to declare shots. Easter-eggs bundle (one open bundle at a time); keep it to these two items.
+See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots to declare shots. This bundle scope is E1, E2, and E4. E3 is intentionally deferred, remains unchecked, and requires the additional screenshot from the human before implementation.
 
 ## Shots
 ```json
@@ -123,3 +123,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T17:40:45Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-22T17:40:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T17:40:45Z · message_delivered: 1 message(s)
+- 2026-10-22T17:44:00Z · body: Notes for AI (added 1, removed 1)
