@@ -3,13 +3,14 @@ id: "0912"
 title: "Human: review and accept ADR 0009 (remote engineer sessions) or send back changes"
 type: feature
 status: inbox
+hold: true
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T01:41:09Z"
-updated_at: "2026-10-22T01:41:09Z"
+updated_at: "2026-10-22T01:41:30Z"
 ---
 ## Problem
 #0904 produced ADR 0009 (docs/adr/0009-remote-engineer-sessions.md, status: proposed). It decides that engineer sessions run in a real git worktree on a runner, synchronised with git bundles in both directions, with the local worktree staying canonical. The ADR says no implementation starts before a human accepts it.
@@ -27,3 +28,4 @@ Human-only. Do not start this task.
 ## Activity
 
 - 2026-10-22T01:41:09Z · created · njachowski@gmail.com
+- 2026-10-22T01:41:30Z · held, assigned_to
