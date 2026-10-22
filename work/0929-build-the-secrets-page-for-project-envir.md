@@ -45,3 +45,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T20:37:08Z · note: handoff requested (cli)
 - 2026-10-22T20:37:08Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
 - 2026-10-22T20:53:45Z · status ready→review
+- 2026-10-22T20:53:45Z · note: handoff requested (cli)
