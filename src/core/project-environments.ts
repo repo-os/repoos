@@ -247,16 +247,20 @@ export function readProjectEnvironmentValues(
 const bindingFile = ".repoos/environment-bindings.json";
 const consumerId = /^(dev|preview|check|deployment):[A-Za-z0-9_.-]{1,80}$/;
 
-export function projectEnvironmentConsumer(
-  kind: "dev" | "preview" | "deployment",
-  name: string,
-): string {
+function normalizeConsumerSlug(name: string): string {
   const slug = name
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9_.-]+/g, "-")
     .replace(/^-|-$/g, "");
-  return normalizeProjectEnvironmentConsumer(`${kind}:${slug || "default"}`);
+  return slug || "default";
+}
+
+export function projectEnvironmentConsumer(
+  kind: "dev" | "preview" | "deployment",
+  name: string,
+): string {
+  return normalizeProjectEnvironmentConsumer(`${kind}:${normalizeConsumerSlug(name)}`);
 }
 
 /** Canonicalize IDs supplied through the CLI/API and old local binding files. */
@@ -266,12 +270,7 @@ export function normalizeProjectEnvironmentConsumer(consumer: string): string {
   const name = consumer.slice(separator + 1);
   if (separator < 1 || !["dev", "preview", "check", "deployment"].includes(kind))
     throw new Error("Invalid environment consumer");
-  const slug = name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_.-]+/g, "-")
-    .replace(/^-|-$/g, "");
-  const normalized = `${kind}:${slug || "default"}`;
+  const normalized = `${kind}:${normalizeConsumerSlug(name)}`;
   if (!consumerId.test(normalized) || (kind === "check" && normalized !== "check:default"))
     throw new Error("Invalid environment consumer");
   return normalized;
