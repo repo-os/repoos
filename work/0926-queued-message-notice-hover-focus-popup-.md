@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-22T16:42:48.919Z: repoos check failed: remote validation unavailable: host thinkpad skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 id: "0926"
 title: "Queued-message notice: hover/focus popup showing the queued message text"
 type: feature
@@ -67,3 +69,4 @@ Follow the AGENTS.md conventions for tooltips/popovers and body-teleported layer
 - 2026-10-22T16:32:17Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/chat-queued-send.test.ts > chat queued state > shows the shared queued wording while a message waits, tests/chat-queued-send.test.ts > chat queued state > lists two queued messages with source and time in the popover on bee — fix it in the feature branch and re-run the gate
 - 2026-10-22T16:39:26Z · body
 - 2026-10-22T16:41:30Z · body
+
