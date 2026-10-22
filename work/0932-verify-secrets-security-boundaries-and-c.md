@@ -2,16 +2,16 @@
 id: "0932"
 title: Verify secrets security boundaries and complete user documentation
 type: chore
-status: inbox
+status: ready
 priority: p1
 area: [docs, server, core]
 story: Secrets and project environments
 depends_on: ["0928", "0929", "0930", "0931"]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-22T08:07:24Z"
-updated_at: "2026-10-22T08:07:24Z"
+updated_at: "2026-10-22T23:49:43Z"
 ---
 ## Problem
 The individual environment, API, UI, process-binding, and deployment slices must be verified together so no integration path leaks values or grants unintended production access. Current environment documentation describes the legacy model and will need a precise update once named project environments ship.
@@ -33,3 +33,4 @@ Depends directly on #0928, #0929, #0930, and #0931; those implementation slices 
 ## Activity
 
 - 2026-10-22T08:07:24Z · created · njachowski@gmail.com
+- 2026-10-22T23:49:43Z · status inbox→ready
