@@ -127,6 +127,39 @@ const hangIdleMinutes = computed({
   },
 });
 
+// Close-out bundle upload caps (#0917): fail fast on wedged hosts instead of
+// waiting for a broken pipe.
+const bundleUploadBudgetSecs = computed({
+  get: () => {
+    const v = config.form["remoteValidation.bundleUploadBudgetSecs"];
+    return typeof v === "number" ? v : 180;
+  },
+  set: (v: number) => {
+    const n = Math.round(Number(v));
+    if (Number.isFinite(n) && n >= 30) {
+      void config.setConfigValues({ "remoteValidation.bundleUploadBudgetSecs": n });
+    }
+  },
+});
+const bundleUploadStallSecs = computed({
+  get: () => {
+    const v = config.form["remoteValidation.bundleUploadStallSecs"];
+    return typeof v === "number" ? v : 90;
+  },
+  set: (v: number) => {
+    const n = Math.round(Number(v));
+    if (Number.isFinite(n) && n >= 10) {
+      void config.setConfigValues({ "remoteValidation.bundleUploadStallSecs": n });
+    }
+  },
+});
+const forceLocalOnMeteredLink = computed({
+  get: () => !!config.form["remoteValidation.forceLocalOnMeteredLink"],
+  set: (v: boolean) => {
+    void config.setConfigValues({ "remoteValidation.forceLocalOnMeteredLink": v });
+  },
+});
+
 // ── host pool editing (#0521) ────────────────────────────────────────────────
 
 const hostsInput = ref("");
@@ -329,6 +362,55 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
             style="width: 84px"
             :model-value="String(hangIdleMinutes)"
             @update:model-value="(v: string) => (hangIdleMinutes = Number(v))"
+          />
+
+          <label style="display: flex; flex-direction: column; gap: 2px">
+            Bundle upload budget (seconds)
+            <span class="tunnel-help" style="margin: 0">
+              Wall-clock cap per close-out upload attempt. Slow or stalled transfers abort and retry
+              on another host (or fall back locally) instead of hanging until SSH fails. Default
+              180.
+            </span>
+          </label>
+          <Input
+            type="number"
+            min="30"
+            style="width: 84px"
+            data-config-key="remoteValidation.bundleUploadBudgetSecs"
+            :model-value="String(bundleUploadBudgetSecs)"
+            @update:model-value="(v: string) => (bundleUploadBudgetSecs = Number(v))"
+          />
+
+          <label style="display: flex; flex-direction: column; gap: 2px">
+            Bundle upload stall timeout (seconds)
+            <span class="tunnel-help" style="margin: 0">
+              Abort when no bytes have been written for this long — catches wedged runners before a
+              multi-minute broken pipe. Default 90.
+            </span>
+          </label>
+          <Input
+            type="number"
+            min="10"
+            style="width: 84px"
+            data-config-key="remoteValidation.bundleUploadStallSecs"
+            :model-value="String(bundleUploadStallSecs)"
+            @update:model-value="(v: string) => (bundleUploadStallSecs = Number(v))"
+          />
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px">
+          <label style="display: flex; flex-direction: column; gap: 2px">
+            Run close-out gate locally on slow or metered link
+            <span class="tunnel-help" style="margin: 0">
+              Skip uploading the candidate bundle and run the full gate on this machine when you are
+              on a hotspot or tether. Auto-detect also runs when link probing predicts a long
+              upload.
+            </span>
+          </label>
+          <Switch
+            data-config-key="remoteValidation.forceLocalOnMeteredLink"
+            :checked="forceLocalOnMeteredLink"
+            @update:checked="(v: boolean) => (forceLocalOnMeteredLink = v)"
           />
         </div>
 
