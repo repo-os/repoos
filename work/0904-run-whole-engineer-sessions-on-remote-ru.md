@@ -2,7 +2,7 @@
 id: "0904"
 title: "Run whole engineer sessions on remote runners, not only checks, shots and gates"
 type: feature
-status: ready
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/run-whole-engineer-sessions-on-remote-ru
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T15:06:23Z"
-updated_at: "2026-10-22T01:21:22Z"
+updated_at: "2026-10-22T01:21:27Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T20:52:34.600Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 7
@@ -102,3 +102,4 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-22T01:21:07Z · cli_override, model_override
 - 2026-10-22T01:21:08Z · needs_input
 - 2026-10-22T01:21:22Z · status active→ready
+- 2026-10-22T01:21:27Z · status ready→active
