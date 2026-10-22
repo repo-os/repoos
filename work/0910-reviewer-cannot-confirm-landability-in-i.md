@@ -11,10 +11,10 @@ area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/reviewer-cannot-confirm-landability-in-i
-cli_override: opencode
-model_override: opencode-go/deepseek-v4.1-flash
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-21T19:45:25Z"
-updated_at: "2026-10-22T01:14:27Z"
+updated_at: "2026-10-22T01:15:05Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:14:24.294Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:14:26.072Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:14:27.749Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -51,3 +51,4 @@ Reproduce with .repoos/reviews/0899/1.md to 5.md. The reviewer for those passes 
 - 2026-10-22T01:14:24Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · error: Go usage limit exceeded
 - 2026-10-22T01:14:26Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · error: Go usage limit exceeded
 - 2026-10-22T01:14:27Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-22T01:15:05Z · cli_override, model_override
