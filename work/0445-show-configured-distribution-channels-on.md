@@ -3,6 +3,8 @@ id: "0445"
 title: Show configured distribution channels on Releases
 type: feature
 status: done
+human_step_decision: agent
+human_step_decision_key: ff693ad1
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: ff693ad1
 priority: p1
