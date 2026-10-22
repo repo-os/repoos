@@ -3,12 +3,6 @@ id: "0904"
 title: "Run whole engineer sessions on remote runners, not only checks, shots and gates"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch. Review the crash detail and either fix the environment, change the override, or resume manually."
-debug_tldr: "Handoff deferred due to unread queued messages about ADR/split requirements—read them in the task thread, update the work, then request review again."
-debug_tldr_at: "2026-10-22T01:12:03Z"
-debug_tldr_key: "dev-error|✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/run-whole-engineer-sessions-on-remote-ru
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-21T15:06:23Z"
-updated_at: "2026-10-22T01:14:41Z"
+updated_at: "2026-10-22T01:15:54Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-21T20:52:34.600Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 6
@@ -100,3 +94,4 @@ This increment delivers the ADR required by the task notes (docs/adr/0009-remote
 - 2026-10-22T01:14:38Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · error: Go usage limit exceeded
 - 2026-10-22T01:14:40Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (2/3 crashes in 30m) · error: Go usage limit exceeded
 - 2026-10-22T01:14:41Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch (3/3 crashes in 30m)
+- 2026-10-22T01:15:54Z · needs_input
