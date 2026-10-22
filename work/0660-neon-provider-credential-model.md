@@ -3,6 +3,8 @@ id: "0660"
 title: Neon provider + credential model
 type: feature
 status: done
+human_step_decision: agent
+human_step_decision_key: dd117055
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: dd117055
 priority: p1
