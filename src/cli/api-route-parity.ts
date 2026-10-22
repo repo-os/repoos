@@ -23,9 +23,21 @@ const re =
   (r) =>
     r.method === method && r.pattern === patternSource;
 
+const under =
+  (prefix: string): Matcher =>
+  (r) =>
+    r.pattern.startsWith(prefix) || r.pattern.replaceAll("\\/", "/").startsWith(`^${prefix}`);
+
 /** Routes implemented by the server-backed control CLI (#0723). */
 const CONTROL_API_MATCHERS: Matcher[] = [
-  re("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/.source),
+  re(
+    "POST",
+    /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen|archive|unarchive|split)$/
+      .source,
+  ),
+  re("POST", /^\/api\/tasks\/([^/]+)\/done\/cancel$/.source),
+  // `repoos attention dismiss <id>` dismisses the task's needs-input event.
+  re("POST", /^\/api\/tasks\/([^/]+)\/needs-input\/dismiss$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)\/landable$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview$/.source),
@@ -44,6 +56,10 @@ const CONTROL_API_MATCHERS: Matcher[] = [
   exact("GET", "/api/stats/board"),
   exact("GET", "/api/driver/brief"),
   exact("GET", "/api/events"),
+  exact("GET", "/api/integration-jobs"),
+  exact("GET", "/api/integration/pipeline"),
+  re("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/.source),
+  re("POST", /^\/api\/integration\/pipeline\/refresh-install\/([^/]+)$/.source),
   exact("POST", "/api/cto/heartbeat"),
   // `repoos review` → PATCH status=review; `repoos override` → PATCH overrides
   re("PATCH", /^\/api\/tasks\/([^/]+)$/.source),
@@ -75,33 +91,33 @@ const FILE_CLI_MATCHERS: Matcher[] = [
 
 /** UI-only, SSE/hub, auth, or internal routes — no CLI required. */
 const UI_ONLY_MATCHERS: Matcher[] = [
-  (r) => r.pattern.startsWith("/api/auth/"),
-  (r) => r.pattern.startsWith("/api/hub/"),
-  (r) => r.pattern.startsWith("/api/telegram/"),
+  under("/api/auth/"),
+  under("/api/hub/"),
+  under("/api/telegram/"),
   exact("GET", "/api/index"),
   exact("GET", "/api/board"),
   exact("GET", "/api/counts"),
   exact("GET", "/api/docs"),
-  (r) => r.pattern.startsWith("/api/repo/"),
-  (r) => r.pattern.startsWith("/api/inputs"),
-  (r) => r.pattern.startsWith("/api/skills"),
-  (r) => r.pattern.startsWith("/api/skill-registry"),
-  (r) => r.pattern.startsWith("/api/stories"),
+  under("/api/repo/"),
+  under("/api/inputs"),
+  under("/api/skills"),
+  under("/api/skill-registry"),
+  under("/api/stories"),
   exact("GET", "/api/system"),
   exact("GET", "/api/system/logs"),
-  (r) => r.pattern.startsWith("/api/support/"),
-  (r) => r.pattern.startsWith("/api/tunnel/"),
-  (r) => r.pattern.startsWith("/api/release"),
-  (r) => r.pattern.startsWith("/api/deployments"),
-  (r) => r.pattern.startsWith("/api/chat"),
-  (r) => r.pattern.startsWith("/api/debugger"),
+  under("/api/support/"),
+  under("/api/tunnel/"),
+  under("/api/release"),
+  under("/api/deployments"),
+  under("/api/chat"),
+  under("/api/debugger"),
   re("GET", /^\/api\/tasks\/([^/]+)\/debugger$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/debugger\/message$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/debugger\/interrupt$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/debugger\/send-to-engineer$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/debugger\/send-to-pm$/.source),
   re("POST", /^\/api\/agents\/built-in\/([^/]+)\/run$/.source),
-  (r) => r.pattern.startsWith("/api/cto"),
+  under("/api/cto"),
   exact("GET", "/api/stats/by-type"),
   exact("GET", "/api/stats/daily"),
   exact("POST", "/api/system/kill-process"),
@@ -115,10 +131,8 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   exact("GET", "/api/check-runs"),
   exact("GET", "/api/local-check-slots"),
   exact("GET", "/api/resource-queues"),
-  (r) => r.pattern.startsWith("/api/integration"),
   exact("GET", "/api/close-out/outcomes"),
   re("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/.source),
-  re("POST", /^\/api\/tasks\/([^/]+)\/done\/cancel$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/worktree-handoff\/discard$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)\/review$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/.source),
@@ -132,7 +146,6 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   re("DELETE", /^\/api\/tasks\/([^/]+)\/shots\/([^/]+)$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)\/ui-verification$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/verify$/.source),
-  re("POST", /^\/api\/tasks\/([^/]+)\/needs-input\/dismiss$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/clear-worktree$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)\/output$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)\/logs$/.source),
@@ -147,10 +160,10 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   re("GET", /^\/api\/tasks\/([^/]+)\/remote-validation\/events$/.source),
   exact("GET", "/api/config/raw"),
   exact("PUT", "/api/config/raw"),
-  (r) => r.pattern.startsWith("/api/dev/"),
-  (r) => r.pattern.startsWith("/api/models"),
-  (r) => r.pattern.startsWith("/api/playground"),
-  (r) => r.pattern.startsWith("/api/model-providers"),
+  under("/api/dev/"),
+  under("/api/models"),
+  under("/api/playground"),
+  under("/api/model-providers"),
   exact("GET", "/api/model-routing/status"),
   exact("GET", "/api/model-routing/decisions"),
   exact("POST", "/api/model-routing/probe"),
@@ -159,11 +172,10 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   exact("GET", "/api/agents/detect/stream"),
   exact("POST", "/api/agents/updates"),
   re("GET", /^\/api\/agents\/([^/]+)\/logs$/.source),
-  (r) => r.pattern.startsWith("/api/ntfy/"),
+  under("/api/ntfy/"),
   exact("POST", "/api/transcribe"),
-  (r) => r.pattern.startsWith("/api/service/"),
+  under("/api/service/"),
   exact("POST", "/api/server/restart"),
-  re("POST", /^\/api\/tasks\/([^/]+)\/(hotfix|abandon|reopen|archive|unarchive)$/.source),
   exact("POST", "/api/tasks/freeform"),
   exact("POST", "/api/docs/create"),
   exact("POST", "/api/docs/freeform"),
@@ -173,10 +185,16 @@ const UI_ONLY_MATCHERS: Matcher[] = [
 const ALL_MATCHERS = [...CONTROL_API_MATCHERS, ...FILE_CLI_MATCHERS, ...UI_ONLY_MATCHERS];
 
 export function isApiRouteCovered(route: ApiRouteRef): boolean {
-  if (!route.pattern.startsWith("/api/")) return true;
+  if (!isApiRoutePattern(route.pattern)) return true;
   return ALL_MATCHERS.some((m) => m(route));
 }
 
+function isApiRoutePattern(pattern: string): boolean {
+  // Router.listRoutes() stores RegExp routes as their `.source`, which begins
+  // with `^\\/api\\/` rather than the literal request path.
+  return pattern.startsWith("/api/") || pattern.replaceAll("\\/", "/").startsWith("^/api/");
+}
+
 export function uncoveredApiRoutes(routes: readonly ApiRouteRef[]): ApiRouteRef[] {
-  return routes.filter((r) => r.pattern.startsWith("/api/") && !isApiRouteCovered(r));
+  return routes.filter((r) => isApiRoutePattern(r.pattern) && !isApiRouteCovered(r));
 }

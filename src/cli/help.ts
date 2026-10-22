@@ -121,7 +121,7 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "review",
-        usage: "review <id> [--wait] [--json] [--port N]",
+        usage: "review <id> [--wait] [--json] [--port N] · review cancel <id> · review again <id>",
         desc: "Request review synchronously (PATCH status=review; waits for handoff)",
         flags: "--wait · --json · --port",
       },
@@ -145,9 +145,16 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "done",
-        usage: "done <id> [--commit-dirty] [--wait] [--json] [--port N]",
-        desc: "Move to done through the close-out pipeline (POST /api/tasks/:id/done)",
-        flags: "--commit-dirty · --wait · --json · --port",
+        usage: "done <id> [--cancel] [--commit-dirty] [--wait] [--json] [--port N]",
+        desc: "Run or cancel the close-out pipeline (POST /api/tasks/:id/done)",
+        flags: "--cancel · --commit-dirty · --wait · --json · --port",
+      },
+      { name: "abort", usage: "abort <id> [--json] [--port N]", desc: "Alias for done --cancel" },
+      {
+        name: "api",
+        usage: "api <METHOD> /api/<path> [--json body] [--port N]",
+        desc: "Authenticated API escape hatch for routes without a dedicated command",
+        flags: "--json body · --port",
       },
       {
         name: "landable",
@@ -185,6 +192,19 @@ const GROUPS: readonly CommandGroup[] = [
         usage: "runners [--probe] [--json] [--port N]",
         desc: "Remote validation runner status (and optional probe)",
         flags: "--probe · --json · --port",
+      },
+      {
+        name: "integration",
+        usage:
+          "integration list|pipeline|get <id>|retry <id>|refresh-install <id> [--json] [--port N]",
+        desc: "Inspect and retry integration jobs",
+        flags: "--json · --port",
+      },
+      {
+        name: "attention",
+        usage: "attention list|dismiss <task-id> [--json] [--port N]",
+        desc: "List attention items or dismiss a task's needs-input notice",
+        flags: "--json · --port",
       },
       {
         name: "agents",
