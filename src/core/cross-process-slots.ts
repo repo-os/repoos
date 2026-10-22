@@ -10,8 +10,51 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
+import { spawnSync } from "node:child_process";
 const STALE_MS = 30 * 60 * 1000;
+const WEDGED_AFTER_MS = 75 * 1000;
+const WEDGED_RECLAIM_AFTER_MS = 150 * 1000;
 const HEARTBEAT_MS = 15_000;
+
+function processIsAlive(pid: number): boolean {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  if (process.platform !== "win32") {
+    const result = spawnSync("ps", ["-o", "stat=", "-p", String(pid)], {
+      encoding: "utf8",
+      timeout: 1_000,
+    });
+    if (result.status === 0 && result.stdout.trim()) {
+      return !result.stdout.trim().startsWith("Z");
+    }
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code !== "ESRCH";
+  }
+}
+
+function processGroupHasLiveMembers(pgid: number): boolean {
+  if (process.platform !== "win32") {
+    const result = spawnSync("ps", ["-axo", "pgid=,stat="], {
+      encoding: "utf8",
+      timeout: 1_000,
+    });
+    if (result.status === 0) {
+      return result.stdout.split(/\r?\n/).some((line) => {
+        const [group, state] = line.trim().split(/\s+/, 2);
+        return Number(group) === pgid && Boolean(state) && !state.startsWith("Z");
+      });
+    }
+  }
+  try {
+    process.kill(-pgid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code !== "ESRCH";
+  }
+}
 
 export class SlotQueueTimeoutError extends Error {
   constructor(message: string) {
@@ -41,12 +84,135 @@ function slotDirs(lockRoot: string): string[] {
 }
 
 function isStaleSlot(dir: string): boolean {
+  // A slot's recorded owner is authoritative when its process has exited;
+  // heartbeat timestamps alone can leave a dead close-out blocking for 30m.
+  try {
+    const rawPid = readFileSync(join(dir, ".holder"), "utf8").trim();
+    if (/^\d+$/.test(rawPid)) {
+      if (!processIsAlive(Number(rawPid))) return true;
+    }
+  } catch {
+    // A slot without holder metadata may be mid-creation; use its age below.
+  }
   try {
     const st = statSync(dir);
-    return Date.now() - st.mtimeMs > STALE_MS;
+    const age = Date.now() - st.mtimeMs;
+    if (age > WEDGED_AFTER_MS) {
+      const marker = join(dir, ".wedged-since");
+      try {
+        const since = Number(readFileSync(marker, "utf8"));
+        if (Number.isFinite(since)) return Date.now() - since >= WEDGED_RECLAIM_AFTER_MS;
+      } catch {
+        try {
+          writeFileSync(marker, String(Date.now()), "utf8");
+        } catch {
+          /* concurrent release */
+        }
+      }
+    } else {
+      try {
+        rmSync(join(dir, ".wedged-since"), { force: true });
+      } catch {
+        /* best effort */
+      }
+    }
+    return age > STALE_MS;
   } catch {
     return true;
   }
+}
+
+export interface LocalSlotHolder {
+  slot: number;
+  pid?: number;
+  ageMs: number;
+  wedged: boolean;
+  dead: boolean;
+  meta?: Record<string, unknown>;
+}
+
+function holderIsDead(pid: number | undefined): boolean {
+  if (!pid || !Number.isInteger(pid) || pid <= 0) return false;
+  return !processIsAlive(pid);
+}
+
+/** Read local slot ownership for the Checks surface and CLI diagnostics. */
+export function inspectCrossProcessSlots(lockRoot: string): LocalSlotHolder[] {
+  return slotDirs(lockRoot).map((dir) => {
+    let pid: number | undefined;
+    let meta: Record<string, unknown> | undefined;
+    let ageMs = 0;
+    try {
+      pid = Number(readFileSync(join(dir, ".holder"), "utf8")) || undefined;
+      meta = JSON.parse(readFileSync(join(dir, ".meta.json"), "utf8")) as Record<string, unknown>;
+      ageMs = Math.max(0, Date.now() - statSync(dir).mtimeMs);
+    } catch {
+      try {
+        ageMs = Math.max(0, Date.now() - statSync(dir).mtimeMs);
+      } catch {
+        /* disappeared during inspection */
+      }
+    }
+    return {
+      slot: Number(dir.slice(dir.lastIndexOf("/") + 1)),
+      pid,
+      ageMs,
+      dead: holderIsDead(pid),
+      wedged: !holderIsDead(pid) && ageMs > WEDGED_AFTER_MS,
+      meta,
+    };
+  });
+}
+
+/** Reap close-out check groups left behind after their candidate worktree vanished. */
+export function reapOrphanedLocalCheckGroups(lockRoot: string): number[] {
+  if (process.platform === "win32") return [];
+  const reaped: number[] = [];
+  for (const dir of slotDirs(lockRoot)) {
+    try {
+      const meta = JSON.parse(readFileSync(join(dir, ".meta.json"), "utf8")) as Record<
+        string,
+        unknown
+      >;
+      if (meta.kind !== "local-check" || meta.processGroup !== true) continue;
+      const worktree = typeof meta.worktree === "string" ? meta.worktree : "";
+      const pid = Number(readFileSync(join(dir, ".holder"), "utf8"));
+      if (!worktree || existsSync(worktree) || !Number.isInteger(pid) || pid <= 0) continue;
+      try {
+        process.kill(-pid, "SIGTERM");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ESRCH") {
+          rmSync(dir, { recursive: true, force: true });
+          continue;
+        }
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1500);
+      try {
+        process.kill(-pid, "SIGKILL");
+      } catch {
+        /* the group exited during the grace period */
+      }
+      // Do not release the slot while any member of the old check group can
+      // still be running. In particular, SIGKILL delivery is asynchronous;
+      // deleting the lock immediately lets a retry overlap the orphan briefly.
+      const waitArray = new Int32Array(new SharedArrayBuffer(4));
+      const killDeadline = Date.now() + 2_000;
+      let groupAlive = true;
+      while (Date.now() < killDeadline) {
+        if (!processGroupHasLiveMembers(pid)) {
+          groupAlive = false;
+          break;
+        }
+        Atomics.wait(waitArray, 0, 0, 100);
+      }
+      if (groupAlive) continue;
+      rmSync(dir, { recursive: true, force: true });
+      reaped.push(pid);
+    } catch {
+      /* malformed or concurrently released slot */
+    }
+  }
+  return reaped;
 }
 
 function tryTakeSlot(
