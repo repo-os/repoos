@@ -1165,6 +1165,34 @@ describe("upload progress heartbeat (#0782)", () => {
     }
   });
 
+  it("propagates a stalled upload abort from exec.uploadFile (#0917)", async () => {
+    const { root, candidateSha } = makeRepo();
+    try {
+      const exec = fakeExec({
+        uploadFile: vi.fn(async () => ({
+          ok: false,
+          detail: "upload stalled (no progress for 90s)",
+          aborted: true,
+        })),
+      });
+      const res = await prepareCandidateUpload(exec, {
+        host: HOST,
+        bundlePath: join(root, "candidate.bundle"),
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        mirrorPath: MIRROR,
+        emit: () => {},
+      });
+      expect(res.ok).toBe(false);
+      if (res.ok) return;
+      expect(res.stage).toBe("upload");
+      expect(res.detail).toContain("stalled");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("fires completion once after a retried upload, never on failure", async () => {
     const { root, candidateSha } = makeRepo();
     try {

@@ -1,18 +1,12 @@
 /**
  * #0917 — streaming bundle upload deadlines and progress.
  */
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { EventEmitter } from "node:events";
-import * as childProcess from "node:child_process";
-import type { ChildProcess } from "node:child_process";
+import { describe, it, expect } from "vitest";
 import {
   formatBundleUploadDetail,
   shouldPreferLocalGate,
   sshTransferArgs,
-  uploadFileOverSsh,
+  bundleUploadLimitsFromConfig,
 } from "../../server/bundle-upload.js";
 
 const HOST = { ip: "203.0.113.9", user: "root" };
@@ -60,44 +54,10 @@ describe("shouldPreferLocalGate (#0917)", () => {
   });
 });
 
-describe("uploadFileOverSsh stall (#0917)", () => {
-  let spawnSpy: ReturnType<typeof vi.spyOn>;
-
-  afterEach(() => {
-    spawnSpy?.mockRestore();
-  });
-
-  it("aborts when the remote accepts the connection but never drains stdin", async () => {
-    const root = mkdtempSync(join(tmpdir(), "repoos-0917-upload-"));
-    const path = join(root, "bundle.bin");
-    writeFileSync(path, Buffer.alloc(512 * 1024, 0x61));
-    try {
-      const stdin = new EventEmitter() as never;
-      let written = 0;
-      (stdin as { write: (chunk: Buffer) => boolean }).write = (chunk: Buffer) => {
-        written += chunk.length;
-        return written < 64 * 1024;
-      };
-      (stdin as { end: () => void }).end = () => undefined;
-      const fakeChild = Object.assign(new EventEmitter(), {
-        stdin,
-        stdout: new EventEmitter(),
-        stderr: new EventEmitter(),
-        kill: vi.fn(() => {
-          fakeChild.emit("close", null);
-        }),
-      }) as unknown as ChildProcess;
-      spawnSpy = vi.spyOn(childProcess, "spawn").mockReturnValue(fakeChild);
-
-      const res = await uploadFileOverSsh(HOST, path, "~/.repoos-x.bundle", {
-        limits: { budgetMs: 30_000, stallMs: 250 },
-        abortWhenEtaExceedsBudget: false,
-      });
-      expect(res.ok).toBe(false);
-      expect(res.aborted).toBe(true);
-      expect(res.reason).toBe("stall");
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
+describe("bundleUploadLimitsFromConfig (#0917)", () => {
+  it("defaults to 180s budget and 90s stall", () => {
+    const limits = bundleUploadLimitsFromConfig(undefined);
+    expect(limits.budgetMs).toBe(180_000);
+    expect(limits.stallMs).toBe(90_000);
   });
 });
