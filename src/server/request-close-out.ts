@@ -51,6 +51,12 @@ export interface CloseOutEnqueueDeps {
 
 export type CloseOutEnqueueResult = { ok: true; jobTaskId: string } | { ok: false; reason: string };
 
+export function mainDirtyCloseOutReason(dirty: string[]): string {
+  const paths = dirty.slice(0, 8).join(", ");
+  const more = dirty.length > 8 ? ", …" : "";
+  return `main has uncommitted files: ${paths}${more}. Commit or stash them, or use "Commit & continue" to checkpoint RepoOS-created stories/ and work/ files, then retry.`;
+}
+
 /** Preflight data for approval policy evaluation. */
 export interface ApprovalPreflight {
   branchMissing: boolean;
@@ -236,12 +242,7 @@ export async function enqueueCloseOutForTask(
     throw err;
   }
   if (dirty.length > 0) {
-    const paths = dirty.slice(0, 8).join(", ");
-    const more = dirty.length > 8 ? ", …" : "";
-    return {
-      ok: false,
-      reason: `main has uncommitted files: ${paths}${more}. Commit or stash them, or use "Commit & continue" to checkpoint RepoOS-created stories/ and work/ files, then retry.`,
-    };
+    return { ok: false, reason: mainDirtyCloseOutReason(dirty) };
   }
 
   const branch = task.branch;

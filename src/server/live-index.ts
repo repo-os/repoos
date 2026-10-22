@@ -188,6 +188,7 @@ export type RepoEvent =
    *  in-progress indicator clears. Emitted on every outcome, not just success. */
   | { type: "input.enriched"; id: string; input: Input; at: string }
   | { type: "story.definitionsChanged"; at: string }
+  | { type: "bookkeeping.recovered"; paths: string[]; at: string }
   /** The PM finished fleshing out a New story (ok or not); `path` is its final file. */
   | {
       type: "story.pmFinished";
