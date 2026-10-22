@@ -12,8 +12,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T02:17:25Z"
 updated_at: "2026-10-22T07:32:11Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/notifications.test.ts > notifications store defaults + persistence > defaults everything to off (task types + release kinds, 0606), tests/notifications.test.ts > NOTIFICATION_TYPE_LABELS > covers every monitorable type — task attention, release kinds (0606) and close-out kinds (#0640) on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 8c522e3a8437089da15ae9b8a5ba6478c5ae0f8c
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-22T05:55:25.520Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-22T06:08:25.959Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-22T06:17:25.965Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -107,3 +105,4 @@ Start from crash recovery in src/server/agents.ts (the 'surfaced instead of swit
 - 2026-10-22T07:20:00Z · body
 - 2026-10-22T07:32:11Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-10-22T07:32:11Z · status active→review
+
