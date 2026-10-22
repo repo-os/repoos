@@ -13,7 +13,7 @@ branch: feat/add-deployment-environment-bindings-and-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:07:01Z"
-updated_at: "2026-10-22T22:14:41Z"
+updated_at: "2026-10-22T22:16:33Z"
 ---
 ## Problem
 Deployments do not yet show or bind the project environment they consume. A local environment selection must not imply that its values were uploaded to a provider, and production must not be propagated implicitly when a deployment destination changes.
@@ -32,6 +32,18 @@ A deployment clearly displays and explicitly selects its named environment. User
 ## Notes for AI
 Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Inspect current deployment targets/providers before choosing a UI or adapter. Keep explicit publish/sync distinct from local process injection; never silently send values to external systems. Update deployment documentation and tests.
 
+## Shots
+```json
+[
+{
+  "label": "Deployment target environment binding",
+  "target": "default",
+  "route": "/deployments",
+  "highlight": ".dep-env-binding"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-22T08:07:01Z · created · njachowski@gmail.com
@@ -41,3 +53,4 @@ Depends on #0929 for the Secrets UI and #0930 for scoped consumer bindings. Insp
 - 2026-10-22T22:12:07Z · message_queued at 2026-10-22T22:12:07.618Z
 - 2026-10-22T22:12:20Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-22T22:14:41Z · body
+- 2026-10-22T22:16:33Z · body
