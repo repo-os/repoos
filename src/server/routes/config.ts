@@ -19,6 +19,7 @@ import {
   resolveColumnLabels,
 } from "../../core/config.js";
 import { effectiveAreaVocabulary } from "../../core/areas.js";
+import { hasConfiguredProjectEnvironmentSecrets } from "../../core/project-environments.js";
 import { effectiveAreaNames, unresolvedAreaReport } from "../../core/areas.js";
 import { normalizeStringList } from "../../core/config.js";
 import {
@@ -201,7 +202,10 @@ export const readConfig: RouteHandler = (ctx, _req, res) => {
   const agents = agentsForConfig(repoos.config);
   const safeConfig = safeConfigForBrowser({ ...repoos.config, agents });
   return json(res, 200, {
-    config: safeConfig,
+    config: {
+      ...safeConfig,
+      projectSecretsEnabled: hasConfiguredProjectEnvironmentSecrets(repoos.config.root),
+    },
     schema: getConfigSchema(),
     /**
      * Attachment-storage status (#0659). The UI must never guess whether the
