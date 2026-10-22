@@ -41,6 +41,7 @@ import {
   type RemoteExecDeps,
   type RemoteExecResult,
   type RemoteHost,
+  type UploadProgressInfo,
 } from "../../server/remote-validation.js";
 import type { HetznerClient, HetznerServer } from "../../server/hetzner.js";
 
@@ -1093,7 +1094,7 @@ describe("upload progress heartbeat (#0782)", () => {
     const { root, candidateSha } = makeRepo();
     try {
       const bundlePath = join(root, "candidate.bundle");
-      const progress: { bundleBytes: number; elapsedSecs: number; attempt: number }[] = [];
+      const progress: UploadProgressInfo[] = [];
       const emitted: string[] = [];
       let completed = 0;
       // A slow transfer: slower than several heartbeat ticks.
@@ -1123,6 +1124,8 @@ describe("upload progress heartbeat (#0782)", () => {
         expect(p.bundleBytes).toBe(res.bundleBytes);
         expect(p.bundleBytes).toBeGreaterThan(0);
         expect(p.attempt).toBe(1);
+        expect(p.bytesSent).toBeGreaterThanOrEqual(0);
+        expect(p.stageElapsedSecs).toBeGreaterThanOrEqual(0);
       }
       expect(emitted.some((s) => s.includes("[uploading bundle"))).toBe(true);
       // Completion fired exactly once, when the transfer landed.
@@ -1157,6 +1160,34 @@ describe("upload progress heartbeat (#0782)", () => {
       expect(emitted.some((s) => s.includes("[uploading bundle"))).toBe(false);
       // Completion still fires — the transfer landed, heartbeats or not.
       expect(completed).toBe(1);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("propagates a stalled upload abort from exec.uploadFile (#0917)", async () => {
+    const { root, candidateSha } = makeRepo();
+    try {
+      const exec = fakeExec({
+        uploadFile: vi.fn(async () => ({
+          ok: false,
+          detail: "upload stalled (no progress for 90s)",
+          aborted: true,
+        })),
+      });
+      const res = await prepareCandidateUpload(exec, {
+        host: HOST,
+        bundlePath: join(root, "candidate.bundle"),
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        mirrorPath: MIRROR,
+        emit: () => {},
+      });
+      expect(res.ok).toBe(false);
+      if (res.ok) return;
+      expect(res.stage).toBe("upload");
+      expect(res.detail).toContain("stalled");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

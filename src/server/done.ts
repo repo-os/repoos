@@ -90,6 +90,11 @@ export interface CheckSummary {
    */
   infraFailure?: boolean;
   /**
+   * Laptop chose intentional local gate (slow uplink, metered link, …) — do not
+   * retry on other remote hosts; fall back locally immediately (#0917).
+   */
+  preferLocalGate?: boolean;
+  /**
    * Effective vitest `--changed` ref on the runner (#0695). `null` means the
    * full suite ran (no `--changed`, or the ref did not resolve).
    */

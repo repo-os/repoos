@@ -17,6 +17,12 @@ import {
 import { runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
 import type { RemoteValidator, UploadProgressInfo } from "./remote-validation.js";
 import type { RunnerHealthNotice } from "../core/runner-health.js";
+import {
+  FULL_BUNDLE_BYTES_ESTIMATE,
+  localPressureOkForLocalGate,
+  readLastCloseOutGateMs,
+  shouldPreferLocalGate,
+} from "./bundle-upload.js";
 
 /** Set on a spawned `repoos check` when a parent already ran the remote gate (#0520). */
 export const REPOOS_REMOTE_VALIDATION_DONE = "REPOOS_REMOTE_VALIDATION_DONE";
@@ -225,6 +231,27 @@ export async function runRemotePreReviewGate(params: {
 }): Promise<RemotePreReviewOutcome> {
   const rv = params.config.remoteValidation;
   if (!rv?.enabled) return { kind: "skip" };
+
+  const localGateMs = readLastCloseOutGateMs(
+    params.config.root,
+    params.config.workDir,
+    params.taskId,
+  );
+  const meteredPrefer = shouldPreferLocalGate({
+    forceMeteredLocal: rv.forceLocalOnMeteredLink === true,
+    probe: null,
+    bundleBytes: FULL_BUNDLE_BYTES_ESTIMATE,
+    localGateMs,
+    remoteGateMs: localGateMs,
+    localPressureOk: localPressureOkForLocalGate(params.config),
+  });
+  if (meteredPrefer.prefer) {
+    return {
+      kind: "local-only",
+      skipTests: false,
+      detail: meteredPrefer.detail ?? "running locally",
+    };
+  }
 
   const headRes = await runGit(params.worktreePath, ["rev-parse", "HEAD"], 10_000);
   if (headRes.status !== 0) {
