@@ -1361,6 +1361,10 @@ export const useRepoStore = defineStore("repo", () => {
       void refresh();
       return;
     }
+    if (e.type === "bookkeeping.recovered") {
+      pushToast(`Recovered and committed ${e.paths.join(", ")}`, "success");
+      return;
+    }
     if (e.type === "input.enriched") {
       // Background PM enrichment (#0628): the POST returned the raw input and
       // the PM wrote title/type/area afterwards — swap it in place so the
