@@ -35,6 +35,17 @@
 
 import { spawn } from "node:child_process";
 import { writeChildStdin } from "../core/child-stdin.js";
+import {
+  bundleUploadLimitsFromConfig,
+  formatBundleUploadDetail,
+  linkProbeAcceptable,
+  probeHostLink,
+  runSshForProbe,
+  sshTransferArgs,
+  uploadFileOverSsh,
+  type BundleUploadLimits,
+  type LinkProbeResult,
+} from "./bundle-upload.js";
 import { createHash, randomBytes } from "node:crypto";
 import { createConnection } from "node:net";
 import {
@@ -238,12 +249,18 @@ export interface RemoteExecDeps {
     outPath: string,
     opts?: { refs?: string[]; excludeRefs?: string[] },
   ): Promise<{ ok: boolean; detail?: string }>;
-  /** `scp <localPath> <host>:<remotePath>`. */
+  /** `ssh <host> cat > <remotePath>` with streaming stdin (#0917). */
   uploadFile(
     host: RemoteHost,
     localPath: string,
     remotePath: string,
-  ): Promise<{ ok: boolean; detail?: string }>;
+    opts?: {
+      limits?: BundleUploadLimits;
+      onProgress?: (sent: number, total: number, rateBps: number, etaSecs: number | null) => void;
+      registerAbort?: (abort: () => void) => void;
+      abortWhenEtaExceedsBudget?: boolean;
+    },
+  ): Promise<{ ok: boolean; detail?: string; bytesSent?: number; aborted?: boolean }>;
   /**
    * Ask whether the host's persistent mirror exists and which refs it holds.
    * Optional: a runner (or test double) that cannot probe simply reports no
@@ -313,6 +330,12 @@ export interface ValidateOptions {
    * in-stage upload detail here. Not fired when the upload fails.
    */
   onUploadComplete?: () => void;
+  /** Wall-clock / stall caps for bundle upload (#0917). */
+  uploadLimits?: BundleUploadLimits;
+  /** Host display name for upload progress (#0917). */
+  hostLabel?: string;
+  /** SIGKILL an in-flight bundle upload (#0917 / #0459 cancel). */
+  registerUploadAbort?: (abort: () => void) => void;
   /** Run task screenshots/UI verification on the runner and return bounded artifacts. */
   browserCapture?: {
     operation: "shots" | "verify" | "both" | "single-shot";
@@ -1943,19 +1966,7 @@ export function deadlineLockWaitSecs(deadlineAt: number, now = Date.now()): numb
 // ── default IO implementation ────────────────────────────────────────────────
 
 function sshArgs(host: RemoteHost): string[] {
-  return [
-    ...(host.keyPath ? ["-i", host.keyPath] : []),
-    "-o",
-    "BatchMode=yes",
-    "-o",
-    "StrictHostKeyChecking=accept-new",
-    "-o",
-    "ConnectTimeout=15",
-    "-o",
-    "UserKnownHostsFile=/dev/null",
-    "-o",
-    "LogLevel=ERROR",
-  ];
+  return sshTransferArgs(host);
 }
 
 function runLocalWithStdin(
@@ -2153,17 +2164,30 @@ export function defaultRemoteExec(): RemoteExecDeps {
       });
       return res.code === 0 ? { ok: true } : { ok: false, detail: tail(res.output) };
     },
-    async uploadFile(host, localPath, remotePath) {
-      // Use SSH pipe instead of scp to avoid Tailscale MTU issues with the
-      // SFTP subsystem — plain SSH data channel handles large files reliably.
-      const fileData = readFileSync(localPath);
-      const res = await runLocalWithStdin(
-        "ssh",
-        [...sshArgs(host), `${host.user}@${host.ip}`, `cat > ${remotePath}`],
-        fileData,
-        { timeoutMs: 120_000 },
-      );
-      return res.code === 0 ? { ok: true } : { ok: false, detail: tail(res.output) };
+    async uploadFile(host, localPath, remotePath, uploadOpts) {
+      const limits =
+        uploadOpts?.limits ??
+        bundleUploadLimitsFromConfig(undefined);
+      const res = await uploadFileOverSsh(host, localPath, remotePath, {
+        limits,
+        abortWhenEtaExceedsBudget: uploadOpts?.abortWhenEtaExceedsBudget ?? true,
+        registerAbort: uploadOpts?.registerAbort,
+        onProgress: (p) =>
+          uploadOpts?.onProgress?.(
+            p.bytesSent,
+            p.totalBytes,
+            p.rateBps,
+            p.etaMs !== null ? Math.round(p.etaMs / 1000) : null,
+          ),
+      });
+      return res.ok
+        ? { ok: true, bytesSent: res.bytesSent }
+        : {
+            ok: false,
+            detail: res.detail,
+            bytesSent: res.bytesSent,
+            aborted: res.aborted,
+          };
     },
     async probeMirror(host, mirrorPath) {
       const res = await runLocal(
@@ -2233,10 +2257,24 @@ const UPLOAD_ATTEMPTS = 3;
 export interface UploadProgressInfo {
   /** Total bundle size in bytes (known before the transfer starts). */
   bundleBytes: number;
+  /** Bytes written to the SSH stdin stream so far (#0917). */
+  bytesSent: number;
   /** Seconds since this upload attempt started. */
   elapsedSecs: number;
+  /** Seconds since the upload stage began (all attempts) (#0917). */
+  stageElapsedSecs: number;
   /** 1-based attempt number within the retry loop. */
   attempt: number;
+  /** Display host name (#0917). */
+  hostLabel?: string;
+  /** Current throughput in bytes per second (#0917). */
+  rateBps?: number;
+  /** Estimated seconds remaining (#0917). */
+  etaSecs?: number | null;
+  /** True when only new commits are shipped (#0717). */
+  partial?: boolean;
+  /** Why a full bundle is being sent (#0917). */
+  fullBundleNote?: string;
 }
 
 /** Default heartbeat cadence for a slow bundle upload (#0782). */
@@ -2256,24 +2294,70 @@ async function uploadFileWithProgress(
   bundleBytes: number,
   attempt: number,
   emit: (s: string) => void,
-  onUploadProgress?: (info: UploadProgressInfo) => void,
-  uploadProgressIntervalMs: number = UPLOAD_PROGRESS_INTERVAL_MS,
+  ctx: {
+    onUploadProgress?: (info: UploadProgressInfo) => void;
+    uploadProgressIntervalMs?: number;
+    uploadLimits?: BundleUploadLimits;
+    registerUploadAbort?: (abort: () => void) => void;
+    stageStartedAt: number;
+    hostLabel?: string;
+    partial?: boolean;
+    fullBundleNote?: string;
+  },
 ): Promise<{ ok: boolean; detail?: string }> {
   const intervalMs =
-    Number.isFinite(uploadProgressIntervalMs) && uploadProgressIntervalMs > 0
-      ? uploadProgressIntervalMs
+    Number.isFinite(ctx.uploadProgressIntervalMs) && ctx.uploadProgressIntervalMs! > 0
+      ? ctx.uploadProgressIntervalMs!
       : UPLOAD_PROGRESS_INTERVAL_MS;
   const startedAt = Date.now();
-  // Always armed while the transfer is in flight: a fast upload finishes
-  // before the first tick, so this only speaks up for genuinely slow ones.
-  const timer = setInterval(() => {
+  let lastSent = 0;
+  let lastRate = 0;
+  let lastEta: number | null = null;
+  const report = (force = false): void => {
     const elapsedSecs = Math.round((Date.now() - startedAt) / 1000);
-    emit(`[uploading bundle ${formatBytes(bundleBytes)} … ${elapsedSecs}s elapsed]\n`);
-    onUploadProgress?.({ bundleBytes, elapsedSecs, attempt });
-  }, intervalMs);
+    const stageElapsedSecs = Math.round((Date.now() - ctx.stageStartedAt) / 1000);
+    const info: UploadProgressInfo = {
+      bundleBytes,
+      bytesSent: lastSent,
+      elapsedSecs,
+      stageElapsedSecs,
+      attempt,
+      hostLabel: ctx.hostLabel ?? host.ip,
+      rateBps: lastRate,
+      etaSecs: lastEta,
+      partial: ctx.partial,
+      fullBundleNote: ctx.fullBundleNote,
+    };
+    if (force || lastSent > 0) {
+      const line = formatBundleUploadDetail({
+        hostLabel: info.hostLabel ?? host.ip,
+        bytesSent: info.bytesSent,
+        totalBytes: bundleBytes,
+        rateBps: lastRate,
+        etaSecs: lastEta,
+        attempt,
+        stageElapsedSecs,
+        partial: ctx.partial,
+        fullBundleNote: ctx.fullBundleNote,
+      });
+      emit(`[${line}]\n`);
+      ctx.onUploadProgress?.(info);
+    }
+  };
+  const timer = setInterval(() => report(true), intervalMs);
   timer?.unref?.();
   try {
-    return await exec.uploadFile(host, bundlePath, remoteBundle);
+    return await exec.uploadFile(host, bundlePath, remoteBundle, {
+      limits: ctx.uploadLimits,
+      abortWhenEtaExceedsBudget: true,
+      registerAbort: ctx.registerUploadAbort,
+      onProgress: (sent, _total, rateBps, etaSecs) => {
+        lastSent = sent;
+        lastRate = rateBps;
+        lastEta = etaSecs;
+        report();
+      },
+    });
   } finally {
     clearInterval(timer);
   }
@@ -2322,10 +2406,33 @@ export async function prepareCandidateUpload(
      * Not fired when the upload fails.
      */
     onUploadComplete?: () => void;
+    uploadLimits?: BundleUploadLimits;
+    hostLabel?: string;
+    registerUploadAbort?: (abort: () => void) => void;
   },
 ): Promise<PreparedUpload> {
   const { host, bundlePath, remoteBundle, worktreePath, candidateSha, mirrorPath, emit } = opts;
   const incrementalUpload = opts.incrementalUpload !== false;
+  const stageStartedAt = Date.now();
+  const uploadCtx = (): {
+    onUploadProgress?: (info: UploadProgressInfo) => void;
+    uploadProgressIntervalMs?: number;
+    uploadLimits?: BundleUploadLimits;
+    registerUploadAbort?: (abort: () => void) => void;
+    stageStartedAt: number;
+    hostLabel?: string;
+    partial?: boolean;
+    fullBundleNote?: string;
+  } => ({
+    onUploadProgress: opts.onUploadProgress,
+    uploadProgressIntervalMs: opts.uploadProgressIntervalMs,
+    uploadLimits: opts.uploadLimits,
+    registerUploadAbort: opts.registerUploadAbort,
+    stageStartedAt,
+    hostLabel: opts.hostLabel,
+    partial: undefined,
+    fullBundleNote: undefined,
+  });
 
   if (!incrementalUpload) {
     emit(
@@ -2346,6 +2453,7 @@ export async function prepareCandidateUpload(
     }
     const uploadStartedAt = Date.now();
     let lastDetail = "";
+    const fullNote = "full bundle (runner script legacy)";
     for (let attempt = 1; attempt <= UPLOAD_ATTEMPTS; attempt++) {
       const up = await uploadFileWithProgress(
         exec,
@@ -2355,8 +2463,7 @@ export async function prepareCandidateUpload(
         bundleBytes,
         attempt,
         emit,
-        opts.onUploadProgress,
-        opts.uploadProgressIntervalMs,
+        { ...uploadCtx(), fullBundleNote: fullNote },
       );
       if (up.ok) {
         const uploadSecs = Math.round((Date.now() - uploadStartedAt) / 100) / 10;
@@ -2446,6 +2553,12 @@ export async function prepareCandidateUpload(
   //    small; a full one is the case this feature is meant to avoid repeating).
   const uploadStartedAt = Date.now();
   let lastDetail = "";
+  const fullBundleNote =
+    baseSha === null
+      ? mirror.exists
+        ? "full bundle (no usable mirror base)"
+        : "full bundle (mirror empty)"
+      : undefined;
   for (let attempt = 1; attempt <= UPLOAD_ATTEMPTS; attempt++) {
     const up = await uploadFileWithProgress(
       exec,
@@ -2455,8 +2568,11 @@ export async function prepareCandidateUpload(
       bundleBytes,
       attempt,
       emit,
-      opts.onUploadProgress,
-      opts.uploadProgressIntervalMs,
+      {
+        ...uploadCtx(),
+        partial: baseSha !== null,
+        fullBundleNote: fullBundleNote,
+      },
     );
     if (up.ok) {
       const uploadSecs = Math.round((Date.now() - uploadStartedAt) / 100) / 10;
@@ -4861,6 +4977,9 @@ export class TailscaleRunner implements RemoteValidator {
   private readonly pool: TailscaleHostPool;
   /** SIGKILL the in-flight validate SSH, keyed by container name + generation (#0739). */
   private readonly activeRunAbort = new Map<string, { generation: number; abort: () => void }>();
+  /** In-flight bundle upload abort, keyed by task id (#0917). */
+  private readonly uploadAbortByTask = new Map<string, () => void>();
+  private readonly linkProbe?: (host: RemoteHost) => Promise<LinkProbeResult>;
   /** Resolve the validate() transport race after hang recovery (#0739). */
   private readonly activeRunSettle = new Map<
     string,
@@ -4881,9 +5000,17 @@ export class TailscaleRunner implements RemoteValidator {
       pressureCacheMs?: number;
       /** Override enablement/thresholds (tests); defaults to live config. */
       pressureOptions?: () => HostPressureOptions;
+      /** Override link probe (tests) (#0917). */
+      linkProbe?: (host: RemoteHost) => Promise<LinkProbeResult>;
     },
   ) {
     this.exec = deps?.exec ?? defaultRemoteExec();
+    // Injected exec doubles cannot reach a real host — stub a fast link (#0917).
+    this.linkProbe =
+      deps?.linkProbe ??
+      (deps?.exec
+        ? async () => ({ ok: true, rttMs: 5, throughputBps: 5_000_000 })
+        : undefined);
     this.timings = { ...DEFAULT_TIMINGS, ...deps?.timings };
     this.keyPath = process.env.REPOOS_REMOTE_SSH_KEY ?? "";
     this.pool = new TailscaleHostPool(config.remoteValidation, {
@@ -5042,6 +5169,8 @@ export class TailscaleRunner implements RemoteValidator {
 
   /** Kill a hung run's container on its host (#0729). */
   async killHungValidation(taskId: string): Promise<{ ok: boolean; detail: string }> {
+    this.uploadAbortByTask.get(taskId)?.();
+    this.uploadAbortByTask.delete(taskId);
     const result = await this.pool.killHungRun(taskId);
     if (result.container) {
       const container = result.container;
@@ -5407,6 +5536,21 @@ export class TailscaleRunner implements RemoteValidator {
       //    and every other repoos process share ONE per-host limit (#0521).
       const image = rv.containerImage ?? "repoos-ci";
       let incrementalUpload = this.pool.validateScriptMirrorSupported(host.ip);
+      const hostLabel = slot.host.host ?? host.ip;
+      const link = this.linkProbe
+        ? await this.linkProbe(host)
+        : await probeHostLink(host, runSshForProbe);
+      if (!link.ok || !linkProbeAcceptable(link)) {
+        const detail =
+          `host ${hostLabel} skipped: link probe failed` +
+          (link.detail ? ` (${link.detail})` : link.throughputBps > 0 ? "" : " (low throughput)");
+        emit(`[${detail}]\n`);
+        return withScope(this.infraFail(detail, { taskId: opts.taskId, host: host.ip }));
+      }
+      emit(
+        `[link probe ${hostLabel}: ${link.rttMs} ms RTT, ${Math.round(link.throughputBps / 1024)} KB/s]\n`,
+      );
+      const uploadLimits = opts.uploadLimits ?? bundleUploadLimitsFromConfig(rv);
       let upload: SuccessfulUpload | null = null;
       let run: RemoteExecResult | null = null;
       let outerTimeoutMs = this.timings.remoteRunTimeoutMs;
@@ -5422,11 +5566,20 @@ export class TailscaleRunner implements RemoteValidator {
           mirrorPath: remoteMirrorPath(this.config.root),
           incrementalUpload,
           emit,
+          uploadLimits,
+          hostLabel,
+          registerUploadAbort: (abort) => {
+            this.uploadAbortByTask.set(opts.taskId, abort);
+            opts.registerUploadAbort?.(abort);
+          },
           ...(opts.onUploadProgress ? { onUploadProgress: opts.onUploadProgress } : {}),
           ...(opts.uploadProgressIntervalMs !== undefined
             ? { uploadProgressIntervalMs: opts.uploadProgressIntervalMs }
             : {}),
-          ...(opts.onUploadComplete ? { onUploadComplete: opts.onUploadComplete } : {}),
+          onUploadComplete: () => {
+            this.uploadAbortByTask.delete(opts.taskId);
+            opts.onUploadComplete?.();
+          },
         });
         if (!preparedUpload.ok) {
           const detail =

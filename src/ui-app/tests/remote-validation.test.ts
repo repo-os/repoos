@@ -1123,6 +1123,8 @@ describe("upload progress heartbeat (#0782)", () => {
         expect(p.bundleBytes).toBe(res.bundleBytes);
         expect(p.bundleBytes).toBeGreaterThan(0);
         expect(p.attempt).toBe(1);
+        expect(p.bytesSent).toBeGreaterThanOrEqual(0);
+        expect(p.stageElapsedSecs).toBeGreaterThanOrEqual(0);
       }
       expect(emitted.some((s) => s.includes("[uploading bundle"))).toBe(true);
       // Completion fired exactly once, when the transfer landed.

@@ -74,6 +74,7 @@ export { hasDependencyInputChange } from "../core/dependency-install.js";
 import type { DoneStep } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
 import type { RemoteValidator, UploadProgressInfo } from "./remote-validation.js";
+import { formatBundleUploadDetail } from "./bundle-upload.js";
 import {
   checkEnvAfterRemoteGate,
   runRemotePreReviewGate,
@@ -2914,7 +2915,17 @@ export class CloseOutOrchestrator {
                 remoteUploading = true;
                 this.onUploadProgress?.(
                   job.taskId,
-                  `uploading bundle ${formatUploadBytes(info.bundleBytes)} · ${info.elapsedSecs}s`,
+                  formatBundleUploadDetail({
+                    hostLabel: info.hostLabel ?? "runner",
+                    bytesSent: info.bytesSent,
+                    totalBytes: info.bundleBytes,
+                    rateBps: info.rateBps ?? 0,
+                    etaSecs: info.etaSecs ?? null,
+                    attempt: info.attempt,
+                    stageElapsedSecs: info.stageElapsedSecs,
+                    partial: info.partial,
+                    fullBundleNote: info.fullBundleNote,
+                  }),
                 );
               } catch {
                 /* observation must never break close-out */

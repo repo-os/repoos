@@ -1260,6 +1260,16 @@ export interface RemoteValidationConfig {
    * `fallbackToLocal` is true.
    */
   localFallback?: LocalFallbackMode;
+  /**
+   * Wall-clock budget for one bundle upload attempt (#0917). Default 180s.
+   */
+  bundleUploadBudgetSecs?: number;
+  /**
+   * Abort when no bytes are written for this long (#0917). Default 90s.
+   */
+  bundleUploadStallSecs?: number;
+  /** Force the close-out gate local — skip bundle upload (#0917). */
+  forceLocalOnMeteredLink?: boolean;
 }
 
 /**

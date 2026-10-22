@@ -3236,6 +3236,25 @@ describe("runner memory health dispatch (#0901)", () => {
     expect(pool.status().find((h) => h.host === "thrash")!.pressure!.state).toBe("pressured");
   });
 
+  it("skips thinkpad at 87% swap before bundle upload would start (#0917)", async () => {
+    const { pool } = healthPool({
+      hosts: [{ host: "thinkpad" }, { host: "ok" }],
+      samples: {
+        thinkpad: pressuredSample({
+          swapUsedBytes: 3.5 * GB,
+          swapTotalBytes: 4 * GB,
+        }),
+        ok: healthySample(),
+      },
+    });
+    const slot = await pool.acquire([]);
+    expect(slot.host.host).toBe("ok");
+    const thinkpad = pool.status().find((h) => h.host === "thinkpad")!;
+    expect(thinkpad.pressure!.swapUsedRatio).toBeCloseTo(0.875, 2);
+    expect(thinkpad.pressure!.state).toBe("pressured");
+    slot.release();
+  });
+
   it("evaluates a Colima VM sample against the VM's numbers, not macOS swap", async () => {
     const { pool } = healthPool({
       hosts: [

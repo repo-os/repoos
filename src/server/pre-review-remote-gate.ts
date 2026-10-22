@@ -225,6 +225,13 @@ export async function runRemotePreReviewGate(params: {
 }): Promise<RemotePreReviewOutcome> {
   const rv = params.config.remoteValidation;
   if (!rv?.enabled) return { kind: "skip" };
+  if (rv.forceLocalOnMeteredLink) {
+    return {
+      kind: "local-only",
+      skipTests: false,
+      detail: "slow or metered link (setting): running locally",
+    };
+  }
 
   const headRes = await runGit(params.worktreePath, ["rev-parse", "HEAD"], 10_000);
   if (headRes.status !== 0) {
