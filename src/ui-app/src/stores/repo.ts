@@ -1909,7 +1909,23 @@ export const useRepoStore = defineStore("repo", () => {
       });
     } else if (e.type === "task-check.output") {
       const run = taskChecks.value[e.taskId]?.find((r) => r.id === e.checkId);
-      if (run) run.output += e.chunk;
+      if (run) {
+        run.output += e.chunk;
+        const marker = "::repoos-check-progress::";
+        const at = run.output.lastIndexOf(marker);
+        if (at >= 0) {
+          const line = run.output.slice(at + marker.length).split(/\r?\n/, 1)[0];
+          try {
+            const p = JSON.parse(line) as { stepsDone?: number; stepsTotal?: number };
+            if (Number.isFinite(p.stepsDone) && Number.isFinite(p.stepsTotal)) {
+              run.stepsDone = p.stepsDone;
+              run.stepsTotal = p.stepsTotal;
+            }
+          } catch {
+            /* record may span SSE chunks */
+          }
+        }
+      }
     } else if (e.type === "task-check.done") {
       const run = taskChecks.value[e.taskId]?.find((r) => r.id === e.checkId);
       if (run) {

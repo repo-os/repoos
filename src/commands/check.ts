@@ -1863,7 +1863,7 @@ export interface RunPlanOptions {
    */
   echo?: boolean;
   onStart?: (step: CheckStep) => void;
-  onResult?: (result: StepRunResult) => void;
+  onResult?: (result: StepRunResult, progress?: { stepsDone: number; stepsTotal: number }) => void;
 }
 
 /**
@@ -1889,9 +1889,11 @@ export async function runCheckPlan(
     stepNames: opts.stepNames,
   });
   const results: StepRunResult[] = [];
+  const stepsTotal = selected.filter(({ skip }) => !skip).length;
   const push = (r: StepRunResult): StepRunResult => {
     results.push(r);
-    opts.onResult?.(r);
+    const stepsDone = results.filter((x) => x.status !== "skipped").length;
+    opts.onResult?.(r, { stepsDone, stepsTotal });
     return r;
   };
 
@@ -2390,7 +2392,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         heading(step.name);
         console.log(c.dim(`  · ${describeStep(step)}`));
       },
-      onResult: (r) => {
+      onResult: (r, progress) => {
+        if (progress) console.log(`::repoos-check-progress::${JSON.stringify(progress)}`);
         const secs = r.durationMs >= 1000 ? ` (${(r.durationMs / 1000).toFixed(1)}s)` : "";
         if (r.status === "passed") {
           console.log(c.green(`  ✔ ${r.name}${secs}${r.detail ? ` — ${r.detail}` : ""}`));

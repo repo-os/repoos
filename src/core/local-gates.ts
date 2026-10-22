@@ -139,10 +139,7 @@ export async function acquireLocalCheckSlot(opts: AcquireLocalCheckSlotOpts): Pr
         processGroup: opts.env.REPOOS_CHECK_PROCESS_GROUP === "1",
       },
       onQueued: (ahead, position) => {
-        const msg =
-          ahead === 0
-            ? "waiting for a local check slot"
-            : `waiting for a local check slot (${ahead} ahead, position ${position})`;
+        const msg = `waiting for a local check slot (${ahead} ahead, position ${position})`;
         emit(`[queue] ${msg}`);
         markQueue(board, cacheDir, opts.env, "local-check", ahead, position, msg);
       },

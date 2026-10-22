@@ -4551,6 +4551,12 @@ watch(
             <div v-if="handoffBusy" class="ff-notice drawer-handoff-banner">
               <ActivityIndicator />
               <span>{{ handoffStepLabel }}</span>
+              <div v-if="activeCheckRun?.stepsTotal" class="check-progress" role="status">
+                <progress :value="activeCheckRun.stepsDone ?? 0" :max="activeCheckRun.stepsTotal" />
+                <span
+                  >step {{ activeCheckRun.stepsDone ?? 0 }} of {{ activeCheckRun.stepsTotal }}</span
+                >
+              </div>
               <span class="drawer-handoff-sub">
                 This task stays <strong>active</strong> until the checks pass.
               </span>
@@ -6721,6 +6727,19 @@ watch(
   background: var(--panel);
   border-radius: 8px;
   border: 1px solid var(--border);
+}
+
+.check-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(100%, 320px);
+  font-size: 12px;
+}
+
+.check-progress progress {
+  width: 120px;
+  accent-color: var(--accent);
 }
 
 .diff-stat-item {
