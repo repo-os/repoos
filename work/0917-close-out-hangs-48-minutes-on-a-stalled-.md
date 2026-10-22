@@ -5,13 +5,13 @@ type: feature
 status: active
 priority: p1
 area: server
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/close-out-hangs-48-minutes-on-a-stalled-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T04:09:06Z"
-updated_at: "2026-10-22T09:30:25Z"
+updated_at: "2026-10-22T09:51:13Z"
 ---
 ## Problem
 2026-10-22: #0909's close-out (check/validating phase) started at 03:03Z and did nothing visible for 48 minutes. At 03:51:39Z the attention event 'Ran locally' recorded: 'ssh upload of candidate bundle to thinkpad failed: [stdin error: EPIPE: broken pipe, write]'. Only then did the gate start locally on the laptop (which also burns the laptop's memory, the problem remote validation is meant to avoid). thinkpad was swap-bound at the time (3579/4095 MB, 87%). The upload to a pressured or wedged host had no hard deadline short enough to fail fast, #0901's health probe did not keep the upload from going to that host, and nothing in the UI/task showed what the close-out was waiting on (the user only saw 'check', and asked why it was stuck for over an hour).
@@ -92,3 +92,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T09:15:50Z · note: handoff requested (ui-review)
 - 2026-10-22T09:30:25Z · note: ui verification failed: ui verification failed (4 issue(s)): [missing-target] Close-out card shows bundle upload progress (target "default"): state "closeOut:uploading" did not render on target "default" — / shows no task card (http://127.0.0.1:34597/?shotState=closeOut%3Auploading); [missing-target] Close-out card shows bundle upload progress (target "default"): highlight .tc-moving matched nothing on / (http://127.0.0.1:34597/?shotState=closeOut%3Auploading); [missing-target] Remote validation
 - 2026-10-22T09:30:25Z · handoff failed · ui-review handoff failed at verify · ui verification failed (4 issue(s)): [missing-target] Close-out card shows bundle upload progress (target "default"): state "closeOut:uploading" did not render on target "default" — / shows no task card (http://127.0.0.1:34597/?shotState=closeOut%3Auploading); [missing-target] Close-out card shows bundle upload progress (target "default"): highlight .tc-moving matched nothing on / (http://127.0.0.1:34597/?shotState=closeOut%3Auploading); [missing-target] Remote validation drawer bundle upload settings (target "default"): click .tunnel-setting-actions button: click: Error: strict mode violation: locator('.tunnel-setting-actions button') resolved to 3 elements: on /settings?section=remote-validation (http://127.0.0.1:34597/settings?section=remote-validation); [missing-target] Remote validation drawer bundle upload settings (target "default"): highlight [data-config-key="remoteValidation.bundleUploadBudgetSecs"] matched nothing on /settings?section=remote-validation (http://127.0.0.1:34597/settings?section=remote-validation)
+- 2026-10-22T09:51:13Z · assigned_to
