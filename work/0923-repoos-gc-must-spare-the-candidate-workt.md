@@ -106,3 +106,4 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 - 2026-10-22T13:13:34Z · message_queued at 2026-10-22T13:13:34.692Z
 - 2026-10-22T13:13:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-22T13:16:46Z · status active→review
+- 2026-10-22T13:16:46Z · message_delivered: 1 message(s)
