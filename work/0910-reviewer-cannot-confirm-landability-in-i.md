@@ -3,9 +3,6 @@ id: "0910"
 title: "Reviewer cannot confirm landability in its sandbox and returns 'needs some work' with no bugs: feed it the landing checklist"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -52,3 +49,4 @@ Reproduce with .repoos/reviews/0899/1.md to 5.md. The reviewer for those passes 
 - 2026-10-22T01:14:26Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · error: Go usage limit exceeded
 - 2026-10-22T01:14:27Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-22T01:15:05Z · cli_override, model_override
+- 2026-10-22T01:15:05Z · needs_input
