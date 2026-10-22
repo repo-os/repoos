@@ -13,6 +13,7 @@ import {
 } from "node:fs";
 import { cpus } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
+import { formatTomlError, validateToml } from "./toml-validate.js";
 import type {
   Agent,
   AuthConfig,
@@ -4151,11 +4152,7 @@ function serializeTableArray(key: string, rows: Record<string, unknown>[]): stri
  * other lines (comments, formatting, unknown keys).
  */
 export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>): void {
-  if (!existsSync(tomlPath)) {
-    writeFileSync(tomlPath, "", "utf8");
-  }
-
-  const text = readFileSync(tomlPath, "utf8");
+  const text = existsSync(tomlPath) ? readFileSync(tomlPath, "utf8") : "";
   let result = text.replace(/\r\n/g, "\n").split("\n");
   let modified = false;
 
@@ -4410,7 +4407,12 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
     // ended with a blank line (`text.split("\n")` yields a trailing "") grew
     // one empty line per save (#0682 round-trip stability).
     while (result.length && result[result.length - 1].trim() === "") result.pop();
-    writeFileSync(tomlPath, result.join("\n") + "\n", "utf8");
+    const output = result.join("\n") + "\n";
+    const validation = validateToml(output);
+    if (!validation.ok) {
+      throw new Error(`Refusing to write invalid repoos.toml: ${formatTomlError(validation)}`);
+    }
+    writeFileSync(tomlPath, output, "utf8");
   }
 }
 

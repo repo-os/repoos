@@ -37,6 +37,10 @@ describe("validateToml accepts", () => {
     ["literal strings with quotes inside", "selector = '[data-theme=\"light\"]'\n"],
     ["single-line arrays", 'a = [1, 2, 3]\nb = ["x", "y"]\n'],
     [
+      "inline model pause tables",
+      'pausedModels = [{ model = "a", pausedReason = "rate limited" }, { model = "b", pausedUntil = "2026-10-23" }]\n',
+    ],
+    [
       "dates, hex, floats, specials",
       "d = 1979-05-27T07:32:00Z\nh = 0xDEAD_beef\nf = -1.5e3\nn = inf\n",
     ],
@@ -82,19 +86,24 @@ describe("validateToml rejects", () => {
 
   // Valid TOML that RepoOS's line-based reader cannot load must be refused, or
   // a save would be accepted and then silently ignored (#0375 review).
-  it.each([
-    ["multi-line array", "a = [\n  1,\n  2,\n]\n"],
-    ["inline table", 'a = { b = 1, c = "x" }\n'],
-  ])("refuses %s as unsupported by the config reader", (_name, source) => {
-    const result = validateToml(source);
-    expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/aren't supported/);
-  });
+  it.each([["multi-line array", "a = [\n  1,\n  2,\n]\n"]])(
+    "refuses %s as unsupported by the config reader",
+    (_name, source) => {
+      const result = validateToml(source);
+      expect(result.ok).toBe(false);
+      expect(result.error).toMatch(/aren't supported/);
+    },
+  );
 });
 
 describe("formatTomlError", () => {
   it("folds the line number into the message", () => {
     const result = validateToml("a = [1, 2\n");
     expect(formatTomlError(result)).toMatch(/^Invalid TOML on line \d+: /);
+  });
+
+  it("names the offending key for release-gate diagnostics", () => {
+    const result = validateToml('pausedModels = [{ model = "x" }\n');
+    expect(formatTomlError(result)).toContain("line 1 (key pausedModels)");
   });
 });
