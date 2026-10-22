@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-22T22:03:38Z"
-review_passes: 5
 id: "0929"
 title: Build the Secrets page for project environments
 type: feature
-status: review
+status: active
 priority: p1
 area: [web, ui]
 story: Secrets and project environments
@@ -15,8 +13,11 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-last_check_failure: "repoos check at 2026-10-22T21:43:27.302Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 2c4d92b6 to fd8c6add) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+updated_at: "2026-10-22T21:59:43Z"
+review_passes: 3
 review_rounds: 2
+last_check_failure: "repoos check at 2026-10-22T19:44:36.309Z: repoos check failed: ui verification failed: runner result omitted the UI verification record"
+engineer_stall_resume_log: "[{\"at\":\"2026-10-22T21:31:23.543Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 Users have no RepoOS screen to see which project environment is selected or which expected keys are set, missing, or inherited. The metadata and write operations from #0928 need a safe, usable interface that never reveals saved values.
@@ -162,14 +163,7 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T21:20:09Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-22T21:20:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T21:20:09Z · message_delivered: 1 message(s)
-- 2026-10-22T21:25:38Z · body
-- 2026-10-22T21:27:20Z · CTO nudge: held — remote validation is running
-- 2026-10-22T21:33:47Z · body
-- 2026-10-22T21:35:12Z · body
-- 2026-10-22T21:44:32Z · body
-- 2026-10-22T21:50:02Z · body
-- 2026-10-22T21:59:40Z · status active→review
-- 2026-10-22T21:59:40Z · note: shots: skipped — 12 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-10-22T22:01:06Z · note: review pass 4: good to go
-- 2026-10-22T22:03:38Z · note: review pass 5: good to go
-
+- 2026-10-22T21:31:23Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-22T21:59:39Z · status active→review
+- 2026-10-22T21:59:39Z · note: handoff requested (cli)
+- 2026-10-22T21:59:43Z · handoff failed · task-file handoff failed at commit · task #0929 has no registered worktree for branch feat/build-the-secrets-page-for-project-envir
