@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1490746
-last_close_out_gate_at: "2026-10-22T13:52:07.598Z"
 id: "0923"
 title: repoos gc must spare the candidate worktree of a running close-out
 type: bug
-status: review
+status: done
 priority: p1
 area: core
+merged_commit: 14c0febaa68b73dc3ec0a12e8e4433cf005accb8
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-gc-must-spare-the-candidate-workt
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:06:09Z"
 updated_at: "2026-10-22T13:52:07Z"
+last_close_out_gate_ms: 1490746
+last_close_out_gate_at: "2026-10-22T13:52:07.598Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-22T12:09:45.656Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Control dashboard worktree cleanup preview (target \"default\"): highlight .gc-preview matched nothing on / (http://127.0.0.1:43707/)"
 ---
