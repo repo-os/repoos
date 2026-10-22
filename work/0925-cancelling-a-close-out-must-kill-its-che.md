@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "0925"
 title: Cancelling a close-out must kill its check process tree and free its slot
 type: bug
@@ -12,7 +13,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:32:56Z"
 updated_at: "2026-10-22T08:05:38Z"
-handoff_signal_retry_count: 1
 ---
 ## Problem
 POST /api/tasks/:id/done/cancel returns ok but does not stop the close-out's check process. 2026-10-22: after cancelling #0908 the 'bun src/cli/index.ts check --profile full' (pid 36175, cwd integrate/0908) kept running as an orphan (ppid 1) for 7 more minutes, still holding local check slot 1. Retrying Move to done returned 'previous close-out attempt was stopped but is still shutting down' the whole time. Also a vitest worker (pid 29031) from #0909's cancelled run stayed behind idle for 33 min. Each cancel therefore needs hand-killing by pid.
@@ -40,3 +40,4 @@ Also fix #0921 in the same change (dead-holder detection for local check slots: 
 - 2026-10-22T07:50:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T07:59:18Z · body
 - 2026-10-22T08:05:38Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
