@@ -13,7 +13,7 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T20:13:52Z"
+updated_at: "2026-10-22T20:14:08Z"
 last_check_failure: "repoos check at 2026-10-22T19:44:36.309Z: repoos check failed: ui verification failed: runner result omitted the UI verification record"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/deployments.test.ts > navFor deployments gating > hides Deployments unless the repo configures any, tests/deployments.test.ts > navFor deployments gating > slots Deployments after Work (and after Releases when both are on), tests/dev-page.test.ts > Dev nav gating (#0748) > hides Dev when no project declares targets on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 3b3805a62ded3d06e7724a86aa8652e967fcb27e
@@ -40,37 +40,37 @@ Implement only the user interface and its route/state/tests; consume the metadat
 ```json
 [
 {
-  "label": "Secrets ledger with set, inherited, and missing keys",
-  "target": "default",
-  "route": "/secrets",
-  "highlight": ".secrets-ledger",
-  "state": "secrets:populated",
-  "theme": "light"
+"label": "Secrets ledger with set, inherited, and missing keys",
+"target": "default",
+"route": "/secrets",
+"highlight": ".secrets-ledger",
+"state": "secrets:populated",
+"theme": "light"
 },
 {
-  "label": "Dark removal confirmation with affected consumers",
-  "target": "default",
-  "route": "/secrets",
-  "highlight": ".delete-confirm-modal",
-  "steps": [
-    {
-      "click": ".secrets-row:first-child .secrets-remove"
-    },
-    {
-      "waitMs": 250
-    }
-  ],
-  "state": "secrets:populated",
-  "theme": "dark"
+"label": "Dark removal confirmation with affected consumers",
+"target": "default",
+"route": "/secrets",
+"highlight": ".delete-confirm-modal",
+"steps": [
+  {
+    "click": ".secrets-row:first-child .secrets-remove"
+  },
+  {
+    "waitMs": 250
+  }
+],
+"state": "secrets:populated",
+"theme": "dark"
 },
 {
-  "label": "Mobile Secrets ledger with inherited and missing rows",
-  "target": "default",
-  "route": "/secrets",
-  "highlight": ".secrets-rows",
-  "state": "secrets:populated",
-  "theme": "light",
-  "viewportWidth": 390
+"label": "Mobile Secrets ledger with inherited and missing rows",
+"target": "default",
+"route": "/secrets",
+"highlight": ".secrets-rows",
+"state": "secrets:populated",
+"theme": "light",
+"viewportWidth": 390
 }
 ]
 ```
@@ -130,3 +130,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T20:09:06Z · note: Resuming manual verification of declared Secrets review shots
 - 2026-10-22T20:13:11Z · body
 - 2026-10-22T20:13:52Z · body
+- 2026-10-22T20:14:08Z · note: Running registered Secrets shots against managed preview
