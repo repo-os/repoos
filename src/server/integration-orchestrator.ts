@@ -823,7 +823,11 @@ export function runProcess(
   return new Promise((resolve) => {
     // Own a process group so cancelling a CLI also stops its test/build workers.
     // Negative-PID signals address only this detached child group.
-    const child = spawn(cmd, args, { cwd: opts.cwd, env: opts.env, detached: process.platform !== "win32" });
+    const child = spawn(cmd, args, {
+      cwd: opts.cwd,
+      env: opts.env,
+      detached: process.platform !== "win32",
+    });
     const effectiveTimeout =
       opts.deadlineAt !== undefined
         ? Math.min(opts.timeout, Math.max(0, opts.deadlineAt - Date.now()))
