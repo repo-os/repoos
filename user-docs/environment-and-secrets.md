@@ -38,6 +38,18 @@ either shadowing the other.
 
 ## Project secrets in `.env`
 
+The legacy root `.env` behavior above remains in effect until a project opts
+into explicitly registered named environments. The storage foundation for that
+model is documented in [ADR 0010](../docs/adr/0010-named-project-environments-and-file-backed-secrets.md).
+Environment names and source files must be registered deliberately; RepoOS
+does not discover `.env*` files, infer names from filenames or `NODE_ENV`, or
+load these project values into its own provider/auth process environment.
+Registered sources have ordered precedence (later sources win); duplicate keys
+inside one source are rejected. `.env.example` contributes expected key names
+only. File writes preserve unrelated lines and comments, use a stale-content
+check, and reject tracked, unsafe, or symlinked destinations. The existing
+startup loader remains unchanged for projects that have not opted in.
+
 Use a gitignored `.env` at the repository root for secrets that belong to this
 codebase. It is the right home for provider keys and session secrets that should
 vary between repos.

@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   checkAgentCompatibility,
+  classifyGitSignature,
   compatibilityFindingSeverity,
   compatibilityRemediation,
   doctorRemediations,
@@ -12,6 +13,7 @@ import {
   findTargetInstallProblems,
   isKnownConfigKey,
   runDoctor,
+  parseSyspolicydCpuTime,
   type DoctorReport,
 } from "../../core/doctor";
 import { parseDoctorArgs } from "../../commands/doctor";
@@ -102,12 +104,106 @@ function namespacedProject(): string {
 }
 
 describe("runDoctor", () => {
+  it("classifies representative codesign verbose output", () => {
+    expect(classifyGitSignature("Executable=/opt/homebrew/bin/git\nSignature=adhoc\n")).toBe(
+      "ad-hoc signed",
+    );
+    expect(classifyGitSignature("Authority=Software Signing\nTeamIdentifier=ABC123\n")).toBe(
+      "Apple/developer signed",
+    );
+    expect(classifyGitSignature("codesign: code object is not signed at all")).toBeNull();
+  });
+
+  it("parses syspolicyd CPU when ps reports its bare name or full path", () => {
+    expect(parseSyspolicydCpuTime("syspolicyd 00:00.80\nlaunchd 00:10.00\n")).toBeCloseTo(0.8);
+    expect(parseSyspolicydCpuTime("/usr/libexec/syspolicyd 00:01.20\n")).toBeCloseTo(1.2);
+    expect(parseSyspolicydCpuTime("launchd 00:10.00\n")).toBeNull();
+  });
+
+  it("names an ad-hoc-signed first git when Apple git preference is disabled", async () => {
+    const root = cleanProject();
+    const bin = join(root, "fake-bin");
+    mkdirSync(bin);
+    writeFileSync(join(bin, "git"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const report = await runDoctor({
+      root,
+      probePort: 1,
+      hasBinary: tools("git", "bun"),
+      platform: "darwin",
+      env: { PATH: bin, REPOOS_PREFER_APPLE_GIT: "0" },
+      signatureProbe: () => "ad-hoc signed",
+      appleGitProbe: () => true,
+      syspolicydCpuProbe: async () => 0,
+    });
+    const diagnostic = findingById(report, "runtime.macos-git-signature");
+    expect(diagnostic?.severity).toBe("warn");
+    expect(diagnostic?.detail).toContain("preferAppleGit is inactive");
+    expect(diagnostic?.detail).toContain("ad-hoc signed");
+    expect(diagnostic?.detail).toContain("8–19 seconds");
+    expect(diagnostic?.remediation).toContain("REPOOS_PREFER_APPLE_GIT=0");
+  });
+
+  it("reports Apple git preference inactive when Apple git is not first on PATH", async () => {
+    const root = cleanProject();
+    const bin = join(root, "fake-bin");
+    mkdirSync(bin);
+    writeFileSync(join(bin, "git"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const report = await runDoctor({
+      root,
+      probePort: 1,
+      hasBinary: tools("git", "bun"),
+      platform: "darwin",
+      env: { PATH: bin },
+      signatureProbe: () => "ad-hoc signed",
+      appleGitProbe: () => true,
+      appleGitPathProbe: () => false,
+      syspolicydCpuProbe: async () => 0,
+    });
+    const diagnostic = findingById(report, "runtime.macos-git-signature");
+    expect(diagnostic?.severity).toBe("warn");
+    expect(diagnostic?.detail).toContain("Apple's git is not first on PATH");
+    expect(diagnostic?.remediation).toContain("Restart RepoOS normally");
+  });
+
+  it("does not add macOS git diagnostics on other platforms", async () => {
+    const report = await runDoctor({
+      root: cleanProject(),
+      probePort: 1,
+      hasBinary: tools("git", "bun"),
+      platform: "linux",
+      signatureProbe: () => "ad-hoc signed",
+      syspolicydCpuProbe: async () => 9,
+    });
+    expect(findingById(report, "runtime.macos-git-signature")).toBeUndefined();
+  });
+
+  it("warns when a short macOS syspolicyd sample shows high CPU during doctor", async () => {
+    const root = cleanProject();
+    const bin = join(root, "fake-bin");
+    mkdirSync(bin);
+    writeFileSync(join(bin, "git"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const report = await runDoctor({
+      root,
+      probePort: 1,
+      hasBinary: tools("git", "bun"),
+      platform: "darwin",
+      env: { PATH: bin },
+      signatureProbe: () => "Apple/developer signed",
+      syspolicydCpuProbe: async () => 0.7,
+    });
+    const diagnostic = findingById(report, "runtime.macos-git-signature");
+    expect(diagnostic?.severity).toBe("warn");
+    expect(diagnostic?.title).toContain("syspolicyd");
+    expect(diagnostic?.detail).toContain("0.7 CPU seconds");
+  });
+
   it("reports a clean, declared-plan project with no warnings or failures", async () => {
     const root = cleanProject();
     const report = await runDoctor({
       root,
       probePort: 1,
       hasBinary: tools("git", "bun", "node"),
+      platform: "linux",
     });
     expect(report.project.root).toBe(root);
     expect(report.schemaVersion).toBe(1);
@@ -727,6 +823,7 @@ describe("dev/preview target dependency installs (#0859 E5)", () => {
       root,
       probePort: 1,
       hasBinary: tools("git", "bun", "node"),
+      platform: "linux",
     });
     const finding = findingById(report, "runtime.target-dependencies");
     expect(finding?.severity).toBe("warn");
@@ -743,6 +840,7 @@ describe("dev/preview target dependency installs (#0859 E5)", () => {
       root,
       probePort: 1,
       hasBinary: tools("git", "bun", "node"),
+      platform: "linux",
     });
     const finding = findingById(report, "runtime.target-dependencies");
     expect(finding?.severity).toBe("pass");

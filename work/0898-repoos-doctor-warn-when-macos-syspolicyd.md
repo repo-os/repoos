@@ -2,22 +2,22 @@
 id: "0898"
 title: "repoos doctor: warn when macOS syspolicyd/trustd slow spawn-heavy work, and name the git cause"
 type: feature
-status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "2026-10-22T15:04:11.889105Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out"
+status: done
 priority: p2
 area: [core, docs]
+merged_commit: "0169768352dc69ed15bc252fe74070c18f1b7e4f"
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-doctor-warn-when-macos-syspolicyd
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:26Z"
-updated_at: "2026-10-22T15:15:49Z"
+updated_at: "2026-10-22T15:21:37Z"
+last_close_out_gate_ms: 415604
+last_close_out_gate_at: "2026-10-22T14:51:50.419Z"
+review_passes: 2
+review_rounds: 1
 handoff_signal_retry_count: 1
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-22T15:15:49.075Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 On macOS, an ad-hoc-signed git (Homebrew, mise) makes every real git command cost extra syspolicyd/trustd CPU. Measured 2026-10-21 on a MacBook Air: 600 real git commands took 16-29 s with Homebrew git and 6-8 s with Apple's (syspolicyd +8..19 s vs +0..5 s); a 289-test run took ~160 s vs ~80 s. RepoOS now prefers Apple's git automatically (preferAppleGit), but a user whose Command Line Tools are missing, who set REPOOS_PREFER_APPLE_GIT=0, or who runs other ad-hoc-signed tooling gets no signal about why their machine is slow.
@@ -54,6 +54,21 @@ See src/core/runtime.ts preferAppleGit, user-docs/configuration.md (Apple-signed
 - 2026-10-22T13:55:30Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/doctor.test.ts > runDoctor > names an ad-hoc-signed first git when Apple git preference is disabled on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-22T13:55:30Z · note: handoff requested (cli)
 - 2026-10-22T14:03:01Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/doctor.test.ts > runDoctor > names an ad-hoc-signed first git when Apple git preference is disabled on bee — fix it in the feature branch and re-run the gate
-- 2026-10-22T14:59:35Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/doctor.test.ts > runDoctor > names an ad-hoc-signed first git when Apple git preference is disabled on bee — fix it in the feature branch and re-run the gate
-- 2026-10-22T15:15:49Z · agent exited with an error (codex) · 2026-10-22T15:04:11.889105Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
-- 2026-10-22T15:15:49Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-22T15:04:11.889105Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-10-22T14:05:18Z · body
+- 2026-10-22T14:07:42Z · body
+- 2026-10-22T14:17:22Z · status active→review
+- 2026-10-22T14:17:22Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-22T14:18:35Z · note: review pass 1: needs some work
+- 2026-10-22T14:18:36Z · status review→active
+- 2026-10-22T14:19:24Z · note: Addressing review round 1 findings
+- 2026-10-22T14:23:19Z · body
+- 2026-10-22T14:25:36Z · body
+- 2026-10-22T14:27:38Z · body
+- 2026-10-22T14:38:26Z · status active→review
+- 2026-10-22T14:38:26Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-22T14:39:26Z · note: review pass 2: good to go
+- 2026-10-22T14:51:50Z · close-out gate completed in 416s
+- 2026-10-22T14:52:24Z · status done→done, release:success
+- 2026-10-22T15:06:31Z · body
+- 2026-10-22T15:18:50Z · body
+- 2026-10-22T15:21:37Z · body
