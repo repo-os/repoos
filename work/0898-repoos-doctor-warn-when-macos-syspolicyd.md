@@ -3,6 +3,9 @@ id: "0898"
 title: "repoos doctor: warn when macOS syspolicyd/trustd slow spawn-heavy work, and name the git cause"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-10-22T15:04:11.889105Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out"
 priority: p2
 area: [core, docs]
 assigned_to: ai
@@ -11,8 +14,10 @@ branch: feat/repoos-doctor-warn-when-macos-syspolicyd
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:26Z"
-updated_at: "2026-10-22T14:59:35Z"
+updated_at: "2026-10-22T15:15:49Z"
 handoff_signal_retry_count: 1
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-22T15:15:49.075Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 On macOS, an ad-hoc-signed git (Homebrew, mise) makes every real git command cost extra syspolicyd/trustd CPU. Measured 2026-10-21 on a MacBook Air: 600 real git commands took 16-29 s with Homebrew git and 6-8 s with Apple's (syspolicyd +8..19 s vs +0..5 s); a 289-test run took ~160 s vs ~80 s. RepoOS now prefers Apple's git automatically (preferAppleGit), but a user whose Command Line Tools are missing, who set REPOOS_PREFER_APPLE_GIT=0, or who runs other ad-hoc-signed tooling gets no signal about why their machine is slow.
@@ -50,3 +55,5 @@ See src/core/runtime.ts preferAppleGit, user-docs/configuration.md (Apple-signed
 - 2026-10-22T13:55:30Z · note: handoff requested (cli)
 - 2026-10-22T14:03:01Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/doctor.test.ts > runDoctor > names an ad-hoc-signed first git when Apple git preference is disabled on bee — fix it in the feature branch and re-run the gate
 - 2026-10-22T14:59:35Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/doctor.test.ts > runDoctor > names an ad-hoc-signed first git when Apple git preference is disabled on bee — fix it in the feature branch and re-run the gate
+- 2026-10-22T15:15:49Z · agent exited with an error (codex) · 2026-10-22T15:04:11.889105Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-10-22T15:15:49Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-22T15:04:11.889105Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
