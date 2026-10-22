@@ -124,8 +124,17 @@ not flagged `underspecified` or `needs-human-step`. This is the one-command way
 to put human work on the board:
 
 ```bash
-repoos new "Flush the Divot DNS cache" --assigned-to human --hold true
+repoos new "Flush the Divot DNS cache" --assigned-to human
 ```
+
+Human-assigned tasks are inert board work: move them between Inbox, Ready,
+Active, Review and Done by dragging, using the drawer status control, or with
+`repoos mv <id> <status>`. These moves only change status; they never start an
+agent, run checks, create a worktree or invoke review/close-out. `hold` is not
+needed for human assignment. Mark done in the drawer or run
+`repoos mv <id> done --note "what was completed"`; RepoOS records who closed it
+and the optional note. An AI agent may move a human task only when the human
+explicitly asked it to update that task's board status.
 
 Pass at most one of `--assigned-to`, `--ai` and `--human`; combining them is an
 error.
