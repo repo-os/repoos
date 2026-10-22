@@ -11,7 +11,7 @@ branch: feat/stop-false-needs-human-step-flags-sticky
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T19:41:23Z"
-updated_at: "2026-10-22T03:00:58Z"
+updated_at: "2026-10-22T05:44:41Z"
 review_rounds: 1
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-22T02:27:19.227Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Needs-human-step detail shows criterion quote (target \"default\"): highlight .agent-waiting-sub matched nothing on /work?task=0909&tab=overview (http://127.0.0.1:58600/work?shotState=card:humanStep)"
@@ -49,9 +49,9 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 "route": "/work?task=9999&tab=overview",
 "highlight": ".drawer-critical .agent-waiting-sub",
 "steps": [
-  {
-    "waitFor": ".drawer-critical .agent-waiting-sub"
-  }
+{
+  "waitFor": ".drawer-critical .agent-waiting-sub"
+}
 ],
 "state": "card:humanStep"
 }
@@ -127,3 +127,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T02:47:01Z · status review→active
 - 2026-10-22T02:48:02Z · body
 - 2026-10-22T03:00:58Z · status active→review
+- 2026-10-22T05:44:41Z · note: review pass 1: needs some work — clamped by automated verification: browser verification: Required UI handoff browser verification has no stored evidence — console errors were not checked.
