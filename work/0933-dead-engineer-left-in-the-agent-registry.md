@@ -45,3 +45,4 @@ Related: #0921 (dead local-check slot holders), #0925 (cancel frees resources), 
 - 2026-10-22T10:53:26Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/agent-review.test.ts > agent review before human sign-off (#0101) > does not re-raise an exhausted-rounds flag dismissed during the review on mini — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-22T10:53:26Z · note: handoff requested (cli)
 - 2026-10-22T11:03:46Z · status active→review
+- 2026-10-22T11:03:46Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
