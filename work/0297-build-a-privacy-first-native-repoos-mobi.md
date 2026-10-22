@@ -3,6 +3,8 @@ id: "0297"
 title: Build a privacy-first native RepoOS mobile hub
 type: feature
 status: done
+human_step_decision: human
+human_step_decision_key: 3464e09f
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 3464e09f
 priority: p2
