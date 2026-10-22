@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 349899
-last_close_out_gate_at: "2026-10-22T02:12:51.334Z"
 id: "0902"
 title: Task spec check flags easter-egg bundles as underspecified
 type: bug
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: "0734984750cfe8f822f2b2307256e1d4f39bf381"
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-spec-check-flags-easter-egg-bundles
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T14:52:31Z"
 updated_at: "2026-10-22T02:12:51Z"
+last_close_out_gate_ms: 349899
+last_close_out_gate_at: "2026-10-22T02:12:51.334Z"
 review_passes: 1
 dev_error_count: 6
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
