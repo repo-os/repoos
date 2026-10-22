@@ -3,9 +3,8 @@ id: "0576"
 title: Provision Developer ID certificate and store CI secrets for macOS Hub signing
 type: feature
 status: ready
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
+human_step_override_key: "05f845c2"
 priority: p1
 area: macos
 story: MacOS Native App
@@ -13,7 +12,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T18:42:44Z"
-updated_at: "2026-10-07T18:08:52Z"
+updated_at: "2026-10-22T07:47:35Z"
 ---
 Document the credentials and rotation runbook required for automated Developer ID signing and notarization of RepoOS Hub. An authorized maintainer performs the Apple Developer account and GitHub secret setup separately; this task's agent deliverable is the repository documentation and must not depend on access to, or claims about, those external account/device outcomes.
 
@@ -71,3 +70,4 @@ There is no UI change; maintainers can follow the runbook to provision and rotat
 - 2026-10-07T18:04:55Z · needs_input
 - 2026-10-07T18:05:22Z · body
 - 2026-10-07T18:08:52Z · needs_input
+- 2026-10-22T07:47:35Z · needs_input
