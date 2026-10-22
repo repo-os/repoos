@@ -170,6 +170,7 @@ import { findStoryDefinitionByKey } from "../../core/story-definition-files.js";
 import { storyKey } from "../../core/stories.js";
 import {
   PM_FLESH_OUT_MESSAGE,
+  PM_SPLIT_HUMAN_STEP_MESSAGE,
   splitHumanStepRequirementsPrompt,
   assessTaskUnderspecified,
   fleshOutRequirementsPrompt,
@@ -3828,7 +3829,7 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
   const messageText =
     text === PM_FLESH_OUT_MESSAGE
       ? `${baseMessageText}\n\n${fleshOutRequirementsPrompt(storyContextFor(config, existing.story), existing.area)}`
-      : text === "Review and resolve the human-only steps in this task."
+      : text === PM_SPLIT_HUMAN_STEP_MESSAGE
         ? `${baseMessageText}\n\n${splitHumanStepRequirementsPrompt()}`
         : baseMessageText;
 
