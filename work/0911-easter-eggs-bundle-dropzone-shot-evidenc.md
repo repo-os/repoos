@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 499942
-last_close_out_gate_at: "2026-10-22T18:29:11.686Z"
 id: "0911"
 title: "Easter eggs bundle: dropzone shot evidence (Manual tab, default picker)"
 type: feature
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 34798df1e3fb2bc75d53f749686b8b57ed300431
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dropzone-shot-evidenc
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T01:34:32Z"
 updated_at: "2026-10-22T18:29:11Z"
+last_close_out_gate_ms: 499942
+last_close_out_gate_at: "2026-10-22T18:29:11.686Z"
 review_passes: 1
 ---
 ## Items
