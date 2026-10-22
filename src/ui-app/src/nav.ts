@@ -98,15 +98,14 @@ export const NAV: NavItem[] = [
  * repoos.toml) and slot in after Work, ahead of the everyday pages. Stories is
  * opt-in too (`[stories] enabled = true`) but sits exactly between Work and
  * Checks, so it is spliced at a fixed index independent of the other two. Dev
- * is opt-in on a non-empty `[[dev.targets]]` list and sits just before Agents,
- * beside the other developer-facing pages.
+ * is opt-in on a non-empty `[[dev.targets]]` list and sits just before the
+ * always-visible Secrets entry, which stays immediately before Agents.
  */
 export function navFor(
   releasesEnabled: boolean,
   deploymentsEnabled = false,
   storiesEnabled = false,
   devEnabled = false,
-  _secretsEnabled = true,
 ): NavItem[] {
   const items = [...NAV];
   let at = 4; // after Work + Checks
@@ -122,10 +121,9 @@ export function navFor(
     items.splice(3, 0, STORIES_NAV);
   }
   if (devEnabled) {
-    // Anchor on `agents` (always present in the base NAV) rather than a magic
-    // index, so Dev lands in the same place no matter which opt-ins are on.
-    const agentsAt = items.findIndex((n) => n.id === "agents");
-    items.splice(agentsAt < 0 ? items.length : agentsAt, 0, DEV_NAV);
+    // Anchor on Secrets so the order remains Dev → Secrets → Agents.
+    const secretsAt = items.findIndex((n) => n.id === "secrets");
+    items.splice(secretsAt < 0 ? items.length : secretsAt, 0, DEV_NAV);
   }
   return items;
 }
@@ -134,14 +132,10 @@ export function navFor(
  * Derive the nav from the raw `/api/config` payload. Each opt-in surface is
  * read from the same shape the server ships it in: `release.enabled`,
  * a non-empty `deployments` array, `stories.enabled`, and a non-empty
- * `dev.targets` array. A missing or malformed section reads as disabled, so a
- * repo that never configures these still gets the Secrets entry so it can
- * create its first environment; that selector never changes process bindings.
+ * `dev.targets` array. Secrets is part of the base nav for every project so
+ * greenfield repositories can create their first environment.
  */
-export function navFromConfig(
-  config: Record<string, unknown> | null | undefined,
-  secretsEnabled?: boolean,
-): NavItem[] {
+export function navFromConfig(config: Record<string, unknown> | null | undefined): NavItem[] {
   const release = config?.release as { enabled?: unknown } | undefined;
   const stories = config?.stories as { enabled?: unknown } | undefined;
   const dev = config?.dev as { targets?: unknown } | undefined;
@@ -150,6 +144,5 @@ export function navFromConfig(
     Array.isArray(config?.deployments) && (config?.deployments as unknown[]).length > 0,
     stories?.enabled === true,
     Array.isArray(dev?.targets) && dev.targets.length > 0,
-    true,
   );
 }

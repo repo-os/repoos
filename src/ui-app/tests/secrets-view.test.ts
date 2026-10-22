@@ -90,7 +90,7 @@ describe("SecretsView (#0929)", () => {
   });
 
   it("keeps Secrets reachable before an environment has been created", () => {
-    const ids = navFromConfig({ dev: { targets: [{ name: "web" }] } }, true).map((item) => item.id);
+    const ids = navFromConfig({ dev: { targets: [{ name: "web" }] } }).map((item) => item.id);
     expect(ids.slice(ids.indexOf("dev") + 1, ids.indexOf("agents"))).toEqual(["secrets"]);
   });
   it("shows a clear empty-project state and environment creation affordance", async () => {

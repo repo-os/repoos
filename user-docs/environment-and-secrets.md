@@ -51,8 +51,11 @@ check, and reject tracked, unsafe, or symlinked destinations. The existing
 startup loader remains unchanged for projects that have not opted in.
 
 Named values reach local child processes only through an explicit binding.
-The Secrets-page selector changes the environment being viewed; it does not
-bind or switch any process. Bind a consumer and grant only the keys it needs:
+The **Secrets** entry is always available between Dev and Agents in the sidebar
+and mobile tabs, including in a new project with no environments yet, so you
+can create its first environment. Its selector changes the environment being
+viewed; it does not bind or switch any process. Bind a consumer and grant only
+the keys it needs:
 
 In the **Secrets** page, create an environment to make an empty ignored source
 file, then add or replace values through masked inputs and an explicit Save.

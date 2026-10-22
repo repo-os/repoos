@@ -2,7 +2,7 @@
 id: "0929"
 title: Build the Secrets page for project environments
 type: feature
-status: ready
+status: active
 priority: p1
 area: [web, ui]
 story: Secrets and project environments
@@ -13,9 +13,9 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T21:13:31Z"
+updated_at: "2026-10-22T21:20:09Z"
+review_passes: 3
 review_rounds: 2
-review_passes: 2
 last_check_failure: "repoos check at 2026-10-22T19:44:36.309Z: repoos check failed: ui verification failed: runner result omitted the UI verification record"
 ---
 ## Problem
@@ -147,6 +147,18 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T20:57:29Z · message_queued at 2026-10-22T20:57:29.297Z
 - 2026-10-22T20:59:36Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-22T20:59:37Z · message_delivered: 1 message(s)
-- 2026-10-22T21:13:30Z · status ready→review
-- 2026-10-22T21:13:30Z · note: handoff requested (cli)
-- 2026-10-22T21:13:31Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
+- 2026-10-22T21:02:29Z · body
+- 2026-10-22T21:04:15Z · body
+- 2026-10-22T21:13:30Z · status active→review
+- 2026-10-22T21:13:31Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-22T21:14:35Z · note: review pass 3: needs some work
+- 2026-10-22T21:14:35Z · needs_input
+- 2026-10-22T21:15:14Z · status review→active
+- 2026-10-22T21:15:24Z · needs_input
+- 2026-10-22T21:15:24Z · message_queued at 2026-10-22T21:15:24.436Z
+- 2026-10-22T21:17:18Z · body
+- 2026-10-22T21:17:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-22T21:19:23Z · body
+- 2026-10-22T21:20:09Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-22T21:20:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-22T21:20:09Z · message_delivered: 1 message(s)
