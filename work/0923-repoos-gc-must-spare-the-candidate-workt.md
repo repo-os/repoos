@@ -49,9 +49,9 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 "route": "/",
 "highlight": ".gc-preview",
 "steps": [
-  {
-    "click": "button.gc-action"
-  }
+{
+  "click": "button.gc-action"
+}
 ],
 "state": "system:worktreeGc"
 }
@@ -101,3 +101,4 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 - 2026-10-22T12:53:34Z · CTO nudge: held — handoff gate is running
 - 2026-10-22T12:55:26Z · body
 - 2026-10-22T12:55:47Z · note: ui verification failed: ui verification failed (1 issue(s)): [request] Failed to load resource: Error resolving “fonts.googleapis.com”: Name or service not known (https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Baloo+2:wght@400;500;600;700;800&family=Bricolage+Grotesque:wght@500;600;700;800&display=swap)
+- 2026-10-22T12:55:47Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [request] Failed to load resource: Error resolving “fonts.googleapis.com”: Name or service not known (https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Baloo+2:wght@400;500;600;700;800&family=Bricolage+Grotesque:wght@500;600;700;800&display=swap)
