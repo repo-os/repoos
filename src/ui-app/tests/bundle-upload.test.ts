@@ -72,16 +72,13 @@ describe("uploadFileOverSsh stall (#0917)", () => {
     const path = join(root, "bundle.bin");
     writeFileSync(path, Buffer.alloc(512 * 1024, 0x61));
     try {
-      const stdin = new EventEmitter() as unknown as NodeJS.WritableStream & {
-        write: (c: Buffer) => boolean;
-        end: () => void;
-      };
+      const stdin = new EventEmitter() as never;
       let written = 0;
-      stdin.write = (chunk: Buffer) => {
+      (stdin as { write: (chunk: Buffer) => boolean }).write = (chunk: Buffer) => {
         written += chunk.length;
         return written < 64 * 1024;
       };
-      stdin.end = () => undefined;
+      (stdin as { end: () => void }).end = () => undefined;
       const fakeChild = Object.assign(new EventEmitter(), {
         stdin,
         stdout: new EventEmitter(),
