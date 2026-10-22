@@ -509,6 +509,36 @@ pausedModels = [{ model = "sonnet", pausedReason = "rate limited", pausedUntil =
     expect(pausedAgentFallbackNote(config, pinned)).toBeNull();
   });
 
+  it("temporarily routes a usage-exhausted pin away, then restores it when resumed", () => {
+    const config = configWith([
+      {
+        cli: "opencode",
+        models: ["big pickle"],
+        pausedModels: [{ model: "big pickle", pausedReason: "out of usage since 10:30" }],
+      },
+      { cli: "claude code", models: ["sonnet"] },
+    ]);
+    const pinned = task({ cliOverride: "opencode", modelOverride: "big pickle" });
+    expect(resolveAgentForTask(config, pinned)).toMatchObject({
+      cli: "claude code",
+      model: "sonnet",
+    });
+    // The task's original pin stays intact while the provider is paused.
+    expect(pinned).toMatchObject({ cliOverride: "opencode", modelOverride: "big pickle" });
+
+    config.budget!.allowlist = [
+      { cli: "opencode", models: ["big pickle"] },
+      {
+        cli: "claude code",
+        models: ["sonnet"],
+      },
+    ];
+    expect(resolveAgentForTask(config, pinned)).toMatchObject({
+      cli: "opencode",
+      model: "big pickle",
+    });
+  });
+
   it("fails closed with a clear message when all allowed pairs are paused", () => {
     const config = configWith([
       { cli: "opencode", models: ["big pickle"], paused: true },
