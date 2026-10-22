@@ -2,7 +2,7 @@
 id: "0908"
 title: "Human-assigned tasks need a real board pathway: move across columns to done without triggering AI, checks or review"
 type: feature
-status: review
+status: active
 priority: p2
 area: [web, server, core]
 assigned_to: ai
