@@ -11,7 +11,7 @@ branch: feat/stop-false-needs-human-step-flags-sticky
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T19:41:23Z"
-updated_at: "2026-10-22T06:50:00Z"
+updated_at: "2026-10-22T07:02:21Z"
 review_passes: 3
 review_rounds: 1
 last_check_failure: "repoos check at 2026-10-22T02:27:19.227Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Needs-human-step detail shows criterion quote (target \"default\"): highlight .agent-waiting-sub matched nothing on /work?task=0909&tab=overview (http://127.0.0.1:58600/work?shotState=card:humanStep)"
@@ -138,3 +138,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T06:46:39Z · status review→active
 - 2026-10-22T06:49:59Z · assigned_to
 - 2026-10-22T06:50:00Z · note: handoff requested (ui-review)
+- 2026-10-22T07:02:21Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
