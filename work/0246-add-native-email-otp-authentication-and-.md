@@ -3,6 +3,8 @@ id: "0246"
 title: Add native email OTP authentication and admin user allowlist
 type: feature
 status: done
+human_step_decision: agent
+human_step_decision_key: 12ff50f5
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 12ff50f5
 priority: p2
