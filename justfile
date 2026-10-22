@@ -155,6 +155,8 @@ _setup-runner host os:
 
     echo "==> testing docker on $HOST"
     ssh "$HOST" "docker run --rm repoos-ci 'echo container ok'"
+    echo "==> installing declared engineer CLIs (non-interactive)"
+    repoos runners setup "$HOST" || true
     echo "==> $HOST is ready as a repoos-ci runner"
 
 # set up mini (macOS) as a NATIVE tailscale validation runner — no Docker,
@@ -195,6 +197,8 @@ _setup-runner-native host:
         echo done
     "
 
+    echo "==> installing declared engineer CLIs (non-interactive)"
+    repoos runners setup "$HOST" || true
     echo "==> $HOST is ready as a NATIVE repoos runner — remember to set"
     echo "    runner = \"native\" on its [[remoteValidation.tailscaleHosts]] row"
 
