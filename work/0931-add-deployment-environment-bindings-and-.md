@@ -1,14 +1,13 @@
 ---
-last_close_out_gate_ms: 214570
-last_close_out_gate_at: "2026-10-22T23:48:35.750Z"
 id: "0931"
 title: Add deployment environment bindings and production safeguards
 type: feature
-status: review
+status: done
 priority: p2
 area: [server, web]
 story: Secrets and project environments
 depends_on: ["0929", "0930"]
+merged_commit: 0fdbb40115f47b528ee1743e99e38921f4188eaa
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-deployment-environment-bindings-and-
@@ -16,6 +15,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:07:01Z"
 updated_at: "2026-10-22T23:48:35Z"
+last_close_out_gate_ms: 214570
+last_close_out_gate_at: "2026-10-22T23:48:35.750Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-22T22:46:53.391Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 55c03c38 to 4d183313) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 ---

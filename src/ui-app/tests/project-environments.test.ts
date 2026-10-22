@@ -16,6 +16,7 @@ import { loadDotEnv } from "../../core/config";
 import { resolveCheckStoreRoot } from "../../core/check-store";
 import {
   buildProjectConsumerEnv,
+  projectEnvironmentConsumer,
   readProjectEnvironment,
   validateEnvironmentRegistry,
   writeProjectEnvironmentValue,
@@ -51,6 +52,14 @@ const env = {
 };
 
 describe("explicit project environment files", () => {
+  it.each([
+    ["Dashboard · Production", "deployment:dashboard-production"],
+    ["  Landing page (prod)  ", "deployment:landing-page-prod"],
+    ["!!!", "deployment:default"],
+  ])("normalizes %s to the shared consumer ID %s", (name, consumer) => {
+    expect(projectEnvironmentConsumer("deployment", name)).toBe(consumer);
+  });
+
   it("isolates concurrent consumer grants and never falls back for a missing selected key", async () => {
     const root = project();
     mkdirSync(join(root, ".repoos"));
@@ -121,6 +130,54 @@ describe("explicit project environment files", () => {
     const childEnv = buildProjectConsumerEnv(root, "check:default", { PATH: "/bin" });
     expect(childEnv.TOKEN).toBeUndefined();
   });
+
+  it("stores deployment environment labels without granting local secrets", () => {
+    const root = project();
+    mkdirSync(join(root, ".repoos"));
+    writeFileSync(
+      join(root, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [{ id: "production", sources: [{ id: "local", path: ".env.production" }] }],
+      }),
+    );
+    writeFileSync(join(root, ".env.production"), "DATABASE_URL=production-secret\n");
+    const result = writeProjectEnvironmentBinding(
+      root,
+      "deployment:Dashboard (prod)",
+      "production",
+      [],
+    );
+    expect(result.bindings[0]).toEqual({
+      consumer: "deployment:dashboard-prod",
+      environment: "production",
+      keys: [],
+    });
+    expect(buildProjectConsumerEnv(root, "deployment:dashboard-prod", {}).DATABASE_URL).toBe(
+      undefined,
+    );
+  });
+
+  it.each(["REPOOS_TOKEN", "path", "HOME", "NODE_OPTIONS", "PORT", "HOST"])(
+    "rejects reserved grant %s when reading and writing bindings",
+    (key) => {
+      const root = project();
+      mkdirSync(join(root, ".repoos"));
+      writeFileSync(
+        join(root, ".repoos/environment-bindings.json"),
+        JSON.stringify({ bindings: [{ consumer: "dev:web", environment: "dev", keys: [key] }] }),
+      );
+      expect(() => buildProjectConsumerEnv(root, "dev:web", {})).toThrow(
+        "Invalid or duplicate environment binding",
+      );
+      writeFileSync(
+        join(root, ".repoos/environment-bindings.json"),
+        JSON.stringify({ bindings: [] }),
+      );
+      expect(() => writeProjectEnvironmentBinding(root, "dev:web", "dev", [key])).toThrow(
+        "Invalid or machine-owned environment key grant",
+      );
+    },
+  );
 
   it("normalizes consumer IDs and resolves bindings from the shared root in a linked worktree", () => {
     const root = project();

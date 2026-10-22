@@ -7,7 +7,9 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 import * as apiMod from "../src/api";
+import { useAuthStore } from "../src/stores/auth";
 import DeploymentsView from "../src/views/DeploymentsView.vue";
 
 const api = vi.spyOn(apiMod, "api");
@@ -27,6 +29,7 @@ function status(overrides: Partial<Record<string, unknown>> = {}) {
         url: "https://repoos.org",
         dashboardUrl: null,
         subdir: "landing",
+        environmentConsumer: "deployment:landing-page-prod",
         lastPushAt: "2026-09-15T00:00:00Z",
         lastPushSha: "abc1234",
         changesVsMain: null,
@@ -39,6 +42,7 @@ function status(overrides: Partial<Record<string, unknown>> = {}) {
         url: "https://main-landing.example.workers.dev",
         dashboardUrl: null,
         subdir: "landing",
+        environmentConsumer: "deployment:landing-page-dev",
         lastPushAt: "2026-09-15T01:00:00Z",
         lastPushSha: "def5678",
         changesVsMain: null,
@@ -51,6 +55,7 @@ function status(overrides: Partial<Record<string, unknown>> = {}) {
         url: "https://docs.repoos.org",
         dashboardUrl: null,
         subdir: "user-docs",
+        environmentConsumer: "deployment:docs-prod",
         lastPushAt: null,
         lastPushSha: null,
         changesVsMain: null,
@@ -80,8 +85,11 @@ function status(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-async function mountView(): Promise<VueWrapper> {
-  const wrapper = mount(DeploymentsView, { attachTo: document.body });
+async function mountView(role: "admin" | "member" = "admin"): Promise<VueWrapper> {
+  const pinia = createPinia();
+  setActivePinia(pinia);
+  useAuthStore().role = role;
+  const wrapper = mount(DeploymentsView, { attachTo: document.body, global: { plugins: [pinia] } });
   await flushPromises();
   return wrapper;
 }
@@ -93,9 +101,82 @@ beforeEach(() => {
 afterEach(() => {
   api.mockReset();
   vi.unstubAllGlobals();
+  window.history.replaceState({}, "", "/");
 });
 
 describe("DeploymentsView matrix (#0365)", () => {
+  it("renders the registered environment-binding capture fixture without API data", async () => {
+    window.history.replaceState({}, "", "/deployments?shotState=deployments%3AenvironmentBinding");
+    const wrapper = await mountView();
+    expect(wrapper.find(".dep-env-binding").exists()).toBe(true);
+    expect(wrapper.text()).toContain("production");
+    expect(wrapper.text()).toContain("Does not upload or sync variables");
+    expect(api).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it("loads deployments for members without calling the admin-only environment route or exposing binding controls", async () => {
+    api.mockImplementation(async (path) => {
+      if (path === "/api/deployments")
+        return status({
+          rows: status().rows.map((row) => ({ ...row, environment: "production" })),
+        }) as never;
+      throw new Error("Admin access required");
+    });
+    const wrapper = await mountView("member");
+    expect(wrapper.find(".dep-err").exists()).toBe(false);
+    expect(wrapper.text()).toContain("Local environment: production");
+    expect(wrapper.text()).toContain("Ask an admin to change this binding");
+    expect(wrapper.find(".dep-env-binding select").exists()).toBe(false);
+    expect(api).toHaveBeenCalledTimes(1);
+    expect(api).toHaveBeenCalledWith("/api/deployments");
+    wrapper.unmount();
+  });
+
+  it("loads the admin environment list and allows an admin to bind a deployment", async () => {
+    api.mockImplementation(async (path) => {
+      if (path === "/api/deployments") return status() as never;
+      if (path === "/api/project-environments") return { environments: [{ id: "dev" }] } as never;
+      throw new Error(`Unexpected API route: ${path}`);
+    });
+    const wrapper = await mountView("admin");
+    expect(wrapper.find(".dep-env-binding select").exists()).toBe(true);
+    expect(wrapper.text()).not.toContain("Ask an admin to change this binding");
+    expect(api).toHaveBeenCalledWith("/api/project-environments");
+    wrapper.unmount();
+  });
+
+  it("changing a deployment environment only saves its local binding", async () => {
+    api.mockImplementation(async (path) => {
+      if (path === "/api/deployments") return status() as never;
+      if (path === "/api/project-environments")
+        return { environments: [{ id: "dev" }, { id: "production" }] } as never;
+      if (path === "/api/project-environment-bindings") return { ok: true } as never;
+      throw new Error(`Unexpected API route: ${path}`);
+    });
+    const wrapper = await mountView("admin");
+    const select = wrapper.find(".dep-env-binding select");
+    await select.setValue("production");
+    await flushPromises();
+
+    expect(api).toHaveBeenCalledWith(
+      "/api/project-environment-bindings",
+      expect.objectContaining({ method: "PUT", body: expect.any(String) }),
+    );
+    const bindingCall = api.mock.calls.find(
+      ([path]) => path === "/api/project-environment-bindings",
+    );
+    expect(bindingCall).toBeDefined();
+    const request = bindingCall?.[1] as { body: string };
+    expect(JSON.parse(request.body)).toEqual({
+      consumer: "deployment:landing-page-prod",
+      environment: "production",
+      keys: [],
+    });
+    expect(api.mock.calls.some(([path]) => path === "/api/deployments/deploy")).toBe(false);
+    wrapper.unmount();
+  });
+
   it("groups rows by service into one matrix row per service, not per (service, branch) pair", async () => {
     api.mockResolvedValue(status());
     const wrapper = await mountView();

@@ -2,6 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import Button from "../components/ui/button.vue";
 import { api, JSON_OPTS } from "../api";
+import { useAuthStore } from "../stores/auth";
+import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
 
 interface DeploymentRow {
   name: string;
@@ -11,6 +13,9 @@ interface DeploymentRow {
   url: string | null;
   dashboardUrl: string | null;
   subdir: string | null;
+  environmentConsumer: string;
+  environment: string | null;
+  environmentError: string | null;
   lastPushAt: string | null;
   lastPushSha: string | null;
   changesVsMain: { aheadOfMain: number; behindMain: number } | null;
@@ -39,6 +44,7 @@ interface DeploymentsStatus {
   root: string | null;
   dirty: boolean;
   currentBranch: string | null;
+  environments: { id: string }[];
 }
 
 /** One row of the services × branches matrix: a service and its cell per branch. */
@@ -52,6 +58,8 @@ interface ServiceGroup {
 const ACCENT_VARS = ["--cyan", "--violet", "--amber", "--green"];
 
 const status = ref<DeploymentsStatus | null>(null);
+const auth = useAuthStore();
+const canBindEnvironment = computed(() => auth.role === "admin");
 const loading = ref(true);
 const error = ref("");
 const message = ref("");
@@ -108,6 +116,13 @@ function targetCount(branch: string): number {
   return status.value?.rows.filter((r) => r.branch === branch).length ?? 0;
 }
 
+function environmentIssue(branch: string): string | null {
+  return (
+    status.value?.rows.find((row) => row.branch === branch && row.environmentError)
+      ?.environmentError ?? null
+  );
+}
+
 const PLURAL = (n: number): string => (n === 1 ? "commit" : "commits");
 
 /** Headline sync text for a branch card (#0365) — replaces the raw ↑/↓ chips. */
@@ -158,11 +173,73 @@ async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    status.value = await api<DeploymentsStatus>("/api/deployments");
+    if (readShotPreviewFixtureFromLocation(window.location) === "deployments:environmentBinding") {
+      // Screenshot-only state: the preview fixture represents an admin
+      // reviewing the binding controls. Production auth still gates every
+      // write, and this branch makes no API calls.
+      auth.role = "admin";
+      status.value = {
+        enabled: true,
+        rows: [
+          {
+            name: "Dashboard · production",
+            service: "Dashboard",
+            branch: "prod",
+            provider: "Cloudflare Workers",
+            url: "https://app.example.test",
+            dashboardUrl: null,
+            subdir: "app",
+            environmentConsumer: "deployment:dashboard-production",
+            environment: "production",
+            environmentError: null,
+            lastPushAt: "2026-10-22T10:30:00.000Z",
+            lastPushSha: "a1b2c3d4",
+            changesVsMain: null,
+          },
+        ],
+        branches: [
+          {
+            branch: "prod",
+            ahead: 0,
+            behind: 0,
+            hasOrigin: true,
+            localExists: true,
+            ffFrom: null,
+            mainSync: { state: "same", aheadOfMain: 0, behindMain: 0 },
+          },
+        ],
+        root: null,
+        dirty: false,
+        currentBranch: "main",
+        environments: [{ id: "dev" }, { id: "staging" }, { id: "production" }],
+      };
+      return;
+    }
+    const deployments = await api<Omit<DeploymentsStatus, "environments">>("/api/deployments");
+    const environments = canBindEnvironment.value
+      ? await api<{ environments: { id: string }[] }>("/api/project-environments")
+      : { environments: [] };
+    status.value = { ...deployments, environments: environments.environments };
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
   } finally {
     loading.value = false;
+  }
+}
+
+async function bindEnvironment(row: DeploymentRow, environment: string | null): Promise<void> {
+  try {
+    await api(
+      "/api/project-environment-bindings",
+      JSON_OPTS("PUT", {
+        consumer: row.environmentConsumer,
+        environment,
+        keys: [],
+      }),
+    );
+    await load();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : String(err);
   }
 }
 
@@ -291,8 +368,16 @@ onBeforeUnmount(() => {
             <Button
               variant="accent"
               size="sm"
-              :disabled="!b.localExists || !!status.dirty || deploying !== null"
-              :title="status.dirty ? 'Commit or stash the checkout\'s changes first' : undefined"
+              :disabled="
+                !b.localExists ||
+                !!status.dirty ||
+                deploying !== null ||
+                !!environmentIssue(b.branch)
+              "
+              :title="
+                environmentIssue(b.branch) ??
+                (status.dirty ? 'Commit or stash the checkout\'s changes first' : undefined)
+              "
               @click="openConfirm(b.branch)"
             >
               {{ deploying === b.branch ? "Deploying…" : `Deploy ${b.branch}` }}
@@ -361,6 +446,50 @@ onBeforeUnmount(() => {
                     on <code>{{ b.branch }}</code>
                   </template>
                 </div>
+                <label v-if="canBindEnvironment" class="dep-env-binding">
+                  Local environment
+                  <select
+                    :value="svc.cells.get(b.branch)!.environment ?? ''"
+                    :aria-label="`Local environment for ${svc.cells.get(b.branch)!.name} on ${b.branch}`"
+                    @change="
+                      bindEnvironment(
+                        svc.cells.get(b.branch)!,
+                        ($event.target as HTMLSelectElement).value || null,
+                      )
+                    "
+                  >
+                    <option value="">Not selected</option>
+                    <option
+                      v-if="
+                        svc.cells.get(b.branch)!.environment &&
+                        !status.environments.some(
+                          (env) => env.id === svc.cells.get(b.branch)!.environment,
+                        )
+                      "
+                      :value="svc.cells.get(b.branch)!.environment!"
+                    >
+                      {{ svc.cells.get(b.branch)!.environment }} (unknown)
+                    </option>
+                    <option v-for="env in status.environments" :key="env.id" :value="env.id">
+                      {{ env.id }}
+                    </option>
+                  </select>
+                  <small
+                    >Local binding only. Does not upload or sync variables to
+                    {{ svc.cells.get(b.branch)!.provider || "a provider" }}.</small
+                  >
+                </label>
+                <p v-else class="dep-env-readonly">
+                  Local environment: {{ svc.cells.get(b.branch)!.environment || "not selected" }}.
+                  Ask an admin to change this binding.
+                </p>
+                <p
+                  v-if="svc.cells.get(b.branch)!.environmentError"
+                  class="dep-env-error"
+                  role="alert"
+                >
+                  {{ svc.cells.get(b.branch)!.environmentError }}
+                </p>
                 <div v-if="serviceSyncLabel(svc.cells.get(b.branch)!, b)" class="dep-service-sync">
                   {{ serviceSyncLabel(svc.cells.get(b.branch)!, b) }}
                 </div>
@@ -368,7 +497,12 @@ onBeforeUnmount(() => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    :disabled="!b.localExists || !!status.dirty || deploying !== null"
+                    :disabled="
+                      !b.localExists ||
+                      !!status.dirty ||
+                      deploying !== null ||
+                      !!environmentIssue(b.branch)
+                    "
                     @click="openConfirm(b.branch)"
                   >
                     {{ deploying === b.branch ? "Deploying…" : "Deploy" }}
@@ -656,6 +790,42 @@ onBeforeUnmount(() => {
 }
 .dep-matrix-row + .dep-matrix-row {
   border-top: 1px solid var(--border);
+}
+.dep-env-binding {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0;
+  color: var(--txt-dim);
+  font-size: 11px;
+  font-weight: 700;
+}
+.dep-env-binding select {
+  max-width: 100%;
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 4px 8px;
+  color: var(--txt);
+  background: var(--panel);
+  font: inherit;
+}
+.dep-env-binding small {
+  color: var(--txt-faint);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.dep-env-readonly {
+  margin: 10px 0;
+  color: var(--txt-dim);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.dep-env-error {
+  margin: 4px 0 8px;
+  color: var(--amber);
+  font-size: 11px;
+  line-height: 1.4;
 }
 .dep-matrix-head {
   background: color-mix(in srgb, var(--border) 30%, transparent);
