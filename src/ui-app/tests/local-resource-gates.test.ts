@@ -196,7 +196,10 @@ describe("cross-process local check slots", () => {
         acquireCrossProcessSlot({ slots: 1, lockRoot, waitTimeoutMs: 0 }),
       ).rejects.toThrow(/timed out/);
       expect(existsSync(slot)).toBe(true);
-      writeFileSync(join(slot, ".wedged-since"), String(monoNow - 160_000));
+      writeFileSync(
+        join(slot, ".heartbeat.json"),
+        JSON.stringify({ monotonicMs: monoNow - 240_000 }),
+      );
       const release = await acquireCrossProcessSlot({ slots: 1, lockRoot, waitTimeoutMs: 100 });
       release();
       expect(inspectCrossProcessSlots(lockRoot)).toEqual([]);
