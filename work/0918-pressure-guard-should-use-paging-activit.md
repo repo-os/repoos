@@ -16,7 +16,7 @@ model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-22T04:18:52Z"
-updated_at: "2026-10-22T07:04:41Z"
+updated_at: "2026-10-22T07:37:23Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-22T05:27:08.607Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -34,6 +34,18 @@ The guard holds new work only when the machine is actually paying a memory cost:
 
 ## Notes for AI
 Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio, maxSwapUsedRatio). Evidence: the 20 s vm_stat sample (macOS, idle: ~186 pageouts, 9 swapins, 0 swapouts) and .repoos/queue-markers/0909-pressure.json. Second evidence, Linux runner: 2026-10-22 13:41 thinkpad had swap 3.5 of 4.0 GB (87%, which the Runner memory pressure banner called 'thrashing') but vmstat si/so were 0 on six consecutive 2 s samples, CPU 98% idle, and /proc/pressure/memory (PSI) was 0.00 for avg10/avg60/avg300 with 7.3 GB available. Use PSI some/full avg10 and pswpin/pswpout deltas on Linux, vm_stat swapin/swapout/pageout deltas and memory_pressure on macOS; occupancy (swap used/total, compressor share) is informational only. Related: #0871, #0900, #0901, #0917.
+
+## Shots
+```json
+[
+{
+  "label": "Pressure guard paging-activity thresholds",
+  "target": "default",
+  "route": "/settings?tab=performance",
+  "highlight": "[data-settings-section=\"performance\"]"
+}
+]
+```
 
 ## Activity
 
@@ -55,3 +67,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T05:42:14Z · body: Notes for AI (added 1, removed 1)
 - 2026-10-22T05:42:14Z · message_queued at 2026-10-22T05:42:14.464Z
 - 2026-10-22T07:04:41Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-22T07:37:23Z · body
