@@ -153,6 +153,36 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.integration?.empty).toBe(false);
   });
 
+  it("seeds progress shot fixtures with determinate and unknown test totals", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "closeOut:checkProgress");
+    expect(repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID]?.[0]).toMatchObject({
+      currentStep: 6,
+      stepsTotal: 12,
+      testsDone: 140,
+      testsTotal: 289,
+      attempt: 2,
+    });
+    applyShotPreviewFixture(repo, "closeOut:checkProgressUnknown");
+    expect(repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID]?.[0]).toMatchObject({
+      currentStep: 4,
+      stepsTotal: 10,
+      testsDone: null,
+      testsTotal: null,
+      attempt: 2,
+    });
+    applyShotPreviewFixture(repo, "checks:progress");
+    expect(repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID]?.[0]).toMatchObject({
+      kind: "merge-gate",
+      stepName: "tests",
+      testsDone: 140,
+      testsTotal: 289,
+      attempt: 2,
+    });
+  });
+
   it("seeds an active coding run for board card indicator shots (#0787)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);

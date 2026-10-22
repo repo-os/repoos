@@ -61,6 +61,15 @@ export interface TaskCheckRun {
   scope: string;
   /** Short hostname of the machine the check runs on (this server's). */
   machine: string;
+  stepsDone: number | null;
+  stepsTotal: number | null;
+  testsDone: number | null;
+  testsTotal: number | null;
+  testsPass: number | null;
+  currentStep: number | null;
+  stepName: string | null;
+  attempt: number | null;
+  attemptReason: string | null;
 }
 
 export type TaskCheckEventKind = "started" | "output" | "done";
@@ -70,6 +79,61 @@ export type TaskCheckListener = (
   event: TaskCheckEventKind,
   chunk?: string,
 ) => void;
+
+export interface CheckProgressRecord {
+  stepsDone?: number | null;
+  stepsTotal?: number | null;
+  testsDone?: number | null;
+  testsTotal?: number | null;
+  testsPass?: number | null;
+  currentStep?: number | null;
+  stepName?: string | null;
+  attempt?: number;
+  reason?: string;
+}
+
+export function parseCheckProgress(output: string): CheckProgressRecord | null {
+  const marker = "::repoos-check-progress::";
+  const lines = output.split(/\r?\n/).reverse();
+  for (const line of lines) {
+    const index = line.lastIndexOf(marker);
+    if (index < 0) continue;
+    try {
+      const value = JSON.parse(line.slice(index + marker.length)) as {
+        stepsDone?: unknown;
+        stepsTotal?: unknown;
+        testsDone?: unknown;
+        testsTotal?: unknown;
+        testsPass?: unknown;
+        currentStep?: unknown;
+        stepName?: unknown;
+        attempt?: unknown;
+        reason?: unknown;
+      };
+      const parsed: CheckProgressRecord = {};
+      for (const key of [
+        "stepsDone",
+        "stepsTotal",
+        "testsDone",
+        "testsTotal",
+        "testsPass",
+        "currentStep",
+        "attempt",
+      ] as const) {
+        if (key !== "attempt" && value[key] === null) parsed[key] = null;
+        else if (Number.isInteger(value[key]) && Number(value[key]) >= 0)
+          parsed[key] = Number(value[key]);
+      }
+      if (typeof value.stepName === "string" || value.stepName === null)
+        parsed.stepName = value.stepName;
+      if (typeof value.reason === "string") parsed.reason = value.reason;
+      if (Object.keys(parsed).length) return parsed;
+    } catch {
+      /* ignore incomplete or malformed records */
+    }
+  }
+  return null;
+}
 
 export interface TaskCheckHandle {
   readonly id: string;
@@ -106,6 +170,16 @@ export class TaskCheckManager {
     onEvent: TaskCheckListener,
     meta: { scope?: string; machine?: string } = {},
   ): TaskCheckHandle {
+    const history = this.runsByTask.get(taskId) ?? [];
+    const previousAttempts = history.filter((candidate) => candidate.kind === kind);
+    const attempt = previousAttempts.length + 1;
+    const previousOutput = previousAttempts.at(-1)?.output ?? "";
+    const attemptReason =
+      attempt > 1
+        ? (previousOutput.match(/timed out[^\r\n]*/i)?.[0] ??
+          previousOutput.match(/(?:failed|failure)[^\r\n]*/i)?.[0] ??
+          "the previous check attempt did not pass")
+        : null;
     const id = `${taskId}-${kind}-${++this.seq}`;
     const run: TaskCheckRun = {
       id,
@@ -121,8 +195,17 @@ export class TaskCheckManager {
       skipped: false,
       scope: meta.scope || "full",
       machine: meta.machine || localMachineName(),
+      stepsDone: null,
+      stepsTotal: null,
+      testsDone: null,
+      testsTotal: null,
+      testsPass: null,
+      currentStep: null,
+      stepName: null,
+      attempt,
+      attemptReason,
     };
-    const list = this.runsByTask.get(taskId) ?? [];
+    const list = history;
     list.push(run);
     while (list.length > MAX_RUNS_PER_TASK) list.shift();
     this.runsByTask.set(taskId, list);
@@ -136,6 +219,21 @@ export class TaskCheckManager {
         run.output += clean;
         if (run.output.length > MAX_BUFFERED_CHARS) {
           run.output = run.output.slice(run.output.length - MAX_BUFFERED_CHARS);
+        }
+        const progress = parseCheckProgress(run.output);
+        if (progress) {
+          run.stepsDone = progress.stepsDone ?? run.stepsDone;
+          run.stepsTotal = progress.stepsTotal ?? run.stepsTotal;
+          run.testsDone = progress.testsDone ?? run.testsDone;
+          run.testsTotal = progress.testsTotal ?? run.testsTotal;
+          run.testsPass = progress.testsPass ?? run.testsPass;
+          run.currentStep = progress.currentStep ?? run.currentStep;
+          run.stepName = progress.stepName ?? run.stepName;
+          if (Object.hasOwn(progress, "testsDone")) run.testsDone = progress.testsDone ?? null;
+          if (Object.hasOwn(progress, "testsTotal")) run.testsTotal = progress.testsTotal ?? null;
+          if (Object.hasOwn(progress, "testsPass")) run.testsPass = progress.testsPass ?? null;
+          run.attempt = progress.attempt ?? run.attempt;
+          run.attemptReason = progress.reason ?? run.attemptReason;
         }
         onEvent(run, "output", clean);
       },
