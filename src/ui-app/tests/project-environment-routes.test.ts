@@ -286,6 +286,25 @@ describe("project environment secret routes", () => {
     expect(listed.fake.payload).toEqual({ bindings: [] });
   });
 
+  it("requires an admin to change a deployment environment binding", async () => {
+    const fx = makeFixture();
+    root = fx.root;
+    const response = fx.response();
+    await putProjectEnvironmentBinding(
+      fx.ctx,
+      fx.req(
+        JSON.stringify({ consumer: "deployment:Dashboard prod", environment: "dev", keys: [] }),
+        { token: fx.auth.createSession("member@example.test", "member", 3600) },
+      ),
+      response.res,
+      {},
+    );
+    expect(response.fake.status).toBe(403);
+    const listed = fx.response();
+    getProjectEnvironmentBindings(fx.ctx, fx.req(), listed.res, {});
+    expect(listed.fake.payload).toEqual({ bindings: [] });
+  });
+
   it("rejects delete on inherited-only keys and reports accurate status after writable delete", async () => {
     root = mkdtempSync(join(tmpdir(), "repoos-secret-route-"));
     execFileSync("git", ["init", "-q"], { cwd: root });
