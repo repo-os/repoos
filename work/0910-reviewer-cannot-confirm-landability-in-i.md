@@ -11,7 +11,7 @@ branch: feat/reviewer-cannot-confirm-landability-in-i
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T19:45:25Z"
-updated_at: "2026-10-22T01:43:35Z"
+updated_at: "2026-10-22T01:43:36Z"
 dev_error_count: 3
 ---
 ## Problem
@@ -60,3 +60,4 @@ Reproduce with .repoos/reviews/0899/1.md to 5.md. The reviewer for those passes 
 - 2026-10-22T01:34:10Z · handoff failed · remote validation failed: test failure: tests/default-agent-prompts.test.ts > shared review mission prompt (#0872) > names the earlier-report directory, the whole-class grep, evidence gaps and the merge check on bee — fix it in the feature branch and re-run the gate
 - 2026-10-22T01:39:29Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/default-agent-prompts.test.ts > shared review mission prompt (#0872) > names the earlier-report directory, the whole-class grep, evidence gaps and the merge check on bee — fix it in the feature branch and re-run the gate
 - 2026-10-22T01:43:35Z · body
+- 2026-10-22T01:43:36Z · body
