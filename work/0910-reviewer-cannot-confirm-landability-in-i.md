@@ -14,9 +14,9 @@ branch: feat/reviewer-cannot-confirm-landability-in-i
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-21T19:45:25Z"
-updated_at: "2026-10-22T01:14:24Z"
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:14:24.294Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-10-22T01:14:26Z"
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:14:24.294Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-22T01:14:26.072Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 2026-10-22: #0899 got five review passes in a row (1-5) that all end 'needs some work' with 'Bugs: None found'. The only stated reason each time is that the reviewer could not confirm RepoOS landability or clean mergeability: its sandbox could not reach the RepoOS server (so repoos landable failed) and git merge-tree --write-tree failed to create a temporary file. The task's real pre-checks all passed (review lock, clean worktree, only its own work file conflicting, 9 files in scope). After enough rounds the task hit review-rounds-exhausted and flagged needs_input. A review that cannot run the landability commands should never turn into a negative verdict; it also burns review rounds and blocks the driver and the human from landing a correct task.
@@ -49,3 +49,4 @@ Reproduce with .repoos/reviews/0899/1.md to 5.md. The reviewer for those passes 
 - 2026-10-22T01:09:22Z · message_delivered: 1 message(s)
 - 2026-10-22T01:14:24Z · agent exited with an error (opencode) · error: Go usage limit exceeded
 - 2026-10-22T01:14:24Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · error: Go usage limit exceeded
+- 2026-10-22T01:14:26Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · error: Go usage limit exceeded
