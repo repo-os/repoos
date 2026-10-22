@@ -3,6 +3,8 @@ id: "0111"
 title: Publish evidence-based agent and model recommendations for RepoOS tasks
 type: feature
 status: done
+human_step_decision: agent
+human_step_decision_key: 89f99adf
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 89f99adf
 priority: p2
