@@ -3,6 +3,8 @@ id: "0581"
 title: "User docs: prefer curl install, top bar and mobile menu fixes"
 type: feature
 status: done
+human_step_decision: agent
+human_step_decision_key: b0d388df
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: b0d388df
 priority: p2
