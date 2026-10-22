@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/chat-queued-send.test.ts > chat queued state > shows the shared queued wording while a message waits, tests/chat-queued-send.test.ts > chat queued state > lists two queued messages with source and time in the popover on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 4e1f93fc3441ed7c90bd28000251253e4eb4ce6f
 id: "0926"
 title: "Queued-message notice: hover/focus popup showing the queued message text"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/queued-message-notice-hover-focus-popup-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T06:59:28Z"
-updated_at: "2026-10-22T16:24:40Z"
+updated_at: "2026-10-22T16:32:17Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/chat-queued-send.test.ts > chat queued state > shows the shared queued wording while a message waits, tests/chat-queued-send.test.ts > chat queued state > lists two queued messages with source and time in the popover on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 4e1f93fc3441ed7c90bd28000251253e4eb4ce6f
 ---
 ## Problem
 The chat shows 'Queued — will be read when the current turn ends.' (src/ui-app/src/components/ChatQueuedNotice.vue) with no way to see WHAT is queued. Automatic board-change notes and CTO nudges queue too, so the viewer cannot tell a requirements update from a nudge. Example 2026-10-22: #0918 showed the notice for 75 min with no indication it was a harmless notes update.
@@ -64,4 +64,4 @@ Follow the AGENTS.md conventions for tooltips/popovers and body-teleported layer
 - 2026-10-22T16:16:20Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/chat-queued-send.test.ts > chat queued state > shows the shared queued wording while a message waits, tests/chat-queued-send.test.ts > chat queued state > lists two queued messages with source and time in the popover on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-22T16:16:20Z · note: handoff requested (cli)
 - 2026-10-22T16:24:40Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/chat-queued-send.test.ts > chat queued state > shows the shared queued wording while a message waits, tests/chat-queued-send.test.ts > chat queued state > lists two queued messages with source and time in the popover on bee — fix it in the feature branch and re-run the gate
-
+- 2026-10-22T16:32:17Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/chat-queued-send.test.ts > chat queued state > shows the shared queued wording while a message waits, tests/chat-queued-send.test.ts > chat queued state > lists two queued messages with source and time in the popover on bee — fix it in the feature branch and re-run the gate
