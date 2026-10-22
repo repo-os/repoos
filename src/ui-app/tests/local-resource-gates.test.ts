@@ -2,7 +2,7 @@
  * Local check and Playwright caps (#0836): third waiter blocks until a slot frees.
  */
 import { afterEach, describe, expect, it } from "vitest";
-import { mkdtempSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
@@ -79,19 +79,139 @@ describe("cross-process local check slots", () => {
     release();
   });
 
-  it("marks and reclaims a live silent holder after its reclaim grace", async () => {
-    const root = mkdtempSync(join(tmpdir(), "repoos-wedged-slot-"));
+  it("treats a reused PID as dead when the process start token changed", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-reused-pid-slot-"));
     dirs.push(root);
     const lockRoot = localCheckLockRoot(root, ".repoos");
     const slot = join(lockRoot, "0");
     mkdirSync(slot, { recursive: true });
     writeFileSync(join(slot, ".holder"), String(process.pid));
-    writeFileSync(join(slot, ".wedged-since"), String(Date.now() - 160_000));
-    const old = new Date(Date.now() - 240_000);
+    writeFileSync(
+      join(slot, ".meta.json"),
+      JSON.stringify({ processStartToken: "a process incarnation that cannot match" }),
+    );
+    expect(inspectCrossProcessSlots(lockRoot)[0]).toMatchObject({ dead: true });
+  });
+
+  it("recognizes the current live process as a slot holder", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-live-slot-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    writeFileSync(join(slot, ".holder"), String(process.pid));
+    writeFileSync(join(slot, ".meta.json"), JSON.stringify({ processStartToken: "" }));
+    expect(inspectCrossProcessSlots(lockRoot)[0]).toMatchObject({ dead: false, wedged: false });
+  });
+
+  it("makes a cancelled check release its slot before the queued check acquires it", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-cancel-slot-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const releaseCancelled = await acquireCrossProcessSlot({
+      slots: 1,
+      lockRoot,
+      waitTimeoutMs: 100,
+    });
+    let acquired = false;
+    const waiting = acquireCrossProcessSlot({ slots: 1, lockRoot, waitTimeoutMs: 2_000 }).then(
+      (release) => {
+        acquired = true;
+        release();
+      },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    releaseCancelled();
+    await waiting;
+    expect(acquired).toBe(true);
+  });
+
+  it("uses the monotonic heartbeat when the wall clock and directory time jump", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-slot-clock-jump-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    writeFileSync(join(slot, ".holder"), String(process.pid));
+    writeFileSync(join(slot, ".meta.json"), JSON.stringify({ processStartToken: "" }));
+    writeFileSync(
+      join(slot, ".heartbeat.json"),
+      JSON.stringify({ wallMs: 0, monotonicMs: Number(process.hrtime.bigint() / 1_000_000n) }),
+    );
+    writeFileSync(
+      join(slot, ".started.json"),
+      JSON.stringify({ wallMs: 0, monotonicMs: Number(process.hrtime.bigint() / 1_000_000n) }),
+    );
+    const old = new Date(0);
     utimesSync(slot, old, old);
-    expect(inspectCrossProcessSlots(lockRoot)[0]).toMatchObject({ dead: false, wedged: true });
-    const release = await acquireCrossProcessSlot({ slots: 1, lockRoot, waitTimeoutMs: 100 });
-    release();
+    expect(inspectCrossProcessSlots(lockRoot)[0]).toMatchObject({ dead: false, wedged: false });
+  });
+
+  it("uses the configured silence window when reporting a wedged holder", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-slot-wedge-window-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    const monotonicNow = Number(process.hrtime.bigint() / 1_000_000n);
+    writeFileSync(join(slot, ".holder"), String(process.pid));
+    writeFileSync(join(slot, ".meta.json"), JSON.stringify({ processStartToken: "" }));
+    writeFileSync(
+      join(slot, ".heartbeat.json"),
+      JSON.stringify({ monotonicMs: monotonicNow - 30_000 }),
+    );
+    expect(inspectCrossProcessSlots(lockRoot)[0]).toMatchObject({ wedged: false });
+    expect(inspectCrossProcessSlots(lockRoot, undefined, 15_000)[0]).toMatchObject({
+      wedged: true,
+    });
+  });
+
+  it("marks a silent live holder wedged, preserves the grace, then kills its process group", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-wedged-slot-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const candidate = join(root, "candidate");
+    mkdirSync(candidate, { recursive: true });
+    if (process.platform === "win32") return;
+    const child = spawn("sh", ["-c", "trap '' TERM; while :; do sleep 1; done"], {
+      cwd: root,
+      detached: true,
+      stdio: "ignore",
+    });
+    if (!child.pid) throw new Error("could not start wedged holder fixture");
+    const childExited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
+    child.unref();
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    const monoNow = Number(process.hrtime.bigint() / 1_000_000n);
+    writeFileSync(join(slot, ".holder"), String(child.pid));
+    writeFileSync(
+      join(slot, ".meta.json"),
+      JSON.stringify({ kind: "local-check", processGroup: true, worktree: candidate }),
+    );
+    writeFileSync(join(slot, ".heartbeat.json"), JSON.stringify({ monotonicMs: monoNow - 90_000 }));
+    try {
+      expect(inspectCrossProcessSlots(lockRoot)[0]).toMatchObject({ dead: false, wedged: true });
+      await expect(
+        acquireCrossProcessSlot({ slots: 1, lockRoot, waitTimeoutMs: 0 }),
+      ).rejects.toThrow(/timed out/);
+      expect(existsSync(slot)).toBe(true);
+      writeFileSync(
+        join(slot, ".heartbeat.json"),
+        JSON.stringify({ monotonicMs: monoNow - 240_000 }),
+      );
+      const release = await acquireCrossProcessSlot({ slots: 1, lockRoot, waitTimeoutMs: 100 });
+      release();
+      expect(inspectCrossProcessSlots(lockRoot)).toEqual([]);
+      await childExited;
+      expect(child.signalCode).toBe("SIGKILL");
+    } finally {
+      try {
+        process.kill(-child.pid, "SIGKILL");
+      } catch {
+        /* already exited */
+      }
+    }
   });
 
   it("reaps a detached close-out check group after its candidate disappeared", () => {

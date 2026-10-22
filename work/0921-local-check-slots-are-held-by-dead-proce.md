@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 405403
-last_close_out_gate_at: "2026-10-22T17:51:38.917Z"
 id: "0921"
 title: "Local check slots are held by dead processes for 30 minutes: reclaim a slot as soon as its holder pid is gone"
 type: feature
-status: review
+status: done
 priority: p1
 area: [core, server]
+merged_commit: 69e0c6d367b83ba900406c29c20b5052d6badbf9
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/local-check-slots-are-held-by-dead-proce
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T05:41:12Z"
 updated_at: "2026-10-22T17:51:38Z"
+last_close_out_gate_ms: 405403
+last_close_out_gate_at: "2026-10-22T17:51:38.917Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---

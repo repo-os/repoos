@@ -90,8 +90,17 @@ const changedRef = ref("");
 const changedInput = ref("");
 const openOutput = ref<string | null>(null);
 const localSlotHolders = ref<
-  Array<{ slot: number; pid?: number; ageMs: number; wedged: boolean; dead: boolean }>
+  Array<{
+    slot: number;
+    pid?: number;
+    ageMs: number;
+    heartbeatAgeMs: number;
+    wedged: boolean;
+    dead: boolean;
+    meta?: Record<string, unknown>;
+  }>
 >([]);
+const localSlotQueue = ref<Array<{ taskId: string; position: number; since: string }>>([]);
 const activeCheckRuns = ref<TaskCheckRun[]>([]);
 let activeCheckPoll: number | undefined;
 
@@ -114,10 +123,31 @@ onBeforeUnmount(() => {
 
 async function loadLocalSlotHolders(): Promise<void> {
   try {
-    const result = await api<{ holders: typeof localSlotHolders.value }>("/api/local-check-slots");
+    const result = await api<{
+      holders: typeof localSlotHolders.value;
+      queue?: typeof localSlotQueue.value;
+    }>("/api/local-check-slots");
     localSlotHolders.value = Array.isArray(result.holders) ? result.holders : [];
+    localSlotQueue.value = Array.isArray(result.queue) ? result.queue : [];
   } catch {
     localSlotHolders.value = [];
+  }
+}
+
+async function releaseWedgedSlot(holder: (typeof localSlotHolders.value)[number]): Promise<void> {
+  if (!holder.pid) return;
+  const task = holder.meta?.taskId ? `#${String(holder.meta.taskId)} check` : "check";
+  if (
+    !window.confirm(
+      `Release slot ${holder.slot}, held by ${task}, PID ${holder.pid}? This will terminate its managed process group.`,
+    )
+  )
+    return;
+  try {
+    await api(`/api/local-check-slots/${holder.slot}/release/${holder.pid}`, { method: "POST" });
+    await loadLocalSlotHolders();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "Could not release the local check slot.";
   }
 }
 
@@ -329,12 +359,29 @@ const RESULT_ICON: Record<string, string> = {
       </section>
       <section class="ck-local-slots" aria-label="Local check slots">
         <h2>Local check slots</h2>
-        <p v-if="!localSlotHolders.length">No local check slots are currently in use.</p>
-        <p v-for="holder in localSlotHolders" :key="holder.slot">
-          Slot {{ holder.slot }} · PID {{ holder.pid ?? "unknown" }} ·
-          {{ Math.round(holder.ageMs / 1000) }}s
-          <strong v-if="holder.dead"> · dead holder (slot reclaiming)</strong>
-          <strong v-if="holder.wedged"> · possibly wedged</strong>
+        <p v-if="!localSlotHolders.some((holder) => holder.pid)">
+          No local check slots are currently in use.
+        </p>
+        <article v-for="holder in localSlotHolders" :key="holder.slot" class="ck-local-slot">
+          <strong>Slot {{ holder.slot }}</strong>
+          <template v-if="holder.pid">
+            · {{ holder.meta?.taskId ? `#${holder.meta.taskId}` : "check" }} · PID
+            {{ holder.pid }} · {{ holder.dead ? "dead" : "alive" }} · held
+            {{ fmtDuration(holder.ageMs) }} · heartbeat {{ fmtDuration(holder.heartbeatAgeMs) }} ago
+            <strong v-if="holder.dead"> · holder is gone, reclaiming</strong>
+            <strong v-else-if="holder.wedged"> · wedged</strong>
+            <Button
+              v-if="holder.wedged && !holder.dead"
+              size="sm"
+              @click="releaseWedgedSlot(holder)"
+              >Release slot</Button
+            >
+          </template>
+          <span v-else> · free</span>
+        </article>
+        <p v-for="(queued, index) in localSlotQueue" :key="queued.taskId">
+          Queue {{ index + 1 }} · #{{ queued.taskId }} · position {{ queued.position }} · waiting
+          {{ fmtDuration(Date.now() - Date.parse(queued.since)) }}
         </p>
       </section>
       <IntegrationPipelineSummary />
