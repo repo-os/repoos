@@ -12,7 +12,7 @@ branch: feat/stop-false-needs-human-step-flags-sticky
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-21T19:41:23Z"
-updated_at: "2026-10-22T07:38:06Z"
+updated_at: "2026-10-22T07:38:38Z"
 last_close_out_gate_ms: 185063
 last_close_out_gate_at: "2026-10-22T07:38:06.760Z"
 review_passes: 6
@@ -160,4 +160,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T07:34:50Z · note: review pass 6: good to go
 - 2026-10-22T07:34:50Z · needs_input
 - 2026-10-22T07:38:06Z · close-out gate completed in 185s
-
+- 2026-10-22T07:38:38Z · status done→done, release:success
