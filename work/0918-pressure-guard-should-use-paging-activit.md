@@ -2,7 +2,7 @@
 id: "0918"
 title: "Pressure guard should use paging activity, not occupancy: macOS compressor share and swap used/total hold work on an idle laptop"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -88,3 +88,4 @@ Start from src/core/pressure-guard.ts and resource-limits.ts (maxCompressorRatio
 - 2026-10-22T08:39:01Z · note: handoff requested (ui-review)
 - 2026-10-22T08:39:39Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-22T08:42:11Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-10-22T08:42:11Z · status active→review
