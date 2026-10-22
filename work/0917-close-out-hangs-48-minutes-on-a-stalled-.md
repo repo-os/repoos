@@ -2,7 +2,7 @@
 id: "0917"
 title: Close-out hangs ~48 minutes on a stalled ssh bundle upload before falling back to local; thinkpad swap full again
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -51,12 +51,12 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 "route": "/settings?section=remote-validation",
 "highlight": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]",
 "steps": [
-  {
-    "click": "[id=\"setting-remoteValidation.enabled\"] button"
-  },
-  {
-    "waitFor": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]"
-  }
+{
+  "click": "[id=\"setting-remoteValidation.enabled\"] button"
+},
+{
+  "waitFor": "[data-config-key=\"remoteValidation.bundleUploadBudgetSecs\"]"
+}
 ]
 }
 ]
@@ -101,3 +101,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T11:39:42Z · body
 - 2026-10-22T11:40:42Z · body
 - 2026-10-22T11:44:41Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-10-22T11:44:41Z · status active→review
