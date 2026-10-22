@@ -13,7 +13,7 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T18:12:40Z"
+updated_at: "2026-10-22T18:16:08Z"
 ---
 ## Problem
 Users have no RepoOS screen to see which project environment is selected or which expected keys are set, missing, or inherited. The metadata and write operations from #0928 need a safe, usable interface that never reveals saved values.
@@ -33,6 +33,38 @@ A Secrets item appears in the sidebar between Dev and Agents. The page lets user
 ## Notes for AI
 Implement only the user interface and its route/state/tests; consume the metadata and mutation contracts from #0928 rather than creating alternate secret APIs. This depends on #0928. The environment selector must be view-only and must not implicitly rebind Dev, checks, or deployments. Update user-facing docs directly affected by the new page. Rebuild the UI after changes.
 
+## Shots
+```json
+[
+{
+  "label": "Secrets inventory with missing, inherited, and public keys",
+  "target": "default",
+  "route": "/secrets?fixture=secrets",
+  "highlight": ".secrets-rows"
+},
+{
+  "label": "Secrets environment creation dialog",
+  "target": "default",
+  "route": "/secrets?fixture=secrets",
+  "highlight": ".secrets-create-panel",
+  "steps": [
+    {
+      "click": ".secrets-picker"
+    },
+    {
+      "click": ".secrets-create-option"
+    }
+  ]
+},
+{
+  "label": "Secrets inventory on mobile",
+  "target": "default",
+  "route": "/secrets?fixture=secrets",
+  "highlight": ".secrets-head"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-22T08:06:27Z · created · njachowski@gmail.com
@@ -44,3 +76,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T18:12:19Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-22T18:12:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T18:12:40Z · message_delivered: 1 message(s)
+- 2026-10-22T18:16:08Z · body
