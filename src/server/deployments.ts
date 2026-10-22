@@ -407,14 +407,11 @@ export async function getDeploymentsStatus(
         environmentConsumer: projectEnvironmentConsumer("deployment", row.name),
         environment:
           environmentBindings.find(
-            (binding) =>
-              binding.consumer === projectEnvironmentConsumer("deployment", row.name),
-          )
-            ?.environment ?? null,
+            (binding) => binding.consumer === projectEnvironmentConsumer("deployment", row.name),
+          )?.environment ?? null,
         environmentError: (() => {
           const binding = environmentBindings.find(
-            (item) =>
-              item.consumer === projectEnvironmentConsumer("deployment", row.name),
+            (item) => item.consumer === projectEnvironmentConsumer("deployment", row.name),
           );
           return binding && !knownEnvironments.has(binding.environment)
             ? `Unknown project environment "${binding.environment}". Repair or clear this binding before deploying.`
