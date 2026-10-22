@@ -1163,8 +1163,7 @@ export async function cmdSplit(args: string[]): Promise<void> {
         c.cyan(`#${result.humanTask.id}`),
     );
   } catch (err) {
-    const message =
-      err instanceof HumanStepSplitError ? err.message : (err as Error).message;
+    const message = err instanceof HumanStepSplitError ? err.message : (err as Error).message;
     console.error(c.red(`  ${message}`));
     process.exitCode = 1;
   }

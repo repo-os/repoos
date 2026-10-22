@@ -52,7 +52,10 @@ export function splitHumanStepTask(
     dependsOn: [source.id],
     createdBy: actor,
   });
-  repoos.commitNewFile(humanTask.absPath, `docs(${humanTask.id}): split human steps from #${source.id}`);
+  repoos.commitNewFile(
+    humanTask.absPath,
+    `docs(${humanTask.id}): split human steps from #${source.id}`,
+  );
   const patched = patchTaskFile(config, source.absPath, { body: nextBody }, { actor });
   return flagTaskSpecFlagsIfNeededAsync(config, patched).then((flagged) => ({
     source: flagged ?? patched,

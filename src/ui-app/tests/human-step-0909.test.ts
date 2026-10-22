@@ -90,9 +90,7 @@ describe("sticky human-step override (#0909)", () => {
     };
     expect(humanStepOverrideSuppresses(config, withOverride)).toBe(true);
     const changed = KEYS_BODY.replace("Tests still pass", "Verify on a real device");
-    expect(
-      humanStepOverrideSuppresses(config, { ...withOverride, body: changed }),
-    ).toBe(false);
+    expect(humanStepOverrideSuppresses(config, { ...withOverride, body: changed })).toBe(false);
   });
 
   it("records fingerprint when needs_input is cleared through patchTaskFile", () => {
@@ -181,18 +179,19 @@ describe("model check before keyword (#0909)", () => {
         defaultStatus: "inbox",
         defaultAssignee: "unassigned",
       });
-      vi.spyOn(await import("../../server/human-step-decision.js"), "runHumanStepDecisionCheck").mockImplementation(
-        async () => ({
-          outcome: "agent",
-          decision: {
-            needsHumanStep: false,
-            probability: 0.1,
-            reason: "none",
-            explanation:
-              "Decision model (10%): no step only a human can do — an AI agent can do this task.",
-          },
-        }),
-      );
+      vi.spyOn(
+        await import("../../server/human-step-decision.js"),
+        "runHumanStepDecisionCheck",
+      ).mockImplementation(async () => ({
+        outcome: "agent",
+        decision: {
+          needsHumanStep: false,
+          probability: 0.1,
+          reason: "none",
+          explanation:
+            "Decision model (10%): no step only a human can do — an AI agent can do this task.",
+        },
+      }));
       const flagged = await flagNeedsHumanStepIfNeededAsync(config, task);
       expect(flagged).toBeNull();
       vi.restoreAllMocks();
@@ -220,20 +219,21 @@ describe("model check before keyword (#0909)", () => {
         defaultStatus: "inbox",
         defaultAssignee: "unassigned",
       });
-      vi.spyOn(await import("../../server/human-step-decision.js"), "runHumanStepDecisionCheck").mockImplementation(
-        async () => ({
-          outcome: "human",
-          detail:
+      vi.spyOn(
+        await import("../../server/human-step-decision.js"),
+        "runHumanStepDecisionCheck",
+      ).mockImplementation(async () => ({
+        outcome: "human",
+        detail:
+          "Decision model (91%): split this into an AI task and a human task — it needs a real account, credential, or API key.",
+        decision: {
+          needsHumanStep: true,
+          probability: 0.91,
+          reason: "account",
+          explanation:
             "Decision model (91%): split this into an AI task and a human task — it needs a real account, credential, or API key.",
-          decision: {
-            needsHumanStep: true,
-            probability: 0.91,
-            reason: "account",
-            explanation:
-              "Decision model (91%): split this into an AI task and a human task — it needs a real account, credential, or API key.",
-          },
-        }),
-      );
+        },
+      }));
       const flagged = await flagNeedsHumanStepIfNeededAsync(config, task);
       expect(flagged?.needsInputReason).toBe("needs-human-step");
       expect(flagged?.needsInputDetail).toContain('Criterion "');
@@ -249,7 +249,10 @@ describe("split human-step tasks (#0909)", () => {
   const mixedBody = KEYS_BODY.replace(
     "## Acceptance criteria\n\n- [ ] The dev config",
     "## Acceptance criteria\n\n- [ai] The dev config",
-  ).replace("- [ ] Tests still pass", "- [human] Verify on a real device with production credentials");
+  ).replace(
+    "- [ ] Tests still pass",
+    "- [human] Verify on a real device with production credentials",
+  );
 
   it("creates a held human task that depends on the AI task", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-split-"));
