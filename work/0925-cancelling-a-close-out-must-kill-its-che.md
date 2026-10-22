@@ -11,7 +11,7 @@ branch: feat/cancelling-a-close-out-must-kill-its-che
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:32:56Z"
-updated_at: "2026-10-22T08:43:02Z"
+updated_at: "2026-10-22T08:43:54Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-22T08:20:35.105Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-22T08:39:33.891Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -30,6 +30,17 @@ Related: #0921 (dead slot holders), #0923 (gc vs running close-out), #0919 (repo
 
 ## Scope addition
 Also fix #0921 in the same change (dead-holder detection for local check slots: free a slot immediately when its holder pid is dead; flag a live but silent holder as wedged after 60-90 s without heartbeat and reclaim after a 2-3 min grace; surface slot holders on the Checks page and in the CLI). Do not hand off until verified and repoos check --changed main passes; run the slot/close-out tests in small groups.
+
+## Shots
+```json
+[
+{
+  "label": "Checks page local slot diagnostics",
+  "target": "default",
+  "route": "/checks"
+}
+]
+```
 
 ## Activity
 
@@ -55,3 +66,4 @@ Also fix #0921 in the same change (dead-holder detection for local check slots: 
 - 2026-10-22T08:33:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T08:39:33Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
 - 2026-10-22T08:43:02Z · body
+- 2026-10-22T08:43:54Z · body
