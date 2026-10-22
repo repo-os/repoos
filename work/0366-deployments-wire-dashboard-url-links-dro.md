@@ -3,6 +3,8 @@ id: "0366"
 title: "Deployments: wire dashboard_url links, drop noisy 'build status unknown' badge"
 type: chore
 status: done
+human_step_decision: agent
+human_step_decision_key: c5f19256
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: c5f19256
 priority: p3
