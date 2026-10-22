@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-dropzone-shot-evidenc
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T01:34:32Z"
-updated_at: "2026-10-22T17:44:25Z"
+updated_at: "2026-10-22T17:44:35Z"
 ---
 ## Items
 - [x] **E1 · Manual-tab handoff capture does not show a dropzone** (web) — #0899’s declared Manual-tab shot lacked a recorded assertion; the light and dark captures now assert the dropzone exists. Source: reviewer notes on #0899 (passes 4 and 5), 2026-10-22.
@@ -26,9 +26,10 @@ updated_at: "2026-10-22T17:44:25Z"
 Reviewers can see the dropzone rendered on the Manual tab and the default (non-error) picker in the TaskDrawer without extra steps.
 
 ## Acceptance criteria
-- E1: the Manual-tab shot declares an assert that the dropzone exists, and the capture shows it in light and dark themes.
-- E2: a TaskDrawer shot of the default picker is declared next to the failure-state shot, using a state fixture, no placeholder-selector click steps.
-- Both pass a handoff capture with zero console errors.
+- E1: the Manual-tab shot declares an assertion that the dropzone exists, and captures it in light and dark themes.
+- E2: a TaskDrawer shot of the default picker is declared beside the failure-state shot, using a state fixture and no placeholder-selector click steps.
+- E4: restart-required hints appear before their controls, controls share a right edge, and the hint remains readable and accessible on narrow widths.
+- E1, E2, and E4 captures pass with zero console errors. E3 remains unchecked until the human uploads the additional screenshot.
 
 ## Notes for AI
 See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots to declare shots. This bundle scope is E1, E2, and E4. E3 is intentionally deferred, remains unchecked, and requires the additional screenshot from the human before implementation.
@@ -43,13 +44,13 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 "highlight": ".shot-dropzone",
 "steps": [
 {
-  "click": ".drawer-tabs .tab-btn:nth-child(2)"
+"click": ".drawer-tabs .tab-btn:nth-child(2)"
 }
 ],
 "assert": [
 {
-  "selector": ".shot-dropzone",
-  "label": "Screenshot dropzone is rendered"
+"selector": ".shot-dropzone",
+"label": "Screenshot dropzone is rendered"
 }
 ],
 "state": "panel:defaultScreenshotPicker",
@@ -62,13 +63,13 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 "highlight": ".shot-dropzone",
 "steps": [
 {
-  "click": ".drawer-tabs .tab-btn:nth-child(2)"
+"click": ".drawer-tabs .tab-btn:nth-child(2)"
 }
 ],
 "assert": [
 {
-  "selector": ".shot-dropzone",
-  "label": "Screenshot dropzone is rendered"
+"selector": ".shot-dropzone",
+"label": "Screenshot dropzone is rendered"
 }
 ],
 "state": "panel:defaultScreenshotPicker",
@@ -81,8 +82,8 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 "highlight": ".shot-dropzone",
 "assert": [
 {
-  "selector": ".shot-dropzone",
-  "label": "Default screenshot picker is rendered"
+"selector": ".shot-dropzone",
+"label": "Default screenshot picker is rendered"
 }
 ],
 "state": "panel:defaultScreenshotPicker"
@@ -100,9 +101,9 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 "highlight": "[id=\"setting-remoteValidation.browserCaptureMode\"]",
 "assert": [
 {
-  "selector": "[id=\"setting-remoteValidation.browserCaptureMode\"] .restart-badge",
-  "label": "Restart hint is shown beside the setting",
-  "text": "restart required"
+"selector": "[id=\"setting-remoteValidation.browserCaptureMode\"] .restart-badge",
+"label": "Restart hint is shown beside the setting",
+"text": "restart required"
 }
 ]
 }
@@ -141,3 +142,4 @@ See #0899 and its reviews under .repoos/reviews/0899/. Use repoos update --shots
 - 2026-10-22T17:44:12Z · body
 - 2026-10-22T17:44:25Z · body: Items (added 4, removed 4)
 - 2026-10-22T17:44:25Z · message_queued at 2026-10-22T17:44:25.996Z
+- 2026-10-22T17:44:35Z · body: Acceptance criteria (added 4, removed 3)
