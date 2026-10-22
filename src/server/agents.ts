@@ -73,6 +73,7 @@ import { buildStoryContext, storyContextSummary } from "../core/story-context.js
 import { unresolvedReviewFindingsBlock } from "../core/review-findings.js";
 import { needsInputClearsOnNewEngineerRun } from "../core/needs-input.js";
 import { ENGINEER_STOPPED_ACTIVITY } from "../core/engineer-crash-recovery.js";
+import { detectProviderUsageLimit } from "../core/provider-usage-limit.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 import { stripAnsi } from "./done.js";
 import type { Logger } from "../core/logger.js";
@@ -8863,8 +8864,14 @@ export class AgentRunner {
     // not honored), and ask the server to resume — or fail over once the
     // bounded crash threshold is reached. A deliberate stop, a paused task, a
     // review turn, and a turn that requested its own handoff are excluded.
-    const crashKind =
-      abortKind === "provider-failure"
+    const crashKind = detectProviderUsageLimit(
+      session?.providerFailureDetail ??
+        entry.degenerateDetail ??
+        this.lastFailureLine(session) ??
+        "",
+    )
+      ? "usage-limit"
+      : abortKind === "provider-failure"
         ? "provider-failure"
         : abortKind === "degenerate-output"
           ? "degenerate-output"

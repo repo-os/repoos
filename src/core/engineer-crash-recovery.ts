@@ -279,11 +279,19 @@ export function planEngineerCrashRecovery(input: EngineerCrashPlanInput): Engine
     ? Math.max(MIN_ENGINEER_CRASH_FAILOVER_WINDOW_MS, input.windowMs)
     : DEFAULT_ENGINEER_CRASH_FAILOVER_WINDOW_MS;
   const nowIso = new Date(input.now).toISOString();
+  const quotaExhausted = input.crashes.some(
+    (crash) =>
+      crash.cli === input.pair.cli &&
+      crash.model === input.pair.model &&
+      crash.kind === "usage-limit",
+  );
   const crashes = countEngineerCrashes(input.crashes, input.pair, nowIso, windowMs);
-  if (crashes < threshold) {
+  if (!quotaExhausted && crashes < threshold) {
     return { action: "resume", pair: input.pair, crashes, threshold, windowMs };
   }
-  const block = failoverBlock(input.task, input.pair);
+  // A provider quota is an explicit temporary outage: honor ordinary human
+  // pins in every other case, but let the task move off the exhausted pair.
+  const block = quotaExhausted ? null : failoverBlock(input.task, input.pair);
   if (block) {
     return {
       action: "surface",
