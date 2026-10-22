@@ -20,6 +20,21 @@ describe("detectProviderUsageLimit", () => {
     ).toBe("2026-10-22T09:30:00.000Z");
   });
 
+  it("parses Retry-After seconds and ignores malformed reset values", () => {
+    const now = Date.now;
+    Date.now = () => Date.parse("2026-10-22T09:00:00.000Z");
+    try {
+      expect(detectProviderUsageLimit("HTTP 429, Retry-After: 120")?.retryAt).toBe(
+        "2026-10-22T09:02:00.000Z",
+      );
+    } finally {
+      Date.now = now;
+    }
+    expect(
+      detectProviderUsageLimit("usage limit reached, resets at 2026-99-99T99:99Z")?.retryAt,
+    ).toBeUndefined();
+  });
+
   it("does not classify ordinary failures", () => {
     expect(detectProviderUsageLimit("connection reset by peer")).toBeNull();
   });
@@ -27,6 +42,7 @@ describe("detectProviderUsageLimit", () => {
   it("resumes an automatically exhausted pair after a successful cheap probe", async () => {
     const config = {
       ...DEFAULT_CONFIG,
+      root: process.cwd(),
       budget: {
         allowlist: [
           {
@@ -50,6 +66,7 @@ describe("detectProviderUsageLimit", () => {
   it("keeps an exhausted pair paused when its probe fails", async () => {
     const config = {
       ...DEFAULT_CONFIG,
+      root: process.cwd(),
       budget: {
         allowlist: [
           {
