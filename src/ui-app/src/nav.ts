@@ -39,6 +39,12 @@ export const DEV_NAV: NavItem = {
   label: "Dev",
   icon: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 9l2.5 2L8 13M12.5 14H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 21h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
 };
+export const SECRETS_NAV: NavItem = {
+  id: "secrets",
+  path: "/secrets",
+  label: "Secrets",
+  icon: '<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 118 0v3M12 14v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+};
 
 export const NAV: NavItem[] = [
   {
@@ -65,6 +71,7 @@ export const NAV: NavItem[] = [
     label: "Checks",
     icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M9 6h10M9 12h10M9 18h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   },
+  SECRETS_NAV,
   {
     id: "agents",
     path: "/agents",
@@ -91,8 +98,8 @@ export const NAV: NavItem[] = [
  * repoos.toml) and slot in after Work, ahead of the everyday pages. Stories is
  * opt-in too (`[stories] enabled = true`) but sits exactly between Work and
  * Checks, so it is spliced at a fixed index independent of the other two. Dev
- * is opt-in on a non-empty `[[dev.targets]]` list and sits just before Agents,
- * beside the other developer-facing pages.
+ * is opt-in on a non-empty `[[dev.targets]]` list and sits just before the
+ * always-visible Secrets entry, which stays immediately before Agents.
  */
 export function navFor(
   releasesEnabled: boolean,
@@ -114,10 +121,9 @@ export function navFor(
     items.splice(3, 0, STORIES_NAV);
   }
   if (devEnabled) {
-    // Anchor on `agents` (always present in the base NAV) rather than a magic
-    // index, so Dev lands in the same place no matter which opt-ins are on.
-    const agentsAt = items.findIndex((n) => n.id === "agents");
-    items.splice(agentsAt < 0 ? items.length : agentsAt, 0, DEV_NAV);
+    // Anchor on Secrets so the order remains Dev → Secrets → Agents.
+    const secretsAt = items.findIndex((n) => n.id === "secrets");
+    items.splice(secretsAt < 0 ? items.length : secretsAt, 0, DEV_NAV);
   }
   return items;
 }
@@ -126,8 +132,8 @@ export function navFor(
  * Derive the nav from the raw `/api/config` payload. Each opt-in surface is
  * read from the same shape the server ships it in: `release.enabled`,
  * a non-empty `deployments` array, `stories.enabled`, and a non-empty
- * `dev.targets` array. A missing or malformed section reads as disabled, so a
- * repo that never configures these gets exactly the default NAV.
+ * `dev.targets` array. Secrets is part of the base nav for every project so
+ * greenfield repositories can create their first environment.
  */
 export function navFromConfig(config: Record<string, unknown> | null | undefined): NavItem[] {
   const release = config?.release as { enabled?: unknown } | undefined;

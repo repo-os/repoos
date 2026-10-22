@@ -135,14 +135,28 @@ describe("Dev nav gating (#0748)", () => {
     );
   });
 
-  it("places Dev just before Agents, regardless of the other opt-ins", () => {
+  it("always shows Secrets and places it between Dev and Agents", () => {
+    const emptyProject = navFromConfig({}).map((n) => n.id);
+    expect(emptyProject).toContain("secrets");
+    expect(emptyProject.indexOf("secrets")).toBe(emptyProject.indexOf("agents") - 1);
+    const devAndSecrets = navFor(false, false, false, true).map((n) => n.id);
+    expect(
+      devAndSecrets.slice(devAndSecrets.indexOf("dev"), devAndSecrets.indexOf("agents") + 1),
+    ).toEqual(["dev", "secrets", "agents"]);
+  });
+
+  it("keeps Dev immediately before Secrets, regardless of the other opt-ins", () => {
     const ids = navFromConfig({
       release: { enabled: true },
       deployments: [{ name: "x" }],
       stories: { enabled: true },
       dev: { targets: [{ name: "web" }] },
     }).map((n) => n.id);
-    expect(ids.indexOf("dev")).toBe(ids.indexOf("agents") - 1);
+    expect(ids.slice(ids.indexOf("dev"), ids.indexOf("agents") + 1)).toEqual([
+      "dev",
+      "secrets",
+      "agents",
+    ]);
     expect(DEV_NAV.path).toBe("/dev");
   });
 });
