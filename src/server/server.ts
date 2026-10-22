@@ -3659,6 +3659,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           localCheckLockRoot(config.root, config.cacheDir ?? ".repoos"),
           Number(params.param1),
           Number(params.param2),
+          config.localChecks?.staleAfterMs,
         );
         return json(res, 200, { ok: true, released: holder.slot, pid: holder.pid });
       } catch (error) {

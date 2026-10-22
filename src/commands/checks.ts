@@ -6,6 +6,7 @@ import {
   releaseLocalCheckSlot,
 } from "../core/cross-process-slots.js";
 import { readQueueMarkers } from "../core/local-queue-marker.js";
+import { mainCheckoutRoot } from "../core/git.js";
 
 export function cmdChecks(args: string[]): void {
   if (args[0] !== "slots") {
@@ -14,7 +15,14 @@ export function cmdChecks(args: string[]): void {
     return;
   }
   const config = loadConfig();
-  const root = localCheckLockRoot(config.root, config.cacheDir ?? ".repoos");
+  let boardRoot = config.root;
+  try {
+    boardRoot = mainCheckoutRoot(config.root);
+  } catch {
+    /* standalone repository checkout */
+  }
+  const cacheDir = config.cacheDir ?? ".repoos";
+  const root = localCheckLockRoot(boardRoot, cacheDir);
   const releaseAt = args.indexOf("--release");
   if (releaseAt >= 0) {
     const slot = Number(args[releaseAt + 1]);
@@ -28,14 +36,16 @@ export function cmdChecks(args: string[]): void {
       return;
     }
     try {
-      const holder = inspectCrossProcessSlots(root, config.localChecks?.maxConcurrent ?? 2).find(
-        (item) => item.slot === slot,
-      );
+      const holder = inspectCrossProcessSlots(
+        root,
+        config.localChecks?.maxConcurrent ?? 2,
+        config.localChecks?.staleAfterMs,
+      ).find((item) => item.slot === slot);
       if (!holder?.pid) throw new Error(`slot ${slot} is free`);
       console.log(
         `Releasing slot ${slot}, held by task #${String(holder.meta?.taskId ?? "unknown")} check, PID ${holder.pid}${holder.dead ? ", dead" : holder.wedged ? ", wedged" : ", alive"}.`,
       );
-      releaseLocalCheckSlot(root, slot, pid);
+      releaseLocalCheckSlot(root, slot, pid, config.localChecks?.staleAfterMs);
       console.log(c.green("  ✔ Slot released."));
     } catch (error) {
       console.error(c.red("  ✗ ") + (error instanceof Error ? error.message : String(error)));
@@ -43,7 +53,11 @@ export function cmdChecks(args: string[]): void {
     }
     return;
   }
-  const holders = inspectCrossProcessSlots(root, config.localChecks?.maxConcurrent ?? 2);
+  const holders = inspectCrossProcessSlots(
+    root,
+    config.localChecks?.maxConcurrent ?? 2,
+    config.localChecks?.staleAfterMs,
+  );
   for (const holder of holders) {
     const task = holder.meta?.taskId
       ? `#${String(holder.meta.taskId)} check`
@@ -54,9 +68,9 @@ export function cmdChecks(args: string[]): void {
         : `slot ${holder.slot}: free`,
     );
   }
-  for (const marker of readQueueMarkers(config.root, config.cacheDir ?? ".repoos").filter(
-    (entry) => entry.kind === "local-check",
-  )) {
+  for (const marker of readQueueMarkers(boardRoot, cacheDir)
+    .filter((entry) => entry.kind === "local-check")
+    .sort((a, b) => a.position - b.position)) {
     const waitingMs = Math.max(0, Date.now() - Date.parse(marker.since));
     console.log(
       `queue position ${marker.position}: #${marker.taskId}, waiting ${Math.round(waitingMs / 1000)}s`,

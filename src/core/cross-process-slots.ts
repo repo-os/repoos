@@ -287,8 +287,11 @@ export function releaseLocalCheckSlot(
   lockRoot: string,
   slot: number,
   confirmedPid: number,
+  staleAfterMs = WEDGED_AFTER_MS,
 ): LocalSlotHolder {
-  const holder = inspectCrossProcessSlots(lockRoot, slot + 1).find((item) => item.slot === slot);
+  const holder = inspectCrossProcessSlots(lockRoot, slot + 1, staleAfterMs).find(
+    (item) => item.slot === slot,
+  );
   if (!holder?.pid || holder.pid !== confirmedPid)
     throw new Error("slot holder changed; inspect slots and retry");
   if (!holder.dead && !holder.wedged)
