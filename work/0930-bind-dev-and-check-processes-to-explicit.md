@@ -2,7 +2,7 @@
 id: "0930"
 title: Bind dev and check processes to explicit environments
 type: feature
-status: review
+status: active
 human_step_decision: agent
 human_step_decision_key: a1c4ab9e
 priority: p1
