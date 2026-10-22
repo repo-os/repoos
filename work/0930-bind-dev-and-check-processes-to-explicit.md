@@ -1,16 +1,15 @@
 ---
-last_close_out_gate_ms: 480359
-last_close_out_gate_at: "2026-10-22T18:10:51.993Z"
 id: "0930"
 title: Bind dev and check processes to explicit environments
 type: feature
-status: review
+status: done
 human_step_decision: agent
 human_step_decision_key: a1c4ab9e
 priority: p1
 area: [core, server]
 story: Secrets and project environments
 depends_on: ["0927", "0928"]
+merged_commit: "05eba1acfe095eb796e4a8449d89b50c1c69bb1d"
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bind-dev-and-check-processes-to-explicit
@@ -18,6 +17,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:43Z"
 updated_at: "2026-10-22T18:10:51Z"
+last_close_out_gate_ms: 480359
+last_close_out_gate_at: "2026-10-22T18:10:51.993Z"
 review_passes: 2
 review_rounds: 1
 ---

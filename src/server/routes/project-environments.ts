@@ -5,6 +5,8 @@ import {
   readProjectEnvironment,
   validateEnvironmentRegistry,
   writeProjectEnvironmentValue,
+  readProjectEnvironmentBindings,
+  writeProjectEnvironmentBinding,
 } from "../../core/project-environments.js";
 import { MODEL_PROVIDERS } from "../../core/providers/spend.js";
 import { requireAdmin } from "./auth.js";
@@ -79,12 +81,17 @@ export const listProjectEnvironmentSecrets: RouteHandler = (ctx, req, res, param
     const env = resolveEnv(ctx.config.root, params.param1 ?? "");
     if (!env) return send(res, 404, { error: "Unknown project environment" });
     const snapshot = readProjectEnvironment(ctx.config.root, env);
+    const bindings = readProjectEnvironmentBindings(ctx.config.root).bindings;
     const keys = [...new Set([...snapshot.keys, ...snapshot.expectedKeys])].sort().map((name) => ({
       name,
       status: snapshot.keys.includes(name) ? "set" : "missing",
       source: snapshot.source,
       visibility: "server-only",
       version: snapshot.sha256,
+      consumers: bindings
+        .filter((row) => row.environment === env.id && row.keys.includes(name))
+        .map((row) => row.consumer),
+      restartNeeded: false,
     }));
     return send(res, 200, { environment: env.id, version: snapshot.sha256, keys });
   } catch {
@@ -145,11 +152,54 @@ export const mutateProjectEnvironmentSecret: RouteHandler = async (ctx, req, res
       key,
       status: stillSet ? "set" : "missing",
       version,
+      consumers: readProjectEnvironmentBindings(ctx.config.root)
+        .bindings.filter((row) => row.environment === env.id && row.keys.includes(key))
+        .map((row) => row.consumer),
+      restartNeeded: true,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "write failed";
     if (message.includes("changed since"))
       return send(res, 409, { error: "Environment source changed; reload metadata" });
     return send(res, 400, { error: "Could not update project environment" });
+  }
+};
+
+/** Binding metadata only; environment values never leave the child builder. */
+export const getProjectEnvironmentBindings: RouteHandler = (ctx, req, res) => {
+  if (!requireAdmin(req, ctx.config, res)) return;
+  if (!originAllowed(req)) return send(res, 403, { error: "Request origin rejected" });
+  try {
+    return send(res, 200, readProjectEnvironmentBindings(ctx.config.root));
+  } catch {
+    return send(res, 400, { error: "Could not read environment bindings" });
+  }
+};
+
+export const putProjectEnvironmentBinding: RouteHandler = async (ctx, req, res) => {
+  if (!requireAdmin(req, ctx.config, res)) return;
+  if (!originAllowed(req)) return send(res, 403, { error: "Request origin rejected" });
+  const body = (await readBody(req)) as {
+    consumer?: unknown;
+    environment?: unknown;
+    keys?: unknown;
+  };
+  const consumer = typeof body.consumer === "string" ? body.consumer : "";
+  const environment =
+    body.environment === null ? null : typeof body.environment === "string" ? body.environment : "";
+  if (!Array.isArray(body.keys) || !body.keys.every((key) => typeof key === "string"))
+    return send(res, 400, { error: "Keys must be an array of key names" });
+  const keys = body.keys as string[];
+  if (!consumer || !environment)
+    return send(res, 400, { error: "Consumer and environment are required" });
+  try {
+    if (!registry(ctx.config.root).environments.some((row) => row.id === environment))
+      return send(res, 404, { error: "Unknown project environment" });
+    const result = writeProjectEnvironmentBinding(ctx.config.root, consumer, environment, keys);
+    return send(res, 200, { ok: true, ...result, restartNeeded: true });
+  } catch (error) {
+    return send(res, 400, {
+      error: error instanceof Error ? error.message : "Could not save binding",
+    });
   }
 };
