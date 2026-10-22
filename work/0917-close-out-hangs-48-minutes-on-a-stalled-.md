@@ -2,7 +2,7 @@
 id: "0917"
 title: Close-out hangs ~48 minutes on a stalled ssh bundle upload before falling back to local; thinkpad swap full again
 type: feature
-status: review
+status: active
 priority: p1
 area: server
 assigned_to: ai
@@ -12,8 +12,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T04:09:06Z"
 updated_at: "2026-10-22T12:12:21Z"
+review_rounds: 2
 review_passes: 2
-review_rounds: 1
 last_check_failure: "repoos check at 2026-10-22T11:36:31.117Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Close-out card shows bundle upload progress (target \"default\"): state \"closeOut:uploading\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Close-out card shows bundle upload progress (target \"default\"): highlight .tc-moving matched nothing on / (http://127.0.0.1:46587/?shotState=closeOut%3Auploading); [missing-target] Remote validation dr… (truncated)"
 ---
 ## Problem
@@ -118,3 +118,4 @@ Evidence: .repoos/integration-jobs/0909.json (phaseTimings) and the remoteFallba
 - 2026-10-22T12:10:00Z · status active→review
 - 2026-10-22T12:12:20Z · note: review pass 2: needs some work
 - 2026-10-22T12:12:21Z · message_delivered: 1 message(s)
+- 2026-10-22T12:12:21Z · status review→active
