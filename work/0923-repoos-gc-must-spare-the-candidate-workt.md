@@ -12,7 +12,7 @@ branch: feat/repoos-gc-must-spare-the-candidate-workt
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:06:09Z"
-updated_at: "2026-10-22T13:52:07Z"
+updated_at: "2026-10-22T13:52:37Z"
 last_close_out_gate_ms: 1490746
 last_close_out_gate_at: "2026-10-22T13:52:07.598Z"
 review_passes: 2
@@ -117,4 +117,4 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 - 2026-10-22T13:19:20Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-22T13:21:05Z · note: review pass 2: good to go
 - 2026-10-22T13:52:07Z · close-out gate completed in 1491s
-
+- 2026-10-22T13:52:37Z · status done→done, release:success
