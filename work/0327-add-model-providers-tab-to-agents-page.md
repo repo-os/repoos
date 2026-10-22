@@ -3,6 +3,8 @@ id: "0327"
 title: "Add \"Model providers\" tab to Agents page"
 type: feature
 status: done
+human_step_decision: agent
+human_step_decision_key: 1f7b1364
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 1f7b1364
 priority: p2
