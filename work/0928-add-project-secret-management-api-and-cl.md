@@ -15,7 +15,7 @@ branch: feat/add-project-secret-management-api-and-cl
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-22T08:06:03Z"
-updated_at: "2026-10-22T16:29:57Z"
+updated_at: "2026-10-22T16:39:27Z"
 dev_error_count: 4
 ---
 ## Problem
@@ -63,3 +63,4 @@ Build on the authentication/authorization, route, audit, and CLI patterns alread
 - 2026-10-22T16:25:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-22T16:25:58Z · message_delivered: 1 message(s)
 - 2026-10-22T16:29:57Z · body
+- 2026-10-22T16:39:27Z · note: shots: skipped — Docs site skipped: no docs shot declared
