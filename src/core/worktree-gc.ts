@@ -68,7 +68,8 @@ export interface SweepOptions {
   dryRun?: boolean;
   /**
    * Task ids whose `repoos/integrate/<id>` candidate must be spared — a job is
-   * still queued/running/recovering for them. The boot sweep passes this.
+   * still queued/running/recovering for them. When omitted, records are read
+   * from the durable integration-job store so callers cannot forget the guard.
    */
   activeJobIds?: Set<string>;
   /**
