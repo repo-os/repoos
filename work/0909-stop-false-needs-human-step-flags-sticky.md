@@ -95,3 +95,4 @@ Order of work: sticky override first (smallest, fixes the loop), then the model 
 - 2026-10-22T01:43:59Z · body
 - 2026-10-22T01:44:26Z · CTO nudge: held — handoff gate is running
 - 2026-10-22T02:01:28Z · handoff failed · remote validation failed: test failure: tests/model-routing-panel.test.ts > ModelRoutingPanel > labels the human-step check as mixed AI and human steps that should be split on mini — fix it in the feature branch and re-run the gate
+- 2026-10-22T02:01:28Z · handoff failed · handoff recovery attempted · finalization failed
