@@ -3,6 +3,8 @@ id: "0337"
 title: Add debugger agent chat to task debug tab
 type: feature
 status: done
+human_step_decision: agent
+human_step_decision_key: 9ea8b423
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: 9ea8b423
 priority: p2
