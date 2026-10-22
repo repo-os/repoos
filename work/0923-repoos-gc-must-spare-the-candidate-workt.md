@@ -11,7 +11,7 @@ branch: feat/repoos-gc-must-spare-the-candidate-workt
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T06:06:09Z"
-updated_at: "2026-10-22T13:16:46Z"
+updated_at: "2026-10-22T13:16:47Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-22T12:09:45.656Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Control dashboard worktree cleanup preview (target \"default\"): highlight .gc-preview matched nothing on / (http://127.0.0.1:43707/)"
 ---
@@ -107,3 +107,4 @@ Derive activeJobIds inside sweepStaleWorktrees when the caller omits it, so no c
 - 2026-10-22T13:13:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-22T13:16:46Z · status active→review
 - 2026-10-22T13:16:46Z · message_delivered: 1 message(s)
+- 2026-10-22T13:16:47Z · note: handoff requested (cli)
