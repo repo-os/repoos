@@ -12,7 +12,7 @@ branch: feat/human-assigned-tasks-need-a-real-board-p
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-21T19:22:55Z"
-updated_at: "2026-10-22T06:38:40Z"
+updated_at: "2026-10-22T06:40:29Z"
 last_close_out_gate_ms: 540701
 last_close_out_gate_at: "2026-10-22T06:38:40.925Z"
 review_passes: 3
@@ -101,4 +101,4 @@ Do not start without the human. Related rule in AGENTS.md: needs-human-step task
 - 2026-10-22T04:27:14Z · note: review pass 4: needs some work
 - 2026-10-22T04:27:14Z · needs_input
 - 2026-10-22T06:38:40Z · close-out gate completed in 541s
-
+- 2026-10-22T06:40:29Z · status done→done, release:success
