@@ -25,7 +25,19 @@ describe("check progress display", () => {
       testsPass: 1,
     };
     expect(checkProgressPercent(progress)).toBe(48);
-    expect(checkProgressLabel(progress)).toBe("step 5 of 12 · pass 1 · tests 140/289 files");
+    expect(checkProgressLabel(progress)).toBe("step 5 of 12 · tests 140/289 files");
+  });
+
+  it("omits file counts when the test total is zero", () => {
+    const progress = {
+      stepsDone: 5,
+      stepsTotal: 12,
+      stepName: "tests",
+      testsDone: 0,
+      testsTotal: 0,
+    };
+    expect(checkProgressLabel(progress)).toBe("step 5 of 12");
+    expect(checkProgressPercent(progress)).toBe(42);
   });
 
   it("does not invent a percentage when stepsDone is missing", () => {
