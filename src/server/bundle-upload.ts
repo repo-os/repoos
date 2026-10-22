@@ -5,9 +5,13 @@
  * wall-clock budgets, ServerAlive on the SSH session, and a process-wide
  * serialization lock so parallel close-outs do not saturate the uplink.
  */
-import { createReadStream, statSync } from "node:fs";
-import { spawn, type ChildProcess } from "node:child_process";
+import { createReadStream, readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process";
 import { writeChildStdin } from "../core/child-stdin.js";
+import { parseDocument } from "../core/frontmatter.js";
+import { pressureReason } from "../core/pressure-guard.js";
+import type { RepoOSConfig } from "../core/types.js";
 
 /** Minimal SSH target for bundle upload (matches {@link RemoteHost}). */
 export interface BundleUploadHost {
@@ -109,6 +113,8 @@ export interface UploadFileOverSshOptions {
   registerAbort?: (abort: () => void) => void;
   /** Abort when ETA exceeds remaining budget at measured rate (#0917). */
   abortWhenEtaExceedsBudget?: boolean;
+  /** Vitest-only: replace `spawn` for the ssh child. */
+  _spawnForTest?: (command: string, args: string[], options: SpawnOptions) => ChildProcess;
 }
 
 /**
@@ -211,7 +217,8 @@ async function doUploadFileOverSsh(
 
   return new Promise<BundleUploadResult>((resolve) => {
     resolveOnce = resolve;
-    child = spawn(
+    const spawnFn = opts._spawnForTest ?? spawn;
+    child = spawnFn(
       "ssh",
       [...sshTransferArgs(host), `${host.user}@${host.ip}`, `cat > ${remotePath}`],
       { stdio: ["pipe", "pipe", "pipe"] },
@@ -350,6 +357,45 @@ function formatSecsShort(secs: number): string {
   const m = Math.floor(secs / 60);
   const s = secs % 60;
   return s ? `${m}m ${s}s` : `${m}m`;
+}
+
+/** Conservative upload size when choosing local vs remote (#0917). */
+export const INCREMENTAL_BUNDLE_BYTES_ESTIMATE = 2 * 1024 * 1024;
+export const FULL_BUNDLE_BYTES_ESTIMATE = 100 * 1024 * 1024;
+
+export function estimateCandidateUploadBytes(incrementalUpload: boolean): number {
+  return incrementalUpload ? INCREMENTAL_BUNDLE_BYTES_ESTIMATE : FULL_BUNDLE_BYTES_ESTIMATE;
+}
+
+/** True when the laptop is healthy enough to run the gate locally (#0917 / #0918). */
+export function localPressureOkForLocalGate(config: RepoOSConfig): boolean {
+  return pressureReason(config) === null;
+}
+
+/** `last_close_out_gate_ms` from the task file, when recorded (#0917). */
+export function readLastCloseOutGateMs(
+  root: string,
+  workDir: string | undefined,
+  taskId: string,
+): number | null {
+  const dir = join(root, workDir ?? "work");
+  let entries: string[];
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return null;
+  }
+  const name = entries.find((f) => f.startsWith(`${taskId}-`) && f.endsWith(".md"));
+  if (!name) return null;
+  try {
+    const { data } = parseDocument(readFileSync(join(dir, name), "utf8"));
+    const raw = data.last_close_out_gate_ms;
+    if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+    if (typeof raw === "string" && /^\d+$/.test(raw.trim())) return parseInt(raw.trim(), 10);
+  } catch {
+    return null;
+  }
+  return null;
 }
 
 /**
