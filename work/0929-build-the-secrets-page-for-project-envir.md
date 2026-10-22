@@ -2,7 +2,7 @@
 id: "0929"
 title: Build the Secrets page for project environments
 type: feature
-status: ready
+status: review
 priority: p1
 area: [web, ui]
 story: Secrets and project environments
@@ -13,7 +13,7 @@ branch: feat/build-the-secrets-page-for-project-envir
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:06:27Z"
-updated_at: "2026-10-22T20:37:08Z"
+updated_at: "2026-10-22T20:53:45Z"
 ---
 ## Problem
 Users have no RepoOS screen to see which project environment is selected or which expected keys are set, missing, or inherited. The metadata and write operations from #0928 need a safe, usable interface that never reveals saved values.
@@ -44,3 +44,4 @@ Implement only the user interface and its route/state/tests; consume the metadat
 - 2026-10-22T20:37:08Z · status ready→review
 - 2026-10-22T20:37:08Z · note: handoff requested (cli)
 - 2026-10-22T20:37:08Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
+- 2026-10-22T20:53:45Z · status ready→review
