@@ -417,20 +417,38 @@ export async function cmdDone(args: string[]): Promise<number> {
     return 1;
   }
   let commitDirty = false;
+  let cancel = false;
   const idParts: string[] = [];
   for (const a of rest) {
     if (a === "--commit-dirty") commitDirty = true;
+    else if (a === "--cancel") cancel = true;
     else idParts.push(a);
   }
   const id = idParts[0];
   if (!id) {
-    printErr("Usage: repoos done <id> [--commit-dirty] [--wait] [--json] [--port N]");
+    printErr("Usage: repoos done <id> [--cancel] [--commit-dirty] [--wait] [--json] [--port N]");
     return 1;
   }
   const wait = opts.wait || !opts.json;
   const api = new RepoOsApi({ port: opts.port });
   try {
     await ensureServer(api);
+    if (cancel) {
+      const result = await api.request("POST", `/api/tasks/${id}/done/cancel`, {});
+      const message =
+        result.body.error ??
+        (result.status === 409
+          ? "close-out is still shutting down; check again shortly"
+          : result.status >= 200 && result.status < 300
+            ? `close-out cancellation returned HTTP ${result.status}`
+            : `HTTP ${result.status}`);
+      if (opts.json) printJson({ status: result.status, ...result.body });
+      else
+        console.log(
+          `${result.status >= 200 && result.status < 300 ? c.green("  ✓ ") : c.yellow("  · ")}${message} (HTTP ${result.status})`,
+        );
+      return (result.status >= 200 && result.status < 300) || result.status === 409 ? 0 : 1;
+    }
     const started = await api.request("POST", `/api/tasks/${id}/done`, { commitDirty });
     if (started.status === 409 && started.body.needsCommit) {
       throw new RepoOsApiError(
@@ -517,6 +535,51 @@ export async function cmdDone(args: string[]): Promise<number> {
     if (opts.json) printJson(jobResult);
     else console.log(c.green("  ✓ ") + c.dim(`#${id} moved to done`));
     return 0;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
+export async function cmdApi(args: string[]): Promise<number> {
+  const method = args.shift()?.toUpperCase();
+  const path = args.shift();
+  let rawBody: string | undefined;
+  let port: number | undefined;
+  while (args.length) {
+    const flag = args.shift();
+    if (flag === "--json") rawBody = args.shift();
+    else if (flag === "--port") {
+      const value = Number(args.shift());
+      if (!Number.isInteger(value) || value <= 0) {
+        printErr("--port requires a positive integer");
+        return 1;
+      }
+      port = value;
+    } else {
+      printErr(`Unknown option: ${flag}`);
+      return 1;
+    }
+  }
+  if (!method || !path || !/^\/(?:api)(?:\/|$)/.test(path)) {
+    printErr("Usage: repoos api <METHOD> /api/<path> [--json body] [--port N]");
+    return 1;
+  }
+  let body: unknown;
+  if (rawBody !== undefined) {
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      printErr("--json must be valid JSON");
+      return 1;
+    }
+  }
+  try {
+    const api = new RepoOsApi({ port });
+    await ensureServer(api);
+    const result = await api.request(method, path, body);
+    printJson({ status: result.status, ...result.body });
+    return result.status >= 200 && result.status < 300 ? 0 : 1;
   } catch (e) {
     printErr((e as RepoOsApiError).message);
     return 1;

@@ -145,9 +145,16 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "done",
-        usage: "done <id> [--commit-dirty] [--wait] [--json] [--port N]",
-        desc: "Move to done through the close-out pipeline (POST /api/tasks/:id/done)",
-        flags: "--commit-dirty · --wait · --json · --port",
+        usage: "done <id> [--cancel] [--commit-dirty] [--wait] [--json] [--port N]",
+        desc: "Run or cancel the close-out pipeline (POST /api/tasks/:id/done)",
+        flags: "--cancel · --commit-dirty · --wait · --json · --port",
+      },
+      { name: "abort", usage: "abort <id> [--json] [--port N]", desc: "Alias for done --cancel" },
+      {
+        name: "api",
+        usage: "api <METHOD> /api/<path> [--json body] [--port N]",
+        desc: "Authenticated API escape hatch for routes without a dedicated command",
+        flags: "--json body · --port",
       },
       {
         name: "landable",

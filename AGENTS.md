@@ -223,6 +223,10 @@ who owns approval and merging:
   `override`, `preview`, `config`, `runners`, `agents`, and `stats` wrap the
   HTTP API with one-shot auth (loopback token or stored session; dev-login
   re-auth on 401). See `user-docs/cli.md` (Control plane).
+- Keep CLI/API parity: every mutating registered API route must have a named
+  CLI command or a specific, reasoned exemption in `src/cli/api-route-parity.ts`.
+  Use `repoos api <METHOD> /api/<path>` as the authenticated escape hatch until
+  a dedicated command exists; do not use ad-hoc `curl`.
 - Request review through the UI, `repoos review <id>`, or `repoos mv <id> review`.
   `repoos mv review` writes task metadata that the server intercepts
   asynchronously; prefer `repoos review` when you need to wait for handoff

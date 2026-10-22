@@ -26,6 +26,7 @@ const re =
 /** Routes implemented by the server-backed control CLI (#0723). */
 const CONTROL_API_MATCHERS: Matcher[] = [
   re("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/.source),
+  re("POST", /^\/api\/tasks\/([^/]+)\/done\/cancel$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)\/landable$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview$/.source),
@@ -115,7 +116,6 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   (r) => r.pattern.startsWith("/api/integration"),
   exact("GET", "/api/close-out/outcomes"),
   re("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/.source),
-  re("POST", /^\/api\/tasks\/([^/]+)\/done\/cancel$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/worktree-handoff\/discard$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)\/review$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/.source),
