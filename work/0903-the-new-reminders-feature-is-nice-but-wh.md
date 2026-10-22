@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 128606
-last_close_out_gate_at: "2026-10-22T01:47:11.061Z"
 id: "0903"
 title: Show due reminders as header cards beside alerts
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: c2918e70fd7b843f3cf0fe132f365ec2cadae86b
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-due-reminders-as-header-cards-besid
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-21T15:04:49Z"
 updated_at: "2026-10-22T01:47:11Z"
+last_close_out_gate_ms: 128606
+last_close_out_gate_at: "2026-10-22T01:47:11.061Z"
 review_passes: 1
 ---
 ## Problem
