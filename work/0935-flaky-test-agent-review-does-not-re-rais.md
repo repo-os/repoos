@@ -1,0 +1,30 @@
+---
+id: "0935"
+title: "Flaky test: agent-review 'does not re-raise an exhausted-rounds flag dismissed during the review'"
+type: bug
+status: inbox
+priority: p2
+area: core
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-22T14:02:13Z"
+updated_at: "2026-10-22T14:02:13Z"
+---
+## Problem
+tests/agent-review.test.ts > 'agent review before human sign-off (#0101) > does not re-raise an exhausted-rounds flag dismissed during the review' failed on a remote runner twice on 2026-10-22: #0933 pre-review handoff (10:47Z) and #0923 close-out attempt 2 on thinkpad (13:27Z, a 16-minute run). Both times a retry passed, with no change to the code under test. By AGENTS.md triage this should reproduce in isolation if it is a real bug; the pattern (only on remote runners, only under load) points to a timing race in the test or in the review/flag code (dismissal landing before or after the exhausted-rounds raise).
+
+## Desired UX
+The test is deterministic: remove the race (gate/await the dismissal ordering) instead of adding a retry or longer timeout. A failing close-out must not be caused by this test.
+
+## Acceptance criteria
+- Reproduce under CPU contention (run the file repeatedly with parallel load) before and after the fix.
+- The ordering the test asserts is enforced by the code (or an explicit test hook), not by sleeps.
+- Passes 20 consecutive runs under load.
+
+## Notes for AI
+See AGENTS.md 'Is a repoos check failure a flake or a real bug?' and the #0330 race-removal approach.
+
+## Activity
+
+- 2026-10-22T14:02:13Z · created · njachowski@gmail.com
