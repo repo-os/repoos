@@ -135,6 +135,18 @@ describe("Dev nav gating (#0748)", () => {
     );
   });
 
+  it("shows Secrets only for configured project environments and keeps it after Dev", () => {
+    expect(navFor(false, false).map((n) => n.id)).not.toContain("secrets");
+    expect(navFromConfig({}).map((n) => n.id)).not.toContain("secrets");
+    const justSecrets = navFor(false, false, false, false, true).map((n) => n.id);
+    expect(justSecrets.indexOf("secrets")).toBe(justSecrets.indexOf("agents") - 1);
+    const devAndSecrets = navFor(false, false, false, true, true).map((n) => n.id);
+    expect(
+      devAndSecrets.slice(devAndSecrets.indexOf("dev"), devAndSecrets.indexOf("agents") + 1),
+    ).toEqual(["dev", "secrets", "agents"]);
+    expect(navFromConfig({}, true).map((n) => n.id)).toContain("secrets");
+  });
+
   it("places Dev just before Agents, regardless of the other opt-ins", () => {
     const ids = navFromConfig({
       release: { enabled: true },

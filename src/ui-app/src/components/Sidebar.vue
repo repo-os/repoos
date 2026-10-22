@@ -8,9 +8,23 @@ import { relTime } from "../lib/time";
 import { CANARY_PROMPT } from "../../../core/canary.js";
 import CanaryConfirmDialog from "./CanaryConfirmDialog.vue";
 import SidebarGitState from "./SidebarGitState.vue";
+import { api } from "../api";
 
 const repo = useRepoStore();
 const config = useConfigStore();
+const secretsEnabled = ref(false);
+async function refreshSecretsAvailability(): Promise<void> {
+  try {
+    const response = await api<{ enabled: boolean }>("/api/project-environments");
+    secretsEnabled.value = response.enabled === true;
+  } catch {
+    secretsEnabled.value = false;
+  }
+}
+const nav = computed(() => navFromConfig(config.data, secretsEnabled.value));
+function secretsChanged(): void {
+  void refreshSecretsAvailability();
+}
 const { connected, eventCount, total, health } = storeToRefs(repo);
 
 const canaryDigit = computed(() => health.value?.canaryCounter ?? 0);
@@ -41,13 +55,15 @@ onMounted(() => {
   tick = setInterval(() => {
     now.value = Date.now();
   }, 1000);
+  window.addEventListener("repoos:project-environments-changed", secretsChanged);
+  void refreshSecretsAvailability();
 });
 onBeforeUnmount(() => {
   if (tick) clearInterval(tick);
+  window.removeEventListener("repoos:project-environments-changed", secretsChanged);
 });
 
 const version = computed(() => (health.value?.version ? `v${health.value.version}` : ""));
-const nav = computed(() => navFromConfig(config.data));
 // Prefer the running server's OWN build timestamp (`serverBuildAt`), falling
 // back to `buildAt` for servers too old to report it — the same build the
 // hash/version beside it names, so the widget never mixes two different builds

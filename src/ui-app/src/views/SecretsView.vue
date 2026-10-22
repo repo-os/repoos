@@ -139,6 +139,7 @@ async function createEnvironment(): Promise<void> {
     selected.value = result.environment.id;
     newName.value = "";
     createOpen.value = false;
+    window.dispatchEvent(new CustomEvent("repoos:project-environments-changed"));
     await loadSnapshot();
   } catch (e) {
     error.value = safeError(e);
