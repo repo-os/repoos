@@ -14,6 +14,16 @@ export const DEFAULT_PRESSURE_MIN_AVAILABLE_MEM_RATIO = 0.08;
  */
 export const DEFAULT_PRESSURE_MAX_SWAP_USED_RATIO = 0.5;
 export const DEFAULT_PRESSURE_MAX_COMPRESSOR_RATIO = 0.35;
+/** Rolling window for paging-activity rates (#0918). */
+export const DEFAULT_PRESSURE_ACTIVITY_WINDOW_SEC = 30;
+/** Block when sustained swap in+out exceeds this (bytes/s). */
+export const DEFAULT_PRESSURE_MAX_SWAP_IO_BYTES_PER_SEC = 1 * 1024 * 1024;
+/** Block when sustained pageouts exceed this (bytes/s). */
+export const DEFAULT_PRESSURE_MAX_PAGEOUT_BYTES_PER_SEC = 256 * 1024;
+/** Block when `memory_pressure` reports free memory below this percent. */
+export const DEFAULT_PRESSURE_MIN_MEMORY_FREE_PERCENT = 10;
+/** Block when Linux PSI memory `avg10` exceeds this (0–100). */
+export const DEFAULT_PRESSURE_MAX_PSI_MEMORY_AVG10 = 25;
 
 export function localChecksMaxConcurrent(config: RepoOSConfig): number {
   return positiveLimit(config.localChecks?.maxConcurrent, DEFAULT_LOCAL_CHECKS_MAX);
@@ -89,4 +99,36 @@ export function pressureMaxCompressorRatio(config: RepoOSConfig): number {
   const raw = config.pressureGuard?.maxCompressorRatio;
   if (typeof raw === "number" && Number.isFinite(raw) && raw > 0 && raw <= 1) return raw;
   return DEFAULT_PRESSURE_MAX_COMPRESSOR_RATIO;
+}
+
+export function pressureActivityWindowSec(config: RepoOSConfig): number {
+  const raw = config.pressureGuard?.activityWindowSec;
+  if (typeof raw === "number" && Number.isFinite(raw) && raw >= 5 && raw <= 300) {
+    return Math.floor(raw);
+  }
+  return DEFAULT_PRESSURE_ACTIVITY_WINDOW_SEC;
+}
+
+export function pressureMaxSwapIoBytesPerSec(config: RepoOSConfig): number {
+  const raw = config.pressureGuard?.maxSwapIoBytesPerSec;
+  if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) return raw;
+  return DEFAULT_PRESSURE_MAX_SWAP_IO_BYTES_PER_SEC;
+}
+
+export function pressureMaxPageoutBytesPerSec(config: RepoOSConfig): number {
+  const raw = config.pressureGuard?.maxPageoutBytesPerSec;
+  if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) return raw;
+  return DEFAULT_PRESSURE_MAX_PAGEOUT_BYTES_PER_SEC;
+}
+
+export function pressureMinMemoryFreePercent(config: RepoOSConfig): number {
+  const raw = config.pressureGuard?.minMemoryFreePercent;
+  if (typeof raw === "number" && Number.isFinite(raw) && raw >= 0 && raw <= 100) return raw;
+  return DEFAULT_PRESSURE_MIN_MEMORY_FREE_PERCENT;
+}
+
+export function pressureMaxPsiMemoryAvg10(config: RepoOSConfig): number {
+  const raw = config.pressureGuard?.maxPsiMemoryAvg10;
+  if (typeof raw === "number" && Number.isFinite(raw) && raw > 0 && raw <= 100) return raw;
+  return DEFAULT_PRESSURE_MAX_PSI_MEMORY_AVG10;
 }

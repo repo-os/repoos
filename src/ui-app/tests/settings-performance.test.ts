@@ -33,6 +33,11 @@ describe("Settings — performance controls (#0836)", () => {
     "pressureGuard.minAvailableMemRatio",
     "pressureGuard.maxSwapUsedRatio",
     "pressureGuard.maxCompressorRatio",
+    "pressureGuard.activityWindowSec",
+    "pressureGuard.maxSwapIoBytesPerSec",
+    "pressureGuard.maxPageoutBytesPerSec",
+    "pressureGuard.minMemoryFreePercent",
+    "pressureGuard.maxPsiMemoryAvg10",
   ];
 
   it("exposes schema rows for every new performance key", () => {

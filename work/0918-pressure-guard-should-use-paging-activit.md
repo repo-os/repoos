@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 187168
-last_close_out_gate_at: "2026-10-22T10:06:11.417Z"
 id: "0918"
 title: "Pressure guard should use paging activity, not occupancy: macOS compressor share and swap used/total hold work on an idle laptop"
 type: feature
-status: review
+status: done
 priority: p1
 area: [server, core]
+merged_commit: b8fa5f9e3b1bd20d24daaaf6f3ac9466ebb46ff9
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/pressure-guard-should-use-paging-activit
@@ -16,6 +15,8 @@ review_cli_override: opencode
 review_model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-22T04:18:52Z"
 updated_at: "2026-10-22T10:06:11Z"
+last_close_out_gate_ms: 187168
+last_close_out_gate_at: "2026-10-22T10:06:11.417Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-22T09:02:53.015Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
