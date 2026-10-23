@@ -12,7 +12,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-22T23:49:54Z"
+updated_at: "2026-10-23T16:49:18Z"
 last_close_out_gate_ms: 108890
 last_close_out_gate_at: "2026-10-20T11:57:00.685Z"
 review_passes: 9
@@ -203,3 +203,4 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-22T11:36:30Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-22T14:03:00Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-22T23:49:54Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-23T16:49:18Z · message_overdue: still queued after 60m without being delivered
