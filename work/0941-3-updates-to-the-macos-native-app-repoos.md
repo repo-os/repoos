@@ -2,14 +2,14 @@
 id: "0941"
 title: Polish macOS native app tab bar
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: macos
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-23T17:20:56Z"
-updated_at: "2026-10-23T17:21:36Z"
+updated_at: "2026-10-23T18:11:20Z"
 ---
 ## Problem
 
@@ -55,3 +55,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T17:21:06Z · screenshots
 - 2026-10-23T17:21:07Z · screenshots
 - 2026-10-23T17:21:36Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
+- 2026-10-23T18:11:20Z · status inbox→ready
