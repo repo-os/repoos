@@ -329,9 +329,10 @@ describe("extractDriverRules", () => {
 
   it("surfaces the pressureGuard start-gate rule from Rules (#0940)", () => {
     const rules = extractDriverRules(
-      ["## Rules", "- **Resource pressure: use RepoOS's `pressureGuard`** — never self-chosen swap floors."].join(
-        "\n",
-      ),
+      [
+        "## Rules",
+        "- **Resource pressure: use RepoOS's `pressureGuard`** — never self-chosen swap floors.",
+      ].join("\n"),
     );
     expect(rules.some((r) => r.text.includes("pressureGuard"))).toBe(true);
   });
