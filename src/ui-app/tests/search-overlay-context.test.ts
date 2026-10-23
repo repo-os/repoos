@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
+import { nextTick } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import SearchOverlay from "../src/components/SearchOverlay.vue";
 import { useDocsStore } from "../src/stores/docs";
@@ -81,10 +82,6 @@ describe("SearchOverlay context scope (#0557)", () => {
     await new Promise((r) => setTimeout(r, 250));
 
     const dialog = document.body.querySelector('[role="dialog"]')!;
-    const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
-    dialog.dispatchEvent(escape);
-    expect(escape.defaultPrevented).toBe(true);
-    expect(wrapper.emitted("update:open")?.at(-1)).toEqual([false]);
 
     const down = new KeyboardEvent("keydown", {
       key: "ArrowDown",
@@ -93,15 +90,23 @@ describe("SearchOverlay context scope (#0557)", () => {
     });
     dialog.dispatchEvent(down);
     expect(down.defaultPrevented).toBe(true);
+    await nextTick();
     expect(
       document.body.querySelectorAll('[role="option"]')[1]?.getAttribute("aria-selected"),
     ).toBe("true");
 
     const enter = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
     dialog.dispatchEvent(enter);
+    await nextTick();
     await flushPromises();
     expect(enter.defaultPrevented).toBe(true);
     expect(loadSkill).toHaveBeenCalledWith("skills/beta/SKILL.md");
+
+    // Escape closes the overlay, so exercise it after the navigation assertions.
+    const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    dialog.dispatchEvent(escape);
+    expect(escape.defaultPrevented).toBe(true);
+    expect(wrapper.emitted("update:open")?.at(-1)).toEqual([false]);
 
     wrapper.unmount();
   });
