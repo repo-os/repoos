@@ -26,8 +26,10 @@ updated_at: "2026-10-23T17:21:06Z"
 ## Screenshots
 
 ![Screenshot-2026-10-24-at-01.13.56](/api/tasks/0941/attachments/att_25f6ff06-7ca3-4f89-8b1c-73c40b855fa3.png)
+![Screenshot-2026-10-24-at-01.14.27](/api/tasks/0941/attachments/att_3c40989e-97d0-467c-8de4-135dd43080fb.png)
 
 ## Activity
 
 - 2026-10-23T17:20:56Z · created · hello@repoos.org
+- 2026-10-23T17:21:06Z · screenshots
 - 2026-10-23T17:21:06Z · screenshots
