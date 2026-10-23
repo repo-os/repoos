@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-keyboard-navigation-and-hints-in-sea
 created_at: "2026-10-23T16:10:17Z"
-updated_at: "2026-10-23T16:49:09Z"
+updated_at: "2026-10-23T16:50:47Z"
 ---
 ## Problem
 
@@ -43,6 +43,26 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 ![Screenshot-2026-10-23-at-23.59.54](/api/tasks/0939/attachments/att_bf7e274a-9e23-4f93-b16f-c1e787e2426b.png)
 ![Screenshot-2026-10-24-at-00.01.41](/api/tasks/0939/attachments/att_7abd01ec-d5a3-44fc-ba8e-316a438af090.png)
 
+## Shots
+```json
+[
+{
+  "label": "Global search keyboard controls",
+  "target": "default",
+  "route": "/",
+  "highlight": ".search-overlay-keyboard-hint",
+  "steps": [
+    {
+      "click": ".search-input"
+    },
+    {
+      "waitMs": 200
+    }
+  ]
+}
+]
+```
+
 ## Activity
 
 - 2026-10-23T16:10:17Z · created · hello@repoos.org
@@ -51,3 +71,4 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 - 2026-10-23T16:10:48Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-10-23T16:47:28Z · status inbox→ready
 - 2026-10-23T16:49:09Z · status ready→active, branch
+- 2026-10-23T16:50:47Z · body
