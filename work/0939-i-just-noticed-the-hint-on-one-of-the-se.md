@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 273386
-last_close_out_gate_at: "2026-10-23T18:37:25.848Z"
 id: "0939"
 title: Fix keyboard navigation and hints in search bars
 type: bug
-status: review
+status: done
 priority: p2
 area: ui
+merged_commit: a84e3490f3312498ca640eb809edf5fd7e5ddc8e
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-keyboard-navigation-and-hints-in-sea
 created_at: "2026-10-23T16:10:17Z"
 updated_at: "2026-10-23T18:37:25Z"
+last_close_out_gate_ms: 273386
+last_close_out_gate_at: "2026-10-23T18:37:25.848Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-23T18:23:38.577Z: repoos check failed: remote validation unavailable: host thinkpad skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 review_rounds: 1
