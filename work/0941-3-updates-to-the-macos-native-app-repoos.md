@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-macos-native-app-tab-bar
 created_at: "2026-10-23T17:20:56Z"
-updated_at: "2026-10-23T18:11:23Z"
+updated_at: "2026-10-23T18:18:14Z"
 ---
 ## Problem
 
@@ -57,3 +57,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T17:21:36Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
 - 2026-10-23T18:11:20Z · status inbox→ready
 - 2026-10-23T18:11:23Z · status ready→active, branch
+- 2026-10-23T18:18:14Z · message_queued at 2026-10-23T18:18:14.308Z
