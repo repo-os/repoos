@@ -86,10 +86,16 @@ describe("SearchOverlay context scope (#0557)", () => {
     expect(escape.defaultPrevented).toBe(true);
     expect(wrapper.emitted("update:open")?.at(-1)).toEqual([false]);
 
-    const down = new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true });
+    const down = new KeyboardEvent("keydown", {
+      key: "ArrowDown",
+      bubbles: true,
+      cancelable: true,
+    });
     dialog.dispatchEvent(down);
     expect(down.defaultPrevented).toBe(true);
-    expect(document.body.querySelectorAll('[role="option"]')[1]?.getAttribute("aria-selected")).toBe("true");
+    expect(
+      document.body.querySelectorAll('[role="option"]')[1]?.getAttribute("aria-selected"),
+    ).toBe("true");
 
     const enter = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
     dialog.dispatchEvent(enter);
