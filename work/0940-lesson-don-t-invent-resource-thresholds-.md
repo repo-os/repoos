@@ -11,9 +11,9 @@ branch: ""
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: opencode
-review_model_override: default
+review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T16:56:10Z"
-updated_at: "2026-10-23T16:58:21Z"
+updated_at: "2026-10-23T16:58:45Z"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ If the RepoOS pressure guard blocks a start, report the reason to the human. Don
 - 2026-10-23T16:58:07Z · model_override
 - 2026-10-23T16:58:16Z · review_cli_override, review_model_override
 - 2026-10-23T16:58:21Z · review_cli_override
+- 2026-10-23T16:58:45Z · review_model_override
