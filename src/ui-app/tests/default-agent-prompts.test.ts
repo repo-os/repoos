@@ -116,7 +116,7 @@ describe("built-in role prompts (#0872)", () => {
     expect(agents).toMatch(/vm\.swapusage/);
     expect(agents).toMatch(/memory_pressure -Q/);
     expect(agents).toMatch(/Never.*block or defer starts with self-chosen numeric/i);
-    expect(agents).toMatch(/do not invent a parallel gate/i);
+    expect(agents).toMatch(/do not invent another gate/i);
   });
 
   it("keeps project-specific rules out of every built-in default", () => {
