@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-macos-native-app-tab-bar
 created_at: "2026-10-23T17:20:56Z"
-updated_at: "2026-10-23T19:08:14Z"
+updated_at: "2026-10-23T19:15:41Z"
 review_passes: 1
 ---
 ## Problem
@@ -79,3 +79,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T19:05:51Z · message_delivered: 1 message(s)
 - 2026-10-23T19:05:51Z · note: handoff requested (cli)
 - 2026-10-23T19:08:14Z · CTO nudge: held — handoff gate is running
+- 2026-10-23T19:15:41Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (appeared: macos/RepoOSHub/HubServerTabStrip.swift, macos/RepoOSHub/RepoOSHubApp.swift, macos/RepoOSHubTests/HubAppAppearanceTests.swift, macos/RepoOSHubTests/HubSnapshotTests.swift) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
