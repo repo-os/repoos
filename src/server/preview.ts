@@ -422,9 +422,10 @@ function previewCandidates(
   const taskAreas = taskAreasOf(task);
   const namedTargets = preview?.targets ?? [];
   const serviceDefs = new Map((preview?.services ?? []).map((s) => [s.name, s] as const));
+  const pathMatchedCandidates: PreviewCandidate[] = [];
   const areaMatches: PreviewCandidate[] = [];
   const otherTargets: PreviewCandidate[] = [];
-  const pathMatches = new Set(targetsForPaths(preview, changedPaths));
+  const pathMatchNames = new Set(targetsForPaths(preview, changedPaths));
 
   /** Resolve a target's `services` names against the declared service blocks. */
   const resolveServices = (
@@ -489,8 +490,8 @@ function previewCandidates(
           : {}),
       },
     };
-    if (pathMatches.has(t.name)) {
-      areaMatches.push(candidate);
+    if (pathMatchNames.has(t.name)) {
+      pathMatchedCandidates.push(candidate);
       candidate.implicit = true;
     } else if (taskAreas.some((a) => t.areas.some((b) => sameArea(a, b)))) {
       areaMatches.push(candidate);
@@ -504,7 +505,7 @@ function previewCandidates(
   // nothing (most tasks: "web", "server", …) would preview e.g. the landing
   // page instead of the app. Other targets stay listed for explicit recovery
   // from a wrong area (#0409), but are never picked implicitly.
-  const candidates: PreviewCandidate[] = [...areaMatches];
+  const candidates: PreviewCandidate[] = [...pathMatchedCandidates, ...areaMatches];
   const defaultCommand = preview?.command?.trim();
   if (defaultCommand) {
     candidates.push({
