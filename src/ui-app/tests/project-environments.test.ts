@@ -157,7 +157,37 @@ describe("explicit project environment files", () => {
     );
   });
 
-  it.each(["REPOOS_TOKEN", "path", "HOME", "NODE_OPTIONS", "PORT", "HOST"])(
+  it("fails closed for missing or stale bindings and clears ambient project values", () => {
+    const root = project();
+    mkdirSync(join(root, ".repoos"));
+    writeFileSync(
+      join(root, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [
+          {
+            id: "dev",
+            sources: [{ id: "local", path: ".env.dev", examplePath: ".env.example" }],
+          },
+          { id: "production", sources: [{ id: "local", path: ".env.production" }] },
+        ],
+      }),
+    );
+    writeFileSync(join(root, ".env.dev"), "DATABASE_URL=dev-db\n");
+    writeFileSync(join(root, ".env.production"), "DATABASE_URL=production-db\n");
+    const ambient = { ...process.env, DATABASE_URL: "production-inherited" };
+    expect(buildProjectConsumerEnv(root, "check:default", ambient).DATABASE_URL).toBeUndefined();
+    writeFileSync(
+      join(root, ".repoos/environment-bindings.json"),
+      JSON.stringify({
+        bindings: [{ consumer: "dev:web", environment: "removed", keys: ["DATABASE_URL"] }],
+      }),
+    );
+    expect(() => buildProjectConsumerEnv(root, "dev:web", ambient)).toThrow(
+      'Unknown environment "removed"',
+    );
+  });
+
+  it.each(["REPOOS_TOKEN", "PATH", "HOME", "NODE_OPTIONS", "PORT", "HOST"])(
     "rejects reserved grant %s when reading and writing bindings",
     (key) => {
       const root = project();
@@ -283,6 +313,22 @@ describe("explicit project environment files", () => {
       readProjectEnvironment(root, { id: "dev", sources: [{ id: "link", path: "safe/link.env" }] }),
     ).toThrow("symlink");
   });
+
+  it.each(["REPOOS_TOKEN", "PATH", "HOME", "NODE_OPTIONS", "PORT", "HOST"])(
+    "refuses direct writes to reserved name %s",
+    (key) => {
+      const root = project();
+      const path = join(root, ".env.dev");
+      writeFileSync(path, "\n");
+      const hash = readProjectEnvironment(root, {
+        id: "dev",
+        sources: [{ id: "local", path: ".env.dev" }],
+      }).sha256;
+      expect(() => writeProjectEnvironmentValue(root, ".env.dev", key, "fake", hash)).toThrow(
+        "Invalid or machine-owned environment key",
+      );
+    },
+  );
 });
 
 describe("legacy dotenv compatibility", () => {

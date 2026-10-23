@@ -311,10 +311,17 @@ export function writeProjectEnvironmentBinding(
   keys: string[] = [],
 ): ProjectEnvironmentBindings {
   consumer = normalizeProjectEnvironmentConsumer(consumer);
-  if (environment !== null && !identifier.test(environment))
-    throw new Error("Invalid environment name");
   if (keys.some((key) => !isAllowedProjectEnvironmentGrantKey(key)))
     throw new Error("Invalid or machine-owned environment key grant");
+  if (environment !== null && !identifier.test(environment))
+    throw new Error("Invalid environment name");
+  if (environment !== null) {
+    const registryFile = join(resolve(root), ".repoos/environments.json");
+    if (!existsSync(registryFile)) throw new Error(`Unknown environment "${environment}"`);
+    const registry = validateEnvironmentRegistry(JSON.parse(readFileSync(registryFile, "utf8")));
+    if (!registry.environments.some((row) => row.id === environment))
+      throw new Error(`Unknown environment "${environment}"`);
+  }
   const path = join(resolve(root), bindingFile);
   const current = readProjectEnvironmentBindings(root);
   const bindings = current.bindings.filter((row) => row.consumer !== consumer);
@@ -338,14 +345,23 @@ export function buildProjectConsumerEnv(
   const binding = readProjectEnvironmentBindings(root).bindings.find(
     (row) => row.consumer === consumer,
   );
-  if (!binding) return { ...base };
   const registryPath = join(resolve(root), ".repoos/environments.json");
-  if (!existsSync(registryPath)) throw new Error(`Unknown environment "${binding.environment}"`);
+  const env: NodeJS.ProcessEnv = { ...base };
+  if (!existsSync(registryPath)) {
+    if (binding) throw new Error(`Unknown environment "${binding.environment}"`);
+    return env;
+  }
   const registry = validateEnvironmentRegistry(JSON.parse(readFileSync(registryPath, "utf8")));
+  // A registered project key must never leak through from ambient process.env
+  // when a consumer is unbound or its selected environment lacks that key.
+  for (const projectEnv of registry.environments) {
+    const snapshot = readProjectEnvironment(root, projectEnv);
+    for (const key of [...snapshot.keys, ...snapshot.expectedKeys]) delete env[key];
+  }
+  if (!binding) return env;
   const selected = registry.environments.find((row) => row.id === binding.environment);
   if (!selected) throw new Error(`Unknown environment "${binding.environment}"`);
   const values = readProjectEnvironmentValues(root, selected);
-  const env: NodeJS.ProcessEnv = { ...base };
   for (const key of binding.keys) {
     if (!isAllowedProjectEnvironmentGrantKey(key)) continue;
     if (Object.hasOwn(values, key)) env[key] = values[key];
@@ -368,7 +384,8 @@ export function writeProjectEnvironmentValue(
   value: string | null,
   expectedSha256: string,
 ): string {
-  if (!keyName.test(key)) throw new Error("Invalid environment key name");
+  if (!isAllowedProjectEnvironmentGrantKey(key))
+    throw new Error("Invalid or machine-owned environment key");
   const file = resolveWritablePath(root, sourcePath);
   const current = existsSync(file) ? readFileSync(file, "utf8") : "";
   const currentHash = createHash("sha256").update(current).digest("hex");
