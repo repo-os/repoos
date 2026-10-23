@@ -28,7 +28,13 @@ import {
 import { parseTaskAreas } from "../core/areas.js";
 import { readPreviewOverlayKeys } from "../core/config.js";
 import { servicePortToken, expandServiceRefs } from "../core/dev-targets.js";
-import { linkInheritedEnv, worktreePathForBranch } from "../core/git.js";
+import {
+  changedPathsVsBase,
+  currentBranch,
+  linkInheritedEnv,
+  worktreePathForBranch,
+} from "../core/git.js";
+import { targetsForPaths } from "../core/shot-targets.js";
 import type { RepoEvent } from "./live-index.js";
 
 export interface PreviewInfo {
@@ -407,13 +413,18 @@ function noPreviewReason(task: Task, lead: string): string {
  * target area case-insensitively, so one hit routes the task. The whole-string
  * compare this replaces silently matched nothing for multi-area tasks.
  */
-function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[] {
+function previewCandidates(
+  config: RepoOSConfig,
+  task: Task,
+  changedPaths: string[] = [],
+): PreviewCandidate[] {
   const preview = config.preview;
   const taskAreas = taskAreasOf(task);
   const namedTargets = preview?.targets ?? [];
   const serviceDefs = new Map((preview?.services ?? []).map((s) => [s.name, s] as const));
   const areaMatches: PreviewCandidate[] = [];
   const otherTargets: PreviewCandidate[] = [];
+  const pathMatches = new Set(targetsForPaths(preview, changedPaths));
 
   /** Resolve a target's `services` names against the declared service blocks. */
   const resolveServices = (
@@ -478,7 +489,10 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
           : {}),
       },
     };
-    if (taskAreas.some((a) => t.areas.some((b) => sameArea(a, b)))) {
+    if (pathMatches.has(t.name)) {
+      areaMatches.push(candidate);
+      candidate.implicit = true;
+    } else if (taskAreas.some((a) => t.areas.some((b) => sameArea(a, b)))) {
       areaMatches.push(candidate);
     } else {
       otherTargets.push(candidate);
@@ -523,8 +537,12 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
  * area-aware default behavior.
  * Exported for the board/task routes and tests.
  */
-export function previewTargetOptions(config: RepoOSConfig, task: Task): PreviewTargetOption[] {
-  return previewCandidates(config, task).map((c) => ({
+export function previewTargetOptions(
+  config: RepoOSConfig,
+  task: Task,
+  changedPaths: string[] = [],
+): PreviewTargetOption[] {
+  return previewCandidates(config, task, changedPaths).map((c) => ({
     name: c.target.label,
     areas: c.areas,
     ...(c.target.native ? { platform: c.target.native.platform } : {}),
@@ -547,6 +565,7 @@ export function resolvePreviewTarget(
   config: RepoOSConfig,
   task: Task,
   targetName?: string,
+  changedPaths: string[] = [],
 ): PreviewTargetResolution {
   const preview = config.preview;
   const hasTargets = Boolean(preview?.targets?.length);
@@ -558,7 +577,7 @@ export function resolvePreviewTarget(
     };
   }
 
-  const candidates = previewCandidates(config, task);
+  const candidates = previewCandidates(config, task, changedPaths);
   if (targetName) {
     const chosen = candidates.find((c) => c.target.label === targetName);
     if (chosen) return chosen.target;
@@ -944,7 +963,13 @@ export class PreviewManager {
     // selected by area. A task whose area matches no configured target — or a
     // project with no `[preview]` config at all (#0370) — returns a clear
     // "nothing configured" result instead of spawning (and failing) something.
-    const target = resolvePreviewTarget(this.config, task, targetName);
+    let changedPaths: string[] = [];
+    try {
+      changedPaths = changedPathsVsBase(root, currentBranch(this.config.root) ?? "main") ?? [];
+    } catch {
+      // Best-effort path resolution falls back to the task's declared area.
+    }
+    const target = resolvePreviewTarget(this.config, task, targetName, changedPaths);
     if (target.kind === "none") {
       this.logLifecycle("start-skipped", task.id, target.reason);
       return { ok: false, error: target.reason };
