@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-23T00:49:53Z"
+review_passes: 1
 id: "0937"
 title: "Secrets follow-ups: 401 tests on widened metadata routes + document PORT/HOST reserved keys"
 type: chore
@@ -11,7 +13,6 @@ branch: feat/secrets-follow-ups-401-tests-on-widened-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T00:35:50Z"
-updated_at: "2026-10-23T00:49:53Z"
 ---
 ## Problem
 Review of #0932 (2026-10-23) left two small, safe follow-ups:
@@ -39,3 +40,4 @@ Related: #0927-#0932 (Secrets chain). Do not widen any route; tests and docs onl
 - 2026-10-23T00:49:21Z · status active→review
 - 2026-10-23T00:49:22Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-23T00:49:53Z · note: review pass 1: good to go
+
