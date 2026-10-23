@@ -2,7 +2,7 @@
 id: "0941"
 title: Polish macOS native app tab bar
 type: feature
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -100,4 +100,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T19:52:22Z · note: Reviewer round 1 findings: strengthen tab shape, validate traffic-light positioning across resize/fullscreen, and harden hover/drag lifecycle; returning to active for fixes.
 - 2026-10-23T20:14:19Z · body
 - 2026-10-23T20:21:27Z · body
-- 2026-10-23T20:30:41Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-23T20:30:41Z · status active→review
