@@ -2,7 +2,7 @@
 id: "0937"
 title: "Secrets follow-ups: 401 tests on widened metadata routes + document PORT/HOST reserved keys"
 type: chore
-status: active
+status: review
 priority: p2
 area: [server, docs]
 assigned_to: ai
@@ -36,4 +36,4 @@ Related: #0927-#0932 (Secrets chain). Do not widen any route; tests and docs onl
 - 2026-10-23T00:36:20Z · status ready→active, branch
 - 2026-10-23T00:38:23Z · body
 - 2026-10-23T00:39:55Z · body
-- 2026-10-23T00:49:21Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-23T00:49:21Z · status active→review
