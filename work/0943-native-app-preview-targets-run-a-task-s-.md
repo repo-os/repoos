@@ -2,14 +2,14 @@
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
-status: ready
+status: active
 priority: p2
 area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/native-app-preview-targets-run-a-task-s-
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-23T21:04:21Z"
+updated_at: "2026-10-23T21:05:03Z"
 ---
 ## Problem
 A task's **Preview** button only serves things that speak HTTP: a `[[preview.targets]]` row is a command that listens on `{port}` and answers a `readyPath` probe (`docs/previews.md`, "v1 is scoped to browser-previewable things"). A native app has no port, so a reviewer cannot launch a task's version of the macOS Hub (`macos/RepoOSHub.xcodeproj`, `just macos-run`), the iOS app or the Android app (`mobile/ios`, `mobile/android`, Capacitor shells) from the task's worktree. Today the options are weaker: a `[[dev.targets]]` row with `kind = "process"` (`user-docs/dev-targets.md`) always runs in the root checkout, never a task worktree, and `[[shot.targets]]` only captures still images (`docs/previews.md`, "Evidence shots for non-web targets", #0761).
@@ -41,3 +41,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 
 - 2026-10-23T20:05:41Z · created · njachowski@gmail.com
 - 2026-10-23T21:04:21Z · status inbox→ready
+- 2026-10-23T21:05:03Z · status ready→active, branch
