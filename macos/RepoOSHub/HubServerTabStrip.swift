@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 /// Geometry for the single native row shared with the real traffic lights.
 enum HubServerTabStripMetrics {
     /// Tall enough for the standard window buttons and a one-line tab label.
-    static let height: CGFloat = 46
+    static let height: CGFloat = 40
     static let minTabWidth: CGFloat = 88
     static let maxTabWidth: CGFloat = 168
     /// Used until the live window-button frames are measured.
@@ -19,6 +19,8 @@ enum HubServerTabStripMetrics {
 struct HubServerTabStrip: View {
     @EnvironmentObject private var appState: HubAppState
     @State private var trafficLightInset = HubServerTabStripMetrics.fallbackTrafficLightInset
+    var snapshotHoverEntryID: UUID? = nil
+    var snapshotChevronHover = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -28,6 +30,8 @@ struct HubServerTabStrip: View {
                 .accessibilityHidden(true)
 
             tabActionsMenu
+                .padding(.leading, 12)
+                .padding(.trailing, 10)
 
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -36,7 +40,8 @@ struct HubServerTabStrip: View {
                             HubServerTab(
                                 entry: entry,
                                 isSelected: entry.id == appState.selectedServerID,
-                                contentColor: contentColor
+                                contentColor: contentColor,
+                                startsHovering: entry.id == snapshotHoverEntryID
                             )
                             .id(entry.id)
                         }
@@ -55,7 +60,10 @@ struct HubServerTabStrip: View {
             settingsButton
 
             Spacer(minLength: 8)
-                .allowsHitTesting(false)
+                .background {
+                    HubWindowDragRegion()
+                        .accessibilityHidden(true)
+                }
         }
         .frame(height: HubServerTabStripMetrics.height)
         .background {
@@ -83,6 +91,7 @@ struct HubServerTabStrip: View {
     }
 
     private var tabActionsMenu: some View {
+        TabActionsMenuButton(startsHovering: snapshotChevronHover) {
         Menu {
             Button("Back") { appState.workspaceGoBack() }
                 .disabled(!appState.workspaceNavigation.canGoBack)
@@ -109,6 +118,7 @@ struct HubServerTabStrip: View {
         .foregroundStyle(.secondary)
         .help("Back, forward, reload, and layout")
         .accessibilityLabel("Tab actions")
+        }
     }
 
     private var addServerMenu: some View {
@@ -200,9 +210,16 @@ private struct HubServerTab: View {
     let entry: ServerEntry
     let isSelected: Bool
     let contentColor: Color
+    var startsHovering = false
 
     @State private var isHovering = false
     @State private var isDropTargeted = false
+    @State private var isShowingDetails = false
+    @State private var hideDetailsWork: DispatchWorkItem?
+
+    private var attentionSnapshot: ServerAttentionSnapshot? {
+        appState.attentionSnapshot(for: entry.id)
+    }
 
     var body: some View {
         HStack(spacing: 6) {
@@ -237,26 +254,23 @@ private struct HubServerTab: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .help("Hide \(entry.name)")
                 .accessibilityLabel("Hide \(entry.name)")
             }
         }
-        .padding(.leading, 10)
-        .padding(.trailing, isHovering || isSelected ? 6 : 10)
+        .padding(.horizontal, 12)
         .frame(minWidth: HubServerTabStripMetrics.minTabWidth, maxWidth: HubServerTabStripMetrics.maxTabWidth)
-        .frame(maxHeight: .infinity)
+        .frame(height: HubServerTabStripMetrics.height)
         .foregroundStyle(isSelected ? .primary : .secondary)
-        .background(alignment: .bottom) {
+        .background {
             HubServerTabShape()
-                .fill(isSelected ? contentColor : (isHovering ? Color.primary.opacity(0.06) : Color.clear))
-                .padding(.top, 6)
+                .fill(isSelected ? contentColor : (isHovering ? Color.primary.opacity(0.075) : .clear))
+                .padding(.top, 3)
         }
         .overlay(alignment: .bottom) {
             if isDropTargeted {
                 Rectangle()
                     .fill(Color.accentColor)
-                    .frame(width: 2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 3)
                     .allowsHitTesting(false)
             }
         }
@@ -264,19 +278,50 @@ private struct HubServerTab: View {
         .onTapGesture {
             appState.selectServer(entry.id)
         }
-        .onHover { isHovering = $0 }
+        .onHover { hovering in
+            isHovering = hovering
+            if hovering {
+                hideDetailsWork?.cancel()
+                isShowingDetails = true
+            } else {
+                scheduleDetailsDismissal()
+            }
+        }
+        .onAppear {
+            if startsHovering {
+                isHovering = true
+            }
+        }
         .onDrag {
-            NSItemProvider(object: entry.id.uuidString as NSString)
+            hideDetailsWork?.cancel()
+            isShowingDetails = false
+            return NSItemProvider(object: entry.id.uuidString as NSString)
         }
         .onDrop(of: [UTType.plainText], isTargeted: $isDropTargeted) { providers in
-            guard let provider = providers.first else { return false }
-            _ = provider.loadObject(ofClass: NSString.self) { object, _ in
-                guard let raw = object as? String, let source = UUID(uuidString: raw) else { return }
-                DispatchQueue.main.async {
-                    appState.moveServerTab(source: source, to: entry.id)
+            HubServerTabDropHandler.accept(
+                providers: providers,
+                target: entry.id,
+                onMove: { source, target in appState.moveServerTab(source: source, to: target) },
+                onCompletion: { isDropTargeted = false }
+            )
+        }
+        .popover(
+            isPresented: $isShowingDetails,
+            attachmentAnchor: .rect(.bounds),
+            arrowEdge: .top
+        ) {
+            ServerDetailsPopover(
+                entry: entry,
+                runtimeInfo: appState.runtimeInfo(for: entry.id),
+                attention: attentionSnapshot
+            )
+            .onHover { hovering in
+                if hovering {
+                    hideDetailsWork?.cancel()
+                } else {
+                    scheduleDetailsDismissal()
                 }
             }
-            return true
         }
         .contextMenu {
             Button("Hide tab") { appState.hideServerTab(entry.id) }
@@ -287,10 +332,14 @@ private struct HubServerTab: View {
             Divider()
             ServerActionsMenu(entry: entry)
         }
-        .help(ServerSidebarStatus.tooltip(for: entry))
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(entry.name), \(entry.lastHealth.displayTitle)")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .onDisappear {
+            hideDetailsWork?.cancel()
+            hideDetailsWork = nil
+            isShowingDetails = false
+        }
     }
 
     private var badgeText: String? {
@@ -317,27 +366,102 @@ private struct HubServerTab: View {
         guard visibleIDs.indices.contains(neighbor) else { return }
         appState.moveServerTab(source: entry.id, to: visibleIDs[neighbor])
     }
+
+    private func scheduleDetailsDismissal() {
+        hideDetailsWork?.cancel()
+        let work = DispatchWorkItem { isShowingDetails = false }
+        hideDetailsWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(180), execute: work)
+    }
 }
 
-/// Active tab silhouette: rounded on top, square on the bottom so it meets the page.
+/// Menu labels in a native titlebar have no default hover fill. Keep the
+/// chevron's hover treatment in the same quiet capsule language as the tabs.
+private struct TabActionsMenuButton<Content: View>: View {
+    let content: Content
+    var startsHovering = false
+    @State private var isHovering = false
+
+    init(startsHovering: Bool = false, @ViewBuilder content: () -> Content) {
+        self.content = content()
+        self.startsHovering = startsHovering
+    }
+
+    var body: some View {
+        content
+            .frame(width: 38, height: HubServerTabStripMetrics.height)
+            .background {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(isHovering ? Color.primary.opacity(0.09) : .clear)
+                    .padding(.vertical, 3)
+            }
+            .contentShape(Rectangle())
+            .onHover { isHovering = $0 }
+            .onAppear {
+                if startsHovering { isHovering = true }
+            }
+    }
+}
+
+/// Chrome-inspired tabs flare gently into a softly rounded crown.
 private struct HubServerTabShape: Shape {
     func path(in rect: CGRect) -> Path {
-        let radius: CGFloat = 8
+        let radius: CGFloat = 9
+        let flare: CGFloat = 5
         var path = Path()
         path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + radius))
-        path.addQuadCurve(
+        path.addCurve(
             to: CGPoint(x: rect.minX + radius, y: rect.minY),
-            control: CGPoint(x: rect.minX, y: rect.minY)
+            control1: CGPoint(x: rect.minX, y: rect.minY + flare),
+            control2: CGPoint(x: rect.minX + flare, y: rect.minY)
         )
         path.addLine(to: CGPoint(x: rect.maxX - radius, y: rect.minY))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.maxX, y: rect.minY + radius),
-            control: CGPoint(x: rect.maxX, y: rect.minY)
+        path.addCurve(
+            to: CGPoint(x: rect.maxX, y: rect.minY + flare),
+            control1: CGPoint(x: rect.maxX - flare, y: rect.minY),
+            control2: CGPoint(x: rect.maxX, y: rect.minY + flare)
         )
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
         path.closeSubpath()
         return path
+    }
+}
+
+/// Empty space in the tab row remains a reliable window drag handle after
+/// background dragging is disabled to protect interactive tabs.
+struct HubWindowDragRegion: NSViewRepresentable {
+    func makeNSView(context: Context) -> HubWindowDragRegionView { HubWindowDragRegionView(frame: .zero) }
+    func updateNSView(_ nsView: HubWindowDragRegionView, context: Context) {}
+}
+
+final class HubWindowDragRegionView: NSView {
+    override var mouseDownCanMoveWindow: Bool { true }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        _ = point
+        return self
+    }
+}
+
+@MainActor
+enum HubServerTabDropHandler {
+    static func accept(
+        providers: [NSItemProvider],
+        target: UUID,
+        onMove: @escaping (UUID, UUID) -> Void,
+        onCompletion: @escaping () -> Void
+    ) -> Bool {
+        guard let provider = providers.first, provider.canLoadObject(ofClass: NSString.self) else {
+            return false
+        }
+        _ = provider.loadObject(ofClass: NSString.self) { object, _ in
+            DispatchQueue.main.async {
+                defer { onCompletion() }
+                guard let raw = object as? String, let source = UUID(uuidString: raw) else { return }
+                onMove(source, target)
+            }
+        }
+        return true
     }
 }
 
@@ -405,7 +529,7 @@ final class TrafficLightInsetView: NSView {
             .filter { !$0.isHidden }
             .map(\.frame.maxX)
             .max() ?? 0
-        let inset = max(maxX + 8, 12)
+        let inset = HubTrafficLightPositioning.reservedInset(frameMaxX: maxX)
         onChange?(inset)
     }
 }
