@@ -5,11 +5,11 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-23T14:40:45Z"
-updated_at: "2026-10-23T14:40:45Z"
+updated_at: "2026-10-23T14:40:54Z"
 ---
 Need to fix some things on the new secrets feature:
 
@@ -31,6 +31,11 @@ Need to fix some things on the new secrets feature:
 - add some vertical padding above the yellow create environment button so that it's prettier
 - please make sure this new feature works
 
+## Screenshots
+
+![Screenshot-2026-10-23-at-22.29.39](/api/tasks/0938/attachments/att_c170452e-8cf8-49bf-877b-5fbeb5bb2ca7.png)
+
 ## Activity
 
 - 2026-10-23T14:40:45Z · created · hello@repoos.org
+- 2026-10-23T14:40:54Z · screenshots
