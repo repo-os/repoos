@@ -141,6 +141,26 @@ describe("buildStoryContext", () => {
     expect(block).toContain("The shared background for the run.");
   });
 
+  it("never reads project dotenv values into task context", () => {
+    const root = tempRoot();
+    const sentinel = "FAKE_SENTINEL_0932_TASK_CONTEXT";
+    mkdirSync(join(root, ".repoos"), { recursive: true });
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(join(root, ".env.dev"), `DATABASE_URL=${sentinel}\n`);
+    writeFileSync(
+      join(root, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [{ id: "dev", sources: [{ id: "local", path: ".env.dev" }] }],
+      }),
+    );
+    writeStory(root, "slice.md", "Slice", "Task context contains only story text.");
+
+    const block = buildStoryContext(task({ story: "Slice" }), config(root));
+
+    expect(block).toContain("Task context contains only story text.");
+    expect(block).not.toContain(sentinel);
+  });
+
   it("matches the tag case-insensitively and ignores tasks in other stories", () => {
     const root = tempRoot();
     writeStory(root, "slice.md", "Slice", "Body.");

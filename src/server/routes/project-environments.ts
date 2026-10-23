@@ -18,7 +18,7 @@ import {
   hasConfiguredProjectEnvironmentSecrets,
 } from "../../core/project-environments.js";
 import { MODEL_PROVIDERS } from "../../core/providers/spend.js";
-import { requireAdmin } from "./auth.js";
+import { getCurrentUser, requireAdmin } from "./auth.js";
 import { readBody } from "./utils.js";
 import type { RouteHandler } from "./types.js";
 
@@ -36,6 +36,11 @@ const reservedCredentialNames = new Set(
     "REPOOS_TELEGRAM_PROVISIONING_KEY",
     "CLOUDFLARE_API_TOKEN",
     "HETZNER_API_TOKEN",
+    "PATH",
+    "HOME",
+    "NODE_OPTIONS",
+    "PORT",
+    "HOST",
     ...MODEL_PROVIDERS.map((provider) => provider.envVar).filter((name): name is string => !!name),
   ].map((name) => name.toUpperCase()),
 );
@@ -53,6 +58,15 @@ function registry(root: string) {
 function send(res: Parameters<RouteHandler>[2], status: number, body: unknown) {
   res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" });
   res.end(JSON.stringify(body));
+}
+function requireSignedIn(
+  req: Parameters<RouteHandler>[1],
+  config: Parameters<RouteHandler>[0]["config"],
+  res: Parameters<RouteHandler>[2],
+) {
+  const user = getCurrentUser(req, config);
+  if (!user) send(res, 401, { error: "Authentication required" });
+  return user;
 }
 function originAllowed(req: Parameters<RouteHandler>[1]) {
   const origin = req.headers.origin;
@@ -83,7 +97,7 @@ function resolveEnv(root: string, id: string) {
 
 export const listProjectEnvironmentSecrets: RouteHandler = (ctx, req, res, params) => {
   res.setHeader("Cache-Control", "no-store");
-  const user = requireAdmin(req, ctx.config, res);
+  const user = requireSignedIn(req, ctx.config, res);
   if (!user) return;
   if (!originAllowed(req)) return send(res, 403, { error: "Request origin rejected" });
   try {
@@ -117,7 +131,7 @@ export const listProjectEnvironmentSecrets: RouteHandler = (ctx, req, res, param
 /** Environment labels and registered source paths only; never return values. */
 export const listProjectEnvironments: RouteHandler = (ctx, req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  if (!requireAdmin(req, ctx.config, res)) return;
+  if (!requireSignedIn(req, ctx.config, res)) return;
   if (!originAllowed(req)) return send(res, 403, { error: "Request origin rejected" });
   try {
     const environments = registry(ctx.config.root).environments;
@@ -208,11 +222,11 @@ export const mutateProjectEnvironmentSecret: RouteHandler = async (ctx, req, res
       return send(res, 409, { error: "Key status changed; reload metadata" });
     const writable = env.sources[env.sources.length - 1];
     if (
-      action === "delete" &&
+      (action === "delete" || action === "replace") &&
       !projectEnvironmentSourceHasKey(ctx.config.root, writable.path, key)
     ) {
       return send(res, 409, {
-        error: "Key is not defined in the writable source; reload metadata",
+        error: "Key is inherited from an earlier source and cannot be changed here",
       });
     }
     const version = writeProjectEnvironmentValue(
@@ -246,7 +260,8 @@ export const mutateProjectEnvironmentSecret: RouteHandler = async (ctx, req, res
 
 /** Binding metadata only; environment values never leave the child builder. */
 export const getProjectEnvironmentBindings: RouteHandler = (ctx, req, res) => {
-  if (!requireAdmin(req, ctx.config, res)) return;
+  res.setHeader("Cache-Control", "no-store");
+  if (!requireSignedIn(req, ctx.config, res)) return;
   if (!originAllowed(req)) return send(res, 403, { error: "Request origin rejected" });
   try {
     return send(res, 200, readProjectEnvironmentBindings(ctx.config.root));
