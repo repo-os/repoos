@@ -1123,6 +1123,20 @@ one-at-a-time and a new request evicts the previous preview. The control-plane
 server re-reads `repoos.toml` when it changes on disk (including after a merge
 to the primary branch), so new targets appear without restarting `repoos serve`.
 
+Native targets run locally on the machine hosting the control plane. They use
+the same one-at-a-time slot and run their build and launch commands from the
+task worktree; the card shows the platform and device and has no URL. For
+example, set `kind = "native"`, `platform = "ios"`, `build_command` to an
+`xcodebuild` simulator build, `launch_command` to `xcrun simctl install` plus
+`launch`, and `stop` to `xcrun simctl terminate`. Use corresponding
+`xcodebuild`/`open -W` commands for macOS or Gradle/`adb` commands for Android.
+All tool-specific behavior belongs in these configured commands. Remote
+runners cannot display a native app on the control-plane host's screen. See
+`docs/previews.md` for full examples and placeholder details. These targets
+differ from `[[dev.targets]] kind = "process"` because they use the task's
+worktree, and from `[[shot.targets]]` because they launch a live app instead of
+capturing an image.
+
 `preview.targets[].paths` drives `repoos shot`, which picks the target to
 screenshot from the task's changed files rather than its up-front `area:`.
 `preview.paths` does the same for the default target — without it the main

@@ -131,11 +131,11 @@ this scale `area` already covers the common case, and #0582 later added them
 only for `repoos shot`'s screenshot-target choice (see below), where the
 area-first guess has no human to correct it before capture.
 
-**v1 is scoped to browser-previewable things.** A target is a command that
-boots something serving HTTP. Non-web areas (a backend with no UI, a CLI) get a
-preview only if a target's `areas` claims them — and if a repo declares targets
-without a default command, any unmatched area gets the clean "no preview
-configured" result above. Mobile is not a separate target: per
+Web targets boot something serving HTTP; native targets use the `kind =
+"native"` lifecycle described above. Non-web areas (a backend with no UI, a
+CLI) get a preview only if a target's `areas` claims them — and if a repo
+declares targets without a default command, any unmatched area gets the clean "no preview
+configured" result above. Mobile web UI is not a separate target: per
 `docs/mobile-architecture.md` (#0297) the shipped mobile app is a Capacitor
 shell that opens the same web UI, so a `mobile` area simply points at whatever
 web target exists (`areas = ["mobile", "web"]`).
