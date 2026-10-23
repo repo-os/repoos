@@ -19,6 +19,7 @@ enum HubServerTabStripMetrics {
 struct HubServerTabStrip: View {
     @EnvironmentObject private var appState: HubAppState
     @State private var trafficLightInset = HubServerTabStripMetrics.fallbackTrafficLightInset
+    var snapshotHoverEntryID: UUID? = nil
 
     var body: some View {
         HStack(spacing: 0) {
@@ -38,7 +39,8 @@ struct HubServerTabStrip: View {
                             HubServerTab(
                                 entry: entry,
                                 isSelected: entry.id == appState.selectedServerID,
-                                contentColor: contentColor
+                                contentColor: contentColor,
+                                startsHovering: entry.id == snapshotHoverEntryID
                             )
                             .id(entry.id)
                         }
@@ -204,9 +206,16 @@ private struct HubServerTab: View {
     let entry: ServerEntry
     let isSelected: Bool
     let contentColor: Color
+    var startsHovering = false
 
     @State private var isHovering = false
     @State private var isDropTargeted = false
+    @State private var isShowingDetails = false
+    @State private var hideDetailsWork: DispatchWorkItem?
+
+    private var attentionSnapshot: ServerAttentionSnapshot? {
+        appState.attentionSnapshot(for: entry.id)
+    }
 
     var body: some View {
         HStack(spacing: 6) {
@@ -245,22 +254,28 @@ private struct HubServerTab: View {
                 .accessibilityLabel("Hide \(entry.name)")
             }
         }
-        .padding(.leading, 12)
-        .padding(.trailing, isHovering || isSelected ? 8 : 12)
+        .padding(.horizontal, 12)
         .frame(minWidth: HubServerTabStripMetrics.minTabWidth, maxWidth: HubServerTabStripMetrics.maxTabWidth)
-        .frame(maxHeight: .infinity)
+        .frame(height: HubServerTabStripMetrics.height)
         .foregroundStyle(isSelected ? .primary : .secondary)
-        .background(alignment: .bottom) {
-            HubServerTabShape()
-                .fill(isSelected ? contentColor : (isHovering ? Color.primary.opacity(0.075) : Color.clear))
-                .padding(.top, 3)
+        .background {
+            Rectangle()
+                .fill(isSelected ? contentColor : (isHovering ? Color.primary.opacity(0.075) : .clear))
+        }
+        .overlay(alignment: .trailing) {
+            Rectangle()
+                .fill(Color.primary.opacity(0.08))
+                .frame(width: 1, height: 18)
+                .allowsHitTesting(false)
+        }
+        .overlay {
+            HubTabDragRegion()
         }
         .overlay(alignment: .bottom) {
             if isDropTargeted {
                 Rectangle()
                     .fill(Color.accentColor)
-                    .frame(width: 2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 3)
                     .allowsHitTesting(false)
             }
         }
@@ -268,19 +283,48 @@ private struct HubServerTab: View {
         .onTapGesture {
             appState.selectServer(entry.id)
         }
-        .onHover { isHovering = $0 }
+        .onHover { hovering in
+            isHovering = hovering
+            if hovering {
+                hideDetailsWork?.cancel()
+                isShowingDetails = true
+            } else {
+                scheduleDetailsDismissal()
+            }
+        }
+        .onAppear {
+            if startsHovering {
+                isHovering = true
+            }
+        }
         .onDrag {
             NSItemProvider(object: entry.id.uuidString as NSString)
         }
         .onDrop(of: [UTType.plainText], isTargeted: $isDropTargeted) { providers in
-            guard let provider = providers.first else { return false }
-            _ = provider.loadObject(ofClass: NSString.self) { object, _ in
-                guard let raw = object as? String, let source = UUID(uuidString: raw) else { return }
-                DispatchQueue.main.async {
-                    appState.moveServerTab(source: source, to: entry.id)
+            HubServerTabDropHandler.accept(
+                providers: providers,
+                target: entry.id,
+                onMove: { source, target in appState.moveServerTab(source: source, to: target) },
+                onCompletion: { isDropTargeted = false }
+            )
+        }
+        .popover(
+            isPresented: $isShowingDetails,
+            attachmentAnchor: .rect(.bounds),
+            arrowEdge: .top
+        ) {
+            ServerDetailsPopover(
+                entry: entry,
+                runtimeInfo: appState.runtimeInfo(for: entry.id),
+                attention: attentionSnapshot
+            )
+            .onHover { hovering in
+                if hovering {
+                    hideDetailsWork?.cancel()
+                } else {
+                    scheduleDetailsDismissal()
                 }
             }
-            return true
         }
         .contextMenu {
             Button("Hide tab") { appState.hideServerTab(entry.id) }
@@ -321,6 +365,13 @@ private struct HubServerTab: View {
         guard visibleIDs.indices.contains(neighbor) else { return }
         appState.moveServerTab(source: entry.id, to: visibleIDs[neighbor])
     }
+
+    private func scheduleDetailsDismissal() {
+        hideDetailsWork?.cancel()
+        let work = DispatchWorkItem { isShowingDetails = false }
+        hideDetailsWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(180), execute: work)
+    }
 }
 
 /// Menu labels in a native titlebar have no default hover fill. Keep the
@@ -344,27 +395,43 @@ private struct TabActionsMenuButton<Content: View>: View {
     }
 }
 
-/// Chrome-inspired tab shoulders flare gently into a softly rounded crown.
-private struct HubServerTabShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        let radius: CGFloat = 9
-        let flare: CGFloat = 5
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.addCurve(
-            to: CGPoint(x: rect.minX + radius, y: rect.minY),
-            control1: CGPoint(x: rect.minX, y: rect.minY + flare),
-            control2: CGPoint(x: rect.minX + flare, y: rect.minY)
-        )
-        path.addLine(to: CGPoint(x: rect.maxX - radius, y: rect.minY))
-        path.addCurve(
-            to: CGPoint(x: rect.maxX, y: rect.minY + flare),
-            control1: CGPoint(x: rect.maxX - flare, y: rect.minY),
-            control2: CGPoint(x: rect.maxX, y: rect.minY + flare)
-        )
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.closeSubpath()
-        return path
+/// Opts the tab hit region out of AppKit's transparent-titlebar window dragging.
+struct HubTabDragRegion: NSViewRepresentable {
+    func makeNSView(context: Context) -> HubTabDragRegionView { HubTabDragRegionView(frame: .zero) }
+    func updateNSView(_ nsView: HubTabDragRegionView, context: Context) {}
+}
+
+final class HubTabDragRegionView: NSView {
+    override var mouseDownCanMoveWindow: Bool { false }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    // Keep SwiftUI's onDrag/onDrop recognizers in the responder path while
+    // this view tells AppKit that the pointer is over an interactive tab.
+    override func mouseDown(with event: NSEvent) { superview?.mouseDown(with: event) }
+    override func mouseDragged(with event: NSEvent) { superview?.mouseDragged(with: event) }
+    override func mouseUp(with event: NSEvent) { superview?.mouseUp(with: event) }
+}
+
+@MainActor
+enum HubServerTabDropHandler {
+    static func accept(
+        providers: [NSItemProvider],
+        target: UUID,
+        onMove: @escaping (UUID, UUID) -> Void,
+        onCompletion: @escaping () -> Void
+    ) -> Bool {
+        guard let provider = providers.first, provider.canLoadObject(ofClass: NSString.self) else {
+            return false
+        }
+        _ = provider.loadObject(ofClass: NSString.self) { object, _ in
+            DispatchQueue.main.async {
+                defer { onCompletion() }
+                guard let raw = object as? String, let source = UUID(uuidString: raw) else { return }
+                onMove(source, target)
+            }
+        }
+        return true
     }
 }
 
