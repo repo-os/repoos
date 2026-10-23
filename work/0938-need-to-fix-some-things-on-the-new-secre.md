@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-23T15:00:11Z"
-review_passes: 1
+last_close_out_gate_ms: 66395
+last_close_out_gate_at: "2026-10-23T15:32:24.813Z"
 id: "0938"
 title: Fix environment selection and creation feedback
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-environment-selection-and-creation-f
 created_at: "2026-10-23T14:40:45Z"
+updated_at: "2026-10-23T15:32:24Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -99,4 +101,5 @@ Need to fix some things on the new secrets feature:
 - 2026-10-23T14:58:45Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-10-23T14:58:45Z · status active→review
 - 2026-10-23T15:00:11Z · note: review pass 1: good to go
+- 2026-10-23T15:32:24Z · close-out gate completed in 66s
 
