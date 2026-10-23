@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 66395
-last_close_out_gate_at: "2026-10-23T15:32:24.813Z"
 id: "0938"
 title: Fix environment selection and creation feedback
 type: bug
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: e8878605e318f554b8e0b85b1bc83763618227d5
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-environment-selection-and-creation-f
 created_at: "2026-10-23T14:40:45Z"
 updated_at: "2026-10-23T15:32:24Z"
+last_close_out_gate_ms: 66395
+last_close_out_gate_at: "2026-10-23T15:32:24.813Z"
 review_passes: 1
 ---
 ## Problem
