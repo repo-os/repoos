@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-23T20:46:16Z"
-review_passes: 5
+last_close_out_gate_ms: 526750
+last_close_out_gate_at: "2026-10-23T21:13:06.047Z"
 id: "0941"
 title: Polish macOS native app tab bar
 type: feature
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-macos-native-app-tab-bar
 created_at: "2026-10-23T17:20:56Z"
+updated_at: "2026-10-23T21:13:06Z"
+review_passes: 5
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -109,4 +111,5 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T20:45:06Z · status active→review
 - 2026-10-23T20:45:06Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-23T20:46:16Z · note: review pass 5: good to go
+- 2026-10-23T21:13:06Z · close-out gate completed in 527s
 
