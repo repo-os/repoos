@@ -2,14 +2,14 @@
 id: "0941"
 title: Polish macOS native app tab bar
 type: feature
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-macos-native-app-tab-bar
 created_at: "2026-10-23T17:20:56Z"
-updated_at: "2026-10-23T19:49:08Z"
+updated_at: "2026-10-23T19:49:09Z"
 review_passes: 2
 ---
 ## Problem
@@ -87,3 +87,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T19:48:24Z · status review→active
 - 2026-10-23T19:48:51Z · message_queued at 2026-10-23T19:48:51.465Z
 - 2026-10-23T19:49:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-23T19:49:09Z · status active→review
