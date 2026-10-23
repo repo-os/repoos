@@ -349,6 +349,12 @@ enum HubTrafficLightPositioning {
         CGAffineTransform(translationX: horizontalAdjustment, y: verticalAdjustment)
     }
 
+    /// Reserve space through the translated controls' visual and hit-test edge.
+    /// `NSView.frame` remains in AppKit's untransformed titlebar coordinates.
+    static func reservedInset(frameMaxX: CGFloat) -> CGFloat {
+        max(frameMaxX + horizontalAdjustment + 8, 12)
+    }
+
     static func apply(to window: NSWindow) {
         let types: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
         for type in types {
