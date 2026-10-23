@@ -95,17 +95,23 @@ describe("project environment secret routes", () => {
   });
 
   it.each([
-    ["environment list", (fx: ReturnType<typeof makeFixture>, res: ServerResponse) =>
-      listProjectEnvironments(fx.ctx, fx.req("{}", { token: "invalid-session" }), res, {})],
-    ["secret metadata", (fx: ReturnType<typeof makeFixture>, res: ServerResponse) =>
-      listProjectEnvironmentSecrets(
-        fx.ctx,
-        fx.req("{}", { token: "invalid-session" }),
-        res,
-        { param1: "dev" },
-      )],
-    ["binding metadata", (fx: ReturnType<typeof makeFixture>, res: ServerResponse) =>
-      getProjectEnvironmentBindings(fx.ctx, fx.req("{}", { token: "invalid-session" }), res, {})],
+    [
+      "environment list",
+      (fx: ReturnType<typeof makeFixture>, res: ServerResponse) =>
+        listProjectEnvironments(fx.ctx, fx.req("{}", { token: "invalid-session" }), res, {}),
+    ],
+    [
+      "secret metadata",
+      (fx: ReturnType<typeof makeFixture>, res: ServerResponse) =>
+        listProjectEnvironmentSecrets(fx.ctx, fx.req("{}", { token: "invalid-session" }), res, {
+          param1: "dev",
+        }),
+    ],
+    [
+      "binding metadata",
+      (fx: ReturnType<typeof makeFixture>, res: ServerResponse) =>
+        getProjectEnvironmentBindings(fx.ctx, fx.req("{}", { token: "invalid-session" }), res, {}),
+    ],
   ])("rejects unauthenticated %s reads without returning metadata", (_name, route) => {
     const fx = makeFixture();
     root = fx.root;
@@ -122,7 +128,9 @@ describe("project environment secret routes", () => {
       join(__dirname, "../../../user-docs/environment-and-secrets.md"),
       "utf8",
     );
-    const section = doc.match(/<!-- reserved-project-keys:start -->([\s\S]*?)<!-- reserved-project-keys:end -->/);
+    const section = doc.match(
+      /<!-- reserved-project-keys:start -->([\s\S]*?)<!-- reserved-project-keys:end -->/,
+    );
     expect(section, "reserved project key documentation block").not.toBeNull();
     const documented = section![1]
       .split("\n")
