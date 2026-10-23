@@ -82,13 +82,17 @@ describe("SearchOverlay context scope (#0557)", () => {
     await new Promise((r) => setTimeout(r, 250));
 
     const dialog = document.body.querySelector('[role="dialog"]')!;
+    const hint = document.body.querySelector(".search-overlay-keyboard-hint");
+    expect(hint?.textContent).toContain("Navigate");
+    expect(hint?.textContent).toContain("Enter");
+    expect(hint?.textContent).toContain("Esc");
 
     const down = new KeyboardEvent("keydown", {
       key: "ArrowDown",
       bubbles: true,
       cancelable: true,
     });
-    dialog.dispatchEvent(down);
+    input.dispatchEvent(down);
     expect(down.defaultPrevented).toBe(true);
     await nextTick();
     expect(
@@ -96,7 +100,7 @@ describe("SearchOverlay context scope (#0557)", () => {
     ).toBe("true");
 
     const enter = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
-    dialog.dispatchEvent(enter);
+    input.dispatchEvent(enter);
     await nextTick();
     await flushPromises();
     expect(enter.defaultPrevented).toBe(true);
@@ -110,4 +114,21 @@ describe("SearchOverlay context scope (#0557)", () => {
 
     wrapper.unmount();
   });
+
+  it.each(["all", "context", "settings"] as const)(
+    "shows the keyboard controls hint for %s search",
+    async (scope) => {
+      const wrapper = mount(SearchOverlay, {
+        props: { open: true, scope },
+        attachTo: document.body,
+      });
+      await flushPromises();
+
+      const hint = document.body.querySelector(".search-overlay-keyboard-hint");
+      expect(hint?.textContent).toContain("Navigate");
+      expect(hint?.textContent).toContain("Enter");
+      expect(hint?.textContent).toContain("Esc");
+      wrapper.unmount();
+    },
+  );
 });
