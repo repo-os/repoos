@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-23T14:40:45Z"
-updated_at: "2026-10-23T14:40:54Z"
+updated_at: "2026-10-23T14:40:55Z"
 ---
 Need to fix some things on the new secrets feature:
 
@@ -36,6 +36,7 @@ Need to fix some things on the new secrets feature:
 ![Screenshot-2026-10-23-at-22.29.39](/api/tasks/0938/attachments/att_c170452e-8cf8-49bf-877b-5fbeb5bb2ca7.png)
 ![Screenshot-2026-10-23-at-22.34.35](/api/tasks/0938/attachments/att_ded01a5e-bb61-4cef-b28e-129a0003879c.png)
 ![Screenshot-2026-10-23-at-22.34.28](/api/tasks/0938/attachments/att_48c9c510-de65-4be9-8ef2-1b5c569aacca.png)
+![Screenshot-2026-10-23-at-22.34.40](/api/tasks/0938/attachments/att_ec53ac49-3d1d-4661-a1ae-638f5f9fc7bd.png)
 
 ## Activity
 
@@ -43,3 +44,4 @@ Need to fix some things on the new secrets feature:
 - 2026-10-23T14:40:54Z · screenshots
 - 2026-10-23T14:40:54Z · screenshots
 - 2026-10-23T14:40:54Z · screenshots
+- 2026-10-23T14:40:55Z · screenshots
