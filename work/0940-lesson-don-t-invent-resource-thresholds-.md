@@ -2,7 +2,7 @@
 id: "0940"
 title: Use RepoOS pressure guard for start decisions
 type: spec
-status: active
+status: review
 priority: p2
 area: [agent, core, docs]
 assigned_to: ai
@@ -83,4 +83,4 @@ If the RepoOS pressure guard blocks a start, report the reason to the human. Don
 - 2026-10-23T18:22:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-23T18:22:49Z · message_delivered: 1 message(s)
 - 2026-10-23T18:34:52Z · body
-- 2026-10-23T18:42:47Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-23T18:42:47Z · status active→review
