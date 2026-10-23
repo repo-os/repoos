@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-keyboard-navigation-and-hints-in-sea
 created_at: "2026-10-23T16:10:17Z"
-updated_at: "2026-10-23T18:21:13Z"
+updated_at: "2026-10-23T18:21:14Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-23T18:17:04.446Z: repoos check failed: remote validation hung on bee — no output for 5m while the host was idle; the run's container (repoos-validate-0939-658eeb05) was removed and the run retried on another host — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 review_rounds: 1
@@ -102,3 +102,4 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 - 2026-10-23T18:19:23Z · body
 - 2026-10-23T18:21:13Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-23T18:21:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-23T18:21:14Z · message_delivered: 1 message(s)
