@@ -4920,8 +4920,12 @@ watch(
               <div v-else class="preview-live" role="status">
                 <span class="preview-dot"></span>
                 <span>{{ ui.active.preview.native.platform }} app running</span>
-                <span v-if="ui.active.preview.native.device" class="preview-target-name">{{ ui.active.preview.native.device }}</span>
-                <span v-if="ui.active.preview.label" class="preview-target-name">{{ ui.active.preview.label }}</span>
+                <span v-if="ui.active.preview.native.device" class="preview-target-name">{{
+                  ui.active.preview.native.device
+                }}</span>
+                <span v-if="ui.active.preview.label" class="preview-target-name">{{
+                  ui.active.preview.label
+                }}</span>
               </div>
               <span
                 v-if="isPreviewBusyForActive && previewAction === 'stop'"
@@ -4995,7 +4999,7 @@ watch(
                 <SelectContent position="popper">
                   <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
                     <SelectItem v-for="t in previewTargets" :key="t.name" :value="t.name">
-                      {{ t.name }}{{ t.platform ? ` · ${t.platform}` : '' }}
+                      {{ t.name }}{{ t.platform ? ` · ${t.platform}` : "" }}
                     </SelectItem>
                   </SelectViewport>
                 </SelectContent>

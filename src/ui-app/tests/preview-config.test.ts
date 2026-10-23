@@ -408,13 +408,41 @@ describe("parsePreviewConfig", () => {
   it("parses native targets only when platform, build and launch are valid", () => {
     const parsed = parsePreviewConfig({
       "preview.targets": [
-        { kind: "native", platform: "ios", areas: ["ios"], build_command: "build", launch_command: "launch", stop: "stop", device: "iPhone", timeout_ms: 5000, requires: "xcrun" },
-        { kind: "native", platform: "watchos", areas: ["ios"], build_command: "build", launch_command: "launch" },
+        {
+          kind: "native",
+          platform: "ios",
+          areas: ["ios"],
+          build_command: "build",
+          launch_command: "launch",
+          stop: "stop",
+          device: "iPhone",
+          timeout_ms: 5000,
+          requires: "xcrun",
+        },
+        {
+          kind: "native",
+          platform: "watchos",
+          areas: ["ios"],
+          build_command: "build",
+          launch_command: "launch",
+        },
         { kind: "native", platform: "macos", areas: ["mac"], build_command: "build" },
       ],
     });
     expect(parsed?.targets).toEqual([
-      { name: "ios", areas: ["ios"], command: "build && launch", kind: "native", platform: "ios", buildCommand: "build", launchCommand: "launch", stop: "stop", device: "iPhone", timeoutMs: 5000, requires: "xcrun" },
+      {
+        name: "ios",
+        areas: ["ios"],
+        command: "build && launch",
+        kind: "native",
+        platform: "ios",
+        buildCommand: "build",
+        launchCommand: "launch",
+        stop: "stop",
+        device: "iPhone",
+        timeoutMs: 5000,
+        requires: "xcrun",
+      },
     ]);
   });
 
@@ -569,6 +597,43 @@ describe("PreviewManager ambiguous-target enforcement (#0379)", () => {
 });
 
 describe("PreviewManager with a project-declared command (#0362)", () => {
+  it("builds and launches a native target in the task worktree and runs its stop command", async () => {
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-native";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      [
+        "[[preview.targets]]",
+        'name = "Fake macOS app"',
+        'kind = "native"',
+        'platform = "macos"',
+        'areas = ["mac"]',
+        'build_command = "touch {outputDir}/built"',
+        'launch_command = "sleep 30"',
+        'stop = "touch {outputDir}/stopped"',
+      ].join("\n") + "\n",
+    );
+    const config = loadConfig(fx.root);
+    const manager = new PreviewManager(config, () => {});
+    const t = { id: "0943", area: "mac", branch, status: "active" } as unknown as Task;
+    try {
+      const result = await manager.start(t);
+      expect(result.ok).toBe(true);
+      expect(result.url).toBe("");
+      expect(manager.get("0943")?.native?.platform).toBe("macos");
+      const output = join(wt.path, ".repoos", "preview-output", "0943");
+      expect(readFileSync(join(output, "built"), "utf8")).toBe("");
+      await manager.stop("0943");
+      expect(readFileSync(join(output, "stopped"), "utf8")).toBe("");
+      expect(manager.get("0943")).toBeNull();
+    } finally {
+      await manager.stopAll();
+    }
+  }, 30_000);
+
   it("spawns the configured command, serves it, and group-kills it on stop", async () => {
     const fx = makeFixture();
     fixtures.push(fx);

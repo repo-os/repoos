@@ -197,15 +197,47 @@ const now = (): string => new Date().toISOString();
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 /** Run a native build as a bounded task-worktree command and retain its stderr tail. */
-async function runNativeCommand(command: string, cwd: string, env: NodeJS.ProcessEnv, timeoutMs = 20 * 60_000): Promise<{ ok: boolean; error?: string }> {
+async function runNativeCommand(
+  command: string,
+  cwd: string,
+  env: NodeJS.ProcessEnv,
+  timeoutMs = 20 * 60_000,
+): Promise<{ ok: boolean; error?: string }> {
   return await new Promise((resolveResult) => {
     const child = spawn(command, { cwd, shell: true, stdio: ["ignore", "ignore", "pipe"], env });
     let tail = "";
     let finished = false;
-    const timer = setTimeout(() => { if (!finished) { finished = true; child.kill("SIGTERM"); resolveResult({ ok: false, error: `build timed out after ${timeoutMs}ms${tail ? ` — ${tail}` : ""}` }); } }, timeoutMs);
-    child.stderr?.on("data", (chunk: Buffer) => { tail = `${tail}${chunk.toString("utf8")}`.slice(-4000).trim(); });
-    child.on("error", (err) => { if (finished) return; finished = true; clearTimeout(timer); resolveResult({ ok: false, error: `${err.message}${tail ? ` — ${tail}` : ""}` }); });
-    child.on("exit", (code) => { if (finished) return; finished = true; clearTimeout(timer); resolveResult(code === 0 ? { ok: true } : { ok: false, error: `exit code ${code}${tail ? ` — ${tail}` : ""}` }); });
+    const timer = setTimeout(() => {
+      if (!finished) {
+        finished = true;
+        child.kill("SIGTERM");
+        resolveResult({
+          ok: false,
+          error: `build timed out after ${timeoutMs}ms${tail ? ` — ${tail}` : ""}`,
+        });
+      }
+    }, timeoutMs);
+    const collect = (chunk: Buffer) => {
+      tail = `${tail}${chunk.toString("utf8")}`.slice(-4000).trim();
+    };
+    child.stderr?.on("data", collect);
+    child.stdout?.on("data", collect);
+    child.on("error", (err) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      resolveResult({ ok: false, error: `${err.message}${tail ? ` — ${tail}` : ""}` });
+    });
+    child.on("exit", (code) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      resolveResult(
+        code === 0
+          ? { ok: true }
+          : { ok: false, error: `exit code ${code}${tail ? ` — ${tail}` : ""}` },
+      );
+    });
   });
 }
 
@@ -261,7 +293,17 @@ export type PreviewTarget = {
    * booting a partial preview.
    */
   unresolvedServices: string[];
-  native?: { platform: "macos" | "ios" | "android"; buildCommand: string; launchCommand: string; stop?: string; cwd?: string; device?: string; env?: Record<string, string>; timeoutMs?: number; requires?: string };
+  native?: {
+    platform: "macos" | "ios" | "android";
+    buildCommand: string;
+    launchCommand: string;
+    stop?: string;
+    cwd?: string;
+    device?: string;
+    env?: Record<string, string>;
+    timeoutMs?: number;
+    requires?: string;
+  };
 };
 
 /** Resolution result: a runnable target, or a clean "nothing configured". */
@@ -419,7 +461,21 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
         readyTimeoutMs: t.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
         services,
         unresolvedServices,
-        ...(t.kind === "native" && t.platform && t.buildCommand && t.launchCommand ? { native: { platform: t.platform, buildCommand: t.buildCommand, launchCommand: t.launchCommand, stop: t.stop, cwd: t.cwd, device: t.device, env: t.env, timeoutMs: t.timeoutMs, requires: t.requires } } : {}),
+        ...(t.kind === "native" && t.platform && t.buildCommand && t.launchCommand
+          ? {
+              native: {
+                platform: t.platform,
+                buildCommand: t.buildCommand,
+                launchCommand: t.launchCommand,
+                stop: t.stop,
+                cwd: t.cwd,
+                device: t.device,
+                env: t.env,
+                timeoutMs: t.timeoutMs,
+                requires: t.requires,
+              },
+            }
+          : {}),
       },
     };
     if (taskAreas.some((a) => t.areas.some((b) => sameArea(a, b)))) {
@@ -938,26 +994,102 @@ export class PreviewManager {
       const outputDir = join(root, ".repoos", "preview-output", task.id);
       mkdirSync(outputDir, { recursive: true });
       const cwd = resolvePreviewCwd(root, target.native.cwd);
-      if (!cwd) return { ok: false, error: `native preview cwd "${target.native.cwd}" is not inside the task's worktree` };
-      const env = buildProjectConsumerEnv(this.config.root, projectEnvironmentConsumer("preview", target.label), {
-        ...process.env, ...target.native.env, REPOOS_WORKTREE: root, REPOOS_TASK_ID: task.id,
-        REPOOS_OUTPUT_DIR: outputDir, REPOOS_PREVIEW_OUTPUT_DIR: outputDir,
-      });
-      const expand = (value: string) => value.replaceAll("{worktree}", root).replaceAll("{taskId}", task.id).replaceAll("{outputDir}", outputDir);
+      if (!cwd)
+        return {
+          ok: false,
+          error: `native preview cwd "${target.native.cwd}" is not inside the task's worktree`,
+        };
+      const env = buildProjectConsumerEnv(
+        this.config.root,
+        projectEnvironmentConsumer("preview", target.label),
+        {
+          ...process.env,
+          ...target.native.env,
+          REPOOS_WORKTREE: root,
+          REPOOS_TASK_ID: task.id,
+          REPOOS_OUTPUT_DIR: outputDir,
+          REPOOS_PREVIEW_OUTPUT_DIR: outputDir,
+        },
+      );
+      const expand = (value: string) =>
+        value
+          .replaceAll("{worktree}", root)
+          .replaceAll("{taskId}", task.id)
+          .replaceAll("{outputDir}", outputDir);
       if (target.native.requires) {
         const binary = target.native.requires.trim();
-        try { execFileSync("sh", ["-lc", `command -v '${binary.replaceAll("'", "'\\''")}'`], { cwd, env, stdio: "ignore", timeout: 5_000 }); }
-        catch { return { ok: false, error: `native preview requires "${binary}" on the control-plane host; install the platform tools (Xcode command line tools for xcodebuild/xcrun, Android platform-tools for adb), then retry` }; }
+        try {
+          execFileSync("sh", ["-lc", `command -v '${binary.replaceAll("'", "'\\''")}'`], {
+            cwd,
+            env,
+            stdio: "ignore",
+            timeout: 5_000,
+          });
+        } catch {
+          return {
+            ok: false,
+            error: `native preview requires "${binary}" on the control-plane host; install the platform tools (Xcode command line tools for xcodebuild/xcrun, Android platform-tools for adb), then retry`,
+          };
+        }
       }
-      const build = await runNativeCommand(expand(target.native.buildCommand), cwd, env, target.native.timeoutMs);
-      if (!build.ok) return { ok: false, error: `native ${target.native.platform} build failed${build.error ? ` — ${build.error}` : ""}` };
-      const launch = spawn(expand(target.native.launchCommand), { cwd, shell: true, detached: process.platform !== "win32", stdio: ["ignore", "ignore", "pipe"], env });
-      if (!launch.pid) return { ok: false, error: `native ${target.native.platform} launch did not start` };
+      const build = await runNativeCommand(
+        expand(target.native.buildCommand),
+        cwd,
+        env,
+        target.native.timeoutMs,
+      );
+      if (!build.ok)
+        return {
+          ok: false,
+          error: `native ${target.native.platform} build failed${build.error ? ` — ${build.error}` : ""}`,
+        };
+      const processGroup = process.platform !== "win32";
+      const launch = spawn(expand(target.native.launchCommand), {
+        cwd,
+        shell: true,
+        detached: processGroup,
+        stdio: ["ignore", "ignore", "pipe"],
+        env,
+      });
+      if (!launch.pid)
+        return { ok: false, error: `native ${target.native.platform} launch did not start` };
       const launchCommand = expand(target.native.launchCommand);
-      const info: PreviewInfo = { port: 0, url: "", startedAt: now(), pid: launch.pid, command: launchCommand, label: target.label, native: { platform: target.native.platform, device: target.native.device, stop: target.native.stop ? expand(target.native.stop) : undefined, cwd } };
-      this.registry.set(task.id, info); this.persist();
-      launch.on("exit", () => { if (this.registry.get(task.id)?.pid === launch.pid) { this.registry.delete(task.id); this.persistOrDrop(); this.emit({ type: "preview", id: task.id, preview: null, at: now() }); } });
-      this.emit({ type: "preview", id: task.id, preview: { port: 0, url: "", startedAt: info.startedAt, label: info.label, native: info.native }, at: now() });
+      const info: PreviewInfo = {
+        port: 0,
+        url: "",
+        startedAt: now(),
+        pid: launch.pid,
+        command: launchCommand,
+        label: target.label,
+        ...(processGroup ? { processGroup: true } : {}),
+        native: {
+          platform: target.native.platform,
+          device: target.native.device,
+          stop: target.native.stop ? expand(target.native.stop) : undefined,
+          cwd,
+        },
+      };
+      this.registry.set(task.id, info);
+      this.persist();
+      launch.on("exit", () => {
+        if (this.registry.get(task.id)?.pid === launch.pid) {
+          this.registry.delete(task.id);
+          this.persistOrDrop();
+          this.emit({ type: "preview", id: task.id, preview: null, at: now() });
+        }
+      });
+      this.emit({
+        type: "preview",
+        id: task.id,
+        preview: {
+          port: 0,
+          url: "",
+          startedAt: info.startedAt,
+          label: info.label,
+          native: info.native,
+        },
+        at: now(),
+      });
       return { ok: true, port: 0, url: "", label: target.label };
     }
 
@@ -1118,7 +1250,15 @@ export class PreviewManager {
     this.logStop(taskId, reason, info);
     this.emit({ type: "preview", id: taskId, preview: null, at: now() });
     if (info.native?.stop) {
-      try { execFileSync("sh", ["-lc", info.native.stop], { cwd: info.native.cwd, stdio: "ignore", timeout: 30_000 }); } catch { /* best effort; terminate owned launcher below */ }
+      try {
+        execFileSync("sh", ["-lc", info.native.stop], {
+          cwd: info.native.cwd,
+          stdio: "ignore",
+          timeout: 30_000,
+        });
+      } catch {
+        /* best effort; terminate owned launcher below */
+      }
     }
     await this.killMany(info.pids?.length ? info.pids : [info.pid], info.processGroup ?? false);
   }
@@ -1268,7 +1408,15 @@ export class PreviewManager {
   private async stopRecorded(taskId: string, info: PreviewInfo, reason: string): Promise<void> {
     this.logStop(taskId, reason, info);
     if (info.native?.stop) {
-      try { execFileSync("sh", ["-lc", info.native.stop], { cwd: info.native.cwd, stdio: "ignore", timeout: 30_000 }); } catch { /* best effort */ }
+      try {
+        execFileSync("sh", ["-lc", info.native.stop], {
+          cwd: info.native.cwd,
+          stdio: "ignore",
+          timeout: 30_000,
+        });
+      } catch {
+        /* best effort */
+      }
     }
     await this.killMany(info.pids?.length ? info.pids : [info.pid], info.processGroup ?? false);
   }
