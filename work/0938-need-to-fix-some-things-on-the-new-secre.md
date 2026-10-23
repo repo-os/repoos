@@ -35,9 +35,11 @@ Need to fix some things on the new secrets feature:
 
 ![Screenshot-2026-10-23-at-22.29.39](/api/tasks/0938/attachments/att_c170452e-8cf8-49bf-877b-5fbeb5bb2ca7.png)
 ![Screenshot-2026-10-23-at-22.34.35](/api/tasks/0938/attachments/att_ded01a5e-bb61-4cef-b28e-129a0003879c.png)
+![Screenshot-2026-10-23-at-22.34.28](/api/tasks/0938/attachments/att_48c9c510-de65-4be9-8ef2-1b5c569aacca.png)
 
 ## Activity
 
 - 2026-10-23T14:40:45Z · created · hello@repoos.org
+- 2026-10-23T14:40:54Z · screenshots
 - 2026-10-23T14:40:54Z · screenshots
 - 2026-10-23T14:40:54Z · screenshots
