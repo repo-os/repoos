@@ -297,6 +297,7 @@ describe("project environment secret routes", () => {
       fx.ctx,
       fx.req("{}", { token: fx.memberToken }),
       memberBindings.res,
+      {},
     );
     expect(memberBindings.fake.status).toBe(200);
 
