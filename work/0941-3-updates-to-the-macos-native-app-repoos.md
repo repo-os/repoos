@@ -2,7 +2,7 @@
 id: "0941"
 title: Polish macOS native app tab bar
 type: feature
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -65,4 +65,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T18:26:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-23T18:26:37Z · message_delivered: 1 message(s)
 - 2026-10-23T18:28:47Z · body
-- 2026-10-23T18:38:41Z · note: shots: skipped — the diff (2 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-23T18:38:41Z · status active→review
