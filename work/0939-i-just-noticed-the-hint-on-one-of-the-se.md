@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation unavailable: ssh upload of candidate bundle to bee failed: upload too slow (ETA 1806s exceeds budget) — trying another host or local gate — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
-last_handoff_failure_sha: 1daffbf8c814c97b9f98f5dfa7d7d0f0a85862ae
 id: "0939"
 title: Fix keyboard navigation and hints in search bars
 type: bug
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-keyboard-navigation-and-hints-in-sea
 created_at: "2026-10-23T16:10:17Z"
-updated_at: "2026-10-23T17:14:58Z"
+updated_at: "2026-10-23T17:21:39Z"
+last_handoff_failure_fingerprint: "check|remote validation unavailable: ssh upload of candidate bundle to bee failed: upload too slow (ETA 1806s exceeds budget) — trying another host or local gate — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
+last_handoff_failure_sha: 1daffbf8c814c97b9f98f5dfa7d7d0f0a85862ae
 ---
 ## Problem
 
@@ -80,4 +80,4 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 - 2026-10-23T17:12:54Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/search-overlay-context.test.ts > SearchOverlay context scope (#0557) > navigates results with arrows, opens the highlighted result, and closes on Escape on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-23T17:12:54Z · note: handoff requested (cli)
 - 2026-10-23T17:14:58Z · handoff failed · task-file handoff failed at check · remote validation unavailable: ssh upload of candidate bundle to bee failed: upload too slow (ETA 1806s exceeds budget) — trying another host or local gate — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
-
+- 2026-10-23T17:21:39Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/search-overlay-context.test.ts > SearchOverlay context scope (#0557) > navigates results with arrows, opens the highlighted result, and closes on Escape on bee — fix it in the feature branch and re-run the gate
