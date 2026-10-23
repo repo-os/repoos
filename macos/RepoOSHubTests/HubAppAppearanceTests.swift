@@ -4,16 +4,18 @@ import XCTest
 @testable import RepoOSHub
 
 final class HubAppAppearanceTests: XCTestCase {
-    func testTrafficLightCorrectionMovesSixPointsDownAndRight() {
-        let origin = CGPoint(x: 12, y: 24)
-        let corrected = HubTrafficLightPositioning.correctedOrigin(for: origin)
-        XCTAssertEqual(corrected.x, 18, accuracy: 0.01)
-        XCTAssertEqual(corrected.y, 18, accuracy: 0.01)
+    func testTrafficLightCorrectionCentersControlsInTheirContainer() {
+        let frame = NSRect(x: 12, y: 24, width: 14, height: 14)
+        let bounds = NSRect(x: 0, y: 0, width: 200, height: 40)
+        let corrected = HubTrafficLightPositioning.correctedOrigin(for: frame, in: bounds)
+        XCTAssertEqual(corrected.x, 27, accuracy: 0.01)
+        XCTAssertEqual(corrected.y, 17, accuracy: 0.01)
     }
 
-    func testTabDragRegionDoesNotStartWindowMovement() {
-        let region = HubTabDragRegionView(frame: NSRect(x: 0, y: 0, width: 100, height: 40))
-        XCTAssertFalse(region.mouseDownCanMoveWindow)
+    func testEmptyStripIsTheOnlyWindowBackgroundDragRegion() {
+        let emptySpace = HubWindowDragRegionView(frame: NSRect(x: 0, y: 0, width: 100, height: 40))
+
+        XCTAssertTrue(emptySpace.mouseDownCanMoveWindow)
     }
 
     @MainActor
@@ -170,6 +172,7 @@ final class HubAppAppearanceTests: XCTestCase {
         XCTAssertTrue(window.styleMask.contains(.closable))
         XCTAssertTrue(window.styleMask.contains(.miniaturizable))
         XCTAssertTrue(window.styleMask.contains(.resizable))
+        XCTAssertFalse(window.isMovableByWindowBackground)
         XCTAssertNotNil(window.standardWindowButton(.closeButton))
         XCTAssertNotNil(window.standardWindowButton(.miniaturizeButton))
         XCTAssertNotNil(window.standardWindowButton(.zoomButton))
@@ -184,9 +187,12 @@ final class HubAppAppearanceTests: XCTestCase {
         HubTrafficLightPositioning.apply(to: window)
         let correctedOrigins = controlTypes.compactMap { window.standardWindowButton($0)?.frame.origin }
         XCTAssertEqual(correctedOrigins.count, 3)
-        for (original, corrected) in zip(originalControlOrigins, correctedOrigins) {
-            XCTAssertEqual(corrected.x, original.x + 6, accuracy: 0.01)
-            XCTAssertEqual(corrected.y, original.y - 6, accuracy: 0.01)
+        for ((type, original), corrected) in zip(zip(controlTypes, originalControlOrigins), correctedOrigins) {
+            XCTAssertEqual(corrected.x, original.x + 15, accuracy: 0.01)
+            XCTAssertEqual(
+                window.standardWindowButton(type)?.frame.midY,
+                window.standardWindowButton(type)?.superview?.bounds.midY
+            )
         }
 
         // Window appearance updates repeat this method. The correction must
@@ -194,6 +200,23 @@ final class HubAppAppearanceTests: XCTestCase {
         configureHubWorkspaceWindowChrome(window)
         let repeatedOrigins = controlTypes.compactMap { window.standardWindowButton($0)?.frame.origin }
         XCTAssertEqual(repeatedOrigins, correctedOrigins)
+
+        // Model AppKit's native relayout during resize/fullscreen by moving the
+        // controls independently. The next chrome layout must correct from
+        // their new positions rather than the stale first-window baseline.
+        let nativeLayoutOrigins = correctedOrigins.map { CGPoint(x: $0.x + 3, y: $0.y + 4) }
+        for (type, origin) in zip(controlTypes, nativeLayoutOrigins) {
+            window.standardWindowButton(type)?.setFrameOrigin(origin)
+        }
+        HubTrafficLightPositioning.apply(to: window)
+        let relaidOutOrigins = controlTypes.compactMap { window.standardWindowButton($0)?.frame.origin }
+        for ((type, native), corrected) in zip(zip(controlTypes, nativeLayoutOrigins), relaidOutOrigins) {
+            XCTAssertEqual(corrected.x, native.x + 15, accuracy: 0.01)
+            XCTAssertEqual(
+                window.standardWindowButton(type)?.frame.midY,
+                window.standardWindowButton(type)?.superview?.bounds.midY
+            )
+        }
     }
 
     /// `makeNSView` can run before SwiftUI assigns the scene's NSWindow, so the
