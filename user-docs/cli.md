@@ -490,8 +490,7 @@ looks healthy (PID alive and `/api/health` reports the same root).
 `--prune` removes stale registry files (dead PID, or a live PID whose
 `/api/health` is unreachable or reports a different root), then lists the rest.
 `--json` prints the same data for scripts. Preview servers and task worktree
-serves never register. See [Running-server registry](/docs/server-registry.md)
-for the Hub JSON contract.
+serves never register. The Hub uses the same registry to discover local servers.
 
 ### `repoos status [--json]`
 
