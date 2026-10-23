@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 201907
-last_close_out_gate_at: "2026-10-23T19:16:14.800Z"
 id: "0940"
 title: Use RepoOS pressure guard for start decisions
 type: spec
-status: review
+status: done
 priority: p2
 area: [agent, core, docs]
+merged_commit: 97d10bd18559acf9c682c08716b812bf556fc89e
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/use-repoos-pressure-guard-for-start-deci
@@ -16,6 +15,8 @@ review_cli_override: opencode
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T16:56:10Z"
 updated_at: "2026-10-23T19:16:14Z"
+last_close_out_gate_ms: 201907
+last_close_out_gate_at: "2026-10-23T19:16:14.800Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-23T17:19:08.287Z: repoos check failed: remote validation unavailable: host bee skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 ---

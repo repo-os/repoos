@@ -141,7 +141,8 @@ The brief covers:
   `chore(config):` commits, and the keys themselves diffed against the baseline.
 - **The AGENTS.md rules that matter to a driver**, pulled from the operating
   loop / rules / review sections so they travel with the brief instead of being
-  re-read by hand.
+  re-read by hand (including **never inventing resource gates** — only RepoOS's
+  configured `pressureGuard` blocks starts; see `docs/memory-pressure-guard.md`).
 
 The same snapshot is on **`GET /api/driver/brief`**. Lessons a driver learns
 belong in the repo, not in a private memory store: append them to the driver
