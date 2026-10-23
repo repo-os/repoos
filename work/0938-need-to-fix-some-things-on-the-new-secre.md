@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-23T15:00:11Z"
-review_passes: 1
 id: "0938"
 title: Fix environment selection and creation feedback
 type: bug
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-environment-selection-and-creation-f
 created_at: "2026-10-23T14:40:45Z"
+updated_at: "2026-10-23T14:58:45Z"
 ---
 ## Problem
 
@@ -54,29 +53,6 @@ Need to fix some things on the new secrets feature:
 - add some vertical padding above the yellow create environment button so that it's prettier
 - please make sure this new feature works
 
-## Shots
-```json
-[
-{
-"label": "Styled local environment selector",
-"target": "default",
-"route": "/deployments?shotState=deployments:environmentBinding",
-"highlight": ".dep-env-select"
-},
-{
-"label": "Environment creation panel with feedback area",
-"target": "default",
-"route": "/secrets?shotState=secrets:populated",
-"highlight": ".secrets-create-panel",
-"steps": [
-{
-"click": ".secrets-create-inline"
-}
-]
-}
-]
-```
-
 ## Screenshots
 
 ![Screenshot-2026-10-23-at-22.29.39](/api/tasks/0938/attachments/att_c170452e-8cf8-49bf-877b-5fbeb5bb2ca7.png)
@@ -94,9 +70,4 @@ Need to fix some things on the new secrets feature:
 - 2026-10-23T14:41:21Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-10-23T14:41:28Z · status inbox→ready
 - 2026-10-23T14:41:30Z · status ready→active, branch
-- 2026-10-23T14:45:13Z · body
-- 2026-10-23T14:46:43Z · body
-- 2026-10-23T14:58:45Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-10-23T14:58:45Z · status active→review
-- 2026-10-23T15:00:11Z · note: review pass 1: good to go
-

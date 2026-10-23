@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import Button from "../components/ui/button.vue";
+import Select from "../components/ui/select/root.vue";
+import SelectContent from "../components/ui/select/content.vue";
+import SelectItem from "../components/ui/select/item.vue";
+import SelectTrigger from "../components/ui/select/trigger.vue";
+import SelectValue from "../components/ui/select/value.vue";
+import SelectViewport from "../components/ui/select/viewport.vue";
+import Dialog from "../components/ui/dialog/root.vue";
+import DialogContent from "../components/ui/dialog/content.vue";
+import DialogOverlay from "../components/ui/dialog/overlay.vue";
+import DialogTitle from "../components/ui/dialog/title.vue";
+import DialogDescription from "../components/ui/dialog/description.vue";
 import { api, JSON_OPTS } from "../api";
 import { useAuthStore } from "../stores/auth";
 import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
@@ -56,6 +67,7 @@ interface ServiceGroup {
 
 /** Cycled per branch column — distinct, theme-aware accent tokens (#0365). */
 const ACCENT_VARS = ["--cyan", "--violet", "--amber", "--green"];
+const NO_ENVIRONMENT_SELECTION = "__repoos_no_environment__";
 
 const status = ref<DeploymentsStatus | null>(null);
 const auth = useAuthStore();
@@ -67,6 +79,7 @@ const message = ref("");
 const confirmBranch = ref<string | null>(null);
 const deploying = ref<string | null>(null);
 const deployError = ref("");
+const environmentHelpOpen = ref(false);
 const now = ref(Date.now());
 let tick: ReturnType<typeof setInterval> | null = null;
 
@@ -219,7 +232,7 @@ async function load(): Promise<void> {
     const environments = canBindEnvironment.value
       ? await api<{ environments: { id: string }[] }>("/api/project-environments")
       : { environments: [] };
-    status.value = { ...deployments, environments: environments.environments };
+    status.value = { ...deployments, environments: environments.environments ?? [] };
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -448,32 +461,53 @@ onBeforeUnmount(() => {
                 </div>
                 <label v-if="canBindEnvironment" class="dep-env-binding">
                   Local environment
-                  <select
-                    :value="svc.cells.get(b.branch)!.environment ?? ''"
-                    :aria-label="`Local environment for ${svc.cells.get(b.branch)!.name} on ${b.branch}`"
-                    @change="
-                      bindEnvironment(
-                        svc.cells.get(b.branch)!,
-                        ($event.target as HTMLSelectElement).value || null,
-                      )
+                  <Select
+                    v-if="(status.environments ?? []).length"
+                    :model-value="svc.cells.get(b.branch)!.environment ?? NO_ENVIRONMENT_SELECTION"
+                    @update:model-value="
+                      (value) =>
+                        bindEnvironment(
+                          svc.cells.get(b.branch)!,
+                          String(value) === NO_ENVIRONMENT_SELECTION ? null : String(value),
+                        )
                     "
                   >
-                    <option value="">Not selected</option>
-                    <option
-                      v-if="
-                        svc.cells.get(b.branch)!.environment &&
-                        !status.environments.some(
-                          (env) => env.id === svc.cells.get(b.branch)!.environment,
-                        )
-                      "
-                      :value="svc.cells.get(b.branch)!.environment!"
+                    <SelectTrigger
+                      class="dep-env-select"
+                      :aria-label="`Local environment for ${svc.cells.get(b.branch)!.name} on ${b.branch}`"
+                      ><SelectValue placeholder="Not selected"
+                    /></SelectTrigger>
+                    <SelectContent position="popper"
+                      ><SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                        <SelectItem :value="NO_ENVIRONMENT_SELECTION">Not selected</SelectItem>
+                        <SelectItem
+                          v-if="
+                            svc.cells.get(b.branch)!.environment &&
+                            !(status.environments ?? []).some(
+                              (env) => env.id === svc.cells.get(b.branch)!.environment,
+                            )
+                          "
+                          :value="svc.cells.get(b.branch)!.environment!"
+                        >
+                          {{ svc.cells.get(b.branch)!.environment }} (unknown)
+                        </SelectItem>
+                        <SelectItem
+                          v-for="env in status.environments ?? []"
+                          :key="env.id"
+                          :value="env.id"
+                          >{{ env.id }}</SelectItem
+                        >
+                      </SelectViewport></SelectContent
                     >
-                      {{ svc.cells.get(b.branch)!.environment }} (unknown)
-                    </option>
-                    <option v-for="env in status.environments" :key="env.id" :value="env.id">
-                      {{ env.id }}
-                    </option>
-                  </select>
+                  </Select>
+                  <button
+                    v-else
+                    type="button"
+                    class="dep-env-select dep-env-empty"
+                    @click="environmentHelpOpen = true"
+                  >
+                    No environments configured <span aria-hidden="true">⌄</span>
+                  </button>
                   <small
                     >Local binding only. Does not upload or sync variables to
                     {{ svc.cells.get(b.branch)!.provider || "a provider" }}.</small
@@ -626,6 +660,19 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </Teleport>
+    <Teleport to="body"
+      ><Dialog :open="environmentHelpOpen" @update:open="(open) => (environmentHelpOpen = open)"
+        ><DialogOverlay /><DialogContent class="dep-env-help">
+          <DialogTitle>Local environments</DialogTitle>
+          <DialogDescription
+            >Environments hold local project secrets for tools you explicitly bind to them. They are
+            never uploaded to your deployment provider. Create one to choose it
+            here.</DialogDescription
+          >
+          <a class="dep-env-help-link" href="/secrets">Go to Secrets</a>
+        </DialogContent></Dialog
+      ></Teleport
+    >
   </div>
 </template>
 
@@ -799,15 +846,27 @@ onBeforeUnmount(() => {
   font-size: 11px;
   font-weight: 700;
 }
-.dep-env-binding select {
+.dep-env-select {
   max-width: 100%;
   min-height: 32px;
+  width: 100%;
   border: 1px solid var(--border);
   border-radius: 7px;
   padding: 4px 8px;
   color: var(--txt);
   background: var(--panel);
   font: inherit;
+}
+.dep-env-empty {
+  display: flex;
+  justify-content: space-between;
+  color: var(--txt-faint);
+  opacity: 0.75;
+  text-align: left;
+}
+.dep-env-help {
+  display: grid;
+  gap: 14px;
 }
 .dep-env-binding small {
   color: var(--txt-faint);

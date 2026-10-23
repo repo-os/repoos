@@ -43,6 +43,7 @@ const valueDraft = ref("");
 const saving = ref(false);
 const confirmKey = ref<KeyRow | null>(null);
 const message = ref("");
+const createError = ref("");
 const addOpen = ref(false);
 const restartKeys = ref(new Set<string>());
 const shotFixture = readShotPreviewFixtureFromLocation(window.location);
@@ -140,6 +141,8 @@ async function createEnvironment(): Promise<void> {
   if (!name) return;
   saving.value = true;
   error.value = "";
+  createError.value = "";
+  message.value = "";
   try {
     const result = await api<{ environment: Environment }>(
       "/api/project-environments",
@@ -149,10 +152,11 @@ async function createEnvironment(): Promise<void> {
     selected.value = result.environment.id;
     newName.value = "";
     createOpen.value = false;
+    message.value = `Environment “${result.environment.id}” created.`;
     window.dispatchEvent(new CustomEvent("repoos:project-environments-changed"));
     await loadSnapshot();
   } catch (e) {
-    error.value = safeError(e);
+    createError.value = e instanceof ApiError ? e.message : safeError(e);
   } finally {
     saving.value = false;
   }
@@ -236,6 +240,7 @@ onMounted(() => {
         <div class="secrets-picker-wrap">
           <Select
             :model-value="selected"
+            :disabled="!environments.length"
             @update:model-value="
               (value) => {
                 selected = String(value);
@@ -452,6 +457,7 @@ onMounted(() => {
                 required
                 placeholder="dev-local"
             /></label>
+            <p v-if="createError" class="secrets-error" role="alert">{{ createError }}</p>
             <div class="secrets-create-actions">
               <DialogClose as-child
                 ><Button variant="outline" type="button">Cancel</Button></DialogClose
