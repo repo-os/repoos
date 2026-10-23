@@ -84,3 +84,4 @@ If the RepoOS pressure guard blocks a start, report the reason to the human. Don
 - 2026-10-23T18:22:49Z · message_delivered: 1 message(s)
 - 2026-10-23T18:34:52Z · body
 - 2026-10-23T18:42:47Z · status active→review
+- 2026-10-23T18:42:47Z · note: shots: skipped — Docs site skipped: no docs shot declared
