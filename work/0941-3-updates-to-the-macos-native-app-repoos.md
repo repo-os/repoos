@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-macos-native-app-tab-bar
 created_at: "2026-10-23T17:20:56Z"
-updated_at: "2026-10-23T20:30:41Z"
+updated_at: "2026-10-23T20:30:42Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 3
@@ -101,3 +101,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T20:14:19Z · body
 - 2026-10-23T20:21:27Z · body
 - 2026-10-23T20:30:41Z · status active→review
+- 2026-10-23T20:30:42Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
