@@ -32,14 +32,15 @@ and `#` comments ignored, optional surrounding single or double quotes stripped.
 There is no `export` keyword and no variable interpolation. A key already present
 in the process environment is never overwritten by the file.
 
-Because a machine-wide provider key can be set once for the whole host while a
-project-specific secret stays in the repo's `.env`, the two coexist without
-either shadowing the other.
+RepoOS provider/auth/infrastructure credentials and application project secrets
+have different consumers and management flows. Root `.env` loading configures
+the RepoOS process; named environments are injected only into explicitly bound
+local child processes.
 
 ## Project secrets in `.env`
 
-The legacy root `.env` behavior above remains in effect until a project opts
-into explicitly registered named environments. The storage foundation for that
+The legacy root `.env` behavior above remains in effect for RepoOS configuration.
+Named project environments are a separate application-secret store. The storage foundation for that
 model is documented in [ADR 0010](../docs/adr/0010-named-project-environments-and-file-backed-secrets.md).
 Environment names and source files must be registered deliberately; RepoOS
 does not discover `.env*` files, infer names from filenames or `NODE_ENV`, or
@@ -81,6 +82,10 @@ from the child's inherited environment; there is no fallback to another named
 environment, including `production`. Machine/service keys (`REPOOS_*`, `PATH`,
 `HOME`, and `NODE_OPTIONS`) cannot be granted. Named values are injected into
 child processes only; RepoOS never installs them into its own `process.env`.
+Names beginning `VITE_`, `NEXT_PUBLIC_`, or `PUBLIC_` are labeled **public**
+because frontend tooling commonly embeds them in client assets. The prefix is a
+visibility warning, not an access control. Other names are labeled
+server-only, which describes intended use rather than a sandbox guarantee.
 
 `repoos check` applies `check:default` to local check-step children. Remote
 validation does not receive project values from these bindings. This limits
@@ -103,16 +108,21 @@ visibility, and a content version for safe concurrent edits. Use
 `repoos secrets add|replace|delete dev KEY`; add and replace read the value
 from stdin or a hidden terminal prompt. Values are never returned by the API
 or printed by the CLI. Writes and deletes apply only to the **last** registered
-source file; keys that appear only from an earlier source are read-only through
-the API (delete is rejected; replace adds an override in the writable file).
-Management endpoints require an authenticated admin, reject mismatched browser
-origins, and write value-free audit entries to `.repoos/secret-audit.ndjson`.
+source file; keys that appear only from an earlier source are read-only in the
+API, CLI, and UI. Both replace and delete return a conflict until the key is
+present in the writable source. Each mutation includes the metadata version it
+was based on; a concurrent edit returns a conflict and requires reloading the
+inventory. Metadata reads are available to signed-in members; mutations require
+an authenticated admin, reject mismatched browser origins, and write value-free
+audit entries to `.repoos/secret-audit.ndjson`.
 Fixed RepoOS credentials remain managed through their dedicated settings and
-provider routes.
+provider routes. A project environment does not sync values to a provider or
+deployment platform; deployment bindings are local metadata only and do not
+publish or upload values.
 
-Use a gitignored `.env` at the repository root for secrets that belong to this
-codebase. It is the right home for provider keys and session secrets that should
-vary between repos.
+Use a gitignored `.env` at the repository root for RepoOS provider keys and
+session secrets. Use named project environments for application credentials
+such as a project's `DATABASE_URL`.
 
 ```bash
 # Auth
@@ -157,6 +167,26 @@ repo-root `.env` is better for per-project secrets that only this repository
 should see. Prefer your platform's secret store — systemd `Environment=`,
 launchd, Docker secrets, or a CI secret store — over a file on disk for
 machine-wide credentials.
+
+## What file-backed means
+
+Named project values are ordinary dotenv text in gitignored files. They are
+**not encrypted at rest** and are not an encrypted vault. Restricted file
+permissions where supported, atomic writes, and refusal of tracked or unsafe
+destinations reduce accidents; they do not protect against a user,
+administrator, backup system, malware, or another local process that can read
+the files. Use an operating-system or hosted secret manager when that level of
+protection is required.
+
+Version 1 is write-only through RepoOS: the UI and API report names,
+set/missing state, source, visibility, and grants, but never return saved
+values. A local administrator who can read the source file can still retrieve
+them. Explicit bindings grant selected keys to a local dev, preview, or check
+consumer. Worktrees do not inherit production access, and remote validation
+receives no project values. This limits RepoOS-managed injection only. Agents
+and commands run as local processes with the user's OS permissions; unrestricted
+processes can read other accessible files, inherit ambient machine values, or
+use the network.
 
 ## Supported environment variables
 

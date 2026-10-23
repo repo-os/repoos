@@ -1,14 +1,13 @@
 ---
-last_close_out_gate_ms: 110982
-last_close_out_gate_at: "2026-10-23T00:34:45.790Z"
 id: "0932"
 title: Verify secrets security boundaries and complete user documentation
 type: chore
-status: review
+status: done
 priority: p1
 area: [docs, server, core]
 story: Secrets and project environments
 depends_on: ["0928", "0929", "0930", "0931"]
+merged_commit: 59ce26485a2d33a7072cce5fcd855e65b0640936
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/verify-secrets-security-boundaries-and-c
@@ -16,6 +15,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:07:24Z"
 updated_at: "2026-10-23T00:34:45Z"
+last_close_out_gate_ms: 110982
+last_close_out_gate_at: "2026-10-23T00:34:45.790Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---

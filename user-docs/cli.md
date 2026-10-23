@@ -441,6 +441,32 @@ copy the live board reads. `repoos new --story "…"` and
 The same write is on the HTTP API for a script that prefers it:
 `POST /api/stories { name?, body }` and `PATCH /api/stories/:key { name?, body? }`.
 
+## Project secrets
+
+### `repoos secrets`
+
+Manage explicitly registered project environments without printing saved
+values. Use `list` to view key names and safe metadata; `add`, `replace`, and
+`delete` read new values from stdin or a hidden terminal prompt. The API and CLI
+use a content version for each write, so a concurrent edit returns a conflict
+and must be retried after reloading. Keys inherited only from an earlier source
+are read-only through the API, CLI, and Secrets page; neither replace nor delete
+silently creates an override.
+
+```bash
+repoos secrets list dev
+printf '%s' 'fake-value' | repoos secrets add dev SERVICE_TOKEN
+repoos secrets replace dev SERVICE_TOKEN   # hidden prompt in a terminal
+repoos secrets delete dev SERVICE_TOKEN
+repoos secrets bind dev:web dev-nick DATABASE_URL STRIPE_SECRET_KEY
+repoos secrets bindings
+```
+
+Bindings select one environment and an explicit key allowlist for a local
+consumer. They never fall back to another environment. See
+[Environment and secrets](/environment-and-secrets) for storage, permissions,
+and exposure limits.
+
 ## Running it
 
 ### `repoos serve [--port N]`
@@ -464,8 +490,7 @@ looks healthy (PID alive and `/api/health` reports the same root).
 `--prune` removes stale registry files (dead PID, or a live PID whose
 `/api/health` is unreachable or reports a different root), then lists the rest.
 `--json` prints the same data for scripts. Preview servers and task worktree
-serves never register. See [Running-server registry](/docs/server-registry.md)
-for the Hub JSON contract.
+serves never register. The Hub uses the same registry to discover local servers.
 
 ### `repoos status [--json]`
 

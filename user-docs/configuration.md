@@ -8,11 +8,13 @@ RepoOS separates project settings from secrets:
 | Where | Good for | Committed? |
 | --- | --- | --- |
 | `repoos.toml` (repo root) | project behavior, board settings, previews, checks, auth UX, releases, deployments | Yes — git-tracked |
-| `.env` (repo root, gitignored) | repo-specific secrets and local overrides | No |
+| `.env` (repo root, gitignored) | RepoOS provider/auth/infrastructure secrets and legacy process overrides | No |
+| registered project environment files | application secrets granted to named local consumers | No |
 | machine / service environment | machine-wide provider keys and infrastructure credentials | No |
 
-**No secret belongs in `repoos.toml`.** Set provider and session secrets in
-`.env` or the machine environment instead. The one secret field the Settings UI
+**No secret belongs in `repoos.toml`.** Set RepoOS provider and session secrets in
+`.env` or the machine environment; use named project environments for
+application secrets. The one secret field the Settings UI
 will write to the file is `whisper.apiKey` — and you should still prefer
 `REPOOS_WHISPER_KEY` in `.env`. The full secret contract — precedence, rotation,
 and the safe `.env.example` — is in
@@ -892,9 +894,13 @@ inheritEnv = false
 | `worktrees.installCommand` | string | *(empty)* | yes | Same as `closeOut.installCommand` when the close-out section does not set it. |
 
 **`inheritEnv` is off by default and must be opted into deliberately.** Every
-worktree is another place secrets live on disk. When enabled, RepoOS creates a
-symlink (not a copy) at `<worktree>/.env` pointing to the main checkout's
-`.env`. The link is created only when all of these hold:
+worktree is another place RepoOS's root `.env` configuration is reachable.
+When enabled, RepoOS creates a symlink (not a copy) at `<worktree>/.env`
+pointing to the main checkout's `.env`. This is legacy RepoOS process
+configuration; it does not select or grant a named project environment. A
+process running with the user's permissions can follow that link and read the
+file, so enable this only when that exposure is acceptable. The link is created
+only when all of these hold:
 
 - The main checkout has a `.env` file.
 - The worktree does not already have its own real `.env`.
