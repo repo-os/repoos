@@ -14,7 +14,7 @@ branch: feat/verify-secrets-security-boundaries-and-c
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T08:07:24Z"
-updated_at: "2026-10-23T00:34:45Z"
+updated_at: "2026-10-23T00:35:41Z"
 last_close_out_gate_ms: 110982
 last_close_out_gate_at: "2026-10-23T00:34:45.790Z"
 review_passes: 1
@@ -57,4 +57,4 @@ Depends directly on #0928, #0929, #0930, and #0931; those implementation slices 
 - 2026-10-23T00:25:51Z · status active→review
 - 2026-10-23T00:26:45Z · note: review pass 1: good to go
 - 2026-10-23T00:34:45Z · close-out gate completed in 111s
-
+- 2026-10-23T00:35:41Z · status done→done, release:success
