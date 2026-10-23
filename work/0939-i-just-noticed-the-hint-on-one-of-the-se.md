@@ -2,14 +2,14 @@
 id: "0939"
 title: Fix keyboard navigation and hints in search bars
 type: bug
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-keyboard-navigation-and-hints-in-sea
 created_at: "2026-10-23T16:10:17Z"
-updated_at: "2026-10-23T16:49:09Z"
+updated_at: "2026-10-23T17:57:56Z"
 ---
 ## Problem
 
@@ -51,3 +51,4 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 - 2026-10-23T16:10:48Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-10-23T16:47:28Z · status inbox→ready
 - 2026-10-23T16:49:09Z · status ready→active, branch
+- 2026-10-23T17:57:56Z · status active→review
