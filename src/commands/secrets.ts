@@ -1,6 +1,17 @@
 import { RepoOsApi } from "../cli/repoos-api.js";
 import { normalizeProjectEnvironmentConsumer } from "../core/project-environments.js";
 
+export function assertSecretMutationAllowed(
+  action: "add" | "replace" | "delete",
+  row: { status: string; inherited?: boolean } | undefined,
+): void {
+  if ((action === "replace" || action === "delete") && row?.inherited)
+    throw new Error("Key is inherited from an earlier source and cannot be changed");
+  if (action === "add" && row?.status === "set") throw new Error("Key already exists; use replace");
+  if ((action === "replace" || action === "delete") && row?.status !== "set")
+    throw new Error("Key is not set");
+}
+
 async function secretInput(): Promise<string> {
   if (!process.stdin.isTTY) {
     const chunks: Buffer[] = [];
@@ -95,6 +106,7 @@ export async function cmdSecrets(args: string[]): Promise<number> {
         source: string;
         visibility: string;
         version: string;
+        inherited?: boolean;
       }>;
     };
     if (action === "list") {
@@ -107,10 +119,7 @@ export async function cmdSecrets(args: string[]): Promise<number> {
       return 2;
     }
     const row = metadata.keys.find((item) => item.name === key);
-    if (action === "add" && row?.status === "set")
-      throw new Error("Key already exists; use replace");
-    if ((action === "replace" || action === "delete") && row?.status !== "set")
-      throw new Error("Key is not set");
+    assertSecretMutationAllowed(action, row);
     const value = action === "delete" ? undefined : await secretInput();
     await api.requestOk("PUT", path, { action, key, value, version: metadata.version });
     console.log(`${action === "delete" ? "Removed" : "Saved"} ${key} in ${environment}`);

@@ -1077,6 +1077,45 @@ describe("dev target routes", () => {
     }
   });
 
+  it("fails a target start for a stale environment binding without returning an ambient secret", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-stale-environment-"));
+    mkdirSync(join(dir, ".repoos"), { recursive: true });
+    writeFileSync(
+      join(dir, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [
+          { id: "dev", sources: [{ id: "local", path: ".env.dev" }] },
+          { id: "production", sources: [{ id: "local", path: ".env.production" }] },
+        ],
+      }),
+    );
+    writeFileSync(join(dir, ".env.dev"), "\n");
+    writeFileSync(join(dir, ".env.production"), "DATABASE_URL=FAKE_SENTINEL_0932_PRODUCTION\n");
+    writeFileSync(
+      join(dir, ".repoos/environment-bindings.json"),
+      JSON.stringify({
+        bindings: [{ consumer: "dev:web", environment: "deleted-prod", keys: ["DATABASE_URL"] }],
+      }),
+    );
+    const previous = process.env.DATABASE_URL;
+    process.env.DATABASE_URL = "FAKE_SENTINEL_0932_AMBIENT_PRODUCTION";
+    const mgr = new DevTargetManager(
+      baseConfig({ targets: [target({ command: 'bun -e "process.exit(0)"' })] }, dir),
+    );
+    try {
+      const response = makeRes();
+      await startDevTarget(makeCtx(mgr), req, response.res, { param1: "web" });
+      expect(response.fake.status).toBe(502);
+      expect((await mgr.getDetailed("web"))?.status).toBe("failed");
+      expect(JSON.stringify(response.fake.payload)).not.toContain("FAKE_SENTINEL_0932");
+    } finally {
+      await mgr.stopAll();
+      if (previous === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = previous;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("starts, then stops, a process target through the routes", async () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-dev-route-process-"));
     const mgr = new DevTargetManager(

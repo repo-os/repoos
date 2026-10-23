@@ -96,6 +96,9 @@ describe("project environment secret routes", () => {
   it("mutates values without returning, logging, or auditing them and rejects stale edits", async () => {
     const fx = makeFixture();
     root = fx.root;
+    mkdirSync(join(root, "work"));
+    writeFileSync(join(root, "work/task.md"), "Task body without secret values.\n");
+    writeFileSync(join(root, "repoos.toml"), 'defaultAssignee = "ai"\n');
     const first = fx.response();
     listProjectEnvironmentSecrets(fx.ctx, fx.req(), first.res, { param1: "dev" });
     expect(first.fake.headers["cache-control"]).toBe("no-store");
@@ -121,6 +124,8 @@ describe("project environment secret routes", () => {
     const secretFree =
       JSON.stringify(put.fake.payload) + JSON.stringify(fx.auth.getAuditLog(20)) + auditText;
     expect(secretFree).not.toContain(sentinel);
+    expect(readFileSync(join(root, "work/task.md"), "utf8")).not.toContain(sentinel);
+    expect(readFileSync(join(root, "repoos.toml"), "utf8")).not.toContain(sentinel);
     expect(auditText).toContain('"action":"replace"');
     expect(auditText).toContain('"key":"TOKEN"');
     const stale = fx.response();
@@ -191,14 +196,132 @@ describe("project environment secret routes", () => {
     });
   });
 
-  it("rejects non-admin callers, mismatched origins, and reserved RepoOS keys", async () => {
+  it("reports example key names without returning tracked placeholder values", () => {
+    const fx = makeFixture();
+    root = fx.root;
+    const sentinel = "FAKE_SENTINEL_0932_EXAMPLE_PLACEHOLDER";
+    writeFileSync(join(root, ".env.example"), `EXAMPLE_TOKEN=${sentinel}\n`);
+    execFileSync("git", ["add", ".env.example"], { cwd: root });
+    writeFileSync(
+      join(root, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [
+          { id: "dev", sources: [{ id: "local", path: ".env.dev", examplePath: ".env.example" }] },
+        ],
+      }),
+    );
+    const response = fx.response();
+    listProjectEnvironmentSecrets(fx.ctx, fx.req(), response.res, { param1: "dev" });
+    expect(response.fake.status).toBe(200);
+    expect(response.fake.raw).not.toContain(sentinel);
+    expect(
+      (response.fake.payload as { keys: Array<{ name: string; status: string }> }).keys,
+    ).toContainEqual(expect.objectContaining({ name: "EXAMPLE_TOKEN", status: "missing" }));
+  });
+
+  it("refuses tracked sources through the real route without echoing the submitted value", async () => {
+    const fx = makeFixture();
+    root = fx.root;
+    const sentinel = "FAKE_SENTINEL_0932_TRACKED_WRITE";
+    writeFileSync(join(root, "tracked.env"), "TOKEN=old\n");
+    execFileSync("git", ["add", "tracked.env"], { cwd: root });
+    writeFileSync(
+      join(root, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [{ id: "dev", sources: [{ id: "local", path: "tracked.env" }] }],
+      }),
+    );
+    const list = fx.response();
+    listProjectEnvironmentSecrets(fx.ctx, fx.req(), list.res, { param1: "dev" });
+    const { version } = list.fake.payload as { version: string };
+    const write = fx.response();
+    await mutateProjectEnvironmentSecret(
+      fx.ctx,
+      fx.req(JSON.stringify({ action: "replace", key: "TOKEN", value: sentinel, version })),
+      write.res,
+      { param1: "dev" },
+    );
+    expect(write.fake.status).toBe(400);
+    expect(write.fake.raw).not.toContain(sentinel);
+    expect(readFileSync(join(root, "tracked.env"), "utf8")).toBe("TOKEN=old\n");
+  });
+
+  it.each(["REPOOS_TOKEN", "PATH", "HOME", "NODE_OPTIONS", "PORT", "HOST"])(
+    "rejects reserved project key %s on the real mutation route",
+    async (key) => {
+      const fx = makeFixture();
+      root = fx.root;
+      const list = fx.response();
+      listProjectEnvironmentSecrets(fx.ctx, fx.req(), list.res, { param1: "dev" });
+      const metadata = list.fake.payload as { version: string };
+      const write = fx.response();
+      await mutateProjectEnvironmentSecret(
+        fx.ctx,
+        fx.req(
+          JSON.stringify({
+            action: "add",
+            key,
+            value: `FAKE_SENTINEL_${key}`,
+            version: metadata.version,
+          }),
+        ),
+        write.res,
+        { param1: "dev" },
+      );
+      expect(write.fake.status).toBe(400);
+      expect(write.fake.raw).not.toContain(`FAKE_SENTINEL_${key}`);
+    },
+  );
+
+  it("allows member metadata reads, rejects member writes and mismatched origins", async () => {
     const fx = makeFixture();
     root = fx.root;
     const denied = fx.response();
     listProjectEnvironmentSecrets(fx.ctx, fx.req("{}", { token: fx.memberToken }), denied.res, {
       param1: "dev",
     });
-    expect(denied.fake.status).toBe(403);
+    expect(denied.fake.status).toBe(200);
+    expect(denied.fake.headers["cache-control"]).toBe("no-store");
+    expect(JSON.stringify(denied.fake.payload)).not.toContain("initial");
+
+    const memberEnvironments = fx.response();
+    listProjectEnvironments(
+      fx.ctx,
+      fx.req("{}", { token: fx.memberToken }),
+      memberEnvironments.res,
+      {},
+    );
+    expect(memberEnvironments.fake.status).toBe(200);
+    const memberBindings = fx.response();
+    getProjectEnvironmentBindings(
+      fx.ctx,
+      fx.req("{}", { token: fx.memberToken }),
+      memberBindings.res,
+    );
+    expect(memberBindings.fake.status).toBe(200);
+
+    const memberWrite = fx.response();
+    await createProjectEnvironment(
+      fx.ctx,
+      fx.req(JSON.stringify({ name: "member-env" }), { token: fx.memberToken }),
+      memberWrite.res,
+      {},
+    );
+    expect(memberWrite.fake.status).toBe(403);
+
+    const memberSecretWrite = fx.response();
+    await mutateProjectEnvironmentSecret(
+      fx.ctx,
+      fx.req(
+        JSON.stringify({ action: "replace", key: "TOKEN", value: "member-fake", version: "x" }),
+        {
+          token: fx.memberToken,
+        },
+      ),
+      memberSecretWrite.res,
+      { param1: "dev" },
+    );
+    expect(memberSecretWrite.fake.status).toBe(403);
 
     const origin = fx.response();
     listProjectEnvironmentSecrets(
@@ -209,6 +332,15 @@ describe("project environment secret routes", () => {
     );
     expect(origin.fake.status).toBe(403);
     expect(origin.fake.raw).not.toContain("initial");
+
+    const createOrigin = fx.response();
+    await createProjectEnvironment(
+      fx.ctx,
+      fx.req(JSON.stringify({ name: "integration" }), { origin: "http://evil.example" }),
+      createOrigin.res,
+      {},
+    );
+    expect(createOrigin.fake.status).toBe(403);
 
     const list = fx.response();
     listProjectEnvironmentSecrets(fx.ctx, fx.req(), list.res, { param1: "dev" });
@@ -344,7 +476,18 @@ describe("project environment secret routes", () => {
       environmentList.res,
       {},
     );
-    expect(environmentList.fake.status).toBe(403);
+    expect(environmentList.fake.status).toBe(200);
+
+    const originDenied = fx.response();
+    await putProjectEnvironmentBinding(
+      fx.ctx,
+      fx.req(JSON.stringify({ consumer: "deployment:test", environment: "dev", keys: [] }), {
+        origin: "http://evil.example",
+      }),
+      originDenied.res,
+      {},
+    );
+    expect(originDenied.fake.status).toBe(403);
   });
 
   it("rejects delete on inherited-only keys and reports accurate status after writable delete", async () => {
@@ -427,7 +570,7 @@ describe("project environment secret routes", () => {
     );
     expect(inheritedDelete.fake.status).toBe(409);
 
-    const override = response();
+    const inheritedReplace = response();
     await mutateProjectEnvironmentSecret(
       ctx,
       req(
@@ -438,15 +581,33 @@ describe("project environment secret routes", () => {
           version: listing.version,
         }),
       ),
-      override.res,
+      inheritedReplace.res,
       { param1: "dev" },
     );
-    expect(override.fake.status).toBe(200);
-    expect(JSON.stringify(override.fake.payload)).not.toContain("FAKE_SENTINEL_0928_OVERRIDE");
+    expect(inheritedReplace.fake.status).toBe(409);
+    expect(JSON.stringify(inheritedReplace.fake.payload)).not.toContain(
+      "FAKE_SENTINEL_0928_OVERRIDE",
+    );
+    expect(readFileSync(join(root, ".env.dev"), "utf8")).not.toContain("INHERITED=");
 
+    const localAdd = response();
+    await mutateProjectEnvironmentSecret(
+      ctx,
+      req(
+        JSON.stringify({
+          action: "add",
+          key: "LOCAL",
+          value: "local-fake",
+          version: listing.version,
+        }),
+      ),
+      localAdd.res,
+      { param1: "dev" },
+    );
+    expect(localAdd.fake.status).toBe(200);
     const relist = response();
     listProjectEnvironmentSecrets(ctx, req(), relist.res, { param1: "dev" });
-    const afterOverride = relist.fake.payload as { version: string };
+    const afterLocalAdd = relist.fake.payload as { version: string };
 
     const writableDelete = response();
     await mutateProjectEnvironmentSecret(
@@ -454,15 +615,15 @@ describe("project environment secret routes", () => {
       req(
         JSON.stringify({
           action: "delete",
-          key: "INHERITED",
-          version: afterOverride.version,
+          key: "LOCAL",
+          version: afterLocalAdd.version,
         }),
       ),
       writableDelete.res,
       { param1: "dev" },
     );
     expect(writableDelete.fake.status).toBe(200);
-    expect(writableDelete.fake.payload).toMatchObject({ status: "set" });
+    expect(writableDelete.fake.payload).toMatchObject({ status: "missing" });
 
     const mutateOrigin = response();
     await mutateProjectEnvironmentSecret(
@@ -470,9 +631,9 @@ describe("project environment secret routes", () => {
       req(
         JSON.stringify({
           action: "replace",
-          key: "INHERITED",
+          key: "LOCAL",
           value: "x",
-          version: afterOverride.version,
+          version: afterLocalAdd.version,
         }),
         "http://evil.example",
       ),

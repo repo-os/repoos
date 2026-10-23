@@ -15,6 +15,7 @@ import DialogTitle from "../components/ui/dialog/title.vue";
 import DialogDescription from "../components/ui/dialog/description.vue";
 import DialogClose from "../components/ui/dialog/close.vue";
 import { ApiError, api, JSON_OPTS } from "../api";
+import { useAuthStore } from "../stores/auth";
 import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
 
 type Environment = { id: string; sources: { id: string; path: string; examplePath?: string }[] };
@@ -46,6 +47,8 @@ const addOpen = ref(false);
 const restartKeys = ref(new Set<string>());
 const shotFixture = readShotPreviewFixtureFromLocation(window.location);
 const fixture = shotFixture === "secrets:populated" || shotFixture === "secrets:removeDialog";
+const auth = useAuthStore();
+const canManage = computed(() => fixture || auth.role === "admin");
 const visibleRows = computed(() =>
   (snapshot.value?.keys ?? [])
     .map((row) =>
@@ -251,7 +254,11 @@ onMounted(() => {
               </SelectViewport>
             </SelectContent>
           </Select>
-          <Button variant="outline" class="secrets-create-inline" @click="createOpen = true"
+          <Button
+            v-if="canManage"
+            variant="outline"
+            class="secrets-create-inline"
+            @click="createOpen = true"
             >Create environment</Button
           >
         </div>
@@ -290,13 +297,13 @@ onMounted(() => {
             <span class="secrets-separator">·</span> Values are never shown
           </p>
         </div>
-        <Button variant="accent" @click="beginAdd">Add key</Button>
+        <Button v-if="canManage" variant="accent" @click="beginAdd">Add key</Button>
       </div>
       <label class="secrets-search"
         ><span aria-hidden="true">⌕</span
         ><input v-model="query" type="search" placeholder="Search keys" aria-label="Search keys"
       /></label>
-      <div v-if="addOpen" class="secrets-add-row">
+      <div v-if="canManage && addOpen" class="secrets-add-row">
         <label
           >Key name<input
             v-model="keyDraft"
@@ -356,6 +363,7 @@ onMounted(() => {
           <div class="secrets-row-actions">
             <template
               ><Button
+                v-if="canManage && row.status !== 'inherited'"
                 variant="outline"
                 @click="
                   keyDraft = row.name;
@@ -369,7 +377,7 @@ onMounted(() => {
                       : "Replace"
                 }}</Button
               ><Button
-                v-if="row.status === 'set'"
+                v-if="canManage && row.status === 'set'"
                 variant="outline"
                 class="secrets-remove"
                 @click="confirmKey = row"
@@ -379,7 +387,7 @@ onMounted(() => {
               >Defined in an earlier source</span
             >
           </div>
-          <div v-if="keyDraft === row.name" class="secrets-inline-form">
+          <div v-if="canManage && keyDraft === row.name" class="secrets-inline-form">
             <label class="sr-only" :for="`secret-${row.name}`">New value for {{ row.name }}</label
             ><input
               :id="`secret-${row.name}`"

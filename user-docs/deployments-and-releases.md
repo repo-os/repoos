@@ -198,3 +198,10 @@ propagates production values. Selecting **Not selected** clears the binding.
 If an existing binding points to an environment that has been removed or
 renamed, RepoOS marks it as unknown and refuses to push that branch until the
 binding is repaired or cleared.
+
+This binding is a local record of intent only. Deploying pushes the configured
+git branch; RepoOS does not upload or synchronize environment values to the
+provider, and selecting `production` does not grant production credentials to
+the deploy process. Configure provider runtime variables in the provider's
+own tools. See [Environment and secrets](/environment-and-secrets) for how
+local dev, preview, and check consumers receive explicit grants.
