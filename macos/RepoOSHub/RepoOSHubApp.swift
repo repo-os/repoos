@@ -230,6 +230,8 @@ private struct HubWindowAppearanceConfigurator: NSViewRepresentable {
 /// exist, so the hidden-title chrome is applied there and re-applied whenever
 /// SwiftUI updates the appearance.
 final class HubWindowChromeView: NSView {
+    private var trafficLightCorrectionQueued = false
+
     var hubAppearance: HubAppAppearance {
         didSet { configureWindow() }
     }
@@ -247,6 +249,7 @@ final class HubWindowChromeView: NSView {
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         configureWindow()
+        scheduleTrafficLightCorrection()
     }
 
     override func layout() {
@@ -258,6 +261,18 @@ final class HubWindowChromeView: NSView {
         // page, and its toggle duplicates the sidebar control (#0895).
         if let window {
             hideHubNativeToolbarRow(window)
+            HubTrafficLightPositioning.apply(to: window)
+            scheduleTrafficLightCorrection()
+        }
+    }
+
+    private func scheduleTrafficLightCorrection() {
+        guard !trafficLightCorrectionQueued else { return }
+        trafficLightCorrectionQueued = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.trafficLightCorrectionQueued = false
+            guard let window = self.window else { return }
             HubTrafficLightPositioning.apply(to: window)
         }
     }
@@ -328,50 +343,22 @@ func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
 /// runs repeatedly as SwiftUI attaches and lays out the window.
 enum HubTrafficLightPositioning {
     static let horizontalAdjustment: CGFloat = 15
-    static let verticalAdjustment: CGFloat = 4
-    private static var originalFrameAssociationKey: UInt8 = 0
-    private static var lastAppliedFrameAssociationKey: UInt8 = 0
+    static let verticalAdjustment: CGFloat = -4
 
-    static func correctedOrigin(for frame: NSRect, in bounds: NSRect) -> CGPoint {
-        CGPoint(
-            x: frame.origin.x + horizontalAdjustment,
-            y: bounds.midY - frame.height / 2 + verticalAdjustment
-        )
+    static var correctionTransform: CGAffineTransform {
+        CGAffineTransform(translationX: horizontalAdjustment, y: verticalAdjustment)
     }
 
     static func apply(to window: NSWindow) {
         let types: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
         for type in types {
             guard let button = window.standardWindowButton(type) else { continue }
-            guard let container = button.superview else { continue }
-            let currentFrame = button.frame
-            let lastApplied = objc_getAssociatedObject(button, &lastAppliedFrameAssociationKey) as? NSValue
-            let original = objc_getAssociatedObject(button, &originalFrameAssociationKey) as? NSValue
-
-            // AppKit can reposition titlebar controls after a resize, toolbar
-            // change, or fullscreen transition. Treat a frame that differs
-            // from our last write as a fresh native baseline, then reapply the
-            // same offset. Repeated layout passes remain idempotent.
-            if original == nil || lastApplied.map({ !NSEqualRects(currentFrame, $0.rectValue) }) == true {
-                objc_setAssociatedObject(
-                    button,
-                    &originalFrameAssociationKey,
-                    NSValue(rect: currentFrame),
-                    .OBJC_ASSOCIATION_RETAIN_NONATOMIC
-                )
-            }
-            guard let baseline = objc_getAssociatedObject(button, &originalFrameAssociationKey) as? NSValue else {
-                continue
-            }
-            button.setFrameOrigin(
-                correctedOrigin(for: baseline.rectValue, in: container.bounds)
-            )
-            objc_setAssociatedObject(
-                button,
-                &lastAppliedFrameAssociationKey,
-                NSValue(rect: button.frame),
-                .OBJC_ASSOCIATION_RETAIN_NONATOMIC
-            )
+            // AppKit's titlebar layout manager resets these views' frames, so
+            // move the native controls at the layer level after each layout.
+            // This keeps drawing and hit testing aligned without accumulating
+            // offsets when the window resizes or enters fullscreen.
+            button.wantsLayer = true
+            button.layer?.setAffineTransform(correctionTransform)
         }
     }
 }
