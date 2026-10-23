@@ -10,6 +10,7 @@ import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import * as apiMod from "../src/api";
 import { useAuthStore } from "../src/stores/auth";
+import Select from "../src/components/ui/select/root.vue";
 import DeploymentsView from "../src/views/DeploymentsView.vue";
 
 const api = vi.spyOn(apiMod, "api");
@@ -127,7 +128,6 @@ describe("DeploymentsView matrix (#0365)", () => {
     expect(wrapper.find(".dep-err").exists()).toBe(false);
     expect(wrapper.text()).toContain("Local environment: production");
     expect(wrapper.text()).toContain("Ask an admin to change this binding");
-    expect(wrapper.find(".dep-env-binding select").exists()).toBe(false);
     expect(api).toHaveBeenCalledTimes(1);
     expect(api).toHaveBeenCalledWith("/api/deployments");
     wrapper.unmount();
@@ -140,7 +140,7 @@ describe("DeploymentsView matrix (#0365)", () => {
       throw new Error(`Unexpected API route: ${path}`);
     });
     const wrapper = await mountView("admin");
-    expect(wrapper.find(".dep-env-binding select").exists()).toBe(true);
+    expect(wrapper.findComponent(Select).exists()).toBe(true);
     expect(wrapper.text()).not.toContain("Ask an admin to change this binding");
     expect(api).toHaveBeenCalledWith("/api/project-environments");
     wrapper.unmount();
@@ -438,6 +438,24 @@ describe("DeploymentsView empty/disabled state", () => {
     });
     const wrapper = await mountView();
     expect(wrapper.text()).toContain("Deployments aren't configured for this repository");
+    wrapper.unmount();
+  });
+
+  it("uses the styled environment selector and explains the empty state with a Secrets link", async () => {
+    api.mockImplementation(async (path) => {
+      if (path === "/api/deployments") return status() as never;
+      if (path === "/api/project-environments") return { environments: [] } as never;
+      throw new Error(`Unexpected API route: ${path}`);
+    });
+    const wrapper = await mountView();
+    expect(wrapper.findComponent(Select).exists()).toBe(false);
+    expect(wrapper.find(".dep-env-binding select").exists()).toBe(false);
+    await wrapper.get(".dep-env-empty").trigger("click");
+    await flushPromises();
+    expect(document.body.textContent).toContain("Environments hold local project secrets");
+    expect(document.body.querySelector('a[href="/secrets"]')?.textContent).toContain(
+      "Go to Secrets",
+    );
     wrapper.unmount();
   });
 });
