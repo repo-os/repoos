@@ -529,7 +529,7 @@ final class TrafficLightInsetView: NSView {
             .filter { !$0.isHidden }
             .map(\.frame.maxX)
             .max() ?? 0
-        let inset = max(maxX + 8, 12)
+        let inset = HubTrafficLightPositioning.reservedInset(frameMaxX: maxX)
         onChange?(inset)
     }
 }

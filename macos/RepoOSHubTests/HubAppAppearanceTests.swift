@@ -9,6 +9,17 @@ final class HubAppAppearanceTests: XCTestCase {
         XCTAssertEqual(HubTrafficLightPositioning.correctionTransform.ty, -4, accuracy: 0.01)
     }
 
+    func testTrafficLightInsetIncludesTranslatedControlExtent() {
+        let nativeFrameMaxX: CGFloat = 86
+        let inset = HubTrafficLightPositioning.reservedInset(frameMaxX: nativeFrameMaxX)
+
+        XCTAssertEqual(inset, 109, accuracy: 0.01)
+        XCTAssertGreaterThanOrEqual(
+            inset,
+            nativeFrameMaxX + HubTrafficLightPositioning.horizontalAdjustment + 8
+        )
+    }
+
     func testEmptyStripIsTheOnlyWindowBackgroundDragRegion() {
         let emptySpace = HubWindowDragRegionView(frame: NSRect(x: 0, y: 0, width: 100, height: 40))
 
