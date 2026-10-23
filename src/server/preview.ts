@@ -204,7 +204,7 @@ async function runNativeCommand(
   timeoutMs = 20 * 60_000,
 ): Promise<{ ok: boolean; error?: string }> {
   return await new Promise((resolveResult) => {
-    const child = spawn(command, { cwd, shell: true, stdio: ["ignore", "ignore", "pipe"], env });
+    const child = spawn(command, { cwd, shell: true, stdio: ["ignore", "pipe", "pipe"], env });
     let tail = "";
     let finished = false;
     const timer = setTimeout(() => {
