@@ -435,7 +435,13 @@ watch(
           <div class="ctx-discover-head">
             <strong>Skills.sh curated catalog</strong>
             <span>Inspect files and audits before installing into this project.</span>
-            <input v-model="skillQuery" class="ctx-skill-search" placeholder="Search skills" />
+            <input
+              v-model="skillQuery"
+              class="ctx-skill-search"
+              placeholder="Search skills"
+              aria-label="Filter skills"
+            />
+            <span class="ctx-skill-search-hint">Type to filter skills</span>
           </div>
           <div v-if="registryError" class="ctx-refresh-error">{{ registryError }}</div>
           <div v-else-if="registryLoading" class="ctx-empty">Loading Skills.sh…</div>
