@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-keyboard-navigation-and-hints-in-sea
 created_at: "2026-10-23T16:10:17Z"
-updated_at: "2026-10-23T18:37:25Z"
+updated_at: "2026-10-23T18:42:17Z"
 last_close_out_gate_ms: 273386
 last_close_out_gate_at: "2026-10-23T18:37:25.848Z"
 check_retry_count: 2
@@ -109,4 +109,4 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 - 2026-10-23T18:21:24Z · status active→review
 - 2026-10-23T18:23:02Z · note: review pass 2: good to go
 - 2026-10-23T18:37:25Z · close-out gate completed in 273s
-
+- 2026-10-23T18:42:17Z · status done→done, release:success
