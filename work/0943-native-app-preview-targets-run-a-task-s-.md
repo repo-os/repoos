@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/native-app-preview-targets-run-a-task-s-
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-23T21:29:59Z"
+updated_at: "2026-10-23T21:31:49Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -38,6 +38,42 @@ Native macOS, iOS and Android all share one shape: build the worktree's code, in
 ## Notes for AI
 Start from `docs/previews.md`, the preview manager and its web target resolver, `src/core/shot-targets.ts` (changed-path resolution) and `src/core/shot-command.ts` (command targets run in the task worktree with `REPOOS_SHOT_DIR`/`REPOOS_WORKTREE`). Reuse the one-preview-at-a-time slot and reaping rather than adding a second manager. `kind = "process"` in `[[dev.targets]]` (`user-docs/dev-targets.md`) already models "alive means running" with no URL: borrow its health semantics, but scope it to a worktree. The Hub's own recipes are in the `justfile` (`macos-build`, `macos-run`, `macos-test`); the mobile shells are Capacitor projects under `mobile/` (`docs/mobile-architecture.md`). The mobile app opens the same web UI, so web-only mobile changes are already covered by the existing web preview. Tasks that only touch a native shell need this. Decide and record in the PR: whether iOS/Android reuse an already-booted device or always boot a dedicated one, and where per-worktree build output lives (it must be gitignored and removed with the worktree). Do not introduce a runtime dependency. Requested by the user on 2026-10-24.
 
+## Shots
+```json
+[
+{
+  "label": "Native iOS preview running (light)",
+  "target": "default",
+  "route": "/work?task=0943&tab=changes",
+  "highlight": ".preview-live",
+  "state": "drawer:nativePreviewRunning",
+  "theme": "light"
+},
+{
+  "label": "Native iOS preview running (dark)",
+  "target": "default",
+  "route": "/work?task=0943&tab=changes",
+  "highlight": ".preview-live",
+  "state": "drawer:nativePreviewRunning",
+  "theme": "dark"
+},
+{
+  "label": "Native preview failure (light)",
+  "target": "default",
+  "route": "/work?task=0943&tab=changes",
+  "state": "drawer:nativePreviewFailed",
+  "theme": "light"
+},
+{
+  "label": "Native preview failure (dark)",
+  "target": "default",
+  "route": "/work?task=0943&tab=changes",
+  "state": "drawer:nativePreviewFailed",
+  "theme": "dark"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-23T20:05:41Z · created · njachowski@gmail.com
@@ -53,3 +89,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-23T21:29:14Z · body
 - 2026-10-23T21:29:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-23T21:29:59Z · message_delivered: 1 message(s)
+- 2026-10-23T21:31:49Z · body
