@@ -23,8 +23,7 @@ import { readBody } from "./utils.js";
 import type { RouteHandler } from "./types.js";
 
 const registryPath = ".repoos/environments.json";
-const reservedCredentialNames = new Set(
-  [
+export const RESERVED_PROJECT_ENVIRONMENT_KEYS = [
     "OPENAI_API_KEY",
     "GROQ_API_KEY",
     "REPOOS_WHISPER_KEY",
@@ -42,8 +41,8 @@ const reservedCredentialNames = new Set(
     "PORT",
     "HOST",
     ...MODEL_PROVIDERS.map((provider) => provider.envVar).filter((name): name is string => !!name),
-  ].map((name) => name.toUpperCase()),
-);
+  ].map((name) => name.toUpperCase());
+const reservedCredentialNames = new Set(RESERVED_PROJECT_ENVIRONMENT_KEYS);
 
 function isReservedProjectKey(key: string): boolean {
   const upper = key.toUpperCase();

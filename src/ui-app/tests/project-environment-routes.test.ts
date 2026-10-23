@@ -13,6 +13,7 @@ import {
   mutateProjectEnvironmentSecret,
   getProjectEnvironmentBindings,
   putProjectEnvironmentBinding,
+  RESERVED_PROJECT_ENVIRONMENT_KEYS,
 } from "../../server/routes/project-environments";
 
 function makeFixture() {
@@ -91,6 +92,43 @@ describe("project environment secret routes", () => {
     if (root) rmSync(root, { recursive: true, force: true });
     root = "";
     resetAuthStoreInstance();
+  });
+
+  it.each([
+    ["environment list", (fx: ReturnType<typeof makeFixture>, res: ServerResponse) =>
+      listProjectEnvironments(fx.ctx, fx.req("{}", { token: "invalid-session" }), res, {})],
+    ["secret metadata", (fx: ReturnType<typeof makeFixture>, res: ServerResponse) =>
+      listProjectEnvironmentSecrets(
+        fx.ctx,
+        fx.req("{}", { token: "invalid-session" }),
+        res,
+        { param1: "dev" },
+      )],
+    ["binding metadata", (fx: ReturnType<typeof makeFixture>, res: ServerResponse) =>
+      getProjectEnvironmentBindings(fx.ctx, fx.req("{}", { token: "invalid-session" }), res, {})],
+  ])("rejects unauthenticated %s reads without returning metadata", (_name, route) => {
+    const fx = makeFixture();
+    root = fx.root;
+    const response = fx.response();
+    route(fx, response.res);
+    expect(response.fake.status).toBe(401);
+    expect(response.fake.raw).toBe(JSON.stringify({ error: "Authentication required" }));
+    expect(response.fake.raw).not.toContain("TOKEN");
+    expect(response.fake.raw).not.toContain("dev");
+  });
+
+  it("keeps the documented reserved project keys in sync with the route guard", () => {
+    const doc = readFileSync(
+      join(__dirname, "../../../user-docs/environment-and-secrets.md"),
+      "utf8",
+    );
+    const section = doc.match(/<!-- reserved-project-keys:start -->([\s\S]*?)<!-- reserved-project-keys:end -->/);
+    expect(section, "reserved project key documentation block").not.toBeNull();
+    const documented = section![1]
+      .split("\n")
+      .map((line) => line.match(/^`([A-Z0-9_]+)`$/)?.[1])
+      .filter((name): name is string => !!name);
+    expect(documented).toEqual(RESERVED_PROJECT_ENVIRONMENT_KEYS);
   });
 
   it("mutates values without returning, logging, or auditing them and rejects stale edits", async () => {
