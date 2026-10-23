@@ -2,16 +2,16 @@
 id: "0937"
 title: "Secrets follow-ups: 401 tests on widened metadata routes + document PORT/HOST reserved keys"
 type: chore
-status: ready
+status: active
 priority: p2
 area: [server, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/secrets-follow-ups-401-tests-on-widened-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T00:35:50Z"
-updated_at: "2026-10-23T00:36:19Z"
+updated_at: "2026-10-23T00:36:20Z"
 ---
 ## Problem
 Review of #0932 (2026-10-23) left two small, safe follow-ups:
@@ -33,3 +33,4 @@ Related: #0927-#0932 (Secrets chain). Do not widen any route; tests and docs onl
 - 2026-10-23T00:35:50Z · created · njachowski@gmail.com
 - 2026-10-23T00:36:13Z · status inbox→ready
 - 2026-10-23T00:36:19Z · cli_override, model_override
+- 2026-10-23T00:36:20Z · status ready→active, branch
