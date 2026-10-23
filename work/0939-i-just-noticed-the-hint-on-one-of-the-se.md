@@ -10,7 +10,6 @@ created_by: hello@repoos.org
 branch: feat/fix-keyboard-navigation-and-hints-in-sea
 created_at: "2026-10-23T16:10:17Z"
 updated_at: "2026-10-23T17:44:45Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-23T17:28:41.083Z: repoos check failed: remote validation unavailable: ssh upload of candidate bundle to bee failed: [stdin error: EPIPE] — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 last_handoff_failure_fingerprint: "check|remote validation unavailable: ssh upload of candidate bundle to bee failed: upload too slow (ETA 1806s exceeds budget) — trying another host or local gate — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 last_handoff_failure_sha: 1daffbf8c814c97b9f98f5dfa7d7d0f0a85862ae
@@ -89,3 +88,4 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 - 2026-10-23T17:39:49Z · body
 - 2026-10-23T17:41:52Z · body
 - 2026-10-23T17:44:45Z · body
+
