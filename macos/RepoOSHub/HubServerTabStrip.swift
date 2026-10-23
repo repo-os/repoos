@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 /// Geometry for the single native row shared with the real traffic lights.
 enum HubServerTabStripMetrics {
     /// Tall enough for the standard window buttons and a one-line tab label.
-    static let height: CGFloat = 46
+    static let height: CGFloat = 40
     static let minTabWidth: CGFloat = 88
     static let maxTabWidth: CGFloat = 168
     /// Used until the live window-button frames are measured.
@@ -28,6 +28,8 @@ struct HubServerTabStrip: View {
                 .accessibilityHidden(true)
 
             tabActionsMenu
+                .padding(.leading, 12)
+                .padding(.trailing, 10)
 
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -83,6 +85,7 @@ struct HubServerTabStrip: View {
     }
 
     private var tabActionsMenu: some View {
+        TabActionsMenuButton {
         Menu {
             Button("Back") { appState.workspaceGoBack() }
                 .disabled(!appState.workspaceNavigation.canGoBack)
@@ -109,6 +112,7 @@ struct HubServerTabStrip: View {
         .foregroundStyle(.secondary)
         .help("Back, forward, reload, and layout")
         .accessibilityLabel("Tab actions")
+        }
     }
 
     private var addServerMenu: some View {
@@ -241,15 +245,15 @@ private struct HubServerTab: View {
                 .accessibilityLabel("Hide \(entry.name)")
             }
         }
-        .padding(.leading, 10)
-        .padding(.trailing, isHovering || isSelected ? 6 : 10)
+        .padding(.leading, 12)
+        .padding(.trailing, isHovering || isSelected ? 8 : 12)
         .frame(minWidth: HubServerTabStripMetrics.minTabWidth, maxWidth: HubServerTabStripMetrics.maxTabWidth)
         .frame(maxHeight: .infinity)
         .foregroundStyle(isSelected ? .primary : .secondary)
         .background(alignment: .bottom) {
             HubServerTabShape()
-                .fill(isSelected ? contentColor : (isHovering ? Color.primary.opacity(0.06) : Color.clear))
-                .padding(.top, 6)
+                .fill(isSelected ? contentColor : (isHovering ? Color.primary.opacity(0.075) : Color.clear))
+                .padding(.top, 3)
         }
         .overlay(alignment: .bottom) {
             if isDropTargeted {
@@ -319,21 +323,44 @@ private struct HubServerTab: View {
     }
 }
 
-/// Active tab silhouette: rounded on top, square on the bottom so it meets the page.
+/// Menu labels in a native titlebar have no default hover fill. Keep the
+/// chevron's hover treatment in the same quiet capsule language as the tabs.
+private struct TabActionsMenuButton<Content: View>: View {
+    let content: Content
+    @State private var isHovering = false
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .background {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(isHovering ? Color.primary.opacity(0.09) : .clear)
+                    .padding(.vertical, 5)
+            }
+            .onHover { isHovering = $0 }
+    }
+}
+
+/// Chrome-inspired tab shoulders flare gently into a softly rounded crown.
 private struct HubServerTabShape: Shape {
     func path(in rect: CGRect) -> Path {
-        let radius: CGFloat = 8
+        let radius: CGFloat = 9
+        let flare: CGFloat = 5
         var path = Path()
         path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + radius))
-        path.addQuadCurve(
+        path.addCurve(
             to: CGPoint(x: rect.minX + radius, y: rect.minY),
-            control: CGPoint(x: rect.minX, y: rect.minY)
+            control1: CGPoint(x: rect.minX, y: rect.minY + flare),
+            control2: CGPoint(x: rect.minX + flare, y: rect.minY)
         )
         path.addLine(to: CGPoint(x: rect.maxX - radius, y: rect.minY))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.maxX, y: rect.minY + radius),
-            control: CGPoint(x: rect.maxX, y: rect.minY)
+        path.addCurve(
+            to: CGPoint(x: rect.maxX, y: rect.minY + flare),
+            control1: CGPoint(x: rect.maxX - flare, y: rect.minY),
+            control2: CGPoint(x: rect.maxX, y: rect.minY + flare)
         )
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
         path.closeSubpath()
