@@ -1,6 +1,7 @@
 import SwiftUI
 import UserNotifications
 import AppKit
+import ObjectiveC
 
 /// Window geometry shared by the scene declaration and its unit test.
 ///
@@ -257,6 +258,7 @@ final class HubWindowChromeView: NSView {
         // page, and its toggle duplicates the sidebar control (#0895).
         if let window {
             hideHubNativeToolbarRow(window)
+            HubTrafficLightPositioning.apply(to: window)
         }
     }
 
@@ -313,6 +315,38 @@ func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
     let standardButtons: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
     for buttonType in standardButtons {
         window.standardWindowButton(buttonType)?.isHidden = false
+    }
+    HubTrafficLightPositioning.apply(to: window)
+}
+
+/// Keep the three native controls aligned to the center of the 40pt tab row.
+/// Their initial positions are retained because the appearance configurator
+/// runs repeatedly as SwiftUI attaches and lays out the window.
+enum HubTrafficLightPositioning {
+    static let adjustment = CGPoint(x: 6, y: -6)
+    private static var originalFrameAssociationKey: UInt8 = 0
+
+    static func correctedOrigin(for origin: CGPoint) -> CGPoint {
+        CGPoint(x: origin.x + adjustment.x, y: origin.y + adjustment.y)
+    }
+
+    static func apply(to window: NSWindow) {
+        let types: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+        for type in types {
+            guard let button = window.standardWindowButton(type) else { continue }
+            if objc_getAssociatedObject(button, &originalFrameAssociationKey) == nil {
+                objc_setAssociatedObject(
+                    button,
+                    &originalFrameAssociationKey,
+                    NSValue(rect: button.frame),
+                    .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+                )
+            }
+            guard let original = objc_getAssociatedObject(button, &originalFrameAssociationKey) as? NSValue else {
+                continue
+            }
+            button.setFrameOrigin(correctedOrigin(for: original.rectValue.origin))
+        }
     }
 }
 

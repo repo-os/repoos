@@ -1,8 +1,42 @@
+import AppKit
 import SwiftUI
 import XCTest
 @testable import RepoOSHub
 
 final class HubAppAppearanceTests: XCTestCase {
+    func testTrafficLightCorrectionMovesSixPointsDownAndRight() {
+        let origin = CGPoint(x: 12, y: 24)
+        let corrected = HubTrafficLightPositioning.correctedOrigin(for: origin)
+        XCTAssertEqual(corrected.x, 18, accuracy: 0.01)
+        XCTAssertEqual(corrected.y, 18, accuracy: 0.01)
+    }
+
+    func testTabDragRegionDoesNotStartWindowMovement() {
+        let region = HubTabDragRegionView(frame: NSRect(x: 0, y: 0, width: 100, height: 40))
+        XCTAssertFalse(region.mouseDownCanMoveWindow)
+    }
+
+    @MainActor
+    func testTabDropLoadsTheDraggedIdentifierAndCompletes() async {
+        let source = UUID()
+        let target = UUID()
+        let provider = NSItemProvider(object: source.uuidString as NSString)
+        let finished = expectation(description: "drop provider finishes loading")
+        var movedPair: (UUID, UUID)?
+
+        let accepted = HubServerTabDropHandler.accept(
+            providers: [provider],
+            target: target,
+            onMove: { movedPair = ($0, $1) },
+            onCompletion: { finished.fulfill() }
+        )
+
+        XCTAssertTrue(accepted)
+        await fulfillment(of: [finished], timeout: 2)
+        XCTAssertEqual(movedPair?.0, source)
+        XCTAssertEqual(movedPair?.1, target)
+    }
+
     func testDefaultsToSystem() {
         XCTAssertEqual(HubGlobalPreferences.default.appearance, .system)
         XCTAssertNil(HubGlobalPreferences.default.appearance.colorScheme)
@@ -109,6 +143,19 @@ final class HubAppAppearanceTests: XCTestCase {
         )
         window.toolbar = NSToolbar(identifier: "HubChromeTestToolbar")
         window.title = "RepoOS"
+        // Capture the default control frames after the hidden/transparent
+        // titlebar style is in place; AppKit recalculates these when the style
+        // mask changes.
+        window.styleMask.insert(.fullSizeContentView)
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.titlebarSeparatorStyle = .none
+        hideHubNativeToolbarRow(window)
+        let controlTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+        for type in controlTypes {
+            window.standardWindowButton(type)?.isHidden = false
+        }
+        let originalControlOrigins = controlTypes.compactMap { window.standardWindowButton($0)?.frame.origin }
 
         configureHubWorkspaceWindowChrome(window)
 
@@ -132,6 +179,21 @@ final class HubAppAppearanceTests: XCTestCase {
         XCTAssertEqual(window.standardWindowButton(.miniaturizeButton)?.isHidden, false)
         XCTAssertEqual(window.standardWindowButton(.zoomButton)?.isHidden, false)
         XCTAssertEqual(window.toolbar?.isVisible, false)
+        // Applying after AppKit has finished the titlebar style change ensures
+        // its own layout doesn't immediately overwrite the corrected frames.
+        HubTrafficLightPositioning.apply(to: window)
+        let correctedOrigins = controlTypes.compactMap { window.standardWindowButton($0)?.frame.origin }
+        XCTAssertEqual(correctedOrigins.count, 3)
+        for (original, corrected) in zip(originalControlOrigins, correctedOrigins) {
+            XCTAssertEqual(corrected.x, original.x + 6, accuracy: 0.01)
+            XCTAssertEqual(corrected.y, original.y - 6, accuracy: 0.01)
+        }
+
+        // Window appearance updates repeat this method. The correction must
+        // remain fixed rather than walking the traffic lights on each update.
+        configureHubWorkspaceWindowChrome(window)
+        let repeatedOrigins = controlTypes.compactMap { window.standardWindowButton($0)?.frame.origin }
+        XCTAssertEqual(repeatedOrigins, correctedOrigins)
     }
 
     /// `makeNSView` can run before SwiftUI assigns the scene's NSWindow, so the
