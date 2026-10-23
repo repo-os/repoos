@@ -610,7 +610,9 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   color: var(--txt-dim);
-  font: 9px "JetBrains Mono", monospace;
+  font:
+    9px "JetBrains Mono",
+    monospace;
 }
 .search-drop {
   position: absolute;
