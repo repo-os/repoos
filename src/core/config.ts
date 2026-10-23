@@ -986,11 +986,25 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
       if (typeof raw !== "object" || raw === null) continue;
       const r = raw as Record<string, unknown>;
       const kind = r.kind === "native" ? "native" : "web";
-      const platform = r.platform === "macos" || r.platform === "ios" || r.platform === "android" ? r.platform : undefined;
-      const buildCommand = typeof r.build_command === "string" ? r.build_command.trim() : typeof r.buildCommand === "string" ? r.buildCommand.trim() : "";
-      const launchCommand = typeof r.launch_command === "string" ? r.launch_command.trim() : typeof r.launchCommand === "string" ? r.launchCommand.trim() : "";
+      const platform =
+        r.platform === "macos" || r.platform === "ios" || r.platform === "android"
+          ? r.platform
+          : undefined;
+      const buildCommand =
+        typeof r.build_command === "string"
+          ? r.build_command.trim()
+          : typeof r.buildCommand === "string"
+            ? r.buildCommand.trim()
+            : "";
+      const launchCommand =
+        typeof r.launch_command === "string"
+          ? r.launch_command.trim()
+          : typeof r.launchCommand === "string"
+            ? r.launchCommand.trim()
+            : "";
       const targetCommand = typeof r.command === "string" ? r.command.trim() : "";
-      if (kind === "native" ? (!platform || !buildCommand || !launchCommand) : !targetCommand) continue;
+      if (kind === "native" ? !platform || !buildCommand || !launchCommand : !targetCommand)
+        continue;
       const areasRaw = r.areas;
       const areas = (Array.isArray(areasRaw) ? areasRaw : [areasRaw])
         .map((a) => (typeof a === "string" ? a.trim() : ""))
@@ -1001,7 +1015,11 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
       let name = base;
       for (let n = 2; usedNames.has(name); n++) name = `${base} (${n})`;
       usedNames.add(name);
-      const target: PreviewTargetConfig = { name, areas, command: kind === "native" ? `${buildCommand} && ${launchCommand}` : targetCommand };
+      const target: PreviewTargetConfig = {
+        name,
+        areas,
+        command: kind === "native" ? `${buildCommand} && ${launchCommand}` : targetCommand,
+      };
       if (kind === "native") {
         target.kind = kind;
         target.platform = platform;
@@ -1015,7 +1033,8 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
         if (Number.isFinite(timeoutMs) && timeoutMs > 0) target.timeoutMs = timeoutMs;
         const device = typeof r.device === "string" ? r.device.trim() : "";
         if (device) target.device = device;
-        if (r.env && typeof r.env === "object" && !Array.isArray(r.env)) target.env = r.env as Record<string, string>;
+        if (r.env && typeof r.env === "object" && !Array.isArray(r.env))
+          target.env = r.env as Record<string, string>;
       }
       if (paths.length) target.paths = paths;
       const targetCwd = typeof r.cwd === "string" ? r.cwd.trim() : "";
@@ -3770,7 +3789,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       tier: "live",
       restartRequired: false,
       default: [],
-      description: "Native app targets use [[preview.targets]] with kind = native, platform, areas, build_command and launch_command; optional stop, cwd, env, requires, timeout_ms and device are configured in repoos.toml.",
+      description:
+        "Native app targets use [[preview.targets]] with kind = native, platform, areas, build_command and launch_command; optional stop, cwd, env, requires, timeout_ms and device are configured in repoos.toml.",
     },
     {
       // Command-based capture targets (#0761). Deliberately raw-TOML-only, like
