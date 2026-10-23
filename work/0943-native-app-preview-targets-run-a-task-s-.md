@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/native-app-preview-targets-run-a-task-s-
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-23T21:55:06Z"
+updated_at: "2026-10-23T22:09:24Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -102,3 +102,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-23T21:52:28Z · status review→active
 - 2026-10-23T21:52:30Z · CTO nudge: held — remote validation is running
 - 2026-10-23T21:55:06Z · body
+- 2026-10-23T22:09:24Z · note: ui verification passed: 4 of 4 shots captured with clean console (1 shot warning)
