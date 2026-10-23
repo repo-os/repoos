@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-23T18:23:38.577Z: repoos check failed: remote validation unavailable: host thinkpad skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 id: "0939"
 title: Fix keyboard navigation and hints in search bars
 type: bug
@@ -10,8 +12,6 @@ created_by: hello@repoos.org
 branch: feat/fix-keyboard-navigation-and-hints-in-sea
 created_at: "2026-10-23T16:10:17Z"
 updated_at: "2026-10-23T18:23:02Z"
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-23T18:17:04.446Z: repoos check failed: remote validation hung on bee — no output for 5m while the host was idle; the run's container (repoos-validate-0939-658eeb05) was removed and the run retried on another host — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -105,3 +105,4 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 - 2026-10-23T18:21:14Z · message_delivered: 1 message(s)
 - 2026-10-23T18:21:24Z · status active→review
 - 2026-10-23T18:23:02Z · note: review pass 2: good to go
+
