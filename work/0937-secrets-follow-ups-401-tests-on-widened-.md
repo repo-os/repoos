@@ -12,7 +12,7 @@ branch: feat/secrets-follow-ups-401-tests-on-widened-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T00:35:50Z"
-updated_at: "2026-10-23T00:52:39Z"
+updated_at: "2026-10-23T00:53:11Z"
 last_close_out_gate_ms: 107592
 last_close_out_gate_at: "2026-10-23T00:52:39.962Z"
 review_passes: 1
@@ -44,4 +44,4 @@ Related: #0927-#0932 (Secrets chain). Do not widen any route; tests and docs onl
 - 2026-10-23T00:49:22Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-23T00:49:53Z · note: review pass 1: good to go
 - 2026-10-23T00:52:39Z · close-out gate completed in 108s
-
+- 2026-10-23T00:53:11Z · status done→done, release:success
