@@ -701,6 +701,40 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
     }
   }, 30_000);
 
+  it("accepts a successful one-shot native launcher and preserves its stop command", async () => {
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-native-launch-handoff";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      [
+        "[[preview.targets]]",
+        'name = "One-shot native app"',
+        'kind = "native"',
+        'platform = "ios"',
+        'areas = ["ios"]',
+        'build_command = "true"',
+        'launch_command = "true"',
+        'stop = "touch {outputDir}/stopped"',
+      ].join("\n") + "\n",
+    );
+    const manager = new PreviewManager(loadConfig(fx.root), () => {});
+    const t = { id: "0943-one-shot", area: "ios", branch, status: "active" } as unknown as Task;
+    try {
+      const result = await manager.start(t);
+      expect(result.ok).toBe(true);
+      expect(manager.get(t.id)?.native?.platform).toBe("ios");
+      await manager.stop(t.id);
+      expect(
+        readFileSync(join(wt.path, ".repoos", "preview-output", t.id, "stopped"), "utf8"),
+      ).toBe("");
+    } finally {
+      await manager.stopAll();
+    }
+  }, 30_000);
+
   it("FIFO-evicts the prior native preview when the single slot is reused", async () => {
     const fx = makeFixture();
     fixtures.push(fx);
