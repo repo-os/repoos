@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/native-app-preview-targets-run-a-task-s-
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-23T21:50:41Z"
+updated_at: "2026-10-23T21:52:27Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -95,3 +95,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-23T21:37:25Z · body
 - 2026-10-23T21:50:40Z · note: ui verification passed: 4 of 4 shots captured with clean console (1 shot warning)
 - 2026-10-23T21:50:41Z · status active→review
+- 2026-10-23T21:52:27Z · note: review pass 1: needs some work
