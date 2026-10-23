@@ -63,3 +63,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T18:21:31Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-23T18:24:27Z · body
 - 2026-10-23T18:26:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-23T18:26:37Z · message_delivered: 1 message(s)
