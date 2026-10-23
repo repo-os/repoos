@@ -52,3 +52,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-23T21:28:30Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-23T21:29:14Z · body
 - 2026-10-23T21:29:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-23T21:29:59Z · message_delivered: 1 message(s)
