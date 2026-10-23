@@ -29,7 +29,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onGlobalKey));
     <button
       class="search-input"
       type="button"
-      title="Search · ↑↓ navigate · Enter open · Esc close"
+      data-tip="Search · ↑↓ navigate · Enter open · Esc close"
       @click="openOverlay"
     >
       <svg class="search-ico" width="13" height="13" viewBox="0 0 24 24" fill="none">
