@@ -8,8 +8,10 @@ area: [agent, core, docs]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+cli_override: cursor
+model_override: default
 created_at: "2026-10-23T16:56:10Z"
-updated_at: "2026-10-23T16:56:51Z"
+updated_at: "2026-10-23T16:58:06Z"
 ---
 ## Problem
 
@@ -55,3 +57,4 @@ If the RepoOS pressure guard blocks a start, report the reason to the human. Don
 
 - 2026-10-23T16:56:10Z · created · hello@repoos.org
 - 2026-10-23T16:56:51Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
+- 2026-10-23T16:58:06Z · cli_override, model_override
