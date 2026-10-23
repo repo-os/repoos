@@ -615,6 +615,42 @@ const RESULT_ICON: Record<string, string> = {
   margin: 0;
   font-size: 14px;
 }
+.ck-local-slots {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-gradient);
+}
+.ck-local-slots h2 {
+  margin: 0 0 2px;
+  font-size: 14px;
+}
+.ck-local-slots > p {
+  margin: 0;
+  color: var(--txt-dim);
+  font-size: 12px;
+}
+.ck-local-slot,
+.ck-local-slots > p:not(:first-of-type) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-solid);
+  color: var(--txt-dim);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ck-local-slot > strong {
+  color: var(--txt);
+}
 .ck-live-check {
   display: grid;
   gap: 7px;
