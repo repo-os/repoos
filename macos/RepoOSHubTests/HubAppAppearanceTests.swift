@@ -4,12 +4,9 @@ import XCTest
 @testable import RepoOSHub
 
 final class HubAppAppearanceTests: XCTestCase {
-    func testTrafficLightCorrectionCentersControlsInTheirContainer() {
-        let frame = NSRect(x: 12, y: 24, width: 14, height: 14)
-        let bounds = NSRect(x: 0, y: 0, width: 200, height: 40)
-        let corrected = HubTrafficLightPositioning.correctedOrigin(for: frame, in: bounds)
-        XCTAssertEqual(corrected.x, 27, accuracy: 0.01)
-        XCTAssertEqual(corrected.y, 17, accuracy: 0.01)
+    func testTrafficLightCorrectionOffsetsNativeControls() {
+        XCTAssertEqual(HubTrafficLightPositioning.correctionTransform.tx, 15, accuracy: 0.01)
+        XCTAssertEqual(HubTrafficLightPositioning.correctionTransform.ty, -4, accuracy: 0.01)
     }
 
     func testEmptyStripIsTheOnlyWindowBackgroundDragRegion() {
@@ -157,7 +154,8 @@ final class HubAppAppearanceTests: XCTestCase {
         for type in controlTypes {
             window.standardWindowButton(type)?.isHidden = false
         }
-        let originalControlOrigins = controlTypes.compactMap { window.standardWindowButton($0)?.frame.origin }
+        let controls = controlTypes.compactMap { window.standardWindowButton($0) }
+        XCTAssertEqual(controls.count, 3)
 
         configureHubWorkspaceWindowChrome(window)
 
@@ -182,40 +180,29 @@ final class HubAppAppearanceTests: XCTestCase {
         XCTAssertEqual(window.standardWindowButton(.miniaturizeButton)?.isHidden, false)
         XCTAssertEqual(window.standardWindowButton(.zoomButton)?.isHidden, false)
         XCTAssertEqual(window.toolbar?.isVisible, false)
-        // Applying after AppKit has finished the titlebar style change ensures
-        // its own layout doesn't immediately overwrite the corrected frames.
         HubTrafficLightPositioning.apply(to: window)
-        let correctedOrigins = controlTypes.compactMap { window.standardWindowButton($0)?.frame.origin }
-        XCTAssertEqual(correctedOrigins.count, 3)
-        for ((type, original), corrected) in zip(zip(controlTypes, originalControlOrigins), correctedOrigins) {
-            XCTAssertEqual(corrected.x, original.x + 15, accuracy: 0.01)
-            XCTAssertEqual(
-                window.standardWindowButton(type)?.frame.midY,
-                window.standardWindowButton(type)?.superview?.bounds.midY
-            )
+        for button in controls {
+            XCTAssertEqual(button.layer?.affineTransform().tx ?? -1, 15)
+            XCTAssertEqual(button.layer?.affineTransform().ty ?? 1, -4)
         }
 
         // Window appearance updates repeat this method. The correction must
         // remain fixed rather than walking the traffic lights on each update.
         configureHubWorkspaceWindowChrome(window)
-        let repeatedOrigins = controlTypes.compactMap { window.standardWindowButton($0)?.frame.origin }
-        XCTAssertEqual(repeatedOrigins, correctedOrigins)
+        for button in controls {
+            XCTAssertEqual(button.layer?.affineTransform().tx ?? -1, 15)
+            XCTAssertEqual(button.layer?.affineTransform().ty ?? 1, -4)
+        }
 
-        // Model AppKit's native relayout during resize/fullscreen by moving the
-        // controls independently. The next chrome layout must correct from
-        // their new positions rather than the stale first-window baseline.
-        let nativeLayoutOrigins = correctedOrigins.map { CGPoint(x: $0.x + 3, y: $0.y + 4) }
-        for (type, origin) in zip(controlTypes, nativeLayoutOrigins) {
-            window.standardWindowButton(type)?.setFrameOrigin(origin)
+        // Model native relayout during resize/fullscreen. Reapplication uses
+        // the same offset and does not accumulate additional movement.
+        for button in controls {
+            button.setFrameOrigin(CGPoint(x: button.frame.minX + 3, y: button.frame.minY + 4))
         }
         HubTrafficLightPositioning.apply(to: window)
-        let relaidOutOrigins = controlTypes.compactMap { window.standardWindowButton($0)?.frame.origin }
-        for ((type, native), corrected) in zip(zip(controlTypes, nativeLayoutOrigins), relaidOutOrigins) {
-            XCTAssertEqual(corrected.x, native.x + 15, accuracy: 0.01)
-            XCTAssertEqual(
-                window.standardWindowButton(type)?.frame.midY,
-                window.standardWindowButton(type)?.superview?.bounds.midY
-            )
+        for button in controls {
+            XCTAssertEqual(button.layer?.affineTransform().tx ?? -1, 15)
+            XCTAssertEqual(button.layer?.affineTransform().ty ?? 1, -4)
         }
     }
 
