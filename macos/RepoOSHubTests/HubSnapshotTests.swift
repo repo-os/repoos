@@ -53,7 +53,22 @@ final class HubSnapshotTests: XCTestCase {
         try capture("hub-summary", size: CGSize(width: 350, height: 390)) { _ in
             AnyView(
                 VStack(spacing: 0) {
-                    ServerDetailsPopover(entry: entry, runtimeInfo: nil, attention: attention)
+                    ServerDetailsPopover(
+                        entry: entry,
+                        runtimeInfo: ServerRuntimeInfo(
+                            payload: HealthResponsePayload(
+                                ok: true,
+                                projectName: "RepoOS",
+                                root: "/Users/nick/code/repoos",
+                                branch: "main",
+                                taskCount: 128,
+                                version: "0.94.1",
+                                buildAt: "2026-10-23T12:00:00.000Z",
+                                serverStartedAt: "2026-10-23T16:00:00.000Z"
+                            )
+                        ),
+                        attention: attention
+                    )
                     Spacer(minLength: 0)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -72,6 +87,81 @@ final class HubSnapshotTests: XCTestCase {
         ) { appearance in
             fixture.state.updateHubAppearance(appearance == .darkAqua ? .dark : .light)
             return AnyView(HubServerTabStrip().environmentObject(fixture.state))
+        }
+    }
+
+    func testTabsTopBarHoverSnapshot() throws {
+        let fixture = try makeFixture(entries: tabEntries(), layout: .tabs)
+        defer { fixture.cleanup() }
+        let hoveredID = try XCTUnwrap(fixture.state.visibleServerTabEntries.dropFirst().first?.id)
+
+        try capture("hub-tabs-top-bar-hover", size: CGSize(width: 900, height: HubServerTabStripMetrics.height)) { appearance in
+            fixture.state.updateHubAppearance(appearance == .darkAqua ? .dark : .light)
+            return AnyView(
+                HubServerTabStrip(snapshotHoverEntryID: hoveredID)
+                    .environmentObject(fixture.state)
+            )
+        }
+    }
+
+    func testTabsTopBarChevronHoverSnapshot() throws {
+        let fixture = try makeFixture(entries: tabEntries(), layout: .tabs)
+        defer { fixture.cleanup() }
+
+        try capture("hub-tabs-top-bar-chevron-hover", size: CGSize(width: 900, height: HubServerTabStripMetrics.height)) { appearance in
+            fixture.state.updateHubAppearance(appearance == .darkAqua ? .dark : .light)
+            return AnyView(
+                HubServerTabStrip(snapshotChevronHover: true)
+                    .environmentObject(fixture.state)
+            )
+        }
+    }
+
+    func testTabsTopBarStatusPopupSnapshot() throws {
+        let fixture = try makeFixture(entries: tabEntries(), layout: .tabs)
+        defer { fixture.cleanup() }
+        var entry = try XCTUnwrap(fixture.state.visibleServerTabEntries.first)
+        entry.repositoryName = "repoos"
+        let attention = ServerAttentionSnapshot(
+            serverID: entry.id,
+            freshness: .fresh,
+            counts: HubAttentionCounts(activeAgents: 2, reviewReadyTasks: 4, needsInputTasks: 3),
+            fetchedAt: Date(timeIntervalSince1970: 1_792_000_000),
+            lastError: nil,
+            hasCapability: true
+        )
+        let runtime = ServerRuntimeInfo(
+            payload: HealthResponsePayload(
+                ok: true,
+                projectName: "RepoOS",
+                root: "/Users/nick/code/repoos",
+                branch: "main",
+                taskCount: 128,
+                version: "0.94.1",
+                buildAt: "2026-10-23T12:00:00.000Z",
+                serverStartedAt: "2026-10-23T16:00:00.000Z"
+            )
+        )
+
+        try capture("hub-tabs-top-bar-status-popup", size: CGSize(width: 900, height: 500)) { appearance in
+            fixture.state.updateHubAppearance(appearance == .darkAqua ? .dark : .light)
+            return AnyView(
+                ZStack(alignment: .topLeading) {
+                    Color(nsColor: .windowBackgroundColor)
+                    VStack(spacing: 0) {
+                        HubServerTabStrip(snapshotHoverEntryID: entry.id)
+                            .environmentObject(fixture.state)
+                        Spacer(minLength: 0)
+                    }
+                    ServerDetailsPopover(entry: entry, runtimeInfo: runtime, attention: attention)
+                        .padding(16)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .shadow(color: .black.opacity(0.18), radius: 14, y: 5)
+                        .padding(.leading, 128)
+                        .padding(.top, HubServerTabStripMetrics.height + 8)
+                }
+                .frame(width: 900, height: 500)
+            )
         }
     }
 
@@ -195,6 +285,7 @@ final class HubSnapshotTests: XCTestCase {
                 repositoryName: "repoos",
                 origin: URL(string: "https://repoos.example.test")!,
                 lastHealth: .healthy,
+                lastHealthAt: Date(timeIntervalSince1970: 1_792_000_000),
                 sortOrder: 0,
                 accentColorHex: "#2F6FEB",
                 attentionAggregationEnabled: false
@@ -204,6 +295,7 @@ final class HubSnapshotTests: XCTestCase {
                 repositoryName: "divot",
                 origin: URL(string: "https://divot.example.test")!,
                 lastHealth: .healthy,
+                lastHealthAt: Date(timeIntervalSince1970: 1_792_000_000),
                 sortOrder: 1,
                 accentColorHex: "#B45309",
                 attentionAggregationEnabled: false
@@ -213,6 +305,7 @@ final class HubSnapshotTests: XCTestCase {
                 repositoryName: "landing",
                 origin: URL(string: "https://landing.example.test")!,
                 lastHealth: .unreachable,
+                lastHealthAt: Date(timeIntervalSince1970: 1_792_000_000),
                 sortOrder: 2,
                 accentColorHex: "#0F766E",
                 attentionAggregationEnabled: false

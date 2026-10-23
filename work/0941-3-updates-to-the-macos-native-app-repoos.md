@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-23T20:46:16Z"
-review_passes: 5
 id: "0941"
 title: Polish macOS native app tab bar
 type: feature
@@ -11,9 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-macos-native-app-tab-bar
 created_at: "2026-10-23T17:20:56Z"
-review_rounds: 2
-routing_switches: 1
-routing_escalations: 1
+updated_at: "2026-10-23T18:38:40Z"
 ---
 ## Problem
 
@@ -61,52 +57,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T17:21:36Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
 - 2026-10-23T18:11:20Z · status inbox→ready
 - 2026-10-23T18:11:23Z · status ready→active, branch
-- 2026-10-23T18:18:14Z · message_queued at 2026-10-23T18:18:14.308Z
-- 2026-10-23T18:18:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-23T18:18:30Z · body
-- 2026-10-23T18:21:31Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-23T18:24:27Z · body
-- 2026-10-23T18:26:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-23T18:26:37Z · message_delivered: 1 message(s)
-- 2026-10-23T18:28:47Z · body
-- 2026-10-23T18:38:41Z · status active→review
-- 2026-10-23T18:38:43Z · note: shots: skipped — the diff (2 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-10-23T18:40:12Z · note: review pass 1: good to go
-- 2026-10-23T19:02:08Z · status review→active
-- 2026-10-23T19:02:27Z · message_queued at 2026-10-23T19:02:27.758Z
-- 2026-10-23T19:03:14Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-23T19:05:25Z · body
-- 2026-10-23T19:05:50Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-23T19:05:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-23T19:05:50Z · status active→review
-- 2026-10-23T19:05:51Z · message_delivered: 1 message(s)
-- 2026-10-23T19:05:51Z · note: handoff requested (cli)
-- 2026-10-23T19:08:14Z · CTO nudge: held — handoff gate is running
-- 2026-10-23T19:15:41Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (appeared: macos/RepoOSHub/HubServerTabStrip.swift, macos/RepoOSHub/RepoOSHubApp.swift, macos/RepoOSHubTests/HubAppAppearanceTests.swift, macos/RepoOSHubTests/HubSnapshotTests.swift) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-- 2026-10-23T19:23:41Z · body
-- 2026-10-23T19:24:21Z · status active→review
-- 2026-10-23T19:24:22Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-10-23T19:25:36Z · note: review pass 2: good to go
-- 2026-10-23T19:48:24Z · status review→active
-- 2026-10-23T19:48:51Z · message_queued at 2026-10-23T19:48:51.465Z
-- 2026-10-23T19:49:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-23T19:49:09Z · status active→review
-- 2026-10-23T19:49:09Z · message_delivered: 1 message(s)
-- 2026-10-23T19:49:11Z · note: handoff requested (cli)
-- 2026-10-23T19:50:11Z · status active→review
-- 2026-10-23T19:50:12Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-10-23T19:50:55Z · status review→active
-- 2026-10-23T19:51:03Z · note: Nick requested fixes after real-app verification; sending back to active for implementation and visual interaction proof.
-- 2026-10-23T19:51:50Z · note: review pass 3: needs some work
-- 2026-10-23T19:52:22Z · note: Reviewer round 1 findings: strengthen tab shape, validate traffic-light positioning across resize/fullscreen, and harden hover/drag lifecycle; returning to active for fixes.
-- 2026-10-23T20:14:19Z · body
-- 2026-10-23T20:21:27Z · body
-- 2026-10-23T20:30:41Z · status active→review
-- 2026-10-23T20:30:42Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-10-23T20:32:31Z · note: review pass 4: needs some work
-- 2026-10-23T20:32:32Z · status review→active
-- 2026-10-23T20:35:17Z · body
-- 2026-10-23T20:45:06Z · status active→review
-- 2026-10-23T20:45:06Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-10-23T20:46:16Z · note: review pass 5: good to go
-
+- 2026-10-23T18:38:40Z · status active→review

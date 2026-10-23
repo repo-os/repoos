@@ -1,8 +1,52 @@
+import AppKit
 import SwiftUI
 import XCTest
 @testable import RepoOSHub
 
 final class HubAppAppearanceTests: XCTestCase {
+    func testTrafficLightCorrectionOffsetsNativeControls() {
+        XCTAssertEqual(HubTrafficLightPositioning.correctionTransform.tx, 15, accuracy: 0.01)
+        XCTAssertEqual(HubTrafficLightPositioning.correctionTransform.ty, -4, accuracy: 0.01)
+    }
+
+    func testTrafficLightInsetIncludesTranslatedControlExtent() {
+        let nativeFrameMaxX: CGFloat = 86
+        let inset = HubTrafficLightPositioning.reservedInset(frameMaxX: nativeFrameMaxX)
+
+        XCTAssertEqual(inset, 109, accuracy: 0.01)
+        XCTAssertGreaterThanOrEqual(
+            inset,
+            nativeFrameMaxX + HubTrafficLightPositioning.horizontalAdjustment + 8
+        )
+    }
+
+    func testEmptyStripIsTheOnlyWindowBackgroundDragRegion() {
+        let emptySpace = HubWindowDragRegionView(frame: NSRect(x: 0, y: 0, width: 100, height: 40))
+
+        XCTAssertTrue(emptySpace.mouseDownCanMoveWindow)
+    }
+
+    @MainActor
+    func testTabDropLoadsTheDraggedIdentifierAndCompletes() async {
+        let source = UUID()
+        let target = UUID()
+        let provider = NSItemProvider(object: source.uuidString as NSString)
+        let finished = expectation(description: "drop provider finishes loading")
+        var movedPair: (UUID, UUID)?
+
+        let accepted = HubServerTabDropHandler.accept(
+            providers: [provider],
+            target: target,
+            onMove: { movedPair = ($0, $1) },
+            onCompletion: { finished.fulfill() }
+        )
+
+        XCTAssertTrue(accepted)
+        await fulfillment(of: [finished], timeout: 2)
+        XCTAssertEqual(movedPair?.0, source)
+        XCTAssertEqual(movedPair?.1, target)
+    }
+
     func testDefaultsToSystem() {
         XCTAssertEqual(HubGlobalPreferences.default.appearance, .system)
         XCTAssertNil(HubGlobalPreferences.default.appearance.colorScheme)
@@ -109,6 +153,20 @@ final class HubAppAppearanceTests: XCTestCase {
         )
         window.toolbar = NSToolbar(identifier: "HubChromeTestToolbar")
         window.title = "RepoOS"
+        // Capture the default control frames after the hidden/transparent
+        // titlebar style is in place; AppKit recalculates these when the style
+        // mask changes.
+        window.styleMask.insert(.fullSizeContentView)
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.titlebarSeparatorStyle = .none
+        hideHubNativeToolbarRow(window)
+        let controlTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+        for type in controlTypes {
+            window.standardWindowButton(type)?.isHidden = false
+        }
+        let controls = controlTypes.compactMap { window.standardWindowButton($0) }
+        XCTAssertEqual(controls.count, 3)
 
         configureHubWorkspaceWindowChrome(window)
 
@@ -123,6 +181,7 @@ final class HubAppAppearanceTests: XCTestCase {
         XCTAssertTrue(window.styleMask.contains(.closable))
         XCTAssertTrue(window.styleMask.contains(.miniaturizable))
         XCTAssertTrue(window.styleMask.contains(.resizable))
+        XCTAssertFalse(window.isMovableByWindowBackground)
         XCTAssertNotNil(window.standardWindowButton(.closeButton))
         XCTAssertNotNil(window.standardWindowButton(.miniaturizeButton))
         XCTAssertNotNil(window.standardWindowButton(.zoomButton))
@@ -132,6 +191,30 @@ final class HubAppAppearanceTests: XCTestCase {
         XCTAssertEqual(window.standardWindowButton(.miniaturizeButton)?.isHidden, false)
         XCTAssertEqual(window.standardWindowButton(.zoomButton)?.isHidden, false)
         XCTAssertEqual(window.toolbar?.isVisible, false)
+        HubTrafficLightPositioning.apply(to: window)
+        for button in controls {
+            XCTAssertEqual(button.layer?.affineTransform().tx ?? -1, 15)
+            XCTAssertEqual(button.layer?.affineTransform().ty ?? 1, -4)
+        }
+
+        // Window appearance updates repeat this method. The correction must
+        // remain fixed rather than walking the traffic lights on each update.
+        configureHubWorkspaceWindowChrome(window)
+        for button in controls {
+            XCTAssertEqual(button.layer?.affineTransform().tx ?? -1, 15)
+            XCTAssertEqual(button.layer?.affineTransform().ty ?? 1, -4)
+        }
+
+        // Model native relayout during resize/fullscreen. Reapplication uses
+        // the same offset and does not accumulate additional movement.
+        for button in controls {
+            button.setFrameOrigin(CGPoint(x: button.frame.minX + 3, y: button.frame.minY + 4))
+        }
+        HubTrafficLightPositioning.apply(to: window)
+        for button in controls {
+            XCTAssertEqual(button.layer?.affineTransform().tx ?? -1, 15)
+            XCTAssertEqual(button.layer?.affineTransform().ty ?? 1, -4)
+        }
     }
 
     /// `makeNSView` can run before SwiftUI assigns the scene's NSWindow, so the
