@@ -351,6 +351,7 @@ function onKey(e: KeyboardEvent): void {
     e.preventDefault();
     highlight.value = (highlight.value - 1 + n) % n;
   } else if (e.key === "Enter" && n) {
+    e.preventDefault();
     const item = displayItems.value[highlight.value];
     if (item) handleRowClick(item as { kind: string; title: string });
   } else if (e.key === "Escape") {
@@ -477,6 +478,11 @@ watch([docList, skillList], () => {
             {{ contextSearchOutput.totalMatches }} matches — showing
             {{ contextSearchOutput.results.length }}. Narrow your search to see fewer results.
           </div>
+        </div>
+        <div class="search-overlay-keyboard-hint" aria-label="Keyboard controls">
+          <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+          <span><kbd>Enter</kbd> Open</span>
+          <span><kbd>Esc</kbd> Close</span>
         </div>
       </div>
     </div>
