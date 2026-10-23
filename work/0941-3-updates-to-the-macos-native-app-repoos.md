@@ -77,3 +77,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T19:05:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-23T19:05:50Z · status active→review
 - 2026-10-23T19:05:51Z · message_delivered: 1 message(s)
+- 2026-10-23T19:05:51Z · note: handoff requested (cli)
