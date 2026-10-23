@@ -420,8 +420,7 @@ cannot tell from the code alone:
   signals are paging activity and the configured limits above. When the guard
   holds a start, report RepoOS's reason to the human and wait (or help clear
   pressure). When `pressureGuard.enabled` is off or the limits look wrong for
-  this machine, ask the human to change Settings — do not invent a parallel
-  gate.
+  this machine, ask the human to change Settings — do not invent another gate.
 - **Agent drivers pick from the budget allowlist.** When you (an AI session, not
   a human in the UI) set an engineer/reviewer override — `repoos override`, or a
   `PATCH` on `cliOverride`/`modelOverride` — the server refuses a pair outside
