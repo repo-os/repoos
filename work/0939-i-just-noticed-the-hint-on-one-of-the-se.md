@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-keyboard-navigation-and-hints-in-sea
 created_at: "2026-10-23T16:10:17Z"
-updated_at: "2026-10-23T16:54:38Z"
+updated_at: "2026-10-23T16:57:06Z"
 ---
 ## Problem
 
@@ -47,12 +47,12 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 "route": "/",
 "highlight": ".search-overlay-keyboard-hint",
 "steps": [
-  {
-    "click": ".search-input"
-  },
-  {
-    "waitMs": 200
-  }
+{
+  "click": ".search-input"
+},
+{
+  "waitMs": 200
+}
 ]
 }
 ]
@@ -73,3 +73,4 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 - 2026-10-23T16:49:09Z · status ready→active, branch
 - 2026-10-23T16:50:47Z · body
 - 2026-10-23T16:54:38Z · body
+- 2026-10-23T16:57:06Z · body
