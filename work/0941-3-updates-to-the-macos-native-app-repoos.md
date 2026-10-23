@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-macos-native-app-tab-bar
 created_at: "2026-10-23T17:20:56Z"
-updated_at: "2026-10-23T20:14:19Z"
+updated_at: "2026-10-23T20:21:27Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 3
@@ -99,3 +99,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T19:51:50Z · note: review pass 3: needs some work
 - 2026-10-23T19:52:22Z · note: Reviewer round 1 findings: strengthen tab shape, validate traffic-light positioning across resize/fullscreen, and harden hover/drag lifecycle; returning to active for fixes.
 - 2026-10-23T20:14:19Z · body
+- 2026-10-23T20:21:27Z · body
