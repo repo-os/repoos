@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-environment-selection-and-creation-f
 created_at: "2026-10-23T14:40:45Z"
-updated_at: "2026-10-23T14:45:13Z"
+updated_at: "2026-10-23T14:46:43Z"
 ---
 ## Problem
 
@@ -53,35 +53,35 @@ Need to fix some things on the new secrets feature:
 - add some vertical padding above the yellow create environment button so that it's prettier
 - please make sure this new feature works
 
+## Shots
+```json
+[
+{
+"label": "Styled local environment selector",
+"target": "default",
+"route": "/deployments?shotState=deployments:environmentBinding",
+"highlight": ".dep-env-select"
+},
+{
+"label": "Environment creation panel with feedback area",
+"target": "default",
+"route": "/secrets?shotState=secrets:populated",
+"highlight": ".secrets-create-panel",
+"steps": [
+  {
+    "click": ".secrets-create-inline"
+  }
+]
+}
+]
+```
+
 ## Screenshots
 
 ![Screenshot-2026-10-23-at-22.29.39](/api/tasks/0938/attachments/att_c170452e-8cf8-49bf-877b-5fbeb5bb2ca7.png)
 ![Screenshot-2026-10-23-at-22.34.35](/api/tasks/0938/attachments/att_ded01a5e-bb61-4cef-b28e-129a0003879c.png)
 ![Screenshot-2026-10-23-at-22.34.28](/api/tasks/0938/attachments/att_48c9c510-de65-4be9-8ef2-1b5c569aacca.png)
 ![Screenshot-2026-10-23-at-22.34.40](/api/tasks/0938/attachments/att_ec53ac49-3d1d-4661-a1ae-638f5f9fc7bd.png)
-
-## Shots
-```json
-[
-{
-  "label": "Styled local environment selector",
-  "target": "default",
-  "route": "/deployments?shotState=deployments:environmentBinding",
-  "highlight": ".dep-env-select"
-},
-{
-  "label": "Environment creation panel with feedback area",
-  "target": "default",
-  "route": "/secrets?shotState=secrets:populated",
-  "highlight": ".secrets-create-panel",
-  "steps": [
-    {
-      "click": ".secrets-create-inline"
-    }
-  ]
-}
-]
-```
 
 ## Activity
 
@@ -94,3 +94,4 @@ Need to fix some things on the new secrets feature:
 - 2026-10-23T14:41:28Z · status inbox→ready
 - 2026-10-23T14:41:30Z · status ready→active, branch
 - 2026-10-23T14:45:13Z · body
+- 2026-10-23T14:46:43Z · body
