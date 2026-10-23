@@ -2382,6 +2382,10 @@ const effectivePreviewTarget = computed<string | null>(
     previewTarget.value ??
     (previewTargets.value.length === 1 ? (previewTargets.value[0]?.name ?? null) : null),
 );
+const selectedPreviewPlatform = computed(
+  () =>
+    previewTargets.value.find((target) => target.name === effectivePreviewTarget.value)?.platform,
+);
 // A target picked for one task must never carry over to another — reset the
 // choice (not the targets, which come from the task) whenever the drawer swaps.
 // When several targets are listed, the top-ranked one is already the default
@@ -5010,6 +5014,9 @@ watch(
                 :title="`Preview target: ${effectivePreviewTarget}`"
               >
                 {{ effectivePreviewTarget }}
+              </span>
+              <span v-if="selectedPreviewPlatform" class="preview-hint">
+                Runs on this control-plane host. Remote runners cannot display it on your screen.
               </span>
               <span
                 v-if="isPreviewBusyForActive && previewAction === 'start'"
