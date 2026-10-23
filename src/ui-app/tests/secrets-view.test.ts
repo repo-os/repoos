@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 import * as apiMod from "../src/api";
 import Select from "../src/components/ui/select/root.vue";
 import SecretsView from "../src/views/SecretsView.vue";
 import { navFromConfig } from "../src/nav";
+import { useAuthStore } from "../src/stores/auth";
 
 const api = vi.spyOn(apiMod, "api");
 const envs = {
@@ -49,8 +51,11 @@ const snapshots: Record<string, unknown> = {
   },
   integration: { environment: "integration", version: "v2", keys: [] },
 };
-function mountPage() {
-  return mount(SecretsView, { attachTo: document.body });
+function mountPage(role: "admin" | "member" = "admin") {
+  const pinia = createPinia();
+  setActivePinia(pinia);
+  useAuthStore().role = role;
+  return mount(SecretsView, { attachTo: document.body, global: { plugins: [pinia] } });
 }
 function answer(path: string): unknown {
   if (path === "/api/project-environments") return envs;
@@ -76,6 +81,7 @@ describe("SecretsView (#0929)", () => {
     expect(wrapper.text()).toContain("DATABASE_URL");
     expect(wrapper.text()).toContain("Defined in an earlier source");
     expect(wrapper.text()).toContain("VITE_PUBLIC_ORIGIN");
+    expect(wrapper.html()).not.toContain("FAKE_SENTINEL_0932_SCREENSHOT_ONLY");
     expect(api).not.toHaveBeenCalled();
     wrapper.unmount();
   });
@@ -122,12 +128,13 @@ describe("SecretsView (#0929)", () => {
     const inherited = wrapper
       .findAll(".secrets-row")
       .find((row) => row.text().includes("STRIPE_SECRET_KEY"));
-    expect(inherited?.text()).toContain("Add override");
+    expect(inherited?.text()).not.toContain("Add override");
+    expect(inherited?.findAll("button")).toHaveLength(0);
     expect(inherited?.text()).toContain("Defined in an earlier source");
     expect(inherited?.text()).not.toContain("Remove");
     wrapper.unmount();
   });
-  it("adds a local override for inherited values and searches safe metadata", async () => {
+  it("keeps inherited values read-only while searching safe metadata", async () => {
     const wrapper = mountPage();
     await flushPromises();
     await wrapper.get('[aria-label="Search keys"]').setValue("Checks");
@@ -137,17 +144,18 @@ describe("SecretsView (#0929)", () => {
     const inherited = wrapper
       .findAll(".secrets-row")
       .find((row) => row.text().includes("STRIPE_SECRET_KEY"));
-    await inherited!.get("button").trigger("click");
-    await wrapper.get(".secrets-inline-form input").setValue("fake-override-value");
-    await wrapper.get(".secrets-inline-form button").trigger("click");
+    expect(inherited!.findAll("button")).toHaveLength(0);
+    expect(api.mock.calls.some(([, opts]) => opts?.method === "PUT")).toBe(false);
+    wrapper.unmount();
+  });
+  it("lets members view metadata without mutation controls", async () => {
+    const wrapper = mountPage("member");
     await flushPromises();
-    const put = api.mock.calls.find(([, opts]) => opts?.method === "PUT");
-    expect(JSON.parse(String(put?.[1]?.body))).toMatchObject({
-      action: "replace",
-      key: "STRIPE_SECRET_KEY",
-      value: "fake-override-value",
-    });
-    expect(wrapper.html()).not.toContain("fake-override-value");
+    expect(wrapper.text()).toContain("DATABASE_URL");
+    expect(wrapper.text()).not.toContain("Add key");
+    expect(wrapper.text()).not.toContain("Create environment");
+    expect(wrapper.findAll(".secrets-row-actions button")).toHaveLength(0);
+    expect(api.mock.calls.some(([, opts]) => opts?.method === "PUT")).toBe(false);
     wrapper.unmount();
   });
   it("uses masked inputs and clears the entered value after explicit save", async () => {
