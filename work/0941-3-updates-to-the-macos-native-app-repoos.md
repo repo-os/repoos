@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-macos-native-app-tab-bar
 created_at: "2026-10-23T17:20:56Z"
-updated_at: "2026-10-23T19:48:24Z"
+updated_at: "2026-10-23T19:48:35Z"
 review_passes: 2
 ---
 ## Problem
