@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-macos-native-app-tab-bar
 created_at: "2026-10-23T17:20:56Z"
-updated_at: "2026-10-23T18:18:30Z"
+updated_at: "2026-10-23T18:21:31Z"
 ---
 ## Problem
 
@@ -60,3 +60,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T18:18:14Z · message_queued at 2026-10-23T18:18:14.308Z
 - 2026-10-23T18:18:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-23T18:18:30Z · body
+- 2026-10-23T18:21:31Z · CTO nudge: held — an undelivered message is already queued
