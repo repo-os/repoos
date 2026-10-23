@@ -232,6 +232,17 @@ async function awaitNativeLaunch(
     child.stderr?.on("data", collect);
     child.once("error", (error) => fail(`could not spawn launch command: ${error.message}`));
     child.once("exit", (code, signal) => {
+      // A configured launcher can be a one-shot handoff (for example,
+      // `simctl launch` or `adb shell am start`). Its successful exit means
+      // the app was launched; only a later non-zero exit indicates failure.
+      if (code === 0) {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          resolveResult({});
+        }
+        return;
+      }
       fail(
         `launch command exited${code === null ? ` (${signal ?? "signal"})` : ` with code ${code}`}`,
       );
