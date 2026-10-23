@@ -944,6 +944,11 @@ export class PreviewManager {
         REPOOS_OUTPUT_DIR: outputDir, REPOOS_PREVIEW_OUTPUT_DIR: outputDir,
       });
       const expand = (value: string) => value.replaceAll("{worktree}", root).replaceAll("{taskId}", task.id).replaceAll("{outputDir}", outputDir);
+      if (target.native.requires) {
+        const binary = target.native.requires.trim();
+        try { execFileSync("sh", ["-lc", `command -v '${binary.replaceAll("'", "'\\''")}'`], { cwd, env, stdio: "ignore", timeout: 5_000 }); }
+        catch { return { ok: false, error: `native preview requires "${binary}" on the control-plane host; install the platform tools (Xcode command line tools for xcodebuild/xcrun, Android platform-tools for adb), then retry` }; }
+      }
       const build = await runNativeCommand(expand(target.native.buildCommand), cwd, env, target.native.timeoutMs);
       if (!build.ok) return { ok: false, error: `native ${target.native.platform} build failed${build.error ? ` — ${build.error}` : ""}` };
       const launch = spawn(expand(target.native.launchCommand), { cwd, shell: true, detached: process.platform !== "win32", stdio: ["ignore", "ignore", "pipe"], env });

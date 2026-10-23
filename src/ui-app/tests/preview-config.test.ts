@@ -405,6 +405,19 @@ describe("parsePreviewConfig", () => {
     expect(parsed?.targets?.[0]).toMatchObject({ areas: ["web"], name: "web" });
   });
 
+  it("parses native targets only when platform, build and launch are valid", () => {
+    const parsed = parsePreviewConfig({
+      "preview.targets": [
+        { kind: "native", platform: "ios", areas: ["ios"], build_command: "build", launch_command: "launch", stop: "stop", device: "iPhone", timeout_ms: 5000, requires: "xcrun" },
+        { kind: "native", platform: "watchos", areas: ["ios"], build_command: "build", launch_command: "launch" },
+        { kind: "native", platform: "macos", areas: ["mac"], build_command: "build" },
+      ],
+    });
+    expect(parsed?.targets).toEqual([
+      { name: "ios", areas: ["ios"], command: "build && launch", kind: "native", platform: "ios", buildCommand: "build", launchCommand: "launch", stop: "stop", device: "iPhone", timeoutMs: 5000, requires: "xcrun" },
+    ]);
+  });
+
   it("disambiguates duplicate target names so the picker and label match stay unambiguous (#0379)", () => {
     const parsed = parsePreviewConfig({
       "preview.targets": [
