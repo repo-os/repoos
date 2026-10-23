@@ -1633,6 +1633,16 @@ export interface PreviewServiceConfig {
  * whose `areas` list names the task areas it serves.
  */
 export interface PreviewTargetConfig {
+  /** `native` targets build and launch a local app without an HTTP server. */
+  kind?: "web" | "native";
+  platform?: "macos" | "ios" | "android";
+  buildCommand?: string;
+  launchCommand?: string;
+  stop?: string;
+  requires?: string;
+  timeoutMs?: number;
+  env?: Record<string, string>;
+  device?: string;
   /** Human label for diagnostics, e.g. "Landing page". */
   name: string;
   /** Task `area:` values this target serves, matched case-insensitively. */

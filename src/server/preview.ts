@@ -86,6 +86,8 @@ export interface PreviewInfo {
    * Not surfaced as a running preview until it becomes ready.
    */
   starting?: boolean;
+  /** Native app target metadata; native previews intentionally have no URL. */
+  native?: { platform: "macos" | "ios" | "android"; device?: string; stop?: string; cwd: string };
 }
 
 export interface PreviewResult {
@@ -194,6 +196,19 @@ const now = (): string => new Date().toISOString();
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+/** Run a native build as a bounded task-worktree command and retain its stderr tail. */
+async function runNativeCommand(command: string, cwd: string, env: NodeJS.ProcessEnv, timeoutMs = 20 * 60_000): Promise<{ ok: boolean; error?: string }> {
+  return await new Promise((resolveResult) => {
+    const child = spawn(command, { cwd, shell: true, stdio: ["ignore", "ignore", "pipe"], env });
+    let tail = "";
+    let finished = false;
+    const timer = setTimeout(() => { if (!finished) { finished = true; child.kill("SIGTERM"); resolveResult({ ok: false, error: `build timed out after ${timeoutMs}ms${tail ? ` — ${tail}` : ""}` }); } }, timeoutMs);
+    child.stderr?.on("data", (chunk: Buffer) => { tail = `${tail}${chunk.toString("utf8")}`.slice(-4000).trim(); });
+    child.on("error", (err) => { if (finished) return; finished = true; clearTimeout(timer); resolveResult({ ok: false, error: `${err.message}${tail ? ` — ${tail}` : ""}` }); });
+    child.on("exit", (code) => { if (finished) return; finished = true; clearTimeout(timer); resolveResult(code === 0 ? { ok: true } : { ok: false, error: `exit code ${code}${tail ? ` — ${tail}` : ""}` }); });
+  });
+}
+
 /** Default readiness path for a project-declared preview command. */
 const DEFAULT_READY_PATH = "/";
 
@@ -246,6 +261,7 @@ export type PreviewTarget = {
    * booting a partial preview.
    */
   unresolvedServices: string[];
+  native?: { platform: "macos" | "ios" | "android"; buildCommand: string; launchCommand: string; stop?: string; cwd?: string; device?: string; env?: Record<string, string>; timeoutMs?: number; requires?: string };
 };
 
 /** Resolution result: a runnable target, or a clean "nothing configured". */
@@ -262,6 +278,7 @@ export interface PreviewTargetOption {
   name: string;
   /** Task areas this target declared (empty for the default command). */
   areas: string[];
+  platform?: "macos" | "ios" | "android";
 }
 
 /** A runnable target plus the `areas` it declared, for candidate listing. */
@@ -402,6 +419,7 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
         readyTimeoutMs: t.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
         services,
         unresolvedServices,
+        ...(t.kind === "native" && t.platform && t.buildCommand && t.launchCommand ? { native: { platform: t.platform, buildCommand: t.buildCommand, launchCommand: t.launchCommand, stop: t.stop, cwd: t.cwd, device: t.device, env: t.env, timeoutMs: t.timeoutMs, requires: t.requires } } : {}),
       },
     };
     if (taskAreas.some((a) => t.areas.some((b) => sameArea(a, b)))) {
@@ -453,6 +471,7 @@ export function previewTargetOptions(config: RepoOSConfig, task: Task): PreviewT
   return previewCandidates(config, task).map((c) => ({
     name: c.target.label,
     areas: c.areas,
+    ...(c.target.native ? { platform: c.target.native.platform } : {}),
   }));
 }
 
@@ -915,6 +934,28 @@ export class PreviewManager {
       return { ok: false, error: `preview start for #${task.id} was cancelled` };
     }
 
+    if (target.native) {
+      const outputDir = join(root, ".repoos", "preview-output", task.id);
+      mkdirSync(outputDir, { recursive: true });
+      const cwd = resolvePreviewCwd(root, target.native.cwd);
+      if (!cwd) return { ok: false, error: `native preview cwd "${target.native.cwd}" is not inside the task's worktree` };
+      const env = buildProjectConsumerEnv(this.config.root, projectEnvironmentConsumer("preview", target.label), {
+        ...process.env, ...target.native.env, REPOOS_WORKTREE: root, REPOOS_TASK_ID: task.id,
+        REPOOS_OUTPUT_DIR: outputDir, REPOOS_PREVIEW_OUTPUT_DIR: outputDir,
+      });
+      const expand = (value: string) => value.replaceAll("{worktree}", root).replaceAll("{taskId}", task.id).replaceAll("{outputDir}", outputDir);
+      const build = await runNativeCommand(expand(target.native.buildCommand), cwd, env, target.native.timeoutMs);
+      if (!build.ok) return { ok: false, error: `native ${target.native.platform} build failed${build.error ? ` — ${build.error}` : ""}` };
+      const launch = spawn(expand(target.native.launchCommand), { cwd, shell: true, detached: process.platform !== "win32", stdio: ["ignore", "ignore", "pipe"], env });
+      if (!launch.pid) return { ok: false, error: `native ${target.native.platform} launch did not start` };
+      const launchCommand = expand(target.native.launchCommand);
+      const info: PreviewInfo = { port: 0, url: "", startedAt: now(), pid: launch.pid, command: launchCommand, label: target.label, native: { platform: target.native.platform, device: target.native.device, stop: target.native.stop ? expand(target.native.stop) : undefined, cwd } };
+      this.registry.set(task.id, info); this.persist();
+      launch.on("exit", () => { if (this.registry.get(task.id)?.pid === launch.pid) { this.registry.delete(task.id); this.persistOrDrop(); this.emit({ type: "preview", id: task.id, preview: null, at: now() }); } });
+      this.emit({ type: "preview", id: task.id, preview: { port: 0, url: "", startedAt: info.startedAt, label: info.label, native: info.native }, at: now() });
+      return { ok: true, port: 0, url: "", label: target.label };
+    }
+
     // A service name the target references but no `[[preview.services]]` block
     // defines is a config error, never a silently partial preview (#0681).
     if (target.unresolvedServices.length) {
@@ -1071,6 +1112,9 @@ export class PreviewManager {
     this.persistOrDrop();
     this.logStop(taskId, reason, info);
     this.emit({ type: "preview", id: taskId, preview: null, at: now() });
+    if (info.native?.stop) {
+      try { execFileSync("sh", ["-lc", info.native.stop], { cwd: info.native.cwd, stdio: "ignore", timeout: 30_000 }); } catch { /* best effort; terminate owned launcher below */ }
+    }
     await this.killMany(info.pids?.length ? info.pids : [info.pid], info.processGroup ?? false);
   }
 
@@ -1218,6 +1262,9 @@ export class PreviewManager {
   /** Stop a preview read from the persisted registry (not yet adopted). */
   private async stopRecorded(taskId: string, info: PreviewInfo, reason: string): Promise<void> {
     this.logStop(taskId, reason, info);
+    if (info.native?.stop) {
+      try { execFileSync("sh", ["-lc", info.native.stop], { cwd: info.native.cwd, stdio: "ignore", timeout: 30_000 }); } catch { /* best effort */ }
+    }
     await this.killMany(info.pids?.length ? info.pids : [info.pid], info.processGroup ?? false);
   }
 
