@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 107592
-last_close_out_gate_at: "2026-10-23T00:52:39.962Z"
 id: "0937"
 title: "Secrets follow-ups: 401 tests on widened metadata routes + document PORT/HOST reserved keys"
 type: chore
-status: review
+status: done
 priority: p2
 area: [server, docs]
+merged_commit: 9762cbf2be158771aa8e23d1e6410bb94e9c3c34
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/secrets-follow-ups-401-tests-on-widened-
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T00:35:50Z"
 updated_at: "2026-10-23T00:52:39Z"
+last_close_out_gate_ms: 107592
+last_close_out_gate_at: "2026-10-23T00:52:39.962Z"
 review_passes: 1
 ---
 ## Problem
