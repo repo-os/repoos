@@ -107,3 +107,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T20:32:32Z · status review→active
 - 2026-10-23T20:35:17Z · body
 - 2026-10-23T20:45:06Z · status active→review
+- 2026-10-23T20:45:06Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
