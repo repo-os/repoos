@@ -107,6 +107,56 @@ describe("SecretsView (#0929)", () => {
     await flushPromises();
     expect(wrapper.text()).toContain("Give this project an environment");
     expect(wrapper.text()).toContain("Create environment");
+    expect(wrapper.get(".secrets-picker").attributes("disabled")).toBeDefined();
+    wrapper.unmount();
+  });
+  it("reports successful creation and selects the new environment immediately", async () => {
+    api.mockImplementation(async (path, opts) => {
+      if (path === "/api/project-environments" && opts?.method === "POST")
+        return {
+          environment: { id: "fresh", sources: [{ id: "local", path: ".env.fresh" }] },
+        } as never;
+      if (path === "/api/project-environments") return { environments: [] } as never;
+      if (path.includes("/fresh/secrets"))
+        return { environment: "fresh", version: "v1", keys: [] } as never;
+      return {} as never;
+    });
+    const wrapper = mountPage();
+    await flushPromises();
+    await wrapper.get(".secrets-empty button").trigger("click");
+    await flushPromises();
+    const input = document.querySelector<HTMLInputElement>('input[placeholder="dev-local"]')!;
+    input.value = "fresh";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    await document
+      .querySelector<HTMLButtonElement>(".secrets-create-actions button[type=submit]")!
+      .click();
+    await flushPromises();
+    expect(wrapper.text()).toContain("Environment “fresh” created.");
+    expect(wrapper.get(".secrets-picker").text()).toContain("fresh");
+    expect(api.mock.calls.some(([path]) => path.includes("/fresh/secrets"))).toBe(true);
+    wrapper.unmount();
+  });
+  it("shows the server creation error in the dialog", async () => {
+    api.mockImplementation(async (path, opts) => {
+      if (path === "/api/project-environments" && opts?.method === "POST")
+        throw new apiMod.ApiError("That environment already exists", 409, {
+          error: "That environment already exists",
+        });
+      return { environments: [] } as never;
+    });
+    const wrapper = mountPage();
+    await flushPromises();
+    await wrapper.get(".secrets-empty button").trigger("click");
+    await flushPromises();
+    const input = document.querySelector<HTMLInputElement>('input[placeholder="dev-local"]')!;
+    input.value = "dev-nick";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    document
+      .querySelector<HTMLButtonElement>(".secrets-create-actions button[type=submit]")!
+      .click();
+    await flushPromises();
+    expect(document.body.querySelector('[role="alert"]')?.textContent).toContain("already exists");
     wrapper.unmount();
   });
   it("changes the viewed environment without rebinding anything", async () => {
