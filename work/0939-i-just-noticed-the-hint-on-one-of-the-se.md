@@ -1,16 +1,18 @@
 ---
-updated_at: "2026-10-23T17:59:19Z"
-review_passes: 1
 id: "0939"
 title: Fix keyboard navigation and hints in search bars
 type: bug
-status: review
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-keyboard-navigation-and-hints-in-sea
 created_at: "2026-10-23T16:10:17Z"
+updated_at: "2026-10-23T17:59:20Z"
+review_rounds: 1
+routing_switches: 1
+review_passes: 1
 last_check_failure: "repoos check at 2026-10-23T17:28:41.083Z: repoos check failed: remote validation unavailable: ssh upload of candidate bundle to bee failed: [stdin error: EPIPE] — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 ---
 ## Problem
@@ -90,4 +92,4 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 - 2026-10-23T17:57:56Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-10-23T17:57:56Z · status active→review
 - 2026-10-23T17:59:19Z · note: review pass 1: needs some work
-
+- 2026-10-23T17:59:20Z · status review→active
