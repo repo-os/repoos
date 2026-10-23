@@ -202,6 +202,43 @@ const now = (): string => new Date().toISOString();
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+/** Give a native launcher a moment to report an immediate spawn/exit failure. */
+const NATIVE_LAUNCH_STARTUP_GRACE_MS = 150;
+
+async function awaitNativeLaunch(
+  child: ChildProcess,
+  onExit: () => void,
+): Promise<{ error?: string }> {
+  return await new Promise((resolveResult) => {
+    let settled = false;
+    let tail = "";
+    const timer = setTimeout(() => {
+      settled = true;
+      resolveResult({});
+    }, NATIVE_LAUNCH_STARTUP_GRACE_MS);
+    const collect = (chunk: Buffer) => {
+      tail = `${tail}${chunk.toString("utf8")}`.slice(-4000).trim();
+    };
+    const fail = (message: string) => {
+      if (settled) {
+        onExit();
+        return;
+      }
+      settled = true;
+      clearTimeout(timer);
+      resolveResult({ error: `${message}${tail ? ` — ${tail}` : ""}` });
+    };
+    child.stdout?.on("data", collect);
+    child.stderr?.on("data", collect);
+    child.once("error", (error) => fail(`could not spawn launch command: ${error.message}`));
+    child.once("exit", (code, signal) => {
+      fail(
+        `launch command exited${code === null ? ` (${signal ?? "signal"})` : ` with code ${code}`}`,
+      );
+    });
+  });
+}
+
 /** Run a native build as a bounded task-worktree command and retain its stderr tail. */
 async function runNativeCommand(
   command: string,
@@ -1077,8 +1114,10 @@ export class PreviewManager {
         stdio: ["ignore", "ignore", "pipe"],
         env,
       });
-      if (!launch.pid)
+      if (!launch.pid) {
+        launch.kill();
         return { ok: false, error: `native ${target.native.platform} launch did not start` };
+      }
       const launchCommand = expand(target.native.launchCommand);
       const info: PreviewInfo = {
         port: 0,
@@ -1095,15 +1134,31 @@ export class PreviewManager {
           cwd,
         },
       };
-      this.registry.set(task.id, info);
-      this.persist();
-      launch.on("exit", () => {
+      const onExit = () => {
         if (this.registry.get(task.id)?.pid === launch.pid) {
           this.registry.delete(task.id);
           this.persistOrDrop();
           this.emit({ type: "preview", id: task.id, preview: null, at: now() });
         }
-      });
+      };
+      const launchHealth = await awaitNativeLaunch(launch, onExit);
+      if (launchHealth.error) {
+        if (processGroup) {
+          try {
+            process.kill(-launch.pid, "SIGTERM");
+          } catch {
+            /* already exited */
+          }
+        } else {
+          launch.kill("SIGTERM");
+        }
+        return {
+          ok: false,
+          error: `native ${target.native.platform} launch failed — ${launchHealth.error}`,
+        };
+      }
+      this.registry.set(task.id, info);
+      this.persist();
       this.emit({
         type: "preview",
         id: task.id,

@@ -666,6 +666,72 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
     }
   }, 30_000);
 
+  it("reports a failed native launch without registering it as running", async () => {
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-native-launch-fails";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      [
+        "[[preview.targets]]",
+        'name = "Failing native app"',
+        'kind = "native"',
+        'platform = "macos"',
+        'areas = ["mac"]',
+        'build_command = "true"',
+        'launch_command = "echo launch-broke >&2; false"',
+      ].join("\n") + "\n",
+    );
+    const manager = new PreviewManager(loadConfig(fx.root), () => {});
+    try {
+      const result = await manager.start({
+        id: "0943-fail",
+        area: "mac",
+        branch,
+        status: "active",
+      } as unknown as Task);
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("native macos launch failed");
+      expect(result.error).toContain("launch-broke");
+      expect(manager.get("0943-fail")).toBeNull();
+    } finally {
+      await manager.stopAll();
+    }
+  }, 30_000);
+
+  it("FIFO-evicts the prior native preview when the single slot is reused", async () => {
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-native-fifo";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      [
+        "[[preview.targets]]",
+        'name = "Native app"',
+        'kind = "native"',
+        'platform = "macos"',
+        'areas = ["mac"]',
+        'build_command = "true"',
+        'launch_command = "sleep 30"',
+      ].join("\n") + "\n",
+    );
+    const manager = new PreviewManager(loadConfig(fx.root), () => {});
+    const first = { id: "0943-first", area: "mac", branch, status: "active" } as unknown as Task;
+    const second = { id: "0943-second", area: "mac", branch, status: "active" } as unknown as Task;
+    try {
+      expect((await manager.start(first)).ok).toBe(true);
+      expect((await manager.start(second)).ok).toBe(true);
+      expect(manager.get("0943-first")).toBeNull();
+      expect(manager.get("0943-second")?.native?.platform).toBe("macos");
+    } finally {
+      await manager.stopAll();
+    }
+  }, 30_000);
+
   it("spawns the configured command, serves it, and group-kills it on stop", async () => {
     const fx = makeFixture();
     fixtures.push(fx);
