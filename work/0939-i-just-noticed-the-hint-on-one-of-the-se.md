@@ -1,6 +1,4 @@
 ---
-check_retry_count: 2
-last_check_failure: "repoos check at 2026-10-23T18:23:38.577Z: repoos check failed: remote validation unavailable: host thinkpad skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 id: "0939"
 title: Fix keyboard navigation and hints in search bars
 type: bug
@@ -11,10 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-keyboard-navigation-and-hints-in-sea
 created_at: "2026-10-23T16:10:17Z"
-updated_at: "2026-10-23T18:23:02Z"
-review_rounds: 1
-routing_switches: 1
-review_passes: 1
+updated_at: "2026-10-23T17:57:56Z"
 ---
 ## Problem
 
@@ -43,26 +38,6 @@ Covers keyboard navigation and keyboard-control hints for search bars, including
 
 I just noticed the hint on one of the search bars (this is the one in context page that has the hint), but the hint to use the arrows and enter to select doesn't actually work at all..can you fix that? and can you add the hint to all the search bars, e.g. the main top bar search bar doesn't have a hint and looks very bare... so yeah, add the relevant hint about the keyboard up/down/enter/esc etc and make sure it actually works.
 
-## Shots
-```json
-[
-{
-"label": "Global search keyboard controls",
-"target": "default",
-"route": "/",
-"highlight": ".search-overlay-keyboard-hint",
-"steps": [
-{
-"click": ".search-input"
-},
-{
-"waitMs": 200
-}
-]
-}
-]
-```
-
 ## Screenshots
 
 ![Screenshot-2026-10-23-at-23.59.54](/api/tasks/0939/attachments/att_bf7e274a-9e23-4f93-b16f-c1e787e2426b.png)
@@ -76,33 +51,4 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 - 2026-10-23T16:10:48Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-10-23T16:47:28Z · status inbox→ready
 - 2026-10-23T16:49:09Z · status ready→active, branch
-- 2026-10-23T16:50:47Z · body
-- 2026-10-23T16:54:38Z · body
-- 2026-10-23T16:57:06Z · body
-- 2026-10-23T17:07:41Z · handoff failed · remote validation failed: test failure: tests/search-overlay-context.test.ts > SearchOverlay context scope (#0557) > navigates results with arrows, opens the highlighted result, and closes on Escape on bee — fix it in the feature branch and re-run the gate
-- 2026-10-23T17:12:54Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/search-overlay-context.test.ts > SearchOverlay context scope (#0557) > navigates results with arrows, opens the highlighted result, and closes on Escape on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-23T17:12:54Z · note: handoff requested (cli)
-- 2026-10-23T17:14:58Z · handoff failed · task-file handoff failed at check · remote validation unavailable: ssh upload of candidate bundle to bee failed: upload too slow (ETA 1806s exceeds budget) — trying another host or local gate — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
-- 2026-10-23T17:21:39Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/search-overlay-context.test.ts > SearchOverlay context scope (#0557) > navigates results with arrows, opens the highlighted result, and closes on Escape on bee — fix it in the feature branch and re-run the gate
-- 2026-10-23T17:22:14Z · body
-- 2026-10-23T17:30:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-23T17:38:14Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/search-overlay-context.test.ts > SearchOverlay context scope (#0557) > navigates results with arrows, opens the highlighted result, and closes on Escape on bee — fix it in the feature branch and re-run the gate
-- 2026-10-23T17:39:49Z · body
-- 2026-10-23T17:41:52Z · body
-- 2026-10-23T17:44:45Z · body
-- 2026-10-23T17:57:56Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-10-23T17:57:56Z · status active→review
-- 2026-10-23T17:59:19Z · note: review pass 1: needs some work
-- 2026-10-23T17:59:20Z · status review→active
-- 2026-10-23T17:59:22Z · CTO nudge: held — remote validation is running
-- 2026-10-23T18:04:36Z · body
-- 2026-10-23T18:07:52Z · body
-- 2026-10-23T18:18:11Z · message_queued at 2026-10-23T18:18:11.932Z
-- 2026-10-23T18:18:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-23T18:19:23Z · body
-- 2026-10-23T18:21:13Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-23T18:21:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-23T18:21:14Z · message_delivered: 1 message(s)
-- 2026-10-23T18:21:24Z · status active→review
-- 2026-10-23T18:23:02Z · note: review pass 2: good to go
-
