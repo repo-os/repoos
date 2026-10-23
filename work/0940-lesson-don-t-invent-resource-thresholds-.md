@@ -14,7 +14,6 @@ review_cli_override: opencode
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T16:56:10Z"
 updated_at: "2026-10-23T18:34:52Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-23T17:19:08.287Z: repoos check failed: remote validation unavailable: host bee skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 ---
 ## Problem
@@ -84,3 +83,4 @@ If the RepoOS pressure guard blocks a start, report the reason to the human. Don
 - 2026-10-23T18:22:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-23T18:22:49Z · message_delivered: 1 message(s)
 - 2026-10-23T18:34:52Z · body
+
