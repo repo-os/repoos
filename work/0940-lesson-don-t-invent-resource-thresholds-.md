@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-23T18:46:03Z"
-review_passes: 1
 id: "0940"
 title: Use RepoOS pressure guard for start decisions
 type: spec
@@ -15,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T16:56:10Z"
-last_check_failure: "repoos check at 2026-10-23T17:19:08.287Z: repoos check failed: remote validation unavailable: host bee skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
+updated_at: "2026-10-23T18:42:46Z"
 ---
 ## Problem
 
@@ -68,23 +66,4 @@ If the RepoOS pressure guard blocks a start, report the reason to the human. Don
 - 2026-10-23T16:58:45Z · review_model_override
 - 2026-10-23T16:58:47Z · status inbox→ready
 - 2026-10-23T16:58:48Z · status ready→active, branch
-- 2026-10-23T17:08:11Z · message_queued at 2026-10-23T17:08:11.830Z
-- 2026-10-23T17:08:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-23T17:08:18Z · body
-- 2026-10-23T17:12:02Z · body
-- 2026-10-23T17:13:01Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-23T17:13:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-23T17:13:02Z · message_delivered: 1 message(s)
-- 2026-10-23T18:02:40Z · body
-- 2026-10-23T18:13:12Z · message_queued at 2026-10-23T18:13:12.209Z
-- 2026-10-23T18:13:13Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-23T18:13:28Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-23T18:17:38Z · body
-- 2026-10-23T18:22:47Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-23T18:22:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-23T18:22:49Z · message_delivered: 1 message(s)
-- 2026-10-23T18:34:52Z · body
-- 2026-10-23T18:42:47Z · status active→review
-- 2026-10-23T18:42:47Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-23T18:46:03Z · note: review pass 1: good to go
-
+- 2026-10-23T18:42:46Z · status active→review
