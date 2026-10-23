@@ -2,7 +2,7 @@
 id: "0939"
 title: Fix keyboard navigation and hints in search bars
 type: bug
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -89,3 +89,4 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 - 2026-10-23T17:41:52Z · body
 - 2026-10-23T17:44:45Z · body
 - 2026-10-23T17:57:56Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-10-23T17:57:56Z · status active→review
