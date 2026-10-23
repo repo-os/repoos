@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-environment-selection-and-creation-f
 created_at: "2026-10-23T14:40:45Z"
-updated_at: "2026-10-23T14:46:43Z"
+updated_at: "2026-10-23T14:58:45Z"
 ---
 ## Problem
 
@@ -68,9 +68,9 @@ Need to fix some things on the new secrets feature:
 "route": "/secrets?shotState=secrets:populated",
 "highlight": ".secrets-create-panel",
 "steps": [
-  {
-    "click": ".secrets-create-inline"
-  }
+{
+  "click": ".secrets-create-inline"
+}
 ]
 }
 ]
@@ -95,3 +95,4 @@ Need to fix some things on the new secrets feature:
 - 2026-10-23T14:41:30Z · status ready→active, branch
 - 2026-10-23T14:45:13Z · body
 - 2026-10-23T14:46:43Z · body
+- 2026-10-23T14:58:45Z · note: ui verification passed: 2 of 2 shots captured with clean console
