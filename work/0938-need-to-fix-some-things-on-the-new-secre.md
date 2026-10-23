@@ -2,14 +2,14 @@
 id: "0938"
 title: Fix environment selection and creation feedback
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-23T14:40:45Z"
-updated_at: "2026-10-23T14:41:21Z"
+updated_at: "2026-10-23T14:41:28Z"
 ---
 ## Problem
 
@@ -68,3 +68,4 @@ Need to fix some things on the new secrets feature:
 - 2026-10-23T14:40:54Z · screenshots
 - 2026-10-23T14:40:55Z · screenshots
 - 2026-10-23T14:41:21Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
+- 2026-10-23T14:41:28Z · status inbox→ready
