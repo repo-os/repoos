@@ -2,7 +2,7 @@
 id: "0939"
 title: Fix keyboard navigation and hints in search bars
 type: bug
-status: review
+status: active
 priority: p2
 area: ui
 assigned_to: ai
