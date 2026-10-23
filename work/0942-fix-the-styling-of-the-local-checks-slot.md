@@ -2,7 +2,7 @@
 id: "0942"
 title: Style the local checks slots section
 type: bug
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -60,3 +60,4 @@ Fix the styling of the "local checks slots" content, it should probably be it's 
 - 2026-10-23T19:17:33Z · body
 - 2026-10-23T19:19:38Z · body
 - 2026-10-23T19:31:53Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-10-23T19:31:53Z · status active→review
