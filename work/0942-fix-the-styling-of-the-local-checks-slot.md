@@ -42,10 +42,10 @@ Fix the styling of the "local checks slots" content, it should probably be it's 
 ```json
 [
 {
-  "label": "Checks page local slots card",
-  "target": "default",
-  "route": "/checks?tab=now",
-  "highlight": ".ck-local-slots"
+"label": "Checks page local slots card",
+"target": "default",
+"route": "/checks?tab=now",
+"highlight": ".ck-local-slots"
 }
 ]
 ```
