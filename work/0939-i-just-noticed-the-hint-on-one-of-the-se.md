@@ -1,17 +1,38 @@
 ---
 id: "0939"
-title: I just noticed the hint on one of the search bars (this i…
-type: feature
-status: draft
+title: Fix keyboard navigation and hints in search bars
+type: bug
+status: inbox
 priority: p2
-area: general
+area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-23T16:10:17Z"
-updated_at: "2026-10-23T16:10:26Z"
+updated_at: "2026-10-23T16:10:48Z"
 ---
-I just noticed the hint on one of the search bars (this is the one in context page that has the hint), but the hint to use the arrows and enter to select doesn't actually work at all..can you fix that? and can you add the hint to all the search bars, e.g. the main top bar search bar doesn't have a hint and looks very bare... so yeah, add the relevant hint about the keyboard up/down/enter/esc etc and make sure it actually works.
+## Problem
+
+The Context page search bar displays a hint about using the arrow keys and Enter to select a result, but that keyboard interaction does not work. Other search bars, including the main top-bar search, lack a hint, making their keyboard controls unclear.
+
+## Desired UX
+
+Search bars consistently show a relevant hint for keyboard navigation and selection. The advertised Up/Down, Enter, and Escape controls work as expected.
+
+## Acceptance criteria
+
+- [ ] Fix the Context page search so its Up/Down, Enter, and Escape keyboard controls work as advertised.
+- [ ] Add a relevant keyboard-controls hint to search bars that do not currently have one, including the main top-bar search.
+- [ ] Ensure hints accurately describe the keyboard controls supported by each search bar.
+
+## Notes for AI
+
+- Inspect the existing search bars and their current keyboard behavior before making changes.
+- Keep each hint aligned with the controls that search bar actually supports.
+
+## Scope
+
+Covers keyboard navigation and keyboard-control hints for search bars, including the Context page and main top bar.
 
 ## Original prompt
 
@@ -27,3 +48,4 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 - 2026-10-23T16:10:17Z · created · hello@repoos.org
 - 2026-10-23T16:10:25Z · screenshots
 - 2026-10-23T16:10:26Z · screenshots
+- 2026-10-23T16:10:48Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
