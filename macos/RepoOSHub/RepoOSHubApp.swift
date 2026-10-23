@@ -1,6 +1,7 @@
 import SwiftUI
 import UserNotifications
 import AppKit
+import ObjectiveC
 
 /// Window geometry shared by the scene declaration and its unit test.
 ///
@@ -229,6 +230,8 @@ private struct HubWindowAppearanceConfigurator: NSViewRepresentable {
 /// exist, so the hidden-title chrome is applied there and re-applied whenever
 /// SwiftUI updates the appearance.
 final class HubWindowChromeView: NSView {
+    private var trafficLightCorrectionQueued = false
+
     var hubAppearance: HubAppAppearance {
         didSet { configureWindow() }
     }
@@ -246,6 +249,7 @@ final class HubWindowChromeView: NSView {
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         configureWindow()
+        scheduleTrafficLightCorrection()
     }
 
     override func layout() {
@@ -257,6 +261,19 @@ final class HubWindowChromeView: NSView {
         // page, and its toggle duplicates the sidebar control (#0895).
         if let window {
             hideHubNativeToolbarRow(window)
+            HubTrafficLightPositioning.apply(to: window)
+            scheduleTrafficLightCorrection()
+        }
+    }
+
+    private func scheduleTrafficLightCorrection() {
+        guard !trafficLightCorrectionQueued else { return }
+        trafficLightCorrectionQueued = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.trafficLightCorrectionQueued = false
+            guard let window = self.window else { return }
+            HubTrafficLightPositioning.apply(to: window)
         }
     }
 
@@ -302,6 +319,10 @@ final class HubWindowChromeView: NSView {
 /// of the title is suppressed.
 func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
     window.styleMask.insert(.fullSizeContentView)
+    // Background dragging would treat the transparent titlebar's hosted tabs
+    // as empty window chrome. The tab strip supplies an explicit drag region
+    // only in its unoccupied space instead.
+    window.isMovableByWindowBackground = false
     window.titleVisibility = .hidden
     window.titlebarAppearsTransparent = true
     window.titlebarSeparatorStyle = .none
@@ -313,6 +334,38 @@ func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
     let standardButtons: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
     for buttonType in standardButtons {
         window.standardWindowButton(buttonType)?.isHidden = false
+    }
+    HubTrafficLightPositioning.apply(to: window)
+}
+
+/// Keep the three native controls aligned to the center of the 40pt tab row.
+/// Their initial positions are retained because the appearance configurator
+/// runs repeatedly as SwiftUI attaches and lays out the window.
+enum HubTrafficLightPositioning {
+    static let horizontalAdjustment: CGFloat = 15
+    static let verticalAdjustment: CGFloat = -4
+
+    static var correctionTransform: CGAffineTransform {
+        CGAffineTransform(translationX: horizontalAdjustment, y: verticalAdjustment)
+    }
+
+    /// Reserve space through the translated controls' visual and hit-test edge.
+    /// `NSView.frame` remains in AppKit's untransformed titlebar coordinates.
+    static func reservedInset(frameMaxX: CGFloat) -> CGFloat {
+        max(frameMaxX + horizontalAdjustment + 8, 12)
+    }
+
+    static func apply(to window: NSWindow) {
+        let types: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+        for type in types {
+            guard let button = window.standardWindowButton(type) else { continue }
+            // AppKit's titlebar layout manager resets these views' frames, so
+            // move the native controls at the layer level after each layout.
+            // This keeps drawing and hit testing aligned without accumulating
+            // offsets when the window resizes or enters fullscreen.
+            button.wantsLayer = true
+            button.layer?.setAffineTransform(correctionTransform)
+        }
     }
 }
 
