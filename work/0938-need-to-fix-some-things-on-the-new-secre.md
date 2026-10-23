@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-environment-selection-and-creation-f
 created_at: "2026-10-23T14:40:45Z"
-updated_at: "2026-10-23T14:41:30Z"
+updated_at: "2026-10-23T14:45:13Z"
 ---
 ## Problem
 
@@ -60,6 +60,29 @@ Need to fix some things on the new secrets feature:
 ![Screenshot-2026-10-23-at-22.34.28](/api/tasks/0938/attachments/att_48c9c510-de65-4be9-8ef2-1b5c569aacca.png)
 ![Screenshot-2026-10-23-at-22.34.40](/api/tasks/0938/attachments/att_ec53ac49-3d1d-4661-a1ae-638f5f9fc7bd.png)
 
+## Shots
+```json
+[
+{
+  "label": "Styled local environment selector",
+  "target": "default",
+  "route": "/deployments?shotState=deployments:environmentBinding",
+  "highlight": ".dep-env-select"
+},
+{
+  "label": "Environment creation panel with feedback area",
+  "target": "default",
+  "route": "/secrets?shotState=secrets:populated",
+  "highlight": ".secrets-create-panel",
+  "steps": [
+    {
+      "click": ".secrets-create-inline"
+    }
+  ]
+}
+]
+```
+
 ## Activity
 
 - 2026-10-23T14:40:45Z · created · hello@repoos.org
@@ -70,3 +93,4 @@ Need to fix some things on the new secrets feature:
 - 2026-10-23T14:41:21Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-10-23T14:41:28Z · status inbox→ready
 - 2026-10-23T14:41:30Z · status ready→active, branch
+- 2026-10-23T14:45:13Z · body
