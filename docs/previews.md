@@ -44,6 +44,52 @@ cwd       = "landing"
 readyPath = "/"
 ```
 
+## Native app targets
+
+`kind = "native"` uses the same preview slot and task lifecycle without an
+HTTP URL. The build command runs first in the task worktree; the launch command
+is then kept as the owned preview process. Configure all device-specific work
+in these commands. `{worktree}`, `{taskId}` and `{outputDir}` plus
+`REPOOS_WORKTREE`, `REPOOS_TASK_ID` and `REPOOS_OUTPUT_DIR` identify the task
+and its private `.repoos/preview-output/<taskId>` directory.
+
+```toml
+[[preview.targets]]
+name = "macOS Hub"
+kind = "native"
+platform = "macos"
+areas = ["mac"]
+build_command = "xcodebuild -project macos/RepoOSHub.xcodeproj -scheme RepoOSHub -derivedDataPath {outputDir}/DerivedData build"
+launch_command = "open -W {outputDir}/DerivedData/Build/Products/Debug/RepoOSHub.app"
+stop = "osascript -e 'tell application \\\"RepoOSHub\\\" to quit'"
+
+[[preview.targets]]
+name = "iOS Simulator"
+kind = "native"
+platform = "ios"
+areas = ["ios"]
+device = "iPhone 17"
+build_command = "xcodebuild -project mobile/ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath {outputDir}/DerivedData build"
+launch_command = "xcrun simctl bootstatus 'iPhone 17' -b && xcrun simctl install booted {outputDir}/DerivedData/Build/Products/Debug-iphonesimulator/App.app && xcrun simctl launch booted com.example.app"
+stop = "xcrun simctl terminate booted com.example.app"
+
+[[preview.targets]]
+name = "Android Emulator"
+kind = "native"
+platform = "android"
+areas = ["android"]
+build_command = "cd mobile/android && ./gradlew assembleDebug"
+launch_command = "adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk && adb shell am start -n com.example.app/.MainActivity && adb logcat"
+stop = "adb shell am force-stop com.example.app"
+```
+
+Replace example scheme, bundle id, and activity names with the project's real
+values. Native targets are local to the control-plane host; remote runners
+cannot display an app on the human's screen. They run in the same one-at-a-time
+FIFO slot as web previews and are stopped with the task. Unlike
+`[[dev.targets]] kind = "process"`, they run from the task worktree; unlike
+`[[shot.targets]]`, they launch a live app rather than capture still images.
+
 - `{port}` / `{host}` are replaced with the OS-assigned values, and `PORT` /
   `HOST` are exported into the child's environment.
 - **Companion services (#0681)** for full-stack previews: repeatable

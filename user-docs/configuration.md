@@ -1095,6 +1095,15 @@ when a task is in `active` or `review`.
 | `preview.targets[].readyPath` | string | `/` | yes | Per-target readiness path (`ready_path` is also accepted). |
 | `preview.targets[].readyTimeoutMs` | number | `10000` | yes | Per-target readiness timeout (`ready_timeout_ms` is also accepted). |
 | `preview.targets[].services` | array of strings | `[]` | yes | Names of `[[preview.services]]` to boot before this target's main command (#0681). |
+| `preview.targets[].kind` | `web` or `native` | `web` | yes | Native targets build and launch a local app without a URL. |
+| `preview.targets[].platform` | `macos`, `ios` or `android` | required for native | yes | Platform label shown in the task drawer. |
+| `preview.targets[].build_command` | string | required for native | yes | Build command run in the task worktree before launch. |
+| `preview.targets[].launch_command` | string | required for native | yes | Launch command run after a successful build. |
+| `preview.targets[].stop` | string | unset | yes | Optional platform command run when stopping the target. |
+| `preview.targets[].device` | string | unset | yes | Simulator or emulator label displayed in the drawer. |
+| `preview.targets[].requires` | string | unset | yes | Required tool name for install guidance. |
+| `preview.targets[].timeout_ms` | number | 20 minutes | yes | Native build timeout. |
+| `preview.targets[].env` | table | `{}` | yes | Additional environment variables for build and launch. |
 | `preview.services[].name` | string | required | yes | Label used to reference the service from a target and in diagnostics. |
 | `preview.services[].command` | string | required | yes | Command that boots the service on its own OS-assigned port. Rows without one are dropped. |
 | `preview.services[].cwd` | string | worktree root | yes | Subdirectory of the worktree to run the service in. |

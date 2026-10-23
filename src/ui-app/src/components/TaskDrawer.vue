@@ -4905,7 +4905,7 @@ watch(
               <!-- Previews are auto-launched when a task lands in review (#0198);
                  the live URL simply appears when ready. A manual "Start preview"
                  fallback (below) covers review tasks where that didn't happen. -->
-              <div class="preview-live">
+              <div class="preview-live" v-if="!ui.active.preview.native">
                 <span class="preview-dot"></span>
                 <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
                   <ExternalLink class="size-3.5" />
@@ -4916,6 +4916,12 @@ watch(
                 <span v-if="ui.active.preview.label" class="preview-target-name">
                   {{ ui.active.preview.label }}
                 </span>
+              </div>
+              <div v-else class="preview-live" role="status">
+                <span class="preview-dot"></span>
+                <span>{{ ui.active.preview.native.platform }} app running</span>
+                <span v-if="ui.active.preview.native.device" class="preview-target-name">{{ ui.active.preview.native.device }}</span>
+                <span v-if="ui.active.preview.label" class="preview-target-name">{{ ui.active.preview.label }}</span>
               </div>
               <span
                 v-if="isPreviewBusyForActive && previewAction === 'stop'"
@@ -4989,7 +4995,7 @@ watch(
                 <SelectContent position="popper">
                   <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
                     <SelectItem v-for="t in previewTargets" :key="t.name" :value="t.name">
-                      {{ t.name }}
+                      {{ t.name }}{{ t.platform ? ` · ${t.platform}` : '' }}
                     </SelectItem>
                   </SelectViewport>
                 </SelectContent>
