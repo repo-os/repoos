@@ -19,7 +19,7 @@ import {
 function makeFixture() {
   const root = mkdtempSync(join(tmpdir(), "repoos-secret-route-"));
   execFileSync("git", ["init", "-q"], { cwd: root });
-  writeFileSync(join(root, ".gitignore"), ".env.dev\n");
+  writeFileSync(join(root, ".gitignore"), ".env.*\n!.env.example\n");
   mkdirSync(join(root, ".repoos"));
   writeFileSync(
     join(root, ".repoos/environments.json"),
