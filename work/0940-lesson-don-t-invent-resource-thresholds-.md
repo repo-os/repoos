@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T16:56:10Z"
-updated_at: "2026-10-23T17:13:01Z"
+updated_at: "2026-10-23T17:13:02Z"
 ---
 ## Problem
 
@@ -71,3 +71,4 @@ If the RepoOS pressure guard blocks a start, report the reason to the human. Don
 - 2026-10-23T17:08:18Z · body
 - 2026-10-23T17:12:02Z · body
 - 2026-10-23T17:13:01Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-23T17:13:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
