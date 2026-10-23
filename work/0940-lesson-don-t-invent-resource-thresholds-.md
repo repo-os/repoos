@@ -2,7 +2,7 @@
 id: "0940"
 title: Use RepoOS pressure guard for start decisions
 type: spec
-status: inbox
+status: ready
 priority: p2
 area: [agent, core, docs]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T16:56:10Z"
-updated_at: "2026-10-23T16:58:45Z"
+updated_at: "2026-10-23T16:58:47Z"
 ---
 ## Problem
 
@@ -64,3 +64,4 @@ If the RepoOS pressure guard blocks a start, report the reason to the human. Don
 - 2026-10-23T16:58:16Z · review_cli_override, review_model_override
 - 2026-10-23T16:58:21Z · review_cli_override
 - 2026-10-23T16:58:45Z · review_model_override
+- 2026-10-23T16:58:47Z · status inbox→ready
