@@ -60,4 +60,45 @@ describe("SearchOverlay context scope (#0557)", () => {
     expect(loadSkill).toHaveBeenCalledWith("skills/deploy/SKILL.md");
     wrapper.unmount();
   });
+
+  it("navigates results with arrows, opens the highlighted result, and closes on Escape", async () => {
+    const docs = useDocsStore();
+    docs.skills = [
+      { path: "skills/alpha/SKILL.md", name: "alpha", description: "alpha tool" },
+      { path: "skills/beta/SKILL.md", name: "beta", description: "beta tool" },
+    ];
+    const loadSkill = vi.spyOn(docs, "loadSkill").mockResolvedValue(undefined);
+    const wrapper = mount(SearchOverlay, {
+      props: { open: true, scope: "context" },
+      attachTo: document.body,
+    });
+    await flushPromises();
+
+    const input = document.body.querySelector(".search-overlay-input") as HTMLInputElement;
+    input.value = "tool";
+    input.dispatchEvent(new Event("input"));
+    await flushPromises();
+    await new Promise((r) => setTimeout(r, 250));
+
+    const dialog = document.body.querySelector('[role="dialog"]')!;
+    const down = new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true });
+    dialog.dispatchEvent(down);
+    expect(down.defaultPrevented).toBe(true);
+    expect(document.body.querySelectorAll('[role="option"]')[1]?.getAttribute("aria-selected")).toBe("true");
+
+    const enter = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    dialog.dispatchEvent(enter);
+    await flushPromises();
+    expect(enter.defaultPrevented).toBe(true);
+    expect(loadSkill).toHaveBeenCalledWith("skills/beta/SKILL.md");
+
+    await wrapper.setProps({ open: false });
+    await wrapper.setProps({ open: true });
+    await flushPromises();
+    const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    document.body.querySelector('[role="dialog"]')!.dispatchEvent(escape);
+    expect(escape.defaultPrevented).toBe(true);
+    expect(wrapper.emitted("update:open")?.at(-1)).toEqual([false]);
+    wrapper.unmount();
+  });
 });
