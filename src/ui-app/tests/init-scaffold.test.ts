@@ -500,6 +500,14 @@ describe("scaffoldInto starter tasks", () => {
     expect(agents).toMatch(/human-only/i);
   });
 
+  it("AGENTS.md tells agents not to invent resource gates (#0940)", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "", "new");
+    const agents = readFileSync(join(root, "AGENTS.md"), "utf8");
+    expect(agents).toMatch(/never invent resource gates/i);
+    expect(agents).toMatch(/pressureGuard/);
+  });
+
   it("AGENTS.md makes the configured repoos.toml paths authoritative", () => {
     const root = scratch();
     scaffoldInto(root, "", "repoos", "new");

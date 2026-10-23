@@ -401,6 +401,27 @@ cannot tell from the code alone:
   server-owned Move-to-done pipeline even from an interactive session. A bare
   `mv done` is at most a metadata repair after separately verified landing and
   explicit human authorization; it is never a merge or approval mechanism.
+- **Resource pressure: use RepoOS's `pressureGuard`, not your own thresholds
+  (#0940).** RepoOS's configured `pressureGuard` is the only decision point for
+  whether resource pressure should block engineer starts, local checks, browser
+  steps, or remote runner dispatch. It uses the limits in Settings (load per
+  CPU, reclaimable memory, paging activity, macOS `memory_pressure -Q` free
+  percentage and warn/critical level, Linux PSI, and the related rates in
+  `user-docs/configuration.md`) — see `docs/memory-pressure-guard.md`. Read
+  RepoOS's verdict from `repoos stats`, the dashboard pressure banner,
+  `repoos driver brief`, or a task's queue marker (`reason: pressure` and the
+  hold message). **Never** block or defer starts with self-chosen numeric
+  limits (for example a minimum "free swap" in GB or a memory-pressure free %
+  you picked), and never work around a guard hold by starting anyway under a
+  different threshold. On macOS, `vm.swapusage` "free" is unused swap-file
+  capacity, not a pressure signal; the OS may retain swap during normal
+  operation, so swap used or free swap alone does not prove thrashing. Swap-used
+  and compressor occupancy in the guard are advisory warnings only — blocking
+  signals are paging activity and the configured limits above. When the guard
+  holds a start, report RepoOS's reason to the human and wait (or help clear
+  pressure). When `pressureGuard.enabled` is off or the limits look wrong for
+  this machine, ask the human to change Settings — do not invent a parallel
+  gate.
 - **Agent drivers pick from the budget allowlist.** When you (an AI session, not
   a human in the UI) set an engineer/reviewer override — `repoos override`, or a
   `PATCH` on `cliOverride`/`modelOverride` — the server refuses a pair outside

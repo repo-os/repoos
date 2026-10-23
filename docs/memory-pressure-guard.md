@@ -100,6 +100,29 @@ The dashboard's System Resources panel renders the pressure banner, the
 machine-wide engineer count, and both top-process lists. `repoos stats` prints
 the same summary (and includes it under `system` in `--json`).
 
+## Agent and driver guidance (#0940)
+
+RepoOS's configured `pressureGuard` is the **only** gate for resource-related
+start blocking. Agents and board drivers must not invent parallel thresholds
+(for example a minimum macOS "free swap" in GB or a `memory_pressure -Q` free %
+they chose) or work around a guard hold by starting under a different limit.
+
+- Read RepoOS's verdict: `repoos stats`, the dashboard pressure banner,
+  `repoos driver brief`, or a task queue marker with `reason: pressure` and the
+  hold message.
+- On macOS, `vm.swapusage` "free" is unused swap capacity, not a pressure
+  signal; quiet high swap or compressor occupancy is advisory in the guard, not
+  a block on its own.
+- Interpret `memory_pressure -Q` free percentage and the guard's pressure
+  level against the configured `pressureGuard.*` limits in Settings, not ad-hoc
+  numbers.
+- When the guard holds a start, report the reason to the human. When the guard
+  is disabled or its limits look wrong, ask the human to change Settings — do
+  not substitute another gate.
+
+The operating rule lives in `AGENTS.md` (Rules) and is included in
+`repoos driver brief` under rules that matter.
+
 ## Tests
 
 All pressure tests use fake probes and parsed fixture output — never the real
