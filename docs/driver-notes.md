@@ -103,9 +103,10 @@ more, and `ps -axo pid,etime,%cpu,rss,command | sort -k3 -rn | head` names the
 consumers. On 2026-10-19/20 the top consumers were Chrome helpers at 80–120% CPU,
 the Claude desktop app, WindowServer, and a second RepoOS project (LightingAI)
 with three active engineers on the same machine. Quitting Chrome dropped load
-from 92 to 3 once. Hold new starts above load ~15 and keep at most ~3 engineers
-here; ask Nick to close other apps rather than restarting the server. Until
-fixed by #0871 (memory-pressure guard with non-RepoOS attribution).
+from 92 to 3 once. Let RepoOS's `pressureGuard` hold new starts — read
+`repoos stats` or the task queue marker instead of inventing swap or load
+floors; ask Nick to close other apps rather than restarting the server.
+Superseded for start gating by #0871 / #0940 (pressure guard + agent guidance).
 
 ## 2026-10-20 — ask before deleting unknown untracked files on main
 
