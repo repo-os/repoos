@@ -2,14 +2,14 @@
 id: "0941"
 title: Polish macOS native app tab bar
 type: feature
-status: review
+status: active
 priority: p2
 area: macos
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-macos-native-app-tab-bar
 created_at: "2026-10-23T17:20:56Z"
-updated_at: "2026-10-23T19:49:11Z"
+updated_at: "2026-10-23T19:49:12Z"
 review_passes: 2
 ---
 ## Problem
