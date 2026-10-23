@@ -79,13 +79,42 @@ lowercase hyphenated IDs. Binding or value changes require a running consumer
 to restart before it uses the new value. Unbound consumers receive no named
 project values. Granted keys missing from the selected environment are removed
 from the child's inherited environment; there is no fallback to another named
-environment, including `production`. Machine/service keys (`REPOOS_*`, `PATH`,
-`HOME`, and `NODE_OPTIONS`) cannot be granted. Named values are injected into
+environment, including `production`. Machine/service keys (`REPOOS_*` and the
+reserved credential and process keys below) cannot be granted. Named values are injected into
 child processes only; RepoOS never installs them into its own `process.env`.
 Names beginning `VITE_`, `NEXT_PUBLIC_`, or `PUBLIC_` are labeled **public**
 because frontend tooling commonly embeds them in client assets. The prefix is a
 visibility warning, not an access control. Other names are labeled
 server-only, which describes intended use rather than a sandbox guarantee.
+
+### Reserved project keys
+
+Project environment writes reject these credential and process keys
+(case-insensitively), in addition to every name beginning with `REPOOS_`:
+
+<!-- reserved-project-keys:start -->
+`OPENAI_API_KEY`
+`GROQ_API_KEY`
+`REPOOS_WHISPER_KEY`
+`REPOOS_RESEND_API_KEY`
+`REPOOS_GOOGLE_CLIENT_SECRET`
+`REPOOS_AUTH_SESSION_SECRET`
+`REPOOS_AUTH_DEV_BACKDOOR_CODE`
+`REPOOS_SECRET_STORE_KEY`
+`REPOOS_TELEGRAM_PROVISIONING_KEY`
+`CLOUDFLARE_API_TOKEN`
+`HETZNER_API_TOKEN`
+`PATH`
+`HOME`
+`NODE_OPTIONS`
+`PORT`
+`HOST`
+`REPOOS_OPENROUTER_API_KEY`
+`TYPESAFE_API_KEY`
+`REPOOS_CLEF_FLASH_API_KEY`
+`REPOOS_OPENCODE_GO_API_KEY`
+`REPOOS_DEEPINFRA_API_KEY`
+<!-- reserved-project-keys:end -->
 
 `repoos check` applies `check:default` to local check-step children. Remote
 validation does not receive project values from these bindings. This limits
