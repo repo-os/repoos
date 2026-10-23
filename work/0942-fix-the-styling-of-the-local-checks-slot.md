@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-23T19:32:42Z"
-review_passes: 1
 id: "0942"
 title: Style the local checks slots section
 type: bug
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/style-the-local-checks-slots-section
 created_at: "2026-10-23T18:12:35Z"
+updated_at: "2026-10-23T19:31:53Z"
 ---
 ## Problem
 
@@ -35,18 +34,6 @@ Present “local checks slots” in its own card or section, styled consistently
 
 Fix the styling of the "local checks slots" content, it should probably be it's own card/section like the other stuff on that page. Make it prettier.
 
-## Shots
-```json
-[
-{
-"label": "Checks page local slots card",
-"target": "default",
-"route": "/checks?tab=now",
-"highlight": ".ck-local-slots"
-}
-]
-```
-
 ## Screenshots
 
 ![Screenshot-2026-10-24-at-01.23.36](/api/tasks/0942/attachments/att_c76ded8b-07ff-4288-bdc3-cb8beeb3f775.png)
@@ -58,9 +45,4 @@ Fix the styling of the "local checks slots" content, it should probably be it's 
 - 2026-10-23T18:13:26Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
 - 2026-10-23T19:13:17Z · status inbox→ready
 - 2026-10-23T19:16:51Z · status ready→active, branch
-- 2026-10-23T19:17:33Z · body
-- 2026-10-23T19:19:38Z · body
-- 2026-10-23T19:31:53Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-10-23T19:31:53Z · status active→review
-- 2026-10-23T19:32:42Z · note: review pass 1: good to go
-
