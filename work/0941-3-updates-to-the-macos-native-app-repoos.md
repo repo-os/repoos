@@ -2,7 +2,7 @@
 id: "0941"
 title: Polish macOS native app tab bar
 type: feature
-status: review
+status: active
 priority: p2
 area: macos
 assigned_to: ai
