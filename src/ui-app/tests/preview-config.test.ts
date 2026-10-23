@@ -37,6 +37,38 @@ function task(area: string): Task {
 }
 
 describe("resolvePreviewTarget", () => {
+  it("prefers a target whose changed-path globs match, while preserving area fallback", () => {
+    const cfg = baseConfig({
+      targets: [
+        {
+          name: "iOS shell",
+          kind: "native",
+          platform: "ios",
+          areas: ["ios"],
+          paths: ["mobile/ios/**"],
+          command: "",
+          buildCommand: "build",
+          launchCommand: "launch",
+        },
+        {
+          name: "macOS shell",
+          kind: "native",
+          platform: "macos",
+          areas: ["mac"],
+          paths: ["macos/**"],
+          command: "",
+          buildCommand: "build",
+          launchCommand: "launch",
+        },
+        { name: "Web", areas: ["web"], command: "bun run dev" },
+      ],
+    });
+    const resolved = resolvePreviewTarget(cfg, task("mac"), undefined, ["mobile/ios/App.swift"]);
+    expect(resolved.kind === "command" && resolved.label).toBe("iOS shell");
+    const web = resolvePreviewTarget(cfg, task("web"));
+    expect(web.kind === "command" && web.label).toBe("Web");
+  });
+
   it("returns an actionable 'no preview configured' result when no [preview] section exists (#0370)", () => {
     const result = resolvePreviewTarget(baseConfig(), task("web"));
     expect(result.kind).toBe("none");

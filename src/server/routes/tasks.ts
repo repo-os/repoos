@@ -217,7 +217,8 @@ function withPreviewTargets<T extends Task>(
   task: T,
   config: RepoOSConfig,
 ): T & { previewTargets: PreviewTargetOption[] } {
-  return { ...task, previewTargets: previewTargetOptions(config, task) };
+  const changedPaths = computeTaskShotContext(config, task).changedPaths;
+  return { ...task, previewTargets: previewTargetOptions(config, task, changedPaths) };
 }
 
 function withPendingHandoff<T extends { id: string }>(
