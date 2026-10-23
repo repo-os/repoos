@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 172436
-last_close_out_gate_at: "2026-10-23T19:43:07.716Z"
 id: "0942"
 title: Style the local checks slots section
 type: bug
-status: review
+status: done
 priority: p2
 area: ui
+merged_commit: 0d60519ee5683d98f5a161e465dc496ddcb48762
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/style-the-local-checks-slots-section
 created_at: "2026-10-23T18:12:35Z"
 updated_at: "2026-10-23T19:43:07Z"
+last_close_out_gate_ms: 172436
+last_close_out_gate_at: "2026-10-23T19:43:07.716Z"
 review_passes: 1
 ---
 ## Problem
