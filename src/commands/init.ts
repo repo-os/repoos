@@ -296,6 +296,12 @@ a candidate merge. Do not erase a task's branch metadata to force this path.
   say a human must supply the proof. Split acceptance criteria that require a
   real device, account, or third-party registration into a separate human-only
   task.
+- **Never invent resource gates.** RepoOS's configured \`pressureGuard\` is the
+  only threshold set that blocks engineer starts and local checks. Do not defer
+  starts using ad-hoc limits on macOS swap free space, swap used ratio alone, or
+  \`memory_pressure -Q\` unless RepoOS's guard says so — read \`repoos stats\` or
+  the task queue marker (\`reason: pressure\`). If the guard is disabled or
+  unsuitable, ask the human to change Settings.
 
 ## Conventions
 

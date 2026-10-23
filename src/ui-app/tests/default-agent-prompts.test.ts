@@ -6,9 +6,10 @@
  * and no RepoOS-only rule leaks into the defaults.
  */
 import { afterAll, describe, expect, it } from "vitest";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   DEFAULT_AGENTS,
   getConfigSchema,
@@ -93,7 +94,9 @@ describe("built-in role prompts (#0872)", () => {
   it("gives the CTO the quiet-monitor, stuck-vs-busy, loop and escalation rules", () => {
     const cto = promptFor("cto");
     expect(cto).toMatch(/one nudge or one escalation per event/);
-    expect(cto).toMatch(/heavy pressure/);
+    expect(cto).toMatch(/pressure guard holding starts/);
+    expect(cto).toMatch(/pressureGuard/);
+    expect(cto).toMatch(/Never defer starts using your own swap/);
     expect(cto).toMatch(/non-RepoOS processes/);
     expect(cto).toMatch(/phantom runner/);
     expect(cto).toMatch(/crashed or exited with an error/);
@@ -104,6 +107,16 @@ describe("built-in role prompts (#0872)", () => {
     expect(cto).toMatch(/never delete or commit them yourself/);
     expect(cto).toMatch(/Escalate to a human, with the evidence/);
     expect(cto).toMatch(/about five review passes/);
+  });
+
+  it("AGENTS.md makes pressureGuard the only resource start gate (#0940)", () => {
+    const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+    const agents = readFileSync(join(repoRoot, "AGENTS.md"), "utf8");
+    expect(agents).toMatch(/pressureGuard/);
+    expect(agents).toMatch(/vm\.swapusage/);
+    expect(agents).toMatch(/memory_pressure -Q/);
+    expect(agents).toMatch(/Never.*block or defer starts with self-chosen numeric/i);
+    expect(agents).toMatch(/do not invent another gate/i);
   });
 
   it("keeps project-specific rules out of every built-in default", () => {
