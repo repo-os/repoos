@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-environment-selection-and-creation-f
 created_at: "2026-10-23T14:40:45Z"
-updated_at: "2026-10-23T15:32:24Z"
+updated_at: "2026-10-23T15:32:53Z"
 last_close_out_gate_ms: 66395
 last_close_out_gate_at: "2026-10-23T15:32:24.813Z"
 review_passes: 1
@@ -103,4 +103,4 @@ Need to fix some things on the new secrets feature:
 - 2026-10-23T14:58:45Z · status active→review
 - 2026-10-23T15:00:11Z · note: review pass 1: good to go
 - 2026-10-23T15:32:24Z · close-out gate completed in 66s
-
+- 2026-10-23T15:32:53Z · status done→done, release:success
