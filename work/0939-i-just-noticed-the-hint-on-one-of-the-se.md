@@ -101,3 +101,4 @@ I just noticed the hint on one of the search bars (this is the one in context pa
 - 2026-10-23T18:18:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-23T18:19:23Z · body
 - 2026-10-23T18:21:13Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-23T18:21:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
