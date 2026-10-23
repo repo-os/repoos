@@ -21,6 +21,8 @@ user-docs/.vitepress/*.timestamp-*.mjs
 
 # Local secrets (auth provider keys, session secret) — never commit these
 .env
+.env.*
+!.env.example
 
 # Build output. Not needed for distribution — npm builds it fresh at publish
 # time via `files: ["dist"]` + `prepublishOnly`. Tracking it in git only ever
