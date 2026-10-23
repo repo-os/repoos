@@ -74,3 +74,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T19:03:14Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-23T19:05:25Z · body
 - 2026-10-23T19:05:50Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-23T19:05:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
