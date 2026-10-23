@@ -1,17 +1,34 @@
 ---
 id: "0942"
-title: "Fix the styling of the \"local checks slots\" content, it s…"
-type: feature
-status: draft
+title: Style the local checks slots section
+type: bug
+status: inbox
 priority: p2
-area: general
+area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-23T18:12:35Z"
-updated_at: "2026-10-23T18:13:00Z"
+updated_at: "2026-10-23T18:13:26Z"
 ---
-Fix the styling of the "local checks slots" content, it should probably be it's own card/section like the other stuff on that page. Make it prettier.
+## Problem
+
+The “local checks slots” content does not have styling that fits with the other content on its page, making the section feel less polished and harder to distinguish.
+
+## Desired UX
+
+Present “local checks slots” in its own card or section, styled consistently with the other sections on the page.
+
+## Acceptance criteria
+
+- [ ] The “local checks slots” content is visually grouped in its own card or section.
+- [ ] The styling looks more polished and fits with the existing sections on the page.
+- [ ] The content and behavior of the local checks slots remain unchanged.
+
+## Notes for AI
+
+- Find the page containing “local checks slots” and follow its existing styling patterns.
+- Assume the section should visually match the other cards or sections on that page; do not redesign unrelated content.
 
 ## Original prompt
 
@@ -25,3 +42,4 @@ Fix the styling of the "local checks slots" content, it should probably be it's 
 
 - 2026-10-23T18:12:35Z · created · hello@repoos.org
 - 2026-10-23T18:13:00Z · screenshots
+- 2026-10-23T18:13:26Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
