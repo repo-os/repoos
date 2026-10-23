@@ -81,6 +81,11 @@ describe("SearchOverlay context scope (#0557)", () => {
     await new Promise((r) => setTimeout(r, 250));
 
     const dialog = document.body.querySelector('[role="dialog"]')!;
+    const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    dialog.dispatchEvent(escape);
+    expect(escape.defaultPrevented).toBe(true);
+    expect(wrapper.emitted("update:open")?.at(-1)).toEqual([false]);
+
     const down = new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true });
     dialog.dispatchEvent(down);
     expect(down.defaultPrevented).toBe(true);
@@ -92,13 +97,6 @@ describe("SearchOverlay context scope (#0557)", () => {
     expect(enter.defaultPrevented).toBe(true);
     expect(loadSkill).toHaveBeenCalledWith("skills/beta/SKILL.md");
 
-    await wrapper.setProps({ open: false });
-    await wrapper.setProps({ open: true });
-    await flushPromises();
-    const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
-    document.body.querySelector('[role="dialog"]')!.dispatchEvent(escape);
-    expect(escape.defaultPrevented).toBe(true);
-    expect(wrapper.emitted("update:open")?.at(-1)).toEqual([false]);
     wrapper.unmount();
   });
 });
