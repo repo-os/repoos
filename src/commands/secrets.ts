@@ -119,10 +119,11 @@ export async function cmdSecrets(args: string[]): Promise<number> {
       return 2;
     }
     const row = metadata.keys.find((item) => item.name === key);
-    assertSecretMutationAllowed(action, row);
-    const value = action === "delete" ? undefined : await secretInput();
-    await api.requestOk("PUT", path, { action, key, value, version: metadata.version });
-    console.log(`${action === "delete" ? "Removed" : "Saved"} ${key} in ${environment}`);
+    const mutation = action as "add" | "replace" | "delete";
+    assertSecretMutationAllowed(mutation, row);
+    const value = mutation === "delete" ? undefined : await secretInput();
+    await api.requestOk("PUT", path, { action: mutation, key, value, version: metadata.version });
+    console.log(`${mutation === "delete" ? "Removed" : "Saved"} ${key} in ${environment}`);
     return 0;
   } catch (error) {
     console.error(error instanceof Error ? error.message : "Secret operation failed");
