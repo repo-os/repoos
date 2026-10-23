@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-macos-native-app-tab-bar
 created_at: "2026-10-23T17:20:56Z"
-updated_at: "2026-10-23T19:05:50Z"
+updated_at: "2026-10-23T19:05:51Z"
 review_passes: 1
 ---
 ## Problem
@@ -76,3 +76,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T19:05:50Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-23T19:05:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-23T19:05:50Z · status active→review
+- 2026-10-23T19:05:51Z · message_delivered: 1 message(s)
