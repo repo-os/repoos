@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-macos-native-app-tab-bar
 created_at: "2026-10-23T17:20:56Z"
-updated_at: "2026-10-23T19:51:03Z"
+updated_at: "2026-10-23T19:51:50Z"
 review_passes: 2
 ---
 ## Problem
@@ -94,3 +94,4 @@ The native app’s top bar is shorter and visually aligned with the PWA example,
 - 2026-10-23T19:50:12Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-23T19:50:55Z · status review→active
 - 2026-10-23T19:51:03Z · note: Nick requested fixes after real-app verification; sending back to active for implementation and visual interaction proof.
+- 2026-10-23T19:51:50Z · note: review pass 3: needs some work
