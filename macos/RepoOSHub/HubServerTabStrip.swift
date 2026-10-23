@@ -20,6 +20,7 @@ struct HubServerTabStrip: View {
     @EnvironmentObject private var appState: HubAppState
     @State private var trafficLightInset = HubServerTabStripMetrics.fallbackTrafficLightInset
     var snapshotHoverEntryID: UUID? = nil
+    var snapshotChevronHover = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -59,7 +60,10 @@ struct HubServerTabStrip: View {
             settingsButton
 
             Spacer(minLength: 8)
-                .allowsHitTesting(false)
+                .background {
+                    HubWindowDragRegion()
+                        .accessibilityHidden(true)
+                }
         }
         .frame(height: HubServerTabStripMetrics.height)
         .background {
@@ -87,7 +91,7 @@ struct HubServerTabStrip: View {
     }
 
     private var tabActionsMenu: some View {
-        TabActionsMenuButton {
+        TabActionsMenuButton(startsHovering: snapshotChevronHover) {
         Menu {
             Button("Back") { appState.workspaceGoBack() }
                 .disabled(!appState.workspaceNavigation.canGoBack)
@@ -250,7 +254,6 @@ private struct HubServerTab: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .help("Hide \(entry.name)")
                 .accessibilityLabel("Hide \(entry.name)")
             }
         }
@@ -259,17 +262,9 @@ private struct HubServerTab: View {
         .frame(height: HubServerTabStripMetrics.height)
         .foregroundStyle(isSelected ? .primary : .secondary)
         .background {
-            Rectangle()
+            HubServerTabShape()
                 .fill(isSelected ? contentColor : (isHovering ? Color.primary.opacity(0.075) : .clear))
-        }
-        .overlay(alignment: .trailing) {
-            Rectangle()
-                .fill(Color.primary.opacity(0.08))
-                .frame(width: 1, height: 18)
-                .allowsHitTesting(false)
-        }
-        .overlay {
-            HubTabDragRegion()
+                .padding(.top, 3)
         }
         .overlay(alignment: .bottom) {
             if isDropTargeted {
@@ -298,7 +293,9 @@ private struct HubServerTab: View {
             }
         }
         .onDrag {
-            NSItemProvider(object: entry.id.uuidString as NSString)
+            hideDetailsWork?.cancel()
+            isShowingDetails = false
+            return NSItemProvider(object: entry.id.uuidString as NSString)
         }
         .onDrop(of: [UTType.plainText], isTargeted: $isDropTargeted) { providers in
             HubServerTabDropHandler.accept(
@@ -335,10 +332,14 @@ private struct HubServerTab: View {
             Divider()
             ServerActionsMenu(entry: entry)
         }
-        .help(ServerSidebarStatus.tooltip(for: entry))
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(entry.name), \(entry.lastHealth.displayTitle)")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .onDisappear {
+            hideDetailsWork?.cancel()
+            hideDetailsWork = nil
+            isShowingDetails = false
+        }
     }
 
     private var badgeText: String? {
@@ -378,39 +379,68 @@ private struct HubServerTab: View {
 /// chevron's hover treatment in the same quiet capsule language as the tabs.
 private struct TabActionsMenuButton<Content: View>: View {
     let content: Content
+    var startsHovering = false
     @State private var isHovering = false
 
-    init(@ViewBuilder content: () -> Content) {
+    init(startsHovering: Bool = false, @ViewBuilder content: () -> Content) {
         self.content = content()
+        self.startsHovering = startsHovering
     }
 
     var body: some View {
         content
+            .frame(width: 38, height: HubServerTabStripMetrics.height)
             .background {
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .fill(isHovering ? Color.primary.opacity(0.09) : .clear)
-                    .padding(.vertical, 5)
+                    .padding(.vertical, 3)
             }
+            .contentShape(Rectangle())
             .onHover { isHovering = $0 }
+            .onAppear {
+                if startsHovering { isHovering = true }
+            }
     }
 }
 
-/// Opts the tab hit region out of AppKit's transparent-titlebar window dragging.
-struct HubTabDragRegion: NSViewRepresentable {
-    func makeNSView(context: Context) -> HubTabDragRegionView { HubTabDragRegionView(frame: .zero) }
-    func updateNSView(_ nsView: HubTabDragRegionView, context: Context) {}
+/// Chrome-inspired tabs flare gently into a softly rounded crown.
+private struct HubServerTabShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let radius: CGFloat = 9
+        let flare: CGFloat = 5
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addCurve(
+            to: CGPoint(x: rect.minX + radius, y: rect.minY),
+            control1: CGPoint(x: rect.minX, y: rect.minY + flare),
+            control2: CGPoint(x: rect.minX + flare, y: rect.minY)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX - radius, y: rect.minY))
+        path.addCurve(
+            to: CGPoint(x: rect.maxX, y: rect.minY + flare),
+            control1: CGPoint(x: rect.maxX - flare, y: rect.minY),
+            control2: CGPoint(x: rect.maxX, y: rect.minY + flare)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
 }
 
-final class HubTabDragRegionView: NSView {
-    override var mouseDownCanMoveWindow: Bool { false }
+/// Empty space in the tab row remains a reliable window drag handle after
+/// background dragging is disabled to protect interactive tabs.
+struct HubWindowDragRegion: NSViewRepresentable {
+    func makeNSView(context: Context) -> HubWindowDragRegionView { HubWindowDragRegionView(frame: .zero) }
+    func updateNSView(_ nsView: HubWindowDragRegionView, context: Context) {}
+}
 
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+final class HubWindowDragRegionView: NSView {
+    override var mouseDownCanMoveWindow: Bool { true }
 
-    // Keep SwiftUI's onDrag/onDrop recognizers in the responder path while
-    // this view tells AppKit that the pointer is over an interactive tab.
-    override func mouseDown(with event: NSEvent) { superview?.mouseDown(with: event) }
-    override func mouseDragged(with event: NSEvent) { superview?.mouseDragged(with: event) }
-    override func mouseUp(with event: NSEvent) { superview?.mouseUp(with: event) }
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        _ = point
+        return self
+    }
 }
 
 @MainActor

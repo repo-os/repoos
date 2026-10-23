@@ -104,6 +104,19 @@ final class HubSnapshotTests: XCTestCase {
         }
     }
 
+    func testTabsTopBarChevronHoverSnapshot() throws {
+        let fixture = try makeFixture(entries: tabEntries(), layout: .tabs)
+        defer { fixture.cleanup() }
+
+        try capture("hub-tabs-top-bar-chevron-hover", size: CGSize(width: 900, height: HubServerTabStripMetrics.height)) { appearance in
+            fixture.state.updateHubAppearance(appearance == .darkAqua ? .dark : .light)
+            return AnyView(
+                HubServerTabStrip(snapshotChevronHover: true)
+                    .environmentObject(fixture.state)
+            )
+        }
+    }
+
     func testTabsTopBarStatusPopupSnapshot() throws {
         let fixture = try makeFixture(entries: tabEntries(), layout: .tabs)
         defer { fixture.cleanup() }

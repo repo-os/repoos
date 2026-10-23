@@ -304,6 +304,10 @@ final class HubWindowChromeView: NSView {
 /// of the title is suppressed.
 func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
     window.styleMask.insert(.fullSizeContentView)
+    // Background dragging would treat the transparent titlebar's hosted tabs
+    // as empty window chrome. The tab strip supplies an explicit drag region
+    // only in its unoccupied space instead.
+    window.isMovableByWindowBackground = false
     window.titleVisibility = .hidden
     window.titlebarAppearsTransparent = true
     window.titlebarSeparatorStyle = .none
@@ -323,29 +327,51 @@ func configureHubWorkspaceWindowChrome(_ window: NSWindow) {
 /// Their initial positions are retained because the appearance configurator
 /// runs repeatedly as SwiftUI attaches and lays out the window.
 enum HubTrafficLightPositioning {
-    static let adjustment = CGPoint(x: 6, y: -6)
+    static let horizontalAdjustment: CGFloat = 15
+    static let verticalAdjustment: CGFloat = 4
     private static var originalFrameAssociationKey: UInt8 = 0
+    private static var lastAppliedFrameAssociationKey: UInt8 = 0
 
-    static func correctedOrigin(for origin: CGPoint) -> CGPoint {
-        CGPoint(x: origin.x + adjustment.x, y: origin.y + adjustment.y)
+    static func correctedOrigin(for frame: NSRect, in bounds: NSRect) -> CGPoint {
+        CGPoint(
+            x: frame.origin.x + horizontalAdjustment,
+            y: bounds.midY - frame.height / 2 + verticalAdjustment
+        )
     }
 
     static func apply(to window: NSWindow) {
         let types: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
         for type in types {
             guard let button = window.standardWindowButton(type) else { continue }
-            if objc_getAssociatedObject(button, &originalFrameAssociationKey) == nil {
+            guard let container = button.superview else { continue }
+            let currentFrame = button.frame
+            let lastApplied = objc_getAssociatedObject(button, &lastAppliedFrameAssociationKey) as? NSValue
+            let original = objc_getAssociatedObject(button, &originalFrameAssociationKey) as? NSValue
+
+            // AppKit can reposition titlebar controls after a resize, toolbar
+            // change, or fullscreen transition. Treat a frame that differs
+            // from our last write as a fresh native baseline, then reapply the
+            // same offset. Repeated layout passes remain idempotent.
+            if original == nil || lastApplied.map({ !NSEqualRects(currentFrame, $0.rectValue) }) == true {
                 objc_setAssociatedObject(
                     button,
                     &originalFrameAssociationKey,
-                    NSValue(rect: button.frame),
+                    NSValue(rect: currentFrame),
                     .OBJC_ASSOCIATION_RETAIN_NONATOMIC
                 )
             }
-            guard let original = objc_getAssociatedObject(button, &originalFrameAssociationKey) as? NSValue else {
+            guard let baseline = objc_getAssociatedObject(button, &originalFrameAssociationKey) as? NSValue else {
                 continue
             }
-            button.setFrameOrigin(correctedOrigin(for: original.rectValue.origin))
+            button.setFrameOrigin(
+                correctedOrigin(for: baseline.rectValue, in: container.bounds)
+            )
+            objc_setAssociatedObject(
+                button,
+                &lastAppliedFrameAssociationKey,
+                NSValue(rect: button.frame),
+                .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+            )
         }
     }
 }
