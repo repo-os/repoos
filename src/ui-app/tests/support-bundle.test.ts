@@ -281,6 +281,21 @@ describe("packageTarGz / readTarGz", () => {
 });
 
 describe("buildSupportBundle", () => {
+  it("does not include named project environment values in support output", async () => {
+    const root = fixtureRepo();
+    const sentinel = "FAKE_SENTINEL_0932_SUPPORT_ONLY";
+    writeFileSync(join(root, ".env.project-test"), `DATABASE_URL=${sentinel}\n`);
+    mkdirSync(join(root, ".repoos"), { recursive: true });
+    writeFileSync(
+      join(root, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [{ id: "test", sources: [{ id: "local", path: ".env.project-test" }] }],
+      }),
+    );
+    const bundle = await buildFixture(root);
+    expect(JSON.stringify(bundle)).not.toContain(sentinel);
+  });
+
   it("produces a redacted, enumerated bundle with no secret or private path", async () => {
     const root = fixtureRepo();
     const bundle = await buildFixture(root);

@@ -438,6 +438,14 @@ cannot tell from the code alone:
   env-var names into `repoos.toml`, show masked save-on-Save UI with Saved /
   Not set status only, use fake values in tests, and never paste live keys into
   tasks, chat, or config fields (incident: #0803).
+- **Keep project secrets separate from RepoOS credentials.** Project environment
+  files are plaintext dotenv text, not an encrypted vault; the API and UI are
+  write-only for values. Only explicitly bound local consumers receive granted
+  keys, missing values never fall back to another environment, and deployment
+  bindings never upload or publish values. Prefixes `VITE_`, `NEXT_PUBLIC_`,
+  and `PUBLIC_` mean values may be embedded in client assets; visibility labels
+  do not sandbox unrestricted local processes. Preserve this boundary in tests
+  and explain it in `user-docs/environment-and-secrets.md`.
 - Zero runtime dependencies is a hard design constraint. Do not add a runtime
   dependency without an explicit task authorizing it. Dev dependencies (test
   runners, types) are fine.

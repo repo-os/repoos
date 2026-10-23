@@ -6,9 +6,13 @@ file. Keys live in the gitignored `.env` at the repo root (via
 reads.
 
 Named **project** environments (registered in `.repoos/environments.json`) use
-a separate management API and `repoos secrets` CLI. Those routes never return
-saved values, reject `REPOOS_*` and fixed provider credential names, and keep
-provider saves on `POST /api/model-providers/:id/key` unchanged. See
+a separate management API and `repoos secrets` CLI. Their values are plaintext
+in gitignored dotenv files, not encrypted at rest. The UI and API are write-only
+for values; they return metadata only. Those routes reject `REPOOS_*` and fixed
+provider credential names, and keep provider saves on
+`POST /api/model-providers/:id/key` unchanged. Project values are injected only
+into explicitly bound local child processes; environment selection and
+deployment bindings do not sync or publish credentials to providers. See
 `user-docs/environment-and-secrets.md`.
 
 ## How to add a feature that needs a key
