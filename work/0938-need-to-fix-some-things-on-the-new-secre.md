@@ -2,7 +2,7 @@
 id: "0938"
 title: Fix environment selection and creation feedback
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -69,7 +69,7 @@ Need to fix some things on the new secrets feature:
 "highlight": ".secrets-create-panel",
 "steps": [
 {
-  "click": ".secrets-create-inline"
+"click": ".secrets-create-inline"
 }
 ]
 }
@@ -96,3 +96,4 @@ Need to fix some things on the new secrets feature:
 - 2026-10-23T14:45:13Z · body
 - 2026-10-23T14:46:43Z · body
 - 2026-10-23T14:58:45Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-10-23T14:58:45Z · status active→review
