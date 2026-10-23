@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
@@ -47,3 +48,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-23T21:17:47Z · body
 - 2026-10-23T21:20:45Z · body
 - 2026-10-23T21:21:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
