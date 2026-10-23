@@ -23,27 +23,26 @@ import { readBody } from "./utils.js";
 import type { RouteHandler } from "./types.js";
 
 const registryPath = ".repoos/environments.json";
-const reservedCredentialNames = new Set(
-  [
-    "OPENAI_API_KEY",
-    "GROQ_API_KEY",
-    "REPOOS_WHISPER_KEY",
-    "REPOOS_RESEND_API_KEY",
-    "REPOOS_GOOGLE_CLIENT_SECRET",
-    "REPOOS_AUTH_SESSION_SECRET",
-    "REPOOS_AUTH_DEV_BACKDOOR_CODE",
-    "REPOOS_SECRET_STORE_KEY",
-    "REPOOS_TELEGRAM_PROVISIONING_KEY",
-    "CLOUDFLARE_API_TOKEN",
-    "HETZNER_API_TOKEN",
-    "PATH",
-    "HOME",
-    "NODE_OPTIONS",
-    "PORT",
-    "HOST",
-    ...MODEL_PROVIDERS.map((provider) => provider.envVar).filter((name): name is string => !!name),
-  ].map((name) => name.toUpperCase()),
-);
+export const RESERVED_PROJECT_ENVIRONMENT_KEYS = [
+  "OPENAI_API_KEY",
+  "GROQ_API_KEY",
+  "REPOOS_WHISPER_KEY",
+  "REPOOS_RESEND_API_KEY",
+  "REPOOS_GOOGLE_CLIENT_SECRET",
+  "REPOOS_AUTH_SESSION_SECRET",
+  "REPOOS_AUTH_DEV_BACKDOOR_CODE",
+  "REPOOS_SECRET_STORE_KEY",
+  "REPOOS_TELEGRAM_PROVISIONING_KEY",
+  "CLOUDFLARE_API_TOKEN",
+  "HETZNER_API_TOKEN",
+  "PATH",
+  "HOME",
+  "NODE_OPTIONS",
+  "PORT",
+  "HOST",
+  ...MODEL_PROVIDERS.map((provider) => provider.envVar).filter((name): name is string => !!name),
+].map((name) => name.toUpperCase());
+const reservedCredentialNames = new Set(RESERVED_PROJECT_ENVIRONMENT_KEYS);
 
 function isReservedProjectKey(key: string): boolean {
   const upper = key.toUpperCase();
