@@ -3,6 +3,9 @@ id: "0944"
 title: This Landable card should only show failing and minimise…
 type: feature
 status: draft
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Acceptance criteria, Notes for AI; body under 400 characters (excluding original prompt)"
 priority: p2
 area: general
 assigned_to: ai
@@ -21,3 +24,4 @@ This Landable card should only show failing and minimise the rest -- if user cli
 
 - 2026-10-24T01:10:48Z · created · hello@repoos.org
 - 2026-10-24T01:21:34Z · note: Freeform PM run failed: github copilot exited with code 1: • Start 'copilot' and run the '/login' command   • Set the COPILOT_GITHUB_TOKEN, GH_TOKEN, or GITHUB_TOKEN environment variable   • Run 'gh auth login' to authenticate with the GitHub CLI
+- 2026-10-24T01:21:34Z · needs_input
