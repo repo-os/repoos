@@ -2,7 +2,7 @@
 id: "0945"
 title: Show only failing checks in Landable by default
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: check-failed-after-retries
 debug_tldr: "Handoff check failed because remote runner mini is offline — restore mini or set remoteValidation.fallbackToLocal, then resume the task and retry handoff."
@@ -82,3 +82,4 @@ This Landable card should only show failing and minimise the rest -- if user cli
 - 2026-10-24T04:02:07Z · handoff failed · ui-review handoff failed at check · remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
 - 2026-10-24T07:03:56Z · body
 - 2026-10-24T07:17:01Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-10-24T07:17:01Z · status active→review
