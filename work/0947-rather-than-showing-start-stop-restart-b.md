@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T07:40:35Z"
+updated_at: "2026-10-24T07:42:25Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-24T06:15:35.021Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Dev target actions for running and stopped targets (target \"default\"): state \"dev:running\" did not render on target \"default\" — the page at /dev did not apply the fixture (is this the app target?) (http://127.0.0.1:56061/dev?shotState=dev%3Arunning); [missing-target] Dev target actions for running and stopped targets (target \"default\"): highlight .dev-card-details matched nothing on /dev (http://127.0.0.1:56061/dev?shotSt… (truncated)"
 dev_error_count: 6
@@ -45,23 +45,23 @@ Rather than showing Start / Stop / Restart buttons always on each dev page targe
 
 Also can we use a flexbox there so that the buttons are in a column to the right of the command/url  col so there's not a big white space above command like there is now?
 
-## Screenshots
-
-![Screenshot-2026-10-24-at-11.59.50](/api/tasks/0947/attachments/att_03986c8b-cc34-4043-b09b-f8f7efb23345.png)
-![Screenshot-2026-10-24-at-12.00.54](/api/tasks/0947/attachments/att_239c9ed4-97fd-482c-8d53-653a40515afd.png)
-
 ## Shots
 ```json
 [
 {
-  "label": "Running and stopped dev target actions",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".dev-card-details",
-  "state": "dev:running"
+"label": "Running and stopped dev target actions",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-card-details",
+"state": "dev:running"
 }
 ]
 ```
+
+## Screenshots
+
+![Screenshot-2026-10-24-at-11.59.50](/api/tasks/0947/attachments/att_03986c8b-cc34-4043-b09b-f8f7efb23345.png)
+![Screenshot-2026-10-24-at-12.00.54](/api/tasks/0947/attachments/att_239c9ed4-97fd-482c-8d53-653a40515afd.png)
 
 ## Activity
 
@@ -99,3 +99,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T07:39:18Z · status review→active
 - 2026-10-24T07:40:10Z · body
 - 2026-10-24T07:40:35Z · body
+- 2026-10-24T07:42:25Z · body
