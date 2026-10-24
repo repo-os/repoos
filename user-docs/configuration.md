@@ -1095,6 +1095,16 @@ when a task is in `active` or `review`.
 | `preview.targets[].readyPath` | string | `/` | yes | Per-target readiness path (`ready_path` is also accepted). |
 | `preview.targets[].readyTimeoutMs` | number | `10000` | yes | Per-target readiness timeout (`ready_timeout_ms` is also accepted). |
 | `preview.targets[].services` | array of strings | `[]` | yes | Names of `[[preview.services]]` to boot before this target's main command (#0681). |
+| `preview.targets[].kind` | `web` or `native` | `web` | yes | Native targets build and launch a local app without a URL. |
+| `preview.targets[].platform` | `macos`, `ios` or `android` | required for native | yes | Platform label shown in the task drawer. |
+| `preview.targets[].build_command` | string | required for native | yes | Build command run in the task worktree before launch. |
+| `preview.targets[].launch_command` | string | required for native | yes | Launch command run after a successful build. |
+| `preview.targets[].launch_mode` | `foreground` or `handoff` | `foreground` | yes | Declares what the launch command's exit means. `foreground` (default): the launcher's lifetime is the app's — any exit during startup is a failed launch, and any later exit (even a clean one, e.g. the user quitting a macOS `open -W` app) ends the preview. `handoff`: a one-shot launcher that exits 0 once the app has launched (e.g. a `simctl boot && install && launch` shell) — the preview stays running until Stop. An unknown value drops the row and `repoos doctor` names it. |
+| `preview.targets[].stop` | string | unset | yes | Optional platform command run when stopping the target. |
+| `preview.targets[].device` | string | unset | yes | Simulator or emulator label displayed in the drawer. |
+| `preview.targets[].requires` | string | unset | yes | Required tool name for install guidance. |
+| `preview.targets[].timeout_ms` | number | 20 minutes | yes | Native build timeout. |
+| `preview.targets[].env` | table | `{}` | yes | Additional environment variables for build and launch. |
 | `preview.services[].name` | string | required | yes | Label used to reference the service from a target and in diagnostics. |
 | `preview.services[].command` | string | required | yes | Command that boots the service on its own OS-assigned port. Rows without one are dropped. |
 | `preview.services[].cwd` | string | worktree root | yes | Subdirectory of the worktree to run the service in. |
@@ -1113,6 +1123,28 @@ preview configured" message rather than booting a random app. Previews are
 one-at-a-time and a new request evicts the previous preview. The control-plane
 server re-reads `repoos.toml` when it changes on disk (including after a merge
 to the primary branch), so new targets appear without restarting `repoos serve`.
+
+Native targets run locally on the machine hosting the control plane. They use
+the same one-at-a-time slot and run their build and launch commands from the
+task worktree; the card shows the platform and device and has no URL. Starting
+one reports `building` (a long build shows a visible building state in the
+drawer) until the app is launched, then `running`; Stop during the build kills
+the build. For
+example, set `kind = "native"`, `platform = "ios"`, `build_command` to an
+`xcodebuild` simulator build, `launch_command` to `xcrun simctl install` plus
+`launch`, `launch_mode = "handoff"` (that one-shot shell exits 0 when the app
+is up while the simulator keeps running it) and `stop` to `xcrun simctl
+terminate`. Use corresponding `xcodebuild`/`open -W` commands for macOS or
+Gradle/`adb` commands for Android with the default `launch_mode = "foreground"`
+— a launcher that stays alive while the app runs (`open -W`, an `adb` shell
+ending in `adb logcat`), whose exit ends the preview (see the
+`preview.targets[].launch_mode` row above).
+All tool-specific behavior belongs in these configured commands. Remote
+runners cannot display a native app on the control-plane host's screen. See
+`docs/previews.md` for full examples and placeholder details. These targets
+differ from `[[dev.targets]] kind = "process"` because they use the task's
+worktree, and from `[[shot.targets]]` because they launch a live app instead of
+capturing an image.
 
 `preview.targets[].paths` drives `repoos shot`, which picks the target to
 screenshot from the task's changed files rather than its up-front `area:`.

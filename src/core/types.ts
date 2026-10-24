@@ -1627,12 +1627,56 @@ export interface PreviewServiceConfig {
 }
 
 /**
+ * The two declared lifetimes a native preview launcher can have (#0943).
+ *
+ * A launcher's exit code alone cannot say what happened: `open -W` exiting 0
+ * means the app quit, while the iOS `bootstatus && install && launch` shell
+ * exiting 0 means "launched" with the app still running on the simulator —
+ * the same event, two meanings. The row declares which one it is instead of
+ * the code guessing.
+ */
+export const NATIVE_LAUNCH_MODES = ["foreground", "handoff"] as const;
+
+/** See {@link NATIVE_LAUNCH_MODES}. */
+export type NativeLaunchMode = (typeof NATIVE_LAUNCH_MODES)[number];
+
+/**
  * A named preview target (#0362): one previewable thing in a repo, selected by
  * matching the task's `area:` frontmatter (case-insensitive). A monorepo can
  * hold a landing page, a docs site, several web apps, etc.; each gets a target
  * whose `areas` list names the task areas it serves.
  */
 export interface PreviewTargetConfig {
+  /** `native` targets build and launch a local app without an HTTP server. */
+  kind?: "web" | "native";
+  platform?: "macos" | "ios" | "android";
+  buildCommand?: string;
+  launchCommand?: string;
+  /**
+   * Declares the launch command's lifetime for a native target (#0943). See
+   * {@link NATIVE_LAUNCH_MODES} for why this must be explicit:
+   *
+   * - `"foreground"` (the default): the launcher's lifetime IS the app's. Any
+   *   exit during the startup grace is a failed launch — even exit 0, because
+   *   a foreground launcher that returns immediately never proved the app is
+   *   up — and any later exit (code 0, non-zero or signal) removes the
+   *   preview, exactly like a web preview whose server exits. Recipes:
+   *   macOS `open -W`, Android's `adb … && adb logcat`.
+   * - `"handoff"`: the launcher is a one-shot that starts the app and exits.
+   *   Exit 0 at ANY time — during or after the grace — means the app was
+   *   launched and the preview stays `running` until the user presses Stop;
+   *   a non-zero exit or spawn error is a failure that cleans up. Recipes:
+   *   the iOS `bootstatus && install && launch` shell, any `simctl`/`adb`
+   *   one-shot.
+   *
+   * An unrecognized value drops the row and `repoos doctor` names it.
+   */
+  launchMode?: NativeLaunchMode;
+  stop?: string;
+  requires?: string;
+  timeoutMs?: number;
+  env?: Record<string, string>;
+  device?: string;
   /** Human label for diagnostics, e.g. "Landing page". */
   name: string;
   /** Task `area:` values this target serves, matched case-insensitively. */
