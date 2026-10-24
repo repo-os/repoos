@@ -3,6 +3,9 @@ id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Native launch processes never get a post-start `exit` listener, so long-lived/`open -W` launchers leave stale “running”…"
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -115,4 +118,5 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-23T22:28:20Z · needs_input
 - 2026-10-24T06:22:12Z · note: review pass 1: failed — no usable report
 - 2026-10-24T08:22:53Z · note: review pass 2: needs some work
+- 2026-10-24T08:22:53Z · needs_input
 - 2026-10-24T08:22:53Z · needs_input
