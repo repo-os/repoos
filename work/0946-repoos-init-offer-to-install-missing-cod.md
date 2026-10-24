@@ -13,7 +13,6 @@ model_override: gpt-6-luna
 created_at: "2026-10-24T02:32:41Z"
 updated_at: "2026-10-24T06:04:39Z"
 dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:33:42.018Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:33:59.984Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:34:17.689Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
