@@ -24,6 +24,8 @@
   --amber: #ffb454;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bot: env(safe-area-inset-bottom, 0px);
+  --page-bottom-inset: calc(88px + var(--safe-bot));
+  --page-bottom-fade-size: 112px;
   --font-sans: "Sora", sans-serif;
   /* theme-aware semantic tokens */
   --body-gradient:
@@ -717,6 +719,21 @@
   flex: 1;
   display: flex;
   min-height: 0;
+  position: relative;
+}
+/* Fixed bottom controls sit above the scrolling pane. Fade the final slice of
+   page content into the theme background and keep one shared scroll inset so
+   the last row can clear those controls. */
+.body::after {
+  content: "";
+  position: fixed;
+  z-index: 45;
+  left: 210px;
+  right: 0;
+  bottom: 0;
+  height: var(--page-bottom-fade-size);
+  background: linear-gradient(to bottom, transparent, var(--bg));
+  pointer-events: none;
 }
 .sidebar {
   width: 210px;
@@ -1128,8 +1145,14 @@
 .main {
   flex: 1;
   overflow-y: auto;
-  padding: 22px 26px 60px;
+  min-height: 0;
+  align-self: stretch;
+  padding: 22px 26px var(--page-bottom-inset);
   min-width: 0;
+}
+.main:has(.work-page) {
+  --page-bottom-inset: calc(154px + var(--safe-bot));
+  --page-bottom-fade-size: 160px;
 }
 /* Standard nav views span this pane's full width: do NOT add a page-level
    max-width (or centering margin) to a page shell — wide tables, step output
@@ -1777,6 +1800,9 @@
   }
 }
 @media (max-width: 760px) {
+  .body::after {
+    left: 0;
+  }
   .work-page {
     height: auto;
     min-height: initial;

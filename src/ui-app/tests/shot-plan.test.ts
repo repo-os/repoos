@@ -205,20 +205,25 @@ describe("parseShotPlan", () => {
     expect(bad.errors[0]).toMatch(/"theme" expects "light" or "dark"/);
   });
 
-  it("parses viewportWidth and reducedMotion (#0787)", () => {
+  it("parses viewport dimensions and reducedMotion (#0787, #0951)", () => {
     const ok = parseShotPlan(
       bodyWithShots(
-        '[{"route":"/work","viewportWidth":390,"reducedMotion":true},{"route":"/","viewportWidth":1280}]',
+        '[{"route":"/work","viewportWidth":390,"viewportHeight":640,"reducedMotion":true},{"route":"/","viewportWidth":1280,"viewportHeight":1120}]',
       ),
     );
     expect(ok.errors).toEqual([]);
     expect(ok.shots[0]?.viewportWidth).toBe(390);
     expect(ok.shots[0]?.reducedMotion).toBe(true);
     expect(ok.shots[1]?.viewportWidth).toBe(1280);
+    expect(ok.shots.map((s) => s.viewportHeight)).toEqual([640, 1120]);
 
     const bad = parseShotPlan(bodyWithShots('[{"route":"/work","viewportWidth":100}]'));
     expect(bad.shots).toEqual([]);
     expect(bad.errors[0]).toMatch(/viewportWidth/);
+
+    const badHeight = parseShotPlan(bodyWithShots('[{"route":"/work","viewportHeight":200}]'));
+    expect(badHeight.shots).toEqual([]);
+    expect(badHeight.errors[0]).toMatch(/viewportHeight/);
   });
 });
 
