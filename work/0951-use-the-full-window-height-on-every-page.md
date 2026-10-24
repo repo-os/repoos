@@ -2,7 +2,7 @@
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
-status: active
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-24T22:52:20Z"
+updated_at: "2026-10-24T23:13:39Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-24T22:52:12Z · status inbox→ready
 - 2026-10-24T22:52:19Z · cli_override, model_override
 - 2026-10-24T22:52:20Z · status ready→active, branch
+- 2026-10-24T23:13:39Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
