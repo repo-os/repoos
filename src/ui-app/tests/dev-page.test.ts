@@ -612,13 +612,12 @@ describe("DevView failure summary (#0775)", () => {
       // The started target carries the shared running hook; the stopped one doesn't.
       expect(cards[0]!.attributes("data-running")).toBe("true");
       expect(cards[1]!.attributes("data-running")).toBeUndefined();
-      expect(cards[0]!.findAll(".dev-actions button").map((button) => button.text().trim())).toEqual([
-        "Restart",
-        "Stop",
-      ]);
-      expect(cards[1]!.findAll(".dev-actions button").map((button) => button.text().trim())).toEqual([
-        "Start",
-      ]);
+      expect(
+        cards[0]!.findAll(".dev-actions button").map((button) => button.text().trim()),
+      ).toEqual(["Restart", "Stop"]);
+      expect(
+        cards[1]!.findAll(".dev-actions button").map((button) => button.text().trim()),
+      ).toEqual(["Start"]);
       expect(cards[0]!.find(".dev-actions button").classes()).toEqual(
         expect.arrayContaining(cards[1]!.find(".dev-actions button").classes()),
       );
