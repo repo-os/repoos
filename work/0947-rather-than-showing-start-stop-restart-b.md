@@ -1,22 +1,36 @@
 ---
 id: "0947"
-title: Rather than showing Start / Stop / Restart buttons always…
+title: Show dev target actions based on running state
 type: feature
-status: draft
+status: inbox
 priority: p2
-area: general
+area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T04:07:39Z"
+updated_at: "2026-10-24T04:08:04Z"
 ---
-Rather than showing Start / Stop / Restart buttons always on each dev page target we should show different buttons based on the current state of the dev target:
-- when a target is not running only show the start button
-- when a target is running show restart and stop buttons
-- you can keep the color of start and restart buttons the same 
+## Problem
 
-Also can we use a flexbox there so that the buttons are in a column to the right of the command/url  col so there's not a big white space above command like there is now?
+Dev page targets always show Start, Stop, and Restart buttons, even when some actions do not apply to the target's current state. The current layout also leaves a large blank space above the command.
+
+## Desired UX
+
+Show only Start when a target is not running. When it is running, show Restart and Stop instead. Keep Start and Restart the same color. Arrange the buttons in a column to the right of the command/URL column using flexbox, reducing the blank space above the command.
+
+## Acceptance criteria
+
+- [ ] A target that is not running shows only the Start button.
+- [ ] A running target shows Restart and Stop, and does not show Start.
+- [ ] Start and Restart use the same color.
+- [ ] The target's buttons are arranged in a column to the right of its command/URL column using flexbox.
+- [ ] The updated layout avoids the large blank space above the command.
+
+## Notes for AI
+
+- Use the target's existing running state to determine which buttons to show.
+- Keep the change limited to the dev page target actions and their layout.
 
 ## Original prompt
 
@@ -37,3 +51,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T04:07:30Z · created · hello@repoos.org
 - 2026-10-24T04:07:38Z · screenshots
 - 2026-10-24T04:07:39Z · screenshots
+- 2026-10-24T04:08:04Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
