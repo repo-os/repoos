@@ -2,7 +2,7 @@
 id: "0947"
 title: Show dev target actions based on running state
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: "the cursor agent exited without output: Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
