@@ -3,6 +3,9 @@ id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the cursor agent exited without output: Error: [unavailable] read ETIMEDOUT"
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -145,3 +148,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:38:21Z · body
 - 2026-10-24T14:38:23Z · status active→review
 - 2026-10-24T14:38:43Z · note: review pass 5: failed — no usable report
+- 2026-10-24T14:38:43Z · needs_input
