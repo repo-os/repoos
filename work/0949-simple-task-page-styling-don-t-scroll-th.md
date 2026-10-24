@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 pm_cli_override: codex
 pm_model_override: gpt-6-luna
 created_at: "2026-10-24T16:04:07Z"
-updated_at: "2026-10-24T16:06:06Z"
+updated_at: "2026-10-24T16:10:15Z"
 ---
 ## Problem
 
@@ -53,6 +53,31 @@ And on secret entries you don't need to mention the source on each, because they
 
 ![Screenshot-2026-10-25-at-00.02.19](/api/tasks/0949/attachments/att_9ea94016-0c1d-43e6-bebd-0de3c2c1d0a7.png)
 
+## Shots
+```json
+[
+{
+  "label": "Secrets keys as full-width cards with the environment file above the inventory",
+  "target": "default",
+  "route": "/secrets",
+  "highlight": ".secrets-file",
+  "state": "secrets:populated"
+},
+{
+  "label": "Settings title and tabs stay above the scrolling panels",
+  "target": "default",
+  "route": "/settings",
+  "highlight": ".settings-tabs"
+},
+{
+  "label": "Checks title and tabs stay above the scrolling section",
+  "target": "default",
+  "route": "/checks",
+  "highlight": ".ck-tabs"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-24T16:04:07Z · created · hello@repoos.org
@@ -62,3 +87,4 @@ And on secret entries you don't need to mention the source on each, because they
 - 2026-10-24T16:06:00Z · model_override
 - 2026-10-24T16:06:02Z · status inbox→ready
 - 2026-10-24T16:06:06Z · status ready→active, branch
+- 2026-10-24T16:10:15Z · body
