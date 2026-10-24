@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 595872
-last_close_out_gate_at: "2026-10-24T07:33:31.802Z"
 id: "0946"
 title: "repoos init: offer to install missing coding agents (checkbox list)"
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, docs]
+merged_commit: d7c2910edf29f4e60ef82e15ee7eba5b0efc0ba0
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-init-offer-to-install-missing-cod
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T02:32:41Z"
 updated_at: "2026-10-24T07:33:31Z"
+last_close_out_gate_ms: 595872
+last_close_out_gate_at: "2026-10-24T07:33:31.802Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-24T06:05:06.867Z: repoos check failed: remote validation unavailable: host bee skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 dev_error_count: 3
