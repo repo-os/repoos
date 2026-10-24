@@ -2,14 +2,14 @@
 id: "0945"
 title: Show only failing checks in Landable by default
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/show-only-failing-checks-in-landable-by-
 created_at: "2026-10-24T01:24:41Z"
-updated_at: "2026-10-24T01:26:27Z"
+updated_at: "2026-10-24T01:26:32Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ This Landable card should only show failing and minimise the rest -- if user cli
 - 2026-10-24T01:24:53Z · screenshots
 - 2026-10-24T01:25:17Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
 - 2026-10-24T01:26:27Z · status inbox→ready
+- 2026-10-24T01:26:32Z · status ready→active, branch
