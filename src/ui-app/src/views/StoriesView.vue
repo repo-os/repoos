@@ -222,7 +222,7 @@ function lastActivity(story: { lastActivity: string | null }): string {
 </script>
 
 <template>
-  <div class="stories-page">
+  <div class="stories-page page-scroll">
     <header class="page-header">
       <div>
         <div class="page-title">Stories</div>
@@ -256,117 +256,121 @@ function lastActivity(story: { lastActivity: string | null }): string {
       </div>
     </header>
 
-    <div v-if="!enabled" class="glass stories-notice">
-      Stories aren't enabled for this repository. Add a <code>[stories]</code> block with
-      <code>enabled = true</code> to <a href="/settings?tab=toml">repoos.toml</a> to turn this page
-      on.
-    </div>
-
-    <div v-else-if="stories.length === 0" class="empty-state">
-      <div class="big">No stories yet</div>
-      <div>
-        Capture a delivery slice with <strong>New story</strong>, or tag a task from the Story field
-        in the task drawer.
+    <div class="page-scroll-body">
+      <div v-if="!enabled" class="glass stories-notice">
+        Stories aren't enabled for this repository. Add a <code>[stories]</code> block with
+        <code>enabled = true</code> to <a href="/settings?tab=toml">repoos.toml</a> to turn this
+        page on.
       </div>
-      <Button variant="outline" style="margin-top: 14px" @click="ui.openNewStory()"
-        >Create your first story</Button
-      >
-    </div>
 
-    <div v-else class="stories-grid">
-      <article
-        v-for="story in stories"
-        :key="story.key"
-        class="glass story-card"
-        :class="{ complete: story.complete }"
-      >
-        <!-- #0515: the copy-link number leads the card, in the same upper left
+      <div v-else-if="stories.length === 0" class="empty-state">
+        <div class="big">No stories yet</div>
+        <div>
+          Capture a delivery slice with <strong>New story</strong>, or tag a task from the Story
+          field in the task drawer.
+        </div>
+        <Button variant="outline" style="margin-top: 14px" @click="ui.openNewStory()"
+          >Create your first story</Button
+        >
+      </div>
+
+      <div v-else class="stories-grid">
+        <article
+          v-for="story in stories"
+          :key="story.key"
+          class="glass story-card"
+          :class="{ complete: story.complete }"
+        >
+          <!-- #0515: the copy-link number leads the card, in the same upper left
              position and with the same `CopyableNumber` chip the task and input
              cards use. It sits OUTSIDE the `.story-head` button on purpose —
              that button is the card's own control, and a <button> inside a
              <button> is invalid markup browsers are free to flatten, which
              would break both the copy and the click. The task/input cards get
              away with nesting because their clickable surface is the <article>. -->
-        <div v-if="story.number" class="story-number-row">
-          <CopyableNumber
-            :label="`#${story.number}`"
-            :path="`/stories?story=${encodeURIComponent(story.number)}`"
-            :aria-label="`Copy link to story ${story.number}`"
-          />
-        </div>
-
-        <button
-          type="button"
-          class="story-head"
-          aria-haspopup="dialog"
-          :aria-label="`Open ${story.name} story details`"
-          @click="selectStory(story.key)"
-        >
-          <div class="story-head-main">
-            <div class="story-name-row">
-              <h2 class="story-name">{{ story.name }}</h2>
-              <span v-if="pmWorkingKeys.has(story.key)" class="story-badge story-badge-pm">
-                <ActivityIndicator activity="agent" /> PM is working
-              </span>
-              <span v-else-if="story.complete" class="story-badge story-badge-done">complete</span>
-              <span v-else-if="story.attention > 0" class="story-badge story-badge-attention">
-                {{ story.attention }} need input
-              </span>
-            </div>
-            <div class="story-meta">
-              <span>{{ story.total }} {{ story.total === 1 ? "task" : "tasks" }}</span>
-              <span class="story-dot-sep">·</span>
-              <span>{{
-                story.total > 0 ? `Last activity ${lastActivity(story)}` : "No tasks tagged yet"
-              }}</span>
-            </div>
-            <p v-if="story.excerpt" class="story-excerpt">{{ story.excerpt }}</p>
-          </div>
-          <div class="story-progress-wrap">
-            <span class="story-frac">{{ story.done }}/{{ story.total }}</span>
-            <div class="story-bar">
-              <i :style="{ width: percent(story.done, story.total) }"></i>
-            </div>
-          </div>
-          <svg class="story-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M9 6l6 6-6 6"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+          <div v-if="story.number" class="story-number-row">
+            <CopyableNumber
+              :label="`#${story.number}`"
+              :path="`/stories?story=${encodeURIComponent(story.number)}`"
+              :aria-label="`Copy link to story ${story.number}`"
             />
-          </svg>
-        </button>
+          </div>
 
-        <div class="story-chips">
-          <span
-            v-for="chip in statusChips(story.counts)"
-            :key="chip.id"
-            class="story-chip"
-            :style="{ '--chip': chip.color }"
-          >
-            <i class="story-chip-dot"></i>{{ chip.label }} {{ chip.count }}
-          </span>
-        </div>
-
-        <div v-if="liveTasks(story.tasks).length" class="story-live">
           <button
-            v-for="row in liveTasks(story.tasks)"
-            :key="row.task.id"
             type="button"
-            class="story-live-row"
-            @click="ui.openTask(row.task)"
+            class="story-head"
+            aria-haspopup="dialog"
+            :aria-label="`Open ${story.name} story details`"
+            @click="selectStory(story.key)"
           >
-            <span
-              class="story-live-dot"
-              :style="{ background: statusColor(row.task.status) }"
-            ></span>
-            <span class="story-live-title">#{{ row.task.id }} {{ row.task.title }}</span>
-            <span class="story-live-cue" :class="row.cueClass">{{ row.cue }}</span>
+            <div class="story-head-main">
+              <div class="story-name-row">
+                <h2 class="story-name">{{ story.name }}</h2>
+                <span v-if="pmWorkingKeys.has(story.key)" class="story-badge story-badge-pm">
+                  <ActivityIndicator activity="agent" /> PM is working
+                </span>
+                <span v-else-if="story.complete" class="story-badge story-badge-done"
+                  >complete</span
+                >
+                <span v-else-if="story.attention > 0" class="story-badge story-badge-attention">
+                  {{ story.attention }} need input
+                </span>
+              </div>
+              <div class="story-meta">
+                <span>{{ story.total }} {{ story.total === 1 ? "task" : "tasks" }}</span>
+                <span class="story-dot-sep">·</span>
+                <span>{{
+                  story.total > 0 ? `Last activity ${lastActivity(story)}` : "No tasks tagged yet"
+                }}</span>
+              </div>
+              <p v-if="story.excerpt" class="story-excerpt">{{ story.excerpt }}</p>
+            </div>
+            <div class="story-progress-wrap">
+              <span class="story-frac">{{ story.done }}/{{ story.total }}</span>
+              <div class="story-bar">
+                <i :style="{ width: percent(story.done, story.total) }"></i>
+              </div>
+            </div>
+            <svg class="story-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M9 6l6 6-6 6"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
           </button>
-        </div>
-      </article>
+
+          <div class="story-chips">
+            <span
+              v-for="chip in statusChips(story.counts)"
+              :key="chip.id"
+              class="story-chip"
+              :style="{ '--chip': chip.color }"
+            >
+              <i class="story-chip-dot"></i>{{ chip.label }} {{ chip.count }}
+            </span>
+          </div>
+
+          <div v-if="liveTasks(story.tasks).length" class="story-live">
+            <button
+              v-for="row in liveTasks(story.tasks)"
+              :key="row.task.id"
+              type="button"
+              class="story-live-row"
+              @click="ui.openTask(row.task)"
+            >
+              <span
+                class="story-live-dot"
+                :style="{ background: statusColor(row.task.status) }"
+              ></span>
+              <span class="story-live-title">#{{ row.task.id }} {{ row.task.title }}</span>
+              <span class="story-live-cue" :class="row.cueClass">{{ row.cue }}</span>
+            </button>
+          </div>
+        </article>
+      </div>
     </div>
     <NewStoryPanel v-if="enabled" />
     <StoryPanel

@@ -50,6 +50,15 @@ const shotFixture = readShotPreviewFixtureFromLocation(window.location);
 const fixture = shotFixture === "secrets:populated" || shotFixture === "secrets:removeDialog";
 const auth = useAuthStore();
 const canManage = computed(() => fixture || auth.role === "admin");
+const environmentFile = computed(() => {
+  const env = environments.value.find((item) => item.id === selected.value);
+  return (
+    env?.sources
+      .map((source) => source.path)
+      .filter(Boolean)
+      .join(", ") ?? ""
+  );
+});
 const visibleRows = computed(() =>
   (snapshot.value?.keys ?? [])
     .map((row) =>
@@ -228,12 +237,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="secrets-page">
-    <header class="secrets-head">
+  <main class="secrets-page page-scroll">
+    <header class="page-header">
       <div>
-        <p class="secrets-kicker">PROJECT SETTINGS / CREDENTIALS</p>
-        <h1>Secrets</h1>
-        <p class="secrets-intro">Manage the keys this project expects. Saved values stay hidden.</p>
+        <h1 class="page-title">Secrets</h1>
+        <p class="page-desc">Manage the keys this project expects. Saved values stay hidden.</p>
       </div>
       <div class="secrets-env-control">
         <span class="secrets-label">Viewing environment</span>
@@ -270,157 +278,161 @@ onMounted(() => {
         <span class="secrets-view-note">Changes here do not switch running processes.</span>
       </div>
     </header>
-    <div v-if="error" class="secrets-error" role="alert">
-      <span>{{ error }}</span
-      ><Button variant="outline" @click="selected ? loadSnapshot() : loadEnvironments()"
-        >Reload</Button
-      >
-    </div>
-    <p v-if="message" class="secrets-message" role="status">{{ message }}</p>
-    <section
-      v-if="!loading && !environments.length"
-      class="secrets-empty"
-      aria-labelledby="secrets-empty-title"
-    >
-      <div class="secrets-empty-mark" aria-hidden="true">⌁</div>
-      <h2 id="secrets-empty-title">Give this project an environment</h2>
-      <p>
-        Start with an empty, private source file. Expected key names come from
-        <code>.env.example</code>; its example values are never imported.
-      </p>
-      <Button variant="accent" @click="createOpen = true">Create environment</Button>
-    </section>
-    <section v-else-if="loading" class="secrets-empty" aria-live="polite">
-      Loading environment metadata…
-    </section>
-    <section v-else-if="snapshot" class="secrets-ledger" aria-label="Environment keys">
-      <div class="secrets-ledger-top">
-        <div>
-          <h2>Key inventory</h2>
-          <p>
-            {{ snapshot.keys.length }} expected or configured keys
-            <span class="secrets-separator">·</span> Values are never shown
-          </p>
-        </div>
-        <Button v-if="canManage" variant="accent" @click="beginAdd">Add key</Button>
-      </div>
-      <label class="secrets-search"
-        ><span aria-hidden="true">⌕</span
-        ><input v-model="query" type="search" placeholder="Search keys" aria-label="Search keys"
-      /></label>
-      <div v-if="canManage && addOpen" class="secrets-add-row">
-        <label
-          >Key name<input
-            v-model="keyDraft"
-            autocomplete="off"
-            placeholder="SERVICE_TOKEN" /></label
-        ><label
-          >New value<input
-            v-model="valueDraft"
-            type="password"
-            autocomplete="new-password"
-            placeholder="Enter a value"
-            @keydown.enter="saveKey()" /></label
-        ><Button variant="accent" :disabled="saving || !keyDraft || !valueDraft" @click="saveKey()"
-          >Save</Button
-        ><Button
-          variant="outline"
-          @click="
-            addOpen = false;
-            keyDraft = '';
-            valueDraft = '';
-          "
-          >Cancel</Button
+    <div class="page-scroll-body">
+      <div v-if="error" class="secrets-error" role="alert">
+        <span>{{ error }}</span
+        ><Button variant="outline" @click="selected ? loadSnapshot() : loadEnvironments()"
+          >Reload</Button
         >
       </div>
-      <div v-if="visibleRows.length" class="secrets-rows">
-        <article v-for="row in visibleRows" :key="row.name" class="secrets-row">
-          <div class="secrets-key-cell">
-            <strong>{{ row.name }}</strong
-            ><span class="secrets-status" :class="`is-${row.status}`">{{
-              row.status === "set" ? "Set" : row.status === "inherited" ? "Inherited" : "Missing"
-            }}</span>
+      <p v-if="message" class="secrets-message" role="status">{{ message }}</p>
+      <section
+        v-if="!loading && !environments.length"
+        class="secrets-empty"
+        aria-labelledby="secrets-empty-title"
+      >
+        <div class="secrets-empty-mark" aria-hidden="true">⌁</div>
+        <h2 id="secrets-empty-title">Give this project an environment</h2>
+        <p>
+          Start with an empty, private source file. Expected key names come from
+          <code>.env.example</code>; its example values are never imported.
+        </p>
+        <Button variant="accent" @click="createOpen = true">Create environment</Button>
+      </section>
+      <section v-else-if="loading" class="secrets-empty" aria-live="polite">
+        Loading environment metadata…
+      </section>
+      <section v-else-if="snapshot" class="secrets-ledger" aria-label="Environment keys">
+        <p v-if="environmentFile" class="secrets-file">
+          <code>{{ environmentFile }}</code>
+        </p>
+        <div class="secrets-ledger-top">
+          <div>
+            <h2>Key inventory</h2>
+            <p>
+              {{ snapshot.keys.length }} expected or configured keys
+              <span class="secrets-separator">·</span> Values are never shown
+            </p>
           </div>
-          <dl class="kv-rows secrets-kv">
-            <div>
-              <dt>Source</dt>
-              <dd>{{ row.source }}</dd>
-            </div>
-            <div>
-              <dt>Visibility</dt>
-              <dd>{{ rowVisibility(row) }}</dd>
-            </div>
-            <div>
-              <dt>Consumers</dt>
-              <dd>{{ row.consumers.length ? row.consumers.join(", ") : "None" }}</dd>
-            </div>
-            <div>
-              <dt>Restart</dt>
-              <dd>
-                {{
-                  row.restartNeeded || restartKeys.has(row.name)
-                    ? "Needed after change"
-                    : "No pending restart"
-                }}
-              </dd>
-            </div>
-          </dl>
-          <div class="secrets-row-actions">
-            <template
-              ><Button
-                v-if="canManage && row.status !== 'inherited'"
-                variant="outline"
-                @click="
-                  keyDraft = row.name;
-                  valueDraft = '';
-                "
-                >{{
-                  row.status === "missing"
-                    ? "Set value"
-                    : row.status === "inherited"
-                      ? "Add override"
-                      : "Replace"
-                }}</Button
-              ><Button
-                v-if="canManage && row.status === 'set'"
-                variant="outline"
-                class="secrets-remove"
-                @click="confirmKey = row"
-                >Remove</Button
-              ></template
-            ><span v-if="row.status === 'inherited'" class="secrets-readonly"
-              >Defined in an earlier source</span
-            >
-          </div>
-          <div v-if="canManage && keyDraft === row.name" class="secrets-inline-form">
-            <label class="sr-only" :for="`secret-${row.name}`">New value for {{ row.name }}</label
-            ><input
-              :id="`secret-${row.name}`"
+          <Button v-if="canManage" variant="accent" @click="beginAdd">Add key</Button>
+        </div>
+        <label class="secrets-search"
+          ><span aria-hidden="true">⌕</span
+          ><input v-model="query" type="search" placeholder="Search keys" aria-label="Search keys"
+        /></label>
+        <div v-if="canManage && addOpen" class="secrets-add-row">
+          <label
+            >Key name<input
+              v-model="keyDraft"
+              autocomplete="off"
+              placeholder="SERVICE_TOKEN" /></label
+          ><label
+            >New value<input
               v-model="valueDraft"
               type="password"
               autocomplete="new-password"
-              placeholder="Enter replacement value"
-            /><Button variant="accent" :disabled="saving || !valueDraft" @click="saveKey(row)"
-              >Save</Button
-            ><Button
-              variant="outline"
-              @click="
-                keyDraft = '';
-                valueDraft = '';
-              "
-              >Cancel</Button
-            >
-          </div>
-        </article>
-      </div>
-      <p v-else class="secrets-no-results">
-        {{
-          query
-            ? "No keys match this search."
-            : "No expected keys yet. Add the first key when you are ready."
-        }}
-      </p>
-    </section>
+              placeholder="Enter a value"
+              @keydown.enter="saveKey()" /></label
+          ><Button
+            variant="accent"
+            :disabled="saving || !keyDraft || !valueDraft"
+            @click="saveKey()"
+            >Save</Button
+          ><Button
+            variant="outline"
+            @click="
+              addOpen = false;
+              keyDraft = '';
+              valueDraft = '';
+            "
+            >Cancel</Button
+          >
+        </div>
+        <div v-if="visibleRows.length" class="secrets-rows">
+          <article v-for="row in visibleRows" :key="row.name" class="secrets-row">
+            <div class="secrets-key-cell">
+              <strong>{{ row.name }}</strong
+              ><span class="secrets-status" :class="`is-${row.status}`">{{
+                row.status === "set" ? "Set" : row.status === "inherited" ? "Inherited" : "Missing"
+              }}</span>
+            </div>
+            <dl class="kv-rows secrets-kv">
+              <div>
+                <dt>Visibility</dt>
+                <dd>{{ rowVisibility(row) }}</dd>
+              </div>
+              <div>
+                <dt>Consumers</dt>
+                <dd>{{ row.consumers.length ? row.consumers.join(", ") : "None" }}</dd>
+              </div>
+              <div>
+                <dt>Restart</dt>
+                <dd>
+                  {{
+                    row.restartNeeded || restartKeys.has(row.name)
+                      ? "Needed after change"
+                      : "No pending restart"
+                  }}
+                </dd>
+              </div>
+            </dl>
+            <div class="secrets-row-actions">
+              <template
+                ><Button
+                  v-if="canManage && row.status !== 'inherited'"
+                  variant="outline"
+                  @click="
+                    keyDraft = row.name;
+                    valueDraft = '';
+                  "
+                  >{{
+                    row.status === "missing"
+                      ? "Set value"
+                      : row.status === "inherited"
+                        ? "Add override"
+                        : "Replace"
+                  }}</Button
+                ><Button
+                  v-if="canManage && row.status === 'set'"
+                  variant="outline"
+                  class="secrets-remove"
+                  @click="confirmKey = row"
+                  >Remove</Button
+                ></template
+              ><span v-if="row.status === 'inherited'" class="secrets-readonly"
+                >Defined in an earlier source</span
+              >
+            </div>
+            <div v-if="canManage && keyDraft === row.name" class="secrets-inline-form">
+              <label class="sr-only" :for="`secret-${row.name}`">New value for {{ row.name }}</label
+              ><input
+                :id="`secret-${row.name}`"
+                v-model="valueDraft"
+                type="password"
+                autocomplete="new-password"
+                placeholder="Enter replacement value"
+              /><Button variant="accent" :disabled="saving || !valueDraft" @click="saveKey(row)"
+                >Save</Button
+              ><Button
+                variant="outline"
+                @click="
+                  keyDraft = '';
+                  valueDraft = '';
+                "
+                >Cancel</Button
+              >
+            </div>
+          </article>
+        </div>
+        <p v-else class="secrets-no-results">
+          {{
+            query
+              ? "No keys match this search."
+              : "No expected keys yet. Add the first key when you are ready."
+          }}
+        </p>
+      </section>
+    </div>
     <ConfirmDialog
       :open="!!confirmKey"
       title="Remove project key?"
