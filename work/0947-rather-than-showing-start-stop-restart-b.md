@@ -2,14 +2,14 @@
 id: "0947"
 title: Show dev target actions based on running state
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T04:08:04Z"
+updated_at: "2026-10-24T04:08:38Z"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T04:07:38Z · screenshots
 - 2026-10-24T04:07:39Z · screenshots
 - 2026-10-24T04:08:04Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
+- 2026-10-24T04:08:38Z · status inbox→ready
