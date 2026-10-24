@@ -30,6 +30,7 @@ const under =
 
 /** Routes implemented by the server-backed control CLI (#0723). */
 const CONTROL_API_MATCHERS: Matcher[] = [
+  re("POST", /^\/api\/tasks\/([^/]+)\/send-back$/.source),
   re(
     "POST",
     /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen|archive|unarchive|split)$/

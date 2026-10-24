@@ -214,6 +214,7 @@ done wait by default in human mode).
 | `repoos pause <id>` | `POST /api/tasks/:id/pause` |
 | `repoos sync <id>` | `POST /api/tasks/:id/sync` — merge main into the task branch (lists conflicting paths and exits non-zero on conflict) |
 | `repoos message <id> "…" [--now]` | `POST /api/tasks/:id/message` (`now: true` interrupts a busy agent) |
+| `repoos send-back <id> --message "…"` or `--message-file <file|->` | `POST /api/tasks/:id/send-back` — move to active, start the engineer, then queue the message; `-` reads stdin |
 | `repoos review <id> [--wait]` | `PATCH /api/tasks/:id` (`status: review`) |
 | `repoos review cancel <id>` | `PATCH /api/tasks/:id` (`status: active`, cancels an in-flight handoff/review) |
 | `repoos review again <id>` | `POST /api/tasks/:id/review/again` |
