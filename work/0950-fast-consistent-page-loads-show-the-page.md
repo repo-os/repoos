@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-24T22:22:14Z"
-review_passes: 4
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — `main` merge conflicts and a dirty worktree block landing; measurement AC (#1/#6) still open in task notes."
@@ -16,6 +14,8 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
+updated_at: "2026-10-24T22:39:32Z"
+review_passes: 4
 handoff_signal_retry_count: 2
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-24T16:55:14.081Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Deployments first load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /deployments (http://127.0.0.1:39677/deployments?shotState=deployments%3Aloading); [missing-target] Dev first load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /dev (http://127.0.0.1:39677/dev?shotState=dev%3Aloading)"
@@ -135,4 +135,5 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T22:21:20Z · status active→review
 - 2026-10-24T22:22:14Z · note: review pass 4: needs some work
 - 2026-10-24T22:22:14Z · needs_input
-
+- 2026-10-24T22:39:32Z · status review→active
+- 2026-10-24T22:39:32Z · note: send-back — returned to active for engineer follow-up
