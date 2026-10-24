@@ -452,7 +452,7 @@ describe("parsePreviewConfig", () => {
           areas: ["ios"],
           build_command: "build",
           launch_command: "launch",
-          launch_waits: true,
+          launch_mode: "handoff",
           stop: "stop",
           device: "iPhone",
           timeout_ms: 5000,
@@ -477,7 +477,7 @@ describe("parsePreviewConfig", () => {
         platform: "ios",
         buildCommand: "build",
         launchCommand: "launch",
-        launchWaits: true,
+        launchMode: "handoff",
         stop: "stop",
         device: "iPhone",
         timeoutMs: 5000,
@@ -486,48 +486,54 @@ describe("parsePreviewConfig", () => {
     ]);
   });
 
-  it("accepts launchWaits in camelCase and ignores a non-boolean launch_waits (#0943)", () => {
+  it("accepts launch_mode in snake_case and camelCase, and defaults to nothing (#0943)", () => {
+    const base = {
+      kind: "native",
+      platform: "macos",
+      areas: ["mac"],
+      build_command: "build",
+      launch_command: "open -W App.app",
+    };
+    const snake = parsePreviewConfig({
+      "preview.targets": [{ ...base, launch_mode: "handoff" }],
+    });
+    expect(snake?.targets?.[0]?.launchMode).toBe("handoff");
     const camel = parsePreviewConfig({
-      "preview.targets": [
-        {
-          kind: "native",
-          platform: "macos",
-          areas: ["mac"],
-          build_command: "build",
-          launch_command: "open -W App.app",
-          launchWaits: true,
-        },
-      ],
+      "preview.targets": [{ ...base, launchMode: "foreground" }],
     });
-    expect(camel?.targets?.[0]?.launchWaits).toBe(true);
-    const notBool = parsePreviewConfig({
-      "preview.targets": [
-        {
-          kind: "native",
-          platform: "macos",
-          areas: ["mac"],
-          build_command: "build",
-          launch_command: "open -W App.app",
-          launch_waits: "yes",
-        },
-      ],
-    });
-    expect(notBool?.targets?.[0]?.launchWaits).toBeUndefined();
-    // Absent means one-shot handoff — the default lifecycle.
-    expect(
-      parsePreviewConfig({
+    expect(camel?.targets?.[0]?.launchMode).toBe("foreground");
+    // Absent means the default `launch_mode = "foreground"` — the launcher's
+    // lifetime is the app's lifetime.
+    const absent = parsePreviewConfig({ "preview.targets": [base] });
+    expect(absent?.targets?.[0]?.launchMode).toBeUndefined();
+  });
+
+  it.each([
+    { bad: "Foreground", why: "wrong case" },
+    { bad: "wait", why: "renamed value" },
+    { bad: "", why: "empty" },
+    { bad: true, why: "non-string" },
+  ])(
+    "drops a native row whose launch_mode is $why instead of silently ignoring it (#0943)",
+    ({ bad }: { bad: unknown; why: string }) => {
+      const parsed = parsePreviewConfig({
         "preview.targets": [
           {
             kind: "native",
             platform: "macos",
             areas: ["mac"],
             build_command: "build",
-            launch_command: "open App.app",
+            launch_command: "open -W App.app",
+            launch_mode: bad,
           },
         ],
-      })?.targets?.[0]?.launchWaits,
-    ).toBeUndefined();
-  });
+      });
+      // The row is dropped (never run under a mode the user did not choose);
+      // `repoos doctor` names the row, the value and both allowed values —
+      // see the doctor table in doctor.test.ts.
+      expect(parsed?.targets).toBeUndefined();
+    },
+  );
 
   it("disambiguates duplicate target names so the picker and label match stay unambiguous (#0379)", () => {
     const parsed = parsePreviewConfig({
@@ -766,6 +772,7 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
         'kind = "native"',
         'platform = "ios"',
         'areas = ["ios"]',
+        'launch_mode = "handoff"',
         'build_command = "true"',
         'launch_command = "true"',
         'stop = "touch {outputDir}/stopped"',
@@ -791,7 +798,7 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
     { ending: "exits non-zero", launch: "sleep 1 && exit 3" },
     { ending: "is killed by a signal", launch: "sleep 1 && kill -9 $$" },
   ])(
-    "drops a native preview whose waiting launcher $ending after the startup grace (#0943)",
+    "drops a native preview whose foreground launcher $ending after the startup grace (#0943)",
     async ({ ending, launch }: { ending: string; launch: string }) => {
       const fx = makeFixture();
       fixtures.push(fx);
@@ -806,7 +813,6 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
           'kind = "native"',
           'platform = "macos"',
           'areas = ["mac"]',
-          "launch_waits = true",
           'build_command = "true"',
           `launch_command = ${JSON.stringify(launch)}`,
         ].join("\n") + "\n",
@@ -817,10 +823,11 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
       try {
         const result = await manager.start(t);
         expect(result.ok, result.error).toBe(true);
-        // The WAITING launcher outlives the 150ms startup grace, so it owns
-        // the running preview. When it then ends on its own — without a
-        // manual stop — the registry entry and the SSE stream must drop,
-        // exactly as a web preview whose server process exits does.
+        // No launch_mode is declared, so the row runs as the DEFAULT
+        // foreground launcher: alive past the 150ms startup grace it owns the
+        // running preview, and when it then ends on its own — even cleanly —
+        // the registry entry and the SSE stream must drop, exactly as a web
+        // preview whose server process exits does.
         expect(manager.get(t.id)).not.toBeNull();
         expect(await waitFor(() => manager.get(t.id) === null)).toBe(true);
         expect(
@@ -833,12 +840,12 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
     30_000,
   );
 
-  it("keeps a slow one-shot native preview running after its launcher exits 0 (#0943)", async () => {
-    // The iOS recipe shape: a launch shell (boot + install + launch) that
-    // takes longer than the 150ms startup grace and then exits cleanly while
-    // the app keeps running. Before the fix its post-grace exit 0 was
-    // conflated with a waiting launcher (`open -W`) and dropped the preview
-    // the moment the handoff completed.
+  it("keeps a slow handoff launcher's preview running after it exits 0 (#0943)", async () => {
+    // The iOS recipe shape: a `launch_mode = "handoff"` shell (boot + install
+    // + launch) that takes longer than the 150ms startup grace and then exits
+    // cleanly while the app keeps running. The SAME command under the default
+    // `foreground` mode drops the preview (the it.each above) — only the
+    // declared mode decides, never a guess from the exit code.
     const fx = makeFixture();
     fixtures.push(fx);
     const branch = "feat/preview-native-slow-oneshot";
@@ -852,6 +859,7 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
         'kind = "native"',
         'platform = "ios"',
         'areas = ["ios"]',
+        'launch_mode = "handoff"',
         'build_command = "true"',
         'launch_command = "sleep 1"',
         'stop = "touch {outputDir}/stopped"',
@@ -1253,122 +1261,175 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
 });
 
 /**
- * The native launch state machine (#0943) — every transition, driven directly
- * with a fake child so grace-timing cannot flake:
+ * The native launch state machine (#0943) — every transition of BOTH declared
+ * launch modes, driven directly with a fake child so grace-timing cannot
+ * flake. The matrix is the whole point: the contested event (exit 0 after the
+ * grace) must clean up in `foreground` and stay running in `handoff`, and the
+ * only thing that decides it is the row's `launch_mode`, never the exit code.
  *
- * - during the 150ms startup grace: exit 0 is a handoff completion (stays
- *   running), any error/non-zero exit is a failed launch (error returned);
- * - after the grace, behavior follows the DECLARED lifetime: a one-shot
- *   handoff that exits 0 late completes normally and stays running (the slow
- *   iOS `boot && install && launch` recipe), while a waiting launcher
- *   (`launch_waits = true`) owns the preview — its exit of any kind, and any
- *   error/non-zero exit for either lifetime — must call `onExit` and drop the
- *   registry/SSE exactly like a web preview exiting.
+ * - during the 150ms startup grace: any exit (including 0) in `foreground` is
+ *   a failed launch; in `handoff`, exit 0 completes the start and anything
+ *   else fails it;
+ * - after the grace: `foreground` drops the preview on ANY exit (code 0,
+ *   non-zero or signal — the launcher's lifetime is the app's), while
+ *   `handoff` keeps it running on exit 0 and drops it on anything else.
  */
 describe("awaitNativeLaunch state machine (#0943)", () => {
   type Row = {
     name: string;
-    /** `launch_waits = true` on the target; absent = one-shot handoff. */
-    waits?: boolean;
+    /** The row's `launch_mode`; absent exercises the built-in default. */
+    mode?: "foreground" | "handoff";
     phase: "during" | "after";
     event: "error" | "exit0" | "exit3" | "signal";
     errorContains: string | null;
+    /** How many times `onExit` ran — the registry/SSE cleanup hook. */
     exits: number;
   };
-  // The full exit matrix across both declared launcher lifetimes. One-shot
-  // (default): a clean exit any time completes the handoff and leaves the
-  // preview running — including a SLOW one that outlives the grace (the iOS
-  // `boot && install && launch` recipe). Waiting (`launch_waits = true`,
-  // e.g. `open -W`): the launcher owns the preview, so any later exit — even
-  // a clean user quit — drops it.
+  // The full exit matrix across both declared launch modes (plus the default).
+  // `handoff` (one-shot, e.g. the iOS `bootstatus && install && launch`
+  // shell): exit 0 any time completes the handoff and leaves the preview
+  // running. `foreground` (default; `open -W`, `adb … && adb logcat`): the
+  // launcher owns the preview, so every exit — even a clean one after a user
+  // quit — drops it, and an exit during the grace never proved the app is up.
   const rows: Row[] = [
+    // ── foreground (the default mode) ──────────────────────────────────────
     {
-      name: "spawn error during the grace returns an error without cleanup",
+      name: "foreground: a spawn error during the grace returns an error without cleanup",
+      mode: "foreground",
       phase: "during",
       event: "error",
       errorContains: "could not spawn",
       exits: 0,
     },
     {
-      name: "a spawn error after the grace drops the preview",
+      name: "foreground: a spawn error after the grace drops the preview",
+      mode: "foreground",
       phase: "after",
       event: "error",
       errorContains: null,
       exits: 1,
     },
     {
-      name: "exit 0 during the grace is a one-shot handoff that stays running",
+      name: "foreground: exit 0 during the grace is a launch failure (never proved the app is up)",
+      mode: "foreground",
       phase: "during",
       event: "exit0",
-      errorContains: null,
+      errorContains: "exited with code 0",
       exits: 0,
     },
     {
-      name: "exit 0 after the grace completes a slow one-shot handoff and stays running",
-      phase: "after",
-      event: "exit0",
-      errorContains: null,
-      exits: 0,
-    },
-    {
-      name: "a waiting launcher exiting 0 during the grace is still treated as launched",
-      waits: true,
-      phase: "during",
-      event: "exit0",
-      errorContains: null,
-      exits: 0,
-    },
-    {
-      name: "a waiting launcher exiting 0 after the grace drops the preview (open -W)",
-      waits: true,
+      name: "foreground: exit 0 after the grace drops the preview (the contested case)",
+      mode: "foreground",
       phase: "after",
       event: "exit0",
       errorContains: null,
       exits: 1,
     },
     {
-      name: "a non-zero exit during the grace returns an error without cleanup",
+      name: "foreground: a non-zero exit during the grace returns an error without cleanup",
+      mode: "foreground",
       phase: "during",
       event: "exit3",
       errorContains: "exited with code 3",
       exits: 0,
     },
     {
-      name: "a non-zero exit after the grace drops the preview",
+      name: "foreground: a non-zero exit after the grace drops the preview",
+      mode: "foreground",
       phase: "after",
       event: "exit3",
       errorContains: null,
       exits: 1,
     },
     {
-      name: "a waiting launcher's non-zero exit after the grace also drops the preview",
-      waits: true,
-      phase: "after",
-      event: "exit3",
-      errorContains: null,
-      exits: 1,
-    },
-    {
-      name: "a signal death during the grace returns an error without cleanup",
+      name: "foreground: a signal death during the grace returns an error without cleanup",
+      mode: "foreground",
       phase: "during",
       event: "signal",
       errorContains: "SIGKILL",
       exits: 0,
     },
     {
-      name: "a signal death after the grace drops the preview",
+      name: "foreground: a signal death after the grace drops the preview",
+      mode: "foreground",
       phase: "after",
       event: "signal",
       errorContains: null,
       exits: 1,
     },
+    // ── handoff (one-shot launcher) ────────────────────────────────────────
     {
-      name: "a waiting launcher's signal death after the grace also drops the preview",
-      waits: true,
+      name: "handoff: a spawn error during the grace returns an error without cleanup",
+      mode: "handoff",
+      phase: "during",
+      event: "error",
+      errorContains: "could not spawn",
+      exits: 0,
+    },
+    {
+      name: "handoff: a spawn error after the grace drops the preview",
+      mode: "handoff",
+      phase: "after",
+      event: "error",
+      errorContains: null,
+      exits: 1,
+    },
+    {
+      name: "handoff: exit 0 during the grace completes the launch and stays running",
+      mode: "handoff",
+      phase: "during",
+      event: "exit0",
+      errorContains: null,
+      exits: 0,
+    },
+    {
+      name: "handoff: exit 0 after the grace is a slow one-shot that stays running (the contested case)",
+      mode: "handoff",
+      phase: "after",
+      event: "exit0",
+      errorContains: null,
+      exits: 0,
+    },
+    {
+      name: "handoff: a non-zero exit during the grace returns an error without cleanup",
+      mode: "handoff",
+      phase: "during",
+      event: "exit3",
+      errorContains: "exited with code 3",
+      exits: 0,
+    },
+    {
+      name: "handoff: a non-zero exit after the grace drops the preview",
+      mode: "handoff",
+      phase: "after",
+      event: "exit3",
+      errorContains: null,
+      exits: 1,
+    },
+    {
+      name: "handoff: a signal death during the grace returns an error without cleanup",
+      mode: "handoff",
+      phase: "during",
+      event: "signal",
+      errorContains: "SIGKILL",
+      exits: 0,
+    },
+    {
+      name: "handoff: a signal death after the grace drops the preview",
+      mode: "handoff",
       phase: "after",
       event: "signal",
       errorContains: null,
       exits: 1,
+    },
+    // The built-in default: a row with no launch_mode is foreground.
+    {
+      name: "no launch_mode declared: exit 0 during the grace fails like foreground",
+      mode: undefined,
+      phase: "during",
+      event: "exit0",
+      errorContains: "exited with code 0",
+      exits: 0,
     },
   ];
 
@@ -1380,7 +1441,7 @@ describe("awaitNativeLaunch state machine (#0943)", () => {
       () => {
         exits += 1;
       },
-      { waits: row.waits },
+      row.mode === undefined ? {} : { mode: row.mode },
     );
     if (row.phase === "after") await sleep(200); // let the 150ms grace expire
     switch (row.event) {

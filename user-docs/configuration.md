@@ -1099,7 +1099,7 @@ when a task is in `active` or `review`.
 | `preview.targets[].platform` | `macos`, `ios` or `android` | required for native | yes | Platform label shown in the task drawer. |
 | `preview.targets[].build_command` | string | required for native | yes | Build command run in the task worktree before launch. |
 | `preview.targets[].launch_command` | string | required for native | yes | Launch command run after a successful build. |
-| `preview.targets[].launch_waits` | boolean | `false` | yes | `false` (default): the launch command is a one-shot handoff — it exits 0 once the app has launched and the preview stays running. `true`: a waiting launcher (e.g. `open -W`) that stays alive while the app runs, whose later exit ends the preview. |
+| `preview.targets[].launch_mode` | `foreground` or `handoff` | `foreground` | yes | Declares what the launch command's exit means. `foreground` (default): the launcher's lifetime is the app's — any exit during startup is a failed launch, and any later exit (even a clean one, e.g. the user quitting a macOS `open -W` app) ends the preview. `handoff`: a one-shot launcher that exits 0 once the app has launched (e.g. a `simctl boot && install && launch` shell) — the preview stays running until Stop. An unknown value drops the row and `repoos doctor` names it. |
 | `preview.targets[].stop` | string | unset | yes | Optional platform command run when stopping the target. |
 | `preview.targets[].device` | string | unset | yes | Simulator or emulator label displayed in the drawer. |
 | `preview.targets[].requires` | string | unset | yes | Required tool name for install guidance. |
@@ -1132,11 +1132,13 @@ drawer) until the app is launched, then `running`; Stop during the build kills
 the build. For
 example, set `kind = "native"`, `platform = "ios"`, `build_command` to an
 `xcodebuild` simulator build, `launch_command` to `xcrun simctl install` plus
-`launch`, and `stop` to `xcrun simctl terminate`. Use corresponding
-`xcodebuild`/`open -W` commands for macOS or Gradle/`adb` commands for Android;
-a waiting launcher such as `open -W` or `adb logcat` declares
-`launch_waits = true` so its exit ends the preview (see the
-`preview.targets[].launch_waits` row above).
+`launch`, `launch_mode = "handoff"` (that one-shot shell exits 0 when the app
+is up while the simulator keeps running it) and `stop` to `xcrun simctl
+terminate`. Use corresponding `xcodebuild`/`open -W` commands for macOS or
+Gradle/`adb` commands for Android with the default `launch_mode = "foreground"`
+— a launcher that stays alive while the app runs (`open -W`, an `adb` shell
+ending in `adb logcat`), whose exit ends the preview (see the
+`preview.targets[].launch_mode` row above).
 All tool-specific behavior belongs in these configured commands. Remote
 runners cannot display a native app on the control-plane host's screen. See
 `docs/previews.md` for full examples and placeholder details. These targets
