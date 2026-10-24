@@ -44,6 +44,90 @@ cwd       = "landing"
 readyPath = "/"
 ```
 
+## Native app targets
+
+`kind = "native"` uses the same preview slot and task lifecycle without an
+HTTP URL. The build command runs first in the task worktree; the launch command
+then starts the app, under the lifetime it declares with `launch_mode` (see
+below). Configure all device-specific work in these commands. `{worktree}`,
+`{taskId}` and `{outputDir}` plus `REPOOS_WORKTREE`, `REPOOS_TASK_ID` and
+`REPOOS_OUTPUT_DIR` identify the task and its private
+`.repoos/preview-output/<taskId>` directory.
+
+```toml
+[[preview.targets]]
+name = "macOS Hub"
+kind = "native"
+platform = "macos"
+areas = ["mac"]
+launch_mode = "foreground"
+build_command = "xcodebuild -project macos/RepoOSHub.xcodeproj -scheme RepoOSHub -derivedDataPath {outputDir}/DerivedData build"
+launch_command = "open -W {outputDir}/DerivedData/Build/Products/Debug/RepoOSHub.app"
+stop = "osascript -e 'tell application \\\"RepoOSHub\\\" to quit'"
+
+[[preview.targets]]
+name = "iOS Simulator"
+kind = "native"
+platform = "ios"
+areas = ["ios"]
+device = "iPhone 17"
+launch_mode = "handoff"
+build_command = "xcodebuild -project mobile/ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath {outputDir}/DerivedData build"
+launch_command = "xcrun simctl bootstatus 'iPhone 17' -b && xcrun simctl install booted {outputDir}/DerivedData/Build/Products/Debug-iphonesimulator/App.app && xcrun simctl launch booted com.example.app"
+stop = "xcrun simctl terminate booted com.example.app"
+
+[[preview.targets]]
+name = "Android Emulator"
+kind = "native"
+platform = "android"
+areas = ["android"]
+launch_mode = "foreground"
+build_command = "cd mobile/android && ./gradlew assembleDebug"
+launch_command = "adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk && adb shell am start -n com.example.app/.MainActivity && adb logcat"
+stop = "adb shell am force-stop com.example.app"
+```
+
+Replace example scheme, bundle id, and activity names with the project's real
+values. Native targets are local to the control-plane host; remote runners
+cannot display an app on the human's screen. They run in the same one-at-a-time
+FIFO slot as web previews and are stopped with the task.
+
+`launch_mode` declares what the launcher's exit means — the one thing an exit
+code cannot say, because "the launcher exited 0 after startup" legitimately
+means two different things and no code can tell them apart (#0943). Every
+recipe above declares its mode:
+
+- **`launch_mode = "foreground"` (the default)** — the launcher's lifetime IS
+  the app's lifetime: `open -W`, or an Android shell ending in `adb logcat`.
+  Any exit during the startup grace is a failed launch (even exit 0: a
+  launcher that returns immediately never proved the app is up), and any later
+  exit — code 0, non-zero or signal, such as the user quitting the macOS app —
+  removes the preview from the board and emits the same SSE update as a web
+  preview that exited, rather than staying stale until a manual Stop.
+- **`launch_mode = "handoff"`** — the launcher is a one-shot that starts the
+  app and exits: the iOS `bootstatus && install && launch` shell, or any bare
+  `simctl`/`adb` install-and-launch pair. Exit 0 at any time — during or after
+  the grace, however slowly — means "launched": the preview stays `running`
+  until the user presses Stop or the task leaves active/review. A non-zero
+  exit or spawn error is a failed launch and cleans up either way.
+
+An unrecognized `launch_mode` value drops the row and `repoos doctor` names the
+row, the value and both allowed values instead of running it under a mode you
+did not choose.
+
+Native previews report **`building` → `running` (or `failed` with the log
+tail)**. The building state is recorded before the build starts, so a long
+`xcodebuild`/Gradle build shows a visible `building …` in the drawer (which
+survives a page reload) instead of nothing; Stop — or the task leaving
+`active`/`review` — during the build kills the build process and cancels the
+start, and a malformed native row (bad platform, missing build/launch command,
+bad `launch_mode`, typo'd `kind`) is reported by `repoos doctor` under *Invalid
+repoos.toml value(s)* instead of being silently dropped.
+
+Unlike `[[dev.targets]] kind = "process"`, they run from the task worktree;
+unlike `[[shot.targets]]`, they launch a live app rather than capture still
+images.
+
 - `{port}` / `{host}` are replaced with the OS-assigned values, and `PORT` /
   `HOST` are exported into the child's environment.
 - **Companion services (#0681)** for full-stack previews: repeatable
@@ -85,11 +169,11 @@ this scale `area` already covers the common case, and #0582 later added them
 only for `repoos shot`'s screenshot-target choice (see below), where the
 area-first guess has no human to correct it before capture.
 
-**v1 is scoped to browser-previewable things.** A target is a command that
-boots something serving HTTP. Non-web areas (a backend with no UI, a CLI) get a
-preview only if a target's `areas` claims them — and if a repo declares targets
-without a default command, any unmatched area gets the clean "no preview
-configured" result above. Mobile is not a separate target: per
+Web targets boot something serving HTTP; native targets use the `kind =
+"native"` lifecycle described above. Non-web areas (a backend with no UI, a
+CLI) get a preview only if a target's `areas` claims them — and if a repo
+declares targets without a default command, any unmatched area gets the clean "no preview
+configured" result above. Mobile web UI is not a separate target: per
 `docs/mobile-architecture.md` (#0297) the shipped mobile app is a Capacitor
 shell that opens the same web UI, so a `mobile` area simply points at whatever
 web target exists (`areas = ["mobile", "web"]`).

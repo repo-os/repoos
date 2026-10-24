@@ -1,15 +1,11 @@
 ---
-last_close_out_gate_ms: 284561
-last_close_out_gate_at: "2026-10-24T15:51:14.975Z"
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
-status: review
-needs_input: true
-needs_input_reason: evidence-gap-exhausted
-needs_input_detail: "Missing: `drawer:nativePreviewFailed` (light and dark). Missing: `drawer:nativePreviewRunning` with dark theme. Present on `259f1ffd5`: iOS running card (platform, device, Stop, control-plane hint, no URL); macOS building card with Stop; routes matched; zero console errors."
+status: done
 priority: p2
 area: [core, server, web]
+merged_commit: 259f1ffd5ecec3af42d6f8e126103ccfd0e82b5a
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/native-app-preview-targets-run-a-task-s-
@@ -17,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
 updated_at: "2026-10-24T15:51:14Z"
+last_close_out_gate_ms: 284561
+last_close_out_gate_at: "2026-10-24T15:51:14.975Z"
 review_passes: 7
 last_check_failure: "repoos check at 2026-10-24T14:42:46.885Z: repoos check failed: ◆ Check plan"
 review_rounds: 2

@@ -2382,6 +2382,10 @@ const effectivePreviewTarget = computed<string | null>(
     previewTarget.value ??
     (previewTargets.value.length === 1 ? (previewTargets.value[0]?.name ?? null) : null),
 );
+const selectedPreviewPlatform = computed(
+  () =>
+    previewTargets.value.find((target) => target.name === effectivePreviewTarget.value)?.platform,
+);
 // A target picked for one task must never carry over to another — reset the
 // choice (not the targets, which come from the task) whenever the drawer swaps.
 // When several targets are listed, the top-ranked one is already the default
@@ -4930,7 +4934,22 @@ watch(
               <!-- Previews are auto-launched when a task lands in review (#0198);
                  the live URL simply appears when ready. A manual "Start preview"
                  fallback (below) covers review tasks where that didn't happen. -->
-              <div class="preview-live">
+              <!-- A start in flight shows `building` (a native build can take
+                 minutes), never a false "running" and never nothing (#0943). -->
+              <div v-if="ui.active.preview.starting" class="preview-live" role="status">
+                <span class="preview-dot"></span>
+                <span v-if="ui.active.preview.native"
+                  >{{ ui.active.preview.native.platform }} app building…</span
+                >
+                <span v-else>Building preview…</span>
+                <span v-if="ui.active.preview.native?.device" class="preview-target-name">{{
+                  ui.active.preview.native.device
+                }}</span>
+                <span v-if="ui.active.preview.label" class="preview-target-name">{{
+                  ui.active.preview.label
+                }}</span>
+              </div>
+              <div class="preview-live" v-else-if="!ui.active.preview.native">
                 <span class="preview-dot"></span>
                 <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
                   <ExternalLink class="size-3.5" />
@@ -4941,6 +4960,16 @@ watch(
                 <span v-if="ui.active.preview.label" class="preview-target-name">
                   {{ ui.active.preview.label }}
                 </span>
+              </div>
+              <div v-else class="preview-live" role="status">
+                <span class="preview-dot"></span>
+                <span>{{ ui.active.preview.native.platform }} app running</span>
+                <span v-if="ui.active.preview.native.device" class="preview-target-name">{{
+                  ui.active.preview.native.device
+                }}</span>
+                <span v-if="ui.active.preview.label" class="preview-target-name">{{
+                  ui.active.preview.label
+                }}</span>
               </div>
               <span
                 v-if="isPreviewBusyForActive && previewAction === 'stop'"
@@ -5014,7 +5043,7 @@ watch(
                 <SelectContent position="popper">
                   <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
                     <SelectItem v-for="t in previewTargets" :key="t.name" :value="t.name">
-                      {{ t.name }}
+                      {{ t.name }}{{ t.platform ? ` · ${t.platform}` : "" }}
                     </SelectItem>
                   </SelectViewport>
                 </SelectContent>
@@ -5025,6 +5054,9 @@ watch(
                 :title="`Preview target: ${effectivePreviewTarget}`"
               >
                 {{ effectivePreviewTarget }}
+              </span>
+              <span v-if="selectedPreviewPlatform" class="preview-hint">
+                Runs on this control-plane host. Remote runners cannot display it on your screen.
               </span>
               <span
                 v-if="isPreviewBusyForActive && previewAction === 'start'"

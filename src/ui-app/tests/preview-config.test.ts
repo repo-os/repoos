@@ -8,7 +8,8 @@
  * and group-kill.
  */
 import { afterEach, describe, expect, it } from "vitest";
-import { execFileSync } from "node:child_process";
+import { execFileSync, type ChildProcess } from "node:child_process";
+import { EventEmitter } from "node:events";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
@@ -16,7 +17,12 @@ import { fileURLToPath } from "node:url";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { loadConfig, parsePreviewConfig } from "../../core/config";
 import { ensureWorktree } from "../../core/git";
-import { PreviewManager, previewTargetOptions, resolvePreviewTarget } from "../../server/preview";
+import {
+  PreviewManager,
+  awaitNativeLaunch,
+  previewTargetOptions,
+  resolvePreviewTarget,
+} from "../../server/preview";
 
 function baseConfig(preview?: RepoOSConfig["preview"]): RepoOSConfig {
   return {
@@ -37,6 +43,38 @@ function task(area: string): Task {
 }
 
 describe("resolvePreviewTarget", () => {
+  it("prefers a target whose changed-path globs match, while preserving area fallback", () => {
+    const cfg = baseConfig({
+      targets: [
+        {
+          name: "iOS shell",
+          kind: "native",
+          platform: "ios",
+          areas: ["ios"],
+          paths: ["mobile/ios/**"],
+          command: "",
+          buildCommand: "build",
+          launchCommand: "launch",
+        },
+        {
+          name: "macOS shell",
+          kind: "native",
+          platform: "macos",
+          areas: ["mac"],
+          paths: ["macos/**"],
+          command: "",
+          buildCommand: "build",
+          launchCommand: "launch",
+        },
+        { name: "Web", areas: ["web"], command: "bun run dev" },
+      ],
+    });
+    const resolved = resolvePreviewTarget(cfg, task("mac"), undefined, ["mobile/ios/App.swift"]);
+    expect(resolved.kind === "command" && resolved.label).toBe("iOS shell");
+    const web = resolvePreviewTarget(cfg, task("web"));
+    expect(web.kind === "command" && web.label).toBe("Web");
+  });
+
   it("returns an actionable 'no preview configured' result when no [preview] section exists (#0370)", () => {
     const result = resolvePreviewTarget(baseConfig(), task("web"));
     expect(result.kind).toBe("none");
@@ -405,6 +443,98 @@ describe("parsePreviewConfig", () => {
     expect(parsed?.targets?.[0]).toMatchObject({ areas: ["web"], name: "web" });
   });
 
+  it("parses native targets only when platform, build and launch are valid", () => {
+    const parsed = parsePreviewConfig({
+      "preview.targets": [
+        {
+          kind: "native",
+          platform: "ios",
+          areas: ["ios"],
+          build_command: "build",
+          launch_command: "launch",
+          launch_mode: "handoff",
+          stop: "stop",
+          device: "iPhone",
+          timeout_ms: 5000,
+          requires: "xcrun",
+        },
+        {
+          kind: "native",
+          platform: "watchos",
+          areas: ["ios"],
+          build_command: "build",
+          launch_command: "launch",
+        },
+        { kind: "native", platform: "macos", areas: ["mac"], build_command: "build" },
+      ],
+    });
+    expect(parsed?.targets).toEqual([
+      {
+        name: "ios",
+        areas: ["ios"],
+        command: "build && launch",
+        kind: "native",
+        platform: "ios",
+        buildCommand: "build",
+        launchCommand: "launch",
+        launchMode: "handoff",
+        stop: "stop",
+        device: "iPhone",
+        timeoutMs: 5000,
+        requires: "xcrun",
+      },
+    ]);
+  });
+
+  it("accepts launch_mode in snake_case and camelCase, and defaults to nothing (#0943)", () => {
+    const base = {
+      kind: "native",
+      platform: "macos",
+      areas: ["mac"],
+      build_command: "build",
+      launch_command: "open -W App.app",
+    };
+    const snake = parsePreviewConfig({
+      "preview.targets": [{ ...base, launch_mode: "handoff" }],
+    });
+    expect(snake?.targets?.[0]?.launchMode).toBe("handoff");
+    const camel = parsePreviewConfig({
+      "preview.targets": [{ ...base, launchMode: "foreground" }],
+    });
+    expect(camel?.targets?.[0]?.launchMode).toBe("foreground");
+    // Absent means the default `launch_mode = "foreground"` — the launcher's
+    // lifetime is the app's lifetime.
+    const absent = parsePreviewConfig({ "preview.targets": [base] });
+    expect(absent?.targets?.[0]?.launchMode).toBeUndefined();
+  });
+
+  it.each([
+    { bad: "Foreground", why: "wrong case" },
+    { bad: "wait", why: "renamed value" },
+    { bad: "", why: "empty" },
+    { bad: true, why: "non-string" },
+  ])(
+    "drops a native row whose launch_mode is $why instead of silently ignoring it (#0943)",
+    ({ bad }: { bad: unknown; why: string }) => {
+      const parsed = parsePreviewConfig({
+        "preview.targets": [
+          {
+            kind: "native",
+            platform: "macos",
+            areas: ["mac"],
+            build_command: "build",
+            launch_command: "open -W App.app",
+            launch_mode: bad,
+          },
+        ],
+      });
+      // The row is dropped (never run under a mode the user did not choose);
+      // `repoos doctor` names the row, the value and both allowed values —
+      // see the doctor table in doctor.test.ts.
+      expect(parsed?.targets).toBeUndefined();
+    },
+  );
+
   it("disambiguates duplicate target names so the picker and label match stay unambiguous (#0379)", () => {
     const parsed = parsePreviewConfig({
       "preview.targets": [
@@ -556,6 +686,400 @@ describe("PreviewManager ambiguous-target enforcement (#0379)", () => {
 });
 
 describe("PreviewManager with a project-declared command (#0362)", () => {
+  it("builds and launches a native target in the task worktree and runs its stop command", async () => {
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-native";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      [
+        "[[preview.targets]]",
+        'name = "Fake macOS app"',
+        'kind = "native"',
+        'platform = "macos"',
+        'areas = ["mac"]',
+        'build_command = "touch {outputDir}/built"',
+        'launch_command = "sleep 30"',
+        'stop = "touch {outputDir}/stopped"',
+      ].join("\n") + "\n",
+    );
+    const config = loadConfig(fx.root);
+    const manager = new PreviewManager(config, () => {});
+    const t = { id: "0943", area: "mac", branch, status: "active" } as unknown as Task;
+    try {
+      const result = await manager.start(t);
+      expect(result.ok).toBe(true);
+      expect(result.url).toBe("");
+      expect(manager.get("0943")?.native?.platform).toBe("macos");
+      const output = join(wt.path, ".repoos", "preview-output", "0943");
+      expect(readFileSync(join(output, "built"), "utf8")).toBe("");
+      await manager.stop("0943");
+      expect(readFileSync(join(output, "stopped"), "utf8")).toBe("");
+      expect(manager.get("0943")).toBeNull();
+    } finally {
+      await manager.stopAll();
+    }
+  }, 30_000);
+
+  it("reports a failed native launch without registering it as running", async () => {
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-native-launch-fails";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      [
+        "[[preview.targets]]",
+        'name = "Failing native app"',
+        'kind = "native"',
+        'platform = "macos"',
+        'areas = ["mac"]',
+        'build_command = "true"',
+        'launch_command = "echo launch-broke >&2; false"',
+      ].join("\n") + "\n",
+    );
+    const manager = new PreviewManager(loadConfig(fx.root), () => {});
+    try {
+      const result = await manager.start({
+        id: "0943-fail",
+        area: "mac",
+        branch,
+        status: "active",
+      } as unknown as Task);
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("native macos launch failed");
+      expect(result.error).toContain("launch-broke");
+      expect(manager.get("0943-fail")).toBeNull();
+    } finally {
+      await manager.stopAll();
+    }
+  }, 30_000);
+
+  it("accepts a successful one-shot native launcher and preserves its stop command", async () => {
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-native-launch-handoff";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      [
+        "[[preview.targets]]",
+        'name = "One-shot native app"',
+        'kind = "native"',
+        'platform = "ios"',
+        'areas = ["ios"]',
+        'launch_mode = "handoff"',
+        'build_command = "true"',
+        'launch_command = "true"',
+        'stop = "touch {outputDir}/stopped"',
+      ].join("\n") + "\n",
+    );
+    const manager = new PreviewManager(loadConfig(fx.root), () => {});
+    const t = { id: "0943-one-shot", area: "ios", branch, status: "active" } as unknown as Task;
+    try {
+      const result = await manager.start(t);
+      expect(result.ok).toBe(true);
+      expect(manager.get(t.id)?.native?.platform).toBe("ios");
+      await manager.stop(t.id);
+      expect(
+        readFileSync(join(wt.path, ".repoos", "preview-output", t.id, "stopped"), "utf8"),
+      ).toBe("");
+    } finally {
+      await manager.stopAll();
+    }
+  }, 30_000);
+
+  it.each([
+    { ending: "exits cleanly", launch: "sleep 1" },
+    { ending: "exits non-zero", launch: "sleep 1 && exit 3" },
+    { ending: "is killed by a signal", launch: "sleep 1 && kill -9 $$" },
+  ])(
+    "drops a native preview whose foreground launcher $ending after the startup grace (#0943)",
+    async ({ ending, launch }: { ending: string; launch: string }) => {
+      const fx = makeFixture();
+      fixtures.push(fx);
+      const branch = "feat/preview-native-selfexit";
+      const wt = ensureWorktree(fx.root, branch);
+      if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+      writeFileSync(
+        join(fx.root, "repoos.toml"),
+        [
+          "[[preview.targets]]",
+          'name = "Self-exiting native app"',
+          'kind = "native"',
+          'platform = "macos"',
+          'areas = ["mac"]',
+          'build_command = "true"',
+          `launch_command = ${JSON.stringify(launch)}`,
+        ].join("\n") + "\n",
+      );
+      const events: Array<{ type: string; id?: string; preview?: unknown }> = [];
+      const manager = new PreviewManager(loadConfig(fx.root), (e) => events.push(e));
+      const t = { id: "0943-selfexit", area: "mac", branch, status: "active" } as unknown as Task;
+      try {
+        const result = await manager.start(t);
+        expect(result.ok, result.error).toBe(true);
+        // No launch_mode is declared, so the row runs as the DEFAULT
+        // foreground launcher: alive past the 150ms startup grace it owns the
+        // running preview, and when it then ends on its own — even cleanly —
+        // the registry entry and the SSE stream must drop, exactly as a web
+        // preview whose server process exits does.
+        expect(manager.get(t.id)).not.toBeNull();
+        expect(await waitFor(() => manager.get(t.id) === null)).toBe(true);
+        expect(
+          events.some((e) => e.type === "preview" && e.id === t.id && e.preview === null),
+        ).toBe(true);
+      } finally {
+        await manager.stopAll();
+      }
+    },
+    30_000,
+  );
+
+  it("keeps a slow handoff launcher's preview running after it exits 0 (#0943)", async () => {
+    // The iOS recipe shape: a `launch_mode = "handoff"` shell (boot + install
+    // + launch) that takes longer than the 150ms startup grace and then exits
+    // cleanly while the app keeps running. The SAME command under the default
+    // `foreground` mode drops the preview (the it.each above) — only the
+    // declared mode decides, never a guess from the exit code.
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-native-slow-oneshot";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      [
+        "[[preview.targets]]",
+        'name = "Slow one-shot native app"',
+        'kind = "native"',
+        'platform = "ios"',
+        'areas = ["ios"]',
+        'launch_mode = "handoff"',
+        'build_command = "true"',
+        'launch_command = "sleep 1"',
+        'stop = "touch {outputDir}/stopped"',
+      ].join("\n") + "\n",
+    );
+    const events: Array<{ type: string; id?: string; preview?: unknown }> = [];
+    const manager = new PreviewManager(loadConfig(fx.root), (e) => events.push(e));
+    const t = {
+      id: "0943-slow-one-shot",
+      area: "ios",
+      branch,
+      status: "active",
+    } as unknown as Task;
+    try {
+      const result = await manager.start(t);
+      expect(result.ok, result.error).toBe(true);
+      // Wait until the launcher shell itself has exited (pid gone), then the
+      // preview must STILL be registered — the handoff completed, the app
+      // "keeps running" — with no SSE drop event.
+      const pid = manager.get(t.id)?.pid ?? 0;
+      const pidGone = (p: number): boolean => {
+        try {
+          process.kill(p, 0);
+          return false;
+        } catch {
+          return true;
+        }
+      };
+      expect(pid).toBeGreaterThan(0);
+      expect(await waitFor(() => pidGone(pid))).toBe(true);
+      await sleep(300); // give a (buggy) drop handler time to fire
+      expect(manager.get(t.id)).not.toBeNull();
+      expect(events.some((e) => e.type === "preview" && e.id === t.id && e.preview === null)).toBe(
+        false,
+      );
+      // Stop still tears it down through the declared stop command.
+      await manager.stop(t.id);
+      expect(
+        readFileSync(join(wt.path, ".repoos", "preview-output", t.id, "stopped"), "utf8"),
+      ).toBe("");
+      expect(manager.get(t.id)).toBeNull();
+    } finally {
+      await manager.stopAll();
+    }
+  }, 30_000);
+
+  it("reports a launch that cannot spawn without registering the preview (#0943 case 1)", async () => {
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-native-spawn-fails";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+    // 3MB exceeds ARG_MAX on macOS (1MB) and Linux (2MB), so the launch spawn
+    // fails — synchronously under Bun, as an async error event under Node —
+    // and BOTH paths must return the error with nothing left registered.
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      [
+        "[[preview.targets]]",
+        'name = "Unspawnable native app"',
+        'kind = "native"',
+        'platform = "macos"',
+        'areas = ["mac"]',
+        'build_command = "true"',
+        `launch_command = "${"x".repeat(3_000_000)}"`,
+      ].join("\n") + "\n",
+    );
+    const events: Array<{ type: string; id?: string; preview?: { starting?: boolean } | null }> =
+      [];
+    const manager = new PreviewManager(loadConfig(fx.root), (e) => events.push(e));
+    const t = { id: "0943-spawn", area: "mac", branch, status: "active" } as unknown as Task;
+    try {
+      const result = await manager.start(t);
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("native macos launch");
+      expect(result.error).toContain("E2BIG");
+      expect(manager.get(t.id)).toBeNull();
+      expect(manager.startingInfo(t.id)).toBeNull();
+      // The building state was visible, then cleared — never left stale.
+      expect(
+        events.some((e) => e.type === "preview" && e.id === t.id && e.preview?.starting === true),
+      ).toBe(true);
+      expect(events.some((e) => e.type === "preview" && e.id === t.id && e.preview === null)).toBe(
+        true,
+      );
+    } finally {
+      await manager.stopAll();
+    }
+  }, 30_000);
+
+  it("reports a failed native build with its log tail and never registers it (#0943 case 7)", async () => {
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-native-build-fails";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      [
+        "[[preview.targets]]",
+        'name = "Failing native build"',
+        'kind = "native"',
+        'platform = "macos"',
+        'areas = ["mac"]',
+        'build_command = "echo build-broke >&2; false"',
+        'launch_command = "true"',
+      ].join("\n") + "\n",
+    );
+    const events: Array<{ type: string; id?: string; preview?: { starting?: boolean } | null }> =
+      [];
+    const manager = new PreviewManager(loadConfig(fx.root), (e) => events.push(e));
+    const t = { id: "0943-buildfail", area: "mac", branch, status: "active" } as unknown as Task;
+    try {
+      const result = await manager.start(t);
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("native macos build failed");
+      expect(result.error).toContain("build-broke");
+      expect(manager.get(t.id)).toBeNull();
+      expect(manager.startingInfo(t.id)).toBeNull();
+      expect(
+        events.some((e) => e.type === "preview" && e.id === t.id && e.preview?.starting === true),
+      ).toBe(true);
+      expect(events.some((e) => e.type === "preview" && e.id === t.id && e.preview === null)).toBe(
+        true,
+      );
+    } finally {
+      await manager.stopAll();
+    }
+  }, 30_000);
+
+  it("a stop during a native build wins: the build is killed and nothing registers (#0943)", async () => {
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-native-stop-during-build";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      [
+        "[[preview.targets]]",
+        'name = "Slow native build"',
+        'kind = "native"',
+        'platform = "macos"',
+        'areas = ["mac"]',
+        'build_command = "sleep 30"',
+        'launch_command = "true"',
+      ].join("\n") + "\n",
+    );
+    const events: Array<{ type: string; id?: string; preview?: { starting?: boolean } | null }> =
+      [];
+    const manager = new PreviewManager(loadConfig(fx.root), (e) => events.push(e));
+    const t = { id: "0943-stopbuild", area: "mac", branch, status: "active" } as unknown as Task;
+    const isPidAlive = (pid: number): boolean => {
+      try {
+        process.kill(pid, 0);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    try {
+      const startP = manager.start(t);
+      // While the build runs, the manager exposes a visible building state.
+      expect(await waitFor(() => (manager.startingInfo(t.id)?.pid ?? 0) > 0)).toBe(true);
+      const building = manager.startingInfo(t.id);
+      expect(building?.starting).toBe(true);
+      expect(building?.native?.platform).toBe("macos");
+      const buildPid = building?.pid ?? 0;
+      expect(isPidAlive(buildPid)).toBe(true);
+
+      await manager.stop(t.id);
+      const result = await startP;
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("cancelled");
+      expect(manager.get(t.id)).toBeNull();
+      expect(manager.startingInfo(t.id)).toBeNull();
+      // The recorded build process must actually be gone — not orphaned.
+      expect(isPidAlive(buildPid)).toBe(false);
+      expect(
+        events.some((e) => e.type === "preview" && e.id === t.id && e.preview?.starting === true),
+      ).toBe(true);
+      expect(events.some((e) => e.type === "preview" && e.id === t.id && e.preview === null)).toBe(
+        true,
+      );
+    } finally {
+      await manager.stopAll();
+    }
+  }, 30_000);
+
+  it("FIFO-evicts the prior native preview when the single slot is reused", async () => {
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-native-fifo";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      [
+        "[[preview.targets]]",
+        'name = "Native app"',
+        'kind = "native"',
+        'platform = "macos"',
+        'areas = ["mac"]',
+        'build_command = "true"',
+        'launch_command = "sleep 30"',
+      ].join("\n") + "\n",
+    );
+    const manager = new PreviewManager(loadConfig(fx.root), () => {});
+    const first = { id: "0943-first", area: "mac", branch, status: "active" } as unknown as Task;
+    const second = { id: "0943-second", area: "mac", branch, status: "active" } as unknown as Task;
+    try {
+      expect((await manager.start(first)).ok).toBe(true);
+      expect((await manager.start(second)).ok).toBe(true);
+      expect(manager.get("0943-first")).toBeNull();
+      expect(manager.get("0943-second")?.native?.platform).toBe("macos");
+    } finally {
+      await manager.stopAll();
+    }
+  }, 30_000);
+
   it("spawns the configured command, serves it, and group-kills it on stop", async () => {
     const fx = makeFixture();
     fixtures.push(fx);
@@ -734,4 +1258,209 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
       await manager.stopAll();
     }
   }, 60_000);
+});
+
+/**
+ * The native launch state machine (#0943) — every transition of BOTH declared
+ * launch modes, driven directly with a fake child so grace-timing cannot
+ * flake. The matrix is the whole point: the contested event (exit 0 after the
+ * grace) must clean up in `foreground` and stay running in `handoff`, and the
+ * only thing that decides it is the row's `launch_mode`, never the exit code.
+ *
+ * - during the 150ms startup grace: any exit (including 0) in `foreground` is
+ *   a failed launch; in `handoff`, exit 0 completes the start and anything
+ *   else fails it;
+ * - after the grace: `foreground` drops the preview on ANY exit (code 0,
+ *   non-zero or signal — the launcher's lifetime is the app's), while
+ *   `handoff` keeps it running on exit 0 and drops it on anything else.
+ */
+describe("awaitNativeLaunch state machine (#0943)", () => {
+  type Row = {
+    name: string;
+    /** The row's `launch_mode`; absent exercises the built-in default. */
+    mode?: "foreground" | "handoff";
+    phase: "during" | "after";
+    event: "error" | "exit0" | "exit3" | "signal";
+    errorContains: string | null;
+    /** How many times `onExit` ran — the registry/SSE cleanup hook. */
+    exits: number;
+  };
+  // The full exit matrix across both declared launch modes (plus the default).
+  // `handoff` (one-shot, e.g. the iOS `bootstatus && install && launch`
+  // shell): exit 0 any time completes the handoff and leaves the preview
+  // running. `foreground` (default; `open -W`, `adb … && adb logcat`): the
+  // launcher owns the preview, so every exit — even a clean one after a user
+  // quit — drops it, and an exit during the grace never proved the app is up.
+  const rows: Row[] = [
+    // ── foreground (the default mode) ──────────────────────────────────────
+    {
+      name: "foreground: a spawn error during the grace returns an error without cleanup",
+      mode: "foreground",
+      phase: "during",
+      event: "error",
+      errorContains: "could not spawn",
+      exits: 0,
+    },
+    {
+      name: "foreground: a spawn error after the grace drops the preview",
+      mode: "foreground",
+      phase: "after",
+      event: "error",
+      errorContains: null,
+      exits: 1,
+    },
+    {
+      name: "foreground: exit 0 during the grace is a launch failure (never proved the app is up)",
+      mode: "foreground",
+      phase: "during",
+      event: "exit0",
+      errorContains: "exited with code 0",
+      exits: 0,
+    },
+    {
+      name: "foreground: exit 0 after the grace drops the preview (the contested case)",
+      mode: "foreground",
+      phase: "after",
+      event: "exit0",
+      errorContains: null,
+      exits: 1,
+    },
+    {
+      name: "foreground: a non-zero exit during the grace returns an error without cleanup",
+      mode: "foreground",
+      phase: "during",
+      event: "exit3",
+      errorContains: "exited with code 3",
+      exits: 0,
+    },
+    {
+      name: "foreground: a non-zero exit after the grace drops the preview",
+      mode: "foreground",
+      phase: "after",
+      event: "exit3",
+      errorContains: null,
+      exits: 1,
+    },
+    {
+      name: "foreground: a signal death during the grace returns an error without cleanup",
+      mode: "foreground",
+      phase: "during",
+      event: "signal",
+      errorContains: "SIGKILL",
+      exits: 0,
+    },
+    {
+      name: "foreground: a signal death after the grace drops the preview",
+      mode: "foreground",
+      phase: "after",
+      event: "signal",
+      errorContains: null,
+      exits: 1,
+    },
+    // ── handoff (one-shot launcher) ────────────────────────────────────────
+    {
+      name: "handoff: a spawn error during the grace returns an error without cleanup",
+      mode: "handoff",
+      phase: "during",
+      event: "error",
+      errorContains: "could not spawn",
+      exits: 0,
+    },
+    {
+      name: "handoff: a spawn error after the grace drops the preview",
+      mode: "handoff",
+      phase: "after",
+      event: "error",
+      errorContains: null,
+      exits: 1,
+    },
+    {
+      name: "handoff: exit 0 during the grace completes the launch and stays running",
+      mode: "handoff",
+      phase: "during",
+      event: "exit0",
+      errorContains: null,
+      exits: 0,
+    },
+    {
+      name: "handoff: exit 0 after the grace is a slow one-shot that stays running (the contested case)",
+      mode: "handoff",
+      phase: "after",
+      event: "exit0",
+      errorContains: null,
+      exits: 0,
+    },
+    {
+      name: "handoff: a non-zero exit during the grace returns an error without cleanup",
+      mode: "handoff",
+      phase: "during",
+      event: "exit3",
+      errorContains: "exited with code 3",
+      exits: 0,
+    },
+    {
+      name: "handoff: a non-zero exit after the grace drops the preview",
+      mode: "handoff",
+      phase: "after",
+      event: "exit3",
+      errorContains: null,
+      exits: 1,
+    },
+    {
+      name: "handoff: a signal death during the grace returns an error without cleanup",
+      mode: "handoff",
+      phase: "during",
+      event: "signal",
+      errorContains: "SIGKILL",
+      exits: 0,
+    },
+    {
+      name: "handoff: a signal death after the grace drops the preview",
+      mode: "handoff",
+      phase: "after",
+      event: "signal",
+      errorContains: null,
+      exits: 1,
+    },
+    // The built-in default: a row with no launch_mode is foreground.
+    {
+      name: "no launch_mode declared: exit 0 during the grace fails like foreground",
+      mode: undefined,
+      phase: "during",
+      event: "exit0",
+      errorContains: "exited with code 0",
+      exits: 0,
+    },
+  ];
+
+  it.each(rows)("$name", async (row: Row) => {
+    const child = new EventEmitter() as unknown as ChildProcess;
+    let exits = 0;
+    const pending = awaitNativeLaunch(
+      child,
+      () => {
+        exits += 1;
+      },
+      row.mode === undefined ? {} : { mode: row.mode },
+    );
+    if (row.phase === "after") await sleep(200); // let the 150ms grace expire
+    switch (row.event) {
+      case "error":
+        child.emit("error", new Error("spawn blew up"));
+        break;
+      case "exit0":
+        child.emit("exit", 0, null);
+        break;
+      case "exit3":
+        child.emit("exit", 3, null);
+        break;
+      case "signal":
+        child.emit("exit", null, "SIGKILL");
+        break;
+    }
+    const result = await pending;
+    if (row.errorContains) expect(result.error).toContain(row.errorContains);
+    else expect(result.error).toBeUndefined();
+    expect(exits).toBe(row.exits);
+  });
 });
