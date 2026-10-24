@@ -131,3 +131,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T11:28:19Z · note: handoff requested (cli)
 - 2026-10-24T11:29:04Z · CTO nudge: held — handoff gate is running
 - 2026-10-24T11:41:28Z · note: ui verification passed: 4 of 4 shots captured with clean console (1 shot warning)
+- 2026-10-24T11:41:28Z · engineer stopped by request
