@@ -12,7 +12,7 @@ branch: feat/repoos-init-offer-to-install-missing-cod
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T02:32:41Z"
-updated_at: "2026-10-24T07:33:31Z"
+updated_at: "2026-10-24T07:34:01Z"
 last_close_out_gate_ms: 595872
 last_close_out_gate_at: "2026-10-24T07:33:31.802Z"
 review_passes: 1
@@ -72,4 +72,4 @@ During interactive `repoos init` (TTY only; non-interactive init stays fully non
 - 2026-10-24T06:12:20Z · note: review pass 1: good to go
 - 2026-10-24T07:13:14Z · close-out gate completed in 613s
 - 2026-10-24T07:33:31Z · close-out gate completed in 596s
-
+- 2026-10-24T07:34:01Z · status done→done, release:success
