@@ -2,14 +2,14 @@
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-24T23:17:33Z"
+updated_at: "2026-10-24T23:17:55Z"
 ---
 ## Problem
 
@@ -65,3 +65,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-24T23:16:59Z · created · njachowski@gmail.com
 - 2026-10-24T23:17:06Z · screenshots
 - 2026-10-24T23:17:33Z · body: Where the removed detail goes (added)
+- 2026-10-24T23:17:55Z · status inbox→ready
