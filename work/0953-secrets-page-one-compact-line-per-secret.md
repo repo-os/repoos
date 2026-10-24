@@ -2,7 +2,7 @@
 id: "0953"
 title: "Secrets page: one compact line per secret with actions behind an options menu (Railway-style)"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 depends_on: ["0950"]
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-24T23:29:19Z"
+updated_at: "2026-10-24T23:39:46Z"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ Values are plaintext dotenv text in gitignored local files (user-docs/environmen
 - 2026-10-24T23:23:08Z · created · njachowski@gmail.com
 - 2026-10-24T23:23:18Z · screenshots
 - 2026-10-24T23:29:19Z · body: Open the env file in the editor (added)
+- 2026-10-24T23:39:46Z · status inbox→ready
