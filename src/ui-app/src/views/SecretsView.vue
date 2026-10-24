@@ -18,7 +18,7 @@ import { ApiError, api, JSON_OPTS } from "../api";
 import { useAuthStore } from "../stores/auth";
 import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
 import PageSkeleton from "../components/PageSkeleton.vue";
-import { refreshPageData } from "../composables/page-data-cache";
+import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
 
 type Environment = { id: string; sources: { id: string; path: string; examplePath?: string }[] };
 type KeyRow = {
@@ -165,6 +165,7 @@ async function createEnvironment(): Promise<void> {
       "/api/project-environments",
       JSON_OPTS("POST", { name }),
     );
+    invalidatePageData("project-environments");
     environments.value.push(result.environment);
     selected.value = result.environment.id;
     newName.value = "";
@@ -199,6 +200,7 @@ async function saveKey(row?: KeyRow): Promise<void> {
         version: snapshot.value.version,
       }),
     );
+    invalidatePageData(`secrets:${selected.value}`);
     valueDraft.value = "";
     keyDraft.value = "";
     addOpen.value = false;
@@ -221,6 +223,7 @@ async function removeKey(): Promise<void> {
       `/api/project-environments/${encodeURIComponent(selected.value)}/secrets`,
       JSON_OPTS("PUT", { action: "delete", key: row.name, version: snapshot.value.version }),
     );
+    invalidatePageData(`secrets:${selected.value}`);
     confirmKey.value = null;
     restartKeys.value = new Set(restartKeys.value).add(row.name);
     message.value = `${row.name} removed.`;
@@ -307,7 +310,7 @@ onMounted(() => {
       </p>
       <Button variant="accent" @click="createOpen = true">Create environment</Button>
     </section>
-    <PageSkeleton v-else-if="loading" kind="table" />
+    <PageSkeleton v-else-if="loading && !snapshot" kind="table" />
     <section v-else-if="snapshot" class="secrets-ledger" aria-label="Environment keys">
       <div class="secrets-ledger-top">
         <div>

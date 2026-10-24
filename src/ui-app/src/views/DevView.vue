@@ -261,6 +261,7 @@ async function act(name: string, action: "start" | "stop" | "restart"): Promise<
     message.value = err instanceof Error ? err.message : String(err);
   } finally {
     busy.value = null;
+    invalidatePageData("dev-targets");
     await load(true);
   }
 }
@@ -319,6 +320,7 @@ async function stopHolder(t: DevTargetView): Promise<void> {
     message.value = err instanceof Error ? err.message : String(err);
   } finally {
     busy.value = null;
+    invalidatePageData("dev-targets");
     await load(true);
   }
 }
@@ -377,14 +379,14 @@ watch(
     </header>
 
     <PageSkeleton v-if="loading && !targets.length" kind="cards" />
-    <p v-if="loadError && targets.length" class="dev-state dev-state--error" role="status">
-      Refresh failed: {{ loadError }}
-    </p>
     <p v-else-if="loadError && !targets.length" class="dev-state dev-state--error" role="alert">
       {{ loadError }}
     </p>
 
     <template v-else>
+      <p v-if="loadError && targets.length" class="dev-state dev-state--error" role="status">
+        Refresh failed: {{ loadError }}
+      </p>
       <section v-if="configErrors.length" class="dev-config-errors" role="alert">
         <strong>Some <code>[[dev.targets]]</code> entries were ignored:</strong>
         <ul>

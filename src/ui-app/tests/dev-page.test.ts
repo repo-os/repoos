@@ -19,6 +19,7 @@ import { useRepoStore } from "../src/stores/repo";
 import { useConfigStore } from "../src/stores/config";
 import { fmtDate, fmtTime } from "../src/lib/time";
 import { DEV_NAV, NAV, navFor, navFromConfig } from "../src/nav";
+import { invalidatePageData } from "../src/composables/page-data-cache";
 import { flush, json } from "./component-test-helpers";
 import type { DevFailureView, DevTargetView, Health } from "../src/types";
 
@@ -112,6 +113,7 @@ function actionButton(wrapper: ReturnType<typeof mount>, label: string, index = 
 }
 
 beforeEach(() => {
+  invalidatePageData("dev-targets");
   localStorage.clear();
   setActivePinia(createPinia());
   useRepoStore().health = makeHealth();
