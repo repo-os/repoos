@@ -2,16 +2,22 @@
 id: "0946"
 title: "repoos init: offer to install missing coding agents (checkbox list)"
 type: feature
-status: ready
+status: done
 priority: p2
 area: [core, docs]
+merged_commit: d7c2910edf29f4e60ef82e15ee7eba5b0efc0ba0
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-init-offer-to-install-missing-cod
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T02:32:41Z"
-updated_at: "2026-10-24T08:21:50Z"
+updated_at: "2026-10-24T07:34:01Z"
+last_close_out_gate_ms: 595872
+last_close_out_gate_at: "2026-10-24T07:33:31.802Z"
+review_passes: 1
+last_check_failure: "repoos check at 2026-10-24T06:05:06.867Z: repoos check failed: remote validation unavailable: host bee skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
+dev_error_count: 3
 ---
 ## Problem
 
@@ -52,4 +58,18 @@ During interactive `repoos init` (TTY only; non-interactive init stays fully non
 - 2026-10-24T04:02:06Z · message_queued at 2026-10-24T04:02:06.604Z
 - 2026-10-24T04:02:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-24T04:07:06Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-24T08:21:50Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-24T04:12:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T04:12:57Z · message_delivered: 1 message(s)
+- 2026-10-24T04:13:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T04:33:25Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-10-24T04:33:41Z · agent exited with an error (codex) · 2026-10-24T04:33:31.480855Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-10-24T04:33:42Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-24T04:33:31.480855Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-10-24T04:33:59Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · 2026-10-24T04:33:49.382272Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-10-24T04:34:17Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-24T06:04:39Z · needs_input
+- 2026-10-24T06:11:22Z · status active→review
+- 2026-10-24T06:11:23Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-24T06:12:20Z · note: review pass 1: good to go
+- 2026-10-24T07:13:14Z · close-out gate completed in 613s
+- 2026-10-24T07:33:31Z · close-out gate completed in 596s
+- 2026-10-24T07:34:01Z · status done→done, release:success

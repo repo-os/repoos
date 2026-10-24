@@ -1,5 +1,5 @@
 ---
-updated_at: "2026-10-24T08:22:53Z"
+updated_at: "2026-10-24T11:42:32Z"
 review_passes: 4
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
@@ -7,12 +7,14 @@ type: feature
 status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — Native launch processes never get a post-start `exit` listener, so long-lived/`open -W` launchers leave stale “running”…"
+needs_input_detail: "`needs some work` — Post-grace exit code 0 tears down native previews for documented iOS/Android one-shot launch shells, not only `open -W`."
 priority: p2
 area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/native-app-preview-targets-run-a-task-s-
+cli_override: opencode
+model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T20:05:41Z"
 review_rounds: 2
 routing_switches: 1
@@ -116,8 +118,23 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-23T22:26:33Z · status active→review
 - 2026-10-23T22:28:20Z · note: review pass 3: needs some work
 - 2026-10-23T22:28:20Z · needs_input
-- 2026-10-24T06:22:12Z · note: review pass 1: failed — no usable report
-- 2026-10-24T08:22:53Z · note: review pass 2: needs some work
-- 2026-10-24T08:22:53Z · needs_input
-- 2026-10-24T08:22:53Z · needs_input
+- 2026-10-24T08:29:08Z · cli_override, model_override
+- 2026-10-24T08:29:11Z · model_override
+- 2026-10-24T08:29:14Z · model_override
+- 2026-10-24T11:13:07Z · status review→active
+- 2026-10-24T11:13:17Z · needs_input
+- 2026-10-24T11:13:18Z · message_queued at 2026-10-24T11:13:18.241Z
+- 2026-10-24T11:13:59Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-24T11:24:14Z · body
+- 2026-10-24T11:27:14Z · body
+- 2026-10-24T11:28:18Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-24T11:28:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T11:28:19Z · status active→review
+- 2026-10-24T11:28:19Z · message_delivered: 1 message(s)
+- 2026-10-24T11:28:19Z · note: handoff requested (cli)
+- 2026-10-24T11:29:04Z · CTO nudge: held — handoff gate is running
+- 2026-10-24T11:41:28Z · note: ui verification passed: 4 of 4 shots captured with clean console (1 shot warning)
+- 2026-10-24T11:41:29Z · status active→review
+- 2026-10-24T11:42:31Z · note: review pass 4: needs some work
+- 2026-10-24T11:42:31Z · needs_input
 
