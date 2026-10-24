@@ -483,7 +483,7 @@ watch(
                   v-if="!isRunning(t)"
                   variant="accent"
                   size="sm"
-                  :disabled="busy === t.name"
+                  :disabled="busy === t.name || t.status === 'starting'"
                   @click="act(t.name, 'start')"
                 >
                   {{ busy === t.name ? "Working…" : "Start" }}
