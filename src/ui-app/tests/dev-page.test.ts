@@ -175,6 +175,7 @@ describe("DevView layout and state (#0748)", () => {
     expect(actions.exists()).toBe(true);
     expect(details.find(".dev-command").text()).toBe("bun run dev");
     expect(actions.findAll("button").map((b) => b.text().trim())).toEqual(["Start"]);
+    expect(actions.find("button").classes()).toContain("btn-accent");
     // No second action row elsewhere in the card.
     expect(card.findAll(".dev-actions")).toHaveLength(1);
 
@@ -204,6 +205,7 @@ describe("DevView layout and state (#0748)", () => {
     const startingButtons = starting!.findAll(".dev-actions button");
     expect(startingButtons.map((button) => button.text().trim())).toEqual(["Start"]);
     expect(startingButtons[0]!.attributes("disabled")).toBeDefined();
+    expect(startingButtons[0]!.classes()).toContain("btn-accent");
   });
 
   it("groups targets by project and shows name, kind, state and label", async () => {
