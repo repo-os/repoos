@@ -11,8 +11,9 @@ branch: feat/repoos-send-back-return-a-task-from-revi
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T11:14:00Z"
-updated_at: "2026-10-24T11:54:18Z"
+updated_at: "2026-10-24T12:09:06Z"
 handoff_signal_retry_count: 1
+engineer_stall_resume_log: "[{\"at\":\"2026-10-24T12:09:06.156Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -49,3 +50,4 @@ Sending a task back from review to its engineer with feedback takes three separa
 - 2026-10-24T11:44:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-24T11:51:43Z · body
 - 2026-10-24T11:54:18Z · body
+- 2026-10-24T12:09:06Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
