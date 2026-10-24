@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-24T23:19:29Z"
+updated_at: "2026-10-24T23:22:27Z"
 ---
 ## Problem
 
@@ -49,6 +49,37 @@ The task side panel gets cluttered when a task reaches review or hits issues. Ex
 - #0950 and #0951 edit views and style.css; keep style.css edits small and merge main often.
 - Run every test touching the drawer in small groups, then `repoos check --changed main`.
 
+## Where the removed detail goes
+Nothing that is removed from the top line or from the cards above the tabs may become unreachable. Add a new sub-tab in the Debug tab (for example "Status details" or "Why is this task here?") that lists every status and issue card and chip that used to appear above the tabs: the review-failed / no-report detail, the not-landable checklist, handoff and remote-validation failures, checks running/progress, retries exhausted, the TL;DR what-happened text, and the full canned guidance paragraphs. The info popovers in the panel can link to it. Acceptance: that Debug sub-tab shows all of those states with their full text and actions' hints, driven by the same status data, and has a test and a shot.
+
+## Shots
+```json
+[
+{
+"label": "Task drawer with compact status and Debug details",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-chip",
+"state": "drawer:reviewWithBranch"
+},
+{
+"label": "Status details subtab",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".debug-tabs",
+"steps": [
+  {
+    "click": ".drawer-status-chip"
+  },
+  {
+    "waitMs": 200
+  }
+],
+"state": "closeOut:checkProgress"
+}
+]
+```
+
 ## Screenshots
 
 ![25](/api/tasks/0952/attachments/att_2aafd889-22f6-440a-afec-6e552e0a61e9.webp)
@@ -59,37 +90,6 @@ The task side panel gets cluttered when a task reaches review or hits issues. Ex
 ![30](/api/tasks/0952/attachments/att_01cb47fc-4b2c-4d27-930f-33a45bbb86f7.png)
 ![31](/api/tasks/0952/attachments/att_c40fe1bc-06ea-4813-86b2-73c9f40fb982.png)
 
-## Where the removed detail goes
-Nothing that is removed from the top line or from the cards above the tabs may become unreachable. Add a new sub-tab in the Debug tab (for example "Status details" or "Why is this task here?") that lists every status and issue card and chip that used to appear above the tabs: the review-failed / no-report detail, the not-landable checklist, handoff and remote-validation failures, checks running/progress, retries exhausted, the TL;DR what-happened text, and the full canned guidance paragraphs. The info popovers in the panel can link to it. Acceptance: that Debug sub-tab shows all of those states with their full text and actions' hints, driven by the same status data, and has a test and a shot.
-
-## Shots
-```json
-[
-{
-  "label": "Task drawer with compact status and Debug details",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-chip",
-  "state": "drawer:reviewWithBranch"
-},
-{
-  "label": "Status details subtab",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".debug-tabs",
-  "steps": [
-    {
-      "click": ".drawer-status-chip"
-    },
-    {
-      "waitMs": 200
-    }
-  ],
-  "state": "closeOut:checkProgress"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-24T23:16:59Z · created · njachowski@gmail.com
@@ -99,3 +99,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-24T23:18:01Z · cli_override, model_override
 - 2026-10-24T23:18:02Z · status ready→active, branch
 - 2026-10-24T23:19:29Z · body
+- 2026-10-24T23:22:27Z · body
