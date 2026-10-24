@@ -11,10 +11,10 @@ area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/native-app-preview-targets-run-a-task-s-
-cli_override: opencode
-model_override: opencode-go/mimo-v2.6-flash
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T14:30:03Z"
+updated_at: "2026-10-24T14:32:52Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -134,3 +134,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:01:24Z · message_delivered: 1 message(s)
 - 2026-10-24T14:30:03Z · message_queued at 2026-10-24T14:30:03.400Z
 - 2026-10-24T14:30:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-24T14:32:52Z · cli_override, model_override
