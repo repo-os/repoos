@@ -40,6 +40,7 @@ import DialogOverlay from "../components/ui/dialog/overlay.vue";
 import DialogTitle from "../components/ui/dialog/title.vue";
 import { useAgentFavorites } from "../composables/useAgentFavorites";
 import PageSkeleton from "../components/PageSkeleton.vue";
+import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
 
 const config = useConfigStore();
 const router = useRouter();
@@ -496,18 +497,19 @@ async function checkAgents(): Promise<void> {
   detectError.value = false;
   detectHintCopied.value = "";
 
-  // 1. Load cached results immediately so the page isn't blank.
-  try {
-    const cached = await api<{ agents: DetectedAgent[]; cachedAt: string | null }>(
-      "/api/agents/detect",
-    );
-    if (cached.agents.length) {
-      detected.value = cached.agents;
+  // The server snapshot is useful immediately on a revisit. Keep it in the
+  // shared page cache while the SSE probe refreshes the individual agents.
+  await refreshPageData(
+    "agents:detect",
+    () => api<{ agents: DetectedAgent[]; cachedAt: string | null }>("/api/agents/detect"),
+    (cached) => {
+      if (cached.agents.length) detected.value = cached.agents;
       detectCachedAt.value = cached.cachedAt;
-    }
-  } catch {
-    // Cache miss is non-fatal; the stream will populate.
-  }
+    },
+    () => {
+      // A cache miss is non-fatal; the stream will populate the page.
+    },
+  );
 
   // 2. Open SSE stream for fresh probes.
   activeStream?.close();
@@ -565,7 +567,10 @@ async function checkAgents(): Promise<void> {
  */
 async function refreshDetected(): Promise<void> {
   const refresh = Object.keys(updates.value).length > 0;
-  if (refresh) await checkAgents();
+  if (refresh) {
+    invalidatePageData("agents:detect");
+    await checkAgents();
+  }
   await checkForUpdates(refresh);
 }
 
@@ -702,27 +707,28 @@ onUnmounted(() => {
       </div>
     </header>
 
+    <div class="agent-tabs">
+      <button
+        v-for="t in AGENT_TABS"
+        :key="t"
+        type="button"
+        class="tab-btn"
+        :class="{ active: activeTab === t }"
+        @click="activeTab = t"
+      >
+        {{ AGENT_TAB_LABELS[t] }}
+        <span
+          v-if="t === 'reminders' && reminders.due.length"
+          class="chip"
+          aria-label="Due reminders"
+          >{{ reminders.due.length }}</span
+        >
+      </button>
+    </div>
+
     <PageSkeleton v-if="!config.loaded" kind="cards" />
 
     <template v-else>
-      <div class="agent-tabs">
-        <button
-          v-for="t in AGENT_TABS"
-          :key="t"
-          type="button"
-          class="tab-btn"
-          :class="{ active: activeTab === t }"
-          @click="activeTab = t"
-        >
-          {{ AGENT_TAB_LABELS[t] }}
-          <span
-            v-if="t === 'reminders' && reminders.due.length"
-            class="chip"
-            aria-label="Due reminders"
-            >{{ reminders.due.length }}</span
-          >
-        </button>
-      </div>
 
       <div class="agents-tab-content">
         <div
