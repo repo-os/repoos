@@ -14,9 +14,9 @@ branch: feat/show-dev-target-actions-based-on-running
 cli_override: github copilot
 model_override: default
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T04:54:00Z"
-dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:52:05.099Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:52:22.651Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:52:40.126Z\",\"kind\":\"dev-error\"},{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-10-24T04:54:00.314Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-10-24T04:55:18Z"
+dev_error_count: 5
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:52:05.099Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:52:22.651Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:52:40.126Z\",\"kind\":\"dev-error\"},{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-10-24T04:54:00.314Z\",\"kind\":\"dev-error\"},{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-10-24T04:55:18.858Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"github copilot\",\"model\":\"default\"}"
 ---
 ## Problem
@@ -88,3 +88,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T04:52:22Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · 2026-10-24T04:52:12.213703Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
 - 2026-10-24T04:52:40Z · engineer crash recovery: switched codex + gpt-6-luna → github copilot + default after 3/3 crashes in 30m · 2026-10-24T04:52:29.890891Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
 - 2026-10-24T04:54:00Z · engineer crash recovery: resuming github copilot + default (1/3 crashes in 30m) · • If the problem persists, retry later or contact support with the Request ID above
+- 2026-10-24T04:55:18Z · engineer crash recovery: resuming github copilot + default (2/3 crashes in 30m) · • If the problem persists, retry later or contact support with the Request ID above
