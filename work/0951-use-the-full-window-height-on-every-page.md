@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-24T22:52:20Z"
+updated_at: "2026-10-24T22:54:10Z"
 ---
 ## Problem
 
@@ -37,9 +37,52 @@ Every standard nav page uses the full window height: the scrollable content area
 - Check how this interacts with #0949 (page scrolling, which pinned headers) and with #0950 (skeleton loaders; it edits the same view files and style.css, so keep your edits small and merge main often).
 - Do not add runtime dependencies.
 
+## Shots
+```json
+[
+{
+  "label": "Work page at tall viewport",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".work-page"
+},
+{
+  "label": "Work page at short viewport",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".work-page"
+},
+{
+  "label": "Stories page at tall viewport",
+  "target": "default",
+  "route": "/stories",
+  "highlight": ".stories-page"
+},
+{
+  "label": "Stories page at short viewport",
+  "target": "default",
+  "route": "/stories",
+  "highlight": ".stories-page"
+},
+{
+  "label": "Checks page at tall viewport",
+  "target": "default",
+  "route": "/checks",
+  "highlight": ".ck-page"
+},
+{
+  "label": "Checks page at short viewport",
+  "target": "default",
+  "route": "/checks",
+  "highlight": ".ck-page"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-24T22:51:41Z · created · njachowski@gmail.com
 - 2026-10-24T22:52:12Z · status inbox→ready
 - 2026-10-24T22:52:19Z · cli_override, model_override
 - 2026-10-24T22:52:20Z · status ready→active, branch
+- 2026-10-24T22:54:10Z · body
