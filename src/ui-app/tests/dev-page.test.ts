@@ -759,21 +759,21 @@ describe("DevView actions (#0748)", () => {
   it.each([
     { status: "stopped" as const, action: "Start" },
     { status: "running" as const, action: "Stop" },
-  ])("disables the $status target's visible actions while $action is in flight", async ({
-    status,
-    action,
-  }) => {
-    installFetch({ targets: [target({ status })], deferActions: true });
-    const wrapper = mountView();
-    await flush();
+  ])(
+    "disables the $status target's visible actions while $action is in flight",
+    async ({ status, action }) => {
+      installFetch({ targets: [target({ status })], deferActions: true });
+      const wrapper = mountView();
+      await flush();
 
-    await actionButton(wrapper, action).trigger("click");
-    await flush();
+      await actionButton(wrapper, action).trigger("click");
+      await flush();
 
-    const buttons = wrapper.findAll(".dev-actions button");
-    expect(buttons.length).toBe(status === "running" ? 2 : 1);
-    expect(buttons.every((button) => button.attributes("disabled") !== undefined)).toBe(true);
-  });
+      const buttons = wrapper.findAll(".dev-actions button");
+      expect(buttons.length).toBe(status === "running" ? 2 : 1);
+      expect(buttons.every((button) => button.attributes("disabled") !== undefined)).toBe(true);
+    },
+  );
 
   it("starts a stopped target through the dev-target API and refreshes", async () => {
     const { calls } = installFetch({ targets: [target({ status: "stopped" })] });
