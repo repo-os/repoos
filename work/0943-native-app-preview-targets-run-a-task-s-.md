@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-24T15:30:19Z"
+review_passes: 7
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
@@ -14,8 +16,6 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T15:30:19Z"
-review_passes: 6
 last_check_failure: "repoos check at 2026-10-24T14:42:46.885Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 routing_switches: 1
@@ -167,3 +167,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T15:30:19Z · note: review pass 8: needs some work
 - 2026-10-24T15:30:19Z · needs_input
 - 2026-10-24T15:30:19Z · needs_input
+
