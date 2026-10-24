@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
@@ -87,3 +88,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T16:18:29Z · body
 - 2026-10-24T16:20:15Z · body
 - 2026-10-24T16:21:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
