@@ -1,6 +1,6 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-24T01:29:55.858Z: repoos check failed: remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-24T01:31:21.495Z: repoos check failed: remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 id: "0945"
 title: Show only failing checks in Landable by default
 type: feature
@@ -61,4 +61,5 @@ This Landable card should only show failing and minimise the rest -- if user cli
 - 2026-10-24T01:26:27Z · status inbox→ready
 - 2026-10-24T01:26:32Z · status ready→active, branch
 - 2026-10-24T01:27:15Z · body
+
 
