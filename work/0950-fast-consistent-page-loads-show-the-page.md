@@ -11,7 +11,7 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-24T16:16:21Z"
+updated_at: "2026-10-24T16:18:29Z"
 ---
 ## Problem
 
@@ -48,30 +48,30 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 ```json
 [
 {
-  "label": "Deployments first load skeleton",
-  "target": "default",
-  "route": "/deployments",
-  "highlight": ".page-skeleton"
+"label": "Deployments first load skeleton",
+"target": "default",
+"route": "/deployments",
+"highlight": ".page-skeleton"
 },
 {
-  "label": "Deployments loaded view",
-  "target": "default",
-  "route": "/deployments",
-  "highlight": ".dep-page",
-  "state": "deployments:environmentBinding"
+"label": "Deployments loaded view",
+"target": "default",
+"route": "/deployments",
+"highlight": ".dep-page",
+"state": "deployments:environmentBinding"
 },
 {
-  "label": "Dev first load skeleton",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".page-skeleton"
+"label": "Dev first load skeleton",
+"target": "default",
+"route": "/dev",
+"highlight": ".page-skeleton"
 },
 {
-  "label": "Dev running target",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".dev-card",
-  "state": "dev:running"
+"label": "Dev running target",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-card",
+"state": "dev:running"
 }
 ]
 ```
@@ -84,3 +84,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T16:14:27Z · status ready→active, branch
 - 2026-10-24T16:15:55Z · body
 - 2026-10-24T16:16:21Z · body
+- 2026-10-24T16:18:29Z · body
