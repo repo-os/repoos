@@ -2,7 +2,7 @@
 id: "0947"
 title: Show dev target actions based on running state
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — DevView and tests satisfy the UX criteria; landing still fails on `work/0943`/`work/0946` drift and merge conflicts (no…
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T12:02:52Z"
+updated_at: "2026-10-24T12:05:52Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -140,3 +140,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T11:47:09Z · note: review pass 4: needs some work
 - 2026-10-24T11:47:09Z · needs_input
 - 2026-10-24T12:02:52Z · status review→active
+- 2026-10-24T12:05:52Z · status active→review
