@@ -14,7 +14,7 @@ model_override: grok-4.7-low
 pm_cli_override: codex
 pm_model_override: gpt-6-luna
 created_at: "2026-10-24T16:04:07Z"
-updated_at: "2026-10-24T16:41:05Z"
+updated_at: "2026-10-24T16:41:34Z"
 last_close_out_gate_ms: 127919
 last_close_out_gate_at: "2026-10-24T16:41:05.990Z"
 review_passes: 1
@@ -98,4 +98,4 @@ And on secret entries you don't need to mention the source on each, because they
 - 2026-10-24T16:27:47Z · status active→review
 - 2026-10-24T16:28:46Z · note: review pass 1: good to go
 - 2026-10-24T16:41:05Z · close-out gate completed in 128s
-
+- 2026-10-24T16:41:34Z · status done→done, release:success
