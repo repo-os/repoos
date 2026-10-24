@@ -233,14 +233,23 @@ async function awaitNativeLaunch(
     child.once("error", (error) => fail(`could not spawn launch command: ${error.message}`));
     child.once("exit", (code, signal) => {
       // A configured launcher can be a one-shot handoff (for example,
-      // `simctl launch` or `adb shell am start`). Its successful exit means
-      // the app was launched; only a later non-zero exit indicates failure.
+      // `simctl launch` or `adb shell am start`). Its successful exit DURING
+      // the startup grace means the app was launched and the launcher was
+      // never meant to stay alive, so the preview stays running; only a
+      // non-zero exit indicates failure.
+      if (code === 0 && !settled) {
+        settled = true;
+        clearTimeout(timer);
+        resolveResult({});
+        return;
+      }
       if (code === 0) {
-        if (!settled) {
-          settled = true;
-          clearTimeout(timer);
-          resolveResult({});
-        }
+        // The grace expired with this launcher still alive, so it OWNS the
+        // running preview (for example `open -W` for the macOS Hub). When it
+        // later ends — even cleanly, such as the user quitting the app — it
+        // must drop out of the registry and SSE exactly like a web preview
+        // whose server process exits (#0943).
+        onExit();
         return;
       }
       fail(
@@ -1149,6 +1158,7 @@ export class PreviewManager {
         if (this.registry.get(task.id)?.pid === launch.pid) {
           this.registry.delete(task.id);
           this.persistOrDrop();
+          this.logLifecycle("exited", task.id, `native launcher ${launch.pid} exited on its own`);
           this.emit({ type: "preview", id: task.id, preview: null, at: now() });
         }
       };
