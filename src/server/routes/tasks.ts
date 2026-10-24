@@ -219,7 +219,8 @@ function withPreviewTargets<T extends Task>(
   task: T,
   config: RepoOSConfig,
 ): T & { previewTargets: PreviewTargetOption[] } {
-  return { ...task, previewTargets: previewTargetOptions(config, task) };
+  const changedPaths = computeTaskShotContext(config, task).changedPaths;
+  return { ...task, previewTargets: previewTargetOptions(config, task, changedPaths) };
 }
 
 function withPendingHandoff<T extends { id: string }>(
@@ -849,7 +850,10 @@ export const getTask: RouteHandler = (ctx, _req, res, params) => {
           config,
         ),
         blockedBy: taskDependencyBlockers(config.root, t, index.getTasks()),
-        preview: previews.get(t.id) ?? null,
+        // A running preview, else the building entry from a start in flight —
+        // a long native build must read as `building` in the UI, not as
+        // "no preview" (#0943).
+        preview: previews.get(t.id) ?? previews.startingInfo(t.id) ?? null,
         attachmentCloud: taskAttachmentCloudStates(config, t.id, t.body),
       })
     : json(res, 404, { error: `Task #${id} not found` });

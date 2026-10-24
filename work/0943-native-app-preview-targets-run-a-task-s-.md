@@ -3,25 +3,13 @@ id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: evidence-gap-exhausted
-needs_input_detail: "Missing: `drawer:nativePreviewFailed` (light and dark). Missing: `drawer:nativePreviewRunning` with dark theme. Present on `259f1ffd5`: iOS running card (platform, device, Stop, control-plane hint, no URL); macOS building card with Stop; routes matched; zero console errors."
 priority: p2
 area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/native-app-preview-targets-run-a-task-s-
-cli_override: codex
-model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T15:30:20Z"
-review_passes: 7
-last_check_failure: "repoos check at 2026-10-24T14:42:46.885Z: repoos check failed: ◆ Check plan"
-review_rounds: 2
-routing_switches: 1
-routing_escalations: 1
-handoff_signal_retry_count: 1
-dev_error_count: 1
+updated_at: "2026-10-23T21:50:41Z"
 ---
 ## Problem
 A task's **Preview** button only serves things that speak HTTP: a `[[preview.targets]]` row is a command that listens on `{port}` and answers a `readyPath` probe (`docs/previews.md`, "v1 is scoped to browser-previewable things"). A native app has no port, so a reviewer cannot launch a task's version of the macOS Hub (`macos/RepoOSHub.xcodeproj`, `just macos-run`), the iOS app or the Android app (`mobile/ios`, `mobile/android`, Capacitor shells) from the task's worktree. Today the options are weaker: a `[[dev.targets]]` row with `kind = "process"` (`user-docs/dev-targets.md`) always runs in the root checkout, never a task worktree, and `[[shot.targets]]` only captures still images (`docs/previews.md`, "Evidence shots for non-web targets", #0761).
@@ -49,122 +37,9 @@ Native macOS, iOS and Android all share one shape: build the worktree's code, in
 ## Notes for AI
 Start from `docs/previews.md`, the preview manager and its web target resolver, `src/core/shot-targets.ts` (changed-path resolution) and `src/core/shot-command.ts` (command targets run in the task worktree with `REPOOS_SHOT_DIR`/`REPOOS_WORKTREE`). Reuse the one-preview-at-a-time slot and reaping rather than adding a second manager. `kind = "process"` in `[[dev.targets]]` (`user-docs/dev-targets.md`) already models "alive means running" with no URL: borrow its health semantics, but scope it to a worktree. The Hub's own recipes are in the `justfile` (`macos-build`, `macos-run`, `macos-test`); the mobile shells are Capacitor projects under `mobile/` (`docs/mobile-architecture.md`). The mobile app opens the same web UI, so web-only mobile changes are already covered by the existing web preview. Tasks that only touch a native shell need this. Decide and record in the PR: whether iOS/Android reuse an already-booted device or always boot a dedicated one, and where per-worktree build output lives (it must be gitignored and removed with the worktree). Do not introduce a runtime dependency. Requested by the user on 2026-10-24.
 
-## Shots
-```json
-[
-{
-"label": "Task drawer: running native iOS preview card (platform, device, Stop)",
-"target": "default",
-"route": "/work?task=9999&tab=overview",
-"highlight": ".preview-live",
-"state": "drawer:nativePreviewRunning"
-},
-{
-"label": "Task drawer: native macOS preview shows building state during a long build",
-"target": "default",
-"route": "/work?task=9999&tab=overview",
-"highlight": ".preview-live",
-"state": "drawer:nativePreviewBuilding"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-23T20:05:41Z · created · njachowski@gmail.com
 - 2026-10-23T21:04:21Z · status inbox→ready
 - 2026-10-23T21:05:03Z · status ready→active, branch
-- 2026-10-23T21:10:58Z · body
-- 2026-10-23T21:14:29Z · body
-- 2026-10-23T21:17:47Z · body
-- 2026-10-23T21:20:45Z · body
-- 2026-10-23T21:21:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-23T21:28:29Z · message_queued at 2026-10-23T21:28:29.904Z
-- 2026-10-23T21:28:30Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-23T21:29:14Z · body
-- 2026-10-23T21:29:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-23T21:29:59Z · message_delivered: 1 message(s)
-- 2026-10-23T21:31:49Z · body
-- 2026-10-23T21:32:27Z · body
-- 2026-10-23T21:34:55Z · body
-- 2026-10-23T21:37:25Z · body
-- 2026-10-23T21:50:40Z · note: ui verification passed: 4 of 4 shots captured with clean console (1 shot warning)
 - 2026-10-23T21:50:41Z · status active→review
-- 2026-10-23T21:52:27Z · note: review pass 1: needs some work
-- 2026-10-23T21:52:28Z · status review→active
-- 2026-10-23T21:52:30Z · CTO nudge: held — remote validation is running
-- 2026-10-23T21:55:06Z · body
-- 2026-10-23T22:09:24Z · note: ui verification passed: 4 of 4 shots captured with clean console (1 shot warning)
-- 2026-10-23T22:09:25Z · status active→review
-- 2026-10-23T22:10:36Z · note: review pass 2: needs some work
-- 2026-10-23T22:10:38Z · status review→active
-- 2026-10-23T22:10:40Z · CTO nudge: held — remote validation is running
-- 2026-10-23T22:13:04Z · body
-- 2026-10-23T22:26:32Z · note: ui verification passed: 4 of 4 shots captured with clean console (1 shot warning)
-- 2026-10-23T22:26:33Z · status active→review
-- 2026-10-23T22:28:20Z · note: review pass 3: needs some work
-- 2026-10-23T22:28:20Z · needs_input
-- 2026-10-24T08:29:08Z · cli_override, model_override
-- 2026-10-24T08:29:11Z · model_override
-- 2026-10-24T08:29:14Z · model_override
-- 2026-10-24T11:13:07Z · status review→active
-- 2026-10-24T11:13:17Z · needs_input
-- 2026-10-24T11:13:18Z · message_queued at 2026-10-24T11:13:18.241Z
-- 2026-10-24T11:13:59Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-24T11:24:14Z · body
-- 2026-10-24T11:27:14Z · body
-- 2026-10-24T11:28:18Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-24T11:28:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-24T11:28:19Z · status active→review
-- 2026-10-24T11:28:19Z · message_delivered: 1 message(s)
-- 2026-10-24T11:28:19Z · note: handoff requested (cli)
-- 2026-10-24T11:29:04Z · CTO nudge: held — handoff gate is running
-- 2026-10-24T11:41:28Z · note: ui verification passed: 4 of 4 shots captured with clean console (1 shot warning)
-- 2026-10-24T11:41:29Z · status active→review
-- 2026-10-24T11:42:31Z · note: review pass 4: needs some work
-- 2026-10-24T11:42:31Z · needs_input
-- 2026-10-24T12:03:47Z · status review→active
-- 2026-10-24T12:04:01Z · needs_input
-- 2026-10-24T12:04:02Z · message_queued at 2026-10-24T12:04:02.365Z
-- 2026-10-24T12:05:56Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-24T12:14:04Z · body
-- 2026-10-24T13:02:04Z · body
-- 2026-10-24T13:11:02Z · message_overdue: still queued after 60m without being delivered
-- 2026-10-24T14:00:25Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
-- 2026-10-24T14:01:24Z · message_overdue: still queued after 60m without being delivered
-- 2026-10-24T14:01:24Z · message_delivered: 1 message(s)
-- 2026-10-24T14:30:03Z · message_queued at 2026-10-24T14:30:03.400Z
-- 2026-10-24T14:30:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-24T14:32:52Z · cli_override, model_override
-- 2026-10-24T14:33:14Z · body
-- 2026-10-24T14:34:03Z · body
-- 2026-10-24T14:35:03Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-24T14:37:32Z · body
-- 2026-10-24T14:37:45Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-24T14:37:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-24T14:37:45Z · needs_input
-- 2026-10-24T14:37:45Z · status active→review
-- 2026-10-24T14:37:45Z · message_delivered: 1 message(s)
-- 2026-10-24T14:37:46Z · note: handoff requested (cli)
-- 2026-10-24T14:38:21Z · body
-- 2026-10-24T14:38:23Z · status active→review
-- 2026-10-24T14:38:43Z · note: review pass 5: failed — no usable report
-- 2026-10-24T14:38:43Z · needs_input
-- 2026-10-24T14:39:32Z · note: declared shot Task drawer: native macOS preview shows building state during a long build on target "default" cannot render: state "drawer:nativePreviewBuilding" did not render on target "default" — /work?task=9999&tab=overview has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes)
-- 2026-10-24T14:39:32Z · note: shots: failed — declared shot Task drawer: native macOS preview shows building state during a long build on target "default" cannot render: state "drawer:nativePreviewBuilding" did not render on target "default" — /work?task=9999&tab=overview has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes)
-- 2026-10-24T14:44:53Z · body
-- 2026-10-24T14:47:36Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate
-- 2026-10-24T14:55:36Z · note: review pass 6: needs some work
-- 2026-10-24T14:55:36Z · needs_input
-- 2026-10-24T14:57:45Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
-- 2026-10-24T14:58:31Z · note: review pass 7: needs some work
-- 2026-10-24T14:58:31Z · needs_input
-- 2026-10-24T15:00:50Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
-- 2026-10-24T15:17:00Z · status review→active
-- 2026-10-24T15:17:24Z · note: handoff requested (ui-review)
-- 2026-10-24T15:29:17Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
-- 2026-10-24T15:29:17Z · status active→review
-- 2026-10-24T15:30:19Z · note: review pass 8: needs some work
-- 2026-10-24T15:30:19Z · needs_input
-- 2026-10-24T15:30:19Z · needs_input
-

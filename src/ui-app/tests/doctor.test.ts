@@ -581,6 +581,139 @@ describe("config key and value helpers", () => {
     expect(findConfigValueProblems({ defaultStatus: "inbox" })).toEqual([]);
   });
 
+  it.each([
+    {
+      name: "a valid native row passes silently",
+      row: {
+        name: "Hub",
+        kind: "native",
+        platform: "macos",
+        areas: ["mac"],
+        build_command: "xcodebuild …",
+        launch_command: "open …",
+      },
+      wants: null,
+      dropped: null,
+    },
+    {
+      name: "a valid web row passes silently",
+      row: { name: "Web", areas: ["web"], command: "bun run dev --port {port}" },
+      wants: null,
+      dropped: null,
+    },
+    {
+      name: "a bad platform names the enum",
+      row: {
+        name: "Bad platform",
+        kind: "native",
+        platform: "android2",
+        build_command: "b",
+        launch_command: "l",
+      },
+      wants: 'platform = "android2" (expected macos, ios or android)',
+      dropped: true,
+    },
+    {
+      name: "a missing platform names the key",
+      row: { name: "No platform", kind: "native", build_command: "b", launch_command: "l" },
+      wants: "platform = undefined",
+      dropped: true,
+    },
+    {
+      name: "a missing build_command is named",
+      row: { name: "No build", kind: "native", platform: "ios", launch_command: "l" },
+      wants: "missing build_command",
+      dropped: true,
+    },
+    {
+      name: "a missing launch_command is named",
+      row: { name: "No launch", kind: "native", platform: "android", build_command: "b" },
+      wants: "missing launch_command",
+      dropped: true,
+    },
+    {
+      name: "a valid launch_mode passes silently",
+      row: {
+        name: "Handoff",
+        kind: "native",
+        platform: "ios",
+        build_command: "b",
+        launch_command: "l",
+        launch_mode: "handoff",
+      },
+      wants: null,
+      dropped: null,
+    },
+    {
+      name: "an unknown launch_mode names the row, the value and both allowed values",
+      row: {
+        name: "Bad mode",
+        kind: "native",
+        platform: "ios",
+        build_command: "b",
+        launch_command: "l",
+        launch_mode: "wait",
+      },
+      wants: 'launch_mode = "wait" (expected "foreground" or "handoff")',
+      dropped: true,
+    },
+    {
+      name: "a non-string launch_mode is reported, never silently defaulted",
+      row: {
+        name: "Bool mode",
+        kind: "native",
+        platform: "ios",
+        build_command: "b",
+        launch_command: "l",
+        launch_mode: true,
+      },
+      wants: 'launch_mode = true (expected "foreground" or "handoff")',
+      dropped: true,
+    },
+    {
+      name: "a typo'd kind without a command is reported and flagged as dropped",
+      row: { name: "Typo kind", kind: "Native", platform: "macos", build_command: "b" },
+      wants: 'kind = "Native" (expected "web" or "native"; parsed as web)',
+      dropped: true,
+    },
+    {
+      name: "a typo'd kind with a command warns but does not claim the row is dropped",
+      row: { name: "Typo kind cmd", kind: "Native", command: "run.sh" },
+      wants: 'kind = "Native"',
+      dropped: false,
+    },
+    {
+      name: "a command-less row points at the native shape",
+      row: { name: "Bare", areas: ["mac"] },
+      wants: 'a native app target needs kind = "native"',
+      dropped: true,
+    },
+    {
+      name: "a non-table row is reported",
+      row: "just-a-string",
+      wants: "expected a [[preview.targets]] table",
+      dropped: null,
+    },
+  ])("$name", ({ row, wants, dropped }) => {
+    const problems = findConfigValueProblems({ "preview.targets": [row] }).filter((p) =>
+      p.includes("preview.targets"),
+    );
+    if (wants === null) {
+      expect(problems).toEqual([]);
+      return;
+    }
+    expect(problems.length).toBe(1);
+    expect(problems[0]).toContain(wants);
+    if (dropped === true) expect(problems[0]).toContain("ignores the row");
+    if (dropped === false) expect(problems[0]).not.toContain("ignores the row");
+  });
+
+  it("flags preview.targets that is not an array of tables", () => {
+    expect(findConfigValueProblems({ "preview.targets": "Hub" })[0]).toContain(
+      "expected an array of tables",
+    );
+  });
+
   it("accepts every UI theme, including gruvbox", () => {
     for (const uiTheme of UI_THEMES) {
       expect(findConfigValueProblems({ uiTheme })).toEqual([]);

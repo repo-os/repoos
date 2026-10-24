@@ -129,7 +129,20 @@ export type RepoEvent =
   | {
       type: "preview";
       id: string;
-      preview: { port: number; url: string; startedAt: string; label?: string } | null;
+      preview: {
+        port: number;
+        url: string;
+        startedAt: string;
+        label?: string;
+        native?: { platform: "macos" | "ios" | "android"; device?: string };
+        /**
+         * A start is building/starting, not running yet (#0943): a long
+         * native build emits this before the build so every viewer sees a
+         * `building` state instead of nothing. Cleared by the running event
+         * or a `preview: null` drop.
+         */
+        starting?: boolean;
+      } | null;
       at: string;
     }
   /** Lifecycle of the automatic agent review of a task in `review` (0101). */

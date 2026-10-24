@@ -57,7 +57,12 @@ import {
   DEFAULT_ACTIVITY_ANIMATION_SIZE,
   normalizeActivityAnimationSize,
 } from "./activity-animation.js";
-import { DEFAULT_MAX_AUTO_SHOTS, STATUSES } from "./types.js";
+import {
+  DEFAULT_MAX_AUTO_SHOTS,
+  NATIVE_LAUNCH_MODES,
+  STATUSES,
+  type NativeLaunchMode,
+} from "./types.js";
 import { agentModelAllowRows } from "./budget-allowlist.js";
 import {
   DEFAULT_ENGINEER_CRASH_FAILOVER_THRESHOLD,
@@ -985,8 +990,38 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
     for (const raw of parsed["preview.targets"]) {
       if (typeof raw !== "object" || raw === null) continue;
       const r = raw as Record<string, unknown>;
+      const kind = r.kind === "native" ? "native" : "web";
+      const platform =
+        r.platform === "macos" || r.platform === "ios" || r.platform === "android"
+          ? r.platform
+          : undefined;
+      const buildCommand =
+        typeof r.build_command === "string"
+          ? r.build_command.trim()
+          : typeof r.buildCommand === "string"
+            ? r.buildCommand.trim()
+            : "";
+      const launchCommand =
+        typeof r.launch_command === "string"
+          ? r.launch_command.trim()
+          : typeof r.launchCommand === "string"
+            ? r.launchCommand.trim()
+            : "";
       const targetCommand = typeof r.command === "string" ? r.command.trim() : "";
-      if (!targetCommand) continue;
+      // Launcher lifetime is an explicit per-row declaration (#0943): the exit
+      // code of a launcher cannot say whether it means "the app quit" (a
+      // foreground `open -W`) or "launched" (a one-shot `simctl` shell), so
+      // the row says which. An unrecognized value is never silently dropped:
+      // the row is dropped here and `repoos doctor` names the row, the bad
+      // value and the two allowed ones (see doctor.ts checkConfigValueProblems).
+      const launchModeRaw = r.launch_mode ?? r.launchMode;
+      const launchModeValid =
+        launchModeRaw === undefined ||
+        launchModeRaw === null ||
+        NATIVE_LAUNCH_MODES.includes(launchModeRaw as NativeLaunchMode);
+      if (kind === "native" ? !platform || !buildCommand || !launchCommand : !targetCommand)
+        continue;
+      if (kind === "native" && !launchModeValid) continue;
       const areasRaw = r.areas;
       const areas = (Array.isArray(areasRaw) ? areasRaw : [areasRaw])
         .map((a) => (typeof a === "string" ? a.trim() : ""))
@@ -997,7 +1032,35 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
       let name = base;
       for (let n = 2; usedNames.has(name); n++) name = `${base} (${n})`;
       usedNames.add(name);
-      const target: PreviewTargetConfig = { name, areas, command: targetCommand };
+      const target: PreviewTargetConfig = {
+        name,
+        areas,
+        command: kind === "native" ? `${buildCommand} && ${launchCommand}` : targetCommand,
+      };
+      if (kind === "native") {
+        target.kind = kind;
+        target.platform = platform;
+        target.buildCommand = buildCommand;
+        target.launchCommand = launchCommand;
+        const stop = typeof r.stop === "string" ? r.stop.trim() : "";
+        if (stop) target.stop = stop;
+        const requires = typeof r.requires === "string" ? r.requires.trim() : "";
+        if (requires) target.requires = requires;
+        const timeoutMs = Number(r.timeout_ms ?? r.timeoutMs);
+        if (Number.isFinite(timeoutMs) && timeoutMs > 0) target.timeoutMs = timeoutMs;
+        const device = typeof r.device === "string" ? r.device.trim() : "";
+        if (device) target.device = device;
+        // Declared launcher lifetime (#0943): absent means the default mode,
+        // `launch_mode = "foreground"` — the launcher's lifetime is the app's.
+        // `"handoff"` is the one-shot launcher that exits 0 when the app has
+        // launched. Any other value was rejected above (row dropped) and is
+        // reported by `repoos doctor`.
+        if (launchModeRaw !== undefined && launchModeRaw !== null) {
+          target.launchMode = launchModeRaw as NativeLaunchMode;
+        }
+        if (r.env && typeof r.env === "object" && !Array.isArray(r.env))
+          target.env = r.env as Record<string, string>;
+      }
       if (paths.length) target.paths = paths;
       const targetCwd = typeof r.cwd === "string" ? r.cwd.trim() : "";
       if (targetCwd) target.cwd = targetCwd;
@@ -3742,6 +3805,19 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "it without any model call). Off by default because it spends a model call.",
     },
     {
+      // Native preview rows are deliberately edited as TOML tables; Settings
+      // exposes the schema/search entry but the general form cannot represent
+      // build + launch + stop commands safely.
+      key: "preview.targets",
+      label: "Native preview targets",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        'Native app targets use [[preview.targets]] with kind = native, platform, areas, build_command and launch_command; optional stop, cwd, env, requires, timeout_ms, device and launch_mode ("foreground" or "handoff") are configured in repoos.toml.',
+    },
+    {
       // Command-based capture targets (#0761). Deliberately raw-TOML-only, like
       // `[[preview.targets]]`: a capture target is a command + globs + optional
       // binary, and a plain Settings row cannot express the table. The schema
@@ -3999,6 +4075,16 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "preview.targets.areas",
   "preview.targets.paths",
   "preview.targets.command",
+  "preview.targets.kind",
+  "preview.targets.platform",
+  "preview.targets.build_command",
+  "preview.targets.launch_command",
+  "preview.targets.launch_mode",
+  "preview.targets.stop",
+  "preview.targets.requires",
+  "preview.targets.timeout_ms",
+  "preview.targets.device",
+  "preview.targets.env",
   "preview.targets.cwd",
   "preview.targets.readyPath",
   "preview.targets.readyTimeoutMs",
