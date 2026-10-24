@@ -27,6 +27,8 @@ import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { fmtDate, fmtTime, relTime } from "../lib/time";
 import type { DevTargetStatus, DevTargetView, DevTargetsResponse } from "../types";
+import PageSkeleton from "../components/PageSkeleton.vue";
+import { refreshPageData, invalidatePageData } from "../composables/page-data-cache";
 
 const repo = useRepoStore();
 const config = useConfigStore();
@@ -213,10 +215,11 @@ async function load(silent = false): Promise<void> {
   }
   if (!silent) loading.value = true;
   try {
-    const res = await api<DevTargetsResponse>("/api/dev/targets");
-    targets.value = res.targets ?? [];
-    configErrors.value = res.errors ?? [];
-    loadError.value = "";
+    await refreshPageData("dev-targets", () => api<DevTargetsResponse>("/api/dev/targets"), (res) => {
+      targets.value = res.targets ?? [];
+      configErrors.value = res.errors ?? [];
+      loadError.value = "";
+    }, (err) => { if (targets.value.length) loadError.value = err instanceof Error ? err.message : String(err); });
   } catch (err) {
     // A failed poll must not thrash the page: keep the last good list and only
     // surface the reason on a non-silent load.
@@ -363,7 +366,8 @@ watch(
       </div>
     </header>
 
-    <p v-if="loading && !targets.length" class="dev-state dev-state--muted">Loading dev targets…</p>
+    <PageSkeleton v-if="loading && !targets.length" kind="cards" />
+    <p v-if="loadError && targets.length" class="dev-state dev-state--error" role="status">Refresh failed: {{ loadError }}</p>
     <p v-else-if="loadError && !targets.length" class="dev-state dev-state--error" role="alert">
       {{ loadError }}
     </p>

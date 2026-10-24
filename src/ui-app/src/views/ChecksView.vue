@@ -31,6 +31,8 @@ import {
 } from "../lib/checks-page";
 import { useRepoStore } from "../stores/repo";
 import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
+import PageSkeleton from "../components/PageSkeleton.vue";
+import { refreshPageData } from "../composables/page-data-cache";
 
 const route = useRoute();
 const router = useRouter();
@@ -164,11 +166,11 @@ async function load(): Promise<void> {
   if (changedRef.value) params.set("changed", changedRef.value);
   const qs = params.toString();
   try {
-    const res = await api<{ ok: boolean; checkPlan: CheckPlanView }>(
-      `/api/check-plan${qs ? `?${qs}` : ""}`,
-    );
-    plan.value = res.checkPlan;
-    if (!profile.value) profile.value = res.checkPlan.profile;
+    const key = `check-plan:${profile.value}:${changedRef.value}`;
+    await refreshPageData(key, () => api<{ ok: boolean; checkPlan: CheckPlanView }>(`/api/check-plan${qs ? `?${qs}` : ""}`), (res) => {
+      plan.value = res.checkPlan;
+      if (!profile.value) profile.value = res.checkPlan.profile;
+    }, (e) => { error.value = e instanceof Error ? e.message : "Could not load the check plan."; });
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Could not load the check plan.";
   } finally {
@@ -395,7 +397,8 @@ const RESULT_ICON: Record<string, string> = {
     </div>
 
     <template v-else-if="activeTab === 'plan'">
-      <div v-if="loading" class="ck-loading">Loading the check plan…</div>
+      <PageSkeleton v-if="loading && !plan" kind="table" />
+      <p v-if="error && plan" class="ck-err" role="status">Refresh failed: {{ error }}</p>
       <p v-else-if="error" class="ck-err">{{ error }}</p>
 
       <template v-else-if="plan">

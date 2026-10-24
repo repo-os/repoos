@@ -16,6 +16,8 @@ import { api, JSON_OPTS } from "../api";
 import { parseAnsi, stripAnsi } from "../lib/ansi";
 import FailedTestsList from "../components/FailedTestsList.vue";
 import { nextReleaseVersion } from "../releases";
+import PageSkeleton from "../components/PageSkeleton.vue";
+import { refreshPageData, invalidatePageData } from "../composables/page-data-cache";
 
 interface ReleaseStatus {
   enabled: boolean;
@@ -400,7 +402,7 @@ async function load(): Promise<void> {
   loading.value = true;
   loadError.value = "";
   try {
-    status.value = await api<ReleaseStatus>("/api/release");
+    await refreshPageData("release-status", () => api<ReleaseStatus>("/api/release"), (value) => { status.value = value; }, (err) => { loadError.value = err instanceof Error ? err.message : String(err); });
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -794,6 +796,7 @@ async function release(): Promise<void> {
       }),
     );
     releasePosting = false;
+    invalidatePageData("release-status");
     run.value = result.run;
     // Re-assert the releasing flag (kept only when the returned run is still
     // in flight) and drop polls issued while the POST was in flight — they
@@ -1005,7 +1008,8 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <div v-if="loading" class="spin"></div>
+    <PageSkeleton v-if="loading && !status" kind="cards" />
+    <p v-if="loadError && status" class="rel-error" role="status">Refresh failed: {{ loadError }}</p>
     <p v-else-if="loadError && !status" class="rel-error">{{ loadError }}</p>
 
     <template v-else-if="status">

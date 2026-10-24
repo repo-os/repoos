@@ -39,6 +39,7 @@ import DialogDescription from "../components/ui/dialog/description.vue";
 import DialogOverlay from "../components/ui/dialog/overlay.vue";
 import DialogTitle from "../components/ui/dialog/title.vue";
 import { useAgentFavorites } from "../composables/useAgentFavorites";
+import PageSkeleton from "../components/PageSkeleton.vue";
 
 const config = useConfigStore();
 const router = useRouter();
@@ -701,7 +702,7 @@ onUnmounted(() => {
       </div>
     </header>
 
-    <div v-if="!config.loaded" class="spin"></div>
+    <PageSkeleton v-if="!config.loaded" kind="cards" />
 
     <template v-else>
       <div class="agent-tabs">
