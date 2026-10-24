@@ -18,7 +18,6 @@ updated_at: "2026-10-24T15:17:24Z"
 review_passes: 6
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 57acf18ba6b00c60846dea6d6a3ee51958739219
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-24T14:42:46.885Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 routing_switches: 1
@@ -165,3 +164,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T15:00:50Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-10-24T15:17:00Z · status review→active
 - 2026-10-24T15:17:24Z · note: handoff requested (ui-review)
+
