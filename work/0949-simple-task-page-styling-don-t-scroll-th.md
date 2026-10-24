@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 127919
-last_close_out_gate_at: "2026-10-24T16:41:05.990Z"
 id: "0949"
 title: Fix page scrolling and Secrets layout
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, ui]
+merged_commit: 253394b8cbe014f028a0d3e01a4cea2db5739d84
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-page-scrolling-and-secrets-layout
@@ -16,6 +15,8 @@ pm_cli_override: codex
 pm_model_override: gpt-6-luna
 created_at: "2026-10-24T16:04:07Z"
 updated_at: "2026-10-24T16:41:05Z"
+last_close_out_gate_ms: 127919
+last_close_out_gate_at: "2026-10-24T16:41:05.990Z"
 review_passes: 1
 ---
 ## Problem

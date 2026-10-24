@@ -8982,6 +8982,40 @@
   color: var(--red);
 }
 
+/* Stationary page chrome (#0949): the header, title, and tabs stay put
+   while the content under them scrolls. Same shape as .agents-page. */
+.page-scroll {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.page-scroll > :not(.page-scroll-body) {
+  flex-shrink: 0;
+}
+.page-scroll-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 3px;
+  scrollbar-width: none;
+}
+.page-scroll-body::-webkit-scrollbar {
+  display: none;
+}
+@media (max-width: 760px) {
+  .page-scroll:not(.settings-page--fill) {
+    height: auto;
+    min-height: initial;
+    display: block;
+  }
+  .page-scroll:not(.settings-page--fill) > .page-scroll-body {
+    overflow: visible;
+    min-height: initial;
+    padding-right: 0;
+  }
+}
+
 /* raw repoos.toml editor (#0375) — its own Settings tab, filling the
    available height: .main is a stretched flex item, so height:100% resolves,
    and each level below is a flex column handing the leftover space down. */
@@ -8991,6 +9025,11 @@
   flex-direction: column;
   /* reclaim most of .main's 60px bottom padding for the editor */
   margin-bottom: -40px;
+}
+.settings-page--fill > .page-scroll-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .settings-page--fill .settings-panels,
 .settings-page--fill .toml-panel,
@@ -15106,39 +15145,14 @@
 }
 /* Secrets inventory (#0929): quiet source ledger, with values only in deliberate password fields. */
 .secrets-page {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 32px clamp(18px, 4vw, 48px) 64px;
   color: var(--txt);
-}
-.secrets-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 32px;
-  padding-bottom: 28px;
-  border-bottom: 1px solid var(--border);
-}
-.secrets-kicker {
-  margin: 0 0 8px;
-  color: var(--muted-foreground);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
-.secrets-head h1 {
-  margin: 0;
-  font-size: clamp(28px, 4vw, 38px);
-  letter-spacing: -0.035em;
-}
-.secrets-intro {
-  margin: 8px 0 0;
-  color: var(--muted-foreground);
+  min-width: 0;
 }
 .secrets-env-control {
   width: min(310px, 100%);
   display: grid;
   gap: 6px;
+  flex-shrink: 0;
 }
 .secrets-label,
 .secrets-view-note {
@@ -15212,7 +15226,16 @@
   color: var(--txt);
 }
 .secrets-ledger {
-  padding-top: 28px;
+  padding-top: 4px;
+}
+.secrets-file {
+  margin: 0 0 14px;
+  color: var(--txt-dim);
+  font-size: 12.5px;
+}
+.secrets-file code {
+  font-family: "JetBrains Mono", monospace;
+  color: var(--txt);
 }
 .secrets-ledger-top {
   display: flex;
@@ -15249,15 +15272,20 @@
   font: inherit;
 }
 .secrets-rows {
-  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 .secrets-row {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(280px, 2fr) auto;
-  align-items: center;
-  gap: 18px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  border: 1px solid var(--border);
+  background: var(--panel-gradient);
+  border-radius: 14px;
+  padding: 16px 18px;
+  min-width: 0;
 }
 .secrets-key-cell {
   display: grid;
@@ -15288,7 +15316,7 @@
 }
 .secrets-row-actions {
   display: flex;
-  justify-content: end;
+  justify-content: flex-end;
   gap: 7px;
 }
 .secrets-remove {
@@ -15309,8 +15337,11 @@
   padding: 8px 0 2px;
 }
 .secrets-add-row {
-  border-bottom: 1px solid var(--border);
-  padding: 16px 0;
+  border: 1px solid var(--border);
+  background: var(--panel-gradient);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
 }
 .secrets-inline-form input,
 .secrets-add-row input,
@@ -15383,24 +15414,11 @@
   margin-top: 28px;
 }
 @media (max-width: 760px) {
-  .secrets-head {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 20px;
-  }
   .secrets-env-control {
     width: 100%;
   }
-  .secrets-row {
-    grid-template-columns: 1fr auto;
-    gap: 12px;
-  }
-  .secrets-kv {
-    grid-column: 1 / -1;
-  }
   .secrets-row-actions {
-    grid-column: 1 / -1;
-    justify-content: start;
+    justify-content: flex-start;
   }
   .secrets-readonly {
     max-width: none;
