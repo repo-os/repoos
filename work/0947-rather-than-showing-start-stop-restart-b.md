@@ -2,7 +2,7 @@
 id: "0947"
 title: Show dev target actions based on running state
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-failed
 priority: p2
@@ -118,4 +118,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T08:23:25Z · body
 - 2026-10-24T08:25:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-24T11:13:50Z · note: handoff requested (ui-review)
-- 2026-10-24T11:13:56Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-24T11:13:56Z · status active→review
