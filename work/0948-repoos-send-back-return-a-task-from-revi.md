@@ -2,14 +2,14 @@
 id: "0948"
 title: "repoos send-back: return a task from review to the engineer with a message in one command"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-24T11:14:00Z"
-updated_at: "2026-10-24T11:14:00Z"
+updated_at: "2026-10-24T11:32:00Z"
 ---
 ## Problem
 
@@ -37,3 +37,4 @@ Sending a task back from review to its engineer with feedback takes three separa
 ## Activity
 
 - 2026-10-24T11:14:00Z · created · njachowski@gmail.com
+- 2026-10-24T11:32:00Z · status inbox→ready
