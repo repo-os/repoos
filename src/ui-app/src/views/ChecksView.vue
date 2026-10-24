@@ -247,7 +247,7 @@ const RESULT_ICON: Record<string, string> = {
 </script>
 
 <template>
-  <div class="ck-page">
+  <div class="ck-page page-scroll">
     <header class="ck-head">
       <div>
         <h1 class="ck-title">Checks</h1>
@@ -334,6 +334,7 @@ const RESULT_ICON: Record<string, string> = {
       </button>
     </nav>
 
+    <div class="page-scroll-body">
     <div v-if="activeTab === 'now'" class="ck-test-suite">
       <section v-if="activeChecks.length" class="ck-live-checks" aria-label="Running checks">
         <h2>Running checks</h2>
@@ -589,6 +590,7 @@ const RESULT_ICON: Record<string, string> = {
         </p>
       </template>
     </template>
+    </div>
   </div>
 </template>
 

@@ -222,7 +222,7 @@ function lastActivity(story: { lastActivity: string | null }): string {
 </script>
 
 <template>
-  <div class="stories-page">
+  <div class="stories-page page-scroll">
     <header class="page-header">
       <div>
         <div class="page-title">Stories</div>
@@ -256,6 +256,7 @@ function lastActivity(story: { lastActivity: string | null }): string {
       </div>
     </header>
 
+    <div class="page-scroll-body">
     <div v-if="!enabled" class="glass stories-notice">
       Stories aren't enabled for this repository. Add a <code>[stories]</code> block with
       <code>enabled = true</code> to <a href="/settings?tab=toml">repoos.toml</a> to turn this page
@@ -367,6 +368,7 @@ function lastActivity(story: { lastActivity: string | null }): string {
           </button>
         </div>
       </article>
+    </div>
     </div>
     <NewStoryPanel v-if="enabled" />
     <StoryPanel

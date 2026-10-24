@@ -347,7 +347,7 @@ watch(
 </script>
 
 <template>
-  <div class="dev-page">
+  <div class="dev-page page-scroll">
     <header class="page-header">
       <div>
         <h1 class="page-title">Dev</h1>
@@ -363,6 +363,7 @@ watch(
       </div>
     </header>
 
+    <div class="page-scroll-body">
     <p v-if="loading && !targets.length" class="dev-state dev-state--muted">Loading dev targets…</p>
     <p v-else-if="loadError && !targets.length" class="dev-state dev-state--error" role="alert">
       {{ loadError }}
@@ -675,6 +676,7 @@ watch(
         <p v-if="message" class="dev-message" role="status" aria-live="polite">{{ message }}</p>
       </template>
     </template>
+    </div>
 
     <ConfirmDialog
       :open="confirmRestart !== null"

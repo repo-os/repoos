@@ -46,8 +46,9 @@ const dashLabel = (status: string) => {
 </script>
 
 <template>
-  <div>
+  <div class="page-scroll">
     <div
+      class="page-header"
       style="
         display: flex;
         align-items: flex-end;
@@ -72,6 +73,7 @@ const dashLabel = (status: string) => {
       </Button>
     </div>
 
+    <div class="page-scroll-body">
     <div class="control-usage">
       <UsagePanel />
     </div>
@@ -191,6 +193,7 @@ const dashLabel = (status: string) => {
       <FeedPanel />
       <DecisionDigestPanel />
       <NeedsYouPanel />
+    </div>
     </div>
   </div>
 </template>
