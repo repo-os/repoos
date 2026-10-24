@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-24T23:18:02Z"
+updated_at: "2026-10-24T23:19:29Z"
 ---
 ## Problem
 
@@ -62,6 +62,34 @@ The task side panel gets cluttered when a task reaches review or hits issues. Ex
 ## Where the removed detail goes
 Nothing that is removed from the top line or from the cards above the tabs may become unreachable. Add a new sub-tab in the Debug tab (for example "Status details" or "Why is this task here?") that lists every status and issue card and chip that used to appear above the tabs: the review-failed / no-report detail, the not-landable checklist, handoff and remote-validation failures, checks running/progress, retries exhausted, the TL;DR what-happened text, and the full canned guidance paragraphs. The info popovers in the panel can link to it. Acceptance: that Debug sub-tab shows all of those states with their full text and actions' hints, driven by the same status data, and has a test and a shot.
 
+## Shots
+```json
+[
+{
+  "label": "Task drawer with compact status and Debug details",
+  "target": "default",
+  "route": "/work?task=0952&tab=debug",
+  "highlight": ".drawer-status-chip",
+  "state": "drawer:reviewWithBranch"
+},
+{
+  "label": "Status details subtab",
+  "target": "default",
+  "route": "/work?task=0952&tab=debug",
+  "highlight": ".debug-tabs",
+  "steps": [
+    {
+      "click": ".drawer-status-chip"
+    },
+    {
+      "waitMs": 200
+    }
+  ],
+  "state": "closeOut:checkProgress"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-24T23:16:59Z · created · njachowski@gmail.com
@@ -70,3 +98,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-24T23:17:55Z · status inbox→ready
 - 2026-10-24T23:18:01Z · cli_override, model_override
 - 2026-10-24T23:18:02Z · status ready→active, branch
+- 2026-10-24T23:19:29Z · body
