@@ -1,13 +1,8 @@
 ---
-updated_at: "2026-10-24T11:42:32Z"
-review_passes: 4
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — Post-grace exit code 0 tears down native previews for documented iOS/Android one-shot launch shells, not only `open -W`."
+status: active
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -16,6 +11,8 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: opencode
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T20:05:41Z"
+updated_at: "2026-10-24T13:11:02Z"
+review_passes: 4
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -51,34 +48,18 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 ```json
 [
 {
-"label": "Native iOS preview running (light)",
+"label": "Task drawer: running native iOS preview card (platform, device, Stop)",
 "target": "default",
-"route": "/work?task=0943&tab=changes",
+"route": "/work?task=9999&tab=overview",
 "highlight": ".preview-live",
-"state": "drawer:nativePreviewRunning",
-"theme": "light"
+"state": "drawer:nativePreviewRunning"
 },
 {
-"label": "Native iOS preview running (dark)",
+"label": "Task drawer: native macOS preview shows building state during a long build",
 "target": "default",
-"route": "/work?task=0943&tab=changes",
+"route": "/work?task=9999&tab=overview",
 "highlight": ".preview-live",
-"state": "drawer:nativePreviewRunning",
-"theme": "dark"
-},
-{
-"label": "Native preview failure (light)",
-"target": "default",
-"route": "/work?task=0943&tab=changes",
-"state": "drawer:nativePreviewFailed",
-"theme": "light"
-},
-{
-"label": "Native preview failure (dark)",
-"target": "default",
-"route": "/work?task=0943&tab=changes",
-"state": "drawer:nativePreviewFailed",
-"theme": "dark"
+"state": "drawer:nativePreviewBuilding"
 }
 ]
 ```
@@ -137,4 +118,10 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T11:41:29Z · status active→review
 - 2026-10-24T11:42:31Z · note: review pass 4: needs some work
 - 2026-10-24T11:42:31Z · needs_input
-
+- 2026-10-24T12:03:47Z · status review→active
+- 2026-10-24T12:04:01Z · needs_input
+- 2026-10-24T12:04:02Z · message_queued at 2026-10-24T12:04:02.365Z
+- 2026-10-24T12:05:56Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-24T12:14:04Z · body
+- 2026-10-24T13:02:04Z · body
+- 2026-10-24T13:11:02Z · message_overdue: still queued after 60m without being delivered
