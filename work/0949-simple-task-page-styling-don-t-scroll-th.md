@@ -2,7 +2,7 @@
 id: "0949"
 title: Fix page scrolling and Secrets layout
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, ui]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 pm_cli_override: codex
 pm_model_override: gpt-6-luna
 created_at: "2026-10-24T16:04:07Z"
-updated_at: "2026-10-24T16:27:46Z"
+updated_at: "2026-10-24T16:27:47Z"
 ---
 ## Problem
 
@@ -91,3 +91,4 @@ And on secret entries you don't need to mention the source on each, because they
 - 2026-10-24T16:11:59Z · body
 - 2026-10-24T16:13:43Z · body
 - 2026-10-24T16:27:46Z · note: ui verification passed: 3 of 3 shots captured with clean console
+- 2026-10-24T16:27:47Z · status active→review
