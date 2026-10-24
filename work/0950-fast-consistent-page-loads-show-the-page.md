@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -129,4 +129,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T22:19:02Z · message_delivered: 1 message(s)
 - 2026-10-24T22:19:02Z · note: handoff requested (cli)
 - 2026-10-24T22:21:20Z · note: ui verification passed: 4 of 4 shots captured with clean console
-- 2026-10-24T22:21:20Z · engineer stopped by request
+- 2026-10-24T22:21:20Z · status active→review
