@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0945"
 title: Show only failing checks in Landable by default
 type: feature
@@ -62,3 +63,4 @@ This Landable card should only show failing and minimise the rest -- if user cli
 - 2026-10-24T01:26:32Z · status ready→active, branch
 - 2026-10-24T01:27:15Z · body
 - 2026-10-24T01:32:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
