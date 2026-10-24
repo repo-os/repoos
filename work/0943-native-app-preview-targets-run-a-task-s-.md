@@ -2,7 +2,7 @@
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-human-attention
 needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
@@ -14,7 +14,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T15:00:50Z"
+updated_at: "2026-10-24T15:17:00Z"
 review_passes: 6
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 57acf18ba6b00c60846dea6d6a3ee51958739219
@@ -163,3 +163,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:58:31Z · note: review pass 7: needs some work
 - 2026-10-24T14:58:31Z · needs_input
 - 2026-10-24T15:00:50Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-10-24T15:17:00Z · status review→active
