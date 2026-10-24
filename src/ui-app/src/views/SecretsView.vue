@@ -71,6 +71,7 @@ async function loadEnvironments(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
+    let snapshotLoad: Promise<void> | undefined;
     await refreshPageData(
       "project-environments",
       () => api<{ environments: Environment[] }>("/api/project-environments"),
@@ -78,12 +79,16 @@ async function loadEnvironments(): Promise<void> {
         environments.value = data.environments;
         if (!selected.value || !data.environments.some((env) => env.id === selected.value))
           selected.value = data.environments[0]?.id ?? "";
+        // Start loading the selected environment as soon as its cached list is
+        // delivered. This lets both cache hits reach the view before a slow
+        // environment-list revalidation finishes.
+        snapshotLoad = loadSnapshot();
       },
       (e) => {
         error.value = safeError(e);
       },
     );
-    await loadSnapshot();
+    await snapshotLoad;
   } catch (e) {
     error.value = safeError(e);
   } finally {

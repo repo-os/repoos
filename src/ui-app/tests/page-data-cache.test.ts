@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { invalidatePageData, refreshPageData } from "../src/composables/page-data-cache";
+import {
+  invalidatePageData,
+  invalidatePageDataPrefix,
+  refreshPageData,
+} from "../src/composables/page-data-cache";
 
 describe("page data cache", () => {
   beforeEach(() => {
@@ -58,5 +62,14 @@ describe("page data cache", () => {
     await outer;
     await nested;
     expect(fetcher).toHaveBeenCalledOnce();
+  });
+
+  it("invalidates matching query variants by prefix", async () => {
+    await refreshPageData("check-plan:default:", async () => "default", vi.fn());
+    await refreshPageData("check-plan:fast:main", async () => "fast", vi.fn());
+    invalidatePageDataPrefix("check-plan:");
+    const receive = vi.fn();
+    await refreshPageData("check-plan:default:", async () => "fresh", receive);
+    expect(receive).toHaveBeenCalledWith("fresh");
   });
 });

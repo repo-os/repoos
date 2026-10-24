@@ -6,6 +6,7 @@ import Select from "../src/components/ui/select/root.vue";
 import SecretsView from "../src/views/SecretsView.vue";
 import { navFromConfig } from "../src/nav";
 import { useAuthStore } from "../src/stores/auth";
+import { invalidatePageData } from "../src/composables/page-data-cache";
 
 const api = vi.spyOn(apiMod, "api");
 const envs = {
@@ -63,6 +64,9 @@ function answer(path: string): unknown {
   return snapshots[id] ?? snapshots["dev-nick"];
 }
 beforeEach(() => {
+  invalidatePageData("project-environments");
+  invalidatePageData("secrets:dev-nick");
+  invalidatePageData("secrets:integration");
   api.mockImplementation(async (path: string, opts?: RequestInit) => {
     if (opts?.method === "PUT") return { ok: true } as never;
     return answer(path) as never;
@@ -84,6 +88,20 @@ describe("SecretsView (#0929)", () => {
     expect(wrapper.html()).not.toContain("FAKE_SENTINEL_0932_SCREENSHOT_ONLY");
     expect(api).not.toHaveBeenCalled();
     wrapper.unmount();
+  });
+
+  it("shows cached keys immediately while both resources revalidate", async () => {
+    const first = mountPage();
+    await flushPromises();
+    expect(first.text()).toContain("DATABASE_URL");
+    first.unmount();
+
+    api.mockImplementation(() => new Promise(() => {}));
+    const revisit = mountPage();
+    await flushPromises();
+    expect(revisit.findAll(".page-skeleton")).toHaveLength(0);
+    expect(revisit.text()).toContain("DATABASE_URL");
+    revisit.unmount();
   });
 
   it("opens the removal dialog from its registered fake shot fixture", async () => {

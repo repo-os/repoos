@@ -68,6 +68,16 @@ describe("AgentsView agent cards", () => {
     expect(wrapper.find(".agent-skills-help").exists()).toBe(false);
 
     wrapper.unmount();
+    const revisit = mount(AgentsView, {
+      global: {
+        plugins: [pinia, router],
+        stubs: { teleport: true, Transition: true, VoiceDictate: true },
+      },
+    });
+    await flush();
+    expect(revisit.find(".page-skeleton").exists()).toBe(false);
+    expect(revisit.findAll(".agent-name").map((el) => el.text())).toContain("engineer");
+    revisit.unmount();
     vi.unstubAllGlobals();
   });
 });
