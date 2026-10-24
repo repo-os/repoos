@@ -1,24 +1,19 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
-last_handoff_failure_sha: d4dd2f3a1fac5f9adec8a3b80911134c50706ed6
 id: "0945"
 title: Show only failing checks in Landable by default
 type: feature
-status: active
-needs_input: true
-needs_input_reason: check-failed-after-retries
-debug_tldr: "Handoff check failed because remote runner mini is offline — restore mini or set remoteValidation.fallbackToLocal, then resume the task and retry handoff."
-debug_tldr_at: "2026-10-24T02:05:05Z"
-debug_tldr_key: check-failed-after-retries|
+status: done
 priority: p2
 area: ui
+merged_commit: b0fbe91ae6031cb62324667699f644ed83cca5e9
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-only-failing-checks-in-landable-by-
 created_at: "2026-10-24T01:24:41Z"
-updated_at: "2026-10-24T04:02:07Z"
+updated_at: "2026-10-24T07:37:25Z"
+last_close_out_gate_ms: 136676
+last_close_out_gate_at: "2026-10-24T07:36:31.542Z"
 handoff_signal_retry_count: 2
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-24T01:31:21.495Z: repoos check failed: remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T01:57:26.775Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -81,4 +76,9 @@ This Landable card should only show failing and minimise the rest -- if user cli
 - 2026-10-24T02:04:43Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-24T04:01:41Z · note: handoff requested (ui-review)
 - 2026-10-24T04:02:07Z · handoff failed · ui-review handoff failed at check · remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
-
+- 2026-10-24T07:03:56Z · body
+- 2026-10-24T07:17:01Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-10-24T07:17:01Z · status active→review
+- 2026-10-24T07:17:42Z · note: review pass 1: good to go
+- 2026-10-24T07:36:31Z · close-out gate completed in 137s
+- 2026-10-24T07:37:25Z · status done→done, release:success
