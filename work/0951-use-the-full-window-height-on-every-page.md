@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-24T23:39:03.710Z: repoos check failed: ◆ Check plan"
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
@@ -12,8 +14,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
 updated_at: "2026-10-24T23:32:01Z"
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-24T23:30:02.135Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from ed0386f1 to 94272d72) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -92,3 +92,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-24T22:56:55Z · body
 - 2026-10-24T22:58:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-24T23:32:01Z · body
+
