@@ -418,91 +418,96 @@ watch(
               </div>
               <div class="dev-card-side">
                 <code class="dev-card-name">{{ t.name }}</code>
-                <div class="dev-actions">
+              </div>
+            </div>
+
+            <div class="dev-card-details">
+              <dl class="kv-rows dev-meta">
+                <div>
+                  <dt>Command</dt>
+                  <dd class="kv-wrap">
+                    <code class="dev-command">{{ t.command }}</code>
+                  </dd>
+                </div>
+                <div v-if="t.kind === 'server' && t.url">
+                  <dt>URL</dt>
+                  <dd class="kv-wrap">
+                    <!-- #0816: only a running target's URL resolves, so it is the
+                       only one that is a link. A stopped target shows the
+                       action that would make it live, greyed out, rather than a
+                       dead link that opens an unreachable page. -->
+                    <a
+                      v-if="isRunning(t)"
+                      class="dev-open"
+                      :href="t.url"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open {{ t.url.replace(/^https?:\/\//, "") }} ↗
+                    </a>
+                    <span
+                      v-else
+                      class="dev-open-stopped"
+                      data-test-id="dev-url-stopped"
+                      data-tip="Start the target to open its URL"
+                      >Click Start</span
+                    >
+                  </dd>
+                </div>
+                <div v-if="t.kind === 'server' && t.port !== undefined">
+                  <dt>Port</dt>
+                  <dd class="kv-wrap">
+                    <code class="dev-port">{{ t.port }}</code>
+                    <span v-if="isRunning(t)" class="dev-port-note">in use now</span>
+                  </dd>
+                </div>
+                <div v-else-if="t.kind === 'artifact' && t.artifactPath">
+                  <dt>Output</dt>
+                  <dd>
+                    <code>{{ t.artifactPath }}</code>
+                  </dd>
+                </div>
+                <div v-else-if="t.kind === 'process'">
+                  <dt>Process</dt>
+                  <dd>Long-lived, no URL — running while the process is alive</dd>
+                </div>
+                <div v-if="t.pid !== undefined">
+                  <dt>PID</dt>
+                  <dd>
+                    <code>{{ t.pid }}</code>
+                  </dd>
+                </div>
+              </dl>
+              <div class="dev-actions">
+                <Button
+                  v-if="!isRunning(t)"
+                  variant="accent"
+                  size="sm"
+                  :disabled="busy === t.name || t.status === 'starting'"
+                  @click="act(t.name, 'start')"
+                >
+                  {{ busy === t.name ? "Working…" : "Start" }}
+                </Button>
+                <template v-else>
                   <Button
                     variant="accent"
-                    size="sm"
-                    :disabled="busy === t.name || t.status === 'running' || t.status === 'starting'"
-                    @click="act(t.name, 'start')"
-                  >
-                    {{ busy === t.name ? "Working…" : "Start" }}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    :disabled="busy === t.name || t.status === 'stopped'"
-                    @click="act(t.name, 'stop')"
-                  >
-                    Stop
-                  </Button>
-                  <Button
-                    variant="ghost"
                     size="sm"
                     :disabled="busy === t.name"
                     @click="requestRestart(t)"
                   >
                     Restart
                   </Button>
-                </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    :disabled="busy === t.name"
+                    @click="act(t.name, 'stop')"
+                  >
+                    Stop
+                  </Button>
+                </template>
               </div>
             </div>
-
-            <dl class="kv-rows dev-meta">
-              <div>
-                <dt>Command</dt>
-                <dd class="kv-wrap">
-                  <code class="dev-command">{{ t.command }}</code>
-                </dd>
-              </div>
-              <div v-if="t.kind === 'server' && t.url">
-                <dt>URL</dt>
-                <dd class="kv-wrap">
-                  <!-- #0816: only a running target's URL resolves, so it is the
-                       only one that is a link. A stopped target shows the
-                       action that would make it live, greyed out, rather than a
-                       dead link that opens an unreachable page. -->
-                  <a
-                    v-if="isRunning(t)"
-                    class="dev-open"
-                    :href="t.url"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Open {{ t.url.replace(/^https?:\/\//, "") }} ↗
-                  </a>
-                  <span
-                    v-else
-                    class="dev-open-stopped"
-                    data-test-id="dev-url-stopped"
-                    data-tip="Start the target to open its URL"
-                    >Click Start</span
-                  >
-                </dd>
-              </div>
-              <div v-if="t.kind === 'server' && t.port !== undefined">
-                <dt>Port</dt>
-                <dd class="kv-wrap">
-                  <code class="dev-port">{{ t.port }}</code>
-                  <span v-if="isRunning(t)" class="dev-port-note">in use now</span>
-                </dd>
-              </div>
-              <div v-else-if="t.kind === 'artifact' && t.artifactPath">
-                <dt>Output</dt>
-                <dd>
-                  <code>{{ t.artifactPath }}</code>
-                </dd>
-              </div>
-              <div v-else-if="t.kind === 'process'">
-                <dt>Process</dt>
-                <dd>Long-lived, no URL — running while the process is alive</dd>
-              </div>
-              <div v-if="t.pid !== undefined">
-                <dt>PID</dt>
-                <dd>
-                  <code>{{ t.pid }}</code>
-                </dd>
-              </div>
-            </dl>
 
             <div v-if="t.services?.length" class="dev-services" data-test-id="dev-services">
               <div class="dev-services-label">
@@ -796,8 +801,8 @@ watch(
   flex-wrap: wrap;
   min-width: 0;
 }
-/* Right side of the card: the target name with its actions directly below it
-   (#0814), so the controls sit beside the thing they act on. */
+/* Target name sits in the card header; the details row below pairs its
+   command/URL column with a compact action stack. */
 .dev-card-side {
   display: flex;
   flex-direction: column;
@@ -1000,12 +1005,21 @@ watch(
   font-weight: 600;
 }
 
+.dev-card-details {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.dev-card-details .dev-meta {
+  flex: 1;
+  min-width: 0;
+}
 .dev-actions {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 9px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  flex: 0 0 auto;
 }
 
 /* Companion-service sub-rows (#0843): a quiet inset list inside the card, so
@@ -1200,8 +1214,11 @@ watch(
   .dev-card-name {
     align-self: flex-start;
   }
+  .dev-card-details {
+    width: 100%;
+  }
   .dev-actions {
-    justify-content: flex-start;
+    align-items: stretch;
   }
 }
 </style>
