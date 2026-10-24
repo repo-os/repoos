@@ -117,7 +117,8 @@ describe("DeploymentsView matrix (#0365)", () => {
     let finish!: (value: unknown) => void;
     api.mockImplementation((path) => {
       if (path === "/api/deployments") return new Promise((resolve) => (finish = resolve)) as never;
-      if (path === "/api/project-environments") return Promise.resolve({ environments: [] }) as never;
+      if (path === "/api/project-environments")
+        return Promise.resolve({ environments: [] }) as never;
       throw new Error(`Unexpected API route: ${path}`);
     });
     const wrapper = mount(DeploymentsView, {

@@ -112,8 +112,12 @@ describe("ChecksView default tab (#0738)", () => {
         if (String(url).includes("/api/check-plan"))
           return new Promise<Response>((resolve) => (finish = resolve));
         if (String(url).includes("/api/integration/pipeline"))
-          return jsonResponse({ ok: true, pipeline: { empty: true, active: null, queue: [], at: "" } });
-        if (String(url).includes("/api/remote-validation/status")) return jsonResponse(idleRemote());
+          return jsonResponse({
+            ok: true,
+            pipeline: { empty: true, active: null, queue: [], at: "" },
+          });
+        if (String(url).includes("/api/remote-validation/status"))
+          return jsonResponse(idleRemote());
         return jsonResponse({ ok: true });
       }),
     );
