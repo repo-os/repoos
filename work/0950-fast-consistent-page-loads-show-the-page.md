@@ -3,6 +3,9 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — `main` merge conflicts block landing; measurement ACs still open; handoff shots are STALE vs reviewed HEAD `88d8a5f`.
 priority: p2
 area: web
 assigned_to: ai
@@ -119,3 +122,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T17:37:03Z · message_delivered: 1 message(s)
 - 2026-10-24T17:37:24Z · status active→review
 - 2026-10-24T17:39:23Z · note: review pass 3: needs some work
+- 2026-10-24T17:39:23Z · needs_input
