@@ -12,7 +12,7 @@ branch: feat/cli-repoos-sync-id-merge-main-into-a-tas
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T04:31:12Z"
-updated_at: "2026-10-24T03:48:39Z"
+updated_at: "2026-10-24T07:39:21Z"
 last_close_out_gate_ms: 397618
 last_close_out_gate_at: "2026-10-18T07:19:32.615Z"
 review_passes: 2
@@ -111,3 +111,5 @@ Mirror the existing control-plane commands in src/commands (start/pause/done). R
 - 2026-10-23T16:49:15Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-23T19:48:37Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-24T03:48:39Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-24T06:15:30Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-24T07:39:21Z · message_overdue: still queued after 60m without being delivered

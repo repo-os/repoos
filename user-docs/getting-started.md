@@ -145,6 +145,15 @@ read it seeds "Read this codebase and propose project docs + an initial task
 backlog". The one-line summary after init says which was chosen and why. Force
 one with `repoos init --starter vision|codebase`.
 
+In an interactive terminal, `repoos init` also asks whether you want to install
+coding agents. If you opt in, it shows detected agents, lets you select missing
+ones, and asks before running each agent's install command. Install failures
+leave the manual command on screen and do not stop initialization. Init never
+signs you in; it lists sign-in guidance for installed agents that still need
+authentication. This step is skipped in non-interactive and CI runs. Global
+`npm i -g` installs can require a writable npm prefix or elevated permissions
+such as `sudo`, depending on your npm setup.
+
 The starter is seeded as an **`inbox`** task, not `ready` — it's a suggestion
 for you, not work to auto-run, and `created_by` is `repoos-init` so it can be
 filtered (and archived) once a real backlog exists. Promote it when you want it
