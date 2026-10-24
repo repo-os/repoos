@@ -11,7 +11,7 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-24T16:14:27Z"
+updated_at: "2026-10-24T16:15:55Z"
 ---
 ## Problem
 
@@ -44,9 +44,29 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - Pages that already use a store with cached data (Work board, Inputs) are the model for how revisits should feel.
 - Run every test touching the migrated views in small groups, and `repoos check --changed main`, before handoff.
 
+## Shots
+```json
+[
+{
+  "label": "Deployments loading skeleton",
+  "target": "default",
+  "route": "/deployments",
+  "highlight": ".page-skeleton"
+},
+{
+  "label": "Dev targets loaded",
+  "target": "default",
+  "route": "/dev",
+  "highlight": ".dev-card",
+  "state": "dev:running"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-24T16:13:34Z · created · njachowski@gmail.com
 - 2026-10-24T16:14:18Z · status inbox→ready
 - 2026-10-24T16:14:26Z · cli_override, model_override
 - 2026-10-24T16:14:27Z · status ready→active, branch
+- 2026-10-24T16:15:55Z · body
