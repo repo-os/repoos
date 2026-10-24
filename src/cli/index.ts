@@ -43,6 +43,7 @@ import {
   cmdDone,
   cmdLandable,
   cmdMessage,
+  cmdSendBack,
   cmdOverride,
   cmdPause,
   cmdPreview,
@@ -299,6 +300,11 @@ function main(): void {
       break;
     case "message":
       void cmdMessage(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "send-back":
+      void cmdSendBack(rest).then((code) => {
         if (code !== 0) process.exitCode = code;
       });
       break;

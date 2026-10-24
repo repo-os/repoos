@@ -43,6 +43,7 @@ import {
 } from "../freeform-runs.js";
 import { randomUUID } from "node:crypto";
 import type { ServerResponse } from "node:http";
+import { Readable } from "node:stream";
 import type { LiveIndex, RepoEvent } from "../live-index.js";
 import type { Logger } from "../../core/logger.js";
 import { getCurrentUser } from "./auth.js";
@@ -189,6 +190,7 @@ import {
   writeWorktreeReviewLock,
 } from "../worktree-handoff-guard.js";
 import { closingOutRefusal, isTaskClosingOut } from "../close-out-lock.js";
+import { runSendBackSequence } from "../send-back-sequence.js";
 import {
   isPostHandoffCheckpointRecoveryActive,
   startPostHandoffCheckpointRecovery,
@@ -2318,6 +2320,99 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     return json(res, 400, {
       error: `Task #${id} is assigned to a human; change its board status directly`,
     });
+  }
+
+  if (action === "send-back") {
+    const body = (await readBody(req)) as { message?: unknown };
+    const message = typeof body?.message === "string" ? body.message.trim() : "";
+    if (!message) return json(res, 400, { error: "message text is required" });
+    if (isTaskClosingOut(config.root, config.cacheDir, id)) {
+      return json(res, 409, { error: closingOutRefusal(id) });
+    }
+    if (existing.isArchived)
+      return json(res, 400, {
+        error: `Task #${id} is archived — unarchive it before sending it back`,
+      });
+    if (runner.isRunning(id))
+      return json(res, 409, { error: `Task #${id} has an engineer turn in progress` });
+    if (reviews.isRunning(id))
+      return json(res, 409, { error: `Task #${id} has a review in progress` });
+    const closeOut = jobCoordinator.getJob(id);
+    if (closeOut && closeOut.phase !== "done" && closeOut.phase !== "failed") {
+      return json(res, 409, { error: `Task #${id} is in the close-out pipeline` });
+    }
+    const invoke = async (nextAction: "start" | "message", payload: object) => {
+      const chunks = Readable.from([
+        Buffer.from(JSON.stringify(payload)),
+      ]) as unknown as import("node:http").IncomingMessage;
+      const captured: {
+        statusCode: number;
+        body?: any;
+        writeHead: (code: number) => void;
+        end: (data?: string) => void;
+      } = {
+        statusCode: 200,
+        writeHead(code) {
+          this.statusCode = code;
+        },
+        end(data) {
+          if (data) this.body = JSON.parse(data);
+        },
+      };
+      await taskAction(ctx, chunks, captured as unknown as ServerResponse, {
+        param1: id,
+        param2: nextAction,
+      });
+      return captured;
+    };
+    const result = await runSendBackSequence(message, {
+      move: async () => {
+        if (existing!.status === "active") return { ok: true };
+        try {
+          clearWorktreeHandoffProtection(config.root, config.cacheDir ?? ".repoos", id);
+          const moved = patchTaskFile(
+            config,
+            existing!.absPath,
+            { status: "active", note: "send-back — returned to active for engineer follow-up" },
+            { onStatusChange: onServerStatusChange },
+          );
+          index.applyFileChange(moved.absPath);
+          return { ok: true };
+        } catch (error) {
+          return { ok: false, status: 409, error: (error as Error).message };
+        }
+      },
+      start: async () => {
+        const started = await invoke("start", {});
+        return {
+          ok: started.statusCode >= 200 && started.statusCode < 300 && started.body?.ok !== false,
+          status: started.statusCode || 400,
+          error: started.body?.error ?? "engineer could not be started",
+        };
+      },
+      queue: async (text) => {
+        const sent = await invoke("message", { text });
+        return {
+          ok: sent.statusCode >= 200 && sent.statusCode < 300 && sent.body?.ok !== false,
+          status: sent.statusCode || 400,
+          error: sent.body?.error ?? "message could not be queued",
+          value: sent.body,
+        };
+      },
+    });
+    if (!result.ok) {
+      const after =
+        result.step === "start"
+          ? `task #${id} is active and the message was not queued`
+          : result.step === "message"
+            ? `task #${id} is active and the engineer was started`
+            : `task #${id} was not moved`;
+      return json(res, result.status ?? 409, {
+        ...result,
+        error: `send-back step ${result.step} failed: ${result.error ?? "unknown error"}; ${after}`,
+      });
+    }
+    return json(res, 200, result);
   }
 
   // Hotfix activation switches the root checkout and rewrites this task file.
