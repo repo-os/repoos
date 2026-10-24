@@ -90,3 +90,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T06:02:20Z · body
 - 2026-10-24T06:04:38Z · needs_input
 - 2026-10-24T06:15:27Z · note: ui verification failed (2 issue(s)): [missing-target] Dev target actions for running and stopped targets (target "default"): state "dev:running" did not render on target "default" — the page at /dev did not apply the fixture (is this the app target?) (http://127.0.0.1:56061/dev?shotState=dev%3Arunning); [missing-target] Dev target actions for running and stopped targets (target "default"): highlight .dev-card-details matched nothing on /dev (http://127.0.0.1:56061/dev?shotState=dev%3Arunning)
+- 2026-10-24T06:15:27Z · handoff failed · handoff recovery attempted · finalization failed
