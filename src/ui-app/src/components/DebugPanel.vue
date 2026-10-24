@@ -511,10 +511,16 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
     <template v-if="view === 'status'">
       <section class="changes-summary" aria-label="Task status details">
         <div class="changes-summary-title">Status details</div>
-        <p>Full check output, review reports, handoff events, and activity are available in Logs.</p>
+        <p>
+          Full check output, review reports, handoff events, and activity are available in Logs.
+        </p>
         <div v-if="task.needsInput" class="debug-status-detail">
           <strong>Waiting for you</strong>
-          <p>{{ task.needsInputDetail || task.needsInputReason || "This task needs your attention." }}</p>
+          <p>
+            {{
+              task.needsInputDetail || task.needsInputReason || "This task needs your attention."
+            }}
+          </p>
           <p v-if="task.debugTldr">{{ task.debugTldr }}</p>
         </div>
         <div v-if="repo.handoffErrorFor(task.id)" class="debug-status-detail">
@@ -526,7 +532,10 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
           <p>{{ repo.doneErrorFor(task.id)?.message }}</p>
           <p>{{ repo.doneErrorFor(task.id)?.hint }}</p>
         </div>
-        <div v-if="!task.needsInput && !repo.handoffErrorFor(task.id) && !repo.doneErrorFor(task.id)" class="changes-empty">
+        <div
+          v-if="!task.needsInput && !repo.handoffErrorFor(task.id) && !repo.doneErrorFor(task.id)"
+          class="changes-empty"
+        >
           No additional status details. Recent checks and activity are in Logs.
         </div>
       </section>
