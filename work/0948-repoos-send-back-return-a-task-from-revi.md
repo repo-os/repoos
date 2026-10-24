@@ -14,7 +14,7 @@ branch: feat/repoos-send-back-return-a-task-from-revi
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T11:14:00Z"
-updated_at: "2026-10-24T14:06:56Z"
+updated_at: "2026-10-24T14:06:58Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T13:11:00.274Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 1
@@ -73,3 +73,4 @@ Sending a task back from review to its engineer with feedback takes three separa
 - 2026-10-24T14:06:56Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-24T14:06:56Z · agent exited with an error (codex) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-10-24T14:06:56Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-10-24T14:06:58Z · message_delivered: 1 message(s)
