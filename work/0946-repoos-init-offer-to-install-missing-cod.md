@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-24T06:05:06.867Z: repoos check failed: remote validation unavailable: host bee skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 id: "0946"
 title: "repoos init: offer to install missing coding agents (checkbox list)"
 type: feature
@@ -62,3 +64,4 @@ During interactive `repoos init` (TTY only; non-interactive init stays fully non
 - 2026-10-24T04:33:59Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · 2026-10-24T04:33:49.382272Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
 - 2026-10-24T04:34:17Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-24T06:04:39Z · needs_input
+
