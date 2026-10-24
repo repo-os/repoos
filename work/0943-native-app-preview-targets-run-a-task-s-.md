@@ -2,7 +2,7 @@
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, server, web]
 assigned_to: ai
