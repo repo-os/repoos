@@ -17,7 +17,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T14:44:53Z"
+updated_at: "2026-10-24T14:47:36Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-24T14:42:46.885Z: repoos check failed: ◆ Check plan"
 review_passes: 4
@@ -157,3 +157,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:39:32Z · note: declared shot Task drawer: native macOS preview shows building state during a long build on target "default" cannot render: state "drawer:nativePreviewBuilding" did not render on target "default" — /work?task=9999&tab=overview has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes)
 - 2026-10-24T14:39:32Z · note: shots: failed — declared shot Task drawer: native macOS preview shows building state during a long build on target "default" cannot render: state "drawer:nativePreviewBuilding" did not render on target "default" — /work?task=9999&tab=overview has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes)
 - 2026-10-24T14:44:53Z · body
+- 2026-10-24T14:47:36Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate
