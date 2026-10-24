@@ -56,7 +56,11 @@ function target(over: Partial<DevTargetView> = {}): DevTargetView {
 }
 
 /** Install a fetch mock serving `/api/dev/targets` + the action routes. */
-function installFetch(options: { targets?: DevTargetView[]; errors?: string[] }): {
+function installFetch(options: {
+  targets?: DevTargetView[];
+  errors?: string[];
+  deferActions?: boolean;
+}): {
   calls: Array<{ url: string; method: string }>;
 } {
   const calls: Array<{ url: string; method: string }> = [];
@@ -75,6 +79,9 @@ function installFetch(options: { targets?: DevTargetView[]; errors?: string[] })
       if (action) {
         const name = decodeURIComponent(action[1]);
         const kind = action[2];
+        if (options.deferActions && kind !== "explain" && kind !== "stop-holder") {
+          return new Promise<Response>(() => {});
+        }
         if (kind === "explain") {
           return json({ ok: true, summary: "The port is held by a stale vite process." });
         }
@@ -162,30 +169,50 @@ describe("Dev nav gating (#0748)", () => {
 });
 
 describe("DevView layout and state (#0748)", () => {
-  it("places Start, Stop and Restart on the right, below the target name (#0814)", async () => {
+  it("shows state-appropriate actions beside the command and URL details", async () => {
     installFetch({ targets: [target({ name: "site", status: "stopped" })] });
     const wrapper = mountView();
     await flush();
 
     const card = wrapper.find(".dev-card");
     const side = card.find(".dev-card-head .dev-card-side");
-    expect(side.exists()).toBe(true);
-    const name = side.find(".dev-card-name");
-    const actions = side.find(".dev-actions");
-    expect(name.text()).toBe("site");
+    expect(side.find(".dev-card-name").text()).toBe("site");
+    const details = card.find(".dev-card-details");
+    const actions = details.find(".dev-actions");
     expect(actions.exists()).toBe(true);
-    // The actions sit directly below the name, in the same right-hand column.
-    expect(name.element.nextElementSibling).toBe(actions.element);
-    expect(actions.findAll("button").map((b) => b.text().trim())).toEqual([
-      "Start",
-      "Stop",
-      "Restart",
-    ]);
+    expect(details.find(".dev-command").text()).toBe("bun run dev");
+    expect(actions.findAll("button").map((b) => b.text().trim())).toEqual(["Start"]);
+    expect(actions.find("button").classes()).toContain("bg-[image:var(--btn-new-bg)]");
     // No second action row elsewhere in the card.
     expect(card.findAll(".dev-actions")).toHaveLength(1);
 
     const source = readFileSync(join(resolve(__dirname, ".."), "src/views/DevView.vue"), "utf8");
-    expect(source).toMatch(/\.dev-card-side\s*\{[^}]*align-items:\s*flex-end/);
+    expect(source).toMatch(/\.dev-card-details\s*\{[^}]*display:\s*flex/);
+    expect(source).toMatch(/\.dev-actions\s*\{[^}]*flex-direction:\s*column/);
+    expect(source).toMatch(/v-if="!isRunning\(t\)"[\s\S]*?variant="accent"/);
+    expect(source).toMatch(/v-else>[\s\S]*?variant="accent"[\s\S]*?Restart/);
+  });
+
+  it("shows Restart and Stop for running targets, and keeps starting targets from restarting", async () => {
+    installFetch({
+      targets: [
+        target({ name: "running", status: "running" }),
+        target({ name: "starting", status: "starting" }),
+      ],
+    });
+    const wrapper = mountView();
+    await flush();
+
+    const [running, starting] = wrapper.findAll(".dev-card");
+    const runningButtons = running!.findAll(".dev-actions button");
+    expect(runningButtons.map((button) => button.text().trim())).toEqual(["Restart", "Stop"]);
+    expect(runningButtons[0]!.classes()).toContain("bg-[image:var(--btn-new-bg)]");
+    expect(runningButtons[1]!.text()).not.toContain("Start");
+
+    const startingButtons = starting!.findAll(".dev-actions button");
+    expect(startingButtons.map((button) => button.text().trim())).toEqual(["Start"]);
+    expect(startingButtons[0]!.attributes("disabled")).toBeDefined();
+    expect(startingButtons[0]!.classes()).toEqual(runningButtons[0]!.classes());
   });
 
   it("groups targets by project and shows name, kind, state and label", async () => {
@@ -594,6 +621,15 @@ describe("DevView failure summary (#0775)", () => {
       // The started target carries the shared running hook; the stopped one doesn't.
       expect(cards[0]!.attributes("data-running")).toBe("true");
       expect(cards[1]!.attributes("data-running")).toBeUndefined();
+      expect(
+        cards[0]!.findAll(".dev-actions button").map((button) => button.text().trim()),
+      ).toEqual(["Restart", "Stop"]);
+      expect(
+        cards[1]!.findAll(".dev-actions button").map((button) => button.text().trim()),
+      ).toEqual(["Start"]);
+      expect(cards[0]!.find(".dev-actions button").classes()).toEqual(
+        expect.arrayContaining(cards[1]!.find(".dev-actions button").classes()),
+      );
       expect(fetchSpy).not.toHaveBeenCalled();
     } finally {
       window.history.replaceState({}, "", "/");
@@ -720,6 +756,25 @@ describe("DevView Last output (#0777/#0814)", () => {
 });
 
 describe("DevView actions (#0748)", () => {
+  it.each([
+    { status: "stopped" as const, action: "Start" },
+    { status: "running" as const, action: "Stop" },
+  ])(
+    "disables the $status target's visible actions while $action is in flight",
+    async ({ status, action }) => {
+      installFetch({ targets: [target({ status })], deferActions: true });
+      const wrapper = mountView();
+      await flush();
+
+      await actionButton(wrapper, action).trigger("click");
+      await flush();
+
+      const buttons = wrapper.findAll(".dev-actions button");
+      expect(buttons.length).toBe(status === "running" ? 2 : 1);
+      expect(buttons.every((button) => button.attributes("disabled") !== undefined)).toBe(true);
+    },
+  );
+
   it("starts a stopped target through the dev-target API and refreshes", async () => {
     const { calls } = installFetch({ targets: [target({ status: "stopped" })] });
     const wrapper = mountView();
@@ -772,19 +827,16 @@ describe("DevView actions (#0748)", () => {
     ).toBe(true);
   });
 
-  it("restarts a stopped target without a confirmation", async () => {
+  it("does not offer Restart for a stopped target", async () => {
     const { calls } = installFetch({ targets: [target({ status: "stopped" })] });
     const wrapper = mountView();
     await flush();
 
-    await actionButton(wrapper, "Restart").trigger("click");
-    await flush();
-
-    expect(wrapper.text()).not.toContain("Restart target?");
-    expect(calls.some((c) => c.url.endsWith("/restart") && c.method === "POST")).toBe(true);
+    expect(wrapper.findAll(".dev-actions button").map((b) => b.text().trim())).toEqual(["Start"]);
+    expect(calls.some((c) => c.url.endsWith("/restart") && c.method === "POST")).toBe(false);
   });
 
-  it("disables Start while a target is running and Stop while it is stopped", async () => {
+  it("shows Start only for stopped targets and Restart plus Stop for running targets", async () => {
     installFetch({
       targets: [
         target({ name: "web", status: "running" }),
@@ -794,12 +846,11 @@ describe("DevView actions (#0748)", () => {
     const wrapper = mountView();
     await flush();
     const cards = wrapper.findAll(".dev-card");
-    const startButtons = cards.map((c) => c.findAll("button").find((b) => b.text() === "Start")!);
-    const stopButtons = cards.map((c) => c.findAll("button").find((b) => b.text() === "Stop")!);
-    expect(startButtons[0].attributes("disabled")).toBeDefined();
-    expect(stopButtons[0].attributes("disabled")).toBeUndefined();
-    expect(startButtons[1].attributes("disabled")).toBeUndefined();
-    expect(stopButtons[1].attributes("disabled")).toBeDefined();
+    expect(cards[0]!.findAll(".dev-actions button").map((b) => b.text().trim())).toEqual([
+      "Restart",
+      "Stop",
+    ]);
+    expect(cards[1]!.findAll(".dev-actions button").map((b) => b.text().trim())).toEqual(["Start"]);
   });
 });
 

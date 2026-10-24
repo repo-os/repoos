@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 140199
-last_close_out_gate_at: "2026-10-24T13:35:13.505Z"
 id: "0947"
 title: Show dev target actions based on running state
 type: feature
-status: review
+status: done
 priority: p2
 area: ui
+merged_commit: 8292ce1f0f2cc7cefb75f2909e04440da747f4e0
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
 updated_at: "2026-10-24T13:35:13Z"
+last_close_out_gate_ms: 140199
+last_close_out_gate_at: "2026-10-24T13:35:13.505Z"
 review_passes: 6
 review_rounds: 2
 routing_switches: 1
