@@ -71,11 +71,18 @@ async function loadEnvironments(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    await refreshPageData("project-environments", () => api<{ environments: Environment[] }>("/api/project-environments"), (data) => {
-      environments.value = data.environments;
-      if (!selected.value || !data.environments.some((env) => env.id === selected.value))
-        selected.value = data.environments[0]?.id ?? "";
-    }, (e) => { error.value = safeError(e); });
+    await refreshPageData(
+      "project-environments",
+      () => api<{ environments: Environment[] }>("/api/project-environments"),
+      (data) => {
+        environments.value = data.environments;
+        if (!selected.value || !data.environments.some((env) => env.id === selected.value))
+          selected.value = data.environments[0]?.id ?? "";
+      },
+      (e) => {
+        error.value = safeError(e);
+      },
+    );
     await loadSnapshot();
   } catch (e) {
     error.value = safeError(e);
@@ -125,9 +132,18 @@ async function loadSnapshot(): Promise<void> {
     return;
   }
   try {
-    await refreshPageData(`secrets:${selected.value}`, () => api<Snapshot>(
-      `/api/project-environments/${encodeURIComponent(selected.value)}/secrets`,
-    ), (value) => { snapshot.value = value; error.value = ""; }, (e) => { error.value = safeError(e); });
+    await refreshPageData(
+      `secrets:${selected.value}`,
+      () =>
+        api<Snapshot>(`/api/project-environments/${encodeURIComponent(selected.value)}/secrets`),
+      (value) => {
+        snapshot.value = value;
+        error.value = "";
+      },
+      (e) => {
+        error.value = safeError(e);
+      },
+    );
   } catch (e) {
     error.value = safeError(e);
   }
