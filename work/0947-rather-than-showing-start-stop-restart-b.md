@@ -2,7 +2,7 @@
 id: "0947"
 title: Show dev target actions based on running state
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — DevView and tests satisfy the UX criteria; landing still fails on `work/0943`/`work/0946` drift and merge conflicts (no…
