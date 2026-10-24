@@ -3,8 +3,6 @@ id: "0947"
 title: Show dev target actions based on running state
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
 priority: p2
 area: ui
 assigned_to: ai
@@ -121,3 +119,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T11:13:56Z · status active→review
 - 2026-10-24T11:13:57Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-24T11:15:04Z · note: review pass 2: needs some work
+- 2026-10-24T11:15:04Z · needs_input
