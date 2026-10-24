@@ -27,7 +27,10 @@ import ActivityIndicator from "./ActivityIndicator.vue";
 import DiffFileViewer from "./DiffFileViewer.vue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 
-const props = defineProps<{ task: Task }>();
+const props = withDefaults(
+  defineProps<{ task: Task; statusDetails?: { title: string; detail: string }[] }>(),
+  { statusDetails: () => [] },
+);
 const router = useRouter();
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -511,33 +514,23 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
     <template v-if="view === 'status'">
       <section class="changes-summary" aria-label="Task status details">
         <div class="changes-summary-title">Status details</div>
-        <p>
-          Full check output, review reports, handoff events, and activity are available in Logs.
-        </p>
-        <div v-if="task.needsInput" class="debug-status-detail">
-          <strong>Waiting for you</strong>
-          <p>
-            {{
-              task.needsInputDetail || task.needsInputReason || "This task needs your attention."
-            }}
-          </p>
-          <p v-if="task.debugTldr">{{ task.debugTldr }}</p>
-        </div>
-        <div v-if="repo.handoffErrorFor(task.id)" class="debug-status-detail">
-          <strong>Handoff failed</strong>
-          <p>{{ repo.handoffErrorFor(task.id) }}</p>
-        </div>
         <div v-if="repo.doneErrorFor(task.id)" class="debug-status-detail">
           <strong>Close-out failed</strong>
           <p>{{ repo.doneErrorFor(task.id)?.message }}</p>
+          <p>{{ repo.doneErrorFor(task.id)?.detail }}</p>
           <p>{{ repo.doneErrorFor(task.id)?.hint }}</p>
         </div>
-        <div
-          v-if="!task.needsInput && !repo.handoffErrorFor(task.id) && !repo.doneErrorFor(task.id)"
-          class="changes-empty"
-        >
+        <article v-for="row in statusDetails" :key="row.title" class="debug-status-detail">
+          <strong>{{ row.title }}</strong>
+          <p class="debug-status-text">{{ row.detail }}</p>
+        </article>
+        <div v-if="!statusDetails.length && !repo.doneErrorFor(task.id)" class="changes-empty">
           No additional status details. Recent checks and activity are in Logs.
         </div>
+        <p class="debug-status-guidance">
+          Check runs and their complete output remain available in Logs. The Review tab keeps the
+          full report and retry actions.
+        </p>
       </section>
     </template>
     <template v-else-if="view === 'logs'">
@@ -755,6 +748,34 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   color: var(--txt-dim);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.debug-status-detail {
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.debug-status-detail > strong {
+  color: var(--txt);
+  font-size: 12px;
+}
+
+.debug-status-text {
+  margin: 6px 0 0;
+  color: var(--txt-dim);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.debug-status-guidance {
+  margin: 12px 0;
+  color: var(--txt-faint);
+  font-size: 11px;
 }
 
 .debug-panel {
