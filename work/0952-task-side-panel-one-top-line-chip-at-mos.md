@@ -2,16 +2,16 @@
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-24T23:18:01Z"
+updated_at: "2026-10-24T23:18:02Z"
 ---
 ## Problem
 
@@ -69,3 +69,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-24T23:17:33Z · body: Where the removed detail goes (added)
 - 2026-10-24T23:17:55Z · status inbox→ready
 - 2026-10-24T23:18:01Z · cli_override, model_override
+- 2026-10-24T23:18:02Z · status ready→active, branch
