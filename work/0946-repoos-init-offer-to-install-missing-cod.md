@@ -3,6 +3,9 @@ id: "0946"
 title: "repoos init: offer to install missing coding agents (checkbox list)"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-10-24T04:33:31.480855Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\")))"
 priority: p2
 area: [core, docs]
 assigned_to: ai
@@ -11,7 +14,9 @@ branch: feat/repoos-init-offer-to-install-missing-cod
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T02:32:41Z"
-updated_at: "2026-10-24T04:33:25Z"
+updated_at: "2026-10-24T04:33:42Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:33:42.018Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -56,3 +61,5 @@ During interactive `repoos init` (TTY only; non-interactive init stays fully non
 - 2026-10-24T04:12:57Z · message_delivered: 1 message(s)
 - 2026-10-24T04:13:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-24T04:33:25Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-10-24T04:33:41Z · agent exited with an error (codex) · 2026-10-24T04:33:31.480855Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-10-24T04:33:42Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-24T04:33:31.480855Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
