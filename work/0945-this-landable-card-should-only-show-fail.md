@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
+last_handoff_failure_sha: d4dd2f3a1fac5f9adec8a3b80911134c50706ed6
 id: "0945"
 title: Show only failing checks in Landable by default
 type: feature
@@ -79,3 +81,4 @@ This Landable card should only show failing and minimise the rest -- if user cli
 - 2026-10-24T02:04:43Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-24T04:01:41Z · note: handoff requested (ui-review)
 - 2026-10-24T04:02:07Z · handoff failed · ui-review handoff failed at check · remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
+
