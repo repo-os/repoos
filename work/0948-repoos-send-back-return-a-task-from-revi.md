@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0948"
 title: "repoos send-back: return a task from review to the engineer with a message in one command"
 type: feature
@@ -46,3 +47,4 @@ Sending a task back from review to its engineer with feedback takes three separa
 - 2026-10-24T11:38:09Z · body
 - 2026-10-24T11:40:55Z · body
 - 2026-10-24T11:44:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
