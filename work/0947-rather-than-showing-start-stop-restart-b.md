@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-24T06:05:07.179Z: repoos check failed: remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 id: "0947"
 title: Show dev target actions based on running state
 type: feature
@@ -88,3 +90,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T06:01:20Z · model_override
 - 2026-10-24T06:02:20Z · body
 - 2026-10-24T06:04:38Z · needs_input
+
