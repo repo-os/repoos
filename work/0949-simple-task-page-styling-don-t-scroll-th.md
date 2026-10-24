@@ -2,9 +2,10 @@
 id: "0949"
 title: Fix page scrolling and Secrets layout
 type: feature
-status: active
+status: done
 priority: p2
 area: [web, ui]
+merged_commit: 253394b8cbe014f028a0d3e01a4cea2db5739d84
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-page-scrolling-and-secrets-layout
@@ -13,7 +14,10 @@ model_override: grok-4.7-low
 pm_cli_override: codex
 pm_model_override: gpt-6-luna
 created_at: "2026-10-24T16:04:07Z"
-updated_at: "2026-10-24T16:13:43Z"
+updated_at: "2026-10-24T16:41:34Z"
+last_close_out_gate_ms: 127919
+last_close_out_gate_at: "2026-10-24T16:41:05.990Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -90,3 +94,8 @@ And on secret entries you don't need to mention the source on each, because they
 - 2026-10-24T16:10:15Z · body
 - 2026-10-24T16:11:59Z · body
 - 2026-10-24T16:13:43Z · body
+- 2026-10-24T16:27:46Z · note: ui verification passed: 3 of 3 shots captured with clean console
+- 2026-10-24T16:27:47Z · status active→review
+- 2026-10-24T16:28:46Z · note: review pass 1: good to go
+- 2026-10-24T16:41:05Z · close-out gate completed in 128s
+- 2026-10-24T16:41:34Z · status done→done, release:success
