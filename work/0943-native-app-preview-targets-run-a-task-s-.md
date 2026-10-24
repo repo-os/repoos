@@ -14,7 +14,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T15:29:17Z"
+updated_at: "2026-10-24T15:30:19Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-10-24T14:42:46.885Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -164,4 +164,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T15:17:24Z · note: handoff requested (ui-review)
 - 2026-10-24T15:29:17Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-10-24T15:29:17Z · status active→review
-
+- 2026-10-24T15:30:19Z · note: review pass 8: needs some work
