@@ -14,7 +14,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T15:17:24Z"
+updated_at: "2026-10-24T15:29:17Z"
 review_passes: 6
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 57acf18ba6b00c60846dea6d6a3ee51958739219
@@ -164,4 +164,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T15:00:50Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-10-24T15:17:00Z · status review→active
 - 2026-10-24T15:17:24Z · note: handoff requested (ui-review)
-
+- 2026-10-24T15:29:17Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
