@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T04:33:24Z"
+updated_at: "2026-10-24T04:37:30Z"
 ---
 ## Problem
 
@@ -46,6 +46,19 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 ![Screenshot-2026-10-24-at-11.59.50](/api/tasks/0947/attachments/att_03986c8b-cc34-4043-b09b-f8f7efb23345.png)
 ![Screenshot-2026-10-24-at-12.00.54](/api/tasks/0947/attachments/att_239c9ed4-97fd-482c-8d53-653a40515afd.png)
 
+## Shots
+```json
+[
+{
+  "label": "Dev targets with running-state actions",
+  "target": "default",
+  "route": "/dev",
+  "highlight": ".dev-card-details",
+  "state": "dev:running"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-24T04:07:30Z · created · hello@repoos.org
@@ -57,3 +70,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T04:17:06Z · message_queued at 2026-10-24T04:17:06.628Z
 - 2026-10-24T04:17:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-24T04:33:24Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-24T04:37:30Z · body
