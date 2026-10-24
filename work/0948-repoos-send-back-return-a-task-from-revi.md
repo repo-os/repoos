@@ -2,7 +2,7 @@
 id: "0948"
 title: "repoos send-back: return a task from review to the engineer with a message in one command"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repoos-send-back-return-a-task-from-revi
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T11:14:00Z"
-updated_at: "2026-10-24T11:32:08Z"
+updated_at: "2026-10-24T14:39:35Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ Sending a task back from review to its engineer with feedback takes three separa
 - 2026-10-24T11:32:00Z · status inbox→ready
 - 2026-10-24T11:32:08Z · cli_override, model_override
 - 2026-10-24T11:32:08Z · status ready→active, branch
+- 2026-10-24T14:39:35Z · status active→review
