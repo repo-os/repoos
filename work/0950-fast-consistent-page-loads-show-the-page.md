@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-24T16:14:27Z"
+updated_at: "2026-10-24T17:08:27Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T16:14:18Z · status inbox→ready
 - 2026-10-24T16:14:26Z · cli_override, model_override
 - 2026-10-24T16:14:27Z · status ready→active, branch
+- 2026-10-24T17:08:27Z · status active→review
