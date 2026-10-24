@@ -114,3 +114,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T08:19:27Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-24T08:19:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-24T08:19:27Z · needs_input
+- 2026-10-24T08:19:27Z · message_delivered: 1 message(s)
