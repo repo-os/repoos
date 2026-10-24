@@ -6,6 +6,9 @@ status: review
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: "the cursor agent exited without output: Error: [unavailable] read ETIMEDOUT"
+debug_tldr: "Cursor review agent hit a network read timeout (ETIMEDOUT) — retry review once, or switch reviewer if it happens again."
+debug_tldr_at: "2026-10-24T14:39:01Z"
+debug_tldr_key: "review-failed|the cursor agent exited without output: Error: [unavailable] read ETIMEDOUT"
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T14:38:43Z"
+updated_at: "2026-10-24T14:39:01Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
