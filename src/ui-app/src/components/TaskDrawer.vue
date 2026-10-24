@@ -582,6 +582,21 @@ const checkChip = computed(() => {
     : { state: "fail" as const, label: `Checks failed${dur}`, title };
 });
 
+/** One compact, priority-ordered status model for the drawer header and status region. */
+const drawerStatusSummary = computed(() => {
+  const task = ui.active;
+  if (!task) return null;
+  // Priority: needs input, failed handoff, failed review, blocked landing,
+  // active checks, running work. Routine pass/review facts stay in their tabs.
+  if (needsInputHeaderChip.value) return { key: "needs-input", label: "Needs input", detail: needsInputBannerText(task.needsInputReason, activeNeedsInputQuestions.value, task.needsInputDetail) };
+  if (handoffError.value) return { key: "handoff-failed", label: "Handoff failed", detail: handoffError.value };
+  if (task.status === "review" && review.value?.report?.state === "incomplete") return { key: "review-failed", label: "Review failed", detail: review.value.report.summary || "Reviewer did not produce a complete report." };
+  if (task.status === "review" && landable.value && !landable.value.landable) return { key: "not-landable", label: "Not landable", detail: landable.value.summary.fail + " landing checks are failing." };
+  if (handoffBusy.value || activeCheckRun.value) return { key: "checks-running", label: "Checks running", detail: handoffStepLabel.value };
+  if (repo.isRunning(task.id)) return { key: "work-running", label: "Work running", detail: "An agent is working on this task." };
+  return null;
+});
+
 const open = computed(() => ui.active !== null || ui.isNew);
 function setOpen(v: boolean): void {
   if (!v) ui.close();
@@ -4429,42 +4444,16 @@ watch(
                 :aria-label="`Copy link to task ${ui.active.id}`"
               />
               <span class="tc-id mono">{{ ui.active.path }}</span>
-              <span
-                v-if="reviewSubstate"
-                class="rs-chip"
-                :class="reviewSubstate.cls"
-                :title="reviewSubstate.label"
-                >{{ reviewSubstate.label }}</span
-              >
-              <span
-                v-else-if="needsInputHeaderChip"
-                class="rs-chip"
-                :class="needsInputHeaderChip.cls"
-                :title="needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)"
-                >{{ needsInputHeaderChip.label }}</span
-              >
               <button
-                v-if="checkChip"
+                v-if="drawerStatusSummary"
                 type="button"
-                class="ck-chip"
-                :class="`ck-chip-${checkChip.state}`"
-                :title="checkChip.title"
-                @click="ui.activeTab = 'debug'"
+                class="rs-chip drawer-status-chip"
+                :class="{ 'ck-chip-fail': drawerStatusSummary.key.includes('fail') || drawerStatusSummary.key === 'not-landable', 'rs-needs-input': drawerStatusSummary.key === 'needs-input' }"
+                :aria-label="`${drawerStatusSummary.label}. Open Debug status details`"
+                @click="ui.activeTab = 'debug'; ui.debugView = 'status'"
               >
-                <ActivityIndicator v-if="checkChip.state === 'running'" class="ck-chip-spin" />
-                {{ checkChip.label }}
-                <span
-                  v-if="checkChip.slow"
-                  class="ck-slow-badge"
-                  data-test-id="task-check-slow"
-                  tabindex="0"
-                  :aria-label="`Slow check. ${checkChip.slowDetail ?? ''}`"
-                  :data-tip="
-                    checkChip.slowDetail ?? 'This check is slower than typical for its kind'
-                  "
-                >
-                  slow
-                </span>
+                <ActivityIndicator v-if="['checks-running', 'work-running'].includes(drawerStatusSummary.key)" class="ck-chip-spin" />
+                {{ drawerStatusSummary.label }}
               </button>
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}
@@ -5234,25 +5223,6 @@ watch(
                     <ActivityIndicator v-if="dismissNeedsInputBusy" />
                     {{ dismissNeedsInputBusy ? "Dismissing…" : "Dismiss" }}
                   </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- The Debugger's one-line tl;dr for the current failure (#0570):
-             the plain-language "what happened / what to do" summary, additive
-             to the banner and the raw detail in the tabs below. Lives above
-             the tabs so it is visible no matter which tab is open. -->
-          <div v-if="activeTldrSentence || activeTldrDiagnosing" class="drawer-critical">
-            <div class="debug-tldr" role="status">
-              <Lightbulb class="debug-tldr-icon" />
-              <div class="debug-tldr-body">
-                <div class="debug-tldr-label">tl;dr — what happened</div>
-                <div v-if="activeTldrSentence" class="debug-tldr-sentence">
-                  {{ activeTldrSentence }}
-                </div>
-                <div v-else class="debug-tldr-diagnosing">
-                  <ActivityIndicator label="Debugger diagnosing" />
-                  Diagnosing…
                 </div>
               </div>
             </div>

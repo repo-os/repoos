@@ -36,7 +36,7 @@ const ui = useUiStore();
  *  Debugger chat. Both stay reachable (the chat is additive, never a
  *  replacement for the logs — see task #0337). v-model'd so a Fix handoff can
  *  open the Debugger view directly. */
-const view = defineModel<"logs" | "debugger" | "conflict">("view", { default: "logs" });
+const view = defineModel<"logs" | "debugger" | "conflict" | "status">("view", { default: "logs" });
 
 /**
  * Merge conflict view: the branch's live conflict against main, rendered with
@@ -475,6 +475,14 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
       <button
         type="button"
         class="debug-tab"
+        :class="{ active: view === 'status' }"
+        @click="view = 'status'"
+      >
+        Status details
+      </button>
+      <button
+        type="button"
+        class="debug-tab"
         :class="{ active: view === 'logs' }"
         @click="view = 'logs'"
       >
@@ -500,7 +508,30 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
       </button>
     </div>
 
-    <template v-if="view === 'logs'">
+    <template v-if="view === 'status'">
+      <section class="changes-summary" aria-label="Task status details">
+        <div class="changes-summary-title">Status details</div>
+        <p>Full check output, review reports, handoff events, and activity are available in Logs.</p>
+        <div v-if="task.needsInput" class="debug-status-detail">
+          <strong>Waiting for you</strong>
+          <p>{{ task.needsInputDetail || task.needsInputReason || "This task needs your attention." }}</p>
+          <p v-if="task.debugTldr">{{ task.debugTldr }}</p>
+        </div>
+        <div v-if="repo.handoffErrorFor(task.id)" class="debug-status-detail">
+          <strong>Handoff failed</strong>
+          <p>{{ repo.handoffErrorFor(task.id) }}</p>
+        </div>
+        <div v-if="repo.doneErrorFor(task.id)" class="debug-status-detail">
+          <strong>Close-out failed</strong>
+          <p>{{ repo.doneErrorFor(task.id)?.message }}</p>
+          <p>{{ repo.doneErrorFor(task.id)?.hint }}</p>
+        </div>
+        <div v-if="!task.needsInput && !repo.handoffErrorFor(task.id) && !repo.doneErrorFor(task.id)" class="changes-empty">
+          No additional status details. Recent checks and activity are in Logs.
+        </div>
+      </section>
+    </template>
+    <template v-else-if="view === 'logs'">
       <Card v-if="hasWorktree" class="debug-sync">
         <div class="debug-sync-head">
           <RefreshCw class="debug-sync-icon" :class="{ spinning: syncBusy }" />
