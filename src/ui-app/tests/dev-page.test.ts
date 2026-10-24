@@ -162,30 +162,27 @@ describe("Dev nav gating (#0748)", () => {
 });
 
 describe("DevView layout and state (#0748)", () => {
-  it("places Start, Stop and Restart on the right, below the target name (#0814)", async () => {
+  it("shows state-appropriate actions beside the command and URL details", async () => {
     installFetch({ targets: [target({ name: "site", status: "stopped" })] });
     const wrapper = mountView();
     await flush();
 
     const card = wrapper.find(".dev-card");
     const side = card.find(".dev-card-head .dev-card-side");
-    expect(side.exists()).toBe(true);
-    const name = side.find(".dev-card-name");
-    const actions = side.find(".dev-actions");
-    expect(name.text()).toBe("site");
+    expect(side.find(".dev-card-name").text()).toBe("site");
+    const details = card.find(".dev-card-details");
+    const actions = details.find(".dev-actions");
     expect(actions.exists()).toBe(true);
-    // The actions sit directly below the name, in the same right-hand column.
-    expect(name.element.nextElementSibling).toBe(actions.element);
-    expect(actions.findAll("button").map((b) => b.text().trim())).toEqual([
-      "Start",
-      "Stop",
-      "Restart",
-    ]);
+    expect(details.find(".dev-command").text()).toBe("bun run dev");
+    expect(actions.findAll("button").map((b) => b.text().trim())).toEqual(["Start"]);
     // No second action row elsewhere in the card.
     expect(card.findAll(".dev-actions")).toHaveLength(1);
 
     const source = readFileSync(join(resolve(__dirname, ".."), "src/views/DevView.vue"), "utf8");
-    expect(source).toMatch(/\.dev-card-side\s*\{[^}]*align-items:\s*flex-end/);
+    expect(source).toMatch(/\.dev-card-details\s*\{[^}]*display:\s*flex/);
+    expect(source).toMatch(/\.dev-actions\s*\{[^}]*flex-direction:\s*column/);
+    expect(source).toMatch(/v-if="!isRunning\(t\)"[\s\S]*?variant="accent"/);
+    expect(source).toMatch(/v-else>[\s\S]*?variant="accent"[\s\S]*?Restart/);
   });
 
   it("groups targets by project and shows name, kind, state and label", async () => {
@@ -784,7 +781,7 @@ describe("DevView actions (#0748)", () => {
     expect(calls.some((c) => c.url.endsWith("/restart") && c.method === "POST")).toBe(true);
   });
 
-  it("disables Start while a target is running and Stop while it is stopped", async () => {
+  it("shows Start only for stopped targets and Restart plus Stop for running targets", async () => {
     installFetch({
       targets: [
         target({ name: "web", status: "running" }),
@@ -794,12 +791,11 @@ describe("DevView actions (#0748)", () => {
     const wrapper = mountView();
     await flush();
     const cards = wrapper.findAll(".dev-card");
-    const startButtons = cards.map((c) => c.findAll("button").find((b) => b.text() === "Start")!);
-    const stopButtons = cards.map((c) => c.findAll("button").find((b) => b.text() === "Stop")!);
-    expect(startButtons[0].attributes("disabled")).toBeDefined();
-    expect(stopButtons[0].attributes("disabled")).toBeUndefined();
-    expect(startButtons[1].attributes("disabled")).toBeUndefined();
-    expect(stopButtons[1].attributes("disabled")).toBeDefined();
+    expect(cards[0]!.findAll(".dev-actions button").map((b) => b.text().trim())).toEqual([
+      "Restart",
+      "Stop",
+    ]);
+    expect(cards[1]!.findAll(".dev-actions button").map((b) => b.text().trim())).toEqual(["Start"]);
   });
 });
 
