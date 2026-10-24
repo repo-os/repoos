@@ -2,7 +2,7 @@
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — Post-grace launch exit code 0 never clears native preview state, so documented `open -W` and long-lived launchers leave…"
@@ -14,7 +14,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: opencode
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T08:29:14Z"
+updated_at: "2026-10-24T11:13:07Z"
 review_passes: 3
 review_rounds: 2
 routing_switches: 1
@@ -121,3 +121,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T08:29:08Z · cli_override, model_override
 - 2026-10-24T08:29:11Z · model_override
 - 2026-10-24T08:29:14Z · model_override
+- 2026-10-24T11:13:07Z · status review→active
