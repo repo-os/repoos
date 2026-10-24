@@ -50,3 +50,4 @@ During interactive `repoos init` (TTY only; non-interactive init stays fully non
 - 2026-10-24T03:48:36Z · cli_override, model_override
 - 2026-10-24T03:48:36Z · status ready→active, branch
 - 2026-10-24T04:02:06Z · message_queued at 2026-10-24T04:02:06.604Z
+- 2026-10-24T04:02:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
