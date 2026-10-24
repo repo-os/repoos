@@ -729,7 +729,6 @@ onUnmounted(() => {
     <PageSkeleton v-if="!config.loaded" kind="cards" />
 
     <template v-else>
-
       <div class="agents-tab-content">
         <div
           class="agent-tab-panel"
