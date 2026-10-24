@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-24T16:14:18Z"
+updated_at: "2026-10-24T16:14:26Z"
 ---
 ## Problem
 
@@ -46,3 +48,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 
 - 2026-10-24T16:13:34Z · created · njachowski@gmail.com
 - 2026-10-24T16:14:18Z · status inbox→ready
+- 2026-10-24T16:14:26Z · cli_override, model_override
