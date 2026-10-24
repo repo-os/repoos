@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
@@ -88,3 +89,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-24T22:54:10Z · body
 - 2026-10-24T22:56:55Z · body
 - 2026-10-24T22:58:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
