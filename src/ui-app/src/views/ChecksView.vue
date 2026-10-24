@@ -335,261 +335,264 @@ const RESULT_ICON: Record<string, string> = {
     </nav>
 
     <div class="page-scroll-body">
-    <div v-if="activeTab === 'now'" class="ck-test-suite">
-      <section v-if="activeChecks.length" class="ck-live-checks" aria-label="Running checks">
-        <h2>Running checks</h2>
-        <article v-for="run in activeChecks" :key="run.id" class="ck-live-check" role="status">
-          <div class="ck-live-check-heading">
-            <a :href="`/work?task=${encodeURIComponent(run.taskId)}`">Task #{{ run.taskId }}</a>
-            <span>{{ run.kind === "handoff-finalize" ? "Handoff" : "Close-out" }}</span>
-            <span v-if="run.machine">on {{ run.machine }}</span>
-          </div>
-          <div class="check-progress" data-test-id="checks-page-progress">
-            <progress
-              v-if="progressPercent(run) !== null"
-              :value="progressPercent(run) ?? 0"
-              max="100"
-            />
-            <span>{{ checkProgressLabel(run) }}</span>
-            <span v-if="run.attempt && run.attempt > 1">
-              attempt {{ run.attempt
-              }}<template v-if="run.attemptReason"> · {{ run.attemptReason }}</template>
-            </span>
-          </div>
-        </article>
-      </section>
-      <section class="ck-local-slots" aria-label="Local check slots">
-        <h2>Local check slots</h2>
-        <p v-if="!localSlotHolders.some((holder) => holder.pid)">
-          No local check slots are currently in use.
-        </p>
-        <article v-for="holder in localSlotHolders" :key="holder.slot" class="ck-local-slot">
-          <strong>Slot {{ holder.slot }}</strong>
-          <template v-if="holder.pid">
-            · {{ holder.meta?.taskId ? `#${holder.meta.taskId}` : "check" }} · PID
-            {{ holder.pid }} · {{ holder.dead ? "dead" : "alive" }} · held
-            {{ fmtDuration(holder.ageMs) }} · heartbeat {{ fmtDuration(holder.heartbeatAgeMs) }} ago
-            <strong v-if="holder.dead"> · holder is gone, reclaiming</strong>
-            <strong v-else-if="holder.wedged"> · wedged</strong>
-            <Button
-              v-if="holder.wedged && !holder.dead"
-              size="sm"
-              @click="releaseWedgedSlot(holder)"
-              >Release slot</Button
-            >
-          </template>
-          <span v-else> · free</span>
-        </article>
-        <p v-for="(queued, index) in localSlotQueue" :key="queued.taskId">
-          Queue {{ index + 1 }} · #{{ queued.taskId }} · position {{ queued.position }} · waiting
-          {{ fmtDuration(Date.now() - Date.parse(queued.since)) }}
-        </p>
-      </section>
-      <IntegrationPipelineSummary />
-      <RemoteRunnersPanel />
-    </div>
-    <div v-else-if="activeTab === 'test-suite'" class="ck-test-suite">
-      <TestRunPanel embedded />
-    </div>
-    <div v-else-if="activeTab === 'runs'" class="ck-test-suite">
-      <CheckRunsPanel />
-    </div>
-
-    <template v-else-if="activeTab === 'plan'">
-      <div v-if="loading" class="ck-loading">Loading the check plan…</div>
-      <p v-else-if="error" class="ck-err">{{ error }}</p>
-
-      <template v-else-if="plan">
-        <!-- Controls: which profile, and the changed-path fast mode. -->
-        <section class="ck-controls">
-          <label class="ck-control">
-            <span class="ck-control-label">Profile</span>
-            <Select :model-value="plan.profile" @update:model-value="onProfile">
-              <SelectTrigger class="ck-select-trigger">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                <SelectViewport class="ck-select-viewport">
-                  <SelectItem v-for="p in plan.profiles" :key="p" :value="p">{{ p }}</SelectItem>
-                </SelectViewport>
-              </SelectContent>
-            </Select>
-          </label>
-
-          <label class="ck-control ck-control-ref">
-            <span class="ck-control-label">Changed-path fast mode</span>
-            <div class="ck-ref-row">
-              <input
-                v-model="changedInput"
-                class="ck-input"
-                placeholder="git ref, e.g. main"
-                spellcheck="false"
-                @keyup.enter="applyChanged"
-              />
-              <Button variant="ghost" size="sm" @click="applyChanged">Compare</Button>
-              <Button v-if="changedRef" variant="ghost" size="sm" @click="clearChanged"
-                >Clear</Button
-              >
+      <div v-if="activeTab === 'now'" class="ck-test-suite">
+        <section v-if="activeChecks.length" class="ck-live-checks" aria-label="Running checks">
+          <h2>Running checks</h2>
+          <article v-for="run in activeChecks" :key="run.id" class="ck-live-check" role="status">
+            <div class="ck-live-check-heading">
+              <a :href="`/work?task=${encodeURIComponent(run.taskId)}`">Task #{{ run.taskId }}</a>
+              <span>{{ run.kind === "handoff-finalize" ? "Handoff" : "Close-out" }}</span>
+              <span v-if="run.machine">on {{ run.machine }}</span>
             </div>
-          </label>
+            <div class="check-progress" data-test-id="checks-page-progress">
+              <progress
+                v-if="progressPercent(run) !== null"
+                :value="progressPercent(run) ?? 0"
+                max="100"
+              />
+              <span>{{ checkProgressLabel(run) }}</span>
+              <span v-if="run.attempt && run.attempt > 1">
+                attempt {{ run.attempt
+                }}<template v-if="run.attemptReason"> · {{ run.attemptReason }}</template>
+              </span>
+            </div>
+          </article>
         </section>
+        <section class="ck-local-slots" aria-label="Local check slots">
+          <h2>Local check slots</h2>
+          <p v-if="!localSlotHolders.some((holder) => holder.pid)">
+            No local check slots are currently in use.
+          </p>
+          <article v-for="holder in localSlotHolders" :key="holder.slot" class="ck-local-slot">
+            <strong>Slot {{ holder.slot }}</strong>
+            <template v-if="holder.pid">
+              · {{ holder.meta?.taskId ? `#${holder.meta.taskId}` : "check" }} · PID
+              {{ holder.pid }} · {{ holder.dead ? "dead" : "alive" }} · held
+              {{ fmtDuration(holder.ageMs) }} · heartbeat
+              {{ fmtDuration(holder.heartbeatAgeMs) }} ago
+              <strong v-if="holder.dead"> · holder is gone, reclaiming</strong>
+              <strong v-else-if="holder.wedged"> · wedged</strong>
+              <Button
+                v-if="holder.wedged && !holder.dead"
+                size="sm"
+                @click="releaseWedgedSlot(holder)"
+                >Release slot</Button
+              >
+            </template>
+            <span v-else> · free</span>
+          </article>
+          <p v-for="(queued, index) in localSlotQueue" :key="queued.taskId">
+            Queue {{ index + 1 }} · #{{ queued.taskId }} · position {{ queued.position }} · waiting
+            {{ fmtDuration(Date.now() - Date.parse(queued.since)) }}
+          </p>
+        </section>
+        <IntegrationPipelineSummary />
+        <RemoteRunnersPanel />
+      </div>
+      <div v-else-if="activeTab === 'test-suite'" class="ck-test-suite">
+        <TestRunPanel embedded />
+      </div>
+      <div v-else-if="activeTab === 'runs'" class="ck-test-suite">
+        <CheckRunsPanel />
+      </div>
 
-        <!-- Plan-level facts: source, selection summary, warnings. -->
-        <section class="ck-banner">
-          <div class="ck-banner-facts">
-            <a
-              v-if="plan.source === 'declared'"
-              class="ck-fact ck-fact-link"
-              :data-source="plan.source"
-              href="/settings?tab=toml"
-              >{{ SOURCE_LABEL[plan.source] }}</a
-            >
-            <span v-else class="ck-fact" :data-source="plan.source">{{
-              SOURCE_LABEL[plan.source]
-            }}</span>
-            <span class="ck-fact"
-              >Profile <strong>{{ plan.profile }}</strong> · {{ selectedCount }} of
-              {{ steps.length }} steps run</span
-            >
-            <span v-if="plan.changedRef" class="ck-fact ck-fact-changed">
-              Changed vs <code>{{ plan.changedRef }}</code> ·
-              {{ plan.changedPaths?.length ?? 0 }} path(s)
-            </span>
-          </div>
-          <p v-for="w in plan.warnings" :key="w" class="ck-warn">⚠ {{ w }}</p>
-          <p v-for="e in plan.errors" :key="e" class="ck-error-line">✗ {{ e }}</p>
-          <!-- #0592: a genuine empty, error-free plan is not a failure, but
+      <template v-else-if="activeTab === 'plan'">
+        <div v-if="loading" class="ck-loading">Loading the check plan…</div>
+        <p v-else-if="error" class="ck-err">{{ error }}</p>
+
+        <template v-else-if="plan">
+          <!-- Controls: which profile, and the changed-path fast mode. -->
+          <section class="ck-controls">
+            <label class="ck-control">
+              <span class="ck-control-label">Profile</span>
+              <Select :model-value="plan.profile" @update:model-value="onProfile">
+                <SelectTrigger class="ck-select-trigger">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport class="ck-select-viewport">
+                    <SelectItem v-for="p in plan.profiles" :key="p" :value="p">{{ p }}</SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+            </label>
+
+            <label class="ck-control ck-control-ref">
+              <span class="ck-control-label">Changed-path fast mode</span>
+              <div class="ck-ref-row">
+                <input
+                  v-model="changedInput"
+                  class="ck-input"
+                  placeholder="git ref, e.g. main"
+                  spellcheck="false"
+                  @keyup.enter="applyChanged"
+                />
+                <Button variant="ghost" size="sm" @click="applyChanged">Compare</Button>
+                <Button v-if="changedRef" variant="ghost" size="sm" @click="clearChanged"
+                  >Clear</Button
+                >
+              </div>
+            </label>
+          </section>
+
+          <!-- Plan-level facts: source, selection summary, warnings. -->
+          <section class="ck-banner">
+            <div class="ck-banner-facts">
+              <a
+                v-if="plan.source === 'declared'"
+                class="ck-fact ck-fact-link"
+                :data-source="plan.source"
+                href="/settings?tab=toml"
+                >{{ SOURCE_LABEL[plan.source] }}</a
+              >
+              <span v-else class="ck-fact" :data-source="plan.source">{{
+                SOURCE_LABEL[plan.source]
+              }}</span>
+              <span class="ck-fact"
+                >Profile <strong>{{ plan.profile }}</strong> · {{ selectedCount }} of
+                {{ steps.length }} steps run</span
+              >
+              <span v-if="plan.changedRef" class="ck-fact ck-fact-changed">
+                Changed vs <code>{{ plan.changedRef }}</code> ·
+                {{ plan.changedPaths?.length ?? 0 }} path(s)
+              </span>
+            </div>
+            <p v-for="w in plan.warnings" :key="w" class="ck-warn">⚠ {{ w }}</p>
+            <p v-for="e in plan.errors" :key="e" class="ck-error-line">✗ {{ e }}</p>
+            <!-- #0592: a genuine empty, error-free plan is not a failure, but
                it is not green either — remind with the two easy setup paths.
                A plan with errors fails red; the reminder is withheld. -->
-          <NoCheckPlanReminder v-if="isGenuinelyEmptyPlan(plan)" />
-        </section>
+            <NoCheckPlanReminder v-if="isGenuinelyEmptyPlan(plan)" />
+          </section>
 
-        <!-- Last run: the one fact a plan screen cannot show by resolving
+          <!-- Last run: the one fact a plan screen cannot show by resolving
              alone. #0592: a skipped gate (no check plan) is never rendered as
              passed, and gets its own neutral/amber styling — not the red
              failure tint. -->
-        <section
-          v-if="lastRun"
-          class="ck-lastrun"
-          :data-passed="lastRun.passed"
-          :data-outcome="lastRun.outcome"
-        >
-          <div class="ck-lastrun-head">
-            <span class="ck-lastrun-title">
-              <template v-if="lastRun.outcome === 'skipped'"
-                >No checks ran — plan not configured</template
-              >
-              <template v-else>Last run {{ lastRun.passed ? "passed" : "failed" }}</template>
-            </span>
-            <span class="ck-lastrun-meta">
-              profile <strong>{{ lastRun.profile }}</strong> ·
-              {{ fmtDuration(lastRun.durationMs) }} ·
-              {{ fmtTime(lastRun.finishedAt) }}
-              <template v-if="lastRun.changedRef"> · changed vs {{ lastRun.changedRef }}</template>
-            </span>
-          </div>
-        </section>
-        <section v-else class="ck-lastrun ck-lastrun-empty">
-          No recorded run yet — the last result appears here after <code>repoos check</code> runs.
-        </section>
-
-        <!-- The run sheet: steps in declaration order, because order matters. -->
-        <ol class="ck-steps">
-          <li
-            v-for="(s, i) in steps"
-            :key="s.name"
-            class="ck-step"
-            :data-selected="s.selected"
-            :data-result="resultFor(s.name)?.status ?? 'none'"
+          <section
+            v-if="lastRun"
+            class="ck-lastrun"
+            :data-passed="lastRun.passed"
+            :data-outcome="lastRun.outcome"
           >
-            <div class="ck-step-rail" aria-hidden="true">
-              <span class="ck-step-num">{{ i + 1 }}</span>
-            </div>
-
-            <div class="ck-step-body">
-              <div class="ck-step-top">
-                <span class="ck-step-name">{{ s.name }}</span>
-                <span v-if="!s.required" class="ck-badge ck-badge-advisory">advisory</span>
-                <span v-if="s.crossCutting" class="ck-badge ck-badge-cross"
-                  >runs on any change</span
+            <div class="ck-lastrun-head">
+              <span class="ck-lastrun-title">
+                <template v-if="lastRun.outcome === 'skipped'"
+                  >No checks ran — plan not configured</template
                 >
-                <span v-for="p in s.profiles" :key="p" class="ck-badge ck-badge-profile">{{
-                  p
-                }}</span>
+                <template v-else>Last run {{ lastRun.passed ? "passed" : "failed" }}</template>
+              </span>
+              <span class="ck-lastrun-meta">
+                profile <strong>{{ lastRun.profile }}</strong> ·
+                {{ fmtDuration(lastRun.durationMs) }} ·
+                {{ fmtTime(lastRun.finishedAt) }}
+                <template v-if="lastRun.changedRef">
+                  · changed vs {{ lastRun.changedRef }}</template
+                >
+              </span>
+            </div>
+          </section>
+          <section v-else class="ck-lastrun ck-lastrun-empty">
+            No recorded run yet — the last result appears here after <code>repoos check</code> runs.
+          </section>
+
+          <!-- The run sheet: steps in declaration order, because order matters. -->
+          <ol class="ck-steps">
+            <li
+              v-for="(s, i) in steps"
+              :key="s.name"
+              class="ck-step"
+              :data-selected="s.selected"
+              :data-result="resultFor(s.name)?.status ?? 'none'"
+            >
+              <div class="ck-step-rail" aria-hidden="true">
+                <span class="ck-step-num">{{ i + 1 }}</span>
               </div>
 
-              <code class="ck-step-cmd">{{ describe(s) }}</code>
+              <div class="ck-step-body">
+                <div class="ck-step-top">
+                  <span class="ck-step-name">{{ s.name }}</span>
+                  <span v-if="!s.required" class="ck-badge ck-badge-advisory">advisory</span>
+                  <span v-if="s.crossCutting" class="ck-badge ck-badge-cross"
+                    >runs on any change</span
+                  >
+                  <span v-for="p in s.profiles" :key="p" class="ck-badge ck-badge-profile">{{
+                    p
+                  }}</span>
+                </div>
 
-              <dl class="ck-step-meta">
-                <div>
-                  <dt>Timeout</dt>
-                  <dd>{{ fmtDuration(s.timeoutMs) }}</dd>
-                </div>
-                <div v-if="s.requires.length">
-                  <dt>Requires</dt>
-                  <dd>
-                    <code>{{ s.requires.join(", ") }}</code>
-                  </dd>
-                </div>
-                <div v-if="s.dependsOn.length">
-                  <dt>After</dt>
-                  <dd>
-                    <code>{{ s.dependsOn.join(", ") }}</code>
-                  </dd>
-                </div>
-                <div v-if="s.whenChanged.length">
-                  <dt>When changed</dt>
-                  <dd>
-                    <code>{{ s.whenChanged.join(", ") }}</code>
-                  </dd>
-                </div>
-                <div v-if="resultFor(s.name)">
-                  <dt>Last</dt>
-                  <dd :data-status="resultFor(s.name)!.status">
-                    {{ RESULT_ICON[resultFor(s.name)!.status] ?? "•" }}
-                    {{ resultFor(s.name)!.status }} ·
-                    {{ fmtDuration(resultFor(s.name)!.durationMs) }}
-                  </dd>
-                </div>
-              </dl>
+                <code class="ck-step-cmd">{{ describe(s) }}</code>
 
-              <!-- Missing prerequisite: never a success, and always with the fix. -->
-              <div v-if="s.missing.length" class="ck-missing" role="alert">
-                <div v-for="m in s.missing" :key="m.tool" class="ck-missing-row">
-                  <strong>Missing prerequisite: {{ m.tool }}</strong>
-                  <span>{{ m.hint }}</span>
+                <dl class="ck-step-meta">
+                  <div>
+                    <dt>Timeout</dt>
+                    <dd>{{ fmtDuration(s.timeoutMs) }}</dd>
+                  </div>
+                  <div v-if="s.requires.length">
+                    <dt>Requires</dt>
+                    <dd>
+                      <code>{{ s.requires.join(", ") }}</code>
+                    </dd>
+                  </div>
+                  <div v-if="s.dependsOn.length">
+                    <dt>After</dt>
+                    <dd>
+                      <code>{{ s.dependsOn.join(", ") }}</code>
+                    </dd>
+                  </div>
+                  <div v-if="s.whenChanged.length">
+                    <dt>When changed</dt>
+                    <dd>
+                      <code>{{ s.whenChanged.join(", ") }}</code>
+                    </dd>
+                  </div>
+                  <div v-if="resultFor(s.name)">
+                    <dt>Last</dt>
+                    <dd :data-status="resultFor(s.name)!.status">
+                      {{ RESULT_ICON[resultFor(s.name)!.status] ?? "•" }}
+                      {{ resultFor(s.name)!.status }} ·
+                      {{ fmtDuration(resultFor(s.name)!.durationMs) }}
+                    </dd>
+                  </div>
+                </dl>
+
+                <!-- Missing prerequisite: never a success, and always with the fix. -->
+                <div v-if="s.missing.length" class="ck-missing" role="alert">
+                  <div v-for="m in s.missing" :key="m.tool" class="ck-missing-row">
+                    <strong>Missing prerequisite: {{ m.tool }}</strong>
+                    <span>{{ m.hint }}</span>
+                  </div>
                 </div>
+
+                <!-- Why this step will not run. -->
+                <p v-if="s.skip" class="ck-skip">
+                  <span class="ck-skip-tag">Skipped ({{ s.skip.reason }})</span>{{ s.skip.detail }}
+                </p>
+                <p v-else class="ck-willrun">Will run for profile "{{ plan.profile }}".</p>
+
+                <template v-if="resultFor(s.name)?.output">
+                  <button
+                    class="ck-output-toggle"
+                    type="button"
+                    @click="openOutput = openOutput === s.name ? null : s.name"
+                  >
+                    {{ openOutput === s.name ? "Hide" : "Show" }} last output
+                  </button>
+                  <pre v-if="openOutput === s.name" class="ck-output">{{
+                    resultFor(s.name)!.output
+                  }}</pre>
+                </template>
               </div>
+            </li>
+          </ol>
 
-              <!-- Why this step will not run. -->
-              <p v-if="s.skip" class="ck-skip">
-                <span class="ck-skip-tag">Skipped ({{ s.skip.reason }})</span>{{ s.skip.detail }}
-              </p>
-              <p v-else class="ck-willrun">Will run for profile "{{ plan.profile }}".</p>
-
-              <template v-if="resultFor(s.name)?.output">
-                <button
-                  class="ck-output-toggle"
-                  type="button"
-                  @click="openOutput = openOutput === s.name ? null : s.name"
-                >
-                  {{ openOutput === s.name ? "Hide" : "Show" }} last output
-                </button>
-                <pre v-if="openOutput === s.name" class="ck-output">{{
-                  resultFor(s.name)!.output
-                }}</pre>
-              </template>
-            </div>
-          </li>
-        </ol>
-
-        <p v-if="steps.length === 0" class="ck-err">
-          This repo has no check plan. Declare <code>[[check.steps]]</code> in
-          <code>repoos.toml</code> — run <code>repoos init</code> for a proposal, or
-          <code>repoos check --print-plan</code> for a starting point.
-        </p>
+          <p v-if="steps.length === 0" class="ck-err">
+            This repo has no check plan. Declare <code>[[check.steps]]</code> in
+            <code>repoos.toml</code> — run <code>repoos init</code> for a proposal, or
+            <code>repoos check --print-plan</code> for a starting point.
+          </p>
+        </template>
       </template>
-    </template>
     </div>
   </div>
 </template>

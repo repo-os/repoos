@@ -1169,333 +1169,782 @@ onUnmounted(() => {
     <div v-if="!config.loaded" class="spin"></div>
 
     <div v-else class="page-scroll-body">
-    <div class="settings-panels">
-      <!-- ─── General tab ─────────────────────────────────── -->
-      <div
-        id="settings-panel-general"
-        role="tabpanel"
-        :aria-labelledby="`settings-tab-general`"
-        v-show="activeTab === 'general'"
-      >
-        <nav
-          v-if="generalNavSections.length > 1"
-          class="settings-section-nav"
-          aria-label="General sections"
+      <div class="settings-panels">
+        <!-- ─── General tab ─────────────────────────────────── -->
+        <div
+          id="settings-panel-general"
+          role="tabpanel"
+          :aria-labelledby="`settings-tab-general`"
+          v-show="activeTab === 'general'"
         >
-          <button
-            v-for="s in generalNavSections"
-            :key="s.id"
-            type="button"
-            class="settings-section-chip"
-            :class="{ active: activeSection === s.id }"
-            :aria-current="activeSection === s.id ? 'true' : undefined"
-            @click="goToSection(s.id)"
+          <nav
+            v-if="generalNavSections.length > 1"
+            class="settings-section-nav"
+            aria-label="General sections"
           >
-            {{ s.label }}
-          </button>
-        </nav>
+            <button
+              v-for="s in generalNavSections"
+              :key="s.id"
+              type="button"
+              class="settings-section-chip"
+              :class="{ active: activeSection === s.id }"
+              :aria-current="activeSection === s.id ? 'true' : undefined"
+              @click="goToSection(s.id)"
+            >
+              {{ s.label }}
+            </button>
+          </nav>
 
-        <section :id="settingsSectionAnchor('themes')" class="settings-section" aria-label="Themes">
-          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-            <div class="setting-group">
-              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-                <span class="live-dot"></span>Themes
+          <section
+            :id="settingsSectionAnchor('themes')"
+            class="settings-section"
+            aria-label="Themes"
+          >
+            <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+              <div class="setting-group">
+                <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                  <span class="live-dot"></span>Themes
+                </div>
+                <div class="theme-list">
+                  <div
+                    v-for="t in DESIGN_THEMES"
+                    :key="t.id"
+                    class="theme-row"
+                    :class="{ current: config.uiTheme === t.id }"
+                    role="button"
+                    tabindex="0"
+                    :aria-pressed="config.uiTheme === t.id"
+                    :aria-label="`Use the ${t.label} theme`"
+                    @click="config.setUiTheme(t.id)"
+                    @keydown.enter.prevent="config.setUiTheme(t.id)"
+                  >
+                    <span
+                      class="theme-swatch"
+                      :style="{
+                        background: swatchFor(t.id).bg,
+                        '--sw-a': swatchFor(t.id).a,
+                        '--sw-b': swatchFor(t.id).b,
+                      }"
+                      aria-hidden="true"
+                    >
+                      <i></i><i></i>
+                    </span>
+                    <span class="theme-name">
+                      {{ t.label }}
+                      <span v-if="config.uiTheme === t.id" class="theme-active-badge">active</span>
+                    </span>
+                    <button
+                      type="button"
+                      class="theme-star"
+                      :class="{ on: config.isThemeFavorite(t.id) }"
+                      :aria-pressed="config.isThemeFavorite(t.id)"
+                      :aria-label="
+                        config.isThemeFavorite(t.id)
+                          ? `Remove ${t.label} from favorites`
+                          : `Add ${t.label} to favorites`
+                      "
+                      :title="
+                        config.isThemeFavorite(t.id) ? 'Remove from favorites' : 'Add to favorites'
+                      "
+                      @click.stop="toggleThemeFavorite(t.id)"
+                    >
+                      {{ config.isThemeFavorite(t.id) ? "★" : "☆" }}
+                    </button>
+                  </div>
+                </div>
+                <div v-if="config.themeFavoritesNotice" class="theme-fav-note" role="status">
+                  {{ config.themeFavoritesNotice }}
+                </div>
+                <div class="setting-desc" style="padding: 4px 0 10px">
+                  Star up to 3 favorites — starred themes appear in the sidebar quick switcher.
+                  Click a theme to apply it.
+                </div>
               </div>
-              <div class="theme-list">
+            </Card>
+          </section>
+
+          <section
+            v-if="activityAnimationField"
+            :id="settingsSectionAnchor('activity-animation')"
+            class="settings-section"
+            aria-label="Activity animation"
+          >
+            <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+              <div class="setting-group">
+                <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                  <span class="live-dot"></span>Activity animation
+                </div>
+                <div id="setting-activityAnimationStyle" class="setting-row">
+                  <div class="setting-info">
+                    <div class="setting-desc">{{ activityAnimationField.description }}</div>
+                  </div>
+                  <div class="setting-input">
+                    <Select
+                      :model-value="
+                        String(form.activityAnimationStyle ?? activityAnimationField.default)
+                      "
+                      :disabled="config.saving"
+                      @update:model-value="(v) => (form.activityAnimationStyle = v)"
+                    >
+                      <SelectTrigger class="h-[34px] w-[min(100%,240px)] rounded-[9px] px-[11px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                          <SelectItem
+                            v-for="o in activityAnimationField.options"
+                            :key="o.value"
+                            :value="o.value"
+                            >{{ o.label }}</SelectItem
+                          >
+                        </SelectViewport>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div
-                  v-for="t in DESIGN_THEMES"
-                  :key="t.id"
-                  class="theme-row"
-                  :class="{ current: config.uiTheme === t.id }"
-                  role="button"
-                  tabindex="0"
-                  :aria-pressed="config.uiTheme === t.id"
-                  :aria-label="`Use the ${t.label} theme`"
-                  @click="config.setUiTheme(t.id)"
-                  @keydown.enter.prevent="config.setUiTheme(t.id)"
+                  v-if="activityAnimationSizeField"
+                  id="setting-activityAnimationSize"
+                  class="setting-row"
                 >
-                  <span
-                    class="theme-swatch"
-                    :style="{
-                      background: swatchFor(t.id).bg,
-                      '--sw-a': swatchFor(t.id).a,
-                      '--sw-b': swatchFor(t.id).b,
-                    }"
-                    aria-hidden="true"
-                  >
-                    <i></i><i></i>
-                  </span>
-                  <span class="theme-name">
-                    {{ t.label }}
-                    <span v-if="config.uiTheme === t.id" class="theme-active-badge">active</span>
-                  </span>
-                  <button
-                    type="button"
-                    class="theme-star"
-                    :class="{ on: config.isThemeFavorite(t.id) }"
-                    :aria-pressed="config.isThemeFavorite(t.id)"
-                    :aria-label="
-                      config.isThemeFavorite(t.id)
-                        ? `Remove ${t.label} from favorites`
-                        : `Add ${t.label} to favorites`
-                    "
-                    :title="
-                      config.isThemeFavorite(t.id) ? 'Remove from favorites' : 'Add to favorites'
-                    "
-                    @click.stop="toggleThemeFavorite(t.id)"
-                  >
-                    {{ config.isThemeFavorite(t.id) ? "★" : "☆" }}
-                  </button>
+                  <div class="setting-info">
+                    <div class="setting-label">Animation size</div>
+                    <div class="setting-desc">{{ activityAnimationSizeField.description }}</div>
+                  </div>
+                  <div class="setting-input">
+                    <div class="activity-size-control">
+                      <div class="activity-size-range-wrap">
+                        <input
+                          id="setting-activityAnimationSize-range"
+                          class="activity-size-range"
+                          type="range"
+                          :min="ACTIVITY_SIZE_MIN"
+                          :max="ACTIVITY_SIZE_MAX"
+                          :step="ACTIVITY_SIZE_STEP"
+                          :value="activityAnimationSliderValue"
+                          :disabled="config.saving"
+                          aria-label="Activity animation size in pixels"
+                          :aria-valuetext="activityAnimationSizeValueText"
+                          @input="
+                            setActivityAnimationSizeFromRange(
+                              ($event.target as HTMLInputElement).value,
+                            )
+                          "
+                        />
+                        <span
+                          class="activity-size-default-tick"
+                          :style="{ left: `${activityAnimationDefaultTickPercent}%` }"
+                          data-test-id="activity-size-default-tick"
+                          aria-hidden="true"
+                        ></span>
+                      </div>
+                      <span class="activity-size-value" aria-hidden="true">{{
+                        activityAnimationSizeValueText
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="activity-animation-preview" aria-hidden="true">
+                  <div class="activity-animation-preview-line">
+                    <ActivityIndicator
+                      :animation-style="activityAnimationPreviewStyle"
+                      :animation-size="activityAnimationPreviewSize"
+                      activity="coding"
+                      label="Coding preview"
+                    />
+                    <span>CODING</span>
+                  </div>
+                  <div class="activity-animation-preview-line ai-reviewing-preview">
+                    <ActivityIndicator
+                      :animation-style="activityAnimationPreviewStyle"
+                      :animation-size="activityAnimationPreviewSize"
+                      variant="reviewing"
+                      activity="reviewing"
+                      label="Reviewing preview"
+                    />
+                    <span>REVIEWING</span>
+                  </div>
+                  <div class="activity-animation-preview-line">
+                    <ActivityIndicator
+                      :animation-style="activityAnimationPreviewStyle"
+                      :animation-size="activityAnimationPreviewSize"
+                      activity="agent"
+                      label="Agent working preview"
+                    />
+                    <span>AGENT WORKING</span>
+                  </div>
+                </div>
+                <div class="setting-desc" style="padding: 4px 0 10px">
+                  Previewed at the exact size used in the app — changes save automatically.
                 </div>
               </div>
-              <div v-if="config.themeFavoritesNotice" class="theme-fav-note" role="status">
-                {{ config.themeFavoritesNotice }}
-              </div>
-              <div class="setting-desc" style="padding: 4px 0 10px">
-                Star up to 3 favorites — starred themes appear in the sidebar quick switcher. Click
-                a theme to apply it.
-              </div>
-            </div>
-          </Card>
-        </section>
+            </Card>
+          </section>
 
-        <section
-          v-if="activityAnimationField"
-          :id="settingsSectionAnchor('activity-animation')"
-          class="settings-section"
-          aria-label="Activity animation"
-        >
-          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-            <div class="setting-group">
-              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-                <span class="live-dot"></span>Activity animation
-              </div>
-              <div id="setting-activityAnimationStyle" class="setting-row">
-                <div class="setting-info">
-                  <div class="setting-desc">{{ activityAnimationField.description }}</div>
+          <section
+            v-for="group in generalFieldSections"
+            :key="group.section.id"
+            :id="settingsSectionAnchor(group.section.id)"
+            :data-settings-section="group.section.id"
+            class="settings-section"
+            :aria-label="group.section.label"
+          >
+            <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+              <div class="setting-group">
+                <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                  <span class="live-dot"></span>{{ group.section.label }}
                 </div>
-                <div class="setting-input">
-                  <Select
-                    :model-value="
-                      String(form.activityAnimationStyle ?? activityAnimationField.default)
-                    "
-                    :disabled="config.saving"
-                    @update:model-value="(v) => (form.activityAnimationStyle = v)"
-                  >
-                    <SelectTrigger class="h-[34px] w-[min(100%,240px)] rounded-[9px] px-[11px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem
-                          v-for="o in activityAnimationField.options"
-                          :key="o.value"
-                          :value="o.value"
-                          >{{ o.label }}</SelectItem
-                        >
-                      </SelectViewport>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div
-                v-if="activityAnimationSizeField"
-                id="setting-activityAnimationSize"
-                class="setting-row"
-              >
-                <div class="setting-info">
-                  <div class="setting-label">Animation size</div>
-                  <div class="setting-desc">{{ activityAnimationSizeField.description }}</div>
-                </div>
-                <div class="setting-input">
-                  <div class="activity-size-control">
-                    <div class="activity-size-range-wrap">
-                      <input
-                        id="setting-activityAnimationSize-range"
-                        class="activity-size-range"
-                        type="range"
-                        :min="ACTIVITY_SIZE_MIN"
-                        :max="ACTIVITY_SIZE_MAX"
-                        :step="ACTIVITY_SIZE_STEP"
-                        :value="activityAnimationSliderValue"
+                <template v-for="f in group.fields" :key="f.key">
+                  <div :id="`setting-${f.key}`" class="setting-row">
+                    <div class="setting-info">
+                      <div class="setting-label">{{ f.label }}</div>
+                      <div class="setting-desc">{{ f.description }}</div>
+                    </div>
+                    <span
+                      v-if="f.restartRequired"
+                      class="restart-badge"
+                      title="Changes require restarting RepoOS"
+                      aria-label="Restart required"
+                      >restart required</span
+                    >
+                    <div :data-config-key="f.key" class="setting-input">
+                      <Select
+                        v-if="f.type === 'select'"
+                        :model-value="String(form[f.key])"
                         :disabled="config.saving"
-                        aria-label="Activity animation size in pixels"
-                        :aria-valuetext="activityAnimationSizeValueText"
-                        @input="
-                          setActivityAnimationSizeFromRange(
-                            ($event.target as HTMLInputElement).value,
-                          )
+                        @update:model-value="(v) => (form[f.key] = v)"
+                      >
+                        <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent position="popper">
+                          <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                            <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
+                              o.label
+                            }}</SelectItem>
+                          </SelectViewport>
+                        </SelectContent>
+                      </Select>
+                      <Switch
+                        v-else-if="f.type === 'boolean'"
+                        :checked="!!form[f.key]"
+                        :disabled="config.saving"
+                        @update:checked="(v: boolean) => (form[f.key] = v)"
+                      />
+                      <Input
+                        v-else-if="f.type === 'number'"
+                        :model-value="form[f.key] == null ? '' : String(form[f.key])"
+                        type="number"
+                        :min="typeof f.min === 'number' ? f.min : 0"
+                        :step="typeof f.step === 'number' ? f.step : 1"
+                        style="width: 100px"
+                        :disabled="config.saving"
+                        @update:model-value="
+                          (v) => (form[f.key] = v === '' ? f.default : Number(v))
                         "
                       />
-                      <span
-                        class="activity-size-default-tick"
-                        :style="{ left: `${activityAnimationDefaultTickPercent}%` }"
-                        data-test-id="activity-size-default-tick"
-                        aria-hidden="true"
-                      ></span>
+                      <Input
+                        v-else-if="f.type === 'string'"
+                        :model-value="String(form[f.key] ?? '')"
+                        type="text"
+                        :disabled="config.saving"
+                        @update:model-value="(v) => (form[f.key] = v)"
+                      />
+                      <Input
+                        v-else-if="f.type === 'array'"
+                        :model-value="String(form[f.key] ?? '')"
+                        type="text"
+                        :placeholder="arrayPlaceholder(f.key)"
+                        :disabled="config.saving"
+                        @update:model-value="(v) => (form[f.key] = v)"
+                      />
                     </div>
-                    <span class="activity-size-value" aria-hidden="true">{{
-                      activityAnimationSizeValueText
-                    }}</span>
                   </div>
-                </div>
+                  <div
+                    v-if="f.key === 'ctoSkipHealthy' && ctoActionsField"
+                    :id="`setting-${ctoActionsField.key}`"
+                    :data-config-key="ctoActionsField.key"
+                    class="setting-row setting-row--stacked"
+                  >
+                    <div class="setting-info">
+                      <div class="setting-label">{{ ctoActionsField.label }}</div>
+                      <div class="setting-desc">{{ CTO_ACTIONS_SETTINGS_ROW_DESC }}</div>
+                    </div>
+                    <div class="setting-input setting-input--wide">
+                      <CtoSafeActionsSettings
+                        :model-value="ctoActionsFormValue()"
+                        :disabled="config.saving"
+                        @update:model-value="setCtoActions"
+                      />
+                    </div>
+                  </div>
+                </template>
               </div>
-              <div class="activity-animation-preview" aria-hidden="true">
-                <div class="activity-animation-preview-line">
-                  <ActivityIndicator
-                    :animation-style="activityAnimationPreviewStyle"
-                    :animation-size="activityAnimationPreviewSize"
-                    activity="coding"
-                    label="Coding preview"
-                  />
-                  <span>CODING</span>
-                </div>
-                <div class="activity-animation-preview-line ai-reviewing-preview">
-                  <ActivityIndicator
-                    :animation-style="activityAnimationPreviewStyle"
-                    :animation-size="activityAnimationPreviewSize"
-                    variant="reviewing"
-                    activity="reviewing"
-                    label="Reviewing preview"
-                  />
-                  <span>REVIEWING</span>
-                </div>
-                <div class="activity-animation-preview-line">
-                  <ActivityIndicator
-                    :animation-style="activityAnimationPreviewStyle"
-                    :animation-size="activityAnimationPreviewSize"
-                    activity="agent"
-                    label="Agent working preview"
-                  />
-                  <span>AGENT WORKING</span>
-                </div>
-              </div>
-              <div class="setting-desc" style="padding: 4px 0 10px">
-                Previewed at the exact size used in the app — changes save automatically.
-              </div>
-            </div>
-          </Card>
-        </section>
+            </Card>
+          </section>
 
-        <section
-          v-for="group in generalFieldSections"
-          :key="group.section.id"
-          :id="settingsSectionAnchor(group.section.id)"
-          :data-settings-section="group.section.id"
-          class="settings-section"
-          :aria-label="group.section.label"
-        >
-          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-            <div class="setting-group">
-              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-                <span class="live-dot"></span>{{ group.section.label }}
-              </div>
-              <template v-for="f in group.fields" :key="f.key">
-                <div :id="`setting-${f.key}`" class="setting-row">
+          <section
+            :id="settingsSectionAnchor('attachments')"
+            class="settings-section"
+            aria-label="Attachments"
+          >
+            <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+              <div class="setting-group">
+                <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                  <span class="live-dot"></span>Attachments
+                </div>
+                <div id="setting-storage.provider" class="setting-row">
                   <div class="setting-info">
-                    <div class="setting-label">{{ f.label }}</div>
-                    <div class="setting-desc">{{ f.description }}</div>
+                    <div class="setting-label">Attachment storage</div>
+                    <div class="setting-desc">
+                      Where attachment files — task and input screenshots — are stored. Local
+                      filesystem keeps them in gitignored
+                      <span class="mono">.attachments/</span> folders on this machine and is the
+                      default; Neon Object Storage is opt-in and needs credentials before it can be
+                      used.
+                    </div>
                   </div>
                   <span
-                    v-if="f.restartRequired"
                     class="restart-badge"
                     title="Changes require restarting RepoOS"
                     aria-label="Restart required"
                     >restart required</span
                   >
-                  <div :data-config-key="f.key" class="setting-input">
+                  <div class="setting-input tunnel-setting-actions">
+                    <span class="tunnel-status-chip">{{ storageStatusChip }}</span>
                     <Select
-                      v-if="f.type === 'select'"
-                      :model-value="String(form[f.key])"
+                      :model-value="String(form['storage.provider'] ?? 'local')"
                       :disabled="config.saving"
-                      @update:model-value="(v) => (form[f.key] = v)"
+                      @update:model-value="(v) => (form['storage.provider'] = v)"
                     >
                       <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent position="popper">
                         <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                          <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
-                            o.label
-                          }}</SelectItem>
+                          <SelectItem
+                            v-for="o in storageProviderOptions"
+                            :key="o.value"
+                            :value="o.value"
+                          >
+                            {{ o.label }}
+                          </SelectItem>
                         </SelectViewport>
                       </SelectContent>
                     </Select>
-                    <Switch
-                      v-else-if="f.type === 'boolean'"
-                      :checked="!!form[f.key]"
-                      :disabled="config.saving"
-                      @update:checked="(v: boolean) => (form[f.key] = v)"
-                    />
-                    <Input
-                      v-else-if="f.type === 'number'"
-                      :model-value="form[f.key] == null ? '' : String(form[f.key])"
-                      type="number"
-                      :min="typeof f.min === 'number' ? f.min : 0"
-                      :step="typeof f.step === 'number' ? f.step : 1"
-                      style="width: 100px"
-                      :disabled="config.saving"
-                      @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
-                    />
-                    <Input
-                      v-else-if="f.type === 'string'"
-                      :model-value="String(form[f.key] ?? '')"
-                      type="text"
-                      :disabled="config.saving"
-                      @update:model-value="(v) => (form[f.key] = v)"
-                    />
-                    <Input
-                      v-else-if="f.type === 'array'"
-                      :model-value="String(form[f.key] ?? '')"
-                      type="text"
-                      :placeholder="arrayPlaceholder(f.key)"
-                      :disabled="config.saving"
-                      @update:model-value="(v) => (form[f.key] = v)"
-                    />
                   </div>
                 </div>
-                <div
-                  v-if="f.key === 'ctoSkipHealthy' && ctoActionsField"
-                  :id="`setting-${ctoActionsField.key}`"
-                  :data-config-key="ctoActionsField.key"
-                  class="setting-row setting-row--stacked"
-                >
-                  <div class="setting-info">
-                    <div class="setting-label">{{ ctoActionsField.label }}</div>
-                    <div class="setting-desc">{{ CTO_ACTIONS_SETTINGS_ROW_DESC }}</div>
-                  </div>
-                  <div class="setting-input setting-input--wide">
-                    <CtoSafeActionsSettings
-                      :model-value="ctoActionsFormValue()"
-                      :disabled="config.saving"
-                      @update:model-value="setCtoActions"
-                    />
-                  </div>
+                <div class="setting-desc" style="padding: 0 0 12px; max-width: 72ch">
+                  {{ storageExplanation }}
                 </div>
-              </template>
-            </div>
-          </Card>
-        </section>
+              </div>
+            </Card>
+          </section>
 
-        <section
-          :id="settingsSectionAnchor('attachments')"
-          class="settings-section"
-          aria-label="Attachments"
+          <section
+            :id="settingsSectionAnchor('service')"
+            class="settings-section"
+            aria-label="Background service"
+          >
+            <ServiceSettings />
+          </section>
+
+          <section
+            :id="settingsSectionAnchor('publishing')"
+            class="settings-section"
+            aria-label="Publishing"
+          >
+            <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+              <div class="setting-group">
+                <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                  <span class="live-dot"></span>Publishing
+                </div>
+                <div id="setting-tunnelEnabled" class="setting-row">
+                  <div class="setting-info">
+                    <div class="setting-label">Cloudflare publishing</div>
+                    <div class="setting-desc">
+                      Configure a protected public hostname for a local RepoOS service. This card
+                      reports status; it does not start or stop cloudflared.
+                    </div>
+                  </div>
+                  <div class="setting-input tunnel-setting-actions">
+                    <span class="tunnel-status-chip">{{ tunnelStatus }}</span>
+                    <Button variant="outline" size="sm" @click="ui.openTunnel()"
+                      >Configure publishing</Button
+                    >
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </section>
+
+          <section
+            :id="settingsSectionAnchor('remote-validation')"
+            data-settings-section="remote-validation"
+            class="settings-section"
+            aria-label="Remote validation"
+          >
+            <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+              <div class="setting-group">
+                <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                  <span class="live-dot"></span>Remote validation
+                </div>
+                <div id="setting-remoteValidation.enabled" class="setting-row">
+                  <div class="setting-info">
+                    <div class="setting-label">Remote validation runner</div>
+                    <div class="setting-desc">
+                      Run the close-out build + test suite on a disposable Hetzner VM instead of
+                      this machine, so MTD isn't blocked by local memory pressure. Off by default;
+                      enabling sends repo contents to Hetzner.
+                    </div>
+                  </div>
+                  <div class="setting-input tunnel-setting-actions">
+                    <span class="tunnel-status-chip">{{ rvStatusLabel }}</span>
+                    <Button variant="outline" size="sm" @click="ui.openRemoteValidation()">
+                      Configure runner
+                    </Button>
+                  </div>
+                </div>
+                <template v-for="f in remoteValidationGeneralFields" :key="f.key">
+                  <div :id="`setting-${f.key}`" class="setting-row">
+                    <div class="setting-info">
+                      <div class="setting-label">{{ f.label }}</div>
+                      <div class="setting-desc">{{ f.description }}</div>
+                    </div>
+                    <span
+                      v-if="f.restartRequired"
+                      class="restart-badge"
+                      title="Changes require restarting RepoOS"
+                      aria-label="Restart required"
+                      >restart required</span
+                    >
+                    <div :data-config-key="f.key" class="setting-input">
+                      <Select
+                        v-if="f.type === 'select'"
+                        :model-value="String(form[f.key])"
+                        :disabled="config.saving"
+                        @update:model-value="(v) => (form[f.key] = v)"
+                      >
+                        <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent position="popper">
+                          <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                            <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
+                              o.label
+                            }}</SelectItem>
+                          </SelectViewport>
+                        </SelectContent>
+                      </Select>
+                      <Switch
+                        v-else-if="f.type === 'boolean'"
+                        :checked="!!form[f.key]"
+                        :disabled="config.saving"
+                        @update:checked="(v: boolean) => (form[f.key] = v)"
+                      />
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </Card>
+          </section>
+
+          <section :id="settingsSectionAnchor('board')" class="settings-section" aria-label="Board">
+            <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+              <div class="setting-group">
+                <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                  <span class="live-dot"></span>Board
+                </div>
+                <div class="setting-row">
+                  <div class="setting-info">
+                    <div class="setting-label">Glide animations</div>
+                    <div class="setting-desc">
+                      When a card changes state, animate it gliding between columns to show where it
+                      came from and where it went. Off by default; when off, cards change state
+                      instantly as before.
+                    </div>
+                  </div>
+                  <div class="setting-input">
+                    <Switch :checked="ui.glideAnimations" @update:checked="ui.setGlideAnimations" />
+                  </div>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-info">
+                    <div class="setting-label">Keyboard navigation</div>
+                    <div class="setting-desc">
+                      Power-user shortcut mode: move around the board with the keyboard —
+                      <span class="mono">j</span>/<span class="mono">k</span> (
+                      <span class="mono">h</span>/<span class="mono">l</span> between columns),
+                      <span class="mono">Enter</span> to open, <span class="mono">Esc</span> to
+                      close or clear. Off by default; when off the board behaves exactly as before.
+                    </div>
+                  </div>
+                  <div class="setting-input">
+                    <Switch
+                      :checked="ui.keyboardNavEnabled"
+                      @update:checked="ui.setKeyboardNavEnabled"
+                    />
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </section>
+        </div>
+
+        <!-- ─── Notifications tab ───────────────────────────── -->
+        <div
+          id="settings-panel-notifications"
+          role="tabpanel"
+          :aria-labelledby="`settings-tab-notifications`"
+          v-show="activeTab === 'notifications'"
         >
           <Card style="padding: 0 18px 6px; margin-bottom: 16px">
             <div class="setting-group">
               <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-                <span class="live-dot"></span>Attachments
+                <span class="live-dot"></span>ntfy Notifications
               </div>
-              <div id="setting-storage.provider" class="setting-row">
+              <div class="ntfy-layout">
+                <div class="ntfy-controls">
+                  <div id="setting-ntfyEnabled" class="setting-row">
+                    <div class="setting-info">
+                      <div class="setting-label">Enable ntfy notifications</div>
+                      <div class="setting-desc">
+                        When on, RepoOS publishes a message to your topic on task lifecycle events
+                        (moved to review, approved, or returned with issues).
+                      </div>
+                    </div>
+                    <div class="setting-input">
+                      <Switch
+                        :checked="!!form.ntfyEnabled"
+                        :disabled="config.saving"
+                        @update:checked="(v: boolean) => (form.ntfyEnabled = v)"
+                      />
+                    </div>
+                  </div>
+                  <div id="setting-ntfyTopic" class="setting-row">
+                    <div class="setting-info">
+                      <div class="setting-label">Subscription topic</div>
+                      <div class="setting-desc">
+                        The ntfy topic RepoOS publishes events to, e.g.
+                        <code>repoos_myproject</code>. Leave empty to never send.
+                      </div>
+                    </div>
+                    <div class="setting-input" style="display: flex; gap: 8px; align-items: center">
+                      <Input
+                        :model-value="String(form.ntfyTopic ?? '')"
+                        type="text"
+                        placeholder="repoos_myproject"
+                        @update:model-value="(v) => (form.ntfyTopic = v)"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        :disabled="!form.ntfyEnabled || !String(form.ntfyTopic ?? '').trim()"
+                        @click="sendTestNotification"
+                      >
+                        {{
+                          testState === "sent"
+                            ? "✓ Sent!"
+                            : testState === "failed"
+                              ? "✗ Failed"
+                              : "Send test"
+                        }}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <aside class="ntfy-info">
+                  <h3>About ntfy</h3>
+                  <p>
+                    ntfy is a free, open-source push notification service. Install the ntfy app on
+                    your phone from the App Store or Google Play, subscribe to a unique topic (e.g.
+                    <code>repoos_myproject</code>), and enter that topic below.
+                  </p>
+                  <p>
+                    Notifications are sent to <code>ntfy.sh</code> by default. Self-hosted ntfy
+                    instances work too — set the <code>NTFY_BASE_URL</code> environment variable (or
+                    the <code>ntfyBaseUrl</code> config key in <code>repoos.toml</code>).
+                  </p>
+                  <a href="https://ntfy.sh/docs/subscribe/phone/" target="_blank" rel="noreferrer">
+                    ntfy install + subscribe guide →
+                  </a>
+                </aside>
+              </div>
+            </div>
+          </Card>
+
+          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                <span class="live-dot"></span>Telegram
+              </div>
+              <div id="setting-telegram.enabled" class="setting-row">
                 <div class="setting-info">
-                  <div class="setting-label">Attachment storage</div>
+                  <div class="setting-label">Telegram bot</div>
                   <div class="setting-desc">
-                    Where attachment files — task and input screenshots — are stored. Local
-                    filesystem keeps them in gitignored
-                    <span class="mono">.attachments/</span> folders on this machine and is the
-                    default; Neon Object Storage is opt-in and needs credentials before it can be
-                    used.
+                    Enable the Telegram integration for this repository. An administrator connects
+                    the project bot over the admin API — a bot token pasted server-side (Bring Your
+                    Own Bot Token) or, after the provisioning service ships, managed provisioning.
+                    The token is stored encrypted on this machine and never reaches the browser; the
+                    connection panel comes with its follow-up task.
+                  </div>
+                </div>
+                <div class="setting-input">
+                  <Switch
+                    :checked="!!form['telegram.enabled']"
+                    :disabled="config.saving"
+                    @update:checked="(v: boolean) => (form['telegram.enabled'] = v)"
+                  />
+                </div>
+              </div>
+              <TelegramSettingsPanel :enabled="!!form['telegram.enabled']" />
+              <TelegramChatNotificationsSettings />
+            </div>
+          </Card>
+
+          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                <span class="live-dot"></span>Spend alert
+              </div>
+              <div id="setting-attention.spendAlertUsd" class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Spend alert threshold (USD)</div>
+                  <div class="setting-desc">{{ spendAlertFieldDesc }}</div>
+                </div>
+                <div class="setting-input">
+                  <Input
+                    :model-value="spendAlertUsd"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    style="width: 100px"
+                    :disabled="config.saving"
+                    @update:model-value="(v) => (spendAlertUsd = Number(v))"
+                  />
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                <span class="live-dot"></span>Attention Notifications
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Sound notifications</div>
+                  <div class="setting-desc">
+                    Play a bell sound on your computer when a task moves into a state that needs
+                    you. Off by default.
+                  </div>
+                </div>
+                <div class="setting-input">
+                  <Switch
+                    :checked="notifications.soundEnabled"
+                    @update:checked="notifications.setSoundEnabled"
+                  />
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Push notifications</div>
+                  <div class="setting-desc">
+                    Send a notification through your computer's notification system when a task
+                    moves into a state that needs you. Turning this on will ask for permission.
+                    Requires a RepoOS tab to stay open — there's no background service worker.
+                  </div>
+                </div>
+                <div class="setting-input">
+                  <Switch
+                    :checked="notifications.pushEnabled"
+                    @update:checked="notifications.setPushEnabled"
+                  />
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label" style="font-weight: 500">
+                    Browser permission:
+                    <span :style="{ color: pushStatus.color }">{{ pushStatus.label }}</span>
+                  </div>
+                  <div
+                    v-if="pushStatus.help"
+                    class="setting-desc"
+                    :style="{
+                      color: pushStatus.tone === 'error' ? 'var(--red)' : 'var(--txt-dim)',
+                    }"
+                  >
+                    {{ pushStatus.help }}
+                  </div>
+                  <div
+                    v-if="notifications.testResult"
+                    class="setting-desc"
+                    :style="{
+                      marginTop: '4px',
+                      color: notifications.testResult.ok ? 'var(--green)' : 'var(--red)',
+                    }"
+                  >
+                    {{ notifications.testResult.detail }}
+                  </div>
+                </div>
+                <div class="setting-input">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    :disabled="testSending"
+                    @click="runTestNotification"
+                  >
+                    {{ testSending ? "Sending…" : "Send test" }}
+                  </Button>
+                </div>
+              </div>
+              <div
+                style="
+                  font-size: 11px;
+                  letter-spacing: 0.1em;
+                  text-transform: uppercase;
+                  color: var(--txt-faint);
+                  font-weight: 600;
+                  padding-top: 8px;
+                "
+              >
+                Events
+              </div>
+              <div v-for="t in notificationTypes" :key="t" class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">{{ NOTIFICATION_TYPE_LABELS[t] }}</div>
+                  <div class="setting-desc">{{ NOTIFICATION_TYPE_DESCRIPTIONS[t] }}</div>
+                </div>
+                <div class="setting-input">
+                  <Switch
+                    :checked="notifications.types[t]"
+                    @update:checked="notifications.setTypeEnabled(t, $event)"
+                  />
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        <!-- ─── Security tab ────────────────────────────────── -->
+        <div
+          id="settings-panel-security"
+          role="tabpanel"
+          :aria-labelledby="`settings-tab-security`"
+          v-show="activeTab === 'security'"
+        >
+          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                <span class="live-dot"></span>Authentication
+              </div>
+              <div id="setting-auth.enabled" class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Authentication</div>
+                  <div class="setting-desc">
+                    Require login to access RepoOS (email OTP or Google OAuth).
                   </div>
                 </div>
                 <span
@@ -1504,1120 +1953,686 @@ onUnmounted(() => {
                   aria-label="Restart required"
                   >restart required</span
                 >
-                <div class="setting-input tunnel-setting-actions">
-                  <span class="tunnel-status-chip">{{ storageStatusChip }}</span>
-                  <Select
-                    :model-value="String(form['storage.provider'] ?? 'local')"
+                <div class="setting-input">
+                  <Switch
+                    :checked="!!form['auth.enabled']"
                     :disabled="config.saving"
-                    @update:model-value="(v) => (form['storage.provider'] = v)"
+                    @update:checked="(v: boolean) => (form['auth.enabled'] = v)"
+                  />
+                </div>
+              </div>
+              <div id="setting-auth.sessionMaxAge" class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Session duration (days)</div>
+                  <div class="setting-desc">
+                    How long a login session lasts before requiring sign-in again. Default 30 days.
+                  </div>
+                </div>
+                <span
+                  class="restart-badge"
+                  title="Changes require restarting RepoOS"
+                  aria-label="Restart required"
+                  >restart required</span
+                >
+                <div class="setting-input">
+                  <Input
+                    :model-value="sessionMaxAgeDays"
+                    type="number"
+                    min="1"
+                    step="1"
+                    style="width: 100px"
+                    @update:model-value="(v) => (sessionMaxAgeDays = Number(v))"
+                  />
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <AuthSettingsPanel />
+
+          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                <span class="live-dot"></span>Voice transcription
+              </div>
+              <div
+                v-for="f in config.voiceFields"
+                :key="f.key"
+                :id="`setting-${f.key}`"
+                class="setting-row"
+              >
+                <div class="setting-info">
+                  <div class="setting-label">{{ f.label }}</div>
+                  <div class="setting-desc">{{ f.description }}</div>
+                </div>
+                <span
+                  v-if="f.restartRequired"
+                  class="restart-badge"
+                  title="Changes require restarting RepoOS"
+                  aria-label="Restart required"
+                  >restart required</span
+                >
+                <div class="setting-input">
+                  <Select
+                    v-if="f.type === 'select'"
+                    :model-value="String(form[f.key])"
+                    :disabled="config.saving"
+                    @update:model-value="(v) => (form[f.key] = v)"
                   >
                     <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent position="popper">
                       <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem
-                          v-for="o in storageProviderOptions"
-                          :key="o.value"
-                          :value="o.value"
-                        >
-                          {{ o.label }}
-                        </SelectItem>
+                        <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
+                          o.label
+                        }}</SelectItem>
                       </SelectViewport>
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-              <div class="setting-desc" style="padding: 0 0 12px; max-width: 72ch">
-                {{ storageExplanation }}
-              </div>
-            </div>
-          </Card>
-        </section>
-
-        <section
-          :id="settingsSectionAnchor('service')"
-          class="settings-section"
-          aria-label="Background service"
-        >
-          <ServiceSettings />
-        </section>
-
-        <section
-          :id="settingsSectionAnchor('publishing')"
-          class="settings-section"
-          aria-label="Publishing"
-        >
-          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-            <div class="setting-group">
-              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-                <span class="live-dot"></span>Publishing
-              </div>
-              <div id="setting-tunnelEnabled" class="setting-row">
-                <div class="setting-info">
-                  <div class="setting-label">Cloudflare publishing</div>
-                  <div class="setting-desc">
-                    Configure a protected public hostname for a local RepoOS service. This card
-                    reports status; it does not start or stop cloudflared.
-                  </div>
-                </div>
-                <div class="setting-input tunnel-setting-actions">
-                  <span class="tunnel-status-chip">{{ tunnelStatus }}</span>
-                  <Button variant="outline" size="sm" @click="ui.openTunnel()"
-                    >Configure publishing</Button
-                  >
+                  <Input
+                    v-else-if="f.type === 'string'"
+                    :model-value="String(form[f.key] ?? '')"
+                    type="password"
+                    autocomplete="new-password"
+                    placeholder="sk-… or gsk_…"
+                    @update:model-value="(v) => (form[f.key] = v)"
+                  />
                 </div>
               </div>
             </div>
           </Card>
-        </section>
+        </div>
 
-        <section
-          :id="settingsSectionAnchor('remote-validation')"
-          data-settings-section="remote-validation"
-          class="settings-section"
-          aria-label="Remote validation"
+        <!-- ─── Advanced tab ────────────────────────────────── -->
+        <div
+          id="settings-panel-advanced"
+          role="tabpanel"
+          :aria-labelledby="`settings-tab-advanced`"
+          v-show="activeTab === 'advanced'"
         >
           <Card style="padding: 0 18px 6px; margin-bottom: 16px">
             <div class="setting-group">
               <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-                <span class="live-dot"></span>Remote validation
+                <span class="live-dot"></span>Advanced
               </div>
-              <div id="setting-remoteValidation.enabled" class="setting-row">
+              <div class="adv-gate">
+                <div class="warning">
+                  ⚠ Changing these may break the running server. Edit with care.
+                </div>
+              </div>
+              <div
+                v-for="f in advancedGuardedFields"
+                :key="f.key"
+                :id="`setting-${f.key}`"
+                class="setting-row"
+              >
                 <div class="setting-info">
-                  <div class="setting-label">Remote validation runner</div>
-                  <div class="setting-desc">
-                    Run the close-out build + test suite on a disposable Hetzner VM instead of this
-                    machine, so MTD isn't blocked by local memory pressure. Off by default; enabling
-                    sends repo contents to Hetzner.
-                  </div>
+                  <div class="setting-label">{{ f.label }}</div>
+                  <div class="setting-desc">{{ f.description }}</div>
                 </div>
-                <div class="setting-input tunnel-setting-actions">
-                  <span class="tunnel-status-chip">{{ rvStatusLabel }}</span>
-                  <Button variant="outline" size="sm" @click="ui.openRemoteValidation()">
-                    Configure runner
-                  </Button>
+                <span
+                  v-if="f.restartRequired"
+                  class="restart-badge"
+                  title="Changes require restarting RepoOS"
+                  aria-label="Restart required"
+                  >restart required</span
+                >
+                <div :data-config-key="f.key" class="setting-input">
+                  <Input
+                    v-if="f.type === 'string'"
+                    :model-value="String(form[f.key])"
+                    type="text"
+                    @update:model-value="(v) => (form[f.key] = v)"
+                  />
+                  <Input
+                    v-else-if="f.type === 'array'"
+                    :model-value="String(form[f.key])"
+                    type="text"
+                    :placeholder="arrayPlaceholder(f.key)"
+                    @update:model-value="(v) => (form[f.key] = v)"
+                  />
+                  <Input
+                    v-else-if="f.type === 'number'"
+                    :model-value="form[f.key] == null ? '' : String(form[f.key])"
+                    type="number"
+                    min="0"
+                    :disabled="config.saving"
+                    @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
+                  />
                 </div>
               </div>
-              <template v-for="f in remoteValidationGeneralFields" :key="f.key">
-                <div :id="`setting-${f.key}`" class="setting-row">
-                  <div class="setting-info">
-                    <div class="setting-label">{{ f.label }}</div>
-                    <div class="setting-desc">{{ f.description }}</div>
-                  </div>
-                  <span
-                    v-if="f.restartRequired"
-                    class="restart-badge"
-                    title="Changes require restarting RepoOS"
-                    aria-label="Restart required"
-                    >restart required</span
-                  >
-                  <div :data-config-key="f.key" class="setting-input">
-                    <Select
-                      v-if="f.type === 'select'"
-                      :model-value="String(form[f.key])"
-                      :disabled="config.saving"
-                      @update:model-value="(v) => (form[f.key] = v)"
-                    >
-                      <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent position="popper">
-                        <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                          <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
-                            o.label
-                          }}</SelectItem>
-                        </SelectViewport>
-                      </SelectContent>
-                    </Select>
-                    <Switch
-                      v-else-if="f.type === 'boolean'"
-                      :checked="!!form[f.key]"
-                      :disabled="config.saving"
-                      @update:checked="(v: boolean) => (form[f.key] = v)"
-                    />
-                  </div>
-                </div>
-              </template>
             </div>
           </Card>
-        </section>
 
-        <section :id="settingsSectionAnchor('board')" class="settings-section" aria-label="Board">
           <Card style="padding: 0 18px 6px; margin-bottom: 16px">
             <div class="setting-group">
               <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-                <span class="live-dot"></span>Board
+                <span class="live-dot"></span>Work board column labels
               </div>
-              <div class="setting-row">
+              <div class="setting-desc" style="padding: 4px 0 12px">
+                Rename the six Work board columns in the UI and CLI. Status IDs, transitions, and
+                task frontmatter are unchanged — these are display labels only.
+              </div>
+              <div
+                v-for="f in boardColumnFields"
+                :key="f.key"
+                :id="`setting-${f.key}`"
+                class="setting-row"
+              >
                 <div class="setting-info">
-                  <div class="setting-label">Glide animations</div>
+                  <div class="setting-label">{{ f.label }}</div>
                   <div class="setting-desc">
-                    When a card changes state, animate it gliding between columns to show where it
-                    came from and where it went. Off by default; when off, cards change state
-                    instantly as before.
+                    Default: {{ f.default }}. Clear the field to restore this default.
+                  </div>
+                  <div v-if="boardColumnErrorForKey(f.key)" class="ff-error">
+                    {{ boardColumnErrorForKey(f.key) }}
                   </div>
                 </div>
                 <div class="setting-input">
-                  <Switch :checked="ui.glideAnimations" @update:checked="ui.setGlideAnimations" />
+                  <Input
+                    :model-value="String(form[f.key] ?? '')"
+                    type="text"
+                    :placeholder="String(f.default)"
+                    :disabled="config.saving"
+                    @update:model-value="(v) => (form[f.key] = v)"
+                  />
                 </div>
               </div>
-              <div class="setting-row">
+            </div>
+          </Card>
+
+          <!-- Dev targets (#0749): a dedicated hand-rendered card — the four
+             fields per target cannot be a plain comma-separated row. The
+             AI-summary toggle (#0775) sits with it. -->
+          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                <span class="live-dot"></span>Dev failure summaries
+              </div>
+              <div
+                id="setting-dev.failureSummary.ai"
+                data-config-key="dev.failureSummary.ai"
+                class="setting-row"
+              >
                 <div class="setting-info">
-                  <div class="setting-label">Keyboard navigation</div>
+                  <div class="setting-label">Explain dev failures with AI</div>
                   <div class="setting-desc">
-                    Power-user shortcut mode: move around the board with the keyboard —
-                    <span class="mono">j</span>/<span class="mono">k</span> (
-                    <span class="mono">h</span>/<span class="mono">l</span> between columns),
-                    <span class="mono">Enter</span> to open, <span class="mono">Esc</span> to close
-                    or clear. Off by default; when off the board behaves exactly as before.
+                    Offer an AI-written plain-language summary of a failed dev target, on top of the
+                    deterministic diagnosis — a port clash always names the port and the process
+                    holding it without any model call. Off by default because it spends a model
+                    call.
                   </div>
                 </div>
                 <div class="setting-input">
                   <Switch
-                    :checked="ui.keyboardNavEnabled"
-                    @update:checked="ui.setKeyboardNavEnabled"
+                    :checked="!!form['dev.failureSummary.ai']"
+                    :disabled="config.saving"
+                    @update:checked="(v: boolean) => (form['dev.failureSummary.ai'] = v)"
                   />
                 </div>
               </div>
             </div>
           </Card>
-        </section>
-      </div>
 
-      <!-- ─── Notifications tab ───────────────────────────── -->
-      <div
-        id="settings-panel-notifications"
-        role="tabpanel"
-        :aria-labelledby="`settings-tab-notifications`"
-        v-show="activeTab === 'notifications'"
-      >
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>ntfy Notifications
-            </div>
-            <div class="ntfy-layout">
-              <div class="ntfy-controls">
-                <div id="setting-ntfyEnabled" class="setting-row">
-                  <div class="setting-info">
-                    <div class="setting-label">Enable ntfy notifications</div>
-                    <div class="setting-desc">
-                      When on, RepoOS publishes a message to your topic on task lifecycle events
-                      (moved to review, approved, or returned with issues).
-                    </div>
+          <DevTargetsSettings />
+        </div>
+
+        <!-- ─── Import/Export tab (#0779) ─────────────────────── -->
+        <div
+          id="settings-panel-import-export"
+          role="tabpanel"
+          :aria-labelledby="`settings-tab-import-export`"
+          v-show="activeTab === 'import-export'"
+        >
+          <SettingsImportExport />
+        </div>
+
+        <!-- ─── Support tab ─────────────────────────────────── -->
+        <div
+          id="settings-panel-support"
+          role="tabpanel"
+          :aria-labelledby="`settings-tab-support`"
+          v-show="activeTab === 'support'"
+        >
+          <div class="support-tab-content">
+            <div class="setting-group">
+              <div class="sec-label" style="margin-bottom: 0">
+                <span class="live-dot"></span>Get support
+              </div>
+              <div class="setting-desc" style="padding: 8px 0 12px">
+                Start here for an unexpected setup, server, check, or coding-agent problem. For a
+                common fix, see the
+                <a
+                  class="support-link"
+                  href="https://docs.repoos.org/troubleshooting"
+                  target="_blank"
+                  rel="noreferrer"
+                  >troubleshooting guide ↗</a
+                >.
+              </div>
+
+              <div class="support-steps-grid" aria-label="How to get support">
+                <article class="support-step">
+                  <span class="support-step-num">1</span>
+                  <div>
+                    <strong>Diagnose</strong>
+                    <p>
+                      Run <code>repoos doctor</code> first. It often identifies the fix immediately.
+                    </p>
                   </div>
-                  <div class="setting-input">
-                    <Switch
-                      :checked="!!form.ntfyEnabled"
-                      :disabled="config.saving"
-                      @update:checked="(v: boolean) => (form.ntfyEnabled = v)"
-                    />
+                </article>
+                <article class="support-step">
+                  <span class="support-step-num">2</span>
+                  <div>
+                    <strong>Create a safe bundle</strong>
+                    <p>It stays on this machine; RepoOS never uploads it.</p>
                   </div>
-                </div>
-                <div id="setting-ntfyTopic" class="setting-row">
-                  <div class="setting-info">
-                    <div class="setting-label">Subscription topic</div>
-                    <div class="setting-desc">
-                      The ntfy topic RepoOS publishes events to, e.g. <code>repoos_myproject</code>.
-                      Leave empty to never send.
-                    </div>
+                </article>
+                <article class="support-step">
+                  <span class="support-step-num">3</span>
+                  <div>
+                    <strong>Share the right context</strong>
+                    <p>Inspect it, then attach it to a bug report or feature request if useful.</p>
                   </div>
-                  <div class="setting-input" style="display: flex; gap: 8px; align-items: center">
-                    <Input
-                      :model-value="String(form.ntfyTopic ?? '')"
-                      type="text"
-                      placeholder="repoos_myproject"
-                      @update:model-value="(v) => (form.ntfyTopic = v)"
-                    />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      :disabled="!form.ntfyEnabled || !String(form.ntfyTopic ?? '').trim()"
-                      @click="sendTestNotification"
-                    >
-                      {{
-                        testState === "sent"
-                          ? "✓ Sent!"
-                          : testState === "failed"
-                            ? "✗ Failed"
-                            : "Send test"
-                      }}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              <aside class="ntfy-info">
-                <h3>About ntfy</h3>
-                <p>
-                  ntfy is a free, open-source push notification service. Install the ntfy app on
-                  your phone from the App Store or Google Play, subscribe to a unique topic (e.g.
-                  <code>repoos_myproject</code>), and enter that topic below.
-                </p>
-                <p>
-                  Notifications are sent to <code>ntfy.sh</code> by default. Self-hosted ntfy
-                  instances work too — set the <code>NTFY_BASE_URL</code> environment variable (or
-                  the <code>ntfyBaseUrl</code> config key in <code>repoos.toml</code>).
-                </p>
-                <a href="https://ntfy.sh/docs/subscribe/phone/" target="_blank" rel="noreferrer">
-                  ntfy install + subscribe guide →
-                </a>
-              </aside>
-            </div>
-          </div>
-        </Card>
-
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Telegram
-            </div>
-            <div id="setting-telegram.enabled" class="setting-row">
-              <div class="setting-info">
-                <div class="setting-label">Telegram bot</div>
-                <div class="setting-desc">
-                  Enable the Telegram integration for this repository. An administrator connects the
-                  project bot over the admin API — a bot token pasted server-side (Bring Your Own
-                  Bot Token) or, after the provisioning service ships, managed provisioning. The
-                  token is stored encrypted on this machine and never reaches the browser; the
-                  connection panel comes with its follow-up task.
-                </div>
-              </div>
-              <div class="setting-input">
-                <Switch
-                  :checked="!!form['telegram.enabled']"
-                  :disabled="config.saving"
-                  @update:checked="(v: boolean) => (form['telegram.enabled'] = v)"
-                />
-              </div>
-            </div>
-            <TelegramSettingsPanel :enabled="!!form['telegram.enabled']" />
-            <TelegramChatNotificationsSettings />
-          </div>
-        </Card>
-
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Spend alert
-            </div>
-            <div id="setting-attention.spendAlertUsd" class="setting-row">
-              <div class="setting-info">
-                <div class="setting-label">Spend alert threshold (USD)</div>
-                <div class="setting-desc">{{ spendAlertFieldDesc }}</div>
-              </div>
-              <div class="setting-input">
-                <Input
-                  :model-value="spendAlertUsd"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  style="width: 100px"
-                  :disabled="config.saving"
-                  @update:model-value="(v) => (spendAlertUsd = Number(v))"
-                />
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Attention Notifications
-            </div>
-            <div class="setting-row">
-              <div class="setting-info">
-                <div class="setting-label">Sound notifications</div>
-                <div class="setting-desc">
-                  Play a bell sound on your computer when a task moves into a state that needs you.
-                  Off by default.
-                </div>
-              </div>
-              <div class="setting-input">
-                <Switch
-                  :checked="notifications.soundEnabled"
-                  @update:checked="notifications.setSoundEnabled"
-                />
-              </div>
-            </div>
-            <div class="setting-row">
-              <div class="setting-info">
-                <div class="setting-label">Push notifications</div>
-                <div class="setting-desc">
-                  Send a notification through your computer's notification system when a task moves
-                  into a state that needs you. Turning this on will ask for permission. Requires a
-                  RepoOS tab to stay open — there's no background service worker.
-                </div>
-              </div>
-              <div class="setting-input">
-                <Switch
-                  :checked="notifications.pushEnabled"
-                  @update:checked="notifications.setPushEnabled"
-                />
-              </div>
-            </div>
-            <div class="setting-row">
-              <div class="setting-info">
-                <div class="setting-label" style="font-weight: 500">
-                  Browser permission:
-                  <span :style="{ color: pushStatus.color }">{{ pushStatus.label }}</span>
-                </div>
-                <div
-                  v-if="pushStatus.help"
-                  class="setting-desc"
-                  :style="{ color: pushStatus.tone === 'error' ? 'var(--red)' : 'var(--txt-dim)' }"
-                >
-                  {{ pushStatus.help }}
-                </div>
-                <div
-                  v-if="notifications.testResult"
-                  class="setting-desc"
-                  :style="{
-                    marginTop: '4px',
-                    color: notifications.testResult.ok ? 'var(--green)' : 'var(--red)',
-                  }"
-                >
-                  {{ notifications.testResult.detail }}
-                </div>
-              </div>
-              <div class="setting-input">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  :disabled="testSending"
-                  @click="runTestNotification"
-                >
-                  {{ testSending ? "Sending…" : "Send test" }}
-                </Button>
-              </div>
-            </div>
-            <div
-              style="
-                font-size: 11px;
-                letter-spacing: 0.1em;
-                text-transform: uppercase;
-                color: var(--txt-faint);
-                font-weight: 600;
-                padding-top: 8px;
-              "
-            >
-              Events
-            </div>
-            <div v-for="t in notificationTypes" :key="t" class="setting-row">
-              <div class="setting-info">
-                <div class="setting-label">{{ NOTIFICATION_TYPE_LABELS[t] }}</div>
-                <div class="setting-desc">{{ NOTIFICATION_TYPE_DESCRIPTIONS[t] }}</div>
-              </div>
-              <div class="setting-input">
-                <Switch
-                  :checked="notifications.types[t]"
-                  @update:checked="notifications.setTypeEnabled(t, $event)"
-                />
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      <!-- ─── Security tab ────────────────────────────────── -->
-      <div
-        id="settings-panel-security"
-        role="tabpanel"
-        :aria-labelledby="`settings-tab-security`"
-        v-show="activeTab === 'security'"
-      >
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Authentication
-            </div>
-            <div id="setting-auth.enabled" class="setting-row">
-              <div class="setting-info">
-                <div class="setting-label">Authentication</div>
-                <div class="setting-desc">
-                  Require login to access RepoOS (email OTP or Google OAuth).
-                </div>
-              </div>
-              <span
-                class="restart-badge"
-                title="Changes require restarting RepoOS"
-                aria-label="Restart required"
-                >restart required</span
-              >
-              <div class="setting-input">
-                <Switch
-                  :checked="!!form['auth.enabled']"
-                  :disabled="config.saving"
-                  @update:checked="(v: boolean) => (form['auth.enabled'] = v)"
-                />
-              </div>
-            </div>
-            <div id="setting-auth.sessionMaxAge" class="setting-row">
-              <div class="setting-info">
-                <div class="setting-label">Session duration (days)</div>
-                <div class="setting-desc">
-                  How long a login session lasts before requiring sign-in again. Default 30 days.
-                </div>
-              </div>
-              <span
-                class="restart-badge"
-                title="Changes require restarting RepoOS"
-                aria-label="Restart required"
-                >restart required</span
-              >
-              <div class="setting-input">
-                <Input
-                  :model-value="sessionMaxAgeDays"
-                  type="number"
-                  min="1"
-                  step="1"
-                  style="width: 100px"
-                  @update:model-value="(v) => (sessionMaxAgeDays = Number(v))"
-                />
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <AuthSettingsPanel />
-
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Voice transcription
-            </div>
-            <div
-              v-for="f in config.voiceFields"
-              :key="f.key"
-              :id="`setting-${f.key}`"
-              class="setting-row"
-            >
-              <div class="setting-info">
-                <div class="setting-label">{{ f.label }}</div>
-                <div class="setting-desc">{{ f.description }}</div>
-              </div>
-              <span
-                v-if="f.restartRequired"
-                class="restart-badge"
-                title="Changes require restarting RepoOS"
-                aria-label="Restart required"
-                >restart required</span
-              >
-              <div class="setting-input">
-                <Select
-                  v-if="f.type === 'select'"
-                  :model-value="String(form[f.key])"
-                  :disabled="config.saving"
-                  @update:model-value="(v) => (form[f.key] = v)"
-                >
-                  <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
-                        o.label
-                      }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-                <Input
-                  v-else-if="f.type === 'string'"
-                  :model-value="String(form[f.key] ?? '')"
-                  type="password"
-                  autocomplete="new-password"
-                  placeholder="sk-… or gsk_…"
-                  @update:model-value="(v) => (form[f.key] = v)"
-                />
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      <!-- ─── Advanced tab ────────────────────────────────── -->
-      <div
-        id="settings-panel-advanced"
-        role="tabpanel"
-        :aria-labelledby="`settings-tab-advanced`"
-        v-show="activeTab === 'advanced'"
-      >
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Advanced
-            </div>
-            <div class="adv-gate">
-              <div class="warning">
-                ⚠ Changing these may break the running server. Edit with care.
-              </div>
-            </div>
-            <div
-              v-for="f in advancedGuardedFields"
-              :key="f.key"
-              :id="`setting-${f.key}`"
-              class="setting-row"
-            >
-              <div class="setting-info">
-                <div class="setting-label">{{ f.label }}</div>
-                <div class="setting-desc">{{ f.description }}</div>
-              </div>
-              <span
-                v-if="f.restartRequired"
-                class="restart-badge"
-                title="Changes require restarting RepoOS"
-                aria-label="Restart required"
-                >restart required</span
-              >
-              <div :data-config-key="f.key" class="setting-input">
-                <Input
-                  v-if="f.type === 'string'"
-                  :model-value="String(form[f.key])"
-                  type="text"
-                  @update:model-value="(v) => (form[f.key] = v)"
-                />
-                <Input
-                  v-else-if="f.type === 'array'"
-                  :model-value="String(form[f.key])"
-                  type="text"
-                  :placeholder="arrayPlaceholder(f.key)"
-                  @update:model-value="(v) => (form[f.key] = v)"
-                />
-                <Input
-                  v-else-if="f.type === 'number'"
-                  :model-value="form[f.key] == null ? '' : String(form[f.key])"
-                  type="number"
-                  min="0"
-                  :disabled="config.saving"
-                  @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
-                />
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Work board column labels
-            </div>
-            <div class="setting-desc" style="padding: 4px 0 12px">
-              Rename the six Work board columns in the UI and CLI. Status IDs, transitions, and task
-              frontmatter are unchanged — these are display labels only.
-            </div>
-            <div
-              v-for="f in boardColumnFields"
-              :key="f.key"
-              :id="`setting-${f.key}`"
-              class="setting-row"
-            >
-              <div class="setting-info">
-                <div class="setting-label">{{ f.label }}</div>
-                <div class="setting-desc">
-                  Default: {{ f.default }}. Clear the field to restore this default.
-                </div>
-                <div v-if="boardColumnErrorForKey(f.key)" class="ff-error">
-                  {{ boardColumnErrorForKey(f.key) }}
-                </div>
-              </div>
-              <div class="setting-input">
-                <Input
-                  :model-value="String(form[f.key] ?? '')"
-                  type="text"
-                  :placeholder="String(f.default)"
-                  :disabled="config.saving"
-                  @update:model-value="(v) => (form[f.key] = v)"
-                />
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <!-- Dev targets (#0749): a dedicated hand-rendered card — the four
-             fields per target cannot be a plain comma-separated row. The
-             AI-summary toggle (#0775) sits with it. -->
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Dev failure summaries
-            </div>
-            <div
-              id="setting-dev.failureSummary.ai"
-              data-config-key="dev.failureSummary.ai"
-              class="setting-row"
-            >
-              <div class="setting-info">
-                <div class="setting-label">Explain dev failures with AI</div>
-                <div class="setting-desc">
-                  Offer an AI-written plain-language summary of a failed dev target, on top of the
-                  deterministic diagnosis — a port clash always names the port and the process
-                  holding it without any model call. Off by default because it spends a model call.
-                </div>
-              </div>
-              <div class="setting-input">
-                <Switch
-                  :checked="!!form['dev.failureSummary.ai']"
-                  :disabled="config.saving"
-                  @update:checked="(v: boolean) => (form['dev.failureSummary.ai'] = v)"
-                />
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <DevTargetsSettings />
-      </div>
-
-      <!-- ─── Import/Export tab (#0779) ─────────────────────── -->
-      <div
-        id="settings-panel-import-export"
-        role="tabpanel"
-        :aria-labelledby="`settings-tab-import-export`"
-        v-show="activeTab === 'import-export'"
-      >
-        <SettingsImportExport />
-      </div>
-
-      <!-- ─── Support tab ─────────────────────────────────── -->
-      <div
-        id="settings-panel-support"
-        role="tabpanel"
-        :aria-labelledby="`settings-tab-support`"
-        v-show="activeTab === 'support'"
-      >
-        <div class="support-tab-content">
-          <div class="setting-group">
-            <div class="sec-label" style="margin-bottom: 0">
-              <span class="live-dot"></span>Get support
-            </div>
-            <div class="setting-desc" style="padding: 8px 0 12px">
-              Start here for an unexpected setup, server, check, or coding-agent problem. For a
-              common fix, see the
-              <a
-                class="support-link"
-                href="https://docs.repoos.org/troubleshooting"
-                target="_blank"
-                rel="noreferrer"
-                >troubleshooting guide ↗</a
-              >.
-            </div>
-
-            <div class="support-steps-grid" aria-label="How to get support">
-              <article class="support-step">
-                <span class="support-step-num">1</span>
-                <div>
-                  <strong>Diagnose</strong>
-                  <p>
-                    Run <code>repoos doctor</code> first. It often identifies the fix immediately.
-                  </p>
-                </div>
-              </article>
-              <article class="support-step">
-                <span class="support-step-num">2</span>
-                <div>
-                  <strong>Create a safe bundle</strong>
-                  <p>It stays on this machine; RepoOS never uploads it.</p>
-                </div>
-              </article>
-              <article class="support-step">
-                <span class="support-step-num">3</span>
-                <div>
-                  <strong>Share the right context</strong>
-                  <p>Inspect it, then attach it to a bug report or feature request if useful.</p>
-                </div>
-              </article>
-            </div>
-
-            <section class="support-bug-report-section" aria-labelledby="bug-report-heading">
-              <div class="support-bug-report-header">
-                <div class="sec-label"><span class="live-dot"></span>Share feedback</div>
-                <h2 id="bug-report-heading">Report a bug or request a feature</h2>
-                <p class="setting-desc">
-                  Jot down what happened or the improvement you want. Include the RepoOS page, your
-                  goal, and any useful context. You can turn those notes into an editable AI draft,
-                  or write the report yourself.
-                </p>
+                </article>
               </div>
 
-              <div class="bug-report-type-picker" role="radiogroup" aria-label="Report type">
-                <button
-                  type="button"
-                  :class="{ active: bugReportType === 'bug' }"
-                  role="radio"
-                  :aria-checked="bugReportType === 'bug'"
-                  @click="selectBugReportType('bug')"
-                >
-                  <strong>Bug report</strong><span>Something is not working as expected</span>
-                </button>
-                <button
-                  type="button"
-                  :class="{ active: bugReportType === 'feature' }"
-                  role="radio"
-                  :aria-checked="bugReportType === 'feature'"
-                  @click="selectBugReportType('feature')"
-                >
-                  <strong>Feature request</strong
-                  ><span>Suggest an improvement or new capability</span>
-                </button>
-              </div>
-
-              <div class="field support-bug-report-notes">
-                <label for="bug-report-text">Notes and description</label>
-                <textarea
-                  id="bug-report-text"
-                  v-model="bugReportText"
-                  class="input-textarea"
-                  rows="7"
-                  :placeholder="
-                    bugReportType === 'bug'
-                      ? 'For example: On Settings → Support, I expected the bundle preview to load. Instead it stayed blank after I refreshed. I was using…'
-                      : 'For example: I would like a way to compare two task runs because it would help me understand what changed between them…'
-                  "
-                ></textarea>
-              </div>
-
-              <div class="bug-report-attachments">
-                <div>
-                  <strong>Screenshots <span class="optional-label">optional</span></strong>
+              <section class="support-bug-report-section" aria-labelledby="bug-report-heading">
+                <div class="support-bug-report-header">
+                  <div class="sec-label"><span class="live-dot"></span>Share feedback</div>
+                  <h2 id="bug-report-heading">Report a bug or request a feature</h2>
                   <p class="setting-desc">
-                    Add screenshots of the page or error. They stay on this machine and are never
-                    sent to the AI.
+                    Jot down what happened or the improvement you want. Include the RepoOS page,
+                    your goal, and any useful context. You can turn those notes into an editable AI
+                    draft, or write the report yourself.
                   </p>
                 </div>
-                <label class="bug-report-add-screenshot" for="bug-report-screenshot-input">
-                  Add screenshots
-                </label>
-                <input
-                  id="bug-report-screenshot-input"
-                  class="sr-only"
-                  type="file"
-                  accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp"
-                  multiple
-                  @change="addBugReportScreenshots"
-                />
-              </div>
-              <div v-if="bugReportScreenshots.length" class="bug-report-screenshot-grid">
-                <figure
-                  v-for="(screenshot, index) in bugReportScreenshots"
-                  :key="screenshot.name + screenshot.size + index"
-                  class="bug-report-screenshot"
-                >
-                  <img
-                    :src="screenshot.dataUrl"
-                    :alt="screenshot.name"
-                    @click="openBugReportViewer(index)"
-                  />
-                  <ScreenshotExpandButton
-                    :name="screenshot.name"
-                    @click="openBugReportViewer(index)"
-                  />
-                  <figcaption :title="screenshot.name">{{ screenshot.name }}</figcaption>
+
+                <div class="bug-report-type-picker" role="radiogroup" aria-label="Report type">
                   <button
                     type="button"
-                    class="bug-report-remove-screenshot"
-                    :aria-label="`Remove ${screenshot.name}`"
-                    @click.stop="removeBugReportScreenshot(index)"
+                    :class="{ active: bugReportType === 'bug' }"
+                    role="radio"
+                    :aria-checked="bugReportType === 'bug'"
+                    @click="selectBugReportType('bug')"
                   >
-                    Remove
+                    <strong>Bug report</strong><span>Something is not working as expected</span>
                   </button>
-                </figure>
-              </div>
-              <p v-if="bugReportAttachmentHint" class="bug-report-hint" role="status">
-                {{ bugReportAttachmentHint }}
-              </p>
-
-              <p class="bug-report-privacy">
-                <strong>Choose your path.</strong> Generate with AI sends only your notes to the
-                configured PM agent to make a draft. Writing manually sends nothing. In either case,
-                you review and edit everything before opening GitHub.
-              </p>
-              <div class="bug-report-actions">
-                <Button
-                  :disabled="!bugReportText.trim() || bugReportPending"
-                  @click="generateBugReport"
-                >
-                  {{
-                    bugReportPending
-                      ? "Generating…"
-                      : `${bugReportDraftOpen ? "Regenerate" : "Generate"} editable ${bugReportType === "bug" ? "bug report" : "feature request"} with AI`
-                  }}
-                </Button>
-                <Button variant="outline" @click="beginManualBugReport">Write it manually</Button>
-              </div>
-              <div v-if="bugReportError" class="support-error" role="alert">
-                <span>{{
-                  bugReportError === "no-pm-agent" ? "No PM agent configured" : bugReportError
-                }}</span>
-              </div>
-              <div v-if="bugReportHint" class="bug-report-hint" role="status">
-                {{ bugReportHint }}
-              </div>
-
-              <section
-                v-if="bugReportDraftOpen"
-                class="bug-report-review"
-                aria-labelledby="bug-report-review-heading"
-              >
-                <div>
-                  <h3 id="bug-report-review-heading">Review and edit before sending</h3>
-                  <p class="setting-desc">
-                    This is your report. Edit the title and details as much as you like; RepoOS will
-                    not submit anything automatically.
-                  </p>
-                </div>
-                <div class="field">
-                  <label for="bug-report-title">Title</label>
-                  <input
-                    id="bug-report-title"
-                    v-model="bugReportTitle"
-                    class="bug-report-title-input"
-                    type="text"
-                    placeholder="Short summary of the bug"
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    class="bug-report-copy-btn"
-                    :disabled="!bugReportTitle"
-                    @click="copyBugReport('title')"
+                  <button
+                    type="button"
+                    :class="{ active: bugReportType === 'feature' }"
+                    role="radio"
+                    :aria-checked="bugReportType === 'feature'"
+                    @click="selectBugReportType('feature')"
                   >
-                    {{ bugReportCopied === "title" ? "Copied!" : "Copy title" }}
-                  </Button>
+                    <strong>Feature request</strong
+                    ><span>Suggest an improvement or new capability</span>
+                  </button>
                 </div>
-                <div class="field">
-                  <label for="bug-report-body">Report</label>
+
+                <div class="field support-bug-report-notes">
+                  <label for="bug-report-text">Notes and description</label>
                   <textarea
-                    id="bug-report-body"
-                    v-model="bugReportBody"
+                    id="bug-report-text"
+                    v-model="bugReportText"
                     class="input-textarea"
-                    rows="14"
-                    placeholder="What happened, what you expected, steps to reproduce, and any useful context…"
+                    rows="7"
+                    :placeholder="
+                      bugReportType === 'bug'
+                        ? 'For example: On Settings → Support, I expected the bundle preview to load. Instead it stayed blank after I refreshed. I was using…'
+                        : 'For example: I would like a way to compare two task runs because it would help me understand what changed between them…'
+                    "
                   ></textarea>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    class="bug-report-copy-btn"
-                    :disabled="!bugReportBody"
-                    @click="copyBugReport('body')"
-                  >
-                    {{ bugReportCopied === "body" ? "Copied!" : "Copy report" }}
-                  </Button>
                 </div>
-                <p v-if="bugReportScreenshots.length" class="bug-report-attachment-reminder">
-                  {{ bugReportScreenshots.length }} screenshot{{
-                    bugReportScreenshots.length === 1 ? "" : "s"
-                  }}
-                  selected. After GitHub opens, attach these same files to the issue if you choose
-                  to share them.
+
+                <div class="bug-report-attachments">
+                  <div>
+                    <strong>Screenshots <span class="optional-label">optional</span></strong>
+                    <p class="setting-desc">
+                      Add screenshots of the page or error. They stay on this machine and are never
+                      sent to the AI.
+                    </p>
+                  </div>
+                  <label class="bug-report-add-screenshot" for="bug-report-screenshot-input">
+                    Add screenshots
+                  </label>
+                  <input
+                    id="bug-report-screenshot-input"
+                    class="sr-only"
+                    type="file"
+                    accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp"
+                    multiple
+                    @change="addBugReportScreenshots"
+                  />
+                </div>
+                <div v-if="bugReportScreenshots.length" class="bug-report-screenshot-grid">
+                  <figure
+                    v-for="(screenshot, index) in bugReportScreenshots"
+                    :key="screenshot.name + screenshot.size + index"
+                    class="bug-report-screenshot"
+                  >
+                    <img
+                      :src="screenshot.dataUrl"
+                      :alt="screenshot.name"
+                      @click="openBugReportViewer(index)"
+                    />
+                    <ScreenshotExpandButton
+                      :name="screenshot.name"
+                      @click="openBugReportViewer(index)"
+                    />
+                    <figcaption :title="screenshot.name">{{ screenshot.name }}</figcaption>
+                    <button
+                      type="button"
+                      class="bug-report-remove-screenshot"
+                      :aria-label="`Remove ${screenshot.name}`"
+                      @click.stop="removeBugReportScreenshot(index)"
+                    >
+                      Remove
+                    </button>
+                  </figure>
+                </div>
+                <p v-if="bugReportAttachmentHint" class="bug-report-hint" role="status">
+                  {{ bugReportAttachmentHint }}
+                </p>
+
+                <p class="bug-report-privacy">
+                  <strong>Choose your path.</strong> Generate with AI sends only your notes to the
+                  configured PM agent to make a draft. Writing manually sends nothing. In either
+                  case, you review and edit everything before opening GitHub.
                 </p>
                 <div class="bug-report-actions">
-                  <a
-                    :href="bugReportGitHubUrl"
-                    target="_blank"
-                    rel="noreferrer"
-                    class="bug-report-github-link"
-                  >
-                    <Button :disabled="!bugReportTitle.trim() || !bugReportBody.trim()" tag="span">
-                      Open editable
-                      {{ bugReportType === "bug" ? "bug report" : "feature request" }} on GitHub
-                    </Button>
-                  </a>
-                </div>
-                <details class="support-details">
-                  <summary>Attach a support bundle</summary>
-                  <div class="support-details-body">
-                    <p class="setting-desc">
-                      You can attach an inspected support bundle to the GitHub issue for additional
-                      context. Create one from the bundle section below before opening the issue.
-                    </p>
-                  </div>
-                </details>
-              </section>
-            </section>
-
-            <section v-if="supportLoading" class="support-preview-loading" aria-live="polite">
-              <span class="support-spinner" aria-hidden="true"></span>
-              <div>
-                <strong>Preparing a private bundle preview</strong>
-                <p>Checking safe diagnostics. This creates nothing and uploads nothing.</p>
-              </div>
-            </section>
-
-            <template v-else-if="supportPreview">
-              <section class="support-preview-ready">
-                <div class="support-preview-ready-copy">
-                  <strong>Bundle preview ready</strong>
-                  <p>
-                    {{ supportPreview.manifest.files.length + 1 }} small diagnostic files will be
-                    collected locally. Source code, credentials, prompts, environment values and raw
-                    logs are excluded.
-                  </p>
-                </div>
-                <div class="support-actions">
-                  <Button size="sm" :disabled="supportCreating" @click="createSupportBundle">{{
-                    supportCreating ? "Creating…" : "Create support bundle"
-                  }}</Button>
-                  <Button variant="outline" size="sm" @click="refreshSupportPreview"
-                    >Refresh</Button
-                  >
-                </div>
-                <section v-if="supportResult" class="support-bundle-location" aria-live="polite">
-                  <div>
-                    <strong>Support bundle saved</strong>
-                    <p>
-                      Inspect this archive before sharing it:
-                      <span class="mono">{{ supportResult.path }}</span>
-                      <span> ({{ supportResult.bytes }} bytes)</span>
-                    </p>
-                  </div>
                   <Button
-                    variant="outline"
-                    size="sm"
-                    :disabled="supportOpening"
-                    @click="openSupportBundle"
+                    :disabled="!bugReportText.trim() || bugReportPending"
+                    @click="generateBugReport"
                   >
-                    {{ supportOpening ? "Opening…" : "Open in file browser" }}
+                    {{
+                      bugReportPending
+                        ? "Generating…"
+                        : `${bugReportDraftOpen ? "Regenerate" : "Generate"} editable ${bugReportType === "bug" ? "bug report" : "feature request"} with AI`
+                    }}
                   </Button>
-                </section>
-                <p v-else class="setting-desc support-output-path">
-                  Planned location: <span class="mono">{{ supportPreview.path }}</span>
-                </p>
-                <div v-if="supportPreview.warning" class="support-warning" role="alert">
-                  {{ supportPreview.warning }}
+                  <Button variant="outline" @click="beginManualBugReport">Write it manually</Button>
                 </div>
-                <details class="support-details">
-                  <summary>Review included information and exclusions</summary>
-                  <div class="support-details-body">
-                    <div class="support-subhead">Included</div>
-                    <ul class="support-list">
-                      <li v-for="f in supportPreview.manifest.files" :key="f.path">
-                        <span class="mono">{{ f.path }}</span>
-                        <span class="setting-desc"> — {{ f.description }}</span>
-                      </li>
-                      <li>
-                        <span class="mono">manifest.json</span>
-                        <span class="setting-desc">
-                          — machine-readable index of every file above.</span
-                        >
-                      </li>
-                    </ul>
-                    <template v-if="supportPreview.manifest.omitted.length">
-                      <div class="support-subhead">Omitted (with reason)</div>
+                <div v-if="bugReportError" class="support-error" role="alert">
+                  <span>{{
+                    bugReportError === "no-pm-agent" ? "No PM agent configured" : bugReportError
+                  }}</span>
+                </div>
+                <div v-if="bugReportHint" class="bug-report-hint" role="status">
+                  {{ bugReportHint }}
+                </div>
+
+                <section
+                  v-if="bugReportDraftOpen"
+                  class="bug-report-review"
+                  aria-labelledby="bug-report-review-heading"
+                >
+                  <div>
+                    <h3 id="bug-report-review-heading">Review and edit before sending</h3>
+                    <p class="setting-desc">
+                      This is your report. Edit the title and details as much as you like; RepoOS
+                      will not submit anything automatically.
+                    </p>
+                  </div>
+                  <div class="field">
+                    <label for="bug-report-title">Title</label>
+                    <input
+                      id="bug-report-title"
+                      v-model="bugReportTitle"
+                      class="bug-report-title-input"
+                      type="text"
+                      placeholder="Short summary of the bug"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      class="bug-report-copy-btn"
+                      :disabled="!bugReportTitle"
+                      @click="copyBugReport('title')"
+                    >
+                      {{ bugReportCopied === "title" ? "Copied!" : "Copy title" }}
+                    </Button>
+                  </div>
+                  <div class="field">
+                    <label for="bug-report-body">Report</label>
+                    <textarea
+                      id="bug-report-body"
+                      v-model="bugReportBody"
+                      class="input-textarea"
+                      rows="14"
+                      placeholder="What happened, what you expected, steps to reproduce, and any useful context…"
+                    ></textarea>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      class="bug-report-copy-btn"
+                      :disabled="!bugReportBody"
+                      @click="copyBugReport('body')"
+                    >
+                      {{ bugReportCopied === "body" ? "Copied!" : "Copy report" }}
+                    </Button>
+                  </div>
+                  <p v-if="bugReportScreenshots.length" class="bug-report-attachment-reminder">
+                    {{ bugReportScreenshots.length }} screenshot{{
+                      bugReportScreenshots.length === 1 ? "" : "s"
+                    }}
+                    selected. After GitHub opens, attach these same files to the issue if you choose
+                    to share them.
+                  </p>
+                  <div class="bug-report-actions">
+                    <a
+                      :href="bugReportGitHubUrl"
+                      target="_blank"
+                      rel="noreferrer"
+                      class="bug-report-github-link"
+                    >
+                      <Button
+                        :disabled="!bugReportTitle.trim() || !bugReportBody.trim()"
+                        tag="span"
+                      >
+                        Open editable
+                        {{ bugReportType === "bug" ? "bug report" : "feature request" }} on GitHub
+                      </Button>
+                    </a>
+                  </div>
+                  <details class="support-details">
+                    <summary>Attach a support bundle</summary>
+                    <div class="support-details-body">
+                      <p class="setting-desc">
+                        You can attach an inspected support bundle to the GitHub issue for
+                        additional context. Create one from the bundle section below before opening
+                        the issue.
+                      </p>
+                    </div>
+                  </details>
+                </section>
+              </section>
+
+              <section v-if="supportLoading" class="support-preview-loading" aria-live="polite">
+                <span class="support-spinner" aria-hidden="true"></span>
+                <div>
+                  <strong>Preparing a private bundle preview</strong>
+                  <p>Checking safe diagnostics. This creates nothing and uploads nothing.</p>
+                </div>
+              </section>
+
+              <template v-else-if="supportPreview">
+                <section class="support-preview-ready">
+                  <div class="support-preview-ready-copy">
+                    <strong>Bundle preview ready</strong>
+                    <p>
+                      {{ supportPreview.manifest.files.length + 1 }} small diagnostic files will be
+                      collected locally. Source code, credentials, prompts, environment values and
+                      raw logs are excluded.
+                    </p>
+                  </div>
+                  <div class="support-actions">
+                    <Button size="sm" :disabled="supportCreating" @click="createSupportBundle">{{
+                      supportCreating ? "Creating…" : "Create support bundle"
+                    }}</Button>
+                    <Button variant="outline" size="sm" @click="refreshSupportPreview"
+                      >Refresh</Button
+                    >
+                  </div>
+                  <section v-if="supportResult" class="support-bundle-location" aria-live="polite">
+                    <div>
+                      <strong>Support bundle saved</strong>
+                      <p>
+                        Inspect this archive before sharing it:
+                        <span class="mono">{{ supportResult.path }}</span>
+                        <span> ({{ supportResult.bytes }} bytes)</span>
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      :disabled="supportOpening"
+                      @click="openSupportBundle"
+                    >
+                      {{ supportOpening ? "Opening…" : "Open in file browser" }}
+                    </Button>
+                  </section>
+                  <p v-else class="setting-desc support-output-path">
+                    Planned location: <span class="mono">{{ supportPreview.path }}</span>
+                  </p>
+                  <div v-if="supportPreview.warning" class="support-warning" role="alert">
+                    {{ supportPreview.warning }}
+                  </div>
+                  <details class="support-details">
+                    <summary>Review included information and exclusions</summary>
+                    <div class="support-details-body">
+                      <div class="support-subhead">Included</div>
                       <ul class="support-list">
-                        <li v-for="o in supportPreview.manifest.omitted" :key="o.category">
-                          <span class="mono">{{ o.category }}</span>
-                          <span class="setting-desc"> — {{ o.reason }}</span>
+                        <li v-for="f in supportPreview.manifest.files" :key="f.path">
+                          <span class="mono">{{ f.path }}</span>
+                          <span class="setting-desc"> — {{ f.description }}</span>
+                        </li>
+                        <li>
+                          <span class="mono">manifest.json</span>
+                          <span class="setting-desc">
+                            — machine-readable index of every file above.</span
+                          >
                         </li>
                       </ul>
-                    </template>
-                  </div>
-                </details>
-              </section>
-              <div v-if="supportResult" class="setting-desc" style="padding-top: 8px">
-                Inspect before sharing:
-                <span class="mono">repoos support inspect {{ supportResult.path }}</span>
-              </div>
-              <div v-if="supportResult" class="support-handoff">
-                <div class="support-subhead">Send it with the right report</div>
-                <p class="setting-desc">
-                  The bug-report form asks for what you expected, what happened, a small
-                  reproduction, your version, and an optional inspected bundle. Use a discussion for
-                  a question, idea, or help choosing an approach.
-                </p>
-                <div class="support-links">
-                  <a
-                    class="support-link"
-                    href="https://github.com/repo-os/repoos/issues/new?template=bug_report.yml"
-                    target="_blank"
-                    rel="noreferrer"
-                    >Open the bug-report form ↗</a
-                  >
-                  <a
-                    class="support-link"
-                    href="https://github.com/repo-os/repoos/discussions"
-                    target="_blank"
-                    rel="noreferrer"
-                    >Start a GitHub discussion ↗</a
-                  >
+                      <template v-if="supportPreview.manifest.omitted.length">
+                        <div class="support-subhead">Omitted (with reason)</div>
+                        <ul class="support-list">
+                          <li v-for="o in supportPreview.manifest.omitted" :key="o.category">
+                            <span class="mono">{{ o.category }}</span>
+                            <span class="setting-desc"> — {{ o.reason }}</span>
+                          </li>
+                        </ul>
+                      </template>
+                    </div>
+                  </details>
+                </section>
+                <div v-if="supportResult" class="setting-desc" style="padding-top: 8px">
+                  Inspect before sharing:
+                  <span class="mono">repoos support inspect {{ supportResult.path }}</span>
                 </div>
-              </div>
-            </template>
+                <div v-if="supportResult" class="support-handoff">
+                  <div class="support-subhead">Send it with the right report</div>
+                  <p class="setting-desc">
+                    The bug-report form asks for what you expected, what happened, a small
+                    reproduction, your version, and an optional inspected bundle. Use a discussion
+                    for a question, idea, or help choosing an approach.
+                  </p>
+                  <div class="support-links">
+                    <a
+                      class="support-link"
+                      href="https://github.com/repo-os/repoos/issues/new?template=bug_report.yml"
+                      target="_blank"
+                      rel="noreferrer"
+                      >Open the bug-report form ↗</a
+                    >
+                    <a
+                      class="support-link"
+                      href="https://github.com/repo-os/repoos/discussions"
+                      target="_blank"
+                      rel="noreferrer"
+                      >Start a GitHub discussion ↗</a
+                    >
+                  </div>
+                </div>
+              </template>
 
-            <div v-if="supportError" class="support-error" role="alert">
-              <span>{{ supportError }}</span>
-              <Button variant="outline" size="sm" @click="refreshSupportPreview">Try again</Button>
+              <div v-if="supportError" class="support-error" role="alert">
+                <span>{{ supportError }}</span>
+                <Button variant="outline" size="sm" @click="refreshSupportPreview"
+                  >Try again</Button
+                >
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- ─── repoos.toml tab ─────────────────────────────── -->
-      <div
-        id="settings-panel-toml"
-        role="tabpanel"
-        :aria-labelledby="`settings-tab-toml`"
-        class="toml-panel"
-        v-show="activeTab === 'toml'"
-      >
-        <Card class="toml-card">
-          <div class="toml-raw">
-            <div v-if="tomlFocusNotice" class="ff-notice toml-focus-notice" role="status">
-              {{ tomlFocusNotice }}
-            </div>
-            <div class="toml-raw-head">
-              <div class="setting-desc" style="margin: 0">
-                The whole file, including sections the other tabs don't cover —
-                <code>[preview]</code>, <code>[check]</code>, <code>[release]</code>,
-                <code>[[deployments]]</code>, and anything you add. Any TOML string form works
-                (<code>"…"</code>, <code>'…'</code>, <code>"""…"""</code>, <code>'''…'''</code>);
-                multi-line arrays and inline tables are not supported. Keep secrets in
-                <code>.env</code>, not here.
+        <!-- ─── repoos.toml tab ─────────────────────────────── -->
+        <div
+          id="settings-panel-toml"
+          role="tabpanel"
+          :aria-labelledby="`settings-tab-toml`"
+          class="toml-panel"
+          v-show="activeTab === 'toml'"
+        >
+          <Card class="toml-card">
+            <div class="toml-raw">
+              <div v-if="tomlFocusNotice" class="ff-notice toml-focus-notice" role="status">
+                {{ tomlFocusNotice }}
               </div>
-              <div class="toml-raw-actions">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  :disabled="config.rawLoading || config.rawSaving"
-                  @click="reloadRaw"
-                  >Reload</Button
-                >
-                <Button
-                  size="sm"
-                  :disabled="!config.rawDirty || config.rawLoading || config.rawSaving"
-                  @click="saveRaw"
-                  >{{ config.rawSaving ? "Saving…" : "Save" }}</Button
-                >
+              <div class="toml-raw-head">
+                <div class="setting-desc" style="margin: 0">
+                  The whole file, including sections the other tabs don't cover —
+                  <code>[preview]</code>, <code>[check]</code>, <code>[release]</code>,
+                  <code>[[deployments]]</code>, and anything you add. Any TOML string form works
+                  (<code>"…"</code>, <code>'…'</code>, <code>"""…"""</code>, <code>'''…'''</code>);
+                  multi-line arrays and inline tables are not supported. Keep secrets in
+                  <code>.env</code>, not here.
+                </div>
+                <div class="toml-raw-actions">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    :disabled="config.rawLoading || config.rawSaving"
+                    @click="reloadRaw"
+                    >Reload</Button
+                  >
+                  <Button
+                    size="sm"
+                    :disabled="!config.rawDirty || config.rawLoading || config.rawSaving"
+                    @click="saveRaw"
+                    >{{ config.rawSaving ? "Saving…" : "Save" }}</Button
+                  >
+                </div>
+              </div>
+              <div class="toml-editor">
+                <pre ref="rawPre" aria-hidden="true"><code v-html="highlightedRaw"></code></pre>
+                <textarea
+                  ref="rawTextarea"
+                  v-model="config.rawDraft"
+                  spellcheck="false"
+                  autocomplete="off"
+                  autocapitalize="off"
+                  autocorrect="off"
+                  aria-label="repoos.toml contents"
+                  :disabled="config.rawLoading"
+                  @scroll="syncRawScroll"
+                ></textarea>
+              </div>
+              <div v-if="config.rawLoading" class="setting-desc toml-raw-status">Loading…</div>
+              <div v-else-if="config.rawError" class="toml-raw-error" role="alert">
+                {{ config.rawError }}
+              </div>
+              <div v-else-if="config.rawDirty" class="setting-desc toml-raw-status">
+                Unsaved changes.
+              </div>
+              <div v-else class="setting-desc toml-raw-status">
+                In sync with <span class="mono">repoos.toml</span>.
               </div>
             </div>
-            <div class="toml-editor">
-              <pre ref="rawPre" aria-hidden="true"><code v-html="highlightedRaw"></code></pre>
-              <textarea
-                ref="rawTextarea"
-                v-model="config.rawDraft"
-                spellcheck="false"
-                autocomplete="off"
-                autocapitalize="off"
-                autocorrect="off"
-                aria-label="repoos.toml contents"
-                :disabled="config.rawLoading"
-                @scroll="syncRawScroll"
-              ></textarea>
-            </div>
-            <div v-if="config.rawLoading" class="setting-desc toml-raw-status">Loading…</div>
-            <div v-else-if="config.rawError" class="toml-raw-error" role="alert">
-              {{ config.rawError }}
-            </div>
-            <div v-else-if="config.rawDirty" class="setting-desc toml-raw-status">
-              Unsaved changes.
-            </div>
-            <div v-else class="setting-desc toml-raw-status">
-              In sync with <span class="mono">repoos.toml</span>.
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </div>
-    </div>
     </div>
   </div>
   <ScreenshotViewer

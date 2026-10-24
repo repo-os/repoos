@@ -339,255 +339,261 @@ onBeforeUnmount(() => {
     </header>
 
     <div class="page-scroll-body">
-    <div v-if="loading" class="spin"></div>
-    <p v-else-if="error && !status" class="dep-err">{{ error }}</p>
+      <div v-if="loading" class="spin"></div>
+      <p v-else-if="error && !status" class="dep-err">{{ error }}</p>
 
-    <template v-else-if="status">
-      <div v-if="!status.enabled" class="dep-panel dep-empty">
-        Deployments aren't configured for this repository. Add a
-        <code>[[deployments]]</code> block to <a href="/settings?tab=toml">repoos.toml</a> — one per
-        service and branch — to turn this page on.
-      </div>
-
-      <template v-else>
-        <!-- Shared branch state, stated once per branch: pushing a branch
-             deploys every service on it, so the action lives here, not on rows. -->
-        <section class="dep-branches" aria-label="Branch deploy state">
-          <article
-            v-for="(b, i) in status.branches"
-            :key="b.branch"
-            class="dep-branch"
-            :style="branchAccent(i)"
-          >
-            <div class="dep-branch-top">
-              <span class="dep-branch-name">{{ b.branch }}</span>
-              <span
-                v-if="b.ffFrom"
-                class="dep-ff"
-                :title="`Deploys fast-forward ${b.branch} to ${b.ffFrom} before pushing`"
-              >
-                ff from {{ b.ffFrom }}
-              </span>
-            </div>
-            <div class="dep-branch-meta">
-              {{ targetCount(b.branch) }} deployment target{{
-                targetCount(b.branch) === 1 ? "" : "s"
-              }}
-            </div>
-            <div class="dep-branch-sync">
-              <span class="dep-sync" :data-state="b.hasOrigin ? b.mainSync.state : 'unknown'">{{
-                mainSyncLabel(b)
-              }}</span>
-            </div>
-            <Button
-              variant="accent"
-              size="sm"
-              :disabled="
-                !b.localExists ||
-                !!status.dirty ||
-                deploying !== null ||
-                !!environmentIssue(b.branch)
-              "
-              :title="
-                environmentIssue(b.branch) ??
-                (status.dirty ? 'Commit or stash the checkout\'s changes first' : undefined)
-              "
-              @click="openConfirm(b.branch)"
-            >
-              {{ deploying === b.branch ? "Deploying…" : `Deploy ${b.branch}` }}
-            </Button>
-          </article>
-        </section>
-
-        <p v-if="status.dirty" class="dep-dirty" role="status">
-          The checkout has uncommitted changes — deploys are refused until it's committed or stashed
-          (same guard as a release).
-        </p>
-
-        <!-- Services × branches matrix: one row per service, one column per branch. -->
-        <section class="dep-matrix" role="table" aria-label="Deployment targets">
-          <div class="dep-matrix-row dep-matrix-head" role="row">
-            <div role="columnheader">Service</div>
-            <div
-              v-for="(b, i) in status.branches"
-              :key="b.branch"
-              class="dep-matrix-colhead"
-              :style="branchAccent(i)"
-              role="columnheader"
-            >
-              <span class="dep-dot"></span>{{ b.branch }}
-            </div>
-          </div>
-
-          <div v-for="svc in services" :key="svc.name" class="dep-matrix-row" role="row">
-            <div class="dep-service" role="rowheader">
-              <div class="dep-service-name">{{ svc.name }}</div>
-              <div v-if="svc.provider" class="dep-service-type">{{ svc.provider }}</div>
-            </div>
-
-            <div
-              v-for="(b, i) in status.branches"
-              :key="b.branch"
-              class="dep-cell"
-              :style="branchAccent(i)"
-              role="cell"
-            >
-              <span class="dep-cellbar"></span>
-              <template v-if="svc.cells.get(b.branch)">
-                <div class="dep-cell-top">
-                  <a
-                    v-if="svc.cells.get(b.branch)!.url"
-                    class="dep-url"
-                    :href="svc.cells.get(b.branch)!.url!"
-                    target="_blank"
-                    rel="noreferrer"
-                    :title="`Open ${svc.cells.get(b.branch)!.url}`"
-                    >{{ svc.cells.get(b.branch)!.url!.replace(/^https:\/\//, "") }}&nbsp;↗</a
-                  >
-                  <span v-else class="dep-nourl">no URL configured</span>
-                </div>
-                <div class="dep-fresh" :title="svc.cells.get(b.branch)!.lastPushAt ?? undefined">
-                  <template v-if="svc.cells.get(b.branch)!.lastPushAt">
-                    Latest branch change {{ relativeTime(svc.cells.get(b.branch)!.lastPushAt) }}
-                    <template v-if="svc.cells.get(b.branch)!.lastPushSha">
-                      · <code>{{ svc.cells.get(b.branch)!.lastPushSha }}</code></template
-                    >
-                  </template>
-                  <template v-else>
-                    no commits yet<span v-if="svc.cells.get(b.branch)!.subdir">
-                      under <code>{{ svc.cells.get(b.branch)!.subdir }}/</code></span
-                    >
-                    on <code>{{ b.branch }}</code>
-                  </template>
-                </div>
-                <label v-if="canBindEnvironment" class="dep-env-binding">
-                  Local environment
-                  <Select
-                    v-if="(status.environments ?? []).length"
-                    :model-value="svc.cells.get(b.branch)!.environment ?? NO_ENVIRONMENT_SELECTION"
-                    @update:model-value="
-                      (value) =>
-                        bindEnvironment(
-                          svc.cells.get(b.branch)!,
-                          String(value) === NO_ENVIRONMENT_SELECTION ? null : String(value),
-                        )
-                    "
-                  >
-                    <SelectTrigger
-                      class="dep-env-select"
-                      :aria-label="`Local environment for ${svc.cells.get(b.branch)!.name} on ${b.branch}`"
-                      ><SelectValue placeholder="Not selected"
-                    /></SelectTrigger>
-                    <SelectContent position="popper"
-                      ><SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem :value="NO_ENVIRONMENT_SELECTION">Not selected</SelectItem>
-                        <SelectItem
-                          v-if="
-                            svc.cells.get(b.branch)!.environment &&
-                            !(status.environments ?? []).some(
-                              (env) => env.id === svc.cells.get(b.branch)!.environment,
-                            )
-                          "
-                          :value="svc.cells.get(b.branch)!.environment!"
-                        >
-                          {{ svc.cells.get(b.branch)!.environment }} (unknown)
-                        </SelectItem>
-                        <SelectItem
-                          v-for="env in status.environments ?? []"
-                          :key="env.id"
-                          :value="env.id"
-                          >{{ env.id }}</SelectItem
-                        >
-                      </SelectViewport></SelectContent
-                    >
-                  </Select>
-                  <button
-                    v-else
-                    type="button"
-                    class="dep-env-select dep-env-empty"
-                    @click="environmentHelpOpen = true"
-                  >
-                    No environments configured <span aria-hidden="true">⌄</span>
-                  </button>
-                  <small
-                    >Local binding only. Does not upload or sync variables to
-                    {{ svc.cells.get(b.branch)!.provider || "a provider" }}.</small
-                  >
-                </label>
-                <p v-else class="dep-env-readonly">
-                  Local environment: {{ svc.cells.get(b.branch)!.environment || "not selected" }}.
-                  Ask an admin to change this binding.
-                </p>
-                <p
-                  v-if="svc.cells.get(b.branch)!.environmentError"
-                  class="dep-env-error"
-                  role="alert"
-                >
-                  {{ svc.cells.get(b.branch)!.environmentError }}
-                </p>
-                <div v-if="serviceSyncLabel(svc.cells.get(b.branch)!, b)" class="dep-service-sync">
-                  {{ serviceSyncLabel(svc.cells.get(b.branch)!, b) }}
-                </div>
-                <div class="dep-cell-actions">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    :disabled="
-                      !b.localExists ||
-                      !!status.dirty ||
-                      deploying !== null ||
-                      !!environmentIssue(b.branch)
-                    "
-                    @click="openConfirm(b.branch)"
-                  >
-                    {{ deploying === b.branch ? "Deploying…" : "Deploy" }}
-                  </Button>
-                  <a
-                    v-if="svc.cells.get(b.branch)!.dashboardUrl"
-                    class="dep-dash"
-                    :href="svc.cells.get(b.branch)!.dashboardUrl!"
-                    target="_blank"
-                    rel="noreferrer"
-                    >Dashboard ↗</a
-                  >
-                </div>
-              </template>
-              <span v-else class="dep-nocell">— not deployed on {{ b.branch }}</span>
-            </div>
-          </div>
-        </section>
-
-        <div class="dep-legend">
-          <span v-for="(b, i) in status.branches" :key="b.branch" :style="branchAccent(i)">
-            <span class="dep-dot"></span>{{ b.branch }}
-          </span>
-          <span class="dep-legend-note"
-            >RepoOS reads git state, not the provider's build result — click "Dashboard" on a target
-            to check its real build status.</span
-          >
+      <template v-else-if="status">
+        <div v-if="!status.enabled" class="dep-panel dep-empty">
+          Deployments aren't configured for this repository. Add a
+          <code>[[deployments]]</code> block to <a href="/settings?tab=toml">repoos.toml</a> — one
+          per service and branch — to turn this page on.
         </div>
 
-        <p class="dep-note">
-          “Latest branch change” is the newest commit on the branch touching this service's
-          directory — the push that tells the provider to build. It is not confirmed build success:
-          a broken build still shows a fresh time while the site serves an older version. Check the
-          linked dashboard for the actual build/deploy result. The branch cards' "vs main" count is
-          whole-branch; a service's own cell breaks down how much of that distance actually touches
-          it, since the two can differ a lot when other parts of the repo are moving.
-        </p>
+        <template v-else>
+          <!-- Shared branch state, stated once per branch: pushing a branch
+             deploys every service on it, so the action lives here, not on rows. -->
+          <section class="dep-branches" aria-label="Branch deploy state">
+            <article
+              v-for="(b, i) in status.branches"
+              :key="b.branch"
+              class="dep-branch"
+              :style="branchAccent(i)"
+            >
+              <div class="dep-branch-top">
+                <span class="dep-branch-name">{{ b.branch }}</span>
+                <span
+                  v-if="b.ffFrom"
+                  class="dep-ff"
+                  :title="`Deploys fast-forward ${b.branch} to ${b.ffFrom} before pushing`"
+                >
+                  ff from {{ b.ffFrom }}
+                </span>
+              </div>
+              <div class="dep-branch-meta">
+                {{ targetCount(b.branch) }} deployment target{{
+                  targetCount(b.branch) === 1 ? "" : "s"
+                }}
+              </div>
+              <div class="dep-branch-sync">
+                <span class="dep-sync" :data-state="b.hasOrigin ? b.mainSync.state : 'unknown'">{{
+                  mainSyncLabel(b)
+                }}</span>
+              </div>
+              <Button
+                variant="accent"
+                size="sm"
+                :disabled="
+                  !b.localExists ||
+                  !!status.dirty ||
+                  deploying !== null ||
+                  !!environmentIssue(b.branch)
+                "
+                :title="
+                  environmentIssue(b.branch) ??
+                  (status.dirty ? 'Commit or stash the checkout\'s changes first' : undefined)
+                "
+                @click="openConfirm(b.branch)"
+              >
+                {{ deploying === b.branch ? "Deploying…" : `Deploy ${b.branch}` }}
+              </Button>
+            </article>
+          </section>
 
-        <section v-if="message" class="dep-outcome dep-outcome--ok" aria-live="polite">
-          {{ message }}
-        </section>
-        <section
-          v-if="deployError && !confirmOpen"
-          class="dep-outcome dep-outcome--fail"
-          role="alert"
-        >
-          {{ deployError }}
-        </section>
+          <p v-if="status.dirty" class="dep-dirty" role="status">
+            The checkout has uncommitted changes — deploys are refused until it's committed or
+            stashed (same guard as a release).
+          </p>
+
+          <!-- Services × branches matrix: one row per service, one column per branch. -->
+          <section class="dep-matrix" role="table" aria-label="Deployment targets">
+            <div class="dep-matrix-row dep-matrix-head" role="row">
+              <div role="columnheader">Service</div>
+              <div
+                v-for="(b, i) in status.branches"
+                :key="b.branch"
+                class="dep-matrix-colhead"
+                :style="branchAccent(i)"
+                role="columnheader"
+              >
+                <span class="dep-dot"></span>{{ b.branch }}
+              </div>
+            </div>
+
+            <div v-for="svc in services" :key="svc.name" class="dep-matrix-row" role="row">
+              <div class="dep-service" role="rowheader">
+                <div class="dep-service-name">{{ svc.name }}</div>
+                <div v-if="svc.provider" class="dep-service-type">{{ svc.provider }}</div>
+              </div>
+
+              <div
+                v-for="(b, i) in status.branches"
+                :key="b.branch"
+                class="dep-cell"
+                :style="branchAccent(i)"
+                role="cell"
+              >
+                <span class="dep-cellbar"></span>
+                <template v-if="svc.cells.get(b.branch)">
+                  <div class="dep-cell-top">
+                    <a
+                      v-if="svc.cells.get(b.branch)!.url"
+                      class="dep-url"
+                      :href="svc.cells.get(b.branch)!.url!"
+                      target="_blank"
+                      rel="noreferrer"
+                      :title="`Open ${svc.cells.get(b.branch)!.url}`"
+                      >{{ svc.cells.get(b.branch)!.url!.replace(/^https:\/\//, "") }}&nbsp;↗</a
+                    >
+                    <span v-else class="dep-nourl">no URL configured</span>
+                  </div>
+                  <div class="dep-fresh" :title="svc.cells.get(b.branch)!.lastPushAt ?? undefined">
+                    <template v-if="svc.cells.get(b.branch)!.lastPushAt">
+                      Latest branch change {{ relativeTime(svc.cells.get(b.branch)!.lastPushAt) }}
+                      <template v-if="svc.cells.get(b.branch)!.lastPushSha">
+                        · <code>{{ svc.cells.get(b.branch)!.lastPushSha }}</code></template
+                      >
+                    </template>
+                    <template v-else>
+                      no commits yet<span v-if="svc.cells.get(b.branch)!.subdir">
+                        under <code>{{ svc.cells.get(b.branch)!.subdir }}/</code></span
+                      >
+                      on <code>{{ b.branch }}</code>
+                    </template>
+                  </div>
+                  <label v-if="canBindEnvironment" class="dep-env-binding">
+                    Local environment
+                    <Select
+                      v-if="(status.environments ?? []).length"
+                      :model-value="
+                        svc.cells.get(b.branch)!.environment ?? NO_ENVIRONMENT_SELECTION
+                      "
+                      @update:model-value="
+                        (value) =>
+                          bindEnvironment(
+                            svc.cells.get(b.branch)!,
+                            String(value) === NO_ENVIRONMENT_SELECTION ? null : String(value),
+                          )
+                      "
+                    >
+                      <SelectTrigger
+                        class="dep-env-select"
+                        :aria-label="`Local environment for ${svc.cells.get(b.branch)!.name} on ${b.branch}`"
+                        ><SelectValue placeholder="Not selected"
+                      /></SelectTrigger>
+                      <SelectContent position="popper"
+                        ><SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                          <SelectItem :value="NO_ENVIRONMENT_SELECTION">Not selected</SelectItem>
+                          <SelectItem
+                            v-if="
+                              svc.cells.get(b.branch)!.environment &&
+                              !(status.environments ?? []).some(
+                                (env) => env.id === svc.cells.get(b.branch)!.environment,
+                              )
+                            "
+                            :value="svc.cells.get(b.branch)!.environment!"
+                          >
+                            {{ svc.cells.get(b.branch)!.environment }} (unknown)
+                          </SelectItem>
+                          <SelectItem
+                            v-for="env in status.environments ?? []"
+                            :key="env.id"
+                            :value="env.id"
+                            >{{ env.id }}</SelectItem
+                          >
+                        </SelectViewport></SelectContent
+                      >
+                    </Select>
+                    <button
+                      v-else
+                      type="button"
+                      class="dep-env-select dep-env-empty"
+                      @click="environmentHelpOpen = true"
+                    >
+                      No environments configured <span aria-hidden="true">⌄</span>
+                    </button>
+                    <small
+                      >Local binding only. Does not upload or sync variables to
+                      {{ svc.cells.get(b.branch)!.provider || "a provider" }}.</small
+                    >
+                  </label>
+                  <p v-else class="dep-env-readonly">
+                    Local environment: {{ svc.cells.get(b.branch)!.environment || "not selected" }}.
+                    Ask an admin to change this binding.
+                  </p>
+                  <p
+                    v-if="svc.cells.get(b.branch)!.environmentError"
+                    class="dep-env-error"
+                    role="alert"
+                  >
+                    {{ svc.cells.get(b.branch)!.environmentError }}
+                  </p>
+                  <div
+                    v-if="serviceSyncLabel(svc.cells.get(b.branch)!, b)"
+                    class="dep-service-sync"
+                  >
+                    {{ serviceSyncLabel(svc.cells.get(b.branch)!, b) }}
+                  </div>
+                  <div class="dep-cell-actions">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      :disabled="
+                        !b.localExists ||
+                        !!status.dirty ||
+                        deploying !== null ||
+                        !!environmentIssue(b.branch)
+                      "
+                      @click="openConfirm(b.branch)"
+                    >
+                      {{ deploying === b.branch ? "Deploying…" : "Deploy" }}
+                    </Button>
+                    <a
+                      v-if="svc.cells.get(b.branch)!.dashboardUrl"
+                      class="dep-dash"
+                      :href="svc.cells.get(b.branch)!.dashboardUrl!"
+                      target="_blank"
+                      rel="noreferrer"
+                      >Dashboard ↗</a
+                    >
+                  </div>
+                </template>
+                <span v-else class="dep-nocell">— not deployed on {{ b.branch }}</span>
+              </div>
+            </div>
+          </section>
+
+          <div class="dep-legend">
+            <span v-for="(b, i) in status.branches" :key="b.branch" :style="branchAccent(i)">
+              <span class="dep-dot"></span>{{ b.branch }}
+            </span>
+            <span class="dep-legend-note"
+              >RepoOS reads git state, not the provider's build result — click "Dashboard" on a
+              target to check its real build status.</span
+            >
+          </div>
+
+          <p class="dep-note">
+            “Latest branch change” is the newest commit on the branch touching this service's
+            directory — the push that tells the provider to build. It is not confirmed build
+            success: a broken build still shows a fresh time while the site serves an older version.
+            Check the linked dashboard for the actual build/deploy result. The branch cards' "vs
+            main" count is whole-branch; a service's own cell breaks down how much of that distance
+            actually touches it, since the two can differ a lot when other parts of the repo are
+            moving.
+          </p>
+
+          <section v-if="message" class="dep-outcome dep-outcome--ok" aria-live="polite">
+            {{ message }}
+          </section>
+          <section
+            v-if="deployError && !confirmOpen"
+            class="dep-outcome dep-outcome--fail"
+            role="alert"
+          >
+            {{ deployError }}
+          </section>
+        </template>
       </template>
-    </template>
     </div>
 
     <Teleport to="body">
