@@ -125,3 +125,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T11:24:14Z · body
 - 2026-10-24T11:27:14Z · body
 - 2026-10-24T11:28:18Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-24T11:28:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
