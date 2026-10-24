@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-24T08:22:53Z"
+review_passes: 4
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
@@ -12,8 +14,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/native-app-preview-targets-run-a-task-s-
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T08:22:53Z"
-review_passes: 3
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -120,3 +120,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T08:22:53Z · note: review pass 2: needs some work
 - 2026-10-24T08:22:53Z · needs_input
 - 2026-10-24T08:22:53Z · needs_input
+
