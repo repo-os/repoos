@@ -140,3 +140,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:35:03Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-24T14:37:32Z · body
 - 2026-10-24T14:37:45Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-24T14:37:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
