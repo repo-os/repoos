@@ -241,7 +241,9 @@ export async function cmdSendBack(args: string[]): Promise<number> {
     return 1;
   }
   if (opts.now) {
-    printErr("repoos send-back does not support --now; feedback is queued after the engineer starts");
+    printErr(
+      "repoos send-back does not support --now; feedback is queued after the engineer starts",
+    );
     return 1;
   }
   let id: string | undefined;
