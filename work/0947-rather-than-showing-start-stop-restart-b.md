@@ -3,6 +3,9 @@ id: "0947"
 title: Show dev target actions based on running state
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the cursor agent exited without output: Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
 priority: p2
 area: ui
 assigned_to: ai
@@ -56,3 +59,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T04:08:44Z · status ready→active, branch
 - 2026-10-24T06:20:16Z · status active→review
 - 2026-10-24T06:22:14Z · note: review pass 1: failed — no usable report
+- 2026-10-24T06:22:14Z · needs_input
