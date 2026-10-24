@@ -2,7 +2,7 @@
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: the agent process exited with an error — open the task to see the full output
@@ -14,7 +14,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: opencode
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T14:00:25Z"
+updated_at: "2026-10-24T14:00:26Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -130,4 +130,3 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T13:02:04Z · body
 - 2026-10-24T13:11:02Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-24T14:00:25Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
-- 2026-10-24T14:00:25Z · status active→review
