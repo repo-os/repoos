@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-24T22:54:10Z"
+updated_at: "2026-10-24T22:56:55Z"
 ---
 ## Problem
 
@@ -41,40 +41,40 @@ Every standard nav page uses the full window height: the scrollable content area
 ```json
 [
 {
-  "label": "Work page at tall viewport",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".work-page"
+"label": "Work page at tall viewport",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page"
 },
 {
-  "label": "Work page at short viewport",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".work-page"
+"label": "Work page at short viewport",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page"
 },
 {
-  "label": "Stories page at tall viewport",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".stories-page"
+"label": "Stories page at tall viewport",
+"target": "default",
+"route": "/stories",
+"highlight": ".stories-page"
 },
 {
-  "label": "Stories page at short viewport",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".stories-page"
+"label": "Stories page at short viewport",
+"target": "default",
+"route": "/stories",
+"highlight": ".stories-page"
 },
 {
-  "label": "Checks page at tall viewport",
-  "target": "default",
-  "route": "/checks",
-  "highlight": ".ck-page"
+"label": "Checks page at tall viewport",
+"target": "default",
+"route": "/checks",
+"highlight": ".ck-page"
 },
 {
-  "label": "Checks page at short viewport",
-  "target": "default",
-  "route": "/checks",
-  "highlight": ".ck-page"
+"label": "Checks page at short viewport",
+"target": "default",
+"route": "/checks",
+"highlight": ".ck-page"
 }
 ]
 ```
@@ -86,3 +86,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-24T22:52:19Z · cli_override, model_override
 - 2026-10-24T22:52:20Z · status ready→active, branch
 - 2026-10-24T22:54:10Z · body
+- 2026-10-24T22:56:55Z · body
