@@ -17,7 +17,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T14:39:01Z"
+updated_at: "2026-10-24T14:39:32Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -152,3 +152,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:38:23Z · status active→review
 - 2026-10-24T14:38:43Z · note: review pass 5: failed — no usable report
 - 2026-10-24T14:38:43Z · needs_input
+- 2026-10-24T14:39:32Z · note: declared shot Task drawer: native macOS preview shows building state during a long build on target "default" cannot render: state "drawer:nativePreviewBuilding" did not render on target "default" — /work?task=9999&tab=overview has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes)
