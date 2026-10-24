@@ -2,14 +2,14 @@
 id: "0946"
 title: "repoos init: offer to install missing coding agents (checkbox list)"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [core, docs]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-24T02:32:41Z"
-updated_at: "2026-10-24T02:32:41Z"
+updated_at: "2026-10-24T03:48:30Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ During interactive `repoos init` (TTY only; non-interactive init stays fully non
 ## Activity
 
 - 2026-10-24T02:32:41Z · created · njachowski@gmail.com
+- 2026-10-24T03:48:30Z · status inbox→ready
