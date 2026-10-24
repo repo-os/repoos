@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
+import { nextTick } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import { createRouter, createMemoryHistory } from "vue-router";
 import ChecksView from "../src/views/ChecksView.vue";
 import IntegrationPipelineSummary from "../src/components/IntegrationPipelineSummary.vue";
 import { useRepoStore } from "../src/stores/repo";
+import { invalidatePageDataPrefix } from "../src/composables/page-data-cache";
 import {
   checksActivityLive,
   parseChecksTab,
@@ -66,6 +68,7 @@ function pipelineActive(taskId = "0737"): IntegrationPipelineSnapshot {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  invalidatePageDataPrefix("check-plan:");
 });
 
 describe("checks-page tab helpers (#0738)", () => {
@@ -98,6 +101,63 @@ describe("checks-page tab helpers (#0738)", () => {
 });
 
 describe("ChecksView default tab (#0738)", () => {
+  it("shows the cached plan immediately on revisit and applies the refresh in place", async () => {
+    const initial = await mountChecks("/checks?tab=plan");
+    initial.wrapper.unmount();
+
+    let finish!: (response: Response) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (String(url).includes("/api/check-plan"))
+          return new Promise<Response>((resolve) => (finish = resolve));
+        if (String(url).includes("/api/integration/pipeline"))
+          return jsonResponse({ ok: true, pipeline: { empty: true, active: null, queue: [], at: "" } });
+        if (String(url).includes("/api/remote-validation/status")) return jsonResponse(idleRemote());
+        return jsonResponse({ ok: true });
+      }),
+    );
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/", component: { template: "<div/>" } },
+        { path: "/checks", name: "checks", component: ChecksView },
+      ],
+    });
+    await router.push("/checks?tab=plan");
+    await router.isReady();
+    const wrapper = mount(ChecksView, {
+      global: { plugins: [pinia, router], stubs: { teleport: true, Transition: true } },
+    });
+    await nextTick();
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    expect(wrapper.text()).toContain("Profile");
+
+    const updated = emptyPlan();
+    updated.steps = [
+      {
+        name: "Updated check",
+        command: "true",
+        timeoutMs: 1000,
+        required: true,
+        profiles: [],
+        whenChanged: [],
+        dependsOn: [],
+        requires: [],
+        crossCutting: true,
+        selected: true,
+        missing: [],
+      },
+    ];
+    finish(jsonResponse({ ok: true, checkPlan: updated }));
+    await flushPromises();
+    expect(wrapper.text()).toContain("Updated check");
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   async function mountChecks(initialPath: string) {
     vi.stubGlobal(
       "fetch",
