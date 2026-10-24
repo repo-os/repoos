@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-24T22:52:12Z"
+updated_at: "2026-10-24T22:52:19Z"
 ---
 ## Problem
 
@@ -39,3 +41,4 @@ Every standard nav page uses the full window height: the scrollable content area
 
 - 2026-10-24T22:51:41Z · created · njachowski@gmail.com
 - 2026-10-24T22:52:12Z · status inbox→ready
+- 2026-10-24T22:52:19Z · cli_override, model_override
