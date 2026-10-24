@@ -64,6 +64,26 @@ describe("page data cache", () => {
     expect(fetcher).toHaveBeenCalledOnce();
   });
 
+  it("does not publish an in-flight response after invalidation", async () => {
+    let resolve!: (value: string) => void;
+    const oldFetcher = () =>
+      new Promise<string>((done) => {
+        resolve = done;
+      });
+    const oldReceive = vi.fn();
+    const oldRequest = refreshPageData("resource", oldFetcher, oldReceive);
+    await Promise.resolve();
+
+    invalidatePageData("resource");
+    const newReceive = vi.fn();
+    await refreshPageData("resource", async () => "fresh", newReceive);
+    resolve("outdated");
+    await oldRequest;
+
+    expect(oldReceive).not.toHaveBeenCalledWith("outdated");
+    expect(newReceive).toHaveBeenLastCalledWith("fresh");
+  });
+
   it("invalidates matching query variants by prefix", async () => {
     await refreshPageData("check-plan:default:", async () => "default", vi.fn());
     await refreshPageData("check-plan:fast:main", async () => "fast", vi.fn());
