@@ -693,6 +693,57 @@ export function findConfigValueProblems(parsed: Record<string, unknown>): string
       }
     }
   }
+
+  // [[preview.targets]] rows (#0943): the parser drops a row that cannot run —
+  // a native row with a bad/missing platform or missing build/launch command,
+  // a typo'd kind, a web row with no command — so the declared area then
+  // resolves to nothing with no hint why. Surface each droppable row here
+  // instead of leaving it silently ignored.
+  const targetsVal = get("preview.targets");
+  if (targetsVal !== undefined && !Array.isArray(targetsVal)) {
+    problems.push(`preview.targets = ${JSON.stringify(targetsVal)} (expected an array of tables)`);
+  } else if (Array.isArray(targetsVal)) {
+    targetsVal.forEach((rawRow, i) => {
+      if (typeof rawRow !== "object" || rawRow === null || Array.isArray(rawRow)) {
+        problems.push(
+          `preview.targets[${i}] = ${JSON.stringify(rawRow)} (expected a [[preview.targets]] table)`,
+        );
+        return;
+      }
+      const row = rawRow as Record<string, unknown>;
+      const name = typeof row.name === "string" && row.name.trim() ? row.name.trim() : `#${i + 1}`;
+      const kind = typeof row.kind === "string" ? row.kind.trim() : "";
+      const issues: string[] = [];
+      if (kind && kind !== "native" && kind !== "web") {
+        issues.push(`kind = ${JSON.stringify(kind)} (expected "web" or "native"; parsed as web)`);
+      }
+      const isNative = kind === "native";
+      if (isNative) {
+        const platform = row.platform;
+        if (platform !== "macos" && platform !== "ios" && platform !== "android") {
+          issues.push(`platform = ${JSON.stringify(platform)} (expected macos, ios or android)`);
+        }
+        const usable = (v: unknown): boolean => typeof v === "string" && Boolean(v.trim());
+        if (!usable(row.build_command ?? row.buildCommand)) issues.push("missing build_command");
+        if (!usable(row.launch_command ?? row.launchCommand)) issues.push("missing launch_command");
+      } else if (!(typeof row.command === "string" && row.command.trim())) {
+        issues.push(
+          kind
+            ? "missing command"
+            : 'missing command (a native app target needs kind = "native" with platform, build_command and launch_command)',
+        );
+      }
+      if (!issues.length) return;
+      const dropped = isNative
+        ? issues.some((s) => /platform|build_command|launch_command/.test(s))
+        : issues.some((s) => s.startsWith("missing command"));
+      problems.push(
+        `[[preview.targets]] ${name}: ${issues.join("; ")}${
+          dropped ? " — RepoOS ignores the row, so tasks in its areas get no preview" : ""
+        }`,
+      );
+    });
+  }
   return problems;
 }
 

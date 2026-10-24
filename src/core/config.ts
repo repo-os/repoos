@@ -1033,6 +1033,12 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
         if (Number.isFinite(timeoutMs) && timeoutMs > 0) target.timeoutMs = timeoutMs;
         const device = typeof r.device === "string" ? r.device.trim() : "";
         if (device) target.device = device;
+        // Launcher lifetime (#0943): absent/false is a one-shot handoff (the
+        // launch command exits 0 when the app has launched, however slowly);
+        // `launch_waits = true` declares a waiting launcher (`open -W`) whose
+        // later exit ends the preview.
+        const launchWaits = r.launch_waits ?? r.launchWaits;
+        if (typeof launchWaits === "boolean") target.launchWaits = launchWaits;
         if (r.env && typeof r.env === "object" && !Array.isArray(r.env))
           target.env = r.env as Record<string, string>;
       }
@@ -3790,7 +3796,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: [],
       description:
-        "Native app targets use [[preview.targets]] with kind = native, platform, areas, build_command and launch_command; optional stop, cwd, env, requires, timeout_ms and device are configured in repoos.toml.",
+        "Native app targets use [[preview.targets]] with kind = native, platform, areas, build_command and launch_command; optional stop, cwd, env, requires, timeout_ms, device and launch_waits are configured in repoos.toml.",
     },
     {
       // Command-based capture targets (#0761). Deliberately raw-TOML-only, like
@@ -4054,6 +4060,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "preview.targets.platform",
   "preview.targets.build_command",
   "preview.targets.launch_command",
+  "preview.targets.launch_waits",
   "preview.targets.stop",
   "preview.targets.requires",
   "preview.targets.timeout_ms",

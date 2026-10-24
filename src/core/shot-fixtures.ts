@@ -40,7 +40,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0817 — active task with requirement sections so the drawer shows Update
   // requirements on the spec header (the action is active-only).
   "drawer:activeRequirements",
-  // #0943 — native preview controls in running and failed states.
+  // #0943 — native preview controls in building, running and failed states.
+  "drawer:nativePreviewBuilding",
   "drawer:nativePreviewRunning",
   "drawer:nativePreviewFailed",
   // #0819 — a task whose Changes tab carries a captured shot (with its handoff

@@ -205,9 +205,36 @@ const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms
 /** Give a native launcher a moment to report an immediate spawn/exit failure. */
 const NATIVE_LAUNCH_STARTUP_GRACE_MS = 150;
 
-async function awaitNativeLaunch(
+/**
+ * Wait out a native launcher's fate through the startup grace: a one-shot
+ * handoff that exits 0 during the grace means "launched". Whether a later
+ * exit means anything depends on the launcher's declared lifetime
+ * (`launch_waits`, #0943):
+ *
+ * - one-shot (default): the launch command is a handoff that exits 0 when
+ *   the app has been launched — including a SLOW one, like the iOS
+ *   `simctl boot && install && launch` recipe, which finishes long after
+ *   the grace while the simulator app keeps running. Its exit 0 at ANY
+ *   time completes the handoff and leaves the preview running; only a
+ *   non-zero exit means the launch failed and drops the preview.
+ * - waiting (`launch_waits = true`, e.g. `open -W`): the launcher stays
+ *   alive while the app runs, so it OWNS the running preview and its later
+ *   exit — of any kind, even a clean one when the user quits the app —
+ *   drops the preview through `onExit` (the same cleanup web previews get
+ *   from `child.on("exit")`).
+ *
+ * Without the declaration the two are indistinguishable: a slow one-shot
+ * and `open -W` returning after a user quit are both "exit 0 after the
+ * grace", and conflating them either kills a freshly launched app's
+ * preview or leaves a stale card for a quit one (#0943).
+ *
+ * Exported so the state machine can be driven directly in tests with fake
+ * children (spawn errors, exits before/after the grace).
+ */
+export async function awaitNativeLaunch(
   child: ChildProcess,
   onExit: () => void,
+  opts: { waits?: boolean } = {},
 ): Promise<{ error?: string }> {
   return await new Promise((resolveResult) => {
     let settled = false;
@@ -232,23 +259,28 @@ async function awaitNativeLaunch(
     child.stderr?.on("data", collect);
     child.once("error", (error) => fail(`could not spawn launch command: ${error.message}`));
     child.once("exit", (code, signal) => {
-      // A configured launcher can be a one-shot handoff (for example,
-      // `simctl launch` or `adb shell am start`). Its successful exit DURING
-      // the startup grace means the app was launched and the launcher was
-      // never meant to stay alive, so the preview stays running; only a
-      // non-zero exit indicates failure.
-      if (code === 0 && !settled) {
-        settled = true;
-        clearTimeout(timer);
-        resolveResult({});
+      // A ONE-SHOT launcher (the default) is a handoff: `simctl launch`,
+      // `adb shell am start`, or a whole `boot && install && launch` shell.
+      // Its successful exit means the app was launched and the launcher was
+      // never meant to stay alive — during the grace or any time after it —
+      // so the preview stays running; only a non-zero exit indicates
+      // failure. (Before #0943's fix a handoff that outlived the grace was
+      // conflated with a waiting launcher and dropped a freshly launched
+      // app's preview.)
+      if (code === 0 && (!settled || !opts.waits)) {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          resolveResult({});
+        }
         return;
       }
       if (code === 0) {
-        // The grace expired with this launcher still alive, so it OWNS the
-        // running preview (for example `open -W` for the macOS Hub). When it
-        // later ends — even cleanly, such as the user quitting the app — it
-        // must drop out of the registry and SSE exactly like a web preview
-        // whose server process exits (#0943).
+        // A WAITING launcher (`launch_waits = true`) was alive past the
+        // grace because it OWNS the running preview (for example `open -W`
+        // for the macOS Hub). When it later ends — even cleanly, such as the
+        // user quitting the app — it must drop out of the registry and SSE
+        // exactly like a web preview whose server process exits (#0943).
         onExit();
         return;
       }
@@ -259,27 +291,59 @@ async function awaitNativeLaunch(
   });
 }
 
-/** Run a native build as a bounded task-worktree command and retain its stderr tail. */
+/**
+ * Run a native build as a bounded task-worktree command and retain its stderr
+ * tail. The child leads its own process group (like the launcher) so a stop
+ * during a long build can take the whole build tree down, not just the shell.
+ * `onSpawn` reports the group-leader pid so the caller can record it in the
+ * building registry entry while the build runs.
+ */
 async function runNativeCommand(
   command: string,
   cwd: string,
   env: NodeJS.ProcessEnv,
   timeoutMs = 20 * 60_000,
+  onSpawn?: (child: ChildProcess) => void,
 ): Promise<{ ok: boolean; error?: string }> {
   return await new Promise((resolveResult) => {
-    const child = spawn(command, { cwd, shell: true, stdio: ["ignore", "pipe", "pipe"], env });
+    const processGroup = process.platform !== "win32";
+    let child: ChildProcess;
+    try {
+      child = spawn(command, {
+        cwd,
+        shell: true,
+        detached: processGroup,
+        stdio: ["ignore", "pipe", "pipe"],
+        env,
+      });
+    } catch (err) {
+      resolveResult({
+        ok: false,
+        error: `could not start build command: ${(err as Error).message}`,
+      });
+      return;
+    }
     let tail = "";
     let finished = false;
+    const killTree = (): void => {
+      try {
+        if (processGroup && child.pid) process.kill(-child.pid, "SIGTERM");
+        else child.kill("SIGTERM");
+      } catch {
+        /* already gone */
+      }
+    };
     const timer = setTimeout(() => {
       if (!finished) {
         finished = true;
-        child.kill("SIGTERM");
+        killTree();
         resolveResult({
           ok: false,
           error: `build timed out after ${timeoutMs}ms${tail ? ` — ${tail}` : ""}`,
         });
       }
     }, timeoutMs);
+    onSpawn?.(child);
     const collect = (chunk: Buffer) => {
       tail = `${tail}${chunk.toString("utf8")}`.slice(-4000).trim();
     };
@@ -360,6 +424,8 @@ export type PreviewTarget = {
     platform: "macos" | "ios" | "android";
     buildCommand: string;
     launchCommand: string;
+    /** See PreviewTargetConfig.launchWaits — waiting vs one-shot launcher. */
+    launchWaits?: boolean;
     stop?: string;
     cwd?: string;
     device?: string;
@@ -536,6 +602,7 @@ function previewCandidates(
                 platform: t.platform,
                 buildCommand: t.buildCommand,
                 launchCommand: t.launchCommand,
+                launchWaits: t.launchWaits,
                 stop: t.stop,
                 cwd: t.cwd,
                 device: t.device,
@@ -852,6 +919,17 @@ export class PreviewManager {
   }
 
   /**
+   * The building entry for a task (a start currently building/starting), if
+   * any. The task routes surface it so a long native build reads as a visible
+   * `building` state instead of nothing (#0943) — `get` still returns only a
+   * usable, running preview.
+   */
+  startingInfo(taskId: string): PreviewInfo | null {
+    const info = this.registry.get(taskId);
+    return info?.starting ? info : null;
+  }
+
+  /**
    * Start a preview for a task: resolve its preview target from `[preview]`
    * config (#0362), allocate an ephemeral port, spawn the project-declared
    * command rooted at the worktree, and wait for it to come up. Returns
@@ -1115,27 +1193,112 @@ export class PreviewManager {
           };
         }
       }
+      const processGroup = process.platform !== "win32";
+      const nativeState = {
+        platform: target.native.platform,
+        device: target.native.device,
+        stop: target.native.stop ? expand(target.native.stop) : undefined,
+        cwd,
+      };
+
+      // Record the `building` state BEFORE the (possibly minutes-long) build:
+      // a long native build must show a visible building state instead of
+      // nothing, a reload mid-build must still see it, and a stop or task
+      // teardown during the build must find an entry to tear down (#0943).
+      // Not surfaced as a running preview (`get`/`runningPreviews` filter it).
+      const building: PreviewInfo = {
+        port: 0,
+        url: "",
+        startedAt: now(),
+        pid: 0,
+        command: expand(target.native.buildCommand),
+        label: target.label,
+        ...(processGroup ? { processGroup: true } : {}),
+        native: nativeState,
+        starting: true,
+      };
+      this.registry.set(task.id, building);
+      this.persist();
+      this.emit({
+        type: "preview",
+        id: task.id,
+        preview: {
+          port: 0,
+          url: "",
+          startedAt: building.startedAt,
+          label: target.label,
+          native: { platform: nativeState.platform, device: nativeState.device },
+          starting: true,
+        },
+        at: now(),
+      });
+      /** Drop the building entry unless a stop/eviction already removed it. */
+      const clearBuilding = (): void => {
+        if (this.registry.get(task.id)?.starting) {
+          this.registry.delete(task.id);
+          this.persistOrDrop();
+          this.emit({ type: "preview", id: task.id, preview: null, at: now() });
+        }
+      };
+
+      if (this.cancelled.has(task.id) || this.shuttingDown) {
+        this.cancelled.delete(task.id);
+        clearBuilding();
+        this.logLifecycle("start-skipped", task.id, "cancelled before spawning");
+        return { ok: false, error: `preview start for #${task.id} was cancelled` };
+      }
       const build = await runNativeCommand(
         expand(target.native.buildCommand),
         cwd,
         env,
         target.native.timeoutMs,
+        (child) => {
+          // Record the build's group leader so a stop mid-build takes the
+          // whole build tree down instead of leaving xcodebuild/gradle burning.
+          const current = this.registry.get(task.id);
+          if (current?.starting && child.pid) {
+            this.registry.set(task.id, { ...current, pid: child.pid });
+            this.persist();
+          }
+        },
       );
-      if (!build.ok)
+      // A stop/eviction/task-teardown during the build must win: it removed
+      // the building entry and flagged `cancelled`, so report the
+      // cancellation instead of launching an app nobody owns.
+      if (this.cancelled.has(task.id) || this.shuttingDown) {
+        this.cancelled.delete(task.id);
+        clearBuilding();
+        this.logLifecycle("start-skipped", task.id, "cancelled during native build");
+        return { ok: false, error: `preview start for #${task.id} was cancelled` };
+      }
+      if (!build.ok) {
+        clearBuilding();
+        this.logLifecycle("start-failed", task.id, build.error);
         return {
           ok: false,
           error: `native ${target.native.platform} build failed${build.error ? ` — ${build.error}` : ""}`,
         };
-      const processGroup = process.platform !== "win32";
-      const launch = spawn(expand(target.native.launchCommand), {
-        cwd,
-        shell: true,
-        detached: processGroup,
-        stdio: ["ignore", "ignore", "pipe"],
-        env,
-      });
+      }
+      let launch: ChildProcess;
+      try {
+        launch = spawn(expand(target.native.launchCommand), {
+          cwd,
+          shell: true,
+          detached: processGroup,
+          stdio: ["ignore", "ignore", "pipe"],
+          env,
+        });
+      } catch (err) {
+        clearBuilding();
+        this.logLifecycle("start-failed", task.id, (err as Error).message);
+        return {
+          ok: false,
+          error: `native ${target.native.platform} launch could not start — ${(err as Error).message}`,
+        };
+      }
       if (!launch.pid) {
         launch.kill();
+        clearBuilding();
         return { ok: false, error: `native ${target.native.platform} launch did not start` };
       }
       const launchCommand = expand(target.native.launchCommand);
@@ -1147,12 +1310,7 @@ export class PreviewManager {
         command: launchCommand,
         label: target.label,
         ...(processGroup ? { processGroup: true } : {}),
-        native: {
-          platform: target.native.platform,
-          device: target.native.device,
-          stop: target.native.stop ? expand(target.native.stop) : undefined,
-          cwd,
-        },
+        native: nativeState,
       };
       const onExit = () => {
         if (this.registry.get(task.id)?.pid === launch.pid) {
@@ -1162,7 +1320,9 @@ export class PreviewManager {
           this.emit({ type: "preview", id: task.id, preview: null, at: now() });
         }
       };
-      const launchHealth = await awaitNativeLaunch(launch, onExit);
+      const launchHealth = await awaitNativeLaunch(launch, onExit, {
+        waits: target.native.launchWaits,
+      });
       if (launchHealth.error) {
         if (processGroup) {
           try {
@@ -1173,11 +1333,16 @@ export class PreviewManager {
         } else {
           launch.kill("SIGTERM");
         }
+        clearBuilding();
+        this.logLifecycle("start-failed", task.id, launchHealth.error);
         return {
           ok: false,
           error: `native ${target.native.platform} launch failed — ${launchHealth.error}`,
         };
       }
+      // Flip building → running in one atomic replace (the exit handler keys
+      // on this pid, and any pending exit event runs only after this sync
+      // block, so a launcher that died at the grace boundary still drops).
       this.registry.set(task.id, info);
       this.persist();
       this.emit({
@@ -1351,7 +1516,10 @@ export class PreviewManager {
     this.persistOrDrop();
     this.logStop(taskId, reason, info);
     this.emit({ type: "preview", id: taskId, preview: null, at: now() });
-    if (info.native?.stop) {
+    // While a native preview is still building there is no launched app to
+    // stop — only the build process to kill below, so skip the app stop
+    // command (it could otherwise signal an unrelated app the human runs).
+    if (info.native?.stop && !info.starting) {
       try {
         execFileSync("sh", ["-lc", info.native.stop], {
           cwd: info.native.cwd,
@@ -1421,8 +1589,12 @@ export class PreviewManager {
       }
       // A provisional entry survived the reload: adopt it only if the child
       // actually answers now. Otherwise it is a dead start, not a preview.
+      // A native building entry has no URL to probe — its start died with the
+      // previous server, so it is always torn down (#0943).
       if (info.starting) {
-        const ready = await waitForReady(info.url, info.readyPath ?? DEFAULT_READY_PATH, 2_000);
+        const ready =
+          !info.native &&
+          (await waitForReady(info.url, info.readyPath ?? DEFAULT_READY_PATH, 2_000));
         if (!ready) {
           await this.stopRecorded(taskId, info, stopReason(taskId, opts));
           continue;
@@ -1509,7 +1681,10 @@ export class PreviewManager {
   /** Stop a preview read from the persisted registry (not yet adopted). */
   private async stopRecorded(taskId: string, info: PreviewInfo, reason: string): Promise<void> {
     this.logStop(taskId, reason, info);
-    if (info.native?.stop) {
+    // While a native preview is still building there is no launched app to
+    // stop — only the build process to kill below, so skip the app stop
+    // command (it could otherwise signal an unrelated app the human runs).
+    if (info.native?.stop && !info.starting) {
       try {
         execFileSync("sh", ["-lc", info.native.stop], {
           cwd: info.native.cwd,
@@ -1756,6 +1931,9 @@ export class PreviewManager {
 
   /** Graceful SIGTERM, then SIGKILL after a short grace period. */
   private async kill(pid: number, processGroup = false): Promise<void> {
+    // A building entry can carry pid 0 before its child spawned; signalling
+    // pid 0/-0 would target OUR OWN process group — never do that.
+    if (!Number.isInteger(pid) || pid <= 0) return;
     const signal = (sig: NodeJS.Signals): boolean => {
       try {
         process.kill(processGroup ? -pid : pid, sig);

@@ -1098,6 +1098,27 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       }
       break;
     }
+    case "drawer:nativePreviewBuilding": {
+      const drawerId = shotPreviewDrawerTaskIdFromLocation(window.location);
+      ensureFixtureTask(
+        repo,
+        "active",
+        {
+          area: "mac",
+          previewTargets: [{ name: "macOS Hub", areas: ["mac"], platform: "macos" }],
+          preview: {
+            port: 0,
+            url: "",
+            startedAt: nowIso(),
+            label: "macOS Hub",
+            native: { platform: "macos", device: "Mac mini" },
+            starting: true,
+          },
+        },
+        drawerId,
+      );
+      break;
+    }
     case "drawer:nativePreviewRunning": {
       const drawerId = shotPreviewDrawerTaskIdFromLocation(window.location);
       ensureFixtureTask(
@@ -1120,15 +1141,25 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     }
     case "drawer:nativePreviewFailed": {
       const drawerId = shotPreviewDrawerTaskIdFromLocation(window.location);
+      // A branch is required for the drawer to show the preview start control
+      // ("No preview running." + Start) instead of the branchless hint, and
+      // seeded diff stats keep the branch's diff-stats fetch from logging a
+      // console error during capture (#0778 pattern).
       ensureFixtureTask(
         repo,
         "active",
         {
           area: "ios",
+          branch: "feat/shot-fixture",
           previewTargets: [{ name: "iOS Simulator", areas: ["ios"], platform: "ios" }],
         },
         drawerId,
       );
+      repo.seedDiffStats(SHOT_PREVIEW_FIXTURE_TASK_ID, {
+        filesChanged: 2,
+        additions: 12,
+        deletions: 3,
+      });
       repo.pushToast(
         "Native preview failed: xcodebuild exited with code 65 — see task preview log for details.",
         "error",

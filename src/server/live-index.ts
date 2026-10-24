@@ -135,6 +135,13 @@ export type RepoEvent =
         startedAt: string;
         label?: string;
         native?: { platform: "macos" | "ios" | "android"; device?: string };
+        /**
+         * A start is building/starting, not running yet (#0943): a long
+         * native build emits this before the build so every viewer sees a
+         * `building` state instead of nothing. Cleared by the running event
+         * or a `preview: null` drop.
+         */
+        starting?: boolean;
       } | null;
       at: string;
     }

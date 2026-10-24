@@ -1638,6 +1638,16 @@ export interface PreviewTargetConfig {
   platform?: "macos" | "ios" | "android";
   buildCommand?: string;
   launchCommand?: string;
+  /**
+   * Declares the launch command's lifetime for a native target. Absent/false
+   * (the default) means a ONE-SHOT handoff: the command exits 0 when the app
+   * has been launched (the iOS `simctl boot && install && launch` recipe) and
+   * the preview stays running regardless of how long that took. `true` means a
+   * WAITING launcher: the command stays alive while the app runs (for example
+   * `open -W`), and its later exit — even a clean one, such as the user
+   * quitting the macOS app — ends the preview (#0943).
+   */
+  launchWaits?: boolean;
   stop?: string;
   requires?: string;
   timeoutMs?: number;

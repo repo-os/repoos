@@ -48,8 +48,9 @@ readyPath = "/"
 
 `kind = "native"` uses the same preview slot and task lifecycle without an
 HTTP URL. The build command runs first in the task worktree; the launch command
-is then kept as the owned preview process. Configure all device-specific work
-in these commands. `{worktree}`, `{taskId}` and `{outputDir}` plus
+then starts the app — a one-shot handoff by default, or the owned preview
+process with `launch_waits = true` (see below). Configure all device-specific
+work in these commands. `{worktree}`, `{taskId}` and `{outputDir}` plus
 `REPOOS_WORKTREE`, `REPOOS_TASK_ID` and `REPOOS_OUTPUT_DIR` identify the task
 and its private `.repoos/preview-output/<taskId>` directory.
 
@@ -59,6 +60,7 @@ name = "macOS Hub"
 kind = "native"
 platform = "macos"
 areas = ["mac"]
+launch_waits = true
 build_command = "xcodebuild -project macos/RepoOSHub.xcodeproj -scheme RepoOSHub -derivedDataPath {outputDir}/DerivedData build"
 launch_command = "open -W {outputDir}/DerivedData/Build/Products/Debug/RepoOSHub.app"
 stop = "osascript -e 'tell application \\\"RepoOSHub\\\" to quit'"
@@ -78,6 +80,7 @@ name = "Android Emulator"
 kind = "native"
 platform = "android"
 areas = ["android"]
+launch_waits = true
 build_command = "cd mobile/android && ./gradlew assembleDebug"
 launch_command = "adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk && adb shell am start -n com.example.app/.MainActivity && adb logcat"
 stop = "adb shell am force-stop com.example.app"
@@ -86,13 +89,32 @@ stop = "adb shell am force-stop com.example.app"
 Replace example scheme, bundle id, and activity names with the project's real
 values. Native targets are local to the control-plane host; remote runners
 cannot display an app on the human's screen. They run in the same one-at-a-time
-FIFO slot as web previews and are stopped with the task. The launch command is
-the owned preview process: if it ends on its own — for example `open -W`
-returning when the user quits the macOS app — the preview drops from the board
-and emits the same SSE update as a web preview that exited, rather than staying
-stale until a manual Stop. Unlike
-`[[dev.targets]] kind = "process"`, they run from the task worktree; unlike
-`[[shot.targets]]`, they launch a live app rather than capture still images.
+FIFO slot as web previews and are stopped with the task.
+
+The launch command's lifetime decides when the preview ends. By default it is
+a ONE-SHOT handoff: the command exits 0 once the app has been launched —
+however long that takes (the iOS `bootstatus && install && launch` recipe
+finishes seconds in, while the simulator app keeps running) — and the preview
+stays running until a manual Stop or the task leaves active/review. With
+`launch_waits = true` the command is a WAITING launcher that stays alive while
+the app runs (the macOS `open -W` recipe): its later exit — even a clean one,
+such as the user quitting the app — drops the preview from the board and emits
+the same SSE update as a web preview that exited, rather than staying stale
+until a manual Stop. A non-zero exit at any point is a failed launch either
+way.
+
+Native previews report **`building` → `running` (or `failed` with the log
+tail)**. The building state is recorded before the build starts, so a long
+`xcodebuild`/Gradle build shows a visible `building …` in the drawer (which
+survives a page reload) instead of nothing; Stop — or the task leaving
+`active`/`review` — during the build kills the build process and cancels the
+start, and a malformed native row (bad platform, missing build/launch command,
+typo'd `kind`) is reported by `repoos doctor` under *Invalid repoos.toml
+value(s)* instead of being silently dropped.
+
+Unlike `[[dev.targets]] kind = "process"`, they run from the task worktree;
+unlike `[[shot.targets]]`, they launch a live app rather than capture still
+images.
 
 - `{port}` / `{host}` are replaced with the OS-assigned values, and `PORT` /
   `HOST` are exported into the child's environment.

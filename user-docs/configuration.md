@@ -1099,6 +1099,7 @@ when a task is in `active` or `review`.
 | `preview.targets[].platform` | `macos`, `ios` or `android` | required for native | yes | Platform label shown in the task drawer. |
 | `preview.targets[].build_command` | string | required for native | yes | Build command run in the task worktree before launch. |
 | `preview.targets[].launch_command` | string | required for native | yes | Launch command run after a successful build. |
+| `preview.targets[].launch_waits` | boolean | `false` | yes | `false` (default): the launch command is a one-shot handoff — it exits 0 once the app has launched and the preview stays running. `true`: a waiting launcher (e.g. `open -W`) that stays alive while the app runs, whose later exit ends the preview. |
 | `preview.targets[].stop` | string | unset | yes | Optional platform command run when stopping the target. |
 | `preview.targets[].device` | string | unset | yes | Simulator or emulator label displayed in the drawer. |
 | `preview.targets[].requires` | string | unset | yes | Required tool name for install guidance. |
@@ -1125,11 +1126,17 @@ to the primary branch), so new targets appear without restarting `repoos serve`.
 
 Native targets run locally on the machine hosting the control plane. They use
 the same one-at-a-time slot and run their build and launch commands from the
-task worktree; the card shows the platform and device and has no URL. For
+task worktree; the card shows the platform and device and has no URL. Starting
+one reports `building` (a long build shows a visible building state in the
+drawer) until the app is launched, then `running`; Stop during the build kills
+the build. For
 example, set `kind = "native"`, `platform = "ios"`, `build_command` to an
 `xcodebuild` simulator build, `launch_command` to `xcrun simctl install` plus
 `launch`, and `stop` to `xcrun simctl terminate`. Use corresponding
-`xcodebuild`/`open -W` commands for macOS or Gradle/`adb` commands for Android.
+`xcodebuild`/`open -W` commands for macOS or Gradle/`adb` commands for Android;
+a waiting launcher such as `open -W` or `adb logcat` declares
+`launch_waits = true` so its exit ends the preview (see the
+`preview.targets[].launch_waits` row above).
 All tool-specific behavior belongs in these configured commands. Remote
 runners cannot display a native app on the control-plane host's screen. See
 `docs/previews.md` for full examples and placeholder details. These targets
