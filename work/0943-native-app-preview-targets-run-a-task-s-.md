@@ -133,3 +133,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:01:24Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-24T14:01:24Z · message_delivered: 1 message(s)
 - 2026-10-24T14:30:03Z · message_queued at 2026-10-24T14:30:03.400Z
+- 2026-10-24T14:30:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
