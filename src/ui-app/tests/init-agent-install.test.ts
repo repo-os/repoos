@@ -45,13 +45,15 @@ describe("init coding-agent install offer", () => {
   it("prints the manual command after failure and continues to sign-in guidance", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const ask = vi.fn().mockResolvedValueOnce("yes").mockResolvedValueOnce("yes");
-    await expect(offerCodingAgentInstall({
-      isTTY: true,
-      ask,
-      detect: async () => [sample(true, false), sample(false)],
-      select: async (agents) => agents,
-      install: async () => ({ ok: false, summary: "permission denied" }),
-    })).resolves.toBeUndefined();
+    await expect(
+      offerCodingAgentInstall({
+        isTTY: true,
+        ask,
+        detect: async () => [sample(true, false), sample(false)],
+        select: async (agents) => agents,
+        install: async () => ({ ok: false, summary: "permission denied" }),
+      }),
+    ).resolves.toBeUndefined();
     const output = log.mock.calls.flat().join(" ");
     expect(output).toContain("To install manually, run: npm i -g example-agent");
     expect(output).toContain("agent login");
@@ -64,5 +66,36 @@ describe("init coding-agent install offer", () => {
     await offerCodingAgentInstall({ isTTY: false, ask, detect });
     expect(ask).not.toHaveBeenCalled();
     expect(detect).not.toHaveBeenCalled();
+  });
+
+  it("never prompts or installs in CI even when stdin is a TTY", async () => {
+    const previousCI = process.env.CI;
+    process.env.CI = "true";
+    const ask = vi.fn();
+    const detect = vi.fn();
+    const install = vi.fn();
+    try {
+      await offerCodingAgentInstall({ isTTY: true, ask, detect, install });
+      expect(ask).not.toHaveBeenCalled();
+      expect(detect).not.toHaveBeenCalled();
+      expect(install).not.toHaveBeenCalled();
+    } finally {
+      if (previousCI === undefined) delete process.env.CI;
+      else process.env.CI = previousCI;
+    }
+  });
+
+  it("asks before each install and skips an unconfirmed command", async () => {
+    const ask = vi.fn().mockResolvedValueOnce("y").mockResolvedValueOnce("n");
+    const install = vi.fn();
+    await offerCodingAgentInstall({
+      isTTY: true,
+      ask,
+      detect: async () => [sample(false)],
+      select: async (agents) => agents,
+      install,
+    });
+    expect(ask).toHaveBeenCalledTimes(2);
+    expect(install).not.toHaveBeenCalled();
   });
 });

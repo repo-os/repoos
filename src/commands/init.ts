@@ -1053,7 +1053,9 @@ async function selectAgents(agents: DetectedAgent[]): Promise<DetectedAgent[]> {
   const render = () => {
     process.stdout.write("\u001b[?25l");
     agents.forEach((agent, index) => {
-      process.stdout.write(`\r\u001b[2K  ${index === cursor ? "›" : " "} [${selected.has(index) ? "x" : " "}] ${agent.name}\n`);
+      process.stdout.write(
+        `\r\u001b[2K  ${index === cursor ? "›" : " "} [${selected.has(index) ? "x" : " "}] ${agent.name}\n`,
+      );
     });
     process.stdout.write(`\u001b[${agents.length}A`);
   };
@@ -1064,12 +1066,15 @@ async function selectAgents(agents: DetectedAgent[]): Promise<DetectedAgent[]> {
     return await new Promise((resolvePromise) => {
       const onKey = (_: string, key: { name?: string; ctrl?: boolean }) => {
         if (key.ctrl && key.name === "c") {
+          input.off("keypress", onKey);
+          process.stdout.write(`\u001b[${agents.length}B\u001b[?25h\n`);
           resolvePromise([]);
           return;
         }
         if (key.name === "up") cursor = (cursor + agents.length - 1) % agents.length;
         else if (key.name === "down") cursor = (cursor + 1) % agents.length;
-        else if (key.name === "space") selected.has(cursor) ? selected.delete(cursor) : selected.add(cursor);
+        else if (key.name === "space")
+          selected.has(cursor) ? selected.delete(cursor) : selected.add(cursor);
         else if (key.name === "return") {
           input.off("keypress", onKey);
           process.stdout.write(`\u001b[${agents.length}B\u001b[?25h\n`);
@@ -1094,7 +1099,7 @@ export async function offerCodingAgentInstall(options: {
   ask?: (question: string) => Promise<string>;
   install?: (command: string) => Promise<{ ok: boolean; summary: string }>;
 }): Promise<void> {
-  if (!options.isTTY) return;
+  if (!options.isTTY || process.env.CI) return;
   const askUser = options.ask ?? ask;
   const answer = (await askUser("\n  Install coding agents now? (y/N) ")).trim().toLowerCase();
   if (answer !== "y" && answer !== "yes") return;
@@ -1103,7 +1108,9 @@ export async function offerCodingAgentInstall(options: {
   console.log("\n  Installed coding agents:");
   if (!installed.length) console.log("    (none detected)");
   for (const agent of installed) {
-    console.log(`    ${agent.name} — ${agent.headless ? "✓ headless-capable" : agent.headless === false ? "not headless-capable" : "headless unknown"}; ${agent.auth === true ? "✓ signed in" : agent.auth === false ? "not signed in" : "sign-in unknown"}`);
+    console.log(
+      `    ${agent.name} — ${agent.headless ? "✓ headless-capable" : agent.headless === false ? "not headless-capable" : "headless unknown"}; ${agent.auth === true ? "✓ signed in" : agent.auth === false ? "not signed in" : "sign-in unknown"}`,
+    );
   }
   const missing = agents.filter((agent) => !agent.installed);
   console.log("\n  Available to install:");
@@ -1119,7 +1126,8 @@ export async function offerCodingAgentInstall(options: {
   const needsSignIn = installed.filter((agent) => agent.auth === false);
   console.log("\n  Still needs sign-in:");
   if (!needsSignIn.length) console.log("    (none detected)");
-  for (const agent of needsSignIn) console.log(`    ${agent.name}: ${agent.authHint ?? "sign in with the CLI"}`);
+  for (const agent of needsSignIn)
+    console.log(`    ${agent.name}: ${agent.authHint ?? "sign in with the CLI"}`);
 }
 
 function runInstallCommand(command: string): Promise<{ ok: boolean; summary: string }> {
@@ -1130,7 +1138,16 @@ function runInstallCommand(command: string): Promise<{ ok: boolean; summary: str
     child.stdout?.on("data", (chunk: Buffer) => (stdout += chunk.toString()));
     child.stderr?.on("data", (chunk: Buffer) => (stderr += chunk.toString()));
     child.on("error", (error) => resolvePromise({ ok: false, summary: error.message }));
-    child.on("close", (code) => resolvePromise({ ok: code === 0, summary: (stderr || stdout).trim().split("\n").slice(-3).join(" ") || `exit code ${code}` }));
+    child.on("close", (code) =>
+      resolvePromise({
+        ok: code === 0,
+        summary:
+          [stdout.trim(), stderr.trim()]
+            .filter(Boolean)
+            .map((stream) => stream.split("\n").slice(-3).join(" "))
+            .join("; ") || `exit code ${code}`,
+      }),
+    );
   });
 }
 
@@ -2255,7 +2272,7 @@ export async function cmdInit(args: string[]): Promise<void> {
       console.log(c.dim("\n  Importing project docs from " + options.docsFrom + " …"));
       importDocsInto(root, config.docsDir, options.docsFrom, { force: options.force });
     }
-    await offerCodingAgentInstall({ isTTY: tty });
+    await offerCodingAgentInstall({ isTTY: tty && !options.nonInteractive });
     if (created.length === 0) {
       warnAlreadySetUp(root, "Nothing to initialize here.");
       for (const f of skipped) console.log("  " + c.dim("exists  " + f));
