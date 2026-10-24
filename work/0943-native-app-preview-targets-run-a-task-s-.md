@@ -3,12 +3,6 @@ id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the cursor agent exited without output: Error: [unavailable] read ETIMEDOUT"
-debug_tldr: "Cursor review agent hit a network read timeout (ETIMEDOUT) — retry review once, or switch reviewer if it happens again."
-debug_tldr_at: "2026-10-24T14:39:01Z"
-debug_tldr_key: "review-failed|the cursor agent exited without output: Error: [unavailable] read ETIMEDOUT"
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -161,3 +155,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:44:53Z · body
 - 2026-10-24T14:47:36Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-24T14:55:36Z · note: review pass 6: needs some work
+- 2026-10-24T14:55:36Z · needs_input
