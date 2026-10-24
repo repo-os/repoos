@@ -51,3 +51,4 @@ Sending a task back from review to its engineer with feedback takes three separa
 - 2026-10-24T11:54:18Z · body
 - 2026-10-24T12:04:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-24T12:22:49Z · message_queued at 2026-10-24T12:22:49.096Z
+- 2026-10-24T12:22:49Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
