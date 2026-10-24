@@ -131,3 +131,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T13:11:02Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-24T14:00:25Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-24T14:01:24Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-24T14:01:24Z · message_delivered: 1 message(s)
