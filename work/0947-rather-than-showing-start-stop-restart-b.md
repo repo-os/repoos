@@ -2,7 +2,7 @@
 id: "0947"
 title: Show dev target actions based on running state
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: "the cursor agent exited without output: Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T07:39:18Z"
+updated_at: "2026-10-24T11:13:56Z"
 ---
 ## Problem
 
@@ -61,3 +61,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T06:22:14Z · note: review pass 1: failed — no usable report
 - 2026-10-24T06:22:14Z · needs_input
 - 2026-10-24T07:39:18Z · status review→active
+- 2026-10-24T11:13:56Z · status active→review
