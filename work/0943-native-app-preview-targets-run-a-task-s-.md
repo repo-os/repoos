@@ -153,3 +153,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:38:43Z · note: review pass 5: failed — no usable report
 - 2026-10-24T14:38:43Z · needs_input
 - 2026-10-24T14:39:32Z · note: declared shot Task drawer: native macOS preview shows building state during a long build on target "default" cannot render: state "drawer:nativePreviewBuilding" did not render on target "default" — /work?task=9999&tab=overview has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes)
+- 2026-10-24T14:39:32Z · note: shots: failed — declared shot Task drawer: native macOS preview shows building state during a long build on target "default" cannot render: state "drawer:nativePreviewBuilding" did not render on target "default" — /work?task=9999&tab=overview has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes)
