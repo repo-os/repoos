@@ -11,7 +11,7 @@ branch: feat/repoos-init-offer-to-install-missing-cod
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T02:32:41Z"
-updated_at: "2026-10-24T06:11:22Z"
+updated_at: "2026-10-24T06:11:23Z"
 last_check_failure: "repoos check at 2026-10-24T06:05:06.867Z: repoos check failed: remote validation unavailable: host bee skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 dev_error_count: 3
 ---
@@ -64,3 +64,4 @@ During interactive `repoos init` (TTY only; non-interactive init stays fully non
 - 2026-10-24T04:34:17Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-24T06:04:39Z · needs_input
 - 2026-10-24T06:11:22Z · status active→review
+- 2026-10-24T06:11:23Z · note: shots: skipped — Docs site skipped: no docs shot declared
