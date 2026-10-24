@@ -18,7 +18,6 @@ updated_at: "2026-10-24T07:03:56Z"
 last_handoff_failure_fingerprint: "check|remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 last_handoff_failure_sha: d4dd2f3a1fac5f9adec8a3b80911134c50706ed6
 handoff_signal_retry_count: 2
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-24T01:31:21.495Z: repoos check failed: remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T01:57:26.775Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -82,3 +81,4 @@ This Landable card should only show failing and minimise the rest -- if user cli
 - 2026-10-24T04:01:41Z · note: handoff requested (ui-review)
 - 2026-10-24T04:02:07Z · handoff failed · ui-review handoff failed at check · remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
 - 2026-10-24T07:03:56Z · body
+
