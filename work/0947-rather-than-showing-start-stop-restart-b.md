@@ -3,16 +3,13 @@ id: "0947"
 title: Show dev target actions based on running state
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): RepoOS already switched this task once (github copilot + default); it will not chain another automatic switch. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T06:02:20Z"
+updated_at: "2026-10-24T06:04:38Z"
 dev_error_count: 6
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:52:05.099Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:52:22.651Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:52:40.126Z\",\"kind\":\"dev-error\"},{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-10-24T04:54:00.314Z\",\"kind\":\"dev-error\"},{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-10-24T04:55:18.858Z\",\"kind\":\"dev-error\"},{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-10-24T04:56:39.543Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"github copilot\",\"model\":\"default\"}"
@@ -56,11 +53,11 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 ```json
 [
 {
-  "label": "Dev target actions for running and stopped targets",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".dev-card-details",
-  "state": "dev:running"
+"label": "Dev target actions for running and stopped targets",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-card-details",
+"state": "dev:running"
 }
 ]
 ```
@@ -91,3 +88,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T06:01:19Z · cli_override
 - 2026-10-24T06:01:20Z · model_override
 - 2026-10-24T06:02:20Z · body
+- 2026-10-24T06:04:38Z · needs_input
