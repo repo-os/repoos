@@ -115,3 +115,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T17:36:53Z · message_queued at 2026-10-24T17:36:52.998Z
 - 2026-10-24T17:36:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-24T17:37:03Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-24T17:37:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
