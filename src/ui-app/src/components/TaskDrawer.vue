@@ -4839,10 +4839,18 @@ watch(
                 :aria-expanded="landableShowAll"
                 @click="landableShowAll = !landableShowAll"
               >
-                {{ landableShowAll ? "Show failing checks" : `Show all ${landable.checks.length} checks` }}
+                {{
+                  landableShowAll
+                    ? "Show failing checks"
+                    : `Show all ${landable.checks.length} checks`
+                }}
               </button>
               <ul class="landable-list">
-                <li v-for="check in visibleLandableChecks" :key="check.id" :class="`is-${check.status}`">
+                <li
+                  v-for="check in visibleLandableChecks"
+                  :key="check.id"
+                  :class="`is-${check.status}`"
+                >
                   <span class="landable-mark" aria-hidden="true">
                     {{ check.status === "pass" ? "✓" : check.status === "warn" ? "!" : "✗" }}
                   </span>
