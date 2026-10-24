@@ -2,14 +2,14 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-24T16:13:34Z"
+updated_at: "2026-10-24T16:14:18Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 ## Activity
 
 - 2026-10-24T16:13:34Z · created · njachowski@gmail.com
+- 2026-10-24T16:14:18Z · status inbox→ready
