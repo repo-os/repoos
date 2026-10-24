@@ -1006,292 +1006,298 @@ onBeforeUnmount(() => {
     </header>
 
     <div class="page-scroll-body">
-    <div v-if="loading" class="spin"></div>
-    <p v-else-if="loadError && !status" class="rel-error">{{ loadError }}</p>
+      <div v-if="loading" class="spin"></div>
+      <p v-else-if="loadError && !status" class="rel-error">{{ loadError }}</p>
 
-    <template v-else-if="status">
-      <div v-if="!status.enabled" class="rel-card rel-empty">
-        Releases aren't configured for this repository. Add a <code>[release]</code> block in
-        <a class="rel-link" href="/settings?tab=toml">repoos.toml</a> to turn this page on.
-      </div>
+      <template v-else-if="status">
+        <div v-if="!status.enabled" class="rel-card rel-empty">
+          Releases aren't configured for this repository. Add a <code>[release]</code> block in
+          <a class="rel-link" href="/settings?tab=toml">repoos.toml</a> to turn this page on.
+        </div>
 
-      <template v-else>
-        <section class="rel-card">
-          <div class="rel-card-head">
-            <div>
-              <div class="rel-provider-name">{{ status.name }}</div>
-              <div class="rel-provider-meta">{{ status.provider }} · {{ status.branch }}</div>
+        <template v-else>
+          <section class="rel-card">
+            <div class="rel-card-head">
+              <div>
+                <div class="rel-provider-name">{{ status.name }}</div>
+                <div class="rel-provider-meta">{{ status.provider }} · {{ status.branch }}</div>
+              </div>
+              <span class="rel-pill" :data-phase="phase">{{ phaseLabel }}</span>
             </div>
-            <span class="rel-pill" :data-phase="phase">{{ phaseLabel }}</span>
-          </div>
 
-          <div class="rel-current-release">
-            <div class="rel-current-version">
-              <span class="rel-current-label">Current release</span>
-              <span class="rel-current-number">{{ publishedTag ?? "Not released yet" }}</span>
-              <template v-if="status.latestTag">
-                <span class="rel-fresh-line">
-                  <span class="rel-fresh" :data-state="releaseFreshness">
-                    {{ isPrerelease ? "cut" : "released" }}
-                    {{ relativeTime(status.latestTagAt) || "—" }}
+            <div class="rel-current-release">
+              <div class="rel-current-version">
+                <span class="rel-current-label">Current release</span>
+                <span class="rel-current-number">{{ publishedTag ?? "Not released yet" }}</span>
+                <template v-if="status.latestTag">
+                  <span class="rel-fresh-line">
+                    <span class="rel-fresh" :data-state="releaseFreshness">
+                      {{ isPrerelease ? "cut" : "released" }}
+                      {{ relativeTime(status.latestTagAt) || "—" }}
+                    </span>
+                    <span
+                      v-if="commitsBehindLabel"
+                      class="rel-behind"
+                      :data-state="releaseFreshness"
+                    >
+                      {{ commitsBehindLabel }}
+                    </span>
                   </span>
-                  <span v-if="commitsBehindLabel" class="rel-behind" :data-state="releaseFreshness">
-                    {{ commitsBehindLabel }}
-                  </span>
+                  <span class="rel-current-meta">{{ shippedMeta }}</span>
+                </template>
+                <span v-if="lastStableTag" class="rel-current-meta">
+                  last stable · <code>{{ lastStableTag }}</code>
                 </span>
-                <span class="rel-current-meta">{{ shippedMeta }}</span>
+              </div>
+              <span
+                v-if="distributionSync"
+                class="rel-current-sync"
+                :data-state="distributionSync.state"
+                >{{ distributionSync.label }}</span
+              >
+            </div>
+
+            <div class="rel-context">
+              <template v-if="status.head">
+                from <code>{{ status.head }}</code> on <code>{{ status.branch }}</code>
               </template>
-              <span v-if="lastStableTag" class="rel-current-meta">
-                last stable · <code>{{ lastStableTag }}</code>
-              </span>
             </div>
-            <span
-              v-if="distributionSync"
-              class="rel-current-sync"
-              :data-state="distributionSync.state"
-              >{{ distributionSync.label }}</span
-            >
-          </div>
 
-          <div class="rel-context">
-            <template v-if="status.head">
-              from <code>{{ status.head }}</code> on <code>{{ status.branch }}</code>
-            </template>
-          </div>
-
-          <div v-if="blockers.length" class="rel-blockers" role="status">
-            <div v-for="b in blockers" :key="b">{{ b }}</div>
-          </div>
-
-          <div class="rel-next-release">
-            <div>
-              <span class="rel-next-label">Next release</span>
-              <strong>{{ suggestedTag ?? "—" }}</strong>
-              <span class="rel-next-hint">{{
-                pendingVersion ? "ready to cut" : "suggested when ready"
-              }}</span>
+            <div v-if="blockers.length" class="rel-blockers" role="status">
+              <div v-for="b in blockers" :key="b">{{ b }}</div>
             </div>
-            <div class="rel-actions rel-next-actions">
-              <Button
-                variant="accent"
-                data-test-id="cut-release-open"
-                :disabled="!canOpen"
-                @click="openConfirm"
-              >
-                {{
-                  running
-                    ? "View progress"
-                    : suggestedVersion
-                      ? "Cut next release"
-                      : "Cut a release"
-                }}
-              </Button>
-              <a
-                v-if="status.workflowUrl"
-                class="rel-link"
-                :href="status.workflowUrl"
-                target="_blank"
-                rel="noreferrer"
-                >CI workflow ↗</a
-              >
-              <a
-                v-if="status.releaseUrl"
-                class="rel-link"
-                :href="status.releaseUrl"
-                target="_blank"
-                rel="noreferrer"
-                >GitHub release ↗</a
-              >
-            </div>
-          </div>
-        </section>
 
-        <!-- Outcome of the most recent successful run (survives until the next
+            <div class="rel-next-release">
+              <div>
+                <span class="rel-next-label">Next release</span>
+                <strong>{{ suggestedTag ?? "—" }}</strong>
+                <span class="rel-next-hint">{{
+                  pendingVersion ? "ready to cut" : "suggested when ready"
+                }}</span>
+              </div>
+              <div class="rel-actions rel-next-actions">
+                <Button
+                  variant="accent"
+                  data-test-id="cut-release-open"
+                  :disabled="!canOpen"
+                  @click="openConfirm"
+                >
+                  {{
+                    running
+                      ? "View progress"
+                      : suggestedVersion
+                        ? "Cut next release"
+                        : "Cut a release"
+                  }}
+                </Button>
+                <a
+                  v-if="status.workflowUrl"
+                  class="rel-link"
+                  :href="status.workflowUrl"
+                  target="_blank"
+                  rel="noreferrer"
+                  >CI workflow ↗</a
+                >
+                <a
+                  v-if="status.releaseUrl"
+                  class="rel-link"
+                  :href="status.releaseUrl"
+                  target="_blank"
+                  rel="noreferrer"
+                  >GitHub release ↗</a
+                >
+              </div>
+            </div>
+          </section>
+
+          <!-- Outcome of the most recent successful run (survives until the next
              one); shown above "Published to" so the current state is visible without scrolling, like a failure. -->
-        <section v-if="message && !error" class="rel-outcome rel-outcome--ok" aria-live="polite">
-          <div class="rel-outcome-line">
-            <strong>{{ message }}</strong>
-            <span v-if="lastRunDuration" class="rel-outcome-span">took {{ lastRunDuration }}</span>
-          </div>
-          <a
-            v-if="status.workflowUrl"
-            class="rel-link"
-            :href="status.workflowUrl"
-            target="_blank"
-            rel="noreferrer"
-            >Watch the build ↗</a
-          >
-        </section>
-
-        <!-- Most recent run failed: shown ABOVE "Published to" until the next
-             successful release, so a failure is visible without scrolling. -->
-        <section v-if="error && !confirmOpen" class="rel-outcome rel-outcome--fail" role="alert">
-          <strong>{{ error }}</strong>
-          <div v-if="run?.state === 'failed' && (run.tldr || run.tldrPending)" class="rel-tldr">
-            <span class="rel-tldr-label">tl;dr</span>
-            <span v-if="run.tldr">{{ run.tldr }}</span>
-            <span v-else class="rel-dim">Debugger is working out what happened…</span>
-          </div>
-          <div v-if="run?.state === 'failed' && run.failedTests?.length" class="rel-failed-tests">
-            <span class="rel-tldr-label">Failed tests</span>
-            <FailedTestsList :tests="run.failedTests" />
-          </div>
-          <pre v-if="runLog" class="rel-log">{{ runLog }}</pre>
-          <div class="rel-debugger">
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="debuggerSending || debuggerSent"
-              @click="sendToDebugger"
+          <section v-if="message && !error" class="rel-outcome rel-outcome--ok" aria-live="polite">
+            <div class="rel-outcome-line">
+              <strong>{{ message }}</strong>
+              <span v-if="lastRunDuration" class="rel-outcome-span"
+                >took {{ lastRunDuration }}</span
+              >
+            </div>
+            <a
+              v-if="status.workflowUrl"
+              class="rel-link"
+              :href="status.workflowUrl"
+              target="_blank"
+              rel="noreferrer"
+              >Watch the build ↗</a
             >
-              <Bug class="btn-ico" aria-hidden="true" />
-              {{
-                debuggerSent
-                  ? "Sent to Debugger"
-                  : debuggerSending
-                    ? "Sending…"
-                    : "Send to Debugger"
-              }}
-            </Button>
-            <span v-if="debuggerErr" class="rel-debugger-err">{{ debuggerErr }}</span>
-          </div>
-        </section>
+          </section>
 
-        <!-- Where users install this release. Rendered only when the project
-             declares [[distribution]] destinations; stays up (with a loading
-             indicator) while the first lookup is in flight. -->
-        <section v-if="distribution.length || distributionLoading" class="rel-card rel-dist">
-          <div class="rel-dist-head">
-            <div class="rel-dist-title-row">
-              <h2 class="rel-dist-title">Published to</h2>
+          <!-- Most recent run failed: shown ABOVE "Published to" until the next
+             successful release, so a failure is visible without scrolling. -->
+          <section v-if="error && !confirmOpen" class="rel-outcome rel-outcome--fail" role="alert">
+            <strong>{{ error }}</strong>
+            <div v-if="run?.state === 'failed' && (run.tldr || run.tldrPending)" class="rel-tldr">
+              <span class="rel-tldr-label">tl;dr</span>
+              <span v-if="run.tldr">{{ run.tldr }}</span>
+              <span v-else class="rel-dim">Debugger is working out what happened…</span>
+            </div>
+            <div v-if="run?.state === 'failed' && run.failedTests?.length" class="rel-failed-tests">
+              <span class="rel-tldr-label">Failed tests</span>
+              <FailedTestsList :tests="run.failedTests" />
+            </div>
+            <pre v-if="runLog" class="rel-log">{{ runLog }}</pre>
+            <div class="rel-debugger">
               <Button
                 variant="outline"
                 size="sm"
-                :disabled="distributionLoading"
-                @click="loadDistribution"
+                :disabled="debuggerSending || debuggerSent"
+                @click="sendToDebugger"
               >
-                {{ distributionLoading ? "Checking…" : "Check again" }}
+                <Bug class="btn-ico" aria-hidden="true" />
+                {{
+                  debuggerSent
+                    ? "Sent to Debugger"
+                    : debuggerSending
+                      ? "Sending…"
+                      : "Send to Debugger"
+                }}
               </Button>
+              <span v-if="debuggerErr" class="rel-debugger-err">{{ debuggerErr }}</span>
             </div>
-            <p class="rel-dist-sub">
-              Where people can install this release.
-              <template v-if="distributionReleaseVersion">
-                Comparing each channel to <code>{{ distributionReleaseVersion }}</code
-                >.
-              </template>
-              Registry and package-manager updates can take several minutes after CI succeeds.
-            </p>
-          </div>
+          </section>
 
-          <!-- While the lookup is in flight show the spinner: alone on the
+          <!-- Where users install this release. Rendered only when the project
+             declares [[distribution]] destinations; stays up (with a loading
+             indicator) while the first lookup is in flight. -->
+          <section v-if="distribution.length || distributionLoading" class="rel-card rel-dist">
+            <div class="rel-dist-head">
+              <div class="rel-dist-title-row">
+                <h2 class="rel-dist-title">Published to</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  :disabled="distributionLoading"
+                  @click="loadDistribution"
+                >
+                  {{ distributionLoading ? "Checking…" : "Check again" }}
+                </Button>
+              </div>
+              <p class="rel-dist-sub">
+                Where people can install this release.
+                <template v-if="distributionReleaseVersion">
+                  Comparing each channel to <code>{{ distributionReleaseVersion }}</code
+                  >.
+                </template>
+                Registry and package-manager updates can take several minutes after CI succeeds.
+              </p>
+            </div>
+
+            <!-- While the lookup is in flight show the spinner: alone on the
                first load (the card would otherwise look broken-empty), and
                alongside the channels during a "Check again" recheck. -->
-          <div v-if="distributionLoading" class="rel-dist-loading" role="status">
-            <span class="rel-dist-loading-spin" aria-hidden="true"></span>
-            Checking distribution channels…
-          </div>
-          <p v-if="distributionCiFailure" class="ff-error" role="alert">
-            The release workflow failed<template v-if="distributionCiFailure.failedStep">
-              at “{{ distributionCiFailure.failedStep }}”</template
-            >, so some channels below may not update on their own.
-            <a :href="distributionCiFailure.runUrl" target="_blank" rel="noreferrer"
-              >View the failed run ↗</a
-            >
-          </p>
-          <div v-if="distribution.length" class="rel-dist-channels">
-            <article v-for="channel in distribution" :key="channel.name" class="rel-channel">
-              <header class="rel-channel-head">
-                <a
-                  v-if="channel.url"
-                  class="rel-channel-name"
-                  :href="channel.url"
-                  target="_blank"
-                  rel="noreferrer"
-                  >{{ channel.name }} ↗</a
-                >
-                <span v-else class="rel-channel-name">{{ channel.name }}</span>
-                <span class="rel-channel-state" :data-state="channel.state">{{
-                  channelStateLabel(channel)
-                }}</span>
-              </header>
-              <p class="rel-channel-detail">{{ channelSummary(channel) }}</p>
-              <ul v-if="channel.install.length" class="rel-installs">
-                <li v-for="command in channel.install" :key="command" class="rel-install">
-                  <span class="rel-install-label">{{ installLabel(command) }}</span>
-                  <code class="rel-install-cmd">{{ command }}</code>
-                  <button
-                    type="button"
-                    class="rel-copy"
-                    :aria-label="`Copy ${channel.name} install command`"
-                    @click="copyCommand(command)"
-                  >
-                    <Check
-                      v-if="copiedCommand === command"
-                      class="rel-copy-ico"
-                      aria-hidden="true"
-                    />
-                    <Copy v-else class="rel-copy-ico" aria-hidden="true" />
-                    {{ copiedCommand === command ? "Copied" : "Copy" }}
-                  </button>
-                </li>
-              </ul>
-            </article>
-          </div>
-        </section>
-
-        <Dialog :open="confirmOpen" @update:open="confirmOpen = $event">
-          <DialogOverlay />
-          <DialogContent
-            class="release-drawer"
-            :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
-          >
-            <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
-            <div class="drawer-head">
-              <div class="drawer-head-title">
-                <DialogTitle>Cut a release</DialogTitle>
-              </div>
-              <DialogClose class="close-x" aria-label="Close"
-                ><X class="size-[15px]"
-              /></DialogClose>
+            <div v-if="distributionLoading" class="rel-dist-loading" role="status">
+              <span class="rel-dist-loading-spin" aria-hidden="true"></span>
+              Checking distribution channels…
             </div>
-            <div class="drawer-body">
-              <DialogDescription class="release-drawer-desc">
-                Runs <code>repoos check</code>, pushes <code>{{ status.branch }}</code
-                >, then pushes a tag. CI builds and publishes from that tag.
-              </DialogDescription>
-
-              <p v-if="!canOpen && !running" class="ff-notice" role="status">
-                Publishing is disabled: the working tree must be clean and on
-                <code>{{ status.branch }}</code
-                >.
-              </p>
-
-              <dl class="rel-panel-facts">
-                <div>
-                  <dt>Currently published</dt>
-                  <dd>{{ publishedTag ?? "nothing yet" }}</dd>
-                </div>
-                <div>
-                  <dt>Suggested next</dt>
-                  <dd>{{ suggestedTag ?? "—" }}</dd>
-                </div>
-              </dl>
-
-              <template v-if="running && run">
-                <h3 class="release-progress-heading">{{ phaseHeading }}</h3>
-                <div class="release-progress" aria-live="polite">
-                  <span>{{ elapsed() }}</span>
-                  <small v-if="run.phase === 'building'"
-                    >Rebuilding so the check runs against fresh output.</small
+            <p v-if="distributionCiFailure" class="ff-error" role="alert">
+              The release workflow failed<template v-if="distributionCiFailure.failedStep">
+                at “{{ distributionCiFailure.failedStep }}”</template
+              >, so some channels below may not update on their own.
+              <a :href="distributionCiFailure.runUrl" target="_blank" rel="noreferrer"
+                >View the failed run ↗</a
+              >
+            </p>
+            <div v-if="distribution.length" class="rel-dist-channels">
+              <article v-for="channel in distribution" :key="channel.name" class="rel-channel">
+                <header class="rel-channel-head">
+                  <a
+                    v-if="channel.url"
+                    class="rel-channel-name"
+                    :href="channel.url"
+                    target="_blank"
+                    rel="noreferrer"
+                    >{{ channel.name }} ↗</a
                   >
-                  <small v-else-if="run.phase === 'checking'"
-                    >Full verification usually takes a few minutes.</small
-                  >
-                  <small>You can leave this page — progress shows here when you return.</small>
+                  <span v-else class="rel-channel-name">{{ channel.name }}</span>
+                  <span class="rel-channel-state" :data-state="channel.state">{{
+                    channelStateLabel(channel)
+                  }}</span>
+                </header>
+                <p class="rel-channel-detail">{{ channelSummary(channel) }}</p>
+                <ul v-if="channel.install.length" class="rel-installs">
+                  <li v-for="command in channel.install" :key="command" class="rel-install">
+                    <span class="rel-install-label">{{ installLabel(command) }}</span>
+                    <code class="rel-install-cmd">{{ command }}</code>
+                    <button
+                      type="button"
+                      class="rel-copy"
+                      :aria-label="`Copy ${channel.name} install command`"
+                      @click="copyCommand(command)"
+                    >
+                      <Check
+                        v-if="copiedCommand === command"
+                        class="rel-copy-ico"
+                        aria-hidden="true"
+                      />
+                      <Copy v-else class="rel-copy-ico" aria-hidden="true" />
+                      {{ copiedCommand === command ? "Copied" : "Copy" }}
+                    </button>
+                  </li>
+                </ul>
+              </article>
+            </div>
+          </section>
+
+          <Dialog :open="confirmOpen" @update:open="confirmOpen = $event">
+            <DialogOverlay />
+            <DialogContent
+              class="release-drawer"
+              :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
+            >
+              <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
+              <div class="drawer-head">
+                <div class="drawer-head-title">
+                  <DialogTitle>Cut a release</DialogTitle>
                 </div>
-                <!-- Output goes LAST and has a fixed height, so streaming text never
+                <DialogClose class="close-x" aria-label="Close"
+                  ><X class="size-[15px]"
+                /></DialogClose>
+              </div>
+              <div class="drawer-body">
+                <DialogDescription class="release-drawer-desc">
+                  Runs <code>repoos check</code>, pushes <code>{{ status.branch }}</code
+                  >, then pushes a tag. CI builds and publishes from that tag.
+                </DialogDescription>
+
+                <p v-if="!canOpen && !running" class="ff-notice" role="status">
+                  Publishing is disabled: the working tree must be clean and on
+                  <code>{{ status.branch }}</code
+                  >.
+                </p>
+
+                <dl class="rel-panel-facts">
+                  <div>
+                    <dt>Currently published</dt>
+                    <dd>{{ publishedTag ?? "nothing yet" }}</dd>
+                  </div>
+                  <div>
+                    <dt>Suggested next</dt>
+                    <dd>{{ suggestedTag ?? "—" }}</dd>
+                  </div>
+                </dl>
+
+                <template v-if="running && run">
+                  <h3 class="release-progress-heading">{{ phaseHeading }}</h3>
+                  <div class="release-progress" aria-live="polite">
+                    <span>{{ elapsed() }}</span>
+                    <small v-if="run.phase === 'building'"
+                      >Rebuilding so the check runs against fresh output.</small
+                    >
+                    <small v-else-if="run.phase === 'checking'"
+                      >Full verification usually takes a few minutes.</small
+                    >
+                    <small>You can leave this page — progress shows here when you return.</small>
+                  </div>
+                  <!-- Output goes LAST and has a fixed height, so streaming text never
                      shifts the heading, timer, or hints above it. -->
-                <pre class="release-progress-output" aria-label="Latest output"><span
+                  <pre class="release-progress-output" aria-label="Latest output"><span
                   v-for="(seg, i) in progressOutput"
                   :key="i"
                   :style="{
@@ -1300,201 +1306,201 @@ onBeforeUnmount(() => {
                     opacity: seg.dim ? 0.7 : undefined,
                   }"
                   >{{ seg.text }}</span></pre>
-              </template>
+                </template>
 
-              <div v-if="error && !running" class="release-drawer-error" role="alert">
-                <strong>{{ error }}</strong>
-                <div
-                  v-if="run?.state === 'failed' && (run.tldr || run.tldrPending)"
-                  class="rel-tldr"
-                >
-                  <span class="rel-tldr-label">tl;dr</span>
-                  <span v-if="run.tldr">{{ run.tldr }}</span>
-                  <span v-else class="rel-dim">Debugger is working out what happened…</span>
-                </div>
-                <div
-                  v-if="run?.state === 'failed' && run.failedTests?.length"
-                  class="rel-failed-tests"
-                >
-                  <span class="rel-tldr-label">Failed tests</span>
-                  <FailedTestsList :tests="run.failedTests" />
-                </div>
-                <pre v-if="runLog" class="rel-log">{{ runLog }}</pre>
-                <div class="rel-debugger">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    :disabled="debuggerSending || debuggerSent"
-                    @click="sendToDebugger"
+                <div v-if="error && !running" class="release-drawer-error" role="alert">
+                  <strong>{{ error }}</strong>
+                  <div
+                    v-if="run?.state === 'failed' && (run.tldr || run.tldrPending)"
+                    class="rel-tldr"
                   >
-                    <Bug class="btn-ico" aria-hidden="true" />
-                    {{
-                      debuggerSent
-                        ? "Sent to Debugger"
-                        : debuggerSending
-                          ? "Sending…"
-                          : "Send to Debugger"
-                    }}
-                  </Button>
-                  <span v-if="debuggerErr" class="rel-debugger-err">{{ debuggerErr }}</span>
-                </div>
-              </div>
-
-              <div v-if="!running" class="rel-version-field">
-                <label class="rel-field-label" for="rel-version">New version</label>
-                <div class="rel-version-row">
-                  <div class="rel-version-input">
-                    <input
-                      id="rel-version"
-                      v-model.trim="newVersion"
-                      :placeholder="suggestedVersion ?? '0.0.0'"
-                      inputmode="text"
-                      autocapitalize="none"
-                      autocorrect="off"
-                      spellcheck="false"
-                      autofocus
-                      @keyup.enter="release"
-                    />
-                    <span
-                      class="rel-version-tag"
-                      :class="{ dim: !newVersion, pre: newIsPrerelease }"
+                    <span class="rel-tldr-label">tl;dr</span>
+                    <span v-if="run.tldr">{{ run.tldr }}</span>
+                    <span v-else class="rel-dim">Debugger is working out what happened…</span>
+                  </div>
+                  <div
+                    v-if="run?.state === 'failed' && run.failedTests?.length"
+                    class="rel-failed-tests"
+                  >
+                    <span class="rel-tldr-label">Failed tests</span>
+                    <FailedTestsList :tests="run.failedTests" />
+                  </div>
+                  <pre v-if="runLog" class="rel-log">{{ runLog }}</pre>
+                  <div class="rel-debugger">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      :disabled="debuggerSending || debuggerSent"
+                      @click="sendToDebugger"
                     >
-                      → {{ newTag || `${tagPrefix}${suggestedVersion ?? "0.0.0"}` }}
-                      <template v-if="newIsPrerelease"> · prerelease</template>
+                      <Bug class="btn-ico" aria-hidden="true" />
+                      {{
+                        debuggerSent
+                          ? "Sent to Debugger"
+                          : debuggerSending
+                            ? "Sending…"
+                            : "Send to Debugger"
+                      }}
+                    </Button>
+                    <span v-if="debuggerErr" class="rel-debugger-err">{{ debuggerErr }}</span>
+                  </div>
+                </div>
+
+                <div v-if="!running" class="rel-version-field">
+                  <label class="rel-field-label" for="rel-version">New version</label>
+                  <div class="rel-version-row">
+                    <div class="rel-version-input">
+                      <input
+                        id="rel-version"
+                        v-model.trim="newVersion"
+                        :placeholder="suggestedVersion ?? '0.0.0'"
+                        inputmode="text"
+                        autocapitalize="none"
+                        autocorrect="off"
+                        spellcheck="false"
+                        autofocus
+                        @keyup.enter="release"
+                      />
+                      <span
+                        class="rel-version-tag"
+                        :class="{ dim: !newVersion, pre: newIsPrerelease }"
+                      >
+                        → {{ newTag || `${tagPrefix}${suggestedVersion ?? "0.0.0"}` }}
+                        <template v-if="newIsPrerelease"> · prerelease</template>
+                      </span>
+                    </div>
+                    <span class="rel-version-or" aria-hidden="true">or</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      :disabled="!suggestedVersion"
+                      @click="cutNext"
+                    >
+                      Cut Next
+                    </Button>
+                  </div>
+                  <div class="rel-field-hint">
+                    <span>Just the number — no “{{ tagPrefix }}”.</span>
+                    <span>
+                      <b>Prerelease channel:</b> append <code>-beta.1</code> /
+                      <code>-canary.1</code> / <code>-rc.1</code>.
+                    </span>
+                    <span>
+                      CI flags it pre-release — users opt in with
+                      <code>repoos upgrade --channel &lt;name&gt;</code>.
                     </span>
                   </div>
-                  <span class="rel-version-or" aria-hidden="true">or</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    :disabled="!suggestedVersion"
-                    @click="cutNext"
-                  >
-                    Cut Next
-                  </Button>
                 </div>
-                <div class="rel-field-hint">
-                  <span>Just the number — no “{{ tagPrefix }}”.</span>
-                  <span>
-                    <b>Prerelease channel:</b> append <code>-beta.1</code> /
-                    <code>-canary.1</code> / <code>-rc.1</code>.
-                  </span>
-                  <span>
-                    CI flags it pre-release — users opt in with
-                    <code>repoos upgrade --channel &lt;name&gt;</code>.
-                  </span>
-                </div>
-              </div>
 
-              <div v-if="!running" class="rel-notes-field">
-                <div class="rel-notes-head">
-                  <label class="rel-field-label" for="rel-notes">
-                    Release notes <span class="rel-optional">optional</span>
-                  </label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    :disabled="generatingNotes"
-                    @click="generateNotes"
-                  >
-                    <Sparkles class="btn-ico" aria-hidden="true" />
-                    {{ generatingNotes ? "Drafting…" : "Generate with AI" }}
-                  </Button>
+                <div v-if="!running" class="rel-notes-field">
+                  <div class="rel-notes-head">
+                    <label class="rel-field-label" for="rel-notes">
+                      Release notes <span class="rel-optional">optional</span>
+                    </label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      :disabled="generatingNotes"
+                      @click="generateNotes"
+                    >
+                      <Sparkles class="btn-ico" aria-hidden="true" />
+                      {{ generatingNotes ? "Drafting…" : "Generate with AI" }}
+                    </Button>
+                  </div>
+                  <textarea
+                    id="rel-notes"
+                    v-model="notes"
+                    class="rel-notes-input"
+                    rows="6"
+                    placeholder="What's in this release? Type it here, generate a draft from the commits since the last release, or leave empty."
+                  ></textarea>
+                  <div v-if="generatingNotes" class="rel-notes-drafting" aria-live="polite">
+                    <ActivityIndicator size="sm" activity="agent" label="Drafting release notes…" />
+                    <span>
+                      Drafting release notes from the commits since the last release… you can keep
+                      editing meanwhile.
+                    </span>
+                  </div>
+                  <div v-if="notesHint" class="rel-notes-hint">{{ notesHint }}</div>
+                  <div v-if="notesError" class="rel-notes-error" role="alert">{{ notesError }}</div>
                 </div>
-                <textarea
-                  id="rel-notes"
-                  v-model="notes"
-                  class="rel-notes-input"
-                  rows="6"
-                  placeholder="What's in this release? Type it here, generate a draft from the commits since the last release, or leave empty."
-                ></textarea>
-                <div v-if="generatingNotes" class="rel-notes-drafting" aria-live="polite">
-                  <ActivityIndicator size="sm" activity="agent" label="Drafting release notes…" />
-                  <span>
-                    Drafting release notes from the commits since the last release… you can keep
-                    editing meanwhile.
-                  </span>
-                </div>
-                <div v-if="notesHint" class="rel-notes-hint">{{ notesHint }}</div>
-                <div v-if="notesError" class="rel-notes-error" role="alert">{{ notesError }}</div>
-              </div>
 
-              <!-- The newest generated draft that never made it out with a
+                <!-- The newest generated draft that never made it out with a
                    release (#0641): enough context to decide whether to reuse it
                    for a retry after a failed cut. -->
-              <article
-                v-if="showUnpushedCard && unpushedNotes"
-                class="rel-notes-stale"
-                data-test-id="unpushed-release-notes"
-              >
-                <div class="rel-notes-stale-head">
-                  <div class="rel-notes-stale-title">
-                    <FileClock class="rel-notes-stale-ico" aria-hidden="true" />
-                    <strong>Saved AI draft not yet released</strong>
+                <article
+                  v-if="showUnpushedCard && unpushedNotes"
+                  class="rel-notes-stale"
+                  data-test-id="unpushed-release-notes"
+                >
+                  <div class="rel-notes-stale-head">
+                    <div class="rel-notes-stale-title">
+                      <FileClock class="rel-notes-stale-ico" aria-hidden="true" />
+                      <strong>Saved AI draft not yet released</strong>
+                    </div>
+                    <Button variant="outline" size="sm" type="button" @click="useUnpushedNotes">
+                      <RotateCcw class="btn-ico" aria-hidden="true" />
+                      Use these notes
+                    </Button>
                   </div>
-                  <Button variant="outline" size="sm" type="button" @click="useUnpushedNotes">
-                    <RotateCcw class="btn-ico" aria-hidden="true" />
-                    Use these notes
-                  </Button>
-                </div>
-                <p class="rel-notes-stale-meta">
-                  Generated {{ relativeTime(unpushedNotes.createdAt) || "earlier" }}
-                  <template v-if="unpushedNotes.headShort">
-                    from <code>{{ unpushedNotes.headShort }}</code>
-                  </template>
-                  <template v-if="unpushedNotes.commitsBehind !== null">
-                    · {{ unpushedNotes.commitsBehind }}
-                    {{ unpushedNotes.commitsBehind === 1 ? "commit" : "commits" }} behind
-                    <code>{{ unpushedNotes.currentHeadShort ?? "main" }}</code>
-                  </template>
-                  · never pushed with a release
-                </p>
-                <p v-if="unpushedNotes.commits.length" class="rel-notes-stale-commits">
-                  New since this draft:
-                  <span v-for="commit in unpushedNotes.commits" :key="commit">{{ commit }}</span>
-                  <span
-                    v-if="
-                      unpushedNotes.commitsBehind !== null &&
-                      unpushedNotes.commitsBehind > unpushedNotes.commits.length
-                    "
-                  >
-                    and
-                    {{ unpushedNotes.commitsBehind - unpushedNotes.commits.length }} more
-                  </span>
-                </p>
-                <pre class="rel-notes-stale-body">{{ unpushedNotes.notes }}</pre>
-              </article>
+                  <p class="rel-notes-stale-meta">
+                    Generated {{ relativeTime(unpushedNotes.createdAt) || "earlier" }}
+                    <template v-if="unpushedNotes.headShort">
+                      from <code>{{ unpushedNotes.headShort }}</code>
+                    </template>
+                    <template v-if="unpushedNotes.commitsBehind !== null">
+                      · {{ unpushedNotes.commitsBehind }}
+                      {{ unpushedNotes.commitsBehind === 1 ? "commit" : "commits" }} behind
+                      <code>{{ unpushedNotes.currentHeadShort ?? "main" }}</code>
+                    </template>
+                    · never pushed with a release
+                  </p>
+                  <p v-if="unpushedNotes.commits.length" class="rel-notes-stale-commits">
+                    New since this draft:
+                    <span v-for="commit in unpushedNotes.commits" :key="commit">{{ commit }}</span>
+                    <span
+                      v-if="
+                        unpushedNotes.commitsBehind !== null &&
+                        unpushedNotes.commitsBehind > unpushedNotes.commits.length
+                      "
+                    >
+                      and
+                      {{ unpushedNotes.commitsBehind - unpushedNotes.commits.length }} more
+                    </span>
+                  </p>
+                  <pre class="rel-notes-stale-body">{{ unpushedNotes.notes }}</pre>
+                </article>
 
-              <div v-if="!running" class="rel-field-hint rel-async-hint">
-                <span>
-                  <b>Generate with AI</b> usually takes 1–3 minutes. You can close this panel and
-                  come back — your draft and edits are waiting, and clicking Generate again reuses
-                  the saved draft.
-                </span>
-                <span>
-                  <b>Publish</b> usually takes a few minutes (about 5). It's safe to leave while it
-                  runs; check progress on this Releases page.
-                </span>
+                <div v-if="!running" class="rel-field-hint rel-async-hint">
+                  <span>
+                    <b>Generate with AI</b> usually takes 1–3 minutes. You can close this panel and
+                    come back — your draft and edits are waiting, and clicking Generate again reuses
+                    the saved draft.
+                  </span>
+                  <span>
+                    <b>Publish</b> usually takes a few minutes (about 5). It's safe to leave while
+                    it runs; check progress on this Releases page.
+                  </span>
+                </div>
               </div>
-            </div>
-            <div class="release-drawer-actions">
-              <Button
-                variant="accent"
-                :disabled="!canOpen || !newVersionValid || running || generatingNotes"
-                @click="release"
-              >
-                {{ running ? "Publishing…" : newTag ? `Publish ${newTag}` : "Publish" }}
-              </Button>
-              <DialogClose as-child
-                ><Button variant="ghost">{{ running ? "Close" : "Cancel" }}</Button></DialogClose
-              >
-            </div>
-          </DialogContent>
-        </Dialog>
+              <div class="release-drawer-actions">
+                <Button
+                  variant="accent"
+                  :disabled="!canOpen || !newVersionValid || running || generatingNotes"
+                  @click="release"
+                >
+                  {{ running ? "Publishing…" : newTag ? `Publish ${newTag}` : "Publish" }}
+                </Button>
+                <DialogClose as-child
+                  ><Button variant="ghost">{{ running ? "Close" : "Cancel" }}</Button></DialogClose
+                >
+              </div>
+            </DialogContent>
+          </Dialog>
+        </template>
       </template>
-    </template>
     </div>
 
     <ConfirmDialog
