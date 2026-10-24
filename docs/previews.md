@@ -86,7 +86,11 @@ stop = "adb shell am force-stop com.example.app"
 Replace example scheme, bundle id, and activity names with the project's real
 values. Native targets are local to the control-plane host; remote runners
 cannot display an app on the human's screen. They run in the same one-at-a-time
-FIFO slot as web previews and are stopped with the task. Unlike
+FIFO slot as web previews and are stopped with the task. The launch command is
+the owned preview process: if it ends on its own — for example `open -W`
+returning when the user quits the macOS app — the preview drops from the board
+and emits the same SSE update as a web preview that exited, rather than staying
+stale until a manual Stop. Unlike
 `[[dev.targets]] kind = "process"`, they run from the task worktree; unlike
 `[[shot.targets]]`, they launch a live app rather than capture still images.
 

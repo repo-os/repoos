@@ -735,6 +735,51 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
     }
   }, 30_000);
 
+  it.each([
+    { ending: "exits cleanly", launch: "sleep 1" },
+    { ending: "is killed by a signal", launch: "sleep 1 && kill -9 $$" },
+  ])(
+    "drops a native preview whose launcher $ending after the startup grace (#0943)",
+    async ({ launch }: { ending: string; launch: string }) => {
+      const fx = makeFixture();
+      fixtures.push(fx);
+      const branch = "feat/preview-native-selfexit";
+      const wt = ensureWorktree(fx.root, branch);
+      if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+      writeFileSync(
+        join(fx.root, "repoos.toml"),
+        [
+          "[[preview.targets]]",
+          'name = "Self-exiting native app"',
+          'kind = "native"',
+          'platform = "macos"',
+          'areas = ["mac"]',
+          'build_command = "true"',
+          `launch_command = ${JSON.stringify(launch)}`,
+        ].join("\n") + "\n",
+      );
+      const events: Array<{ type: string; id?: string; preview?: unknown }> = [];
+      const manager = new PreviewManager(loadConfig(fx.root), (e) => events.push(e));
+      const t = { id: "0943-selfexit", area: "mac", branch, status: "active" } as unknown as Task;
+      try {
+        const result = await manager.start(t);
+        expect(result.ok, result.error).toBe(true);
+        // The launcher outlives the 150ms startup grace, so it owns the
+        // running preview. When it then ends on its own — without a manual
+        // stop — the registry entry and the SSE stream must drop, exactly as
+        // a web preview whose server process exits does.
+        expect(manager.get(t.id)).not.toBeNull();
+        expect(await waitFor(() => manager.get(t.id) === null)).toBe(true);
+        expect(
+          events.some((e) => e.type === "preview" && e.id === t.id && e.preview === null),
+        ).toBe(true);
+      } finally {
+        await manager.stopAll();
+      }
+    },
+    30_000,
+  );
+
   it("FIFO-evicts the prior native preview when the single slot is reused", async () => {
     const fx = makeFixture();
     fixtures.push(fx);
