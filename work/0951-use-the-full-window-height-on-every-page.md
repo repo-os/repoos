@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-24T22:56:55Z"
+updated_at: "2026-10-24T22:58:13Z"
 ---
 ## Problem
 
@@ -87,3 +87,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-24T22:52:20Z · status ready→active, branch
 - 2026-10-24T22:54:10Z · body
 - 2026-10-24T22:56:55Z · body
+- 2026-10-24T22:58:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
