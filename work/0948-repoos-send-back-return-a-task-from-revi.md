@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "0948"
 title: "repoos send-back: return a task from review to the engineer with a message in one command"
 type: feature
@@ -12,7 +13,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T11:14:00Z"
 updated_at: "2026-10-24T12:04:13Z"
-handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Sending a task back from review to its engineer with feedback takes three separa
 - 2026-10-24T11:51:43Z · body
 - 2026-10-24T11:54:18Z · body
 - 2026-10-24T12:04:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
