@@ -12,7 +12,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T15:51:14Z"
+updated_at: "2026-10-24T15:51:44Z"
 last_close_out_gate_ms: 284561
 last_close_out_gate_at: "2026-10-24T15:51:14.975Z"
 review_passes: 7
@@ -168,4 +168,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T15:30:19Z · needs_input
 - 2026-10-24T15:30:19Z · needs_input
 - 2026-10-24T15:51:14Z · close-out gate completed in 285s
-
+- 2026-10-24T15:51:44Z · status done→done, release:success
