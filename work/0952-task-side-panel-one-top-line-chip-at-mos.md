@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-24T23:55:54Z"
+updated_at: "2026-10-24T23:56:53Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -106,3 +106,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-24T23:39:23Z · body
 - 2026-10-24T23:51:07Z · handoff failed · remote validation failed: test failure: tests/done-error-placement.test.ts > move-to-done inline error placement > renders in the task panel below the Move to done button, tests/reviewer-thinking-state.test.ts > reviewer thinking state in the task panel (#0209) > labels a previous-round report and withholds sign-off while a new review is pending, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on bee — fix it in the feature branch and re-run the gate
 - 2026-10-24T23:55:54Z · message_queued at 2026-10-24T23:55:54.440Z
+- 2026-10-24T23:56:53Z · CTO nudge: held — an undelivered message is already queued
