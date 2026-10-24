@@ -11,10 +11,9 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
-cli_override: github copilot
 model_override: default
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T04:56:39Z"
+updated_at: "2026-10-24T06:01:19Z"
 dev_error_count: 6
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:52:05.099Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:52:22.651Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:52:40.126Z\",\"kind\":\"dev-error\"},{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-10-24T04:54:00.314Z\",\"kind\":\"dev-error\"},{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-10-24T04:55:18.858Z\",\"kind\":\"dev-error\"},{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-10-24T04:56:39.543Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"github copilot\",\"model\":\"default\"}"
@@ -90,3 +89,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T04:54:00Z · engineer crash recovery: resuming github copilot + default (1/3 crashes in 30m) · • If the problem persists, retry later or contact support with the Request ID above
 - 2026-10-24T04:55:18Z · engineer crash recovery: resuming github copilot + default (2/3 crashes in 30m) · • If the problem persists, retry later or contact support with the Request ID above
 - 2026-10-24T04:56:39Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (github copilot + default); it will not chain another automatic switch (3/3 crashes in 30m)
+- 2026-10-24T06:01:19Z · cli_override
