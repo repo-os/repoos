@@ -1,13 +1,11 @@
 ---
-updated_at: "2026-10-24T15:30:19Z"
-review_passes: 7
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: evidence-gap-exhausted
+needs_input_detail: "Missing: `drawer:nativePreviewFailed` (light and dark). Missing: `drawer:nativePreviewRunning` with dark theme. Present on `259f1ffd5`: iOS running card (platform, device, Stop, control-plane hint, no URL); macOS building card with Stop; routes matched; zero console errors."
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -16,6 +14,8 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
+updated_at: "2026-10-24T15:30:20Z"
+review_passes: 7
 last_check_failure: "repoos check at 2026-10-24T14:42:46.885Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 routing_switches: 1
