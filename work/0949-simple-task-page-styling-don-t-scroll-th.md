@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-24T16:28:46Z"
-review_passes: 1
 id: "0949"
 title: Fix page scrolling and Secrets layout
 type: feature
@@ -15,6 +13,7 @@ model_override: grok-4.7-low
 pm_cli_override: codex
 pm_model_override: gpt-6-luna
 created_at: "2026-10-24T16:04:07Z"
+updated_at: "2026-10-24T16:27:47Z"
 ---
 ## Problem
 
@@ -50,31 +49,6 @@ Also all the pages are full-width except Secrets page, so please fix the Secrets
 
 And on secret entries you don't need to mention the source on each, because they're all the same once you choose the env at the top (so do show the filename above the key inventory).
 
-## Shots
-```json
-[
-{
-"label": "Secrets keys as full-width cards with the environment file above the inventory",
-"target": "default",
-"route": "/secrets",
-"highlight": ".secrets-file",
-"state": "secrets:populated"
-},
-{
-"label": "Settings title and tabs stay above the scrolling panels",
-"target": "default",
-"route": "/settings",
-"highlight": ".settings-tabs"
-},
-{
-"label": "Checks title and tabs stay above the scrolling section",
-"target": "default",
-"route": "/checks",
-"highlight": ".ck-tabs"
-}
-]
-```
-
 ## Screenshots
 
 ![Screenshot-2026-10-25-at-00.02.19](/api/tasks/0949/attachments/att_9ea94016-0c1d-43e6-bebd-0de3c2c1d0a7.png)
@@ -88,10 +62,4 @@ And on secret entries you don't need to mention the source on each, because they
 - 2026-10-24T16:06:00Z · model_override
 - 2026-10-24T16:06:02Z · status inbox→ready
 - 2026-10-24T16:06:06Z · status ready→active, branch
-- 2026-10-24T16:10:15Z · body
-- 2026-10-24T16:11:59Z · body
-- 2026-10-24T16:13:43Z · body
-- 2026-10-24T16:27:46Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-10-24T16:27:47Z · status active→review
-- 2026-10-24T16:28:46Z · note: review pass 1: good to go
-
