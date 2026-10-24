@@ -3,13 +3,18 @@ id: "0945"
 title: Show only failing checks in Landable by default
 type: feature
 status: active
+needs_input: true
+needs_input_reason: check-failed-after-retries
+debug_tldr: "Handoff check failed because remote runner mini is offline — restore mini or set remoteValidation.fallbackToLocal, then resume the task and retry handoff."
+debug_tldr_at: "2026-10-24T02:05:05Z"
+debug_tldr_key: check-failed-after-retries|
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-only-failing-checks-in-landable-by-
 created_at: "2026-10-24T01:24:41Z"
-updated_at: "2026-10-24T01:59:34Z"
+updated_at: "2026-10-24T02:05:05Z"
 handoff_signal_retry_count: 2
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-24T01:31:21.495Z: repoos check failed: remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
@@ -71,3 +76,4 @@ This Landable card should only show failing and minimise the rest -- if user cli
 - 2026-10-24T01:57:26Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-24T01:58:00Z · body
 - 2026-10-24T01:59:34Z · handoff failed · check failed after 2 automatic retries · remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
+- 2026-10-24T02:04:43Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally · next step: resume the session manually from the task's worktree and check for uncommitted work
