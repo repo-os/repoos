@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T06:20:17Z"
+updated_at: "2026-10-24T06:20:36Z"
 last_check_failure: "repoos check at 2026-10-24T06:15:35.021Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Dev target actions for running and stopped targets (target \"default\"): state \"dev:running\" did not render on target \"default\" — the page at /dev did not apply the fixture (is this the app target?) (http://127.0.0.1:56061/dev?shotState=dev%3Arunning); [missing-target] Dev target actions for running and stopped targets (target \"default\"): highlight .dev-card-details matched nothing on /dev (http://127.0.0.1:56061/dev?shotSt… (truncated)"
 dev_error_count: 6
 engineer_failover: "{\"cli\":\"github copilot\",\"model\":\"default\"}"
@@ -92,3 +92,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T06:15:27Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-24T06:16:47Z · body
 - 2026-10-24T06:20:17Z · status active→review
+- 2026-10-24T06:20:36Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (81276a8a7) during finalization (#0734)
