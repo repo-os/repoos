@@ -11,7 +11,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T14:37:46Z"
+updated_at: "2026-10-24T14:38:21Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -142,3 +142,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:37:45Z · status active→review
 - 2026-10-24T14:37:45Z · message_delivered: 1 message(s)
 - 2026-10-24T14:37:46Z · note: handoff requested (cli)
+- 2026-10-24T14:38:21Z · body
