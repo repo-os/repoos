@@ -769,16 +769,13 @@ describe("DevView actions (#0748)", () => {
     ).toBe(true);
   });
 
-  it("restarts a stopped target without a confirmation", async () => {
+  it("does not offer Restart for a stopped target", async () => {
     const { calls } = installFetch({ targets: [target({ status: "stopped" })] });
     const wrapper = mountView();
     await flush();
 
-    await actionButton(wrapper, "Restart").trigger("click");
-    await flush();
-
-    expect(wrapper.text()).not.toContain("Restart target?");
-    expect(calls.some((c) => c.url.endsWith("/restart") && c.method === "POST")).toBe(true);
+    expect(wrapper.findAll(".dev-actions button").map((b) => b.text().trim())).toEqual(["Start"]);
+    expect(calls.some((c) => c.url.endsWith("/restart") && c.method === "POST")).toBe(false);
   });
 
   it("shows Start only for stopped targets and Restart plus Stop for running targets", async () => {
