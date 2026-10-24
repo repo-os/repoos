@@ -168,6 +168,20 @@ describe("Dev nav gating (#0748)", () => {
   });
 });
 
+describe("Dev loading shot", () => {
+  it("pins the shared skeleton without fetching targets", async () => {
+    useRepoStore().health = makeHealth({ isPreviewBuild: true });
+    window.history.replaceState({}, "", "/dev?shotState=dev%3Aloading");
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const wrapper = mountView();
+    await flush();
+    expect(wrapper.find(".page-skeleton").exists()).toBe(true);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+});
+
 describe("DevView layout and state (#0748)", () => {
   it("shows state-appropriate actions beside the command and URL details", async () => {
     installFetch({ targets: [target({ name: "site", status: "stopped" })] });

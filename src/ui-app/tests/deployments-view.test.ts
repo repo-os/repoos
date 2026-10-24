@@ -106,6 +106,14 @@ afterEach(() => {
 });
 
 describe("DeploymentsView matrix (#0365)", () => {
+  it("pins the first-load skeleton for its declared shot fixture", async () => {
+    window.history.replaceState({}, "", "/deployments?shotState=deployments%3Aloading");
+    const wrapper = await mountView();
+    expect(wrapper.find(".page-skeleton").exists()).toBe(true);
+    expect(api).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
   it("renders the registered environment-binding capture fixture without API data", async () => {
     window.history.replaceState({}, "", "/deployments?shotState=deployments%3AenvironmentBinding");
     const wrapper = await mountView();

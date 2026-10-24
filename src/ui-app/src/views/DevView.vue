@@ -204,7 +204,9 @@ async function load(silent = false): Promise<void> {
   // builds only, #0775), so its shot shows the failure summary and port holder
   // without needing a genuinely stuck port. Real data is used everywhere else.
   if (repo.health?.isPreviewBuild) {
-    const fixture = shotFixtureDevTargets(readShotPreviewFixtureFromLocation(window.location));
+    const shotState = readShotPreviewFixtureFromLocation(window.location);
+    if (shotState === "dev:loading") return;
+    const fixture = shotFixtureDevTargets(shotState);
     if (fixture) {
       targets.value = fixture;
       configErrors.value = [];
