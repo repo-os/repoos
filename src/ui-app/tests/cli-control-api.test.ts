@@ -21,6 +21,7 @@ import {
   cmdReview,
   cmdReviewAgain,
   cmdRunners,
+  cmdSendBack,
   cmdStart,
   cmdStats,
   cmdSync,
@@ -264,6 +265,20 @@ describe("control API CLI", () => {
       const port = Number(new URL(s.url).port);
       const id = await createReadyTask(s);
       await runJsonCmd(port, cmdStart, [id]);
+    });
+    killSpawns(fx);
+  }, 30_000);
+
+  it("send-back --message-file runs the sequence and returns JSON", async () => {
+    const fx = makeFixture(true);
+    useAgentPath(fx);
+    const brief = join(fx.root, "review-brief.txt");
+    writeFileSync(brief, "  fix the failing check\n");
+    await withServer(fx.root, async (s) => {
+      const port = Number(new URL(s.url).port);
+      const id = await createReadyTask(s);
+      const result = await runJsonCmd(port, cmdSendBack, [id, "--message-file", brief]);
+      expect(result).toMatchObject({ ok: true, moved: true, started: true, messageQueued: true });
     });
     killSpawns(fx);
   }, 30_000);

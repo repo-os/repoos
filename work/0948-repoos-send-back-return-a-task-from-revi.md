@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-24T14:40:35Z"
-review_passes: 1
 id: "0948"
 title: "repoos send-back: return a task from review to the engineer with a message in one command"
 type: feature
@@ -13,9 +11,7 @@ branch: feat/repoos-send-back-return-a-task-from-revi
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T11:14:00Z"
-handoff_signal_retry_count: 2
-engineer_stall_resume_log: "[{\"at\":\"2026-10-24T13:11:00.274Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 1
+updated_at: "2026-10-24T14:39:35Z"
 ---
 ## Problem
 
@@ -46,34 +42,4 @@ Sending a task back from review to its engineer with feedback takes three separa
 - 2026-10-24T11:32:00Z · status inbox→ready
 - 2026-10-24T11:32:08Z · cli_override, model_override
 - 2026-10-24T11:32:08Z · status ready→active, branch
-- 2026-10-24T11:35:56Z · body
-- 2026-10-24T11:38:09Z · body
-- 2026-10-24T11:40:55Z · body
-- 2026-10-24T11:44:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-24T11:51:43Z · body
-- 2026-10-24T11:54:18Z · body
-- 2026-10-24T12:04:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-24T12:22:49Z · message_queued at 2026-10-24T12:22:49.096Z
-- 2026-10-24T12:22:49Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-24T12:40:44Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-24T13:04:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-24T13:04:44Z · message_delivered: 1 message(s)
-- 2026-10-24T13:04:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-24T13:11:00Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
-- 2026-10-24T13:20:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-24T13:32:35Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
-- 2026-10-24T13:59:54Z · message_queued at 2026-10-24T13:59:54.181Z
-- 2026-10-24T13:59:57Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-24T14:00:40Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-24T14:04:24Z · body
-- 2026-10-24T14:06:07Z · body
-- 2026-10-24T14:06:56Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-24T14:06:56Z · agent exited with an error (codex) · ✗ handoff deferred — read the queued message(s) first, then request review again
-- 2026-10-24T14:06:56Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
-- 2026-10-24T14:06:58Z · message_delivered: 1 message(s)
-- 2026-10-24T14:09:33Z · body
-- 2026-10-24T14:10:20Z · needs_input
 - 2026-10-24T14:39:35Z · status active→review
-- 2026-10-24T14:39:36Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-24T14:40:35Z · note: review pass 1: good to go
-
