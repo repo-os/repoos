@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T06:20:16Z"
+updated_at: "2026-10-24T06:22:14Z"
 ---
 ## Problem
 
@@ -55,3 +55,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T04:08:38Z · status inbox→ready
 - 2026-10-24T04:08:44Z · status ready→active, branch
 - 2026-10-24T06:20:16Z · status active→review
+- 2026-10-24T06:22:14Z · note: review pass 1: failed — no usable report
