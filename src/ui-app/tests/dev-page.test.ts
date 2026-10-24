@@ -56,7 +56,11 @@ function target(over: Partial<DevTargetView> = {}): DevTargetView {
 }
 
 /** Install a fetch mock serving `/api/dev/targets` + the action routes. */
-function installFetch(options: { targets?: DevTargetView[]; errors?: string[] }): {
+function installFetch(options: {
+  targets?: DevTargetView[];
+  errors?: string[];
+  deferActions?: boolean;
+}): {
   calls: Array<{ url: string; method: string }>;
 } {
   const calls: Array<{ url: string; method: string }> = [];
@@ -75,6 +79,9 @@ function installFetch(options: { targets?: DevTargetView[]; errors?: string[] })
       if (action) {
         const name = decodeURIComponent(action[1]);
         const kind = action[2];
+        if (options.deferActions && kind !== "explain" && kind !== "stop-holder") {
+          return new Promise<Response>(() => {});
+        }
         if (kind === "explain") {
           return json({ ok: true, summary: "The port is held by a stale vite process." });
         }
@@ -749,6 +756,25 @@ describe("DevView Last output (#0777/#0814)", () => {
 });
 
 describe("DevView actions (#0748)", () => {
+  it.each([
+    { status: "stopped" as const, action: "Start" },
+    { status: "running" as const, action: "Stop" },
+  ])("disables the $status target's visible actions while $action is in flight", async ({
+    status,
+    action,
+  }) => {
+    installFetch({ targets: [target({ status })], deferActions: true });
+    const wrapper = mountView();
+    await flush();
+
+    await actionButton(wrapper, action).trigger("click");
+    await flush();
+
+    const buttons = wrapper.findAll(".dev-actions button");
+    expect(buttons.length).toBe(status === "running" ? 2 : 1);
+    expect(buttons.every((button) => button.attributes("disabled") !== undefined)).toBe(true);
+  });
+
   it("starts a stopped target through the dev-target API and refreshes", async () => {
     const { calls } = installFetch({ targets: [target({ status: "stopped" })] });
     const wrapper = mountView();
