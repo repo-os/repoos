@@ -42,8 +42,21 @@ describe("page data cache", () => {
     );
     const a = refreshPageData("resource", fetcher, vi.fn());
     const b = refreshPageData("resource", fetcher, vi.fn());
+    await Promise.resolve();
     resolve("shared");
     await Promise.all([a, b]);
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
+
+  it("reserves a cached refresh before delivering stale data", async () => {
+    await refreshPageData("resource", async () => "stale", vi.fn());
+    const fetcher = vi.fn(async () => "fresh");
+    let nested: Promise<void> | undefined;
+    const outer = refreshPageData("resource", fetcher, () => {
+      nested ??= refreshPageData("resource", fetcher, vi.fn());
+    });
+    await outer;
+    await nested;
     expect(fetcher).toHaveBeenCalledOnce();
   });
 });

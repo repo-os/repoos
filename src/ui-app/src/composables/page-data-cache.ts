@@ -9,32 +9,40 @@ export async function refreshPageData<T>(
   failed?: (error: unknown) => void,
   force = false,
 ): Promise<void> {
-  let entry = entries.get(key);
-  if (entry?.value !== undefined) receive(entry.value as T);
-  // Cached values render synchronously through receive(), then always revalidate.
+  const entry = entries.get(key) ?? { value: undefined, updatedAt: 0 };
+  entries.set(key, entry);
+  // Reserve the shared request before delivering stale data: receive() can
+  // synchronously trigger another refresh for this key during navigation.
+  const isRequestOwner = !entry.request;
+  let resolveRequest!: (value: T | PromiseLike<T>) => void;
+  let rejectRequest!: (error: unknown) => void;
+  const request = (entry.request ??
+    new Promise<T>((resolve, reject) => {
+      resolveRequest = resolve;
+      rejectRequest = reject;
+    })) as Promise<T>;
+  if (isRequestOwner) entry.request = request;
+  if (entry.value !== undefined) receive(entry.value as T);
   // `force` remains explicit at call sites that represent a user refresh.
   void force;
-  if (entry?.request) {
+  if (isRequestOwner) {
     try {
-      receive((await entry.request) as T);
+      resolveRequest(fetcher());
     } catch (error) {
-      failed?.(error);
+      rejectRequest(error);
     }
-    return;
   }
-  entry ??= { value: undefined, updatedAt: 0 };
-  const request = fetcher();
-  entry.request = request;
-  entries.set(key, entry);
   try {
     const value = await request;
-    entry.value = value;
-    entry.updatedAt = Date.now();
+    if (isRequestOwner) {
+      entry.value = value;
+      entry.updatedAt = Date.now();
+    }
     receive(value);
   } catch (error) {
     failed?.(error);
   } finally {
-    entry.request = undefined;
+    if (isRequestOwner && entry.request === request) entry.request = undefined;
   }
 }
 
