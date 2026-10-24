@@ -169,6 +169,9 @@ shows an `archived` row with its reason.
 
 Moves a task to a new status. Takes `--note "..."` to record why.
 
+`--note` only adds an activity log entry; it does not send feedback to the
+engineer. Use `repoos send-back` when returning work with instructions.
+
 ```bash
 repoos mv 0001 ready --note "spec is settled, ready to hand over"
 ```
