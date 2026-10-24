@@ -2,7 +2,7 @@
 id: "0948"
 title: "repoos send-back: return a task from review to the engineer with a message in one command"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -72,4 +72,4 @@ Sending a task back from review to its engineer with feedback takes three separa
 - 2026-10-24T14:06:58Z · message_delivered: 1 message(s)
 - 2026-10-24T14:09:33Z · body
 - 2026-10-24T14:10:20Z · needs_input
-- 2026-10-24T14:39:35Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-24T14:39:35Z · status active→review
