@@ -104,7 +104,13 @@ describe("ReleasesView Published to (#0445)", () => {
       if (path === "/api/release/distribution")
         return Promise.resolve({ releaseVersion: "1.2.3", releaseTag: "v1.2.3", channels: [] });
       if (path === "/api/release/run")
-        return Promise.resolve({ state: "idle", phase: null, message: "", startedAt: null, updatedAt: null });
+        return Promise.resolve({
+          state: "idle",
+          phase: null,
+          message: "",
+          startedAt: null,
+          updatedAt: null,
+        });
       return Promise.reject(new Error(`unexpected ${path}`));
     });
     const wrapper = mount(ReleasesView, {

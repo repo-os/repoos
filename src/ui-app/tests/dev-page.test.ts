@@ -201,7 +201,11 @@ describe("Dev loading shot", () => {
     expect(revisited.text()).toContain("Cached service");
 
     finish(
-      (await json({ ok: true, targets: [target({ label: "Updated service" })], errors: [] })) as unknown as Response,
+      (await json({
+        ok: true,
+        targets: [target({ label: "Updated service" })],
+        errors: [],
+      })) as unknown as Response,
     );
     await flush();
     expect(revisited.text()).toContain("Updated service");

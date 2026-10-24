@@ -145,7 +145,8 @@ async function loadSnapshot(): Promise<void> {
   try {
     await refreshPageData(
       `secrets:${selected.value}`,
-      () => api<Snapshot>(`/api/project-environments/${encodeURIComponent(selected.value)}/secrets`),
+      () =>
+        api<Snapshot>(`/api/project-environments/${encodeURIComponent(selected.value)}/secrets`),
       (value) => {
         snapshot.value = value;
         error.value = "";
