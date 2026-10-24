@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T08:25:17Z"
+updated_at: "2026-10-24T08:25:18Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-24T06:15:35.021Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Dev target actions for running and stopped targets (target \"default\"): state \"dev:running\" did not render on target \"default\" — the page at /dev did not apply the fixture (is this the app target?) (http://127.0.0.1:56061/dev?shotState=dev%3Arunning); [missing-target] Dev target actions for running and stopped targets (target \"default\"): highlight .dev-card-details matched nothing on /dev (http://127.0.0.1:56061/dev?shotSt… (truncated)"
 dev_error_count: 6
