@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T04:17:06Z"
+updated_at: "2026-10-24T04:33:24Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T04:08:44Z · status ready→active, branch
 - 2026-10-24T04:17:06Z · message_queued at 2026-10-24T04:17:06.628Z
 - 2026-10-24T04:17:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-24T04:33:24Z · CTO nudge: held — an undelivered message is already queued
