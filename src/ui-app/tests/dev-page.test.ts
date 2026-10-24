@@ -185,6 +185,27 @@ describe("DevView layout and state (#0748)", () => {
     expect(source).toMatch(/v-else>[\s\S]*?variant="accent"[\s\S]*?Restart/);
   });
 
+  it("shows Restart and Stop for running targets, and keeps starting targets from restarting", async () => {
+    installFetch({
+      targets: [
+        target({ name: "running", status: "running" }),
+        target({ name: "starting", status: "starting" }),
+      ],
+    });
+    const wrapper = mountView();
+    await flush();
+
+    const [running, starting] = wrapper.findAll(".dev-card");
+    const runningButtons = running!.findAll(".dev-actions button");
+    expect(runningButtons.map((button) => button.text().trim())).toEqual(["Restart", "Stop"]);
+    expect(runningButtons[0]!.classes()).toContain("btn-accent");
+    expect(runningButtons[1]!.text()).not.toContain("Start");
+
+    const startingButtons = starting!.findAll(".dev-actions button");
+    expect(startingButtons.map((button) => button.text().trim())).toEqual(["Start"]);
+    expect(startingButtons[0]!.attributes("disabled")).toBeDefined();
+  });
+
   it("groups targets by project and shows name, kind, state and label", async () => {
     installFetch({
       targets: [
@@ -591,6 +612,16 @@ describe("DevView failure summary (#0775)", () => {
       // The started target carries the shared running hook; the stopped one doesn't.
       expect(cards[0]!.attributes("data-running")).toBe("true");
       expect(cards[1]!.attributes("data-running")).toBeUndefined();
+      expect(cards[0]!.findAll(".dev-actions button").map((button) => button.text().trim())).toEqual([
+        "Restart",
+        "Stop",
+      ]);
+      expect(cards[1]!.findAll(".dev-actions button").map((button) => button.text().trim())).toEqual([
+        "Start",
+      ]);
+      expect(cards[0]!.find(".dev-actions button").classes()).toEqual(
+        expect.arrayContaining(cards[1]!.find(".dev-actions button").classes()),
+      );
       expect(fetchSpy).not.toHaveBeenCalled();
     } finally {
       window.history.replaceState({}, "", "/");
