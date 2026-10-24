@@ -8,8 +8,10 @@ area: [core, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-24T02:32:41Z"
-updated_at: "2026-10-24T03:48:30Z"
+updated_at: "2026-10-24T03:48:36Z"
 ---
 ## Problem
 
@@ -45,3 +47,4 @@ During interactive `repoos init` (TTY only; non-interactive init stays fully non
 
 - 2026-10-24T02:32:41Z · created · njachowski@gmail.com
 - 2026-10-24T03:48:30Z · status inbox→ready
+- 2026-10-24T03:48:36Z · cli_override, model_override
