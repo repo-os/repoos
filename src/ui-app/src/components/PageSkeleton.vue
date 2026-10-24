@@ -3,12 +3,7 @@ withDefaults(defineProps<{ kind?: "cards" | "table" | "rows" }>(), { kind: "rows
 </script>
 
 <template>
-  <div
-    class="page-skeleton"
-    :class="`page-skeleton--${kind}`"
-    aria-label="Loading page content"
-    aria-busy="true"
-  >
+  <div class="page-skeleton" :class="`page-skeleton--${kind}`" aria-label="Loading page content">
     <span v-for="i in kind === 'cards' ? 3 : 5" :key="i" class="page-skeleton__item">
       <i></i><i></i><i></i>
     </span>
