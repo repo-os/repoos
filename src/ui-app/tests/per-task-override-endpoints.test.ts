@@ -16,7 +16,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
@@ -246,5 +246,31 @@ describe("POST /api/tasks/:id/message rejects ignored overrides (#0684)", () => 
 
     expect(send).toHaveBeenCalledOnce();
     expect(res.statusCode).toBe(200);
+  });
+});
+
+describe("POST /api/tasks/:id/send-back", () => {
+  beforeEach(() => {
+    ROOT = mkdtempSync(join(tmpdir(), "repoos-send-back-route-"));
+    writeTaskFile("0684", "review");
+  });
+  afterEach(() => {
+    rmSync(ROOT, { recursive: true, force: true });
+  });
+
+  it("rejects an empty message before changing task state or starting work", async () => {
+    const task = baseTask({ status: "review" });
+    const send = vi.fn(() => ({ ok: true, pid: 1 }));
+    const res = makeRes();
+    const before = readFileSync(task.absPath, "utf8");
+    await taskAction(makeCtx(task, { send }), makeReq({ message: "  " }), res as any, {
+      param1: task.id,
+      param2: "send-back",
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error).toMatch(/message text is required/);
+    expect(readFileSync(task.absPath, "utf8")).toBe(before);
+    expect(send).not.toHaveBeenCalled();
   });
 });

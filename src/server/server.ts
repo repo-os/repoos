@@ -3695,6 +3695,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen|archive|unarchive|split)$/,
     taskAction,
   );
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/(send-back)$/, taskAction);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/, stopPreview);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/review$/, getTaskReview);
