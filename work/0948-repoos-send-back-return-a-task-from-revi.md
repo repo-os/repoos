@@ -11,7 +11,7 @@ branch: feat/repoos-send-back-return-a-task-from-revi
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T11:14:00Z"
-updated_at: "2026-10-24T12:40:44Z"
+updated_at: "2026-10-24T13:04:44Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -53,3 +53,4 @@ Sending a task back from review to its engineer with feedback takes three separa
 - 2026-10-24T12:22:49Z · message_queued at 2026-10-24T12:22:49.096Z
 - 2026-10-24T12:22:49Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-24T12:40:44Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-24T13:04:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
