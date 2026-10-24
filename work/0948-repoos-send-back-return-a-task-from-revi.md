@@ -8,8 +8,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-24T11:14:00Z"
-updated_at: "2026-10-24T11:32:00Z"
+updated_at: "2026-10-24T11:32:08Z"
 ---
 ## Problem
 
@@ -38,3 +40,4 @@ Sending a task back from review to its engineer with feedback takes three separa
 
 - 2026-10-24T11:14:00Z · created · njachowski@gmail.com
 - 2026-10-24T11:32:00Z · status inbox→ready
+- 2026-10-24T11:32:08Z · cli_override, model_override
