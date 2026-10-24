@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-only-failing-checks-in-landable-by-
 created_at: "2026-10-24T01:24:41Z"
-updated_at: "2026-10-24T01:26:32Z"
+updated_at: "2026-10-24T01:27:15Z"
 ---
 ## Problem
 
@@ -38,6 +38,19 @@ This Landable card should only show failing and minimise the rest -- if user cli
 
 ![Screenshot-2026-10-24-at-08.59.05](/api/tasks/0945/attachments/att_d142c3b9-8f26-4087-99db-89c3a53bb88a.png)
 
+## Shots
+```json
+[
+{
+  "label": "Landable card with failing checks shown by default",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".landable-checks",
+  "state": "drawer:landable"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-24T01:24:41Z · created · hello@repoos.org
@@ -45,3 +58,4 @@ This Landable card should only show failing and minimise the rest -- if user cli
 - 2026-10-24T01:25:17Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
 - 2026-10-24T01:26:27Z · status inbox→ready
 - 2026-10-24T01:26:32Z · status ready→active, branch
+- 2026-10-24T01:27:15Z · body
