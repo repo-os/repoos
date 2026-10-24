@@ -11,7 +11,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: opencode
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T13:02:04Z"
+updated_at: "2026-10-24T13:11:02Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -48,18 +48,18 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 ```json
 [
 {
-  "label": "Task drawer: running native iOS preview card (platform, device, Stop)",
-  "target": "default",
-  "route": "/work?task=9999&tab=overview",
-  "highlight": ".preview-live",
-  "state": "drawer:nativePreviewRunning"
+"label": "Task drawer: running native iOS preview card (platform, device, Stop)",
+"target": "default",
+"route": "/work?task=9999&tab=overview",
+"highlight": ".preview-live",
+"state": "drawer:nativePreviewRunning"
 },
 {
-  "label": "Task drawer: native macOS preview shows building state during a long build",
-  "target": "default",
-  "route": "/work?task=9999&tab=overview",
-  "highlight": ".preview-live",
-  "state": "drawer:nativePreviewBuilding"
+"label": "Task drawer: native macOS preview shows building state during a long build",
+"target": "default",
+"route": "/work?task=9999&tab=overview",
+"highlight": ".preview-live",
+"state": "drawer:nativePreviewBuilding"
 }
 ]
 ```
@@ -124,3 +124,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T12:05:56Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-24T12:14:04Z · body
 - 2026-10-24T13:02:04Z · body
+- 2026-10-24T13:11:02Z · message_overdue: still queued after 60m without being delivered
