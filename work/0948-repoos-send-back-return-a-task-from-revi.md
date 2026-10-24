@@ -12,7 +12,7 @@ branch: feat/repoos-send-back-return-a-task-from-revi
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T11:14:00Z"
-updated_at: "2026-10-24T14:53:28Z"
+updated_at: "2026-10-24T14:54:01Z"
 last_close_out_gate_ms: 100127
 last_close_out_gate_at: "2026-10-24T14:53:28.557Z"
 review_passes: 1
@@ -80,4 +80,4 @@ Sending a task back from review to its engineer with feedback takes three separa
 - 2026-10-24T14:39:36Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-24T14:40:35Z · note: review pass 1: good to go
 - 2026-10-24T14:53:28Z · close-out gate completed in 100s
-
+- 2026-10-24T14:54:01Z · status done→done, release:success
