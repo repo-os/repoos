@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
@@ -12,7 +11,8 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-24T23:23:26Z"
+updated_at: "2026-10-24T23:35:48Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -70,10 +70,10 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 "highlight": ".debug-tabs",
 "steps": [
 {
-  "click": ".drawer-status-chip"
+"click": ".drawer-status-chip"
 },
 {
-  "waitMs": 200
+"waitMs": 200
 }
 ],
 "state": "closeOut:checkProgress"
@@ -102,4 +102,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-24T23:19:29Z · body
 - 2026-10-24T23:22:27Z · body
 - 2026-10-24T23:23:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-
+- 2026-10-24T23:35:48Z · body
