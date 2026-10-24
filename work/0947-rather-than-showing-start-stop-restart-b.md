@@ -2,7 +2,7 @@
 id: "0947"
 title: Show dev target actions based on running state
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -144,4 +144,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T12:07:06Z · needs_input
 - 2026-10-24T13:21:26Z · status review→active
 - 2026-10-24T13:21:41Z · note: handoff requested (ui-review)
-- 2026-10-24T13:23:05Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-24T13:23:05Z · status active→review
