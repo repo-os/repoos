@@ -2,7 +2,7 @@
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: opencode
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T11:41:28Z"
+updated_at: "2026-10-24T11:41:29Z"
 review_passes: 3
 review_rounds: 2
 routing_switches: 1
@@ -131,4 +131,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T11:28:19Z · note: handoff requested (cli)
 - 2026-10-24T11:29:04Z · CTO nudge: held — handoff gate is running
 - 2026-10-24T11:41:28Z · note: ui verification passed: 4 of 4 shots captured with clean console (1 shot warning)
-- 2026-10-24T11:41:28Z · engineer stopped by request
+- 2026-10-24T11:41:29Z · status active→review
