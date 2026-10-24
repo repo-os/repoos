@@ -1100,7 +1100,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="settings-page" :class="{ 'settings-page--fill': activeTab === 'toml' }">
+  <div class="settings-page page-scroll" :class="{ 'settings-page--fill': activeTab === 'toml' }">
     <header class="page-header">
       <div>
         <div class="page-title">Settings</div>
@@ -1168,7 +1168,8 @@ onUnmounted(() => {
 
     <div v-if="!config.loaded" class="spin"></div>
 
-    <div v-else class="settings-panels">
+    <div v-else class="page-scroll-body">
+    <div class="settings-panels">
       <!-- ─── General tab ─────────────────────────────────── -->
       <div
         id="settings-panel-general"
@@ -2616,6 +2617,7 @@ onUnmounted(() => {
           </div>
         </Card>
       </div>
+    </div>
     </div>
   </div>
   <ScreenshotViewer

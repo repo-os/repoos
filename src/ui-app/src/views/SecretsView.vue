@@ -50,6 +50,10 @@ const shotFixture = readShotPreviewFixtureFromLocation(window.location);
 const fixture = shotFixture === "secrets:populated" || shotFixture === "secrets:removeDialog";
 const auth = useAuthStore();
 const canManage = computed(() => fixture || auth.role === "admin");
+const environmentFile = computed(() => {
+  const env = environments.value.find((item) => item.id === selected.value);
+  return env?.sources.map((source) => source.path).filter(Boolean).join(", ") ?? "";
+});
 const visibleRows = computed(() =>
   (snapshot.value?.keys ?? [])
     .map((row) =>
@@ -228,12 +232,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="secrets-page">
-    <header class="secrets-head">
+  <main class="secrets-page page-scroll">
+    <header class="page-header">
       <div>
-        <p class="secrets-kicker">PROJECT SETTINGS / CREDENTIALS</p>
-        <h1>Secrets</h1>
-        <p class="secrets-intro">Manage the keys this project expects. Saved values stay hidden.</p>
+        <h1 class="page-title">Secrets</h1>
+        <p class="page-desc">Manage the keys this project expects. Saved values stay hidden.</p>
       </div>
       <div class="secrets-env-control">
         <span class="secrets-label">Viewing environment</span>
@@ -270,6 +273,7 @@ onMounted(() => {
         <span class="secrets-view-note">Changes here do not switch running processes.</span>
       </div>
     </header>
+    <div class="page-scroll-body">
     <div v-if="error" class="secrets-error" role="alert">
       <span>{{ error }}</span
       ><Button variant="outline" @click="selected ? loadSnapshot() : loadEnvironments()"
@@ -294,6 +298,9 @@ onMounted(() => {
       Loading environment metadata…
     </section>
     <section v-else-if="snapshot" class="secrets-ledger" aria-label="Environment keys">
+      <p v-if="environmentFile" class="secrets-file">
+        <code>{{ environmentFile }}</code>
+      </p>
       <div class="secrets-ledger-top">
         <div>
           <h2>Key inventory</h2>
@@ -342,10 +349,6 @@ onMounted(() => {
             }}</span>
           </div>
           <dl class="kv-rows secrets-kv">
-            <div>
-              <dt>Source</dt>
-              <dd>{{ row.source }}</dd>
-            </div>
             <div>
               <dt>Visibility</dt>
               <dd>{{ rowVisibility(row) }}</dd>
@@ -421,6 +424,7 @@ onMounted(() => {
         }}
       </p>
     </section>
+    </div>
     <ConfirmDialog
       :open="!!confirmKey"
       title="Remove project key?"

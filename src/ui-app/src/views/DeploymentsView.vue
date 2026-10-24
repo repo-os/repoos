@@ -316,7 +316,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="dep-page">
+  <div class="dep-page page-scroll">
     <header class="dep-head">
       <div>
         <h1 class="dep-title">Deployments</h1>
@@ -338,6 +338,7 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
+    <div class="page-scroll-body">
     <div v-if="loading" class="spin"></div>
     <p v-else-if="error && !status" class="dep-err">{{ error }}</p>
 
@@ -587,6 +588,7 @@ onBeforeUnmount(() => {
         </section>
       </template>
     </template>
+    </div>
 
     <Teleport to="body">
       <div

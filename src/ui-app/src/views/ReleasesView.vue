@@ -986,7 +986,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="releases-page">
+  <div class="releases-page page-scroll">
     <header class="rel-head">
       <div>
         <h1 class="rel-title">Releases</h1>
@@ -1005,6 +1005,7 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
+    <div class="page-scroll-body">
     <div v-if="loading" class="spin"></div>
     <p v-else-if="loadError && !status" class="rel-error">{{ loadError }}</p>
 
@@ -1494,6 +1495,7 @@ onBeforeUnmount(() => {
         </Dialog>
       </template>
     </template>
+    </div>
 
     <ConfirmDialog
       :open="pendingNotesReplace !== null"
