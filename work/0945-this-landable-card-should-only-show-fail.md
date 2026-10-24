@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-only-failing-checks-in-landable-by-
 created_at: "2026-10-24T01:24:41Z"
-updated_at: "2026-10-24T01:58:00Z"
+updated_at: "2026-10-24T01:59:34Z"
 handoff_signal_retry_count: 2
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-24T01:31:21.495Z: repoos check failed: remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
@@ -46,11 +46,11 @@ This Landable card should only show failing and minimise the rest -- if user cli
 ```json
 [
 {
-  "label": "Landable card with failing checks shown by default",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".landable-checks",
-  "state": "drawer:landable"
+"label": "Landable card with failing checks shown by default",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".landable-checks",
+"state": "drawer:landable"
 }
 ]
 ```
@@ -70,3 +70,4 @@ This Landable card should only show failing and minimise the rest -- if user cli
 - 2026-10-24T01:52:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-24T01:57:26Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-24T01:58:00Z · body
+- 2026-10-24T01:59:34Z · handoff failed · check failed after 2 automatic retries · remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
