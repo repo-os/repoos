@@ -11,7 +11,7 @@ branch: feat/repoos-init-offer-to-install-missing-cod
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T02:32:41Z"
-updated_at: "2026-10-24T04:13:10Z"
+updated_at: "2026-10-24T04:33:25Z"
 ---
 ## Problem
 
@@ -55,3 +55,4 @@ During interactive `repoos init` (TTY only; non-interactive init stays fully non
 - 2026-10-24T04:12:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-24T04:12:57Z · message_delivered: 1 message(s)
 - 2026-10-24T04:13:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T04:33:25Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
