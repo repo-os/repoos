@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T04:37:30Z"
+updated_at: "2026-10-24T04:38:23Z"
 ---
 ## Problem
 
@@ -50,11 +50,11 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 ```json
 [
 {
-  "label": "Dev targets with running-state actions",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".dev-card-details",
-  "state": "dev:running"
+"label": "Dev targets with running-state actions",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-card-details",
+"state": "dev:running"
 }
 ]
 ```
@@ -71,3 +71,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T04:17:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-24T04:33:24Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-24T04:37:30Z · body
+- 2026-10-24T04:38:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
