@@ -142,6 +142,18 @@ describe("task drawer landing pre-checks (#0867)", () => {
     expect(checks.text()).toContain("src/core/types.ts conflicts with main");
     expect(checks.text()).toContain("5 passed");
     expect(checks.text()).toContain("1 failing");
+    expect(checks.text()).not.toContain("Review verdict");
+    expect(checks.text()).not.toContain("worktree is clean");
+
+    const toggle = wrapper.find(".landable-toggle");
+    expect(toggle.text()).toBe("Show all 6 checks");
+    await toggle.trigger("click");
+    expect(toggle.attributes("aria-expanded")).toBe("true");
+    expect(checks.text()).toContain('latest review pass is "good to go"');
+    expect(checks.text()).toContain("worktree is clean");
+    await toggle.trigger("click");
+    expect(toggle.attributes("aria-expanded")).toBe("false");
+    expect(checks.text()).not.toContain("worktree is clean");
 
     const button = moveToDone(wrapper);
     expect(button, "Move to done is rendered").toBeTruthy();
