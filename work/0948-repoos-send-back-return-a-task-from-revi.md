@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
+debug_tldr: "Handoff blocked with a message still in queue — let the resumed engineer read it, then request review again."
+debug_tldr_at: "2026-10-24T14:07:19Z"
+debug_tldr_key: "dev-error|✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p2
 area: core
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/repoos-send-back-return-a-task-from-revi
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T11:14:00Z"
-updated_at: "2026-10-24T14:06:58Z"
+updated_at: "2026-10-24T14:07:19Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T13:11:00.274Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 1
