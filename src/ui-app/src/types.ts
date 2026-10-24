@@ -51,6 +51,12 @@ export interface PreviewInfo {
    */
   services?: { name: string; port: number }[];
   native?: { platform: "macos" | "ios" | "android"; device?: string };
+  /**
+   * The start is building/starting, not running yet (#0943) — notably a long
+   * native build (`xcodebuild`, gradle). The drawer renders a building state
+   * instead of "app running" until the server emits the running event.
+   */
+  starting?: boolean;
 }
 
 /** A preview target a task can be served from (#0379). More than one means the
