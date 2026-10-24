@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-24T17:37:03Z"
+updated_at: "2026-10-24T17:37:24Z"
 handoff_signal_retry_count: 2
 review_rounds: 2
 review_passes: 2
@@ -117,3 +117,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T17:37:03Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-24T17:37:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-24T17:37:03Z · message_delivered: 1 message(s)
+- 2026-10-24T17:37:24Z · status active→review
