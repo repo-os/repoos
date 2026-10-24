@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
-last_handoff_failure_sha: d4dd2f3a1fac5f9adec8a3b80911134c50706ed6
 id: "0945"
 title: Show only failing checks in Landable by default
 type: feature
@@ -16,7 +14,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-only-failing-checks-in-landable-by-
 created_at: "2026-10-24T01:24:41Z"
-updated_at: "2026-10-24T04:02:07Z"
+updated_at: "2026-10-24T07:03:17Z"
+last_handoff_failure_fingerprint: "check|remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
+last_handoff_failure_sha: d4dd2f3a1fac5f9adec8a3b80911134c50706ed6
 handoff_signal_retry_count: 2
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-24T01:31:21.495Z: repoos check failed: remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
