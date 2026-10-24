@@ -190,6 +190,7 @@ import {
   writeWorktreeReviewLock,
 } from "../worktree-handoff-guard.js";
 import { closingOutRefusal, isTaskClosingOut } from "../close-out-lock.js";
+import { runSendBackSequence } from "../send-back-sequence.js";
 import {
   isPostHandoffCheckpointRecoveryActive,
   startPostHandoffCheckpointRecovery,
@@ -2340,23 +2341,6 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (closeOut && closeOut.phase !== "done" && closeOut.phase !== "failed") {
       return json(res, 409, { error: `Task #${id} is in the close-out pipeline` });
     }
-    if (existing.status !== "active") {
-      try {
-        clearWorktreeHandoffProtection(config.root, config.cacheDir ?? ".repoos", id);
-        const moved = patchTaskFile(
-          config,
-          existing.absPath,
-          {
-            status: "active",
-            note: "send-back — returned to active for engineer follow-up",
-          },
-          { onStatusChange: onServerStatusChange },
-        );
-        index.applyFileChange(moved.absPath);
-      } catch (error) {
-        return json(res, 409, { error: `send-back step move failed: ${(error as Error).message}` });
-      }
-    }
     const invoke = async (nextAction: "start" | "message", payload: object) => {
       const chunks = Readable.from([
         JSON.stringify(payload),
@@ -2381,32 +2365,54 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       });
       return captured;
     };
-    const started = await invoke("start", {});
-    if (started.statusCode < 200 || started.statusCode >= 300 || started.body?.ok === false) {
-      return json(res, started.statusCode || 400, {
-        error: `send-back step start failed: ${started.body?.error ?? "engineer could not be started"}; task #${id} is active and the message was not queued`,
-        step: "start",
-        moved: true,
-        messageQueued: false,
-      });
-    }
-    const sent = await invoke("message", { text: message });
-    if (sent.statusCode < 200 || sent.statusCode >= 300 || sent.body?.ok === false) {
-      return json(res, sent.statusCode || 400, {
-        error: `send-back step message failed: ${sent.body?.error ?? "message could not be queued"}; task #${id} is active and the engineer was started`,
-        step: "message",
-        moved: true,
-        started: true,
-        messageQueued: false,
-      });
-    }
-    return json(res, 200, {
-      ok: true,
-      moved: true,
-      started: true,
-      messageQueued: true,
-      message: sent.body,
+    const result = await runSendBackSequence(message, {
+      move: async () => {
+        if (existing!.status === "active") return { ok: true };
+        try {
+          clearWorktreeHandoffProtection(config.root, config.cacheDir ?? ".repoos", id);
+          const moved = patchTaskFile(
+            config,
+            existing!.absPath,
+            { status: "active", note: "send-back — returned to active for engineer follow-up" },
+            { onStatusChange: onServerStatusChange },
+          );
+          index.applyFileChange(moved.absPath);
+          return { ok: true };
+        } catch (error) {
+          return { ok: false, status: 409, error: (error as Error).message };
+        }
+      },
+      start: async () => {
+        const started = await invoke("start", {});
+        return {
+          ok: started.statusCode >= 200 && started.statusCode < 300 && started.body?.ok !== false,
+          status: started.statusCode || 400,
+          error: started.body?.error ?? "engineer could not be started",
+        };
+      },
+      queue: async (text) => {
+        const sent = await invoke("message", { text });
+        return {
+          ok: sent.statusCode >= 200 && sent.statusCode < 300 && sent.body?.ok !== false,
+          status: sent.statusCode || 400,
+          error: sent.body?.error ?? "message could not be queued",
+          value: sent.body,
+        };
+      },
     });
+    if (!result.ok) {
+      const after =
+        result.step === "start"
+          ? `task #${id} is active and the message was not queued`
+          : result.step === "message"
+            ? `task #${id} is active and the engineer was started`
+            : `task #${id} was not moved`;
+      return json(res, result.status ?? 409, {
+        ...result,
+        error: `send-back step ${result.step} failed: ${result.error ?? "unknown error"}; ${after}`,
+      });
+    }
+    return json(res, 200, result);
   }
 
   // Hotfix activation switches the root checkout and rewrites this task file.
