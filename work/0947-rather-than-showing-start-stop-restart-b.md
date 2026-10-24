@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T04:08:44Z"
+updated_at: "2026-10-24T04:17:06Z"
 ---
 ## Problem
 
@@ -54,3 +54,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T04:08:04Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
 - 2026-10-24T04:08:38Z · status inbox→ready
 - 2026-10-24T04:08:44Z · status ready→active, branch
+- 2026-10-24T04:17:06Z · message_queued at 2026-10-24T04:17:06.628Z
