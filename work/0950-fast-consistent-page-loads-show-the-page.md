@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
@@ -12,7 +11,8 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-24T17:31:09Z"
+updated_at: "2026-10-24T17:36:53Z"
+handoff_signal_retry_count: 2
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-24T16:55:14.081Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Deployments first load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /deployments (http://127.0.0.1:39677/deployments?shotState=deployments%3Aloading); [missing-target] Dev first load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /dev (http://127.0.0.1:39677/dev?shotState=dev%3Aloading)"
@@ -112,4 +112,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T17:27:23Z · status review→active
 - 2026-10-24T17:27:25Z · CTO nudge: held — remote validation is running
 - 2026-10-24T17:31:09Z · body
-
+- 2026-10-24T17:36:53Z · message_queued at 2026-10-24T17:36:52.998Z
