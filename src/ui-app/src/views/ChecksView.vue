@@ -32,7 +32,7 @@ import {
 import { useRepoStore } from "../stores/repo";
 import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
 import PageSkeleton from "../components/PageSkeleton.vue";
-import { refreshPageData } from "../composables/page-data-cache";
+import { invalidatePageDataPrefix, refreshPageData } from "../composables/page-data-cache";
 
 const route = useRoute();
 const router = useRouter();
@@ -83,6 +83,17 @@ watch(
 );
 
 onMounted(load);
+
+// A completed test run changes the plan's last-run summary. Drop all cached
+// profile/ref variants so revisiting the Plan tab reads that updated summary.
+watch(
+  () => testRun.value.finishedAt,
+  (finishedAt, previous) => {
+    if (!finishedAt || finishedAt === previous) return;
+    invalidatePageDataPrefix("check-plan:");
+    if (activeTab.value === "plan") void load();
+  },
+);
 
 const plan = ref<CheckPlanView | null>(null);
 const loading = ref(true);

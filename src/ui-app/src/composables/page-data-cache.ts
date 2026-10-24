@@ -49,3 +49,9 @@ export async function refreshPageData<T>(
 export function invalidatePageData(key: string): void {
   entries.delete(key);
 }
+
+export function invalidatePageDataPrefix(prefix: string): void {
+  for (const key of entries.keys()) {
+    if (key.startsWith(prefix)) entries.delete(key);
+  }
+}
