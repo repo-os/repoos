@@ -140,3 +140,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:37:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-24T14:37:45Z · needs_input
 - 2026-10-24T14:37:45Z · status active→review
+- 2026-10-24T14:37:45Z · message_delivered: 1 message(s)
