@@ -2,7 +2,7 @@
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T14:38:21Z"
+updated_at: "2026-10-24T14:38:23Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -143,3 +143,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:37:45Z · message_delivered: 1 message(s)
 - 2026-10-24T14:37:46Z · note: handoff requested (cli)
 - 2026-10-24T14:38:21Z · body
+- 2026-10-24T14:38:23Z · status active→review
