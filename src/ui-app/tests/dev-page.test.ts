@@ -175,7 +175,7 @@ describe("DevView layout and state (#0748)", () => {
     expect(actions.exists()).toBe(true);
     expect(details.find(".dev-command").text()).toBe("bun run dev");
     expect(actions.findAll("button").map((b) => b.text().trim())).toEqual(["Start"]);
-    expect(actions.find("button").classes()).toContain("btn-accent");
+    expect(actions.find("button").classes()).toContain("bg-[image:var(--btn-new-bg)]");
     // No second action row elsewhere in the card.
     expect(card.findAll(".dev-actions")).toHaveLength(1);
 
@@ -199,13 +199,13 @@ describe("DevView layout and state (#0748)", () => {
     const [running, starting] = wrapper.findAll(".dev-card");
     const runningButtons = running!.findAll(".dev-actions button");
     expect(runningButtons.map((button) => button.text().trim())).toEqual(["Restart", "Stop"]);
-    expect(runningButtons[0]!.classes()).toContain("btn-accent");
+    expect(runningButtons[0]!.classes()).toContain("bg-[image:var(--btn-new-bg)]");
     expect(runningButtons[1]!.text()).not.toContain("Start");
 
     const startingButtons = starting!.findAll(".dev-actions button");
     expect(startingButtons.map((button) => button.text().trim())).toEqual(["Start"]);
     expect(startingButtons[0]!.attributes("disabled")).toBeDefined();
-    expect(startingButtons[0]!.classes()).toContain("btn-accent");
+    expect(startingButtons[0]!.classes()).toEqual(runningButtons[0]!.classes());
   });
 
   it("groups targets by project and shows name, kind, state and label", async () => {
