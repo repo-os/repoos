@@ -2,7 +2,10 @@
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -11,12 +14,13 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: opencode
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T13:11:02Z"
+updated_at: "2026-10-24T14:00:25Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
 handoff_signal_retry_count: 1
+dev_error_count: 1
 ---
 ## Problem
 A task's **Preview** button only serves things that speak HTTP: a `[[preview.targets]]` row is a command that listens on `{port}` and answers a `readyPath` probe (`docs/previews.md`, "v1 is scoped to browser-previewable things"). A native app has no port, so a reviewer cannot launch a task's version of the macOS Hub (`macos/RepoOSHub.xcodeproj`, `just macos-run`), the iOS app or the Android app (`mobile/ios`, `mobile/android`, Capacitor shells) from the task's worktree. Today the options are weaker: a `[[dev.targets]]` row with `kind = "process"` (`user-docs/dev-targets.md`) always runs in the root checkout, never a task worktree, and `[[shot.targets]]` only captures still images (`docs/previews.md`, "Evidence shots for non-web targets", #0761).
@@ -125,3 +129,5 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T12:14:04Z · body
 - 2026-10-24T13:02:04Z · body
 - 2026-10-24T13:11:02Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-24T14:00:25Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-24T14:00:25Z · status active→review
