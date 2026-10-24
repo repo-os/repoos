@@ -2325,9 +2325,17 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     const body = (await readBody(req)) as { message?: unknown };
     const message = typeof body?.message === "string" ? body.message.trim() : "";
     if (!message) return json(res, 400, { error: "message text is required" });
-    if (existing.isArchived) return json(res, 400, { error: `Task #${id} is archived — unarchive it before sending it back` });
-    if (runner.isRunning(id)) return json(res, 409, { error: `Task #${id} has an engineer turn in progress` });
-    if (reviews.isRunning(id)) return json(res, 409, { error: `Task #${id} has a review in progress` });
+    if (isTaskClosingOut(config.root, config.cacheDir, id)) {
+      return json(res, 409, { error: closingOutRefusal(id) });
+    }
+    if (existing.isArchived)
+      return json(res, 400, {
+        error: `Task #${id} is archived — unarchive it before sending it back`,
+      });
+    if (runner.isRunning(id))
+      return json(res, 409, { error: `Task #${id} has an engineer turn in progress` });
+    if (reviews.isRunning(id))
+      return json(res, 409, { error: `Task #${id} has a review in progress` });
     const closeOut = jobCoordinator.getJob(id);
     if (closeOut && closeOut.phase !== "done" && closeOut.phase !== "failed") {
       return json(res, 409, { error: `Task #${id} is in the close-out pipeline` });
@@ -2335,40 +2343,70 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (existing.status !== "active") {
       try {
         clearWorktreeHandoffProtection(config.root, config.cacheDir ?? ".repoos", id);
-        const moved = patchTaskFile(config, existing.absPath, {
-          status: "active",
-          note: "send-back — returned to active for engineer follow-up",
-        }, { onStatusChange: onServerStatusChange });
+        const moved = patchTaskFile(
+          config,
+          existing.absPath,
+          {
+            status: "active",
+            note: "send-back — returned to active for engineer follow-up",
+          },
+          { onStatusChange: onServerStatusChange },
+        );
         index.applyFileChange(moved.absPath);
       } catch (error) {
         return json(res, 409, { error: `send-back step move failed: ${(error as Error).message}` });
       }
     }
     const invoke = async (nextAction: "start" | "message", payload: object) => {
-      const chunks = Readable.from([JSON.stringify(payload)]) as unknown as import("node:http").IncomingMessage;
-      const captured: { statusCode: number; body?: any; writeHead: (code: number) => void; end: (data?: string) => void } = {
+      const chunks = Readable.from([
+        JSON.stringify(payload),
+      ]) as unknown as import("node:http").IncomingMessage;
+      const captured: {
+        statusCode: number;
+        body?: any;
+        writeHead: (code: number) => void;
+        end: (data?: string) => void;
+      } = {
         statusCode: 200,
-        writeHead(code) { this.statusCode = code; },
-        end(data) { if (data) this.body = JSON.parse(data); },
+        writeHead(code) {
+          this.statusCode = code;
+        },
+        end(data) {
+          if (data) this.body = JSON.parse(data);
+        },
       };
-      await taskAction(ctx, chunks, captured as unknown as ServerResponse, { param1: id, param2: nextAction });
+      await taskAction(ctx, chunks, captured as unknown as ServerResponse, {
+        param1: id,
+        param2: nextAction,
+      });
       return captured;
     };
     const started = await invoke("start", {});
     if (started.statusCode < 200 || started.statusCode >= 300 || started.body?.ok === false) {
       return json(res, started.statusCode || 400, {
         error: `send-back step start failed: ${started.body?.error ?? "engineer could not be started"}; task #${id} is active and the message was not queued`,
-        step: "start", moved: true, messageQueued: false,
+        step: "start",
+        moved: true,
+        messageQueued: false,
       });
     }
     const sent = await invoke("message", { text: message });
     if (sent.statusCode < 200 || sent.statusCode >= 300 || sent.body?.ok === false) {
       return json(res, sent.statusCode || 400, {
         error: `send-back step message failed: ${sent.body?.error ?? "message could not be queued"}; task #${id} is active and the engineer was started`,
-        step: "message", moved: true, started: true, messageQueued: false,
+        step: "message",
+        moved: true,
+        started: true,
+        messageQueued: false,
       });
     }
-    return json(res, 200, { ok: true, moved: true, started: true, messageQueued: true, message: sent.body });
+    return json(res, 200, {
+      ok: true,
+      moved: true,
+      started: true,
+      messageQueued: true,
+      message: sent.body,
+    });
   }
 
   // Hotfix activation switches the root checkout and rewrites this task file.
