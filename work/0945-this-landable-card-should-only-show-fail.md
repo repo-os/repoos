@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0945"
 title: Show only failing checks in Landable by default
 type: feature
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-only-failing-checks-in-landable-by-
 created_at: "2026-10-24T01:24:41Z"
-updated_at: "2026-10-24T01:32:11Z"
+updated_at: "2026-10-24T01:37:30Z"
+handoff_signal_retry_count: 1
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-24T01:31:21.495Z: repoos check failed: remote validation unavailable: host mini skipped: link probe failed — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 ---
@@ -63,4 +63,4 @@ This Landable card should only show failing and minimise the rest -- if user cli
 - 2026-10-24T01:26:32Z · status ready→active, branch
 - 2026-10-24T01:27:15Z · body
 - 2026-10-24T01:32:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-
+- 2026-10-24T01:37:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
