@@ -11,7 +11,7 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-24T17:09:47Z"
+updated_at: "2026-10-24T17:13:21Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-24T16:55:14.081Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Deployments first load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /deployments (http://127.0.0.1:39677/deployments?shotState=deployments%3Aloading); [missing-target] Dev first load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /dev (http://127.0.0.1:39677/dev?shotState=dev%3Aloading)"
@@ -104,3 +104,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T17:09:44Z · note: review pass 1: needs some work
 - 2026-10-24T17:09:45Z · status review→active
 - 2026-10-24T17:09:47Z · CTO nudge: held — remote validation is running
+- 2026-10-24T17:13:21Z · note: Performance evidence for review round 2: the task description supplies rough pre-change endpoint estimates (not measurements from this run): /api/deployments ~1.2s, /api/dev/targets ~0.6s, /api/check-plan and /api/releases ~0.35s each; per-page time-to-content was not recorded. No post-change live endpoint or page timing was collected in this run, so no before/after improvement is claimed. Deployments now requests deployments and project-environments in parallel; this removes serial waiting, but no numerical speedup is asserted. Follow-up: capture repeatable per-endpoint and per-page timings against the managed preview before marking the measurement acceptance criterion complete. --help
