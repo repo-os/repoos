@@ -215,11 +215,19 @@ async function load(silent = false): Promise<void> {
   }
   if (!silent) loading.value = true;
   try {
-    await refreshPageData("dev-targets", () => api<DevTargetsResponse>("/api/dev/targets"), (res) => {
-      targets.value = res.targets ?? [];
-      configErrors.value = res.errors ?? [];
-      loadError.value = "";
-    }, (err) => { if (targets.value.length) loadError.value = err instanceof Error ? err.message : String(err); });
+    await refreshPageData(
+      "dev-targets",
+      () => api<DevTargetsResponse>("/api/dev/targets"),
+      (res) => {
+        targets.value = res.targets ?? [];
+        configErrors.value = res.errors ?? [];
+        loadError.value = "";
+      },
+      (err) => {
+        if (targets.value.length)
+          loadError.value = err instanceof Error ? err.message : String(err);
+      },
+    );
   } catch (err) {
     // A failed poll must not thrash the page: keep the last good list and only
     // surface the reason on a non-silent load.
@@ -367,7 +375,9 @@ watch(
     </header>
 
     <PageSkeleton v-if="loading && !targets.length" kind="cards" />
-    <p v-if="loadError && targets.length" class="dev-state dev-state--error" role="status">Refresh failed: {{ loadError }}</p>
+    <p v-if="loadError && targets.length" class="dev-state dev-state--error" role="status">
+      Refresh failed: {{ loadError }}
+    </p>
     <p v-else-if="loadError && !targets.length" class="dev-state dev-state--error" role="alert">
       {{ loadError }}
     </p>

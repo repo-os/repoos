@@ -230,15 +230,24 @@ async function load(): Promise<void> {
       };
       return;
     }
-    await refreshPageData("deployments", async () => {
-      const [deployments, environments] = await Promise.all([
-        api<Omit<DeploymentsStatus, "environments">>("/api/deployments"),
-        canBindEnvironment.value
-          ? api<{ environments: { id: string }[] }>("/api/project-environments")
-          : Promise.resolve({ environments: [] }),
-      ]);
-      return { ...deployments, environments: environments.environments ?? [] };
-    }, (value) => { status.value = value; }, (err) => { error.value = err instanceof Error ? err.message : String(err); });
+    await refreshPageData(
+      "deployments",
+      async () => {
+        const [deployments, environments] = await Promise.all([
+          api<Omit<DeploymentsStatus, "environments">>("/api/deployments"),
+          canBindEnvironment.value
+            ? api<{ environments: { id: string }[] }>("/api/project-environments")
+            : Promise.resolve({ environments: [] }),
+        ]);
+        return { ...deployments, environments: environments.environments ?? [] };
+      },
+      (value) => {
+        status.value = value;
+      },
+      (err) => {
+        error.value = err instanceof Error ? err.message : String(err);
+      },
+    );
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
   } finally {

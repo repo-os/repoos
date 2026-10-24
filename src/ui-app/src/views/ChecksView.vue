@@ -167,10 +167,17 @@ async function load(): Promise<void> {
   const qs = params.toString();
   try {
     const key = `check-plan:${profile.value}:${changedRef.value}`;
-    await refreshPageData(key, () => api<{ ok: boolean; checkPlan: CheckPlanView }>(`/api/check-plan${qs ? `?${qs}` : ""}`), (res) => {
-      plan.value = res.checkPlan;
-      if (!profile.value) profile.value = res.checkPlan.profile;
-    }, (e) => { error.value = e instanceof Error ? e.message : "Could not load the check plan."; });
+    await refreshPageData(
+      key,
+      () => api<{ ok: boolean; checkPlan: CheckPlanView }>(`/api/check-plan${qs ? `?${qs}` : ""}`),
+      (res) => {
+        plan.value = res.checkPlan;
+        if (!profile.value) profile.value = res.checkPlan.profile;
+      },
+      (e) => {
+        error.value = e instanceof Error ? e.message : "Could not load the check plan.";
+      },
+    );
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Could not load the check plan.";
   } finally {

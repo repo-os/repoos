@@ -20,14 +20,26 @@ describe("page data cache", () => {
     const receive = vi.fn();
     const failed = vi.fn();
     await refreshPageData("resource", async () => "stale", receive);
-    await refreshPageData("resource", async () => { throw new Error("offline"); }, receive, failed);
+    await refreshPageData(
+      "resource",
+      async () => {
+        throw new Error("offline");
+      },
+      receive,
+      failed,
+    );
     expect(receive).toHaveBeenLastCalledWith("stale");
     expect(failed).toHaveBeenCalledWith(expect.any(Error));
   });
 
   it("shares a refresh already in flight", async () => {
     let resolve!: (value: string) => void;
-    const fetcher = vi.fn(() => new Promise<string>((done) => { resolve = done; }));
+    const fetcher = vi.fn(
+      () =>
+        new Promise<string>((done) => {
+          resolve = done;
+        }),
+    );
     const a = refreshPageData("resource", fetcher, vi.fn());
     const b = refreshPageData("resource", fetcher, vi.fn());
     resolve("shared");

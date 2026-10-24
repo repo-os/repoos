@@ -402,7 +402,16 @@ async function load(): Promise<void> {
   loading.value = true;
   loadError.value = "";
   try {
-    await refreshPageData("release-status", () => api<ReleaseStatus>("/api/release"), (value) => { status.value = value; }, (err) => { loadError.value = err instanceof Error ? err.message : String(err); });
+    await refreshPageData(
+      "release-status",
+      () => api<ReleaseStatus>("/api/release"),
+      (value) => {
+        status.value = value;
+      },
+      (err) => {
+        loadError.value = err instanceof Error ? err.message : String(err);
+      },
+    );
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -1009,7 +1018,9 @@ onBeforeUnmount(() => {
     </header>
 
     <PageSkeleton v-if="loading && !status" kind="cards" />
-    <p v-if="loadError && status" class="rel-error" role="status">Refresh failed: {{ loadError }}</p>
+    <p v-if="loadError && status" class="rel-error" role="status">
+      Refresh failed: {{ loadError }}
+    </p>
     <p v-else-if="loadError && !status" class="rel-error">{{ loadError }}</p>
 
     <template v-else-if="status">
