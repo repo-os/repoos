@@ -34,13 +34,17 @@ export async function refreshPageData<T>(
   }
   try {
     const value = await request;
+    // An action may invalidate this resource while the request is in flight.
+    // Never let that older response repopulate the cache or overwrite the
+    // caller's fresh post-action load.
+    if (entries.get(key) !== entry) return;
     if (isRequestOwner) {
       entry.value = value;
       entry.updatedAt = Date.now();
     }
     receive(value);
   } catch (error) {
-    failed?.(error);
+    if (entries.get(key) === entry) failed?.(error);
   } finally {
     if (isRequestOwner && entry.request === request) entry.request = undefined;
   }
