@@ -3,6 +3,9 @@ id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -158,3 +161,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:55:36Z · needs_input
 - 2026-10-24T14:57:45Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-10-24T14:58:31Z · note: review pass 7: needs some work
+- 2026-10-24T14:58:31Z · needs_input
