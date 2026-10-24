@@ -6,8 +6,10 @@
 import { createPinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
+import { nextTick } from "vue";
 import * as apiMod from "../src/api";
 import ReleasesView from "../src/views/ReleasesView.vue";
+import { invalidatePageData } from "../src/composables/page-data-cache";
 
 const api = vi.spyOn(apiMod, "api");
 
@@ -79,6 +81,7 @@ async function mountView(): Promise<VueWrapper> {
 }
 
 beforeEach(() => {
+  invalidatePageData("release-status");
   vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
 });
 
@@ -90,6 +93,35 @@ afterEach(() => {
 });
 
 describe("ReleasesView Published to (#0445)", () => {
+  it("shows cached release data immediately on revisit and applies the refresh in place", async () => {
+    mockApi([channel()]);
+    const first = await mountView();
+    first.unmount();
+
+    let finish!: (value: unknown) => void;
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return new Promise((resolve) => (finish = resolve));
+      if (path === "/api/release/distribution")
+        return Promise.resolve({ releaseVersion: "1.2.3", releaseTag: "v1.2.3", channels: [] });
+      if (path === "/api/release/run")
+        return Promise.resolve({ state: "idle", phase: null, message: "", startedAt: null, updatedAt: null });
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await nextTick();
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.3");
+
+    finish?.({ ...releaseStatus(), version: "1.2.4", tag: "v1.2.4", latestTag: "v1.2.4" });
+    await flushPromises();
+    expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.4");
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   it("makes the current release and its distribution sync state the primary summary", async () => {
     mockApi([channel()]);
     const wrapper = await mountView();

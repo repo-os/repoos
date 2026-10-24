@@ -187,9 +187,9 @@ function serviceSyncLabel(row: DeploymentRow, b: DeploymentBranch): string {
 async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
+  if (readShotPreviewFixtureFromLocation(window.location) === "deployments:loading") return;
   try {
     const shotState = readShotPreviewFixtureFromLocation(window.location);
-    if (shotState === "deployments:loading") return;
     if (shotState === "deployments:environmentBinding") {
       // Screenshot-only state: the preview fixture represents an admin
       // reviewing the binding controls. Production auth still gates every

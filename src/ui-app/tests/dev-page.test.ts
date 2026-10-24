@@ -11,6 +11,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
+import { nextTick } from "vue";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { createPinia, setActivePinia } from "pinia";
@@ -181,6 +182,31 @@ describe("Dev loading shot", () => {
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     expect(fetchSpy).not.toHaveBeenCalled();
     wrapper.unmount();
+  });
+
+  it("shows cached targets immediately on revisit and applies the refresh in place", async () => {
+    installFetch({ targets: [target({ label: "Cached service" })] });
+    const first = mountView();
+    await flush();
+    first.unmount();
+
+    let finish!: (response: Response) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>((resolve) => (finish = resolve))),
+    );
+    const revisited = mountView();
+    await nextTick();
+    expect(revisited.find(".page-skeleton").exists()).toBe(false);
+    expect(revisited.text()).toContain("Cached service");
+
+    finish(
+      (await json({ ok: true, targets: [target({ label: "Updated service" })], errors: [] })) as unknown as Response,
+    );
+    await flush();
+    expect(revisited.text()).toContain("Updated service");
+    expect(revisited.find(".page-skeleton").exists()).toBe(false);
+    revisited.unmount();
   });
 });
 
