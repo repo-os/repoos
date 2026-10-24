@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,11 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-24T17:08:27Z"
+updated_at: "2026-10-24T22:19:02Z"
+review_passes: 3
+handoff_signal_retry_count: 2
+review_rounds: 2
+last_check_failure: "repoos check at 2026-10-24T16:55:14.081Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Deployments first load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /deployments (http://127.0.0.1:39677/deployments?shotState=deployments%3Aloading); [missing-target] Dev first load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /dev (http://127.0.0.1:39677/dev?shotState=dev%3Aloading)"
 ---
 ## Problem
 
@@ -44,10 +48,83 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - Pages that already use a store with cached data (Work board, Inputs) are the model for how revisits should feel.
 - Run every test touching the migrated views in small groups, and `repoos check --changed main`, before handoff.
 
+## Shots
+```json
+[
+{
+"label": "Deployments first load skeleton",
+"target": "default",
+"route": "/deployments",
+"highlight": ".page-skeleton",
+"state": "deployments:loading"
+},
+{
+"label": "Deployments loaded view",
+"target": "default",
+"route": "/deployments",
+"highlight": ".dep-page",
+"state": "deployments:environmentBinding"
+},
+{
+"label": "Dev first load skeleton",
+"target": "default",
+"route": "/dev",
+"highlight": ".page-skeleton",
+"state": "dev:loading"
+},
+{
+"label": "Dev running target",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-card",
+"state": "dev:running"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-24T16:13:34Z · created · njachowski@gmail.com
 - 2026-10-24T16:14:18Z · status inbox→ready
 - 2026-10-24T16:14:26Z · cli_override, model_override
 - 2026-10-24T16:14:27Z · status ready→active, branch
+- 2026-10-24T16:15:55Z · body
+- 2026-10-24T16:16:21Z · body
+- 2026-10-24T16:18:29Z · body
+- 2026-10-24T16:20:15Z · body
+- 2026-10-24T16:21:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T16:37:14Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Deployments first load skeleton (target "default"): highlight .page-skeleton matched nothing on /deployments (http://127.0.0.1:43579/deployments); [missing-target] Dev first load skeleton (target "default"): highlight .page-skeleton matched nothing on /dev (http://127.0.0.1:43579/dev)
+- 2026-10-24T16:38:12Z · body
+- 2026-10-24T16:40:01Z · body
+- 2026-10-24T16:42:33Z · body
+- 2026-10-24T16:55:07Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Deployments first load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /deployments (http://127.0.0.1:39677/deployments?shotState=deployments%3Aloading); [missing-target] Dev first load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /dev (http://127.0.0.1:39677/dev?shotState=dev%3Aloading)
+- 2026-10-24T16:57:14Z · body
+- 2026-10-24T17:08:26Z · note: ui verification passed: 4 of 4 shots captured with clean console
 - 2026-10-24T17:08:27Z · status active→review
+- 2026-10-24T17:09:44Z · note: review pass 1: needs some work
+- 2026-10-24T17:09:45Z · status review→active
+- 2026-10-24T17:09:47Z · CTO nudge: held — remote validation is running
+- 2026-10-24T17:13:21Z · note: Performance evidence for review round 2: the task description supplies rough pre-change endpoint estimates (not measurements from this run): /api/deployments ~1.2s, /api/dev/targets ~0.6s, /api/check-plan and /api/releases ~0.35s each; per-page time-to-content was not recorded. No post-change live endpoint or page timing was collected in this run, so no before/after improvement is claimed. Deployments now requests deployments and project-environments in parallel; this removes serial waiting, but no numerical speedup is asserted. Follow-up: capture repeatable per-endpoint and per-page timings against the managed preview before marking the measurement acceptance criterion complete. --help
+- 2026-10-24T17:15:05Z · body
+- 2026-10-24T17:26:19Z · note: ui verification passed: 4 of 4 shots captured with clean console
+- 2026-10-24T17:26:20Z · status active→review
+- 2026-10-24T17:27:22Z · note: review pass 2: needs some work
+- 2026-10-24T17:27:23Z · status review→active
+- 2026-10-24T17:27:25Z · CTO nudge: held — remote validation is running
+- 2026-10-24T17:31:09Z · body
+- 2026-10-24T17:36:53Z · message_queued at 2026-10-24T17:36:52.998Z
+- 2026-10-24T17:36:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-24T17:37:03Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-24T17:37:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T17:37:03Z · message_delivered: 1 message(s)
+- 2026-10-24T17:37:24Z · status active→review
+- 2026-10-24T17:39:23Z · note: review pass 3: needs some work
+- 2026-10-24T17:39:23Z · needs_input
+- 2026-10-24T17:49:07Z · note: ui verification passed: 4 of 4 shots captured with clean console
+- 2026-10-24T22:18:25Z · status review→active
+- 2026-10-24T22:18:37Z · needs_input
+- 2026-10-24T22:18:37Z · message_queued at 2026-10-24T22:18:37.928Z
+- 2026-10-24T22:19:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T22:19:01Z · status active→review
+- 2026-10-24T22:19:02Z · message_delivered: 1 message(s)
+- 2026-10-24T22:19:02Z · note: handoff requested (cli)

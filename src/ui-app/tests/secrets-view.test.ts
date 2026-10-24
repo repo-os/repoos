@@ -192,6 +192,8 @@ describe("SecretsView (#0929)", () => {
     await flushPromises();
     expect(wrapper.text()).toContain("Missing");
     expect(wrapper.text()).toContain("Inherited");
+    expect(wrapper.get(".secrets-file").text()).toContain(".env.dev-nick");
+    expect(wrapper.findAll(".secrets-row dt").some((node) => node.text() === "Source")).toBe(false);
     expect(wrapper.get(".secrets-row").text()).toContain("Replace");
     const inherited = wrapper
       .findAll(".secrets-row")

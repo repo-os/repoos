@@ -28,7 +28,7 @@ import { useConfigStore } from "../stores/config";
 import { fmtDate, fmtTime, relTime } from "../lib/time";
 import type { DevTargetStatus, DevTargetView, DevTargetsResponse } from "../types";
 import PageSkeleton from "../components/PageSkeleton.vue";
-import { refreshPageData, invalidatePageData } from "../composables/page-data-cache";
+import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
 
 const repo = useRepoStore();
 const config = useConfigStore();
@@ -226,8 +226,7 @@ async function load(silent = false): Promise<void> {
         loadError.value = "";
       },
       (err) => {
-        if (targets.value.length)
-          loadError.value = err instanceof Error ? err.message : String(err);
+        if (targets.value.length) loadError.value = err instanceof Error ? err.message : String(err);
       },
     );
   } catch (err) {
@@ -362,7 +361,7 @@ watch(
 </script>
 
 <template>
-  <div class="dev-page">
+  <div class="dev-page page-scroll">
     <header class="page-header">
       <div>
         <h1 class="page-title">Dev</h1>
@@ -378,321 +377,323 @@ watch(
       </div>
     </header>
 
-    <PageSkeleton v-if="loading && !targets.length" kind="cards" />
-    <p v-else-if="loadError && !targets.length" class="dev-state dev-state--error" role="alert">
-      {{ loadError }}
-    </p>
-
-    <template v-else>
-      <p v-if="loadError && targets.length" class="dev-state dev-state--error" role="status">
-        Refresh failed: {{ loadError }}
-      </p>
-      <section v-if="configErrors.length" class="dev-config-errors" role="alert">
-        <strong>Some <code>[[dev.targets]]</code> entries were ignored:</strong>
-        <ul>
-          <li v-for="e in configErrors" :key="e">{{ e }}</li>
-        </ul>
-      </section>
-
-      <p v-if="!targets.length" class="dev-empty">
-        No dev targets are declared for this project. Add a
-        <code>[[dev.targets]]</code> row in <a href="/settings?tab=toml">repoos.toml</a> — a
-        <code>server</code> (with a URL), an <code>artifact</code> build (with an output path), or a
-        <code>process</code> (a native app with no URL) — then reload.
+    <div class="page-scroll-body">
+      <PageSkeleton v-if="loading && !targets.length" kind="cards" />
+      <p v-else-if="loadError && !targets.length" class="dev-state dev-state--error" role="alert">
+        {{ loadError }}
       </p>
 
       <template v-else>
-        <section
-          v-for="group in groups"
-          :key="group.project"
-          class="dev-group"
-          :aria-label="`Dev targets for ${group.project}`"
-        >
-          <h2 class="dev-group-name">{{ group.project }}</h2>
+        <p v-if="loadError && targets.length" class="dev-state dev-state--error" role="status">
+          Refresh failed: {{ loadError }}
+        </p>
+        <section v-if="configErrors.length" class="dev-config-errors" role="alert">
+          <strong>Some <code>[[dev.targets]]</code> entries were ignored:</strong>
+          <ul>
+            <li v-for="e in configErrors" :key="e">{{ e }}</li>
+          </ul>
+        </section>
 
-          <article
-            v-for="t in group.targets"
-            :key="t.name"
-            class="dev-card"
-            :data-status="t.status"
-            :data-running="isRunning(t) || undefined"
+        <p v-if="!targets.length" class="dev-empty">
+          No dev targets are declared for this project. Add a
+          <code>[[dev.targets]]</code> row in <a href="/settings?tab=toml">repoos.toml</a> — a
+          <code>server</code> (with a URL), an <code>artifact</code> build (with an output path), or
+          a <code>process</code> (a native app with no URL) — then reload.
+        </p>
+
+        <template v-else>
+          <section
+            v-for="group in groups"
+            :key="group.project"
+            class="dev-group"
+            :aria-label="`Dev targets for ${group.project}`"
           >
-            <div class="dev-card-head">
-              <div class="dev-card-title">
-                <span class="dev-card-label">{{ t.label }}</span>
-                <span class="dev-chip dev-chip--kind">{{ KIND_LABEL[t.kind] }}</span>
-                <span class="dev-state-pill" :data-status="t.status">
-                  <span class="dev-dot"></span>{{ STATE_LABEL[t.status] }}
-                </span>
-                <span
-                  v-if="t.startedAt && isRunning(t)"
-                  class="dev-started"
-                  tabindex="0"
-                  data-test-id="dev-started"
-                  :data-tip="startedAtTip(t)"
-                  :aria-label="`Started ${startedAgo(t)} — ${startedAtTip(t)}`"
-                  >{{ startedAgo(t) }}</span
-                >
-              </div>
-              <div class="dev-card-side">
-                <code class="dev-card-name">{{ t.name }}</code>
-              </div>
-            </div>
+            <h2 class="dev-group-name">{{ group.project }}</h2>
 
-            <div class="dev-card-details">
-              <dl class="kv-rows dev-meta">
-                <div>
-                  <dt>Command</dt>
-                  <dd class="kv-wrap">
-                    <code class="dev-command">{{ t.command }}</code>
-                  </dd>
+            <article
+              v-for="t in group.targets"
+              :key="t.name"
+              class="dev-card"
+              :data-status="t.status"
+              :data-running="isRunning(t) || undefined"
+            >
+              <div class="dev-card-head">
+                <div class="dev-card-title">
+                  <span class="dev-card-label">{{ t.label }}</span>
+                  <span class="dev-chip dev-chip--kind">{{ KIND_LABEL[t.kind] }}</span>
+                  <span class="dev-state-pill" :data-status="t.status">
+                    <span class="dev-dot"></span>{{ STATE_LABEL[t.status] }}
+                  </span>
+                  <span
+                    v-if="t.startedAt && isRunning(t)"
+                    class="dev-started"
+                    tabindex="0"
+                    data-test-id="dev-started"
+                    :data-tip="startedAtTip(t)"
+                    :aria-label="`Started ${startedAgo(t)} — ${startedAtTip(t)}`"
+                    >{{ startedAgo(t) }}</span
+                  >
                 </div>
-                <div v-if="t.kind === 'server' && t.url">
-                  <dt>URL</dt>
-                  <dd class="kv-wrap">
-                    <!-- #0816: only a running target's URL resolves, so it is the
+                <div class="dev-card-side">
+                  <code class="dev-card-name">{{ t.name }}</code>
+                </div>
+              </div>
+
+              <div class="dev-card-details">
+                <dl class="kv-rows dev-meta">
+                  <div>
+                    <dt>Command</dt>
+                    <dd class="kv-wrap">
+                      <code class="dev-command">{{ t.command }}</code>
+                    </dd>
+                  </div>
+                  <div v-if="t.kind === 'server' && t.url">
+                    <dt>URL</dt>
+                    <dd class="kv-wrap">
+                      <!-- #0816: only a running target's URL resolves, so it is the
                        only one that is a link. A stopped target shows the
                        action that would make it live, greyed out, rather than a
                        dead link that opens an unreachable page. -->
-                    <a
-                      v-if="isRunning(t)"
-                      class="dev-open"
-                      :href="t.url"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Open {{ t.url.replace(/^https?:\/\//, "") }} ↗
-                    </a>
-                    <span
-                      v-else
-                      class="dev-open-stopped"
-                      data-test-id="dev-url-stopped"
-                      data-tip="Start the target to open its URL"
-                      >Click Start</span
-                    >
-                  </dd>
-                </div>
-                <div v-if="t.kind === 'server' && t.port !== undefined">
-                  <dt>Port</dt>
-                  <dd class="kv-wrap">
-                    <code class="dev-port">{{ t.port }}</code>
-                    <span v-if="isRunning(t)" class="dev-port-note">in use now</span>
-                  </dd>
-                </div>
-                <div v-else-if="t.kind === 'artifact' && t.artifactPath">
-                  <dt>Output</dt>
-                  <dd>
-                    <code>{{ t.artifactPath }}</code>
-                  </dd>
-                </div>
-                <div v-else-if="t.kind === 'process'">
-                  <dt>Process</dt>
-                  <dd>Long-lived, no URL — running while the process is alive</dd>
-                </div>
-                <div v-if="t.pid !== undefined">
-                  <dt>PID</dt>
-                  <dd>
-                    <code>{{ t.pid }}</code>
-                  </dd>
-                </div>
-              </dl>
-              <div class="dev-actions">
-                <Button
-                  v-if="!isRunning(t)"
-                  variant="accent"
-                  size="sm"
-                  :disabled="busy === t.name || t.status === 'starting'"
-                  @click="act(t.name, 'start')"
-                >
-                  {{ busy === t.name ? "Working…" : "Start" }}
-                </Button>
-                <template v-else>
+                      <a
+                        v-if="isRunning(t)"
+                        class="dev-open"
+                        :href="t.url"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Open {{ t.url.replace(/^https?:\/\//, "") }} ↗
+                      </a>
+                      <span
+                        v-else
+                        class="dev-open-stopped"
+                        data-test-id="dev-url-stopped"
+                        data-tip="Start the target to open its URL"
+                        >Click Start</span
+                      >
+                    </dd>
+                  </div>
+                  <div v-if="t.kind === 'server' && t.port !== undefined">
+                    <dt>Port</dt>
+                    <dd class="kv-wrap">
+                      <code class="dev-port">{{ t.port }}</code>
+                      <span v-if="isRunning(t)" class="dev-port-note">in use now</span>
+                    </dd>
+                  </div>
+                  <div v-else-if="t.kind === 'artifact' && t.artifactPath">
+                    <dt>Output</dt>
+                    <dd>
+                      <code>{{ t.artifactPath }}</code>
+                    </dd>
+                  </div>
+                  <div v-else-if="t.kind === 'process'">
+                    <dt>Process</dt>
+                    <dd>Long-lived, no URL — running while the process is alive</dd>
+                  </div>
+                  <div v-if="t.pid !== undefined">
+                    <dt>PID</dt>
+                    <dd>
+                      <code>{{ t.pid }}</code>
+                    </dd>
+                  </div>
+                </dl>
+                <div class="dev-actions">
                   <Button
+                    v-if="!isRunning(t)"
                     variant="accent"
                     size="sm"
-                    :disabled="busy === t.name"
-                    @click="requestRestart(t)"
+                    :disabled="busy === t.name || t.status === 'starting'"
+                    @click="act(t.name, 'start')"
                   >
-                    Restart
+                    {{ busy === t.name ? "Working…" : "Start" }}
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    :disabled="busy === t.name"
-                    @click="act(t.name, 'stop')"
-                  >
-                    Stop
-                  </Button>
-                </template>
-              </div>
-            </div>
-
-            <div v-if="t.services?.length" class="dev-services" data-test-id="dev-services">
-              <div class="dev-services-label">
-                Services
-                <span class="dev-services-note"
-                  >booted before the target, each on its own port</span
-                >
-              </div>
-              <!-- #0843: one sub-row per companion service: its own status pill,
-                   the real port it was given, its PID, and a collapsible output. -->
-              <div
-                v-for="s in t.services"
-                :key="s.name"
-                class="dev-service"
-                :data-status="s.status"
-              >
-                <div class="dev-service-head">
-                  <span class="dev-state-pill" :data-status="s.status">
-                    <span class="dev-dot"></span>{{ STATE_LABEL[s.status] }}
-                  </span>
-                  <code class="dev-service-name">{{ s.name }}</code>
-                  <span v-if="typeof s.port === 'number'" class="dev-service-port">
-                    <code>:{{ s.port }}</code>
-                  </span>
-                  <span v-if="s.pid !== undefined" class="dev-service-pid">PID {{ s.pid }}</span>
-                  <span class="dev-service-side">
-                    <a
-                      v-if="s.url && s.status === 'running'"
-                      class="dev-open"
-                      :href="s.url"
-                      target="_blank"
-                      rel="noreferrer"
+                  <template v-else>
+                    <Button
+                      variant="accent"
+                      size="sm"
+                      :disabled="busy === t.name"
+                      @click="requestRestart(t)"
                     >
-                      {{ s.url.replace(/^https?:\/\//, "") }} ↗
-                    </a>
+                      Restart
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      :disabled="busy === t.name"
+                      @click="act(t.name, 'stop')"
+                    >
+                      Stop
+                    </Button>
+                  </template>
+                </div>
+              </div>
+
+              <div v-if="t.services?.length" class="dev-services" data-test-id="dev-services">
+                <div class="dev-services-label">
+                  Services
+                  <span class="dev-services-note"
+                    >booted before the target, each on its own port</span
+                  >
+                </div>
+                <!-- #0843: one sub-row per companion service: its own status pill,
+                   the real port it was given, its PID, and a collapsible output. -->
+                <div
+                  v-for="s in t.services"
+                  :key="s.name"
+                  class="dev-service"
+                  :data-status="s.status"
+                >
+                  <div class="dev-service-head">
+                    <span class="dev-state-pill" :data-status="s.status">
+                      <span class="dev-dot"></span>{{ STATE_LABEL[s.status] }}
+                    </span>
+                    <code class="dev-service-name">{{ s.name }}</code>
+                    <span v-if="typeof s.port === 'number'" class="dev-service-port">
+                      <code>:{{ s.port }}</code>
+                    </span>
+                    <span v-if="s.pid !== undefined" class="dev-service-pid">PID {{ s.pid }}</span>
+                    <span class="dev-service-side">
+                      <a
+                        v-if="s.url && s.status === 'running'"
+                        class="dev-open"
+                        :href="s.url"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {{ s.url.replace(/^https?:\/\//, "") }} ↗
+                      </a>
+                      <button
+                        v-if="s.log.length"
+                        type="button"
+                        class="dev-log-toggle"
+                        :aria-label="
+                          isServiceLogExpanded(t, s.name) ? 'Collapse output' : 'Expand output'
+                        "
+                        :aria-expanded="isServiceLogExpanded(t, s.name)"
+                        :data-tip="
+                          isServiceLogExpanded(t, s.name)
+                            ? 'Collapse the service output'
+                            : 'Expand the service output'
+                        "
+                        @click="toggleServiceLog(t, s.name)"
+                      >
+                        <ChevronDown
+                          class="size-3.5 dev-log-chev"
+                          :class="{ open: isServiceLogExpanded(t, s.name) }"
+                        />
+                      </button>
+                    </span>
+                  </div>
+                  <p v-if="s.error" class="dev-service-error">{{ s.error }}</p>
+                  <pre
+                    v-show="isServiceLogExpanded(t, s.name) && s.log.length"
+                    class="dev-log-body dev-service-log"
+                    tabindex="0"
+                    role="region"
+                    :aria-label="`Output of service ${s.name} for ${t.label}`"
+                  ><code>{{ fullLog(s.log) }}</code></pre>
+                </div>
+              </div>
+
+              <section
+                v-if="t.status === 'failed' && (t.failure || t.error)"
+                class="dev-failure dev-summary"
+                role="alert"
+              >
+                <template v-if="t.failure">
+                  <p class="dev-summary-what">{{ t.failure.what }}</p>
+                  <p class="dev-summary-line">
+                    <span class="dev-summary-key">Likely cause</span> {{ t.failure.cause }}
+                  </p>
+                  <p class="dev-summary-line">
+                    <span class="dev-summary-key">How to fix</span> {{ t.failure.fix }}
+                  </p>
+                  <div v-if="t.failure.holder" class="dev-holder">
+                    <p class="dev-summary-line dev-holder-line">
+                      <span class="dev-summary-key">Held by</span>
+                      <code class="dev-holder-command">{{ t.failure.holder.command }}</code>
+                      <span class="dev-holder-pid">PID {{ t.failure.holder.pid }}</span>
+                      <span v-if="t.failure.holder.stale" class="dev-holder-stale"
+                        >left over from an earlier run</span
+                      >
+                    </p>
+                    <Button
+                      v-if="t.failure.canStopHolder"
+                      variant="outline"
+                      size="sm"
+                      :disabled="busy === t.name"
+                      @click="stopHolder(t)"
+                    >
+                      Stop the process holding it
+                    </Button>
+                  </div>
+                  <p
+                    v-else-if="t.failure.kind === 'port-in-use' && t.failure.port !== undefined"
+                    class="dev-summary-hint"
+                  >
+                    Run
+                    <code>lsof -iTCP:{{ t.failure.port }} -sTCP:LISTEN -t</code>
+                    to find the process holding the port.
+                  </p>
+                  <div v-if="aiSummariesEnabled" class="dev-ai">
+                    <Button
+                      v-if="!aiSummary[t.name]"
+                      variant="ghost"
+                      size="sm"
+                      :disabled="aiBusy !== null"
+                      @click="explainFailure(t)"
+                    >
+                      {{ aiBusy === t.name ? "Explaining…" : "Explain with AI" }}
+                    </Button>
+                    <p v-if="aiSummary[t.name]" class="dev-ai-text">
+                      <span class="dev-summary-key">AI summary</span> {{ aiSummary[t.name] }}
+                    </p>
+                    <p v-if="aiSummaryError[t.name]" class="dev-ai-error">
+                      {{ aiSummaryError[t.name] }}
+                    </p>
+                  </div>
+                </template>
+                <p v-if="t.error" class="dev-summary-reported">
+                  <span class="dev-summary-key">Reported</span> <code>{{ t.error }}</code>
+                </p>
+              </section>
+
+              <div v-if="t.log.length" class="dev-log">
+                <div class="dev-log-head" :class="{ collapsed: !isLogExpanded(t) }">
+                  <span>Last output</span>
+                  <span class="dev-log-meta">
+                    <span class="dev-log-count">{{ t.log.length }} lines</span>
                     <button
-                      v-if="s.log.length"
                       type="button"
                       class="dev-log-toggle"
-                      :aria-label="
-                        isServiceLogExpanded(t, s.name) ? 'Collapse output' : 'Expand output'
-                      "
-                      :aria-expanded="isServiceLogExpanded(t, s.name)"
-                      :data-tip="
-                        isServiceLogExpanded(t, s.name)
-                          ? 'Collapse the service output'
-                          : 'Expand the service output'
-                      "
-                      @click="toggleServiceLog(t, s.name)"
+                      :data-tip="isLogExpanded(t) ? 'Collapse the output' : 'Expand the output'"
+                      :aria-label="isLogExpanded(t) ? 'Collapse output' : 'Expand output'"
+                      :aria-expanded="isLogExpanded(t)"
+                      @click="toggleLog(t)"
                     >
                       <ChevronDown
                         class="size-3.5 dev-log-chev"
-                        :class="{ open: isServiceLogExpanded(t, s.name) }"
+                        :class="{ open: isLogExpanded(t) }"
                       />
                     </button>
                   </span>
                 </div>
-                <p v-if="s.error" class="dev-service-error">{{ s.error }}</p>
                 <pre
-                  v-show="isServiceLogExpanded(t, s.name) && s.log.length"
-                  class="dev-log-body dev-service-log"
+                  v-show="isLogExpanded(t)"
+                  class="dev-log-body"
                   tabindex="0"
                   role="region"
-                  :aria-label="`Output of service ${s.name} for ${t.label}`"
-                ><code>{{ fullLog(s.log) }}</code></pre>
+                  :data-max-lines="MAX_LOG_LINES"
+                  :aria-label="`Last ${MAX_LOG_LINES} output lines for ${t.label} — scroll for the full log`"
+                ><code>{{ fullLog(t.log) }}</code></pre>
               </div>
-            </div>
+              <p v-else class="dev-log-empty">No output yet.</p>
+            </article>
+          </section>
 
-            <section
-              v-if="t.status === 'failed' && (t.failure || t.error)"
-              class="dev-failure dev-summary"
-              role="alert"
-            >
-              <template v-if="t.failure">
-                <p class="dev-summary-what">{{ t.failure.what }}</p>
-                <p class="dev-summary-line">
-                  <span class="dev-summary-key">Likely cause</span> {{ t.failure.cause }}
-                </p>
-                <p class="dev-summary-line">
-                  <span class="dev-summary-key">How to fix</span> {{ t.failure.fix }}
-                </p>
-                <div v-if="t.failure.holder" class="dev-holder">
-                  <p class="dev-summary-line dev-holder-line">
-                    <span class="dev-summary-key">Held by</span>
-                    <code class="dev-holder-command">{{ t.failure.holder.command }}</code>
-                    <span class="dev-holder-pid">PID {{ t.failure.holder.pid }}</span>
-                    <span v-if="t.failure.holder.stale" class="dev-holder-stale"
-                      >left over from an earlier run</span
-                    >
-                  </p>
-                  <Button
-                    v-if="t.failure.canStopHolder"
-                    variant="outline"
-                    size="sm"
-                    :disabled="busy === t.name"
-                    @click="stopHolder(t)"
-                  >
-                    Stop the process holding it
-                  </Button>
-                </div>
-                <p
-                  v-else-if="t.failure.kind === 'port-in-use' && t.failure.port !== undefined"
-                  class="dev-summary-hint"
-                >
-                  Run
-                  <code>lsof -iTCP:{{ t.failure.port }} -sTCP:LISTEN -t</code>
-                  to find the process holding the port.
-                </p>
-                <div v-if="aiSummariesEnabled" class="dev-ai">
-                  <Button
-                    v-if="!aiSummary[t.name]"
-                    variant="ghost"
-                    size="sm"
-                    :disabled="aiBusy !== null"
-                    @click="explainFailure(t)"
-                  >
-                    {{ aiBusy === t.name ? "Explaining…" : "Explain with AI" }}
-                  </Button>
-                  <p v-if="aiSummary[t.name]" class="dev-ai-text">
-                    <span class="dev-summary-key">AI summary</span> {{ aiSummary[t.name] }}
-                  </p>
-                  <p v-if="aiSummaryError[t.name]" class="dev-ai-error">
-                    {{ aiSummaryError[t.name] }}
-                  </p>
-                </div>
-              </template>
-              <p v-if="t.error" class="dev-summary-reported">
-                <span class="dev-summary-key">Reported</span> <code>{{ t.error }}</code>
-              </p>
-            </section>
-
-            <div v-if="t.log.length" class="dev-log">
-              <div class="dev-log-head" :class="{ collapsed: !isLogExpanded(t) }">
-                <span>Last output</span>
-                <span class="dev-log-meta">
-                  <span class="dev-log-count">{{ t.log.length }} lines</span>
-                  <button
-                    type="button"
-                    class="dev-log-toggle"
-                    :data-tip="isLogExpanded(t) ? 'Collapse the output' : 'Expand the output'"
-                    :aria-label="isLogExpanded(t) ? 'Collapse output' : 'Expand output'"
-                    :aria-expanded="isLogExpanded(t)"
-                    @click="toggleLog(t)"
-                  >
-                    <ChevronDown
-                      class="size-3.5 dev-log-chev"
-                      :class="{ open: isLogExpanded(t) }"
-                    />
-                  </button>
-                </span>
-              </div>
-              <pre
-                v-show="isLogExpanded(t)"
-                class="dev-log-body"
-                tabindex="0"
-                role="region"
-                :data-max-lines="MAX_LOG_LINES"
-                :aria-label="`Last ${MAX_LOG_LINES} output lines for ${t.label} — scroll for the full log`"
-              ><code>{{ fullLog(t.log) }}</code></pre>
-            </div>
-            <p v-else class="dev-log-empty">No output yet.</p>
-          </article>
-        </section>
-
-        <p v-if="message" class="dev-message" role="status" aria-live="polite">{{ message }}</p>
+          <p v-if="message" class="dev-message" role="status" aria-live="polite">{{ message }}</p>
+        </template>
       </template>
-    </template>
+    </div>
 
     <ConfirmDialog
       :open="confirmRestart !== null"
