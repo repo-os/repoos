@@ -2,16 +2,16 @@
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-24T22:52:19Z"
+updated_at: "2026-10-24T22:52:20Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-24T22:51:41Z · created · njachowski@gmail.com
 - 2026-10-24T22:52:12Z · status inbox→ready
 - 2026-10-24T22:52:19Z · cli_override, model_override
+- 2026-10-24T22:52:20Z · status ready→active, branch
