@@ -2,7 +2,7 @@
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,9 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-24T23:13:39Z"
+updated_at: "2026-10-24T23:54:16Z"
+last_check_failure: "repoos check at 2026-10-24T23:39:03.710Z: repoos check failed: ◆ Check plan"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -37,10 +39,57 @@ Every standard nav page uses the full window height: the scrollable content area
 - Check how this interacts with #0949 (page scrolling, which pinned headers) and with #0950 (skeleton loaders; it edits the same view files and style.css, so keep your edits small and merge main often).
 - Do not add runtime dependencies.
 
+## Shots
+```json
+[
+{
+"label": "Work page at tall viewport",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page"
+},
+{
+"label": "Work page at short viewport",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page"
+},
+{
+"label": "Stories page at tall viewport",
+"target": "default",
+"route": "/stories",
+"highlight": ".stories-page"
+},
+{
+"label": "Stories page at short viewport",
+"target": "default",
+"route": "/stories",
+"highlight": ".stories-page"
+},
+{
+"label": "Checks page at tall viewport",
+"target": "default",
+"route": "/checks",
+"highlight": ".ck-page"
+},
+{
+"label": "Checks page at short viewport",
+"target": "default",
+"route": "/checks",
+"highlight": ".ck-page"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-24T22:51:41Z · created · njachowski@gmail.com
 - 2026-10-24T22:52:12Z · status inbox→ready
 - 2026-10-24T22:52:19Z · cli_override, model_override
 - 2026-10-24T22:52:20Z · status ready→active, branch
-- 2026-10-24T23:13:39Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-24T22:54:10Z · body
+- 2026-10-24T22:56:55Z · body
+- 2026-10-24T22:58:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T23:32:01Z · body
+- 2026-10-24T23:42:36Z · body
+- 2026-10-24T23:54:16Z · handoff failed · check failed after 2 automatic retries · the worktree changed while the gate was running (HEAD moved from 671525a3 to 4a029553) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
