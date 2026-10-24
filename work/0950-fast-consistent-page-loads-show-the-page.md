@@ -11,7 +11,7 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-24T16:42:33Z"
+updated_at: "2026-10-24T16:55:07Z"
 last_check_failure: "repoos check at 2026-10-24T16:37:17.878Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Deployments first load skeleton (target \"default\"): highlight .page-skeleton matched nothing on /deployments (http://127.0.0.1:43579/deployments); [missing-target] Dev first load skeleton (target \"default\"): highlight .page-skeleton matched nothing on /dev (http://127.0.0.1:43579/dev)"
 handoff_signal_retry_count: 1
 ---
@@ -95,4 +95,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T16:38:12Z · body
 - 2026-10-24T16:40:01Z · body
 - 2026-10-24T16:42:33Z · body
-
+- 2026-10-24T16:55:07Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Deployments first load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /deployments (http://127.0.0.1:39677/deployments?shotState=deployments%3Aloading); [missing-target] Dev first load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /dev (http://127.0.0.1:39677/dev?shotState=dev%3Aloading)
