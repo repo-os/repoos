@@ -133,3 +133,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T11:34:05Z · body
 - 2026-10-24T11:37:03Z · body
 - 2026-10-24T11:46:37Z · status active→review
+- 2026-10-24T11:46:37Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
