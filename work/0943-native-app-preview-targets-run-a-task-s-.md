@@ -11,7 +11,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: opencode
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T12:14:04Z"
+updated_at: "2026-10-24T13:02:04Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -48,82 +48,18 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 ```json
 [
 {
-  "label": "Native preview control while the app is building (dark)",
+  "label": "Task drawer: running native iOS preview card (platform, device, Stop)",
   "target": "default",
-  "route": "/work?task=9999",
+  "route": "/work?task=9999&tab=overview",
   "highlight": ".preview-live",
-  "steps": [
-    {
-      "waitFor": ".preview-live"
-    }
-  ],
-  "state": "drawer:nativePreviewBuilding",
-  "theme": "dark"
+  "state": "drawer:nativePreviewRunning"
 },
 {
-  "label": "Native preview control while the app is building (light)",
+  "label": "Task drawer: native macOS preview shows building state during a long build",
   "target": "default",
-  "route": "/work?task=9999",
+  "route": "/work?task=9999&tab=overview",
   "highlight": ".preview-live",
-  "steps": [
-    {
-      "waitFor": ".preview-live"
-    }
-  ],
-  "state": "drawer:nativePreviewBuilding",
-  "theme": "light"
-},
-{
-  "label": "Native preview control running (dark)",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".preview-live",
-  "steps": [
-    {
-      "waitFor": ".preview-live"
-    }
-  ],
-  "state": "drawer:nativePreviewRunning",
-  "theme": "dark"
-},
-{
-  "label": "Native preview control running (light)",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".preview-live",
-  "steps": [
-    {
-      "waitFor": ".preview-live"
-    }
-  ],
-  "state": "drawer:nativePreviewRunning",
-  "theme": "light"
-},
-{
-  "label": "Native preview failed: start control with error toast (dark)",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".preview-hint",
-  "steps": [
-    {
-      "waitFor": ".preview-hint"
-    }
-  ],
-  "state": "drawer:nativePreviewFailed",
-  "theme": "dark"
-},
-{
-  "label": "Native preview failed: start control with error toast (light)",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".preview-hint",
-  "steps": [
-    {
-      "waitFor": ".preview-hint"
-    }
-  ],
-  "state": "drawer:nativePreviewFailed",
-  "theme": "light"
+  "state": "drawer:nativePreviewBuilding"
 }
 ]
 ```
@@ -187,3 +123,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T12:04:02Z · message_queued at 2026-10-24T12:04:02.365Z
 - 2026-10-24T12:05:56Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-24T12:14:04Z · body
+- 2026-10-24T13:02:04Z · body
