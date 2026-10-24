@@ -23,6 +23,7 @@ import {
 import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
+import { emitKeypressEvents } from "node:readline";
 import { stdin as input, stdout as output } from "node:process";
 import { canaryGitignoreIgnore, canaryGitignoreNegation, canaryRelPath } from "../core/canary.js";
 import { scaffoldCanaryFile } from "../core/canary-repo.js";
@@ -33,6 +34,7 @@ import { importDocsInto, scaffoldDocsInto } from "./docs-io.js";
 import { gitAvailable, gitCommitAll, gitConfig, gitInit, isGitRepo } from "../core/git.js";
 import { c } from "../cli/colors.js";
 import { cmdServe } from "./serve.js";
+import { detectAgents, type DetectedAgent } from "../core/detect.js";
 
 const SAMPLE_TASK = (description: string, workDir: string) => `---
 id: "0001"
@@ -1042,6 +1044,96 @@ async function confirm(question: string, dflt: boolean): Promise<boolean> {
   return answer === "y" || answer === "yes";
 }
 
+/** Keyboard-only multiselect used by the optional first-run agent installer. */
+async function selectAgents(agents: DetectedAgent[]): Promise<DetectedAgent[]> {
+  if (!agents.length) return [];
+  console.log("  Select agents to install (↑/↓ move, space toggle, enter continue):");
+  let cursor = 0;
+  const selected = new Set<number>();
+  const render = () => {
+    process.stdout.write("\u001b[?25l");
+    agents.forEach((agent, index) => {
+      process.stdout.write(`\r\u001b[2K  ${index === cursor ? "›" : " "} [${selected.has(index) ? "x" : " "}] ${agent.name}\n`);
+    });
+    process.stdout.write(`\u001b[${agents.length}A`);
+  };
+  emitKeypressEvents(input);
+  if (input.isTTY) input.setRawMode(true);
+  render();
+  try {
+    return await new Promise((resolvePromise) => {
+      const onKey = (_: string, key: { name?: string; ctrl?: boolean }) => {
+        if (key.ctrl && key.name === "c") {
+          resolvePromise([]);
+          return;
+        }
+        if (key.name === "up") cursor = (cursor + agents.length - 1) % agents.length;
+        else if (key.name === "down") cursor = (cursor + 1) % agents.length;
+        else if (key.name === "space") selected.has(cursor) ? selected.delete(cursor) : selected.add(cursor);
+        else if (key.name === "return") {
+          input.off("keypress", onKey);
+          process.stdout.write(`\u001b[${agents.length}B\u001b[?25h\n`);
+          resolvePromise([...selected].sort().map((index) => agents[index]!));
+          return;
+        }
+        render();
+      };
+      input.on("keypress", onKey);
+    });
+  } finally {
+    if (input.isTTY) input.setRawMode(false);
+    process.stdout.write("\u001b[?25h");
+  }
+}
+
+/** Interactive-only offer. Detection and all user-facing hints come from detect.ts. */
+export async function offerCodingAgentInstall(options: {
+  isTTY: boolean;
+  detect?: () => Promise<DetectedAgent[]>;
+  select?: (agents: DetectedAgent[]) => Promise<DetectedAgent[]>;
+  ask?: (question: string) => Promise<string>;
+  install?: (command: string) => Promise<{ ok: boolean; summary: string }>;
+}): Promise<void> {
+  if (!options.isTTY) return;
+  const askUser = options.ask ?? ask;
+  const answer = (await askUser("\n  Install coding agents now? (y/N) ")).trim().toLowerCase();
+  if (answer !== "y" && answer !== "yes") return;
+  const agents = await (options.detect ?? detectAgents)();
+  const installed = agents.filter((agent) => agent.installed);
+  console.log("\n  Installed coding agents:");
+  if (!installed.length) console.log("    (none detected)");
+  for (const agent of installed) {
+    console.log(`    ${agent.name} — ${agent.headless ? "✓ headless-capable" : agent.headless === false ? "not headless-capable" : "headless unknown"}; ${agent.auth === true ? "✓ signed in" : agent.auth === false ? "not signed in" : "sign-in unknown"}`);
+  }
+  const missing = agents.filter((agent) => !agent.installed);
+  console.log("\n  Available to install:");
+  const chosen = await (options.select ?? selectAgents)(missing);
+  for (const agent of chosen) {
+    console.log(`\n  Install ${agent.name} with:\n    ${agent.installHint}`);
+    const confirmed = (await askUser("  Run this command? (y/N) ")).trim().toLowerCase();
+    if (confirmed !== "y" && confirmed !== "yes") continue;
+    const result = await (options.install ?? runInstallCommand)(agent.installHint);
+    console.log(`  ${result.ok ? "Install completed" : "Install failed"}: ${result.summary}`);
+    if (!result.ok) console.log(`  To install manually, run: ${agent.installHint}`);
+  }
+  const needsSignIn = installed.filter((agent) => agent.auth === false);
+  console.log("\n  Still needs sign-in:");
+  if (!needsSignIn.length) console.log("    (none detected)");
+  for (const agent of needsSignIn) console.log(`    ${agent.name}: ${agent.authHint ?? "sign in with the CLI"}`);
+}
+
+function runInstallCommand(command: string): Promise<{ ok: boolean; summary: string }> {
+  return new Promise((resolvePromise) => {
+    const child = spawn(command, { shell: true, stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    child.stdout?.on("data", (chunk: Buffer) => (stdout += chunk.toString()));
+    child.stderr?.on("data", (chunk: Buffer) => (stderr += chunk.toString()));
+    child.on("error", (error) => resolvePromise({ ok: false, summary: error.message }));
+    child.on("close", (code) => resolvePromise({ ok: code === 0, summary: (stderr || stdout).trim().split("\n").slice(-3).join(" ") || `exit code ${code}` }));
+  });
+}
+
 /** Split `--docs-from <path>` / `--force` off an init argument list. */
 export function parseDocsFromArgs(args: string[]): {
   positional: string[];
@@ -1902,6 +1994,8 @@ async function guidedNewRepo(opts: NewProjectOptions): Promise<void> {
     }
   }
 
+  if (interactive) await offerCodingAgentInstall({ isTTY: true });
+
   const doLaunch = interactive
     ? await confirm("\n  Launch the RepoOS web console now to start building?", true)
     : opts.launch;
@@ -2161,6 +2255,7 @@ export async function cmdInit(args: string[]): Promise<void> {
       console.log(c.dim("\n  Importing project docs from " + options.docsFrom + " …"));
       importDocsInto(root, config.docsDir, options.docsFrom, { force: options.force });
     }
+    await offerCodingAgentInstall({ isTTY: tty });
     if (created.length === 0) {
       warnAlreadySetUp(root, "Nothing to initialize here.");
       for (const f of skipped) console.log("  " + c.dim("exists  " + f));
