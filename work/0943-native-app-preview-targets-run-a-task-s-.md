@@ -3,9 +3,6 @@ id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -141,3 +138,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:37:32Z · body
 - 2026-10-24T14:37:45Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-24T14:37:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T14:37:45Z · needs_input
