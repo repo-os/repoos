@@ -236,7 +236,10 @@ export async function cmdMessage(args: string[]): Promise<number> {
 /** `repoos send-back` — reopen, start the engineer, then deliver feedback. */
 export async function cmdSendBack(args: string[]): Promise<number> {
   const { rest, opts, error } = parseCommonFlags(args);
-  if (error) { printErr(error); return 1; }
+  if (error) {
+    printErr(error);
+    return 1;
+  }
   let id: string | undefined;
   let message: string | undefined;
   let messageFile: string | undefined;
@@ -244,15 +247,30 @@ export async function cmdSendBack(args: string[]): Promise<number> {
     if (rest[i] === "--message") message = rest[++i];
     else if (rest[i] === "--message-file") messageFile = rest[++i];
     else if (!id) id = rest[i];
-    else { printErr(`Unexpected argument: ${rest[i]}`); return 1; }
+    else {
+      printErr(`Unexpected argument: ${rest[i]}`);
+      return 1;
+    }
   }
-  if (message !== undefined && messageFile !== undefined) { printErr("Use --message or --message-file, not both"); return 1; }
+  if (message !== undefined && messageFile !== undefined) {
+    printErr("Use --message or --message-file, not both");
+    return 1;
+  }
   if (messageFile !== undefined) {
-    try { message = messageFile === "-" ? readFileSync(0, "utf8") : readFileSync(messageFile, "utf8"); }
-    catch (e) { printErr(`Could not read message file: ${(e as Error).message}`); return 1; }
+    try {
+      message = messageFile === "-" ? readFileSync(0, "utf8") : readFileSync(messageFile, "utf8");
+    } catch (e) {
+      printErr(`Could not read message file: ${(e as Error).message}`);
+      return 1;
+    }
   }
   message = message?.trim();
-  if (!id || !message) { printErr('Usage: repoos send-back <id> (--message "…" | --message-file <file|->) [--json] [--port N]'); return 1; }
+  if (!id || !message) {
+    printErr(
+      'Usage: repoos send-back <id> (--message "…" | --message-file <file|->) [--json] [--port N]',
+    );
+    return 1;
+  }
   const api = new RepoOsApi({ port: opts.port });
   try {
     await ensureServer(api);
@@ -264,7 +282,10 @@ export async function cmdSendBack(args: string[]): Promise<number> {
       console.log(c.green("  ✓ ") + c.dim(`queued message to #${id}`));
     }
     return 0;
-  } catch (e) { printErr(`send-back failed: ${(e as RepoOsApiError).message}`); return 1; }
+  } catch (e) {
+    printErr(`send-back failed: ${(e as RepoOsApiError).message}`);
+    return 1;
+  }
 }
 
 export async function cmdReviewAgain(args: string[]): Promise<number> {

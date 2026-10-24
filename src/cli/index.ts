@@ -304,7 +304,9 @@ function main(): void {
       });
       break;
     case "send-back":
-      void cmdSendBack(rest).then((code) => { if (code !== 0) process.exitCode = code; });
+      void cmdSendBack(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
       break;
     case "review":
       void cmdReview(rest).then((code) => {

@@ -101,7 +101,12 @@ const GROUPS: readonly CommandGroup[] = [
         desc: "Move a task to a new status (file write) — --note only adds an activity note; it does not message the engineer",
         flags: '--note "..." · --force-not-merged',
       },
-      { name: "send-back", usage: 'send-back <id> (--message "…" | --message-file <file|->) [--json] [--port N]', desc: "Return a task to the engineer, start work, then queue feedback", flags: "--message · --message-file · --json · --port" },
+      {
+        name: "send-back",
+        usage: 'send-back <id> (--message "…" | --message-file <file|->) [--json] [--port N]',
+        desc: "Return a task to the engineer, start work, then queue feedback",
+        flags: "--message · --message-file · --json · --port",
+      },
       {
         name: "start",
         usage: "start <id> [--fresh] [--json] [--port N]",
