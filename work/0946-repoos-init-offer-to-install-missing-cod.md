@@ -2,7 +2,7 @@
 id: "0946"
 title: "repoos init: offer to install missing coding agents (checkbox list)"
 type: feature
-status: active
+status: ready
 priority: p2
 area: [core, docs]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repoos-init-offer-to-install-missing-cod
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T02:32:41Z"
-updated_at: "2026-10-24T04:07:06Z"
+updated_at: "2026-10-24T08:21:50Z"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ During interactive `repoos init` (TTY only; non-interactive init stays fully non
 - 2026-10-24T04:02:06Z · message_queued at 2026-10-24T04:02:06.604Z
 - 2026-10-24T04:02:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-24T04:07:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-24T08:21:50Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
