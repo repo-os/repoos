@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T11:29:00Z"
+updated_at: "2026-10-24T11:29:01Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 2
@@ -125,3 +125,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T11:15:05Z · status review→active
 - 2026-10-24T11:17:24Z · body
 - 2026-10-24T11:29:00Z · status active→review
+- 2026-10-24T11:29:01Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
