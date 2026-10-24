@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-24T13:23:55Z"
+review_passes: 6
 id: "0947"
 title: Show dev target actions based on running state
 type: feature
@@ -9,8 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T13:23:54Z"
-review_passes: 5
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -147,3 +147,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T13:23:05Z · status active→review
 - 2026-10-24T13:23:06Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-24T13:23:54Z · note: review pass 6: good to go
+
