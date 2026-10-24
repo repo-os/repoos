@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
@@ -101,3 +102,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-24T23:19:29Z · body
 - 2026-10-24T23:22:27Z · body
 - 2026-10-24T23:23:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
