@@ -3,9 +3,6 @@ id: "0946"
 title: "repoos init: offer to install missing coding agents (checkbox list)"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p2
 area: [core, docs]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/repoos-init-offer-to-install-missing-cod
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T02:32:41Z"
-updated_at: "2026-10-24T06:00:27Z"
+updated_at: "2026-10-24T06:04:39Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:33:42.018Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:33:59.984Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T04:34:17.689Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -65,3 +62,4 @@ During interactive `repoos init` (TTY only; non-interactive init stays fully non
 - 2026-10-24T04:33:42Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-24T04:33:31.480855Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
 - 2026-10-24T04:33:59Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · 2026-10-24T04:33:49.382272Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
 - 2026-10-24T04:34:17Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-24T06:04:39Z · needs_input
