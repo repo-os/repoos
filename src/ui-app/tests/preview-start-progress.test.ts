@@ -96,6 +96,10 @@ function installFetch(holdPreview: boolean) {
     release = r;
   });
   vi.stubGlobal("EventSource", FakeEventSource);
+  // jsdom has no Element.scrollTo, and the drawer's scroll-to-bottom calls it from
+  // async continuations: without this an unhandled rejection fails the whole run
+  // even though every test passes.
+  Element.prototype.scrollTo = vi.fn() as unknown as typeof Element.prototype.scrollTo;
   FakeEventSource.instances = [];
   vi.stubGlobal(
     "fetch",
