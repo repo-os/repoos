@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-24T16:28:46Z"
-review_passes: 1
+last_close_out_gate_ms: 127919
+last_close_out_gate_at: "2026-10-24T16:41:05.990Z"
 id: "0949"
 title: Fix page scrolling and Secrets layout
 type: feature
@@ -15,6 +15,8 @@ model_override: grok-4.7-low
 pm_cli_override: codex
 pm_model_override: gpt-6-luna
 created_at: "2026-10-24T16:04:07Z"
+updated_at: "2026-10-24T16:41:05Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -94,4 +96,5 @@ And on secret entries you don't need to mention the source on each, because they
 - 2026-10-24T16:27:46Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-10-24T16:27:47Z · status active→review
 - 2026-10-24T16:28:46Z · note: review pass 1: good to go
+- 2026-10-24T16:41:05Z · close-out gate completed in 128s
 
