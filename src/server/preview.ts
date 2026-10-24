@@ -20,7 +20,7 @@ import { spawn, execFileSync, type ChildProcess } from "node:child_process";
 import { createServer as createTcpServer } from "node:net";
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
-import type { RepoOSConfig, Status, Task } from "../core/types.js";
+import type { NativeLaunchMode, RepoOSConfig, Status, Task } from "../core/types.js";
 import {
   buildProjectConsumerEnv,
   projectEnvironmentConsumer,
@@ -206,86 +206,106 @@ const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms
 const NATIVE_LAUNCH_STARTUP_GRACE_MS = 150;
 
 /**
- * Wait out a native launcher's fate through the startup grace: a one-shot
- * handoff that exits 0 during the grace means "launched". Whether a later
- * exit means anything depends on the launcher's declared lifetime
- * (`launch_waits`, #0943):
+ * Track a native launcher's fate through the startup grace under its DECLARED
+ * lifetime (`launch_mode`, #0943).
  *
- * - one-shot (default): the launch command is a handoff that exits 0 when
- *   the app has been launched — including a SLOW one, like the iOS
- *   `simctl boot && install && launch` recipe, which finishes long after
- *   the grace while the simulator app keeps running. Its exit 0 at ANY
- *   time completes the handoff and leaves the preview running; only a
- *   non-zero exit means the launch failed and drops the preview.
- * - waiting (`launch_waits = true`, e.g. `open -W`): the launcher stays
- *   alive while the app runs, so it OWNS the running preview and its later
- *   exit — of any kind, even a clean one when the user quits the app —
- *   drops the preview through `onExit` (the same cleanup web previews get
- *   from `child.on("exit")`).
+ * A launcher's exit code alone cannot say what happened, because the same
+ * event — "the launcher exited 0 after the 150ms grace" — legitimately means
+ * two different things and no code can tell them apart:
  *
- * Without the declaration the two are indistinguishable: a slow one-shot
- * and `open -W` returning after a user quit are both "exit 0 after the
- * grace", and conflating them either kills a freshly launched app's
- * preview or leaves a stale card for a quit one (#0943).
+ * - `launch_mode = "foreground"` (the default): the launcher's lifetime IS
+ *   the app's lifetime (`open -W`, an `adb … && adb logcat` shell). ANY exit
+ *   during the grace is a launch failure — including exit 0, because a
+ *   foreground launcher returning immediately never proved the app is up —
+ *   and ANY exit after it (code 0, non-zero or signal, e.g. the user quit the
+ *   app) removes the preview from the registry and SSE, exactly like a web
+ *   preview whose server process exits.
+ * - `launch_mode = "handoff"`: the launcher is a one-shot that starts the app
+ *   and exits (the documented iOS `bootstatus && install && launch` shell).
+ *   Exit 0 at ANY time — during or after the grace — means "launched": the
+ *   preview stays `running` until the user presses Stop. A non-zero exit or a
+ *   spawn error (during or after the grace) is a failure that cleans up.
+ *
+ * The row declares the mode; this function never guesses from the code (#0943
+ * review rounds 3 and 4 each guessed one reading and were refuted by the
+ * other).
  *
  * Exported so the state machine can be driven directly in tests with fake
- * children (spawn errors, exits before/after the grace).
+ * children (spawn errors, exits before/after the grace, both modes).
  */
 export async function awaitNativeLaunch(
   child: ChildProcess,
   onExit: () => void,
-  opts: { waits?: boolean } = {},
+  opts: { mode?: NativeLaunchMode } = {},
 ): Promise<{ error?: string }> {
+  const mode: NativeLaunchMode = opts.mode ?? "foreground";
   return await new Promise((resolveResult) => {
-    let settled = false;
+    let graceOver = false;
     let tail = "";
     const timer = setTimeout(() => {
-      settled = true;
+      graceOver = true;
       resolveResult({});
     }, NATIVE_LAUNCH_STARTUP_GRACE_MS);
     const collect = (chunk: Buffer) => {
       tail = `${tail}${chunk.toString("utf8")}`.slice(-4000).trim();
     };
-    const fail = (message: string) => {
-      if (settled) {
-        onExit();
-        return;
-      }
-      settled = true;
+    /**
+     * A failure DURING the startup grace: the start itself fails, so report
+     * it to the caller — `doStart` clears the building entry and kills the
+     * group itself, and the preview was never registered as running.
+     */
+    const failDuringGrace = (message: string): void => {
       clearTimeout(timer);
       resolveResult({ error: `${message}${tail ? ` — ${tail}` : ""}` });
     };
+    /**
+     * The launcher is gone AFTER the grace and the preview must go with it
+     * (any foreground exit; a handoff failure): drop registry + SSE through
+     * the caller's `onExit`, the same cleanup a web preview's `exit` handler
+     * runs.
+     */
+    const dropAfterGrace = (): void => {
+      onExit();
+    };
     child.stdout?.on("data", collect);
     child.stderr?.on("data", collect);
-    child.once("error", (error) => fail(`could not spawn launch command: ${error.message}`));
+    child.once("error", (error) => {
+      const message = `could not spawn launch command: ${error.message}`;
+      if (graceOver) dropAfterGrace();
+      else failDuringGrace(message);
+    });
     child.once("exit", (code, signal) => {
-      // A ONE-SHOT launcher (the default) is a handoff: `simctl launch`,
-      // `adb shell am start`, or a whole `boot && install && launch` shell.
-      // Its successful exit means the app was launched and the launcher was
-      // never meant to stay alive — during the grace or any time after it —
-      // so the preview stays running; only a non-zero exit indicates
-      // failure. (Before #0943's fix a handoff that outlived the grace was
-      // conflated with a waiting launcher and dropped a freshly launched
-      // app's preview.)
-      if (code === 0 && (!settled || !opts.waits)) {
-        if (!settled) {
-          settled = true;
-          clearTimeout(timer);
-          resolveResult({});
+      const exited = `launch command exited${
+        code === null ? ` (${signal ?? "signal"})` : ` with code ${code}`
+      }`;
+      const failed = (message: string): void => {
+        if (graceOver) dropAfterGrace();
+        else failDuringGrace(message);
+      };
+      if (mode === "handoff") {
+        // A one-shot handoff succeeds by exiting 0 — at any time. Before the
+        // grace it completes the start; after it, the app was already
+        // launched and keeps the preview running until Stop. Anything else
+        // (non-zero exit, signal) means the launch failed.
+        if (code === 0) {
+          if (!graceOver) {
+            clearTimeout(timer);
+            resolveResult({});
+          }
+          return;
         }
+        failed(
+          `${exited} — launch_mode = "handoff" expects the launcher to exit 0 once the app has launched`,
+        );
         return;
       }
-      if (code === 0) {
-        // A WAITING launcher (`launch_waits = true`) was alive past the
-        // grace because it OWNS the running preview (for example `open -W`
-        // for the macOS Hub). When it later ends — even cleanly, such as the
-        // user quitting the app — it must drop out of the registry and SSE
-        // exactly like a web preview whose server process exits (#0943).
-        onExit();
-        return;
-      }
-      fail(
-        `launch command exited${code === null ? ` (${signal ?? "signal"})` : ` with code ${code}`}`,
+      // foreground: the launcher owns the preview, so its end is the app's end
+      // (after the grace) or a launch that never proved the app is up (during
+      // it) — either way the preview must not stay registered as running.
+      failed(
+        graceOver
+          ? exited
+          : `${exited} — launch_mode = "foreground" needs a launcher that stays alive while the app runs; use launch_mode = "handoff" for a one-shot launcher`,
       );
     });
   });
@@ -424,8 +444,8 @@ export type PreviewTarget = {
     platform: "macos" | "ios" | "android";
     buildCommand: string;
     launchCommand: string;
-    /** See PreviewTargetConfig.launchWaits — waiting vs one-shot launcher. */
-    launchWaits?: boolean;
+    /** See PreviewTargetConfig.launchMode — the declared launcher lifetime. */
+    launchMode?: NativeLaunchMode;
     stop?: string;
     cwd?: string;
     device?: string;
@@ -602,7 +622,7 @@ function previewCandidates(
                 platform: t.platform,
                 buildCommand: t.buildCommand,
                 launchCommand: t.launchCommand,
-                launchWaits: t.launchWaits,
+                launchMode: t.launchMode,
                 stop: t.stop,
                 cwd: t.cwd,
                 device: t.device,
@@ -1321,7 +1341,7 @@ export class PreviewManager {
         }
       };
       const launchHealth = await awaitNativeLaunch(launch, onExit, {
-        waits: target.native.launchWaits,
+        mode: target.native.launchMode ?? "foreground",
       });
       if (launchHealth.error) {
         if (processGroup) {

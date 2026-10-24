@@ -57,7 +57,12 @@ import {
   DEFAULT_ACTIVITY_ANIMATION_SIZE,
   normalizeActivityAnimationSize,
 } from "./activity-animation.js";
-import { DEFAULT_MAX_AUTO_SHOTS, STATUSES } from "./types.js";
+import {
+  DEFAULT_MAX_AUTO_SHOTS,
+  NATIVE_LAUNCH_MODES,
+  STATUSES,
+  type NativeLaunchMode,
+} from "./types.js";
 import { agentModelAllowRows } from "./budget-allowlist.js";
 import {
   DEFAULT_ENGINEER_CRASH_FAILOVER_THRESHOLD,
@@ -1003,8 +1008,20 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
             ? r.launchCommand.trim()
             : "";
       const targetCommand = typeof r.command === "string" ? r.command.trim() : "";
+      // Launcher lifetime is an explicit per-row declaration (#0943): the exit
+      // code of a launcher cannot say whether it means "the app quit" (a
+      // foreground `open -W`) or "launched" (a one-shot `simctl` shell), so
+      // the row says which. An unrecognized value is never silently dropped:
+      // the row is dropped here and `repoos doctor` names the row, the bad
+      // value and the two allowed ones (see doctor.ts checkConfigValueProblems).
+      const launchModeRaw = r.launch_mode ?? r.launchMode;
+      const launchModeValid =
+        launchModeRaw === undefined ||
+        launchModeRaw === null ||
+        NATIVE_LAUNCH_MODES.includes(launchModeRaw as NativeLaunchMode);
       if (kind === "native" ? !platform || !buildCommand || !launchCommand : !targetCommand)
         continue;
+      if (kind === "native" && !launchModeValid) continue;
       const areasRaw = r.areas;
       const areas = (Array.isArray(areasRaw) ? areasRaw : [areasRaw])
         .map((a) => (typeof a === "string" ? a.trim() : ""))
@@ -1033,12 +1050,14 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
         if (Number.isFinite(timeoutMs) && timeoutMs > 0) target.timeoutMs = timeoutMs;
         const device = typeof r.device === "string" ? r.device.trim() : "";
         if (device) target.device = device;
-        // Launcher lifetime (#0943): absent/false is a one-shot handoff (the
-        // launch command exits 0 when the app has launched, however slowly);
-        // `launch_waits = true` declares a waiting launcher (`open -W`) whose
-        // later exit ends the preview.
-        const launchWaits = r.launch_waits ?? r.launchWaits;
-        if (typeof launchWaits === "boolean") target.launchWaits = launchWaits;
+        // Declared launcher lifetime (#0943): absent means the default mode,
+        // `launch_mode = "foreground"` — the launcher's lifetime is the app's.
+        // `"handoff"` is the one-shot launcher that exits 0 when the app has
+        // launched. Any other value was rejected above (row dropped) and is
+        // reported by `repoos doctor`.
+        if (launchModeRaw !== undefined && launchModeRaw !== null) {
+          target.launchMode = launchModeRaw as NativeLaunchMode;
+        }
         if (r.env && typeof r.env === "object" && !Array.isArray(r.env))
           target.env = r.env as Record<string, string>;
       }
@@ -3796,7 +3815,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: [],
       description:
-        "Native app targets use [[preview.targets]] with kind = native, platform, areas, build_command and launch_command; optional stop, cwd, env, requires, timeout_ms, device and launch_waits are configured in repoos.toml.",
+        'Native app targets use [[preview.targets]] with kind = native, platform, areas, build_command and launch_command; optional stop, cwd, env, requires, timeout_ms, device and launch_mode ("foreground" or "handoff") are configured in repoos.toml.',
     },
     {
       // Command-based capture targets (#0761). Deliberately raw-TOML-only, like
@@ -4060,7 +4079,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "preview.targets.platform",
   "preview.targets.build_command",
   "preview.targets.launch_command",
-  "preview.targets.launch_waits",
+  "preview.targets.launch_mode",
   "preview.targets.stop",
   "preview.targets.requires",
   "preview.targets.timeout_ms",

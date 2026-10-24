@@ -37,7 +37,7 @@ import {
   SUPPORTED_TOML_KEYS,
   worktreesDir,
 } from "./config.js";
-import { STATUSES, UI_THEMES, type RepoOSConfig } from "./types.js";
+import { NATIVE_LAUNCH_MODES, STATUSES, UI_THEMES, type RepoOSConfig } from "./types.js";
 import { normalizeActivityAnimationSize } from "./activity-animation.js";
 import { checkBuildForRoot } from "./build.js";
 import {
@@ -726,6 +726,18 @@ export function findConfigValueProblems(parsed: Record<string, unknown>): string
         const usable = (v: unknown): boolean => typeof v === "string" && Boolean(v.trim());
         if (!usable(row.build_command ?? row.buildCommand)) issues.push("missing build_command");
         if (!usable(row.launch_command ?? row.launchCommand)) issues.push("missing launch_command");
+        // Launcher lifetime (#0943): absent means the default `foreground`.
+        // Anything else is a typo the parser drops the row for, so name the
+        // row, the value and both allowed values instead of leaving the
+        // area silently preview-less.
+        const mode = row.launch_mode ?? row.launchMode;
+        if (
+          mode !== undefined &&
+          mode !== null &&
+          !(typeof mode === "string" && (NATIVE_LAUNCH_MODES as readonly string[]).includes(mode))
+        ) {
+          issues.push(`launch_mode = ${JSON.stringify(mode)} (expected "foreground" or "handoff")`);
+        }
       } else if (!(typeof row.command === "string" && row.command.trim())) {
         issues.push(
           kind
@@ -735,7 +747,7 @@ export function findConfigValueProblems(parsed: Record<string, unknown>): string
       }
       if (!issues.length) return;
       const dropped = isNative
-        ? issues.some((s) => /platform|build_command|launch_command/.test(s))
+        ? issues.some((s) => /platform|build_command|launch_command|launch_mode/.test(s))
         : issues.some((s) => s.startsWith("missing command"));
       problems.push(
         `[[preview.targets]] ${name}: ${issues.join("; ")}${
