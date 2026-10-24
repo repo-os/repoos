@@ -11,7 +11,7 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-24T16:20:15Z"
+updated_at: "2026-10-24T16:21:25Z"
 ---
 ## Problem
 
@@ -86,3 +86,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T16:16:21Z · body
 - 2026-10-24T16:18:29Z · body
 - 2026-10-24T16:20:15Z · body
+- 2026-10-24T16:21:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
