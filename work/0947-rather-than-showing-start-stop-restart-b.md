@@ -3,6 +3,8 @@ id: "0947"
 title: Show dev target actions based on running state
 type: feature
 status: active
+needs_input: true
+needs_input_reason: review-failed
 priority: p2
 area: ui
 assigned_to: ai
@@ -111,3 +113,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T08:18:23Z · body
 - 2026-10-24T08:19:27Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-24T08:19:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T08:19:27Z · needs_input
