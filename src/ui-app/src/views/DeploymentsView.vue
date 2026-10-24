@@ -15,6 +15,8 @@ import DialogDescription from "../components/ui/dialog/description.vue";
 import { api, JSON_OPTS } from "../api";
 import { useAuthStore } from "../stores/auth";
 import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
+import PageSkeleton from "../components/PageSkeleton.vue";
+import { refreshPageData, invalidatePageData } from "../composables/page-data-cache";
 
 interface DeploymentRow {
   name: string;
@@ -228,11 +230,15 @@ async function load(): Promise<void> {
       };
       return;
     }
-    const deployments = await api<Omit<DeploymentsStatus, "environments">>("/api/deployments");
-    const environments = canBindEnvironment.value
-      ? await api<{ environments: { id: string }[] }>("/api/project-environments")
-      : { environments: [] };
-    status.value = { ...deployments, environments: environments.environments ?? [] };
+    await refreshPageData("deployments", async () => {
+      const [deployments, environments] = await Promise.all([
+        api<Omit<DeploymentsStatus, "environments">>("/api/deployments"),
+        canBindEnvironment.value
+          ? api<{ environments: { id: string }[] }>("/api/project-environments")
+          : Promise.resolve({ environments: [] }),
+      ]);
+      return { ...deployments, environments: environments.environments ?? [] };
+    }, (value) => { status.value = value; }, (err) => { error.value = err instanceof Error ? err.message : String(err); });
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -250,6 +256,7 @@ async function bindEnvironment(row: DeploymentRow, environment: string | null): 
         keys: [],
       }),
     );
+    invalidatePageData("deployments");
     await load();
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
@@ -281,6 +288,7 @@ async function deploy(): Promise<void> {
       JSON_OPTS("POST", { branch }),
     );
     message.value = result.output;
+    invalidatePageData("deployments");
     confirmBranch.value = null;
     await load();
   } catch (err) {
@@ -338,7 +346,8 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <div v-if="loading" class="spin"></div>
+    <PageSkeleton v-if="loading && !status" kind="cards" />
+    <p v-if="error && status" class="dep-err" role="status">Refresh failed: {{ error }}</p>
     <p v-else-if="error && !status" class="dep-err">{{ error }}</p>
 
     <template v-else-if="status">

@@ -17,6 +17,8 @@ import DialogClose from "../components/ui/dialog/close.vue";
 import { ApiError, api, JSON_OPTS } from "../api";
 import { useAuthStore } from "../stores/auth";
 import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
+import PageSkeleton from "../components/PageSkeleton.vue";
+import { refreshPageData } from "../composables/page-data-cache";
 
 type Environment = { id: string; sources: { id: string; path: string; examplePath?: string }[] };
 type KeyRow = {
@@ -69,10 +71,11 @@ async function loadEnvironments(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    const data = await api<{ environments: Environment[] }>("/api/project-environments");
-    environments.value = data.environments;
-    if (!selected.value || !data.environments.some((env) => env.id === selected.value))
-      selected.value = data.environments[0]?.id ?? "";
+    await refreshPageData("project-environments", () => api<{ environments: Environment[] }>("/api/project-environments"), (data) => {
+      environments.value = data.environments;
+      if (!selected.value || !data.environments.some((env) => env.id === selected.value))
+        selected.value = data.environments[0]?.id ?? "";
+    }, (e) => { error.value = safeError(e); });
     await loadSnapshot();
   } catch (e) {
     error.value = safeError(e);
@@ -122,12 +125,10 @@ async function loadSnapshot(): Promise<void> {
     return;
   }
   try {
-    snapshot.value = await api<Snapshot>(
+    await refreshPageData(`secrets:${selected.value}`, () => api<Snapshot>(
       `/api/project-environments/${encodeURIComponent(selected.value)}/secrets`,
-    );
-    error.value = "";
+    ), (value) => { snapshot.value = value; error.value = ""; }, (e) => { error.value = safeError(e); });
   } catch (e) {
-    snapshot.value = null;
     error.value = safeError(e);
   }
 }
@@ -290,9 +291,7 @@ onMounted(() => {
       </p>
       <Button variant="accent" @click="createOpen = true">Create environment</Button>
     </section>
-    <section v-else-if="loading" class="secrets-empty" aria-live="polite">
-      Loading environment metadata…
-    </section>
+    <PageSkeleton v-else-if="loading" kind="table" />
     <section v-else-if="snapshot" class="secrets-ledger" aria-label="Environment keys">
       <div class="secrets-ledger-top">
         <div>
