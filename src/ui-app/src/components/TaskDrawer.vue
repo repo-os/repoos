@@ -2527,6 +2527,14 @@ const landable = computed(() => {
   return result;
 });
 
+/** Keep the landing checklist focused on blockers until the user expands it. */
+const landableShowAll = ref(false);
+const visibleLandableChecks = computed(() =>
+  landableShowAll.value
+    ? (landable.value?.checks ?? [])
+    : (landable.value?.checks.filter((check) => check.status === "fail") ?? []),
+);
+
 /** The first failing check, used as the Move to done button's explanation. */
 const landableFailureTitle = computed(() => {
   const fail = landable.value?.checks.find((c) => c.status === "fail");
@@ -4824,8 +4832,17 @@ watch(
                   · {{ landable.summary.fail }} failing
                 </span>
               </div>
+              <button
+                v-if="landable.checks.length > 0"
+                type="button"
+                class="landable-toggle"
+                :aria-expanded="landableShowAll"
+                @click="landableShowAll = !landableShowAll"
+              >
+                {{ landableShowAll ? "Show failing checks" : `Show all ${landable.checks.length} checks` }}
+              </button>
               <ul class="landable-list">
-                <li v-for="check in landable.checks" :key="check.id" :class="`is-${check.status}`">
+                <li v-for="check in visibleLandableChecks" :key="check.id" :class="`is-${check.status}`">
                   <span class="landable-mark" aria-hidden="true">
                     {{ check.status === "pass" ? "✓" : check.status === "warn" ? "!" : "✗" }}
                   </span>
@@ -6990,6 +7007,27 @@ watch(
   color: var(--txt-faint);
   font-size: 11px;
   white-space: nowrap;
+}
+
+.landable-toggle {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--txt-faint);
+  font: 11px/1.4 var(--font-sans);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.landable-toggle:hover {
+  color: var(--txt);
+}
+
+.landable-toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .landable-list {
