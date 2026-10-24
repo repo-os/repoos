@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-only-failing-checks-in-landable-by-
 created_at: "2026-10-24T01:24:41Z"
-updated_at: "2026-10-24T07:36:31Z"
+updated_at: "2026-10-24T07:37:25Z"
 last_close_out_gate_ms: 136676
 last_close_out_gate_at: "2026-10-24T07:36:31.542Z"
 handoff_signal_retry_count: 2
@@ -81,4 +81,4 @@ This Landable card should only show failing and minimise the rest -- if user cli
 - 2026-10-24T07:17:01Z · status active→review
 - 2026-10-24T07:17:42Z · note: review pass 1: good to go
 - 2026-10-24T07:36:31Z · close-out gate completed in 137s
-
+- 2026-10-24T07:37:25Z · status done→done, release:success
