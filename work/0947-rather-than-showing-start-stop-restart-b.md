@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T12:05:52Z"
+updated_at: "2026-10-24T12:05:55Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -142,3 +142,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T12:02:52Z · status review→active
 - 2026-10-24T12:05:52Z · status active→review
 - 2026-10-24T12:05:52Z · note: handoff requested (cli)
+- 2026-10-24T12:05:55Z · handoff failed · task-file handoff failed at commit · task #0947 has no registered worktree for branch feat/show-dev-target-actions-based-on-running
