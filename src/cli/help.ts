@@ -98,8 +98,14 @@ const GROUPS: readonly CommandGroup[] = [
       {
         name: "mv",
         usage: "mv <id> <status> [--note <text>] [--force-not-merged]",
-        desc: "Move a task to a new status (file write) — use review/done for handoff and close-out",
+        desc: "Move a task to a new status (file write) — --note only adds an activity note; it does not message the engineer",
         flags: '--note "..." · --force-not-merged',
+      },
+      {
+        name: "send-back",
+        usage: 'send-back <id> (--message "…" | --message-file <file|->) [--json] [--port N]',
+        desc: "Return a task to the engineer, start work, then queue feedback",
+        flags: "--message · --message-file · --json · --port",
       },
       {
         name: "start",

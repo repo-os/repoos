@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 100127
-last_close_out_gate_at: "2026-10-24T14:53:28.557Z"
 id: "0948"
 title: "repoos send-back: return a task from review to the engineer with a message in one command"
 type: feature
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: 8978255a5f7aa4bb9e6467a69683542556fcaaa1
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-send-back-return-a-task-from-revi
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T11:14:00Z"
 updated_at: "2026-10-24T14:53:28Z"
+last_close_out_gate_ms: 100127
+last_close_out_gate_at: "2026-10-24T14:53:28.557Z"
 review_passes: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T13:11:00.274Z\",\"reason\":\"clean-exit-without-handoff\"}]"
