@@ -9,11 +9,11 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: cursor
-model_override: default
+model_override: grok-4.7-low
 pm_cli_override: codex
 pm_model_override: gpt-6-luna
 created_at: "2026-10-24T16:04:07Z"
-updated_at: "2026-10-24T16:05:00Z"
+updated_at: "2026-10-24T16:06:00Z"
 ---
 ## Problem
 
@@ -59,3 +59,4 @@ And on secret entries you don't need to mention the source on each, because they
 - 2026-10-24T16:04:16Z · screenshots
 - 2026-10-24T16:04:22Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
 - 2026-10-24T16:05:00Z · cli_override, model_override
+- 2026-10-24T16:06:00Z · model_override
