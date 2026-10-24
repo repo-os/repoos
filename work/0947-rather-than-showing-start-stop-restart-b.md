@@ -3,9 +3,6 @@ id: "0947"
 title: Show dev target actions based on running state
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — DevView and tests satisfy the UX criteria; landing still fails on `work/0943`/`work/0946` drift and merge conflicts (no…
 priority: p2
 area: ui
 assigned_to: ai
@@ -144,3 +141,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T12:05:52Z · status active→review
 - 2026-10-24T12:05:53Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-24T12:07:06Z · note: review pass 5: good to go
+- 2026-10-24T12:07:06Z · needs_input
