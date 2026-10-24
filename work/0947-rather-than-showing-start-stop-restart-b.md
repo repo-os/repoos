@@ -110,3 +110,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T08:17:47Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-24T08:18:23Z · body
 - 2026-10-24T08:19:27Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-24T08:19:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
