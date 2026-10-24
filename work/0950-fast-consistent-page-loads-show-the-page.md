@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-24T17:08:26Z"
+updated_at: "2026-10-24T17:08:27Z"
 last_check_failure: "repoos check at 2026-10-24T16:55:14.081Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Deployments first load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /deployments (http://127.0.0.1:39677/deployments?shotState=deployments%3Aloading); [missing-target] Dev first load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /dev (http://127.0.0.1:39677/dev?shotState=dev%3Aloading)"
 handoff_signal_retry_count: 1
 ---
@@ -98,3 +98,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T16:55:07Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Deployments first load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /deployments (http://127.0.0.1:39677/deployments?shotState=deployments%3Aloading); [missing-target] Dev first load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /dev (http://127.0.0.1:39677/dev?shotState=dev%3Aloading)
 - 2026-10-24T16:57:14Z · body
 - 2026-10-24T17:08:26Z · note: ui verification passed: 4 of 4 shots captured with clean console
+- 2026-10-24T17:08:27Z · status active→review
