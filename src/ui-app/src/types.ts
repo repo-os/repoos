@@ -50,6 +50,13 @@ export interface PreviewInfo {
    * Absent for a single-process preview.
    */
   services?: { name: string; port: number }[];
+  native?: { platform: "macos" | "ios" | "android"; device?: string };
+  /**
+   * The start is building/starting, not running yet (#0943) — notably a long
+   * native build (`xcodebuild`, gradle). The drawer renders a building state
+   * instead of "app running" until the server emits the running event.
+   */
+  starting?: boolean;
 }
 
 /** A preview target a task can be served from (#0379). More than one means the
@@ -60,6 +67,7 @@ export interface PreviewTargetOption {
   name: string;
   /** Task areas this target declared (empty for the default command). */
   areas: string[];
+  platform?: "macos" | "ios" | "android";
 }
 
 /** Lightweight automatic-review state included with indexed tasks. */

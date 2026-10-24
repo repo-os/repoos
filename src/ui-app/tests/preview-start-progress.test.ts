@@ -96,6 +96,10 @@ function installFetch(holdPreview: boolean) {
     release = r;
   });
   vi.stubGlobal("EventSource", FakeEventSource);
+  // jsdom has no Element.scrollTo, and the drawer's scroll-to-bottom calls it from
+  // async continuations: without this an unhandled rejection fails the whole run
+  // even though every test passes.
+  Element.prototype.scrollTo = vi.fn() as unknown as typeof Element.prototype.scrollTo;
   FakeEventSource.instances = [];
   vi.stubGlobal(
     "fetch",
@@ -239,5 +243,106 @@ describe("preview start feedback (#0374)", () => {
 
     expect(wrapper.find(".preview-progress").exists()).toBe(false);
     expect(startButton(wrapper)?.text()).toContain("Start preview");
+  });
+});
+
+describe("preview building state (#0943)", () => {
+  it("shows a building native app (platform, device, label) instead of nothing", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    clearFetchState = installFetch(false);
+    const repo = useRepoStore();
+    await repo.init();
+    const wrapper = await mountDrawer(
+      pinia,
+      makeTask({
+        area: "mac",
+        preview: {
+          port: 0,
+          url: "",
+          startedAt: "2026-10-24T00:00:00Z",
+          label: "macOS Hub",
+          native: { platform: "macos", device: "Mac mini" },
+          starting: true,
+        },
+      }),
+    );
+
+    const live = wrapper.find(".preview-live");
+    expect(live.exists()).toBe(true);
+    expect(live.text()).toContain("macos app building…");
+    expect(live.text()).toContain("Mac mini");
+    expect(live.text()).toContain("macOS Hub");
+    expect(wrapper.text()).not.toContain("app running");
+
+    // Stop stays available while building — it aborts the build server-side.
+    const stop = wrapper.findAll("button").find((b) => b.text().includes("Stop preview"));
+    expect(stop, "Stop preview button should render while building").toBeTruthy();
+    expect(stop!.attributes("disabled")).toBeUndefined();
+  });
+
+  it("shows a building web preview without a fake running URL", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    clearFetchState = installFetch(false);
+    const repo = useRepoStore();
+    await repo.init();
+    const wrapper = await mountDrawer(
+      pinia,
+      makeTask({
+        preview: {
+          port: 0,
+          url: "http://127.0.0.1:5000",
+          startedAt: "2026-10-24T00:00:00Z",
+          starting: true,
+        },
+      }),
+    );
+
+    const live = wrapper.find(".preview-live");
+    expect(live.exists()).toBe(true);
+    expect(live.text()).toContain("Building preview…");
+    expect(wrapper.text()).not.toContain("http://127.0.0.1:5000");
+    expect(live.find("a").exists()).toBe(false);
+  });
+
+  it("flips to the running state once the server reports it", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    clearFetchState = installFetch(false);
+    const repo = useRepoStore();
+    await repo.init();
+    const task = makeTask({
+      area: "mac",
+      preview: {
+        port: 0,
+        url: "",
+        startedAt: "2026-10-24T00:00:00Z",
+        label: "macOS Hub",
+        native: { platform: "macos" },
+        starting: true,
+      },
+    });
+    const wrapper = await mountDrawer(pinia, task);
+    expect(wrapper.find(".preview-live").text()).toContain("app building…");
+
+    // The server's running SSE event replaces the building entry.
+    const ui = useUiStore();
+    const running = {
+      ...task,
+      preview: {
+        port: 0,
+        url: "",
+        startedAt: "2026-10-24T00:00:10Z",
+        label: "macOS Hub",
+        native: { platform: "macos" as const },
+      },
+    };
+    ui.syncActive(running);
+    await flush();
+
+    const live = wrapper.find(".preview-live");
+    expect(live.text()).toContain("macos app running");
+    expect(live.text()).not.toContain("building");
   });
 });

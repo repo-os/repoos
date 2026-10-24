@@ -1818,9 +1818,11 @@ export const useRepoStore = defineStore("repo", () => {
       }
       pushFeed(
         e.preview
-          ? `<b>preview</b> #${e.id} at <span class="mono">${e.preview.url}</span>`
+          ? e.preview.starting
+            ? `<b>preview building</b> for #${e.id}`
+            : `<b>preview</b> #${e.id} at <span class="mono">${e.preview.url}</span>`
           : `<b>preview stopped</b> for #${e.id}`,
-        e.preview ? "#39e0ff" : "#ffb454",
+        e.preview && !e.preview.starting ? "#39e0ff" : "#ffb454",
         "preview",
       );
     } else if (e.type === "review") {

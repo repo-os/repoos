@@ -703,6 +703,43 @@ describe("preview state", () => {
     expect(repo.feed[0].msg).toContain("preview stopped");
   });
 
+  it("reflects a building preview from SSE and labels the feed accordingly (#0943)", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("task.created", { type: "task.created", task: makeTask() });
+    es.emit("preview", {
+      type: "preview",
+      id: "0001",
+      preview: {
+        port: 0,
+        url: "",
+        startedAt: "2026-10-24T00:00:00Z",
+        starting: true,
+        native: { platform: "macos" },
+      },
+      at: "2026-10-24T00:00:00Z",
+    });
+    expect(repo.tasks[0].preview?.starting).toBe(true);
+    expect(repo.tasks[0].preview?.native?.platform).toBe("macos");
+    expect(repo.feed[0].msg).toContain("preview building");
+
+    // The running event flips the same task to a URL-less running preview.
+    es.emit("preview", {
+      type: "preview",
+      id: "0001",
+      preview: {
+        port: 0,
+        url: "",
+        startedAt: "2026-10-24T00:01:00Z",
+        native: { platform: "macos" },
+      },
+      at: "2026-10-24T00:01:00Z",
+    });
+    expect(repo.tasks[0].preview?.starting).toBeUndefined();
+    expect(repo.feed[0].msg).not.toContain("preview building");
+  });
+
   it("startPreview and stopPreview hit the preview endpoints", async () => {
     const repo = useRepoStore();
     await repo.init();
