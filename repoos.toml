@@ -68,7 +68,7 @@ auth.emailProvider.fromAddress = "otp@send.repoos.org"
 whisper.provider = "none"
 
 remoteValidation.enabled = true
-remoteValidation.fallbackToLocal = false
+remoteValidation.fallbackToLocal = true
 
 worktreeWarnThreshold = 20
 
@@ -119,12 +119,13 @@ activityAnimationSize = "24"
 model_routing.humanStepCheck = true
 remoteValidation.browserCaptureMode = "runner-available"
 pressureGuard.enabled = false
-[[remoteValidation.tailscaleHosts]]
-host = "bee"
-user = "nick"
-maxConcurrent = 1
+remoteValidation.offloadBrowserSteps = true
 [[remoteValidation.tailscaleHosts]]
 host = "thinkpad"
+user = "nick"
+maxConcurrent = 2
+[[remoteValidation.tailscaleHosts]]
+host = "bee"
 user = "nick"
 maxConcurrent = 2
 [[remoteValidation.tailscaleHosts]]
@@ -731,6 +732,13 @@ command = "bunx vite --config src/ui-app/vite.config.ts --port {port} --host 127
 url = "http://127.0.0.1:{port}"
 label = "Main UI (HMR, needs repoos serve on 7171)"
 healthCheck.url = "http://127.0.0.1:{port}/"
+
+[[dev.targets]]
+name = "hub"
+kind = "process"
+label = "RepoOS Hub (macOS app)"
+command = "just macos-build && exec 'macos/.derived-data/Build/Products/Debug/RepoOS Hub.app/Contents/MacOS/RepoOS Hub'"
+
 [[budget.allowlist]]
 cli = "opencode"
 models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash"]
