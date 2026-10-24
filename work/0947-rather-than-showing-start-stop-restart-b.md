@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-dev-target-actions-based-on-running
 created_at: "2026-10-24T04:07:30Z"
-updated_at: "2026-10-24T13:35:13Z"
+updated_at: "2026-10-24T14:00:04Z"
 last_close_out_gate_ms: 140199
 last_close_out_gate_at: "2026-10-24T13:35:13.505Z"
 review_passes: 6
@@ -151,4 +151,4 @@ Also can we use a flexbox there so that the buttons are in a column to the right
 - 2026-10-24T13:23:06Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-24T13:23:54Z · note: review pass 6: good to go
 - 2026-10-24T13:35:13Z · close-out gate completed in 140s
-
+- 2026-10-24T14:00:04Z · status done→done, release:success
