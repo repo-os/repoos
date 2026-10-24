@@ -2,12 +2,12 @@
 id: "0946"
 title: "repoos init: offer to install missing coding agents (checkbox list)"
 type: feature
-status: ready
+status: active
 priority: p2
 area: [core, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/repoos-init-offer-to-install-missing-cod
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T02:32:41Z"
@@ -48,3 +48,4 @@ During interactive `repoos init` (TTY only; non-interactive init stays fully non
 - 2026-10-24T02:32:41Z · created · njachowski@gmail.com
 - 2026-10-24T03:48:30Z · status inbox→ready
 - 2026-10-24T03:48:36Z · cli_override, model_override
+- 2026-10-24T03:48:36Z · status ready→active, branch
