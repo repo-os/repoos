@@ -2343,7 +2343,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     }
     const invoke = async (nextAction: "start" | "message", payload: object) => {
       const chunks = Readable.from([
-        JSON.stringify(payload),
+        Buffer.from(JSON.stringify(payload)),
       ]) as unknown as import("node:http").IncomingMessage;
       const captured: {
         statusCode: number;
