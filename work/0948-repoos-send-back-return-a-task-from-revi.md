@@ -3,6 +3,9 @@ id: "0948"
 title: "repoos send-back: return a task from review to the engineer with a message in one command"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p2
 area: core
 assigned_to: ai
@@ -14,6 +17,8 @@ created_at: "2026-10-24T11:14:00Z"
 updated_at: "2026-10-24T14:06:56Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T13:11:00.274Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-24T14:06:56.980Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -66,3 +71,5 @@ Sending a task back from review to its engineer with feedback takes three separa
 - 2026-10-24T14:04:24Z · body
 - 2026-10-24T14:06:07Z · body
 - 2026-10-24T14:06:56Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-24T14:06:56Z · agent exited with an error (codex) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-10-24T14:06:56Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
