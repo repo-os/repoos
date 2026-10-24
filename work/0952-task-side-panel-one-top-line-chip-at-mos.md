@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-24T23:17:06Z"
+updated_at: "2026-10-24T23:17:33Z"
 ---
 ## Problem
 
@@ -57,7 +57,11 @@ The task side panel gets cluttered when a task reaches review or hits issues. Ex
 ![30](/api/tasks/0952/attachments/att_01cb47fc-4b2c-4d27-930f-33a45bbb86f7.png)
 ![31](/api/tasks/0952/attachments/att_c40fe1bc-06ea-4813-86b2-73c9f40fb982.png)
 
+## Where the removed detail goes
+Nothing that is removed from the top line or from the cards above the tabs may become unreachable. Add a new sub-tab in the Debug tab (for example "Status details" or "Why is this task here?") that lists every status and issue card and chip that used to appear above the tabs: the review-failed / no-report detail, the not-landable checklist, handoff and remote-validation failures, checks running/progress, retries exhausted, the TL;DR what-happened text, and the full canned guidance paragraphs. The info popovers in the panel can link to it. Acceptance: that Debug sub-tab shows all of those states with their full text and actions' hints, driven by the same status data, and has a test and a shot.
+
 ## Activity
 
 - 2026-10-24T23:16:59Z · created · njachowski@gmail.com
 - 2026-10-24T23:17:06Z · screenshots
+- 2026-10-24T23:17:33Z · body: Where the removed detail goes (added)
