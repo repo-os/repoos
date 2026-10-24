@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-24T14:55:36Z"
-review_passes: 5
 id: "0943"
 title: "Native app preview targets: run a task's macOS, iOS and Android build from its worktree"
 type: feature
@@ -13,6 +11,8 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-23T20:05:41Z"
+updated_at: "2026-10-24T14:57:45Z"
+review_passes: 5
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 57acf18ba6b00c60846dea6d6a3ee51958739219
 check_retry_count: 1
@@ -156,4 +156,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T14:47:36Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-24T14:55:36Z · note: review pass 6: needs some work
 - 2026-10-24T14:55:36Z · needs_input
-
+- 2026-10-24T14:57:45Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
