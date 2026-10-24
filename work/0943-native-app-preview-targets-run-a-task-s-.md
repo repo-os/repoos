@@ -11,7 +11,7 @@ branch: feat/native-app-preview-targets-run-a-task-s-
 cli_override: opencode
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-23T20:05:41Z"
-updated_at: "2026-10-24T12:05:56Z"
+updated_at: "2026-10-24T12:14:04Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -48,34 +48,82 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 ```json
 [
 {
-"label": "Native iOS preview running (light)",
-"target": "default",
-"route": "/work?task=0943&tab=changes",
-"highlight": ".preview-live",
-"state": "drawer:nativePreviewRunning",
-"theme": "light"
+  "label": "Native preview control while the app is building (dark)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".preview-live",
+  "steps": [
+    {
+      "waitFor": ".preview-live"
+    }
+  ],
+  "state": "drawer:nativePreviewBuilding",
+  "theme": "dark"
 },
 {
-"label": "Native iOS preview running (dark)",
-"target": "default",
-"route": "/work?task=0943&tab=changes",
-"highlight": ".preview-live",
-"state": "drawer:nativePreviewRunning",
-"theme": "dark"
+  "label": "Native preview control while the app is building (light)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".preview-live",
+  "steps": [
+    {
+      "waitFor": ".preview-live"
+    }
+  ],
+  "state": "drawer:nativePreviewBuilding",
+  "theme": "light"
 },
 {
-"label": "Native preview failure (light)",
-"target": "default",
-"route": "/work?task=0943&tab=changes",
-"state": "drawer:nativePreviewFailed",
-"theme": "light"
+  "label": "Native preview control running (dark)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".preview-live",
+  "steps": [
+    {
+      "waitFor": ".preview-live"
+    }
+  ],
+  "state": "drawer:nativePreviewRunning",
+  "theme": "dark"
 },
 {
-"label": "Native preview failure (dark)",
-"target": "default",
-"route": "/work?task=0943&tab=changes",
-"state": "drawer:nativePreviewFailed",
-"theme": "dark"
+  "label": "Native preview control running (light)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".preview-live",
+  "steps": [
+    {
+      "waitFor": ".preview-live"
+    }
+  ],
+  "state": "drawer:nativePreviewRunning",
+  "theme": "light"
+},
+{
+  "label": "Native preview failed: start control with error toast (dark)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".preview-hint",
+  "steps": [
+    {
+      "waitFor": ".preview-hint"
+    }
+  ],
+  "state": "drawer:nativePreviewFailed",
+  "theme": "dark"
+},
+{
+  "label": "Native preview failed: start control with error toast (light)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".preview-hint",
+  "steps": [
+    {
+      "waitFor": ".preview-hint"
+    }
+  ],
+  "state": "drawer:nativePreviewFailed",
+  "theme": "light"
 }
 ]
 ```
@@ -138,3 +186,4 @@ Start from `docs/previews.md`, the preview manager and its web target resolver, 
 - 2026-10-24T12:04:01Z · needs_input
 - 2026-10-24T12:04:02Z · message_queued at 2026-10-24T12:04:02.365Z
 - 2026-10-24T12:05:56Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-24T12:14:04Z · body
