@@ -9,6 +9,7 @@ import {
   Check,
   X,
   GitMerge,
+  Info,
 } from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
 import type { RetryHint } from "../lib/retryHints";
@@ -97,6 +98,7 @@ const emit = defineEmits<{
   (e: "open-support"): void;
   /** Show the branch's conflicting files in the Debug tab's Merge conflict view. */
   (e: "open-conflict"): void;
+  (e: "open-status-details"): void;
   /** The user acknowledged the error; the parent hides it (and remembers that). */
   (e: "dismiss"): void;
   /** Refresh main's install and re-queue close-out (#0674). */
@@ -311,12 +313,18 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
           View the conflicts
         </button>
       </div>
-      <p class="done-error-hint">
-        {{
-          hint ??
-          "RepoOS couldn't sync this branch with main automatically — resolve the conflicting files in the worktree, then retry."
-        }}
-      </p>
+      <details class="done-error-help">
+        <summary aria-label="Help for this close-out failure"><Info class="size-3.5" /></summary>
+        <div class="done-error-help-popover" role="note">
+          <p>
+            {{
+              hint ??
+              "RepoOS couldn't sync this branch with main automatically — resolve the conflicting files in the worktree, then retry."
+            }}
+          </p>
+          <button type="button" @click="emit('open-status-details')">Open Status details</button>
+        </div>
+      </details>
       <button type="button" class="done-error-support" @click="openSupportBundle">
         <LifeBuoy class="size-3.5" />
         Create a redacted support bundle
