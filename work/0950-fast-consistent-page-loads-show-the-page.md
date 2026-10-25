@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: handoff finalization was interrupted (server reload) — restart work to hand off again
@@ -384,4 +384,4 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-25T18:47:41Z · note: handoff requested (ui-review)
 - 2026-10-25T18:57:51Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/incremental-index.test.ts > resolveWorktreeStatuses > reuses cached dirtiness when the worktree HEAD has not moved on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-25T19:03:14Z · note: handoff requested (ui-review)
-- 2026-10-25T19:14:46Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-25T19:14:46Z · status active→review
