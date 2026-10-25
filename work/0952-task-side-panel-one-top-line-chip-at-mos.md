@@ -223,3 +223,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T01:40:28Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-25T01:47:26Z · cli_override, model_override
 - 2026-10-25T01:47:59Z · needs_input
+- 2026-10-25T01:47:59Z · message_queued at 2026-10-25T01:47:59.741Z
