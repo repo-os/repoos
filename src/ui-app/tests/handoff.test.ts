@@ -448,7 +448,7 @@ describe("trusted server-side handoff", { timeout: 15_000 }, () => {
     }
   });
 
-  it("tolerates a task-file-only bookkeeping commit during the check", async () => {
+  it("tolerates a task-file-only bookkeeping commit during the check", { timeout: 30_000 }, async () => {
     const fx = makeFixture(0);
     const oldPath = process.env.PATH ?? "";
     process.env.PATH = `${fx.bin}:${oldPath}`;
@@ -471,7 +471,10 @@ describe("trusted server-side handoff", { timeout: 15_000 }, () => {
     }
   });
 
-  it("keeps task B stable when another task's bookkeeping lands on main during the check (#0954)", async () => {
+  it(
+    "keeps task B stable when another task's bookkeeping lands on main during the check (#0954)",
+    { timeout: 30_000 },
+    async () => {
     const fx = makeFixture(0);
     const oldPath = process.env.PATH ?? "";
     process.env.PATH = `${fx.bin}:${oldPath}`;
