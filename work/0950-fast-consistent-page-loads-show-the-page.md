@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-25T01:42:43Z"
-review_passes: 8
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
@@ -13,11 +11,13 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
+updated_at: "2026-10-25T01:48:09Z"
+review_passes: 8
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 review_rounds: 2
@@ -218,4 +218,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T01:42:40Z · note: review pass 9: needs some work
 - 2026-10-25T01:42:41Z · needs_input
 - 2026-10-25T01:42:41Z · needs_input
-
+- 2026-10-25T01:48:09Z · cli_override, model_override
