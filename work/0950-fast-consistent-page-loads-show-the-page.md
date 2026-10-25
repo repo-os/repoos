@@ -11,12 +11,12 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T00:06:31Z"
+updated_at: "2026-10-25T00:11:24Z"
 review_passes: 4
 handoff_signal_retry_count: 2
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-24T16:55:14.081Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Deployments first load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /deployments (http://127.0.0.1:39677/deployments?shotState=deployments%3Aloading); [missing-target] Dev first load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /dev (http://127.0.0.1:39677/dev?shotState=dev%3Aloading)"
-engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:09.890Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -160,5 +160,15 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T23:51:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-24T23:51:50Z · message_delivered: 1 message(s)
 - 2026-10-24T23:51:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-24T23:57:09Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
-- 2026-10-25T00:06:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T23:57:03Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-10-24T23:59:22Z · body
+- 2026-10-25T00:00:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T00:03:12Z · note: BASELINE (measured by the driver on main's running server, in-process API client, median of 5, 2026-10-25): /api/deployments 2687ms (min 2279, max 3000); /api/project-environments 1ms; /api/dev/targets 1ms; /api/check-plan 5ms; /api/releases 0ms. So the multi-second wait is server-side in /api/deployments (git work per service/branch), not in the other endpoints; the other pages' waits are client-side (blank until fetch, no cache between visits).
+- 2026-10-25T00:03:25Z · message_queued at 2026-10-25T00:03:25.672Z
+- 2026-10-25T00:06:32Z · body
+- 2026-10-25T00:06:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T00:07:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T00:07:26Z · message_delivered: 1 message(s)
+- 2026-10-25T00:08:32Z · note: Measurements and follow-up for #0950: driver-recorded main baseline (5 runs): /api/deployments median 2687 ms (min 2279, max 3000); /api/project-environments 1 ms; /api/dev/targets 1 ms; /api/check-plan 5 ms; /api/releases 0 ms. Handler inspection in this branch found getDeploymentsStatus already fans out independent branch summaries and row freshness/subdir git calls with Promise.all and coalesces identical (branch, subdir) freshness work; the remaining subprocess fan-out needs profiling before a safe optimization, so follow-up #0955 was filed to profile/reduce it and capture five-run before/after medians. This branchs view tests prove revisit content is visible with no skeleton while a deferred background refresh is still unresolved, then updates in place
+- 2026-10-25T00:08:54Z · note: Measurements and follow-up for #0950: driver-recorded main baseline (5 runs): /api/deployments median 2687 ms (min 2279, max 3000); /api/project-environments 1 ms; /api/dev/targets 1 ms; /api/check-plan 5 ms; /api/releases 0 ms. Handler inspection in this branch found getDeploymentsStatus already fans out independent branch summaries and row freshness/subdir git calls with Promise.all and coalesces identical (branch, subdir) freshness work; the remaining subprocess fan-out needs profiling before a safe optimization, so follow-up #0955 was filed to profile/reduce it and capture five-run before/after medians. This branch's view tests prove revisit content is visible with no skeleton while a deferred background refresh is still unresolved, then updates in place; this is the measurable no-blocking-request evidence for Releases, Checks, Deployments, and Dev. Exact wall-clock first-load/revisit page timings and an after endpoint median were not captured because this worktree's managed preview is unavailable for ad hoc endpoint benchmarking and starting repoos serve is prohibited. No latency improvement is claimed for /api/deployments.
+- 2026-10-25T00:11:24Z · body
