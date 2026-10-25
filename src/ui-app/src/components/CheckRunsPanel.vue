@@ -3,7 +3,9 @@ import { computed, onMounted, ref } from "vue";
 import { RefreshCw } from "lucide-vue-next";
 import { api } from "../api";
 import Button from "./ui/button.vue";
+import PageSkeleton from "./PageSkeleton.vue";
 import FailedTestsList from "./FailedTestsList.vue";
+import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
 import type { CheckRunRow } from "../types";
 
 /**
@@ -46,18 +48,37 @@ function toggleRow(r: CheckRunRow): void {
 const loading = ref(true);
 const error = ref("");
 
+/**
+ * Revisit behaviour (#0950): the last run history is kept in the shared page
+ * cache, so coming back to the Checks page shows it at once and revalidates in
+ * the background. A refresh failure leaves those rows on screen.
+ */
 async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    const res = await api<{ ok: boolean; runs: CheckRunRow[] }>("/api/check-runs?limit=300");
-    runs.value = res.runs ?? [];
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : "Could not load the run history.";
+    await refreshPageData(
+      "check-runs:300",
+      () => api<{ ok: boolean; runs: CheckRunRow[] }>("/api/check-runs?limit=300"),
+      (res) => {
+        runs.value = res.runs ?? [];
+        error.value = "";
+      },
+      (e) => {
+        error.value = e instanceof Error ? e.message : "Could not load the run history.";
+      },
+    );
   } finally {
     loading.value = false;
   }
 }
+
+/** A manual refresh must not be served from the cache. */
+function refresh(): void {
+  invalidatePageData("check-runs:300");
+  void load();
+}
+
 onMounted(load);
 
 // ── sorting ──────────────────────────────────────────────────────────────────
@@ -210,15 +231,26 @@ function outcomeLabel(r: CheckRunRow): string {
 <template>
   <div class="cr-panel">
     <div class="cr-toolbar">
-      <Button variant="ghost" size="sm" :disabled="loading" @click="load">
-        <RefreshCw class="size-3.5" :class="{ spin: loading }" />
+      <Button
+        variant="ghost"
+        size="sm"
+        :disabled="loading && !runs.length"
+        data-testid="check-runs-refresh"
+        @click="refresh"
+      >
+        <RefreshCw class="size-3.5" :class="{ spin: loading && !runs.length }" />
         Refresh
       </Button>
-      <span class="cr-count">{{
-        loading ? "Loading run history…" : `${runs.length} run${runs.length === 1 ? "" : "s"}`
+      <span v-if="runs.length || !loading" class="cr-count">{{
+        `${runs.length} run${runs.length === 1 ? "" : "s"}`
       }}</span>
     </div>
-    <p v-if="error" class="cr-err">{{ error }}</p>
+    <!-- Stale rows stay visible through a failed refresh; only an empty page
+         (no cache yet) reports it as a blocking error. -->
+    <p v-if="error && runs.length" class="cr-err" role="status">Refresh failed: {{ error }}</p>
+    <p v-else-if="error" class="cr-err">{{ error }}</p>
+
+    <PageSkeleton v-if="loading && !runs.length" kind="table" />
 
     <section v-if="machines.length" class="cr-machines" aria-label="Machines summary">
       <div v-for="m in machines" :key="m.key" class="cr-machine">
