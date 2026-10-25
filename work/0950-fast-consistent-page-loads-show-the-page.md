@@ -11,12 +11,12 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
-cli_override: cursor
-model_override: composer-2.5
+cli_override: opencode
+model_override: opencode-go/hy4-preview
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T05:07:49Z"
+updated_at: "2026-10-25T05:31:38Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 9de52afd to c8e8b5e5) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 9de52afdc9ae459b5e601f6a5a6ad9b7e5294396
 review_passes: 8
@@ -233,3 +233,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T03:49:11Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T04:55:25Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-25T05:07:49Z · cli_override, model_override
+- 2026-10-25T05:31:38Z · cli_override, model_override
