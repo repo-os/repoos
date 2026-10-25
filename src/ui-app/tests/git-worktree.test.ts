@@ -547,26 +547,29 @@ describe("removeWorktree", () => {
     }
   });
 
-  it("does not spawn a daemon stop when fsmonitor is disabled or unset", () => {
+  it("stops a daemon even when fsmonitor is disabled or unset", () => {
     const { root, clean } = makeRepo();
     try {
-      ensureWorktree(root, "feat/fsmonitor-off");
+      const off = ensureWorktree(root, "feat/fsmonitor-off");
       const stopped: string[] = [];
       expect(
         removeWorktree(root, "feat/fsmonitor-off", {
           stopFsmonitor: (path) => stopped.push(path),
         }),
       ).toBe(true);
-      expect(stopped).toEqual([]);
+      expect(stopped).toEqual([off.path]);
 
       git(root, ["config", "core.fsmonitor", "false"]);
-      ensureWorktree(root, "feat/fsmonitor-explicit-off");
+      const explicitOff = ensureWorktree(root, "feat/fsmonitor-explicit-off");
       expect(
         removeWorktree(root, "feat/fsmonitor-explicit-off", {
           stopFsmonitor: (path) => stopped.push(path),
         }),
       ).toBe(true);
-      expect(stopped).toEqual([]);
+      expect(stopped).toEqual([
+        off.path,
+        explicitOff.path,
+      ]);
     } finally {
       clean();
     }
