@@ -1,10 +1,8 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -12,8 +10,11 @@ created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T00:11:24Z"
+updated_at: "2026-10-25T00:50:35Z"
+last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 review_passes: 4
 handoff_signal_retry_count: 2
 review_rounds: 2
@@ -173,4 +174,11 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T00:08:32Z · note: Measurements and follow-up for #0950: driver-recorded main baseline (5 runs): /api/deployments median 2687 ms (min 2279, max 3000); /api/project-environments 1 ms; /api/dev/targets 1 ms; /api/check-plan 5 ms; /api/releases 0 ms. Handler inspection in this branch found getDeploymentsStatus already fans out independent branch summaries and row freshness/subdir git calls with Promise.all and coalesces identical (branch, subdir) freshness work; the remaining subprocess fan-out needs profiling before a safe optimization, so follow-up #0955 was filed to profile/reduce it and capture five-run before/after medians. This branchs view tests prove revisit content is visible with no skeleton while a deferred background refresh is still unresolved, then updates in place
 - 2026-10-25T00:08:54Z · note: Measurements and follow-up for #0950: driver-recorded main baseline (5 runs): /api/deployments median 2687 ms (min 2279, max 3000); /api/project-environments 1 ms; /api/dev/targets 1 ms; /api/check-plan 5 ms; /api/releases 0 ms. Handler inspection in this branch found getDeploymentsStatus already fans out independent branch summaries and row freshness/subdir git calls with Promise.all and coalesces identical (branch, subdir) freshness work; the remaining subprocess fan-out needs profiling before a safe optimization, so follow-up #0955 was filed to profile/reduce it and capture five-run before/after medians. This branch's view tests prove revisit content is visible with no skeleton while a deferred background refresh is still unresolved, then updates in place; this is the measurable no-blocking-request evidence for Releases, Checks, Deployments, and Dev. Exact wall-clock first-load/revisit page timings and an after endpoint median were not captured because this worktree's managed preview is unavailable for ad hoc endpoint benchmarking and starting repoos serve is prohibited. No latency improvement is claimed for /api/deployments.
 - 2026-10-25T00:11:24Z · body
-
+- 2026-10-25T00:33:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T00:38:35Z · note: handoff requested (ui-review)
+- 2026-10-25T00:48:16Z · status active→review
+- 2026-10-25T00:48:17Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-25T00:48:34Z · note: review pass 5: failed — no usable report
+- 2026-10-25T00:48:34Z · needs_input
+- 2026-10-25T00:50:31Z · review_cli_override, review_model_override
+- 2026-10-25T00:50:35Z · needs_input (review-failed) cleared for review again by hello@repoos.org

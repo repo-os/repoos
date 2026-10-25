@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T00:26:31Z"
+updated_at: "2026-10-25T00:50:09Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -57,47 +57,42 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "Reviewer failure status in task drawer",
-  "target": "default",
-  "route": "/work?task=0952&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:reviewWithBranch"
+"label": "Short failure chip beside a long file path",
+"target": "default",
+"route": "/work?task=9999&tab=changes",
+"highlight": ".drawer-head",
+"state": "drawer:statusChecksFailed"
 },
 {
-  "label": "Not landable status in task drawer",
-  "target": "default",
-  "route": "/work?task=0952&tab=details",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landable"
+"label": "Single failed-check summary above the tabs",
+"target": "default",
+"route": "/work?task=9999&tab=changes",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailed"
 },
 {
-  "label": "Running checks status in task drawer",
-  "target": "default",
-  "route": "/work?task=0952&tab=details",
-  "highlight": ".drawer-status-summary",
-  "state": "closeOut:checkProgress"
+"label": "Waiting-for-you help popover",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".waiting-info .drawer-info-content",
+"steps": [
+  {
+    "click": "details.waiting-info > summary"
+  }
+],
+"state": "drawer:tabExpandWarnings"
 },
 {
-  "label": "Checks failed after retries in task drawer",
-  "target": "default",
-  "route": "/work?task=0952&tab=details",
-  "highlight": ".drawer-status-summary",
-  "state": "card:reviewRoundsExhausted"
-},
-{
-  "label": "Full status details in Debug",
-  "target": "default",
-  "route": "/work?task=0952&tab=details",
-  "highlight": ".debug-status-detail",
-  "steps": [
-    {
-      "click": ".drawer-status-summary .drawer-info-popover summary"
-    },
-    {
-      "click": ".drawer-info-content button"
-    }
-  ],
-  "state": "closeOut:checkProgress"
+"label": "Debug status details sub-tab",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".debug-status-detail",
+"steps": [
+  {
+    "click": ".debug-tabs .debug-tab:first-child"
+  }
+],
+"state": "drawer:tabExpandWarnings"
 }
 ]
 ```
@@ -136,3 +131,20 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T00:22:03Z · body
 - 2026-10-25T00:25:03Z · body
 - 2026-10-25T00:26:31Z · body
+- 2026-10-25T00:31:54Z · message_queued at 2026-10-25T00:31:54.176Z
+- 2026-10-25T00:31:54Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T00:36:16Z · body
+- 2026-10-25T00:36:54Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T00:37:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T00:37:21Z · message_delivered: 1 message(s)
+- 2026-10-25T00:37:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T00:38:34Z · message_queued at 2026-10-25T00:38:34.195Z
+- 2026-10-25T00:39:42Z · body
+- 2026-10-25T00:41:48Z · body
+- 2026-10-25T00:45:19Z · body
+- 2026-10-25T00:46:31Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-25T00:46:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T00:46:32Z · message_delivered: 1 message(s)
+- 2026-10-25T00:47:45Z · body
+- 2026-10-25T00:48:22Z · body
+- 2026-10-25T00:50:09Z · note: loading state detected: loading text "Loading changes…" on /work?task=9999&tab=changes
