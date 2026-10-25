@@ -226,14 +226,13 @@ async function load(silent = false): Promise<void> {
         loadError.value = "";
       },
       (err) => {
-        if (silent) return;
         loadError.value = err instanceof Error ? err.message : String(err);
       },
     );
   } catch (err) {
-    // A failed poll must not thrash the page: keep the last good list and only
-    // surface the reason on a non-silent load.
-    if (!silent) loadError.value = err instanceof Error ? err.message : String(err);
+    // A failed poll keeps the last good list in place and surfaces a small
+    // status message; it never replaces cached content with the error state.
+    loadError.value = err instanceof Error ? err.message : String(err);
   } finally {
     if (!silent) loading.value = false;
   }

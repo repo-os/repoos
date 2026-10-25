@@ -377,6 +377,7 @@ const detected = ref<DetectedAgent[]>([]);
 const detectPending = ref<Set<string>>(new Set());
 const detectLoading = ref(false);
 const detectError = ref(false);
+const detectRefreshError = ref("");
 const detectCachedAt = ref<string | null>(null);
 const detectHintCopied = ref<string>("");
 const openCompatId = ref<string | null>(null);
@@ -495,6 +496,7 @@ let activeStream: EventSource | null = null;
 
 async function checkAgents(): Promise<void> {
   detectError.value = false;
+  detectRefreshError.value = "";
   detectHintCopied.value = "";
 
   // The server snapshot is useful immediately on a revisit. Keep it in the
@@ -506,8 +508,11 @@ async function checkAgents(): Promise<void> {
       if (cached.agents.length) detected.value = cached.agents;
       detectCachedAt.value = cached.cachedAt;
     },
-    () => {
-      // A cache miss is non-fatal; the stream will populate the page.
+    (error) => {
+      // A cache miss is non-fatal; the stream will populate the page. When a
+      // cached snapshot exists, keep showing it and report the failed refresh.
+      if (detected.value.length)
+        detectRefreshError.value = error instanceof Error ? error.message : String(error);
     },
   );
 
@@ -547,6 +552,7 @@ async function checkAgents(): Promise<void> {
     }
     detectPending.value = new Set();
     detectLoading.value = false;
+    detectRefreshError.value = "";
     es.close();
     activeStream = null;
   });
@@ -555,6 +561,7 @@ async function checkAgents(): Promise<void> {
     detectPending.value = new Set();
     detectLoading.value = false;
     if (!detected.value.length) detectError.value = true;
+    else detectRefreshError.value = "Could not refresh detected coding agents. Showing the last saved list.";
     es.close();
     activeStream = null;
   };
@@ -928,6 +935,9 @@ onUnmounted(() => {
             missing. Update checks contact only the supported public source after you request them;
             results are cached for 6 hours.
           </div>
+          <p v-if="detectRefreshError" class="detect-update-error" role="status">
+            Refresh failed: {{ detectRefreshError }}
+          </p>
           <div v-if="updateError" class="detect-update-error">
             Update checks are temporarily unavailable.
           </div>

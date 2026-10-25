@@ -212,6 +212,23 @@ describe("Dev loading shot", () => {
     expect(revisited.find(".page-skeleton").exists()).toBe(false);
     revisited.unmount();
   });
+
+  it("keeps cached targets visible and reports a failed silent refresh", async () => {
+    installFetch({ targets: [target({ label: "Cached service" })] });
+    const first = mountView();
+    await flush();
+    first.unmount();
+
+    vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("refresh offline"))));
+    const revisited = mountView();
+    await flush();
+
+    expect(revisited.find(".dev-card").exists()).toBe(true);
+    expect(revisited.text()).toContain("Cached service");
+    expect(revisited.text()).toContain("Refresh failed");
+    expect(revisited.find(".page-skeleton").exists()).toBe(false);
+    revisited.unmount();
+  });
 });
 
 describe("DevView layout and state (#0748)", () => {
