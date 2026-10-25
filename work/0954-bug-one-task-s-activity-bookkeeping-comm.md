@@ -5,7 +5,7 @@ type: bug
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
+needs_input_detail: "Error: [internal]"
 priority: p1
 area: core
 assigned_to: ai
@@ -14,10 +14,10 @@ branch: feat/bug-one-task-s-activity-bookkeeping-comm
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T04:54:57Z"
+updated_at: "2026-10-25T04:55:01Z"
 handoff_signal_retry_count: 1
-dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:54:55.478Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 5
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:54:55.478Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:55:01.795Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -96,3 +96,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T04:54:55Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-10-25T04:54:55Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-10-25T04:54:57Z · message_delivered: 1 message(s)
+- 2026-10-25T04:55:01Z · engineer crash recovery: resuming cursor + composer-2.5 (2/3 crashes in 30m) · Error: [internal]
