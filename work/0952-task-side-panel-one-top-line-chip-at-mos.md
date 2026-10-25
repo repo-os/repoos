@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T02:00:59Z"
+updated_at: "2026-10-25T02:01:00Z"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T01:02:11.529Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T01:26:46.721Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 3
@@ -221,3 +221,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T01:52:34Z · body
 - 2026-10-25T01:52:56Z · body
 - 2026-10-25T02:00:59Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-25T02:01:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
