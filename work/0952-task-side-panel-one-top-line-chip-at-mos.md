@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T08:52:16Z"
+updated_at: "2026-10-25T08:53:54Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -290,3 +290,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T08:52:04Z · cli_override, model_override
 - 2026-10-25T08:52:14Z · needs_input
 - 2026-10-25T08:52:16Z · message_queued at 2026-10-25T08:52:16.496Z
+- 2026-10-25T08:53:54Z · CTO nudge: held — an undelivered message is already queued
