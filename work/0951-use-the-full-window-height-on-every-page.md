@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-stylesheet-config.test.ts > RepoOS dogfoods the stylesheet-guard declaration > keeps its current coverage: the real stylesheet still passes, tests/incremental-index.test.ts > resolveWorktreeStatuses > reuses cached dirtiness when the worktree HEAD has not moved on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: "09df4a4720f8564ce4f2a09741613fcee57783c0"
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
@@ -12,8 +14,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
 updated_at: "2026-10-25T17:54:31Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 review_passes: 1
@@ -255,3 +255,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T17:42:35Z · status ready→active
 - 2026-10-25T17:42:44Z · note: handoff requested (ui-review)
 - 2026-10-25T17:54:31Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/check-stylesheet-config.test.ts > RepoOS dogfoods the stylesheet-guard declaration > keeps its current coverage: the real stylesheet still passes, tests/incremental-index.test.ts > resolveWorktreeStatuses > reuses cached dirtiness when the worktree HEAD has not moved on thinkpad — fix it in the feature branch and re-run the gate
+
