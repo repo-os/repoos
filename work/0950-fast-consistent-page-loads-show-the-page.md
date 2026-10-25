@@ -8,12 +8,12 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
-cli_override: cursor
-model_override: composer-2.5
+cli_override: codex
+model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T14:53:55Z"
+updated_at: "2026-10-25T14:54:02Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -297,3 +297,4 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 - 2026-10-25T14:53:28Z · assigned_to
 - 2026-10-25T14:53:36Z · released
 - 2026-10-25T14:53:55Z · status ready→active
+- 2026-10-25T14:54:02Z · cli_override, model_override
