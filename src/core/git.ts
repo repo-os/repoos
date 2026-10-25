@@ -16,7 +16,7 @@ import {
 } from "node:fs";
 import { dirname, isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
-import { worktreesDir, worktreesInheritEnv } from "./config.js";
+import { isLinkedWorktreeRoot, worktreesDir, worktreesInheritEnv } from "./config.js";
 import { notifyGitMutation } from "./git-activity.js";
 import {
   isLockfileOnlyConflicts,
@@ -351,7 +351,26 @@ export async function lastCommitsForDirAsync(
  *
  * Idempotent, best-effort, and cheap — call it once at startup. Existing
  * values, including an explicit false, belong to the repository owner.
+ *
+ * Callers should gate with `shouldTuneRepoForScaleAtStartup` so preview
+ * servers and linked worktrees do not rewrite shared `.git/config` or spawn
+ * another fsmonitor daemon per checkout.
  */
+export interface TuneRepoForScaleStartupOptions {
+  root: string;
+  tuneForScale?: boolean;
+  previewChild?: boolean;
+  previewOverrides?: string[];
+}
+
+export function shouldTuneRepoForScaleAtStartup(opts: TuneRepoForScaleStartupOptions): boolean {
+  if (opts.tuneForScale === false) return false;
+  if (opts.previewChild) return false;
+  if ((opts.previewOverrides?.length ?? 0) > 0) return false;
+  if (isLinkedWorktreeRoot(opts.root)) return false;
+  return true;
+}
+
 export function tuneRepoForScale(root: string, enabled = true): void {
   if (!enabled || !isGitRepo(root)) return;
   for (const [key, value] of [

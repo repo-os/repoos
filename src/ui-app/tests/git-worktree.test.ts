@@ -22,6 +22,7 @@ import {
   worktreeStatusAsync,
   resetWorktree,
   removeWorktree,
+  shouldTuneRepoForScaleAtStartup,
   stopFsmonitorDaemon,
   tuneRepoForScale,
   listWorktrees,
@@ -470,6 +471,40 @@ describe("resetWorktree", () => {
       const branch = git(root, ["branch", "--show-current"]);
 
       expect(resetWorktree(root, branch)).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("shouldTuneRepoForScaleAtStartup", () => {
+  it("allows tuning only on the main checkout when enabled", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/tune-gate");
+      expect(
+        shouldTuneRepoForScaleAtStartup({ root, tuneForScale: true }),
+      ).toBe(true);
+      expect(
+        shouldTuneRepoForScaleAtStartup({ root: wt.path, tuneForScale: true }),
+      ).toBe(false);
+      expect(
+        shouldTuneRepoForScaleAtStartup({
+          root,
+          tuneForScale: true,
+          previewChild: true,
+        }),
+      ).toBe(false);
+      expect(
+        shouldTuneRepoForScaleAtStartup({
+          root,
+          tuneForScale: true,
+          previewOverrides: ["auth.enabled"],
+        }),
+      ).toBe(false);
+      expect(
+        shouldTuneRepoForScaleAtStartup({ root, tuneForScale: false }),
+      ).toBe(false);
     } finally {
       clean();
     }

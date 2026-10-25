@@ -133,6 +133,7 @@ import {
   resetWorktree,
   syncBranchWithMain,
   worktreePathForBranch,
+  shouldTuneRepoForScaleAtStartup,
   tuneRepoForScale,
   runGit,
 } from "../core/git.js";
@@ -1155,9 +1156,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     bindHost = "127.0.0.1";
   }
   const logger = createLogger(config.root);
-  // Best-effort: enable git's fsmonitor + untracked-cache so the per-worktree
-  // `git status` calls in every index build stop doing full tree scans.
-  tuneRepoForScale(config.root, config.git?.tuneForScale !== false);
+  // Best-effort: enable git's fsmonitor + untracked-cache on the main checkout
+  // only — preview/shot servers and linked task worktrees share `.git/config`
+  // and must not re-enable watchers or spawn another daemon per start (#0958).
+  tuneRepoForScale(
+    config.root,
+    shouldTuneRepoForScaleAtStartup({
+      root: config.root,
+      tuneForScale: config.git?.tuneForScale,
+      previewChild: process.env.REPOOS_PREVIEW_CHILD === "1",
+      previewOverrides: config.previewOverrides,
+    }),
+  );
   const index = new LiveIndex(config);
   // Non-blocking: with 200+ tasks, the git-heavy full index build can take
   // several seconds even after parallelizing it (buildIndexAsync). Kicking it
