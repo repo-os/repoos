@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
@@ -12,8 +14,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
 updated_at: "2026-10-25T03:10:33Z"
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-25T02:27:44.782Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T02:27:40.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 3
@@ -262,3 +262,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T03:07:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T03:07:54Z · message_delivered: 1 message(s)
 - 2026-10-25T03:10:33Z · body
+
