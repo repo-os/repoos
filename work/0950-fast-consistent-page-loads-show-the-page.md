@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — Required after-change endpoint and per-page timings are still missing.
@@ -200,4 +200,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T01:21:05Z · note: Pass-7 edge case fixed: page-data-cache now ignores cached entries older than 5 minutes (they are refetched with the skeleton) and caps the cache at 64 entries, with tests for inside/outside the max age. Measurements: unchanged from the earlier note; this diff changes no server code so after-change endpoint medians equal the baseline by construction (/api/deployments 2687 ms, tracked in #0955), and the per-page change is client-side (cached revisit shows content with zero blocking requests, proven by the revisit tests).
 - 2026-10-25T01:22:03Z · status review→active
 - 2026-10-25T01:22:11Z · note: handoff requested (ui-review)
-- 2026-10-25T01:34:25Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-25T01:34:25Z · status active→review
