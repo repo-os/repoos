@@ -12,9 +12,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: opencode
-model_override: default
+model_override: opencode-go/hy4-preview
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T05:30:59Z"
+updated_at: "2026-10-25T05:31:00Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -276,3 +276,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T05:07:59Z · cli_override, model_override
 - 2026-10-25T05:30:55Z · cli_override, model_override
 - 2026-10-25T05:30:59Z · cli_override
+- 2026-10-25T05:31:00Z · model_override
