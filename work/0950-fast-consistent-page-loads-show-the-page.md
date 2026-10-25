@@ -3,25 +3,27 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: review-rounds-exhausted
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
-cli_override: cursor
-model_override: composer-2.5
+cli_override: codex
+model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T08:53:54Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 9de52afd to c8e8b5e5) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 9de52afdc9ae459b5e601f6a5a6ad9b7e5294396
+updated_at: "2026-10-25T11:59:03Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 3
+dev_error_count: 5
 ---
 ## Problem
 
@@ -246,3 +248,22 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T08:52:13Z · needs_input
 - 2026-10-25T08:52:14Z · message_queued at 2026-10-25T08:52:14.167Z
 - 2026-10-25T08:53:54Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T09:41:26Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-25T09:53:59Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T10:15:43Z · needs_input
+- 2026-10-25T10:15:43Z · message_delivered: 1 message(s)
+- 2026-10-25T10:24:34Z · message_queued at 2026-10-25T10:24:34.631Z
+- 2026-10-25T10:24:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T10:29:36Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T11:13:09Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production... · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-25T11:13:09Z · note: handoff requested (cli)
+- 2026-10-25T11:28:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T11:29:28Z · cli_override, model_override
+- 2026-10-25T11:29:29Z · message_delivered: 1 message(s)
+- 2026-10-25T11:30:06Z · message_queued at 2026-10-25T11:30:06.323Z
+- 2026-10-25T11:30:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T11:30:42Z · status active→review, needs_input
+- 2026-10-25T11:30:42Z · message_delivered: 1 message(s)
+- 2026-10-25T11:30:42Z · note: handoff requested (cli)
+- 2026-10-25T11:34:20Z · CTO nudge: held — handoff gate is running
+- 2026-10-25T11:35:04Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan

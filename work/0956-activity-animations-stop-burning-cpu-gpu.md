@@ -3,16 +3,13 @@ id: "0956"
 title: "Activity animations: stop burning CPU/GPU (pause when hidden or off screen, reduced motion, cap concurrent, cheaper rendering)"
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX"
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-25T03:58:48Z"
-updated_at: "2026-10-25T03:59:21Z"
+updated_at: "2026-10-25T11:12:35Z"
 ---
 ## Problem
 
@@ -48,3 +45,4 @@ Animated indicators stay fun and visible, but they cost almost nothing: they onl
 - 2026-10-25T03:58:48Z · created · njachowski@gmail.com
 - 2026-10-25T03:58:58Z · needs_input
 - 2026-10-25T03:59:21Z · body: Desired UX (added)
+- 2026-10-25T11:12:35Z · needs_input
