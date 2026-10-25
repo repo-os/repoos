@@ -2,16 +2,16 @@
 id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
-status: ready
+status: active
 priority: p1
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T11:35:27Z"
+updated_at: "2026-10-25T11:35:28Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ At every server start, `tuneRepoForScale(config.root)` (`src/core/git.ts`, calle
 - 2026-10-25T11:34:02Z · created · njachowski@gmail.com
 - 2026-10-25T11:35:12Z · status inbox→ready
 - 2026-10-25T11:35:27Z · cli_override, model_override
+- 2026-10-25T11:35:28Z · status ready→active, branch
