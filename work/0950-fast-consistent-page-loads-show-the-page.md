@@ -9,7 +9,6 @@ needs_input_detail: "2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router
 debug_tldr: "Missing handoff screenshot default-1.png in the worktree — run repoos shot for #0950 there, then restart the engineer run."
 debug_tldr_at: "2026-10-25T15:34:35Z"
 debug_tldr_key: "dev-error|2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/fast-consistent-page-loads-show-the-page/work/.attachments/0950/shots/default-1.png`: No such file or directory (os error 2)"
-hold: true
 priority: p2
 area: web
 assigned_to: ai
@@ -20,7 +19,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T18:02:38Z"
+updated_at: "2026-10-25T18:02:44Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -323,3 +322,4 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 - 2026-10-25T16:16:27Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T16:50:46Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T18:02:38Z · assigned_to
+- 2026-10-25T18:02:44Z · released
