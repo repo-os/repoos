@@ -3,6 +3,9 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — refresh failures hide stale page content on three views; required before/after timings are missing.
 priority: p2
 area: web
 assigned_to: ai
@@ -183,3 +186,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T00:50:31Z · review_cli_override, review_model_override
 - 2026-10-25T00:50:35Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-25T00:52:42Z · note: review pass 6: needs some work
+- 2026-10-25T00:52:42Z · needs_input
