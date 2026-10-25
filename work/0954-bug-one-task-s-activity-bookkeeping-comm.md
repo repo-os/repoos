@@ -2,16 +2,16 @@
 id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
-status: ready
+status: active
 priority: p1
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/bug-one-task-s-activity-bookkeeping-comm
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T01:04:57Z"
+updated_at: "2026-10-25T01:04:58Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T01:04:24Z · body: More evidence: it is the handoff itself (added)
 - 2026-10-25T01:04:49Z · status inbox→ready
 - 2026-10-25T01:04:57Z · cli_override, model_override
+- 2026-10-25T01:04:58Z · status ready→active, branch
