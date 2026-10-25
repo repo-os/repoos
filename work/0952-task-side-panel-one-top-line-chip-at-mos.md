@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T00:38:34Z"
+updated_at: "2026-10-25T00:39:42Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -57,47 +57,97 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "Reviewer failure status in task drawer",
-"target": "default",
-"route": "/work?task=0952&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:reviewWithBranch"
+  "label": "Review failure summary",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 1280
 },
 {
-"label": "Not landable status in task drawer",
-"target": "default",
-"route": "/work?task=0952&tab=details",
-"highlight": ".drawer-status-summary",
-"state": "drawer:landable"
+  "label": "Review failure summary at narrow width",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 760
 },
 {
-"label": "Running checks status in task drawer",
-"target": "default",
-"route": "/work?task=0952&tab=details",
-"highlight": ".drawer-status-summary",
-"state": "closeOut:checkProgress"
+  "label": "Not landable summary",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:landable",
+  "viewportWidth": 1280
 },
 {
-"label": "Checks failed after retries in task drawer",
-"target": "default",
-"route": "/work?task=0952&tab=details",
-"highlight": ".drawer-status-summary",
-"state": "card:reviewRoundsExhausted"
+  "label": "Not landable summary at narrow width",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:landable",
+  "viewportWidth": 760
 },
 {
-"label": "Full status details in Debug",
-"target": "default",
-"route": "/work?task=0952&tab=details",
-"highlight": ".debug-status-detail",
-"steps": [
-{
-"click": ".drawer-status-summary .drawer-info-popover summary"
+  "label": "Checks running status",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusChecksRunning",
+  "viewportWidth": 1280
 },
 {
-"click": ".drawer-info-content button"
-}
-],
-"state": "closeOut:checkProgress"
+  "label": "Checks running status at narrow width",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusChecksRunning",
+  "viewportWidth": 760
+},
+{
+  "label": "Confirming handoff status",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusConfirmingHandoff",
+  "viewportWidth": 1280
+},
+{
+  "label": "Confirming handoff status at narrow width",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusConfirmingHandoff",
+  "viewportWidth": 760
+},
+{
+  "label": "Checks failed after retries",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusChecksFailed",
+  "viewportWidth": 1280
+},
+{
+  "label": "Checks failed after retries at narrow width",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusChecksFailed",
+  "viewportWidth": 760
+},
+{
+  "label": "Debug status details",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": "[aria-label=\"Task status details\"]",
+  "steps": [
+    {
+      "click": "button.debug-tab"
+    }
+  ],
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 1280
 }
 ]
 ```
@@ -144,3 +194,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T00:37:21Z · message_delivered: 1 message(s)
 - 2026-10-25T00:37:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T00:38:34Z · message_queued at 2026-10-25T00:38:34.195Z
+- 2026-10-25T00:39:42Z · body
