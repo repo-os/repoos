@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T16:21:03Z"
+updated_at: "2026-10-25T16:21:08Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
@@ -232,3 +232,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T16:20:38Z · released
 - 2026-10-25T16:20:56Z · status ready→active
 - 2026-10-25T16:21:03Z · cli_override, model_override
+- 2026-10-25T16:21:08Z · message_queued at 2026-10-25T16:21:08.180Z
