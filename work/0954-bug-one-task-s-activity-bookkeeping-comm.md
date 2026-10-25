@@ -1,9 +1,11 @@
 ---
-handoff_signal_retry_count: 1
 id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:18 AM."
 priority: p1
 area: core
 assigned_to: ai
@@ -12,7 +14,10 @@ branch: feat/bug-one-task-s-activity-bookkeeping-comm
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T01:36:00Z"
+updated_at: "2026-10-25T01:41:21Z"
+handoff_signal_retry_count: 1
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T01:41:21.271Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -64,4 +69,5 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T01:18:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T01:18:58Z · message_delivered: 1 message(s)
 - 2026-10-25T01:36:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-
+- 2026-10-25T01:41:21Z · agent exited with an error (codex) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:18 AM.
+- 2026-10-25T01:41:21Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:18 AM.
