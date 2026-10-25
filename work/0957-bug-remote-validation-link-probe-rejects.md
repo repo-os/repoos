@@ -2,7 +2,7 @@
 id: "0957"
 title: "Bug: remote validation link probe rejects usable high-latency links (throughput includes ssh setup time)"
 type: bug
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/bug-remote-validation-link-probe-rejects
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T12:30:02Z"
+updated_at: "2026-10-25T12:35:06Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:46:43.085Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T11:13:08.170Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 4
@@ -84,3 +84,5 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T12:29:32Z · cli_override, model_override
 - 2026-10-25T12:30:01Z · needs_input
 - 2026-10-25T12:30:02Z · message_queued at 2026-10-25T12:30:02.080Z
+- 2026-10-25T12:35:05Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-25T12:35:06Z · note: handoff requested (cli)
