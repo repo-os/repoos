@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T14:55:17Z"
+updated_at: "2026-10-25T14:55:18Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -301,3 +301,4 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 - 2026-10-25T14:54:15Z · message_queued at 2026-10-25T14:54:15.254Z
 - 2026-10-25T14:55:02Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T14:55:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T14:55:18Z · message_delivered: 1 message(s)
