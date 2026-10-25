@@ -147,3 +147,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T13:13:18Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-25T13:18:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T13:21:30Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-25T13:21:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
