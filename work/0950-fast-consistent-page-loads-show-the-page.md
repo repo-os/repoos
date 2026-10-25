@@ -16,7 +16,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T09:41:40Z"
+updated_at: "2026-10-25T09:53:59Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 9de52afd to c8e8b5e5) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 9de52afdc9ae459b5e601f6a5a6ad9b7e5294396
 review_passes: 8
@@ -250,3 +250,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T08:52:14Z · message_queued at 2026-10-25T08:52:14.167Z
 - 2026-10-25T08:53:54Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T09:41:26Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-25T09:53:59Z · message_overdue: still queued after 60m without being delivered
