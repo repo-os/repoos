@@ -11,7 +11,7 @@ branch: feat/bug-one-task-s-activity-bookkeeping-comm
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T10:34:31Z"
+updated_at: "2026-10-25T10:39:39Z"
 handoff_signal_retry_count: 2
 dev_error_count: 6
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:07:11.393Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -120,3 +120,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T10:34:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T10:34:23Z · message_delivered: 1 message(s)
 - 2026-10-25T10:34:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T10:39:39Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
