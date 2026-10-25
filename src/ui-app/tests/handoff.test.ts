@@ -504,9 +504,12 @@ Other.
       writeFileSync(
         join(fx.bin, "repoos"),
         `#!/bin/sh
+before=$(git -C '${fx.worktree}' rev-parse HEAD)
 printf '\\n- activity on main\\n' >> '${otherPath}'
 git -C '${fx.root}' add work/0950-other-task.md
 git -C '${fx.root}' commit -qm 'docs(0950): record activity'
+after=$(git -C '${fx.worktree}' rev-parse HEAD)
+printf '%s\\n%s\\n' "$before" "$after" > '${join(fx.bin, "task-b-heads")}'
 exit 0
 `,
         { mode: 0o755 },
@@ -517,6 +520,10 @@ exit 0
       expect(result).toMatchObject({ ok: true, step: "done" });
       expect(git(fx.root, ["log", "--oneline"])).toMatch(/docs\(0950\)/);
       expect(git(fx.worktree, ["log", "--oneline"])).not.toMatch(/docs\(0950\)/);
+      const [headBefore, headAfter] = readFileSync(join(fx.bin, "task-b-heads"), "utf8")
+        .trim()
+        .split("\n");
+      expect(headAfter).toBe(headBefore);
       expect(git(fx.worktree, ["diff", "main...HEAD", "--name-only"])).not.toContain(
         "work/0950-other-task.md",
       );
