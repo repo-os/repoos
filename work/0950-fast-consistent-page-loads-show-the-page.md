@@ -2,7 +2,9 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
 priority: p2
 area: web
 assigned_to: ai
@@ -260,3 +262,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T11:29:29Z · message_delivered: 1 message(s)
 - 2026-10-25T11:30:06Z · message_queued at 2026-10-25T11:30:06.323Z
 - 2026-10-25T11:30:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T11:30:42Z · status active→review, needs_input
