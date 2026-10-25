@@ -6936,6 +6936,7 @@ export class AgentRunner {
 
   /** Record an activity entry in the task's activity log. Fail-soft. */
   private recordTaskActivity(taskId: string, entry: string): void {
+    if (process.env.REPOOS_PREVIEW_CHILD === "1") return;
     if (!this.getTask) return;
     try {
       const task = this.getTask(taskId);

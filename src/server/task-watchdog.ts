@@ -486,6 +486,7 @@ export class TaskWatchdog {
   }
 
   start(): void {
+    if (process.env.REPOOS_PREVIEW_CHILD === "1") return;
     if (this.timer) return;
     this.timer = setInterval(() => {
       void this.checkNow();
@@ -510,6 +511,7 @@ export class TaskWatchdog {
 
   /** Run one full scan now (used by the timer and by tests). */
   async checkNow(): Promise<void> {
+    if (process.env.REPOOS_PREVIEW_CHILD === "1") return;
     if (this.canRun && !this.canRun()) return;
     // Re-entry guard: the timer fires every 60s and a scan is async; if an
     // earlier scan somehow overlaps (a slow disk, a blocked write), a second
@@ -923,6 +925,7 @@ export class TaskWatchdog {
   }
 
   private writeTask(task: Task): void {
+    if (process.env.REPOOS_PREVIEW_CHILD === "1") return;
     writeFileSync(task.absPath, serializeTask(task));
     // Surface the change to the live index so the board updates and the
     // existing status-change/needs-input notification subscribers fire.
