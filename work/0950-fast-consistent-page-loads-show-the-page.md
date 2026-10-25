@@ -2,7 +2,13 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: ready
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/fast-consistent-page-loads-show-the-page/work/.attachments/0950/shots/default-1.png`: No such file or directory (os error 2)"
+debug_tldr: "Missing handoff screenshot default-1.png in the worktree — run repoos shot for #0950 there, then restart the engineer run."
+debug_tldr_at: "2026-10-25T15:34:35Z"
+debug_tldr_key: "dev-error|2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/fast-consistent-page-loads-show-the-page/work/.attachments/0950/shots/default-1.png`: No such file or directory (os error 2)"
 hold: true
 priority: p2
 area: web
@@ -14,7 +20,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T15:23:17Z"
+updated_at: "2026-10-25T15:34:35Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -22,7 +28,7 @@ last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check fail
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 5
+dev_error_count: 6
 ---
 ## Problem
 
@@ -312,3 +318,5 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 - 2026-10-25T15:06:33Z · note: highlight .dev-card matched nothing on /dev
 - 2026-10-25T15:22:56Z · held
 - 2026-10-25T15:23:17Z · assigned_to
+- 2026-10-25T15:23:59Z · status active→ready
+- 2026-10-25T15:30:45Z · agent exited with an error (codex) · 2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/fast-consistent-page-loads-show-the-page/work/.attachments/0950/shots/default-1.png`: No such file or directory (os error 2)
