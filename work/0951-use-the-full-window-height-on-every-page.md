@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: Reading additional input from stdin...
+debug_tldr: "Remote runners failed link probes and the local check sat 8+ minutes behind another gate—restore runners or wait, then rerun repoos check."
+debug_tldr_at: "2026-10-25T11:28:23Z"
+debug_tldr_key: dev-error|Reading additional input from stdin...
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T11:28:07Z"
+updated_at: "2026-10-25T11:28:23Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
