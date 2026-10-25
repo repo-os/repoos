@@ -88,13 +88,16 @@ async function loadEnvironments(): Promise<void> {
         environments.value = data.environments;
         if (!selected.value || !data.environments.some((env) => env.id === selected.value))
           selected.value = data.environments[0]?.id ?? "";
+        // Load keys as soon as the environment list is known (including a
+        // cache hit delivered before the network refresh settles). loadSnapshot
+        // ignores responses that no longer match the selected environment.
+        void loadSnapshot();
       },
       (e) => {
         if (environments.value.length) snapshotRefreshError.value = safeError(e);
         else error.value = safeError(e);
       },
     );
-    await loadSnapshot();
   } catch (e) {
     error.value = safeError(e);
   } finally {
