@@ -3,12 +3,6 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
-debug_tldr: "Codex engineer crashed on stdin—resume #0951, add viewportHeight to the six shots via repoos update --shots in the worktree, then hand off."
-debug_tldr_at: "2026-10-25T11:44:14Z"
-debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T11:47:24Z"
+updated_at: "2026-10-25T11:47:29Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
@@ -204,3 +198,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T11:43:40Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-25T11:45:08Z · body
 - 2026-10-25T11:47:24Z · cli_override, model_override
+- 2026-10-25T11:47:29Z · needs_input
