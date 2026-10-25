@@ -11,10 +11,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-one-task-s-activity-bookkeeping-comm
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T12:29:04Z"
+updated_at: "2026-10-25T12:29:26Z"
 handoff_signal_retry_count: 2
 dev_error_count: 10
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T12:19:20.905Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -141,3 +141,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T12:28:31Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-25T12:28:30.609191Z ERROR codex_core::session: failed to record rollout items: thread 01a17300-56d9-7e41-b049-c00b10cbe884 not found
 - 2026-10-25T12:28:44Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-25T12:29:04Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T12:29:26Z · cli_override, model_override
