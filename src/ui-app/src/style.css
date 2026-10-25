@@ -33,7 +33,7 @@
     var(--floating-head-size) + var(--floating-head-size) + var(--floating-head-size) +
       var(--floating-head-gap) + var(--floating-head-gap)
   );
-  --page-bottom-inset: calc(var(--floating-head-stack-height) + var(--floating-head-bottom) + 16px);
+  --page-bottom-inset: calc(var(--floating-head-stack-height) + var(--floating-head-bottom) + 24px);
   --page-bottom-fade-size: calc(var(--floating-head-stack-height) + var(--floating-head-bottom));
   --font-sans: "Sora", sans-serif;
   /* theme-aware semantic tokens */
