@@ -3,6 +3,9 @@ id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: Reading additional input from stdin...
 priority: p1
 area: core
 assigned_to: ai
@@ -11,10 +14,11 @@ branch: feat/bug-one-task-s-activity-bookkeeping-comm
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T12:29:57Z"
+updated_at: "2026-10-25T12:30:15Z"
 handoff_signal_retry_count: 2
-dev_error_count: 8
+dev_error_count: 9
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T12:10:32.776Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T12:29:57.006Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:30:15.457Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -137,3 +141,5 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T12:24:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T12:24:50Z · needs_input
 - 2026-10-25T12:29:57Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-10-25T12:30:15Z · agent exited with an error (codex) · Reading additional input from stdin...
+- 2026-10-25T12:30:15Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Reading additional input from stdin...
