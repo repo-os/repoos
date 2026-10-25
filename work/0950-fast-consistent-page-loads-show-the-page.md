@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T14:10:21Z"
+updated_at: "2026-10-25T14:10:59Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -290,3 +290,4 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 - 2026-10-25T14:02:05Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T14:10:18Z · message_delivered: 3 message(s)
 - 2026-10-25T14:10:21Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
+- 2026-10-25T14:10:59Z · engineer stopped by request
