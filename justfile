@@ -344,11 +344,26 @@ kill:
     # actually free, or the new process will fail with a misleading
     # "port already in use" error and the readiness loop will wait needlessly.
     deadline=$((SECONDS + 15))
+    escalated=0
     while lsof -nP -iTCP:"$port" -sTCP:LISTEN -t >/dev/null 2>&1; do
         if (( SECONDS >= deadline )); then
-            fail "port $port is still in use 15s after stopping the server"
-            lsof -nP -iTCP:"$port" -sTCP:LISTEN | indent_dim || true
-            exit 1
+            if (( escalated == 0 )); then
+                # A frozen server (listening but not answering) never runs its
+                # shutdown handler, so SIGTERM is ignored forever. Escalate to
+                # SIGKILL, scoped to the pids still listening on THIS port.
+                stuck=$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null || true)
+                warn "port $port still in use after 15s; sending SIGKILL to: $stuck"
+                echo "$stuck" | xargs kill -9 2>/dev/null || true
+                escalated=1
+                deadline=$((SECONDS + 5))
+            else
+                fail "port $port is still in use after SIGKILL (a process in an uninterruptible kernel wait cannot be killed until its call returns)"
+                for p in $(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null || true); do
+                    echo "pid $p state: $(ps -o stat= -p "$p" 2>/dev/null)" | indent_dim || true
+                done
+                lsof -nP -iTCP:"$port" -sTCP:LISTEN | indent_dim || true
+                exit 1
+            fi
         fi
         sleep 0.2
     done
