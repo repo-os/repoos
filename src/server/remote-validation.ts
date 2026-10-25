@@ -38,10 +38,13 @@ import { writeChildStdin } from "../core/child-stdin.js";
 import {
   bundleUploadLimitsFromConfig,
   estimateCandidateUploadBytes,
+  formatLinkProbeFailure,
   formatBundleUploadDetail,
+  LINK_THROUGHPUT_FLOOR_BPS,
   linkProbeAcceptable,
   localPressureOkForLocalGate,
   probeHostLink,
+  probeLinkWithRetry,
   readLastCloseOutGateMs,
   runSshForProbe,
   shouldPreferLocalGate,
@@ -5620,13 +5623,14 @@ export class TailscaleRunner implements RemoteValidator {
       const image = rv.containerImage ?? "repoos-ci";
       let incrementalUpload = this.pool.validateScriptMirrorSupported(host.ip);
       const hostLabel = slot.host.host ?? host.ip;
-      const link = this.linkProbe
-        ? await this.linkProbe(host)
-        : await probeHostLink(host, runSshForProbe);
-      if (!link.ok || !linkProbeAcceptable(link)) {
-        const detail =
-          `host ${hostLabel} skipped: link probe failed` +
-          (link.detail ? ` (${link.detail})` : link.throughputBps > 0 ? "" : " (low throughput)");
+      const throughputFloorBps = rv.linkThroughputFloorBps ?? LINK_THROUGHPUT_FLOOR_BPS;
+      const runProbe = () =>
+        this.linkProbe
+          ? this.linkProbe(host)
+          : probeHostLink(host, runSshForProbe, { payloadBytes: rv.linkProbeBytes });
+      const link = await probeLinkWithRetry(runProbe, throughputFloorBps);
+      if (!link.ok || !linkProbeAcceptable(link, throughputFloorBps)) {
+        const detail = formatLinkProbeFailure(hostLabel, link, throughputFloorBps);
         emit(`[${detail}]\n`);
         return withScope(this.infraFail(detail, { taskId: opts.taskId, host: host.ip }));
       }

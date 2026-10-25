@@ -29,13 +29,13 @@ function observationalGitArgs(args: string[]): string[] {
   return args[0] === "status" ? ["--no-optional-locks", ...args] : args;
 }
 
-function git(root: string, args: string[]): string | null {
+function git(root: string, args: string[], timeoutMs = 4000): string | null {
   try {
     return execFileSync("git", observationalGitArgs(args), {
       cwd: root,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
-      timeout: 4000,
+      timeout: timeoutMs,
     }).trim();
   } catch {
     return null;
@@ -81,12 +81,12 @@ function worktreeAddFailure(run: GitRun): string {
  * the event loop for the OS round-trip, so N tasks in a `for` loop costs N
  * full serial round-trips no matter how idle the machine is.
  */
-function gitAsync(root: string, args: string[]): Promise<string | null> {
+function gitAsync(root: string, args: string[], timeoutMs = 4000): Promise<string | null> {
   return new Promise((resolve) => {
     execFile(
       "git",
       observationalGitArgs(args),
-      { cwd: root, encoding: "utf8", timeout: 4000 },
+      { cwd: root, encoding: "utf8", timeout: timeoutMs },
       (error, stdout) => {
         resolve(error ? null : stdout.trim());
       },
@@ -252,6 +252,46 @@ export function branchAheadCounts(root: string, base: string | null): Map<string
   return map;
 }
 
+function parseAheadCounts(out: string | null): Map<string, number> {
+  const map = new Map<string, number>();
+  if (!out) return map;
+  for (const line of out.split("\n")) {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length < 2) continue;
+    const ahead = Number(parts[1]);
+    if (parts[0] && Number.isFinite(ahead)) map.set(parts[0], ahead);
+  }
+  return map;
+}
+
+const aheadCountsCache = new Map<string, { at: number; map: Map<string, number> }>();
+const AHEAD_COUNTS_TTL_MS = 20_000;
+
+/**
+ * Non-blocking, briefly cached `branchAheadCounts`. The synchronous version ran
+ * `git for-each-ref %(ahead-behind:main)` through execFileSync on the server's
+ * main thread on every worktree-status reconcile; over ~100 branches and 20k+
+ * commits that child burned 60%+ CPU for seconds while the event loop sat
+ * blocked, so the server stopped answering (2026-10-25). Async + a 20 s cache.
+ */
+export async function branchAheadCountsAsync(
+  root: string,
+  base: string | null,
+): Promise<Map<string, number>> {
+  if (!base) return new Map();
+  const key = `${root}\0${base}`;
+  const hit = aheadCountsCache.get(key);
+  if (hit && Date.now() - hit.at < AHEAD_COUNTS_TTL_MS) return new Map(hit.map);
+  const out = await gitAsync(
+    root,
+    ["for-each-ref", `--format=%(refname:short) %(ahead-behind:${base})`, "refs/heads/"],
+    60_000,
+  );
+  const map = parseAheadCounts(out);
+  aheadCountsCache.set(key, { at: Date.now(), map });
+  return new Map(map);
+}
+
 /** Last commit subject + ISO date touching a specific file. */
 export function lastCommitForFile(
   root: string,
@@ -280,7 +320,7 @@ const DIR_LOG_REC = "\x1e";
 const DIR_LOG_FLD = "\x1f";
 
 /** Args for a single `git log` pass that reports the last commit per file. */
-function dirLogArgs(relDir: string): string[] {
+function dirLogArgs(relDir: string, range?: string): string[] {
   return [
     // Unicode-safe paths; never abbreviate task filenames.
     "-c",
@@ -293,6 +333,7 @@ function dirLogArgs(relDir: string): string[] {
     "--relative",
     `--format=${DIR_LOG_REC}%s${DIR_LOG_FLD}%cI`,
     "--name-only",
+    ...(range ? [range] : []),
     "--",
     relDir,
   ];
@@ -320,15 +361,55 @@ function parseDirLog(out: string | null): Map<string, LastCommit> {
 }
 
 /**
+ * A full `git log --name-only -- <dir>` walks every commit that ever touched
+ * the directory. For `work/` that is 20k+ bookkeeping commits and takes about
+ * 5 s of CPU, which is longer than git()'s 4 s timeout: the walk was killed and
+ * returned nothing on EVERY index refresh, burning a core each time (the
+ * 2026-10-25 UI stalls). So the result is cached per (root, dir) against HEAD
+ * and only the commits since the cached HEAD are walked on later refreshes
+ * (milliseconds). The first walk and any non-fast-forward move of HEAD use a
+ * long timeout so they can finish once.
+ */
+const FULL_DIR_LOG_TIMEOUT_MS = 120_000;
+const dirLogCache = new Map<string, { head: string; map: Map<string, LastCommit> }>();
+const dirLogInflight = new Map<string, Promise<Map<string, LastCommit>>>();
+
+function mergeDirLog(
+  cached: Map<string, LastCommit>,
+  newer: Map<string, LastCommit>,
+): Map<string, LastCommit> {
+  const merged = new Map(cached);
+  for (const [path, commit] of newer) merged.set(path, commit);
+  return merged;
+}
+
+/**
  * Last commit subject + ISO date for EVERY tracked file under `relDir`, in a
- * SINGLE `git log` pass. The indexer needs this for every task file; calling
- * `lastCommitForFile` per task instead runs one full history walk per file,
- * which was a large share of RepoOS's slow index build at 200+ tasks (#0271
- * follow-up). Keys are paths relative to `root`, matching `Task.path`.
- * Fail-soft: an empty map when git is missing or the walk fails.
+ * SINGLE `git log` pass (then incrementally, see above). The indexer needs this
+ * for every task file; calling `lastCommitForFile` per task instead runs one
+ * full history walk per file, which was a large share of RepoOS's slow index
+ * build at 200+ tasks (#0271 follow-up). Keys are paths relative to `root`,
+ * matching `Task.path`. Fail-soft: an empty map when git is missing or the walk
+ * fails.
  */
 export function lastCommitsForDir(root: string, relDir: string): Map<string, LastCommit> {
-  return parseDirLog(git(root, dirLogArgs(relDir)));
+  const head = git(root, ["rev-parse", "HEAD"]);
+  if (!head) return parseDirLog(git(root, dirLogArgs(relDir)));
+  const key = `${root}\0${relDir}`;
+  const cached = dirLogCache.get(key);
+  if (cached && cached.head === head) return new Map(cached.map);
+  let map: Map<string, LastCommit> | null = null;
+  if (cached && git(root, ["merge-base", "--is-ancestor", cached.head, head]) !== null) {
+    const out = git(root, dirLogArgs(relDir, `${cached.head}..${head}`));
+    if (out !== null) map = mergeDirLog(cached.map, parseDirLog(out));
+  }
+  if (!map) {
+    const out = git(root, dirLogArgs(relDir), FULL_DIR_LOG_TIMEOUT_MS);
+    if (out === null) return new Map();
+    map = parseDirLog(out);
+  }
+  dirLogCache.set(key, { head, map });
+  return new Map(map);
 }
 
 /** Async counterpart of `lastCommitsForDir` - see `gitAsync`. */
@@ -336,7 +417,44 @@ export async function lastCommitsForDirAsync(
   root: string,
   relDir: string,
 ): Promise<Map<string, LastCommit>> {
-  return parseDirLog(await gitAsync(root, dirLogArgs(relDir)));
+  // Share one walk between callers that refresh at the same moment, so a burst
+  // of index refreshes does not start several multi-second history walks.
+  const flightKey = `${root}\0${relDir}`;
+  const running = dirLogInflight.get(flightKey);
+  if (running) return new Map(await running);
+  const walk = lastCommitsForDirAsyncUncoalesced(root, relDir);
+  dirLogInflight.set(flightKey, walk);
+  try {
+    return new Map(await walk);
+  } finally {
+    if (dirLogInflight.get(flightKey) === walk) dirLogInflight.delete(flightKey);
+  }
+}
+
+async function lastCommitsForDirAsyncUncoalesced(
+  root: string,
+  relDir: string,
+): Promise<Map<string, LastCommit>> {
+  const head = await gitAsync(root, ["rev-parse", "HEAD"]);
+  if (!head) return parseDirLog(await gitAsync(root, dirLogArgs(relDir)));
+  const key = `${root}\0${relDir}`;
+  const cached = dirLogCache.get(key);
+  if (cached && cached.head === head) return new Map(cached.map);
+  let map: Map<string, LastCommit> | null = null;
+  if (
+    cached &&
+    (await gitAsync(root, ["merge-base", "--is-ancestor", cached.head, head])) !== null
+  ) {
+    const out = await gitAsync(root, dirLogArgs(relDir, `${cached.head}..${head}`));
+    if (out !== null) map = mergeDirLog(cached.map, parseDirLog(out));
+  }
+  if (!map) {
+    const out = await gitAsync(root, dirLogArgs(relDir), FULL_DIR_LOG_TIMEOUT_MS);
+    if (out === null) return new Map();
+    map = parseDirLog(out);
+  }
+  dirLogCache.set(key, { head, map });
+  return new Map(map);
 }
 
 /**
@@ -349,11 +467,19 @@ export async function lastCommitsForDirAsync(
  * per-directory untracked-file scan. Both are opt-in per repo and safe:
  * git falls back to a full scan if the daemon is unavailable.
  *
+ * OFF by default (hotfix, #0958): each server start, including preview and
+ * shot servers rooted in task worktrees, used to flip these on in the shared
+ * `.git/config`, spawning one watcher daemon per worktree and loading fseventsd
+ * on repos with many worktrees. Measured `git status` is already ~20 ms
+ * without it. Set `REPOOS_GIT_FSMONITOR=1` to opt in; a human's `false` is
+ * never overwritten.
+ *
  * Idempotent, best-effort, and cheap — call it once at startup. Skips any key
  * already set to the desired value, so a repo that has been tuned once pays
  * only two `git config --get` reads on subsequent boots.
  */
 export function tuneRepoForScale(root: string): void {
+  if (process.env.REPOOS_GIT_FSMONITOR !== "1") return;
   if (!isGitRepo(root)) return;
   for (const [key, value] of [
     ["core.fsmonitor", "true"],
@@ -936,7 +1062,7 @@ export async function resolveWorktreeStatuses(
   if (wanted.size === 0) return { statuses, cache, changed: false };
 
   const worktrees = worktreeList(root);
-  const aheadCounts = branchAheadCounts(root, opts.baseBranch);
+  const aheadCounts = await branchAheadCountsAsync(root, opts.baseBranch);
 
   let realRoot = root;
   try {
