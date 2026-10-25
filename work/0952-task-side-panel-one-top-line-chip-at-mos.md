@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T01:52:56Z"
+updated_at: "2026-10-25T02:00:59Z"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T01:02:11.529Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T01:26:46.721Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 3
@@ -60,84 +60,84 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "Review failed status card (desktop)",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 1280
+"label": "Review failed status card (desktop)",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 1280
 },
 {
-  "label": "Review failed status card (narrow)",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".drawer-head",
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 390
+"label": "Review failed status card (narrow)",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".drawer-head",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 390
 },
 {
-  "label": "Not landable status card (desktop)",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landable",
-  "viewportWidth": 1280
+"label": "Not landable status card (desktop)",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landable",
+"viewportWidth": 1280
 },
 {
-  "label": "Not landable status card (narrow)",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".drawer-head",
-  "state": "drawer:landable",
-  "viewportWidth": 390
+"label": "Not landable status card (narrow)",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".drawer-head",
+"state": "drawer:landable",
+"viewportWidth": 390
 },
 {
-  "label": "Checks running status card (desktop)",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunning",
-  "viewportWidth": 1280
+"label": "Checks running status card (desktop)",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning",
+"viewportWidth": 1280
 },
 {
-  "label": "Checks running status card (narrow)",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".drawer-head",
-  "state": "drawer:statusChecksRunning",
-  "viewportWidth": 390
+"label": "Checks running status card (narrow)",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".drawer-head",
+"state": "drawer:statusChecksRunning",
+"viewportWidth": 390
 },
 {
-  "label": "Confirming handoff status card (desktop)",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusConfirmingHandoff",
-  "viewportWidth": 1280
+"label": "Confirming handoff status card (desktop)",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusConfirmingHandoff",
+"viewportWidth": 1280
 },
 {
-  "label": "Confirming handoff status card (narrow)",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".drawer-head",
-  "state": "drawer:statusConfirmingHandoff",
-  "viewportWidth": 390
+"label": "Confirming handoff status card (narrow)",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".drawer-head",
+"state": "drawer:statusConfirmingHandoff",
+"viewportWidth": 390
 },
 {
-  "label": "Checks failed after retries (desktop)",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksFailed",
-  "viewportWidth": 1280
+"label": "Checks failed after retries (desktop)",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailed",
+"viewportWidth": 1280
 },
 {
-  "label": "Checks failed two-line path (narrow)",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".drawer-head",
-  "state": "drawer:statusChecksFailed",
-  "viewportWidth": 390
+"label": "Checks failed two-line path (narrow)",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".drawer-head",
+"state": "drawer:statusChecksFailed",
+"viewportWidth": 390
 }
 ]
 ```
@@ -220,3 +220,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T01:50:24Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T01:52:34Z · body
 - 2026-10-25T01:52:56Z · body
+- 2026-10-25T02:00:59Z · handoff_deferred: 1 queued message(s) must be read before review
