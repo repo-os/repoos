@@ -591,6 +591,9 @@ const drawerHeaderChip = computed(() => {
   const status = drawerStatusSummary.value;
   if (
     !status ||
+    // Waiting states have their actionable card below the preview row; repeating
+    // the same state in the title line only squeezes the task path.
+    (status.key === "waitingForYou" && drawerWaitingCardVisible.value) ||
     ["checksRunning", "confirmingHandoff", "reviewerRunning", "workRunning"].includes(status.key)
   )
     return null;
@@ -613,7 +616,10 @@ const drawerStatusSummary = computed(() => {
   const task = ui.active;
   if (!task) return null;
   const key = selectDrawerStatus({
-    waitingForYou: Boolean(needsInputHeaderChip.value),
+    // The question banner and regular needs-input card are the waiting card.
+    // Include them in the same priority decision so they cannot coexist with a
+    // lower-priority status summary (for example a live check run).
+    waitingForYou: drawerWaitingCardVisible.value,
     reviewFailed:
       task.status === "review" &&
       (review.value?.report?.state === "incomplete" || task.needsInputReason === "review-failed"),
@@ -674,7 +680,7 @@ const drawerStatusDetails = computed(() => {
   if (task.needsInput)
     rows.push({
       title: "Waiting for you",
-      detail: `${needsInputBannerText(task.needsInputReason, activeNeedsInputQuestions.value, task.needsInputDetail)}${activeNeedsInputDetailLine.value ? `\n${activeNeedsInputDetailLine.value}` : ""}${activeTldrSentence.value ? `\n${activeTldrSentence.value}` : ""}`,
+      detail: `${needsInputBannerText(task.needsInputReason, activeNeedsInputQuestions.value, task.needsInputDetail)}${activeNeedsInputDetailLine.value ? `\n${activeNeedsInputDetailLine.value}` : ""}${needsInputSuggestionText(task.needsInputReason, activeNeedsInputQuestions.value) ? `\n${needsInputSuggestionText(task.needsInputReason, activeNeedsInputQuestions.value)}` : ""}${activeTldrSentence.value ? `\n${activeTldrSentence.value}` : ""}`,
     });
   if (
     task.status === "review" &&
@@ -2757,6 +2763,20 @@ const showAgentQuestionsBanner = computed(() => {
   }
   const key = resolveNeedsInputReasonKey(ui.active.needsInputReason, true);
   return key === "questions" || key === "cto-escalation";
+});
+
+/** True only while one of the actionable waiting cards is actually visible. */
+const drawerWaitingCardVisible = computed(() => {
+  const task = ui.active;
+  if (!task || !needsInputSurfaces(task)) return false;
+  if (showAgentQuestionsBanner.value) return true;
+  return Boolean(
+    !handoffBusy.value &&
+      !awaitingFreshReview.value &&
+      !staleNeedsInputOnReview.value &&
+      !review.value?.running &&
+      !repo.isRunning(task.id),
+  );
 });
 
 const staleNeedsInputOnReview = computed(() =>
@@ -5297,7 +5317,7 @@ watch(
             </div>
           </div>
           <div
-            v-else-if="ui.active && ui.active.needsInput && !handoffBusy && !awaitingFreshReview"
+            v-else-if="drawerWaitingCardVisible && ui.active"
             class="drawer-critical"
           >
             <div class="agent-waiting" :class="{ 'agent-waiting-static': staleNeedsInputOnReview }">
@@ -5323,17 +5343,6 @@ watch(
                    metadata — not meaningful to users, so we hide it. -->
                 <div v-if="activeNeedsInputDetailLine" class="agent-waiting-detail">
                   {{ activeNeedsInputDetailLine }}
-                </div>
-                <div
-                  v-if="
-                    !staleNeedsInputOnReview &&
-                    needsInputSuggestionText(ui.active.needsInputReason, activeNeedsInputQuestions)
-                  "
-                  class="agent-waiting-suggestion"
-                >
-                  {{
-                    needsInputSuggestionText(ui.active.needsInputReason, activeNeedsInputQuestions)
-                  }}
                 </div>
                 <details class="drawer-info-popover waiting-info">
                   <summary aria-label="Help for waiting for you"><Info class="size-3.5" /></summary>
