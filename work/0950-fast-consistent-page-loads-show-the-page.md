@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — refresh failures hide stale page content on three views; required before/after timings are missing.
@@ -194,4 +194,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T00:57:42Z · note: handoff requested (ui-review)
 - 2026-10-25T01:01:54Z · handoff failed · ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
 - 2026-10-25T01:03:23Z · note: handoff requested (ui-review)
-- 2026-10-25T01:14:43Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-25T01:14:43Z · status active→review
