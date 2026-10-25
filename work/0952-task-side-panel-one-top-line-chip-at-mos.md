@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T01:02:11Z"
+updated_at: "2026-10-25T01:03:45Z"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T01:02:11.529Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -58,42 +58,39 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "Short failure chip beside a long file path",
-"target": "default",
-"route": "/work?task=9999&tab=changes",
-"highlight": ".drawer-head",
-"state": "drawer:statusChecksFailed"
+  "label": "Drawer with review failure status",
+  "target": "default",
+  "route": "/work?task=0952&tab=debug",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:reviewWithBranch"
 },
 {
-"label": "Single failed-check summary above the tabs",
-"target": "default",
-"route": "/work?task=9999&tab=changes",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksFailed"
+  "label": "Drawer with landability status",
+  "target": "default",
+  "route": "/work?task=0952&tab=debug",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:landable"
 },
 {
-"label": "Waiting-for-you help popover",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".waiting-info .drawer-info-content",
-"steps": [
-{
-"click": "details.waiting-info > summary"
-}
-],
-"state": "drawer:tabExpandWarnings"
+  "label": "Drawer with live check progress",
+  "target": "default",
+  "route": "/work?task=0952&tab=debug",
+  "highlight": ".drawer-status-summary",
+  "state": "checks:progress"
 },
 {
-"label": "Debug status details sub-tab",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".debug-status-detail",
-"steps": [
+  "label": "Drawer confirming handoff",
+  "target": "default",
+  "route": "/work?task=0952&tab=debug",
+  "highlight": ".drawer-status-summary",
+  "state": "closeOut:active"
+},
 {
-"click": ".debug-tabs .debug-tab:first-child"
-}
-],
-"state": "drawer:tabExpandWarnings"
+  "label": "Drawer after check retries fail",
+  "target": "default",
+  "route": "/work?task=0952&tab=debug",
+  "highlight": ".drawer-status-summary",
+  "state": "dev:failed"
 }
 ]
 ```
@@ -154,3 +151,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T00:55:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T00:57:01Z · note: loading state detected: loading text "Loading changes…" on /work?task=9999&tab=changes
 - 2026-10-25T01:02:11Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-25T01:03:45Z · body
