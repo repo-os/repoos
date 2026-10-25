@@ -370,3 +370,4 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-25T18:21:45Z · body
 - 2026-10-25T18:25:31Z · handoff_deferred: 4 queued message(s) must be read before review
 - 2026-10-25T18:25:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T18:25:32Z · message_delivered: 4 message(s)
