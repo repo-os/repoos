@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T00:51:42Z"
+updated_at: "2026-10-25T00:56:35Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-24T23:39:03.710Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
@@ -44,46 +44,46 @@ Every standard nav page uses the full window height: the scrollable content area
 ```json
 [
 {
-  "label": "Work page at tall viewport",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".work-page",
-  "viewportHeight": 1120
+"label": "Work page at tall viewport",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page",
+"viewportHeight": 1120
 },
 {
-  "label": "Work page at short viewport",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".work-page",
-  "viewportHeight": 620
+"label": "Work page at short viewport",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page",
+"viewportHeight": 620
 },
 {
-  "label": "Stories page at tall viewport",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".stories-page",
-  "viewportHeight": 1120
+"label": "Stories page at tall viewport",
+"target": "default",
+"route": "/stories",
+"highlight": ".stories-page",
+"viewportHeight": 1120
 },
 {
-  "label": "Stories page at short viewport",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".stories-page",
-  "viewportHeight": 620
+"label": "Stories page at short viewport",
+"target": "default",
+"route": "/stories",
+"highlight": ".stories-page",
+"viewportHeight": 620
 },
 {
-  "label": "Checks page at tall viewport",
-  "target": "default",
-  "route": "/checks",
-  "highlight": ".ck-page",
-  "viewportHeight": 1120
+"label": "Checks page at tall viewport",
+"target": "default",
+"route": "/checks",
+"highlight": ".ck-page",
+"viewportHeight": 1120
 },
 {
-  "label": "Checks page at short viewport",
-  "target": "default",
-  "route": "/checks",
-  "highlight": ".ck-page",
-  "viewportHeight": 620
+"label": "Checks page at short viewport",
+"target": "default",
+"route": "/checks",
+"highlight": ".ck-page",
+"viewportHeight": 620
 }
 ]
 ```
@@ -120,3 +120,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T00:49:28Z · body
 - 2026-10-25T00:49:46Z · body
 - 2026-10-25T00:51:42Z · body
+- 2026-10-25T00:56:35Z · body
