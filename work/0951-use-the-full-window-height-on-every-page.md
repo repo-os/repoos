@@ -19,7 +19,6 @@ last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check fail
 review_passes: 1
 handoff_signal_retry_count: 1
 dev_error_count: 12
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T16:50:26.076Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T16:53:11.305Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T16:53:22.254Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
