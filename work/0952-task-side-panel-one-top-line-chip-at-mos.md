@@ -147,9 +147,9 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 "route": "/work?task=9999&tab=debug",
 "highlight": ".debug-status-detail",
 "steps": [
-  {
-    "click": "button[data-test-id=\"debug-tab-status\"]"
-  }
+{
+  "click": "button[data-test-id=\"debug-tab-status\"]"
+}
 ],
 "state": "drawer:statusReviewFailed",
 "viewportWidth": 1280
