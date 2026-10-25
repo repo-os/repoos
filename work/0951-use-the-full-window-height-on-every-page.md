@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T18:29:34Z"
+updated_at: "2026-10-25T18:39:03Z"
 review_rounds: 1
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
@@ -262,3 +262,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T18:24:50Z · note: review pass 2: needs some work
 - 2026-10-25T18:24:51Z · status review→active
 - 2026-10-25T18:29:34Z · body
+- 2026-10-25T18:39:03Z · body
