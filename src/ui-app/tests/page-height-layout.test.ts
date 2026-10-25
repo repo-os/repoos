@@ -24,7 +24,7 @@ describe("standard page height and floating controls", () => {
       /--floating-head-stack-height:\s*calc\([\s\S]*--floating-head-size[\s\S]*--floating-head-gap/,
     );
     expect(css).toMatch(
-      /--page-bottom-inset:\s*calc\(var\(--floating-head-stack-height\) \+ var\(--floating-head-bottom\) \+ 16px\)/,
+      /--page-bottom-inset:\s*calc\(var\(--floating-head-stack-height\) \+ var\(--floating-head-bottom\) \+ 24px\)/,
     );
     expect(css).toMatch(
       /\.body::after\s*\{[^}]*position:\s*fixed;[^}]*left:\s*auto;[^}]*right:\s*0;[^}]*width:\s*calc\(var\(--floating-head-size\) \+ 44px\);[^}]*background:\s*linear-gradient\(to bottom, transparent, var\(--bg\)\)/s,
@@ -53,9 +53,9 @@ describe("standard page height and floating controls", () => {
     const gap = 8;
     const stack = size * 3 + gap * 2;
     const bottom = 22;
-    const clearance = 16;
+    const clearance = 24;
     const minInset = stack + bottom + clearance;
-    expect(minInset).toBeGreaterThan(190);
+    expect(minInset).toBeGreaterThan(200);
     expect(css).toContain(
       `--page-bottom-inset: calc(var(--floating-head-stack-height) + var(--floating-head-bottom) + ${clearance}px)`,
     );
