@@ -3,6 +3,9 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: Reading additional input from stdin...
 priority: p2
 area: web
 assigned_to: ai
@@ -11,14 +14,15 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T11:18:37Z"
+updated_at: "2026-10-25T11:28:03Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 review_passes: 1
 handoff_signal_retry_count: 1
-dev_error_count: 6
+dev_error_count: 7
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T11:28:03.815Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -191,3 +195,5 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T10:42:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T11:17:08Z · CTO action: restart-stalled-agent (resume) · check-failed-after-retries · check failed after 2 automatic retries · the worktree changed while the gate was running (HEAD moved from 671525a3 to 4a029553) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-10-25T11:18:37Z · body
+- 2026-10-25T11:28:03Z · agent exited with an error (codex) · Reading additional input from stdin...
+- 2026-10-25T11:28:03Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Reading additional input from stdin...
