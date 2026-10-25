@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T12:04:07Z"
+updated_at: "2026-10-25T12:12:43Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
@@ -48,52 +48,52 @@ Every standard nav page uses the full window height: the scrollable content area
 ```json
 [
 {
-  "label": "Work page at tall viewport",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".work-page",
-  "viewportWidth": 1280,
-  "viewportHeight": 1120
+"label": "Work page at tall viewport",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page",
+"viewportWidth": 1280,
+"viewportHeight": 1120
 },
 {
-  "label": "Work page at short viewport",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".work-page",
-  "viewportWidth": 1280,
-  "viewportHeight": 620
+"label": "Work page at short viewport",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page",
+"viewportWidth": 1280,
+"viewportHeight": 620
 },
 {
-  "label": "Stories page at tall viewport",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".stories-page",
-  "viewportWidth": 1280,
-  "viewportHeight": 1120
+"label": "Stories page at tall viewport",
+"target": "default",
+"route": "/stories",
+"highlight": ".stories-page",
+"viewportWidth": 1280,
+"viewportHeight": 1120
 },
 {
-  "label": "Stories page at short viewport",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".stories-page",
-  "viewportWidth": 1280,
-  "viewportHeight": 620
+"label": "Stories page at short viewport",
+"target": "default",
+"route": "/stories",
+"highlight": ".stories-page",
+"viewportWidth": 1280,
+"viewportHeight": 620
 },
 {
-  "label": "Checks page at tall viewport",
-  "target": "default",
-  "route": "/checks",
-  "highlight": ".ck-page",
-  "viewportWidth": 1280,
-  "viewportHeight": 1120
+"label": "Checks page at tall viewport",
+"target": "default",
+"route": "/checks",
+"highlight": ".ck-page",
+"viewportWidth": 1280,
+"viewportHeight": 1120
 },
 {
-  "label": "Checks page at short viewport",
-  "target": "default",
-  "route": "/checks",
-  "highlight": ".ck-page",
-  "viewportWidth": 1280,
-  "viewportHeight": 620
+"label": "Checks page at short viewport",
+"target": "default",
+"route": "/checks",
+"highlight": ".ck-page",
+"viewportWidth": 1280,
+"viewportHeight": 620
 }
 ]
 ```
@@ -213,3 +213,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T12:02:05Z · body
 - 2026-10-25T12:03:36Z · body
 - 2026-10-25T12:04:07Z · body
+- 2026-10-25T12:12:43Z · message_queued at 2026-10-25T12:12:43.765Z
