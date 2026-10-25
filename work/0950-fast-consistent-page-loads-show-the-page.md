@@ -245,3 +245,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T06:13:36Z · agent exited with an error (opencode) · ✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed.
 - 2026-10-25T08:51:58Z · cli_override, model_override
 - 2026-10-25T08:52:03Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T08:52:03Z · message_delivered: 1 message(s)
