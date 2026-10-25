@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-24T23:55:54Z"
+updated_at: "2026-10-25T00:09:33Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -57,26 +57,121 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "Task drawer with compact status and Debug details",
+"label": "Review failed",
 "target": "default",
-"route": "/work?task=0952&tab=debug",
-"highlight": ".drawer-status-chip",
-"state": "drawer:reviewWithBranch"
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 820
 },
 {
-"label": "Status details subtab",
+"label": "Review failed narrow",
 "target": "default",
-"route": "/work?task=0952&tab=debug",
-"highlight": ".debug-tabs",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 390
+},
+{
+"label": "Not landable",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:landable",
+"viewportWidth": 820
+},
+{
+"label": "Not landable narrow",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:landable",
+"viewportWidth": 390
+},
+{
+"label": "Handoff failed",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusHandoffFailed",
+"viewportWidth": 820
+},
+{
+"label": "Handoff failed narrow",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusHandoffFailed",
+"viewportWidth": 390
+},
+{
+"label": "Checks running",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusChecksRunning",
+"viewportWidth": 820
+},
+{
+"label": "Checks running narrow",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusChecksRunning",
+"viewportWidth": 390
+},
+{
+"label": "Confirming handoff",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusConfirmingHandoff",
+"viewportWidth": 820
+},
+{
+"label": "Confirming handoff narrow",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusConfirmingHandoff",
+"viewportWidth": 390
+},
+{
+"label": "Checks failed after retries",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusChecksFailed",
+"viewportWidth": 820
+},
+{
+"label": "Checks failed narrow",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusChecksFailed",
+"viewportWidth": 390
+},
+{
+"label": "Waiting for you details",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:tabExpandWarnings",
+"viewportWidth": 820
+},
+{
+"label": "Debug status details",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": "[aria-label=\"Task status details\"]",
 "steps": [
 {
-"click": ".drawer-status-chip"
-},
-{
-"waitMs": 200
+"click": "button.debug-tab:first-child"
 }
 ],
-"state": "closeOut:checkProgress"
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 820
 }
 ]
 ```
@@ -106,3 +201,9 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-24T23:39:23Z · body
 - 2026-10-24T23:51:07Z · handoff failed · remote validation failed: test failure: tests/done-error-placement.test.ts > move-to-done inline error placement > renders in the task panel below the Move to done button, tests/reviewer-thinking-state.test.ts > reviewer thinking state in the task panel (#0209) > labels a previous-round report and withholds sign-off while a new review is pending, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on bee — fix it in the feature branch and re-run the gate
 - 2026-10-24T23:55:54Z · message_queued at 2026-10-24T23:55:54.440Z
+- 2026-10-24T23:56:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-24T23:59:08Z · body
+- 2026-10-25T00:04:45Z · body
+- 2026-10-25T00:08:24Z · body
+- 2026-10-25T00:09:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T00:09:33Z · message_delivered: 1 message(s)
