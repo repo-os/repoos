@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T03:06:23Z"
+updated_at: "2026-10-25T03:07:53Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:27:44.782Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
@@ -258,3 +258,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T03:01:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-25T03:03:31Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T03:06:23Z · body
+- 2026-10-25T03:07:53Z · handoff_deferred: 1 queued message(s) must be read before review
