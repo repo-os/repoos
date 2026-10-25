@@ -2,8 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   LINK_PROBE_BYTES,
   LINK_THROUGHPUT_FLOOR_BPS,
+  formatLinkProbeFailure,
   linkProbeAcceptable,
   probeHostLink,
+  probeLinkWithRetry,
   type BundleUploadHost,
 } from "../../server/bundle-upload.js";
 
@@ -45,5 +47,31 @@ describe("remote link probe", () => {
     expect(
       linkProbeAcceptable({ ok: true, rttMs: 900, throughputBps: LINK_THROUGHPUT_FLOOR_BPS }),
     ).toBe(true);
+  });
+
+  it("retries one failed probe after backoff and accepts a recovered link", async () => {
+    const probe = vi
+      .fn<() => Promise<{ ok: boolean; rttMs: number; throughputBps: number }>>()
+      .mockResolvedValueOnce({ ok: false, rttMs: 120, throughputBps: 0 })
+      .mockResolvedValueOnce({ ok: true, rttMs: 900, throughputBps: LINK_THROUGHPUT_FLOOR_BPS });
+    const wait = vi.fn(async (_ms: number) => {});
+
+    const result = await probeLinkWithRetry(probe, LINK_THROUGHPUT_FLOOR_BPS, wait);
+
+    expect(probe).toHaveBeenCalledTimes(2);
+    expect(wait).toHaveBeenCalledExactlyOnceWith(500);
+    expect(linkProbeAcceptable(result)).toBe(true);
+  });
+
+  it("reports the final failed probe's RTT, measured rate, and configured floor", async () => {
+    const probe = vi
+      .fn<() => Promise<{ ok: boolean; rttMs: number; throughputBps: number; detail?: string }>>()
+      .mockResolvedValue({ ok: true, rttMs: 190, throughputBps: 80 * 1024 });
+    const result = await probeLinkWithRetry(probe, LINK_THROUGHPUT_FLOOR_BPS, async () => {});
+
+    expect(probe).toHaveBeenCalledTimes(2);
+    expect(formatLinkProbeFailure("bee", result, LINK_THROUGHPUT_FLOOR_BPS)).toContain(
+      "RTT 190 ms, 80 KB/s measured, 200 KB/s floor",
+    );
   });
 });

@@ -38,11 +38,13 @@ import { writeChildStdin } from "../core/child-stdin.js";
 import {
   bundleUploadLimitsFromConfig,
   estimateCandidateUploadBytes,
+  formatLinkProbeFailure,
   formatBundleUploadDetail,
   LINK_THROUGHPUT_FLOOR_BPS,
   linkProbeAcceptable,
   localPressureOkForLocalGate,
   probeHostLink,
+  probeLinkWithRetry,
   readLastCloseOutGateMs,
   runSshForProbe,
   shouldPreferLocalGate,
@@ -5621,22 +5623,14 @@ export class TailscaleRunner implements RemoteValidator {
       const image = rv.containerImage ?? "repoos-ci";
       let incrementalUpload = this.pool.validateScriptMirrorSupported(host.ip);
       const hostLabel = slot.host.host ?? host.ip;
-      let link = this.linkProbe
-        ? await this.linkProbe(host)
-        : await probeHostLink(host, runSshForProbe, { payloadBytes: rv.linkProbeBytes });
       const throughputFloorBps = rv.linkThroughputFloorBps ?? LINK_THROUGHPUT_FLOOR_BPS;
+      const runProbe = () =>
+        this.linkProbe
+          ? this.linkProbe(host)
+          : probeHostLink(host, runSshForProbe, { payloadBytes: rv.linkProbeBytes });
+      const link = await probeLinkWithRetry(runProbe, throughputFloorBps);
       if (!link.ok || !linkProbeAcceptable(link, throughputFloorBps)) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        link = this.linkProbe
-          ? await this.linkProbe(host)
-          : await probeHostLink(host, runSshForProbe, { payloadBytes: rv.linkProbeBytes });
-      }
-      if (!link.ok || !linkProbeAcceptable(link, throughputFloorBps)) {
-        const measuredKbps = Math.round(link.throughputBps / 1024);
-        const detail =
-          `host ${hostLabel} skipped: link probe failed (RTT ${link.rttMs} ms, ` +
-          `${measuredKbps} KB/s measured, ${Math.round(throughputFloorBps / 1024)} KB/s floor)` +
-          (link.detail ? `: ${link.detail}` : "");
+        const detail = formatLinkProbeFailure(hostLabel, link, throughputFloorBps);
         emit(`[${detail}]\n`);
         return withScope(this.infraFail(detail, { taskId: opts.taskId, host: host.ip }));
       }
