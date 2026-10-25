@@ -2,33 +2,32 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: ready
+status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/fast-consistent-page-loads-show-the-page/work/.attachments/0950/shots/default-1.png`: No such file or directory (os error 2)"
-debug_tldr: "Missing handoff screenshot default-1.png in the worktree — run repoos shot for #0950 there, then restart the engineer run."
-debug_tldr_at: "2026-10-25T15:34:35Z"
-debug_tldr_key: "dev-error|2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/fast-consistent-page-loads-show-the-page/work/.attachments/0950/shots/default-1.png`: No such file or directory (os error 2)"
-hold: true
+needs_input_detail: handoff finalization was interrupted (server reload) — restart work to hand off again
+debug_tldr: "Handoff finalization was cut off by a RepoOS server reload—resume the engineer on #0950 and request review again."
+debug_tldr_at: "2026-10-25T18:37:48Z"
+debug_tldr_key: dev-error|handoff finalization was interrupted (server reload) — restart work to hand off again
 priority: p2
 area: web
-assigned_to: human
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: opencode
+model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T16:50:46Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
+updated_at: "2026-10-25T19:03:14Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/incremental-index.test.ts > resolveWorktreeStatuses > reuses cached dirtiness when the worktree HEAD has not moved on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 8a686f6e99c339ddf551e110a4374da7ebe7937e
 review_passes: 8
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 6
+dev_error_count: 7
 ---
 ## Problem
 
@@ -96,16 +95,50 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 ```
 
 ## Performance measurements
-### Baseline (driver on main, 2026-10-25, 5 runs)
-- `/api/deployments` median **2687 ms** (min 2279, max 3000)
-- `/api/project-environments` 1 ms · `/api/dev/targets` 1 ms · `/api/check-plan` 5 ms · `/api/releases` 0 ms
+Measured 2026-10-26, five samples per endpoint/page. This replaces the earlier latency-replay figures: the old harness included a 3-second wait for an absent skeleton and those figures are not valid navigation timings.
 
-### After this branch (2026-10-25, `bun scripts/bench-page-loads.mjs --runs=5`)
-**Endpoint (in-process `getDeploymentsStatus`, this worktree):** median **1923 ms** (min 1785, max 2093). Same handler as baseline; machine load differs — not a claimed optimization.
+### Method
 
-**Pages (headless WebKit, endpoint latencies replayed per script):** median cold → revisit — Releases 1203→657 ms, Checks 864→622 ms, Deployments 3392→3011 ms, Dev 1204→3062 ms, Secrets 10030→3013 ms, Agents 632→3023 ms. Skeleton on cold: Releases/Checks/Deployments/Dev 5/5. Skeleton on revisit: Deployments/Dev/Secrets **0/5** (cached content, no flash). Revisit wall-clock still includes the bench harness’s delayed API routes.
+Built the pre-feature UI from Git main (`7d064df87455`, all 863 archived UI blobs verified against that revision) entirely inside this worktree. Served that UI and this branch UI against the same isolated, authenticated fixture backend in headless WebKit at 1440×900. No injected API delay; service workers disabled. Cold means a new document/context; revisit means sidebar navigation away and back in the same context. Content readiness is the first sampled animation frame containing visible real content and no visible skeleton; timing includes browser navigation/action overhead. Skeleton checks no longer wait for a missing element or count hidden tabs. Secrets uses the empty environment state; Agents uses the default agents tab. Deferred-response component tests separately cover populated/cached views and refresh failures.
 
-Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
+Reproduce baseline UI with `git archive main src/ui-app src/core src/server` extracted into `.repoos/page-load-baseline`, then `bunx vite build --config .repoos/page-load-baseline/src/ui-app/vite.config.ts`. Run `bun scripts/bench-page-loads.mjs --runs=5 --baseline-ui=.repoos/page-load-baseline/dist/ui`; after-only runs omit `--baseline-ui`. Raw five-sample results are printed by the script. This run used `.repoos/page-load-benchmark.log` for the reconstructed baseline and `.repoos/page-load-benchmark-final.log` for the final branch build.
+
+### Per-page median time to content (ms)
+
+| Page | Before cold | After cold | Before revisit | After revisit | After revisit skeletons |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Releases | 422 | 354 | 607 | 476 | 0/5 |
+| Checks | 410 | 408 | 614 | 414 | 0/5 |
+| Deployments | 412 | 416 | 631 | 398 | 0/5 |
+| Dev | 420 | 397 | 629 | 429 | 0/5 |
+| Secrets | 417 | 401 | 434 | 441 | 0/5 |
+| Agents | 643 | 415 | 451 | 472 | 0/5 |
+
+Cold shell medians after the change (ms): Releases 321, Checks 408, Deployments 416, Dev 397, Secrets 401, Agents 415. Fast fixture requests can settle before a sampled frame; the deterministic first-load skeleton tests and loading shot fixtures cover slow responses. No production page speedup is inferred from fixture timings; Secrets/Agents revisits are roughly unchanged at this latency.
+
+### Per-endpoint HTTP median (ms, identical fixture backend)
+
+| Endpoint | Before | After |
+| --- | ---: | ---: |
+| `/api/release` | 42 | 28 |
+| `/api/release/distribution` | 45 | 20 |
+| `/api/check-plan` | 1 | 1 |
+| `/api/check-runs?limit=300` | 2 | 1 |
+| `/api/deployments` | 64 | 41 |
+| `/api/dev/targets` | 1 | 1 |
+| `/api/project-environments` | 1 | 1 |
+| `/api/agents/detect` | 0 | 0 |
+
+### Real-worktree slow endpoint
+
+Previously recorded driver baseline: `/api/deployments` median 2687 ms (2279–3000, five samples). In this run the actual worktree `getDeploymentsStatus()` handler measured median **2508 ms** (2335–2688; samples 2688, 2508, 2357, 2335, 2626). This is in-process handler time, distinct from the small fixture HTTP endpoint above. Earlier attempts ranged higher under different host load; no server optimization or causal server speedup is claimed. The handler already parallelizes independent branch summaries and coalesces identical freshness work. Follow-up **#0955** tracks profiling/reducing the remaining git subprocess fan-out.
+
+### Review follow-up and visual QA
+
+Cached empty lists now render without skeletons on Checks, Dev, Secrets, detected Agents and Releases distribution. Table-driven tests cover empty/populated responses; Secrets tests cover late success and failure after the selected environment changes, and the previous keys are cleared immediately. Skeletons now match Dev stacked target cards and Deployments branch cards plus a matrix; table skeletons use aligned row columns. Reduced-motion styles apply to every shape. Four fresh fixture PNGs were captured under `.repoos/page-load-shots-final/` for visual inspection; the four corresponding managed handoff shots remain declared.
+
+## Implementation follow-up
+The current branch already migrated Check Runs, detected Agents and release distribution to the shared skeleton/cache. This continuation fixes cached empty lists on Checks, Dev and Secrets, clears the previous environment snapshot immediately when selection changes, and guards late snapshot failures as well as successes. Table-driven race tests cover both late outcomes; empty and populated list cases cover cached revisits. The page benchmark now uses a separately built baseline UI from Git against the same authenticated fixture backend, measures DOM content readiness without waiting for an absent skeleton, and ignores skeletons in hidden tabs. Existing loading/loaded shots for Deployments and Dev remain declared; current captures are being verified before handoff.
 
 ## Activity
 
@@ -322,3 +355,32 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 - 2026-10-25T15:30:45Z · agent exited with an error (codex) · 2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/fast-consistent-page-loads-show-the-page/work/.attachments/0950/shots/default-1.png`: No such file or directory (os error 2)
 - 2026-10-25T16:16:27Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T16:50:46Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T18:02:38Z · assigned_to
+- 2026-10-25T18:02:44Z · released
+- 2026-10-25T18:03:01Z · status ready→active
+- 2026-10-25T18:03:07Z · model_override
+- 2026-10-25T18:03:15Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T18:03:16Z · message_delivered: 1 message(s)
+- 2026-10-25T18:03:17Z · needs_input
+- 2026-10-25T18:03:17Z · message_queued at 2026-10-25T18:03:17.565Z
+- 2026-10-25T18:09:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T18:10:49Z · cli_override, model_override
+- 2026-10-25T18:10:50Z · message_queued at 2026-10-25T18:10:50.981Z
+- 2026-10-25T18:11:54Z · body
+- 2026-10-25T18:12:36Z · body: Implementation follow-up (added)
+- 2026-10-25T18:12:37Z · message_queued at 2026-10-25T18:12:37.216Z
+- 2026-10-25T18:14:17Z · body
+- 2026-10-25T18:19:14Z · body: Performance measurements (added 29, removed 7)
+- 2026-10-25T18:19:14Z · message_queued at 2026-10-25T18:19:14.537Z
+- 2026-10-25T18:19:35Z · note: Visually inspected all four final PNGs: Deployments shell plus branch-card/table skeleton and populated matrix; Dev shell plus stacked target-card skeleton and running/stopped target cards. The final WebKit benchmark observed no visible skeleton on any of 30 cached revisits. Baseline and final per-page/endpoint medians, method and limitations are recorded in Performance measurements.
+- 2026-10-25T18:21:45Z · body
+- 2026-10-25T18:25:31Z · handoff_deferred: 4 queued message(s) must be read before review
+- 2026-10-25T18:25:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T18:25:32Z · message_delivered: 4 message(s)
+- 2026-10-25T18:30:35Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production... · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-25T18:30:35Z · note: handoff requested (cli)
+- 2026-10-25T18:37:30Z · agent exited with an error (codex) · handoff finalization was interrupted (server reload) — restart work to hand off again
+- 2026-10-25T18:42:22Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from d420f735 to 8a686f6e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-25T18:47:41Z · note: handoff requested (ui-review)
+- 2026-10-25T18:57:51Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/incremental-index.test.ts > resolveWorktreeStatuses > reuses cached dirtiness when the worktree HEAD has not moved on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-25T19:03:14Z · note: handoff requested (ui-review)
