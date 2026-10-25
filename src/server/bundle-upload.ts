@@ -448,6 +448,33 @@ export function linkProbeAcceptable(
   return probe.ok && probe.throughputBps >= floorBps;
 }
 
+/** Retry a failed probe once to ride out a transient network interruption. */
+export async function probeLinkWithRetry(
+  probe: () => Promise<LinkProbeResult>,
+  floorBps = LINK_THROUGHPUT_FLOOR_BPS,
+  wait: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+): Promise<LinkProbeResult> {
+  let result = await probe();
+  if (!linkProbeAcceptable(result, floorBps)) {
+    await wait(500);
+    result = await probe();
+  }
+  return result;
+}
+
+export function formatLinkProbeFailure(
+  host: string,
+  probe: LinkProbeResult,
+  floorBps: number,
+): string {
+  const measuredKbps = Math.round(probe.throughputBps / 1024);
+  return (
+    `host ${host} skipped: link probe failed (RTT ${probe.rttMs} ms, ` +
+    `${measuredKbps} KB/s measured, ${Math.round(floorBps / 1024)} KB/s floor)` +
+    (probe.detail ? `: ${probe.detail}` : "")
+  );
+}
+
 /**
  * RTT via `ssh true` and throughput via a small stdin transfer to `/dev/null`.
  * `runLocal` is injected so tests avoid real SSH.
