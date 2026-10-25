@@ -2,7 +2,10 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed."
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +16,7 @@ model_override: opencode-go/hy4-preview
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T06:07:27Z"
+updated_at: "2026-10-25T06:13:36Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 9de52afd to c8e8b5e5) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 9de52afdc9ae459b5e601f6a5a6ad9b7e5294396
 review_passes: 8
@@ -21,7 +24,7 @@ last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check fail
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 2
+dev_error_count: 3
 ---
 ## Problem
 
@@ -239,3 +242,5 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T05:54:05Z · message_queued at 2026-10-25T05:54:05.964Z
 - 2026-10-25T05:54:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-25T06:07:27Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T06:13:36Z · agent exited with an error (opencode) · ✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed.
+- 2026-10-25T06:13:36Z · status active→review
