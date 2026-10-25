@@ -3,6 +3,9 @@ id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p1
 area: core
 assigned_to: ai
@@ -12,7 +15,7 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
 updated_at: "2026-10-25T18:04:34Z"
-dev_error_count: 7
+dev_error_count: 8
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4-pro\",\"at\":\"2026-10-25T16:53:06.736Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4-pro\",\"at\":\"2026-10-25T16:53:17.358Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4-pro\",\"at\":\"2026-10-25T16:53:23.411Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -135,3 +138,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T17:58:07Z · body
 - 2026-10-25T18:03:16Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T18:04:34Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-25T18:04:34Z · agent exited with an error (codex) · ✗ handoff deferred — read the queued message(s) first, then request review again
