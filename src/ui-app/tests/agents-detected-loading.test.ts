@@ -94,6 +94,18 @@ async function mountAgents(
   return wrapper;
 }
 
+function detectedPanel(wrapper: ReturnType<typeof mount>) {
+  return wrapper
+    .findAll(".agent-tab-panel")
+    .find((panel) => panel.text().includes("Detected coding agents"))!;
+}
+
+class QuietEventSource {
+  onerror: (() => void) | null = null;
+  addEventListener(): void {}
+  close(): void {}
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   invalidatePageData("agents:detect");
@@ -102,15 +114,16 @@ afterEach(() => {
 
 describe("AgentsView detected-tab loading (#0950)", () => {
   it("shows the shared skeleton instead of a Probing PATH line", async () => {
+    vi.stubGlobal("EventSource", QuietEventSource);
     const wrapper = await mountAgents();
 
     expect(wrapper.text()).not.toContain("Probing PATH");
     expect(wrapper.find(".detect-loading").exists()).toBe(false);
-    expect(wrapper.find(".agent-tab-panel .page-skeleton").exists()).toBe(true);
+    expect(detectedPanel(wrapper).find(".page-skeleton").exists()).toBe(true);
     wrapper.unmount();
   });
 
-  it("renders the cached detection snapshot on revisit with no skeleton", async () => {
+  it("shows cached detections immediately without a skeleton, then refreshes in place", async () => {
     const first = await mountAgents("/?tab=detected", async (url) => {
       if (String(url).includes("/api/agents/detect"))
         return json({ agents: detectedAgents, cachedAt: "2026-10-25T00:00:00Z" });
@@ -120,17 +133,29 @@ describe("AgentsView detected-tab loading (#0950)", () => {
         });
       return new Promise<Response>(() => {});
     });
-    expect(first.find(".detect-agent-name").exists()).toBe(true);
+    expect(first.find(".detect-agent-name").text()).toBe("Codex");
     first.unmount();
 
-    const revisit = await mountAgents();
-    const detected = revisit
-      .findAll(".agent-tab-panel")
-      .find((panel) => panel.text().includes("Detected coding agents"))!;
-    expect(detected).toBeDefined();
+    let finish!: (response: Response) => void;
+    const revisit = await mountAgents("/?tab=detected", (url) => {
+      if (String(url).includes("/api/agents/detect"))
+        return new Promise<Response>((resolve) => (finish = resolve));
+      return new Promise<Response>(() => {});
+    });
+    const detected = detectedPanel(revisit);
     expect(detected.find(".page-skeleton").exists()).toBe(false);
     expect(detected.text()).not.toContain("Probing PATH");
     expect(detected.find(".detect-agent-name").text()).toBe("Codex");
+
+    finish(
+      json({
+        agents: [{ ...detectedAgents[0], name: "Codex Nightly" }],
+        cachedAt: "2026-10-25T00:01:00Z",
+      }),
+    );
+    await flushPromises();
+    expect(detected.find(".detect-agent-name").text()).toBe("Codex Nightly");
+    expect(detected.find(".page-skeleton").exists()).toBe(false);
     revisit.unmount();
   });
 
@@ -155,6 +180,7 @@ describe("AgentsView detected-tab loading (#0950)", () => {
     const revisit = await mountAgents("/?tab=detected", async () => {
       throw new Error("refresh offline");
     });
+    // The stale snapshot is rendered before the probe stream reports failure.
     FailedEventSource.latest.onerror?.();
     await flushPromises();
 
