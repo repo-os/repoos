@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from eec677ba to d74e9b93) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: eec677bac89c446145383d0d176ce86853f65c62
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
@@ -122,3 +124,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T00:51:42Z · body
 - 2026-10-25T00:56:35Z · body
 - 2026-10-25T00:57:58Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from eec677ba to d74e9b93) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+
