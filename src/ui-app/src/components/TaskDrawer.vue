@@ -2772,10 +2772,10 @@ const drawerWaitingCardVisible = computed(() => {
   if (showAgentQuestionsBanner.value) return true;
   return Boolean(
     !handoffBusy.value &&
-      !awaitingFreshReview.value &&
-      !staleNeedsInputOnReview.value &&
-      !review.value?.running &&
-      !repo.isRunning(task.id),
+    !awaitingFreshReview.value &&
+    !staleNeedsInputOnReview.value &&
+    !review.value?.running &&
+    !repo.isRunning(task.id),
   );
 });
 
@@ -5316,10 +5316,7 @@ watch(
               </div>
             </div>
           </div>
-          <div
-            v-else-if="drawerWaitingCardVisible && ui.active"
-            class="drawer-critical"
-          >
+          <div v-else-if="drawerWaitingCardVisible && ui.active" class="drawer-critical">
             <div class="agent-waiting" :class="{ 'agent-waiting-static': staleNeedsInputOnReview }">
               <span v-if="!staleNeedsInputOnReview" class="agent-waiting-dot"></span>
               <div>
