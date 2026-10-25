@@ -72,3 +72,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T01:41:38Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-25T01:47:25Z · cli_override, model_override
 - 2026-10-25T01:48:01Z · needs_input
+- 2026-10-25T01:48:01Z · message_queued at 2026-10-25T01:48:01.698Z
