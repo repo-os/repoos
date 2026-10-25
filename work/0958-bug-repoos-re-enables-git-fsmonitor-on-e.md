@@ -17,7 +17,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T12:28:29Z"
+updated_at: "2026-10-25T12:29:48Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:05:48.590Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:12.715Z\",\"kind\":\"dev-error\"}]"
 ---
