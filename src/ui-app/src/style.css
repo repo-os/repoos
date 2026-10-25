@@ -29,6 +29,7 @@
   --floating-head-size: 52px;
   --floating-head-gap: 8px;
   --floating-head-bottom: calc(22px + var(--safe-bot));
+  --floating-head-inline-offset: 22px;
   --floating-head-stack-height: calc(
     var(--floating-head-size) + var(--floating-head-size) + var(--floating-head-size) +
       var(--floating-head-gap) + var(--floating-head-gap)
@@ -744,7 +745,7 @@
   left: auto;
   right: 0;
   bottom: 0;
-  width: calc(var(--floating-head-size) + 44px);
+  width: calc(var(--floating-head-size) + var(--floating-head-inline-offset) + 22px);
   height: var(--page-bottom-fade-size);
   background: linear-gradient(to bottom, transparent, var(--bg));
   pointer-events: none;
@@ -1161,7 +1162,9 @@
   overflow-y: auto;
   min-height: 0;
   align-self: stretch;
-  padding: 22px 26px var(--page-bottom-inset);
+  /* Full-height views own their scrollports and put the shared end inset on
+     that scroller. Padding here would instead recreate an empty bottom band. */
+  padding: 22px 26px 0;
   min-width: 0;
 }
 /* Standard nav views span this pane's full width: do NOT add a page-level
@@ -1813,12 +1816,15 @@
 }
 @media (max-width: 760px) {
   .body::after {
-    width: calc(var(--floating-head-size) + 24px);
+    width: calc(var(--floating-head-size) + var(--floating-head-inline-offset) + 12px);
   }
   .work-page {
     height: auto;
     min-height: initial;
     display: block;
+    /* Columns rejoin the outer scroller at this width, so only the final
+       column needs end clearance rather than a large gap after every column. */
+    padding-bottom: var(--page-bottom-inset);
   }
   .work-page .board {
     display: flex;
@@ -4859,7 +4865,7 @@
 .doc-view {
   max-width: 100%;
   min-width: 0;
-  padding: 24px 28px;
+  padding: 24px 28px var(--page-bottom-inset);
   overflow-y: auto;
   min-height: 0;
   white-space: pre-wrap;
@@ -8651,12 +8657,13 @@
   :root {
     --floating-head-size: 46px;
     --floating-head-bottom: calc(74px + var(--safe-bot));
+    --floating-head-inline-offset: 12px;
   }
   .sidebar {
     display: none;
   }
   .main {
-    padding: 18px 16px var(--page-bottom-inset);
+    padding: 18px 16px 0;
   }
   .tabbar {
     display: flex;
@@ -9041,7 +9048,8 @@
   min-height: 0;
   overflow-y: auto;
   padding-right: 3px;
-  /* Same end inset as .main: these pages scroll here, not in the pane. */
+  /* These pages scroll here, not in .main; the last row must clear the fixed
+     controls without shortening the scrollport itself. */
   padding-bottom: var(--page-bottom-inset);
   scrollbar-width: none;
 }
@@ -9068,13 +9076,13 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  /* reclaim most of .main's 60px bottom padding for the editor */
-  margin-bottom: -40px;
 }
 .settings-page--fill > .page-scroll-body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* The editor is not the page scroller; its textarea owns end clearance. */
+  padding-bottom: 0;
 }
 .settings-page--fill .settings-panels,
 .settings-page--fill .toml-panel,
@@ -9089,10 +9097,6 @@
   padding: 0 18px;
 }
 @media (max-width: 760px) {
-  /* .main's 90px bottom padding clears the fixed tabbar; keep all of it */
-  .settings-page--fill {
-    margin-bottom: 0;
-  }
   /* five tabs don't fit a phone: scroll the strip instead of clipping the
      last ones. overflow clips at the padding box, so drop the -1px overlap
      that normally lets the active underline sit on the strip's border. */
@@ -9146,7 +9150,9 @@
   width: 100%;
   height: 100%;
   margin: 0;
-  padding: 12px 14px;
+  /* Keep the final config lines above the fixed heads; matching padding on the
+     highlight layer and textarea preserves their alignment while scrolling. */
+  padding: 12px 14px var(--page-bottom-inset);
   font-family: "JetBrains Mono", monospace;
   font-size: 12px;
   line-height: 1.6;
@@ -9665,7 +9671,12 @@
   min-height: 0;
   overflow-y: auto;
   padding-right: 3px;
+  padding-bottom: var(--page-bottom-inset);
   scrollbar-width: none;
+}
+.agents-tab-content--playground {
+  /* The playground fills this pane and protects its own log and composer. */
+  padding-bottom: 0;
 }
 .agents-tab-content::-webkit-scrollbar {
   display: none;

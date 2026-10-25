@@ -97,7 +97,7 @@ onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDeb
 <style scoped>
 .floating-heads {
   position: fixed;
-  right: 22px;
+  right: var(--floating-head-inline-offset);
   bottom: var(--floating-head-bottom);
   z-index: 70;
   pointer-events: none;

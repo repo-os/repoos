@@ -33,6 +33,12 @@ describe("standard page height and floating controls", () => {
     expect(css).toMatch(
       /--page-bottom-fade-size:\s*calc\(var\(--floating-head-stack-height\) \+ var\(--floating-head-bottom\)\)/,
     );
+    expect(css).toMatch(
+      /--page-inline-end-inset:\s*calc\(\s*var\(--floating-head-size\) \+ var\(--floating-head-inline-offset\) \+ 12px\s*\)/,
+    );
+    expect(css).toMatch(
+      /\.main\s*\{[^}]*padding-inline-end:\s*max\(26px, var\(--page-inline-end-inset\)\)/s,
+    );
     expect(css).toMatch(/--floating-head-size:\s*46px/);
     expect(css).toMatch(/padding:\s*18px 16px var\(--page-bottom-inset\)/);
     expect(floatingHeads).toMatch(/\.stack\s*\{[^}]*gap:\s*var\(--floating-head-gap\)/s);

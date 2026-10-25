@@ -587,7 +587,7 @@ function tryOpenInput(ref: string, attempt: number): void {
 <style scoped>
 .inputs-page {
   width: 100%;
-  padding: 0 0 80px;
+  padding: 0 0 var(--page-bottom-inset);
   box-sizing: border-box;
 }
 .inputs-board-page {
@@ -931,7 +931,7 @@ function tryOpenInput(ref: string, attempt: number): void {
 @media (max-width: 650px) {
   .inputs-page {
     width: 100%;
-    padding: 20px 14px 70px;
+    padding: 20px 14px var(--page-bottom-inset);
     box-sizing: border-box;
   }
   .inputs-board-page {
