@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T01:28:44Z"
+updated_at: "2026-10-25T01:39:05Z"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T01:02:11.529Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T01:26:46.721Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -58,92 +58,92 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "Review failure card at wide width",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 1280
+"label": "Review failure card at wide width",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 1280
 },
 {
-  "label": "Review failure card at narrow width",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 390
+"label": "Review failure card at narrow width",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 390
 },
 {
-  "label": "Not landable card at wide width",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landable",
-  "viewportWidth": 1280
+"label": "Not landable card at wide width",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landable",
+"viewportWidth": 1280
 },
 {
-  "label": "Not landable card at narrow width",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landable",
-  "viewportWidth": 390
+"label": "Not landable card at narrow width",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landable",
+"viewportWidth": 390
 },
 {
-  "label": "Live check progress at wide width",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunning",
-  "viewportWidth": 1280
+"label": "Live check progress at wide width",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning",
+"viewportWidth": 1280
 },
 {
-  "label": "Live check progress at narrow width",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunning",
-  "viewportWidth": 390
+"label": "Live check progress at narrow width",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning",
+"viewportWidth": 390
 },
 {
-  "label": "Confirming handoff at wide width",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusConfirmingHandoff",
-  "viewportWidth": 1280
+"label": "Confirming handoff at wide width",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusConfirmingHandoff",
+"viewportWidth": 1280
 },
 {
-  "label": "Confirming handoff at narrow width",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusConfirmingHandoff",
-  "viewportWidth": 390
+"label": "Confirming handoff at narrow width",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusConfirmingHandoff",
+"viewportWidth": 390
 },
 {
-  "label": "Check retries failed at wide width",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksFailed",
-  "viewportWidth": 1280
+"label": "Check retries failed at wide width",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailed",
+"viewportWidth": 1280
 },
 {
-  "label": "Check retries failed at narrow width",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksFailed",
-  "viewportWidth": 390
+"label": "Check retries failed at narrow width",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailed",
+"viewportWidth": 390
 },
 {
-  "label": "Full status details in Debug",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": "[aria-label=\"Task status details\"]",
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 1280
+"label": "Full status details in Debug",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": "[aria-label=\"Task status details\"]",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 1280
 }
 ]
 ```
@@ -212,3 +212,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T01:21:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T01:26:46Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
 - 2026-10-25T01:28:44Z · body
+- 2026-10-25T01:39:05Z · message_queued at 2026-10-25T01:39:05.680Z
