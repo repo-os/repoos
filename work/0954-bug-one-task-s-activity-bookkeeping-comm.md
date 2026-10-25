@@ -106,3 +106,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T08:57:45Z · message_delivered: 1 message(s)
 - 2026-10-25T08:59:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T09:08:54Z · message_queued at 2026-10-25T09:08:54.348Z
+- 2026-10-25T09:08:54Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
