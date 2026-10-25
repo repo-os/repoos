@@ -19,7 +19,6 @@ last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check fail
 review_passes: 1
 handoff_signal_retry_count: 1
 dev_error_count: 8
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T11:28:03.815Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T11:43:40.281Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
