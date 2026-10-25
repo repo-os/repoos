@@ -521,6 +521,9 @@ describe("tuneRepoForScale", () => {
       tuneRepoForScale(root);
       expect(git(root, ["config", "--get", "core.fsmonitor"])).toBe("true");
     } finally {
+      // `tuneRepoForScale` may have started a real daemon for this fixture;
+      // stop it before deleting the checkout so the suite leaves none behind.
+      stopFsmonitorDaemon(root);
       clean();
     }
   });
@@ -530,6 +533,7 @@ describe("removeWorktree", () => {
   it("stops fsmonitor when a clean worktree is removed", () => {
     const { root, clean } = makeRepo();
     try {
+      git(root, ["config", "core.fsmonitor", "true"]);
       const wt = ensureWorktree(root, "feat/fsmonitor-stop");
       const stopped: string[] = [];
       expect(
@@ -538,6 +542,31 @@ describe("removeWorktree", () => {
         }),
       ).toBe(true);
       expect(stopped).toEqual([wt.path]);
+    } finally {
+      clean();
+    }
+  });
+
+  it("does not spawn a daemon stop when fsmonitor is disabled or unset", () => {
+    const { root, clean } = makeRepo();
+    try {
+      ensureWorktree(root, "feat/fsmonitor-off");
+      const stopped: string[] = [];
+      expect(
+        removeWorktree(root, "feat/fsmonitor-off", {
+          stopFsmonitor: (path) => stopped.push(path),
+        }),
+      ).toBe(true);
+      expect(stopped).toEqual([]);
+
+      git(root, ["config", "core.fsmonitor", "false"]);
+      ensureWorktree(root, "feat/fsmonitor-explicit-off");
+      expect(
+        removeWorktree(root, "feat/fsmonitor-explicit-off", {
+          stopFsmonitor: (path) => stopped.push(path),
+        }),
+      ).toBe(true);
+      expect(stopped).toEqual([]);
     } finally {
       clean();
     }
@@ -557,6 +586,7 @@ describe("removeWorktree", () => {
   it("leaves a dirty worktree's daemon alone when removal is refused", () => {
     const { root, clean } = makeRepo();
     try {
+      git(root, ["config", "core.fsmonitor", "true"]);
       const wt = ensureWorktree(root, "feat/fsmonitor-dirty");
       writeFileSync(join(wt.path, "scratch.txt"), "uncommitted\n");
       const stopped: string[] = [];

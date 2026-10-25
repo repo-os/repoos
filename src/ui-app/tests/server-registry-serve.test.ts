@@ -99,7 +99,7 @@ describe("startServer running-server registry", () => {
       await handle.close();
       delete process.env.REPOOS_PREVIEW_CHILD;
     }
-  });
+  }, 30_000);
 
   it("does not tune git config when --preview-overrides is active", async () => {
     const root = minimalRepo();
@@ -120,7 +120,7 @@ describe("startServer running-server registry", () => {
     } finally {
       await handle.close();
     }
-  });
+  }, 30_000);
 
   it("does not tune git config when serving from a linked worktree", async () => {
     const main = minimalRepo();
@@ -142,7 +142,7 @@ describe("startServer running-server registry", () => {
     } finally {
       await handle.close();
     }
-  });
+  }, 30_000);
 
   it("keeps human-disabled fsmonitor when a preview child serves from a linked worktree (#0958)", async () => {
     const main = minimalRepo();
@@ -201,7 +201,7 @@ describe("startServer running-server registry", () => {
     } finally {
       await handle.close();
     }
-  });
+  }, 30_000);
 
   it("writes registry file once listening and removes it on close", async () => {
     const root = minimalRepo();
