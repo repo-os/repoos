@@ -3,9 +3,6 @@ id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (opencode + opencode-go/deepseek-v4-pro) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p1
 area: core
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T16:54:30Z"
+updated_at: "2026-10-25T16:54:35Z"
 dev_error_count: 7
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4-pro\",\"at\":\"2026-10-25T16:53:06.736Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4-pro\",\"at\":\"2026-10-25T16:53:17.358Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4-pro\",\"at\":\"2026-10-25T16:53:23.411Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -128,3 +125,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T16:53:17Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4-pro (2/3 crashes in 30m) · error: Reconnect OpenCode Console to continue.
 - 2026-10-25T16:53:23Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/deepseek-v4-pro) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-25T16:54:29Z · cli_override, model_override
+- 2026-10-25T16:54:35Z · needs_input
