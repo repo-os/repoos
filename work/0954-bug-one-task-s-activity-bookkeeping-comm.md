@@ -15,7 +15,6 @@ updated_at: "2026-10-25T13:21:31Z"
 handoff_signal_retry_count: 2
 dev_error_count: 10
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T12:53:28.823Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:31.757Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:44.989Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:29:04.333Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
