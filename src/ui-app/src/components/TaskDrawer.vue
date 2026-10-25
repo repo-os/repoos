@@ -707,6 +707,12 @@ const drawerStatusDetails = computed(() => {
   const task = ui.active;
   if (!task) return [];
   const rows: { title: string; detail: string }[] = [];
+  if (drawerStatusSummary.value) {
+    rows.push({
+      title: drawerStatusSummary.value.label,
+      detail: drawerStatusSummary.value.guidance,
+    });
+  }
   if (task.needsInput)
     rows.push({
       title: "Waiting for you",
@@ -5166,16 +5172,12 @@ watch(
               (drawerStatusSummary.key !== 'handoffFailed' || !repo.doneErrorFor(ui.active.id))
             "
             class="drawer-status-summary"
-            :class="{
-              'is-error':
-                drawerStatusSummary.key.toLowerCase().includes('failed') ||
-                drawerStatusSummary.key === 'notLandable',
-            }"
+            :class="{ 'is-error': drawerStatusSummary.isError }"
             aria-label="Task status"
           >
             <div class="drawer-status-summary-copy">
               <strong>{{ drawerStatusSummary.label }}</strong>
-              <span>{{ drawerStatusSummary.detail }}</span>
+              <span v-if="drawerStatusSummary.detail">{{ drawerStatusSummary.detail }}</span>
             </div>
             <span
               v-if="
@@ -5191,7 +5193,7 @@ watch(
                 drawerStatusSummary.key === "checksRunning"
                   ? "Running checks…"
                   : drawerStatusSummary.key === "confirmingHandoff"
-                    ? "Confirming handoff…"
+                    ? handoffStepLabel
                     : drawerStatusSummary.key === "reviewerRunning"
                       ? "Reviewer is working…"
                       : "Work is running…"
@@ -5203,7 +5205,7 @@ watch(
             <details class="drawer-info-popover">
               <summary aria-label="Help for this task status"><Info class="size-3.5" /></summary>
               <div class="drawer-info-content" role="note">
-                <p>{{ drawerStatusSummary.detail }}</p>
+                <p>{{ drawerStatusSummary.guidance }}</p>
                 <button
                   type="button"
                   @click="
