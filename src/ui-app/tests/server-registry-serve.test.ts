@@ -79,6 +79,33 @@ afterEach(async () => {
 });
 
 describe("startServer running-server registry", () => {
+  it("honors git.tuneForScale = false during startup", async () => {
+    const root = minimalRepo();
+    writeFileSync(join(root, "repoos.toml"), "servePort = 0\ngit.tuneForScale = false\n");
+    const handle = await startServer({
+      root,
+      host: "127.0.0.1",
+      port: 0,
+      disableAuth: true,
+    });
+    try {
+      expect(() =>
+        execFileSync("git", ["config", "--get", "core.fsmonitor"], {
+          cwd: root,
+          encoding: "utf8",
+        }),
+      ).toThrow();
+      expect(() =>
+        execFileSync("git", ["config", "--get", "core.untrackedCache"], {
+          cwd: root,
+          encoding: "utf8",
+        }),
+      ).toThrow();
+    } finally {
+      await handle.close();
+    }
+  });
+
   it("writes registry file once listening and removes it on close", async () => {
     const root = minimalRepo();
     const port = await reservePort();
