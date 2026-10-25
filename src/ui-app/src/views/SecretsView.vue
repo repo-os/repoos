@@ -142,12 +142,16 @@ async function loadSnapshot(): Promise<void> {
     snapshot.value = null;
     return;
   }
+  // Remember which environment this request belongs to: if the selection changes
+  // before it answers (cached list vs fresh list), the late response must not
+  // show one environment's keys under another's selection.
+  const requestedEnv = selected.value;
   try {
     await refreshPageData(
-      `secrets:${selected.value}`,
-      () =>
-        api<Snapshot>(`/api/project-environments/${encodeURIComponent(selected.value)}/secrets`),
+      `secrets:${requestedEnv}`,
+      () => api<Snapshot>(`/api/project-environments/${encodeURIComponent(requestedEnv)}/secrets`),
       (value) => {
+        if (selected.value !== requestedEnv) return;
         snapshot.value = value;
         error.value = "";
       },

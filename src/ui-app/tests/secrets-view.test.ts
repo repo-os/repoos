@@ -104,6 +104,32 @@ describe("SecretsView (#0929)", () => {
     revisit.unmount();
   });
 
+  it("ignores a late snapshot for an environment that is no longer selected", async () => {
+    const first = mountPage();
+    await flushPromises();
+    first.unmount();
+
+    let finishDev!: (value: unknown) => void;
+    const lateDev = new Promise((resolve) => (finishDev = resolve));
+    const onlyIntegration = {
+      ...(envs as { environments: Array<{ id: string }> }),
+      environments: (envs as { environments: Array<{ id: string }> }).environments.filter(
+        (env) => env.id === "integration",
+      ),
+    };
+    api.mockImplementation(async (path: string) => {
+      if (path === "/api/project-environments") return onlyIntegration as never;
+      if (decodeURIComponent(path.split("/")[3] ?? "") === "dev-nick") return lateDev as never;
+      return answer(path) as never;
+    });
+    const revisit = mountPage();
+    await flushPromises();
+    finishDev(snapshots["dev-nick"]);
+    await flushPromises();
+    expect(revisit.text()).not.toContain("DATABASE_URL");
+    revisit.unmount();
+  });
+
   it("opens the removal dialog from its registered fake shot fixture", async () => {
     window.history.replaceState({}, "", "/secrets?shotState=secrets%3AremoveDialog");
     const wrapper = mountPage();
