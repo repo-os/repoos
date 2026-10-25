@@ -3,6 +3,9 @@ id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-10-25T12:28:30.609191Z ERROR codex_core::session: failed to record rollout items: thread 01a17300-56d9-7e41-b049-c00b10cbe884 not found"
 priority: p1
 area: core
 assigned_to: ai
@@ -11,10 +14,11 @@ branch: feat/bug-one-task-s-activity-bookkeeping-comm
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T12:19:20Z"
+updated_at: "2026-10-25T12:28:31Z"
 handoff_signal_retry_count: 2
-dev_error_count: 7
+dev_error_count: 8
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T12:19:20.905Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:31.757Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -133,3 +137,5 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T11:45:12Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-25T12:14:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T12:19:20Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-25T12:28:31Z · agent exited with an error (codex) · 2026-10-25T12:28:30.609191Z ERROR codex_core::session: failed to record rollout items: thread 01a17300-56d9-7e41-b049-c00b10cbe884 not found
+- 2026-10-25T12:28:31Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-25T12:28:30.609191Z ERROR codex_core::session: failed to record rollout items: thread 01a17300-56d9-7e41-b049-c00b10cbe884 not found
