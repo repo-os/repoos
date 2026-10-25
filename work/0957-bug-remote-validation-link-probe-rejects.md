@@ -11,7 +11,7 @@ branch: feat/bug-remote-validation-link-probe-rejects
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T11:35:15Z"
+updated_at: "2026-10-25T11:35:34Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:46:43.085Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T11:13:08.170Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -59,3 +59,4 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T11:29:32Z · cli_override, model_override
 - 2026-10-25T11:35:14Z · message_queued at 2026-10-25T11:35:14.897Z
 - 2026-10-25T11:35:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T11:35:34Z · CTO nudge: held — an undelivered message is already queued
