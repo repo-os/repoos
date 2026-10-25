@@ -820,6 +820,7 @@ export async function removeDetachedWorktree(
   path: string,
   timeout = 60_000,
 ): Promise<void> {
+  if (existsSync(path) && fsmonitorEnabledAt(root)) stopFsmonitorDaemon(path);
   const run = await runGit(root, ["worktree", "remove", "--force", path], timeout);
   if (run.status !== 0) {
     if (existsSync(path)) {
