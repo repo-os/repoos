@@ -1585,7 +1585,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Initialize job processing (runs after emitEvent is available) (0118)
   triggerJobProcessing = () => {
-    if (!isControlPlane) return;
+    if (isPreviewChild) return;
     if (processingJob) return;
     processingJob = true;
     setImmediate(async () => {
@@ -1782,7 +1782,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   };
 
   // Trigger processing of recovered jobs on startup
-  if (triggerRecoveryJobs && isControlPlane) {
+  if (triggerRecoveryJobs && !isPreviewChild) {
     setImmediate(triggerRecoveryJobs);
   }
 
@@ -2096,7 +2096,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Adopt any agent children that survived a server restart (0214).
   // Reads the durable registry, checks PID aliveness, and re-attaches
   // to still-running children so isRunning() reports true immediately.
-  if (isControlPlane) runner.adoptRunningAgents();
+  if (!isPreviewChild) runner.adoptRunningAgents();
 
   // Recover any pending handoff requests from a previous interrupted turn (#0235).
   // Validates each request (task still exists, active, branch matches) and
@@ -2107,14 +2107,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // and silently drop valid requests (`if (!task) clearPendingHandoff()`),
   // leaving the task stuck `active` with its work uncommitted.
   const runHandoffRecovery = (): void => runner.recoverPendingHandoffs();
-  if (isControlPlane) {
+  if (!isPreviewChild) {
     void indexReady.then(runHandoffRecovery, runHandoffRecovery).catch(() => {});
   }
 
   const runOrphanEngineerReconcile = (): void => {
     runner.reconcileOrphanedEngineers(index.getTasks());
   };
-  if (isControlPlane) {
+  if (!isPreviewChild) {
     void indexReady.then(runOrphanEngineerReconcile, runOrphanEngineerReconcile).catch(() => {});
   }
 
@@ -2459,7 +2459,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const ctoIntervalMs =
     ((config as unknown as Record<string, unknown>)?.ctoMonitorIntervalMs as number | undefined) ||
     5 * 60 * 1000;
-  if (isControlPlane) ctoMonitor.start(ctoIntervalMs);
+  if (!isPreviewChild) ctoMonitor.start(ctoIntervalMs);
 
   // Review activity is transient server state, not task-file frontmatter. Add
   // its small authoritative summary to index-shaped API responses so a board
@@ -2813,7 +2813,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // server was up is finalized from its durable log. Deferred until `indexReady`
   // so an adopted completion can resolve its draft task.
   const runFreeformAdoption = (): void => freeformRuns.adopt();
-  if (isControlPlane) {
+  if (!isPreviewChild) {
     void indexReady.then(runFreeformAdoption, runFreeformAdoption).catch(() => {});
   }
 
@@ -4545,7 +4545,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       void reload.bootSelfHeal();
 
       // Agent supervisor: periodic health checks and safe recovery (0112)
-      if (isControlPlane) {
+      if (!isPreviewChild) {
         supervisor = new AgentSupervisor(config, index, emitEvent);
         supervisor.start();
       }
@@ -4554,7 +4554,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // stalled (0180). Guarded so it never fires while the server is handing
       // over to a reload replacement.
       const watchdogConfig = config.watchdog ?? {};
-      if (isControlPlane)
+      if (!isPreviewChild)
         watchdog = new TaskWatchdog(
           config,
           index,
