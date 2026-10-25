@@ -1025,7 +1025,7 @@ onBeforeUnmount(() => {
         Refresh failed: {{ loadError }}
       </p>
 
-      <template v-else-if="status">
+      <template v-if="status">
         <div v-if="!status.enabled" class="rel-card rel-empty">
           Releases aren't configured for this repository. Add a <code>[release]</code> block in
           <a class="rel-link" href="/settings?tab=toml">repoos.toml</a> to turn this page on.

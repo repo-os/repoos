@@ -363,7 +363,7 @@ onBeforeUnmount(() => {
       <p v-else-if="error && !status" class="dep-err">{{ error }}</p>
       <p v-if="error && status" class="dep-err" role="status">Refresh failed: {{ error }}</p>
 
-      <template v-else-if="status">
+      <template v-if="status">
         <div v-if="!status.enabled" class="dep-panel dep-empty">
           Deployments aren't configured for this repository. Add a
           <code>[[deployments]]</code> block to <a href="/settings?tab=toml">repoos.toml</a> — one
