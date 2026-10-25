@@ -14,7 +14,6 @@ created_at: "2026-10-24T23:57:03Z"
 updated_at: "2026-10-25T08:57:45Z"
 handoff_signal_retry_count: 1
 dev_error_count: 6
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:54:55.478Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:55:01.795Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:55:08.580Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
