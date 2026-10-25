@@ -11,7 +11,7 @@ branch: feat/bug-remote-validation-link-probe-rejects
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T13:43:45Z"
+updated_at: "2026-10-25T13:46:05Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 1ff6ba371c2765741565b178fc674b7105d16e60
 handoff_signal_retry_count: 2
@@ -91,3 +91,4 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T12:39:49Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-10-25T13:30:04Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T13:43:45Z · note: handoff requested (ui-review)
+- 2026-10-25T13:46:05Z · CTO nudge: held — handoff gate is running
