@@ -15,7 +15,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T01:40:27Z"
+updated_at: "2026-10-25T01:42:40Z"
 review_passes: 7
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -214,3 +214,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T01:40:06Z · note: handoff requested (cli)
 - 2026-10-25T01:40:21Z · status active→review
 - 2026-10-25T01:40:27Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-25T01:42:40Z · note: review pass 9: needs some work
