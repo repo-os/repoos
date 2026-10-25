@@ -13,7 +13,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T18:21:45Z"
+updated_at: "2026-10-25T18:25:31Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -368,3 +368,4 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-25T18:19:14Z · message_queued at 2026-10-25T18:19:14.537Z
 - 2026-10-25T18:19:35Z · note: Visually inspected all four final PNGs: Deployments shell plus branch-card/table skeleton and populated matrix; Dev shell plus stacked target-card skeleton and running/stopped target cards. The final WebKit benchmark observed no visible skeleton on any of 30 cached revisits. Baseline and final per-page/endpoint medians, method and limitations are recorded in Performance measurements.
 - 2026-10-25T18:21:45Z · body
+- 2026-10-25T18:25:31Z · handoff_deferred: 4 queued message(s) must be read before review
