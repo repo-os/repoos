@@ -2,7 +2,7 @@
 id: "0957"
 title: "Bug: remote validation link probe rejects usable high-latency links (throughput includes ssh setup time)"
 type: bug
-status: active
+status: done
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/bug-remote-validation-link-probe-rejects
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T13:51:05Z"
+updated_at: "2026-10-25T13:56:57Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 78db36984edf375ea554aacdafedf74bcbf50a1d
 handoff_signal_retry_count: 2
@@ -94,3 +94,5 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T13:46:05Z · CTO nudge: held — handoff gate is running
 - 2026-10-25T13:48:48Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-10-25T13:51:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T13:56:55Z · status active→done
+- 2026-10-25T13:56:57Z · engineer stopped by request
