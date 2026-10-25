@@ -1239,7 +1239,11 @@ onBeforeUnmount(() => {
                 >View the failed run ↗</a
               >
             </p>
-            <p v-if="distributionRefreshError && distribution.length" class="rel-error" role="status">
+            <p
+              v-if="distributionRefreshError && distribution.length"
+              class="rel-error"
+              role="status"
+            >
               Refresh failed: {{ distributionRefreshError }}
             </p>
             <div v-if="distribution.length" class="rel-dist-channels">
