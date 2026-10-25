@@ -90,12 +90,12 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 "route": "/work?task=0952&tab=details",
 "highlight": ".debug-status-detail",
 "steps": [
-  {
-    "click": ".drawer-status-summary .drawer-info-popover summary"
-  },
-  {
-    "click": ".drawer-info-content button"
-  }
+{
+  "click": ".drawer-status-summary .drawer-info-popover summary"
+},
+{
+  "click": ".drawer-info-content button"
+}
 ],
 "state": "closeOut:checkProgress"
 }
@@ -137,3 +137,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T00:25:03Z · body
 - 2026-10-25T00:26:31Z · body
 - 2026-10-25T00:31:54Z · message_queued at 2026-10-25T00:31:54.176Z
+- 2026-10-25T00:31:54Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
