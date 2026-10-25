@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T00:46:31Z"
+updated_at: "2026-10-25T00:46:32Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -198,3 +198,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T00:41:48Z · body
 - 2026-10-25T00:45:19Z · body
 - 2026-10-25T00:46:31Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-25T00:46:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
