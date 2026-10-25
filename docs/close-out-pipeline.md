@@ -48,8 +48,10 @@ release soak), a few patterns recur. Full CLI table and incident notes:
   self-check locks: see [Remote validation → host lock](remote-validation.md#cross-process-limit-the-host-lock)
   and the #0705 dispatcher/tab behavior in
   [`agent-run-operations.md`](agent-run-operations.md#remote-runner-slot-starvation-0694-0705-0706).
-- **Task previews** rooted in a worktree can commit bookkeeping onto that branch
-  and break handoff; stop previews when done.
+- **Task previews** run as read-only preview children. They reject mutating API
+  requests, do not run the task watchdog or engineer recovery, and the shared git
+  commit helper refuses commits from a preview child. This prevents a shot
+  capture rooted in task B's worktree from recording task A's activity there.
 - **Stray `repoos.toml` on the feature branch** (#0827): handoff and Move to done
   both fail fast when the branch diff against `main` touches `repoos.toml` and
   the task did not declare that file in its title, `paths`, or `config` area —
@@ -529,9 +531,11 @@ The pre-review gate follows the same rule from the other side
 the tree the check tested is the tree that got committed, and after the check the
 worktree's `HEAD` and uncommitted work must be byte-identical to what it was before —
 a file rewritten while the check ran (#0506) fails the handoff loudly instead of
-landing a green result that describes a tree which no longer exists. `dist/`, the
-cache dir and the task dir are excluded from that comparison, because the check itself
-writes there.
+landing a green result that describes a tree which no longer exists. A RepoOS commit
+during the check is tolerated only when its entire diff is the task's own
+`work/<id>-*.md` bookkeeping file; source changes and another task's file still fail.
+`dist/`, the cache dir and the task dir are excluded from the uncommitted-file comparison,
+because the check itself writes there.
 
 ## The reload-churn interaction (SIGNIFICANTLY MITIGATED as of #0271, 2026-08-25 — read this before troubleshooting flakiness)
 

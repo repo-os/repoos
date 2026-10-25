@@ -448,6 +448,29 @@ describe("trusted server-side handoff", { timeout: 15_000 }, () => {
     }
   });
 
+  it("tolerates a task-file-only bookkeeping commit during the check", async () => {
+    const fx = makeFixture(0);
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      writeFileSync(
+        join(fx.bin, "repoos"),
+        "#!/bin/sh\nprintf '\\n- activity recorded\\n' >> work/0001-handoff.md\ngit add work/0001-handoff.md\ngit commit -qm 'docs(0001): record activity'\nexit 0\n",
+        { mode: 0o755 },
+      );
+
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+
+      expect(result.ok).toBe(true);
+      expect(git(fx.worktree, ["show", "--name-only", "--format=", "HEAD"])).toBe(
+        "work/0001-handoff.md",
+      );
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
   it("tolerates a check that only writes generated output", async () => {
     // `repoos check` builds in the worktree, so `dist/` and the runtime cache
     // are expected to move. Only real work files count as drift, or every
