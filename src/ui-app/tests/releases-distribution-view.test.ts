@@ -382,8 +382,7 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     let finish!: (value: unknown) => void;
     api.mockImplementation((path: string) => {
       if (path === "/api/release") return Promise.resolve(releaseStatus());
-      if (path === "/api/release/distribution")
-        return new Promise((resolve) => (finish = resolve));
+      if (path === "/api/release/distribution") return new Promise((resolve) => (finish = resolve));
       if (path === "/api/release/run")
         return Promise.resolve({
           state: "idle",
