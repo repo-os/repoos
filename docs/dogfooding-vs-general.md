@@ -183,7 +183,34 @@ When something in the pipeline breaks, ask in order:
 And the standing question: *is this failing because of something we chose to do
 to ourselves?* The `dist/` case says the answer is "yes" more often than it feels.
 
-
 ## Git fsmonitor daemon cost (2026-10-25)
 
-RepoOS originally enabled `core.fsmonitor` and `core.untrackedCache` on every server start. Linked worktrees share Git configuration, and each task checkout could start its own fsmonitor daemon. On Nick's Mac, 31 daemons watched trees including `node_modules`, driving `fseventsd` above 100% CPU, memory above 1 GB, and severe machine load. RepoOS now preserves explicitly configured values, exposes `git.tuneForScale = false`, stops a checkout's daemon as it removes that worktree, and `repoos doctor` warns above eight daemons.
+RepoOS originally enabled `core.fsmonitor` and `core.untrackedCache` on every
+server start. Linked worktrees share Git configuration, so the setting applied
+to every task checkout, and each checkout could start its own fsmonitor daemon.
+On Nick's Mac, 31 daemons watched trees that include `node_modules`, driving
+`fseventsd` above 100% CPU, memory above 1 GB, and severe machine load — and a
+human's `core.fsmonitor = false` was silently rewritten to `true` on the next
+server start (#0958).
+
+The fix has four parts:
+
+- `tuneRepoForScale` only sets a key that is **unset**. An explicit value,
+  including `false`, belongs to the repository owner and is never touched.
+- Only the main checkout's startup tunes anything. Preview/shot child servers
+  (`REPOOS_PREVIEW_CHILD=1`), `--preview-overrides`, and any server rooted in a
+  linked worktree skip the tune entirely, so they cannot rewrite the shared
+  `.git/config` and respawn daemons.
+- Removing a worktree — review close-out, Move to done, GC — now runs
+  `git fsmonitor--daemon stop` in that checkout first, so daemon count stays
+  bounded by the worktrees that actually exist.
+- `repoos doctor` warns above eight running fsmonitor daemons, names the cost,
+  and prints the one-line fix. `git.tuneForScale = false` in `repoos.toml`
+  (Settings → General → Performance) is the off switch.
+
+This is still a default-on feature: it speeds up the per-worktree
+`git status` scans the index build runs, and worktree removal keeps the daemon
+count bounded. If a machine still thrashes — or a human deliberately disabled
+the setting — the off switch and the preserved explicit `false` are the escape
+hatches.
+

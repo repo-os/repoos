@@ -105,6 +105,7 @@ export function generalSectionForKey(key: string): string {
   if (key === "remoteValidation.healthCheck") return "remote-validation";
   if (key === "storage.provider") return "attachments";
   if (
+    key === "git.tuneForScale" ||
     key.startsWith("localChecks.") ||
     key.startsWith("playwright.") ||
     key.startsWith("pressureGuard.")

@@ -1165,7 +1165,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       root: config.root,
       tuneForScale: config.git?.tuneForScale,
       previewChild: process.env.REPOOS_PREVIEW_CHILD === "1",
-      previewOverrides: config.previewOverrides,
+      previewOverrides:
+        opts.previewOverrides === true || (config.previewOverrides?.length ?? 0) > 0,
     }),
   );
   const index = new LiveIndex(config);

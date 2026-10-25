@@ -359,14 +359,16 @@ export async function lastCommitsForDirAsync(
 export interface TuneRepoForScaleStartupOptions {
   root: string;
   tuneForScale?: boolean;
+  /** `REPOOS_PREVIEW_CHILD=1` — a managed preview/shot child server. */
   previewChild?: boolean;
-  previewOverrides?: string[];
+  /** `--preview-overrides` (or an applied `[preview.*]` overlay) is active. */
+  previewOverrides?: boolean;
 }
 
 export function shouldTuneRepoForScaleAtStartup(opts: TuneRepoForScaleStartupOptions): boolean {
   if (opts.tuneForScale === false) return false;
   if (opts.previewChild) return false;
-  if ((opts.previewOverrides?.length ?? 0) > 0) return false;
+  if (opts.previewOverrides) return false;
   if (isLinkedWorktreeRoot(opts.root)) return false;
   return true;
 }
