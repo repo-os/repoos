@@ -2,7 +2,7 @@
 id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
-status: active
+status: ready
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/bug-one-task-s-activity-bookkeeping-comm
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T03:02:39Z"
+updated_at: "2026-10-25T03:03:27Z"
 handoff_signal_retry_count: 1
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T01:41:21.271Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T01:41:30.006Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T01:41:38.401Z\",\"kind\":\"dev-error\"}]"
@@ -77,3 +77,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T02:49:41Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T02:58:54Z · body
 - 2026-10-25T03:02:39Z · engineer stopped by request
+- 2026-10-25T03:03:27Z · status active→ready
