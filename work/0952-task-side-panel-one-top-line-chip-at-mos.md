@@ -222,3 +222,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T01:52:56Z · body
 - 2026-10-25T02:00:59Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-25T02:01:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T02:01:00Z · message_delivered: 1 message(s)
