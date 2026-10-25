@@ -11,7 +11,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T18:03:16Z"
+updated_at: "2026-10-25T18:04:34Z"
 dev_error_count: 7
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4-pro\",\"at\":\"2026-10-25T16:53:06.736Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4-pro\",\"at\":\"2026-10-25T16:53:17.358Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4-pro\",\"at\":\"2026-10-25T16:53:23.411Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -134,3 +134,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T17:53:45Z · body
 - 2026-10-25T17:58:07Z · body
 - 2026-10-25T18:03:16Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T18:04:34Z · handoff_deferred: 1 queued message(s) must be read before review
