@@ -55,3 +55,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T01:04:57Z · cli_override, model_override
 - 2026-10-25T01:04:58Z · status ready→active, branch
 - 2026-10-25T01:10:16Z · body: Root cause found (driver, 2026-10-25) (added 1, removed 1)
+- 2026-10-25T01:10:16Z · message_queued at 2026-10-25T01:10:16.639Z
