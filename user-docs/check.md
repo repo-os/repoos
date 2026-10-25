@@ -261,7 +261,11 @@ engineers (`REPOOS_AGENT=1`) always use the board's runner (Hetzner or Tailscale
 Run `repoos check` once before handoff — not after every edit — to avoid WIP
 checkpoint churn. Handoff reuses a green **full** remote pass at the same commit
 when `remoteValidation.engineerSelfCheckRemote` is on (default); a scoped
-self-check does not skip handoff's full runner pass. Pass `--local-tests` to force
+self-check does not skip handoff's full runner pass. The link probe separates
+SSH setup latency from payload throughput and retries once before skipping a
+host, so checks from high-latency networks can use a runner when the actual
+transfer rate meets `remoteValidation.linkThroughputFloorBps`. Its sample size
+is controlled by `remoteValidation.linkProbeBytes`. Pass `--local-tests` to force
 the full local suite even when remote validation is enabled.
 
 ## Failed-first re-runs and isolation triage

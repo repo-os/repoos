@@ -83,9 +83,15 @@ Close-out uploads the merged candidate tree with `ssh host 'cat > …bundle'` (n
 progress on the close-out card (sent / total, rate, ETA, per-host attempt, and
 total time in the upload stage).
 
-Before a large bundle, each leased host gets a **link probe** (RTT + a 64 KiB
-test write). Hosts below the throughput floor are skipped so a wedged or
-swap-bound machine is not fed a 200 MB bundle.
+Before a large bundle, each leased host gets a **link probe** (RTT + a 1 MiB
+test write). The throughput estimate subtracts the measured SSH setup time so
+latency is not mistaken for a slow transfer. The probe retries once after a
+short backoff, then reports RTT, measured throughput and the configured floor
+when it skips a host. A high-latency network can therefore use remote
+validation when its actual transfer rate is sufficient.
+The floor (`remoteValidation.linkThroughputFloorBps`, default 204800 bytes/s)
+and sample size (`remoteValidation.linkProbeBytes`, default 1048576 bytes) are
+editable in Settings → Remote validation.
 
 SSH uses **ServerAlive** options plus local guards:
 
