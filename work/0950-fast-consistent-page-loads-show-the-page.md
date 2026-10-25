@@ -2,7 +2,10 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: review
+status: active
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — refresh failures hide stale page content on three views; required before/after timings are missing.
 priority: p2
 area: web
 assigned_to: ai
@@ -10,12 +13,15 @@ created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T00:48:16Z"
-review_passes: 3
+updated_at: "2026-10-25T00:56:20Z"
+review_passes: 5
+last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 review_rounds: 2
-last_check_failure: "repoos check at 2026-10-24T16:55:14.081Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Deployments first load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /deployments (http://127.0.0.1:39677/deployments?shotState=deployments%3Aloading); [missing-target] Dev first load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /dev (http://127.0.0.1:39677/dev?shotState=dev%3Aloading)"
+engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -128,4 +134,57 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-24T22:19:01Z · status active→review
 - 2026-10-24T22:19:02Z · message_delivered: 1 message(s)
 - 2026-10-24T22:19:02Z · note: handoff requested (cli)
+- 2026-10-24T22:21:20Z · note: ui verification passed: 4 of 4 shots captured with clean console
+- 2026-10-24T22:21:20Z · status active→review
+- 2026-10-24T22:22:14Z · note: review pass 4: needs some work
+- 2026-10-24T22:22:14Z · needs_input
+- 2026-10-24T22:39:32Z · status review→active
+- 2026-10-24T22:39:32Z · note: send-back — returned to active for engineer follow-up
+- 2026-10-24T22:39:34Z · needs_input
+- 2026-10-24T22:39:34Z · message_queued at 2026-10-24T22:39:34.591Z
+- 2026-10-24T22:39:35Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-24T22:40:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T22:40:04Z · message_delivered: 1 message(s)
+- 2026-10-24T22:46:19Z · body
+- 2026-10-24T22:48:16Z · body
+- 2026-10-24T22:50:57Z · body
+- 2026-10-24T22:52:50Z · body
+- 2026-10-24T22:59:01Z · note: Final committed tree a67cdc873e25: merge of main resolved; scoped check passes. I visually inspected Deployments first-load skeleton and populated matrix, plus Dev first-load skeleton and loaded stopped-target cards in the managed preview. The local repoos shot capture stalled before writing artifacts. I did not obtain valid 5-run before/after endpoint or per-page medians this turn; the description's rough pre-change estimates are not measurements, and no timing improvement is claimed. Performance acceptance remains open; no deployment endpoint root-cause or follow-up task is asserted without measurements.
+- 2026-10-24T22:59:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T23:04:41Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-24T23:06:18Z · body
+- 2026-10-24T23:15:30Z · body
+- 2026-10-24T23:16:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T23:21:27Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-10-24T23:23:50Z · body
+- 2026-10-24T23:31:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T23:36:25Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-10-24T23:46:53Z · message_queued at 2026-10-24T23:46:53.281Z
+- 2026-10-24T23:46:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-24T23:50:56Z · body
+- 2026-10-24T23:51:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T23:51:50Z · message_delivered: 1 message(s)
+- 2026-10-24T23:51:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-24T23:57:03Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-10-24T23:59:22Z · body
+- 2026-10-25T00:00:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T00:03:12Z · note: BASELINE (measured by the driver on main's running server, in-process API client, median of 5, 2026-10-25): /api/deployments 2687ms (min 2279, max 3000); /api/project-environments 1ms; /api/dev/targets 1ms; /api/check-plan 5ms; /api/releases 0ms. So the multi-second wait is server-side in /api/deployments (git work per service/branch), not in the other endpoints; the other pages' waits are client-side (blank until fetch, no cache between visits).
+- 2026-10-25T00:03:25Z · message_queued at 2026-10-25T00:03:25.672Z
+- 2026-10-25T00:06:32Z · body
+- 2026-10-25T00:06:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T00:07:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T00:07:26Z · message_delivered: 1 message(s)
+- 2026-10-25T00:08:32Z · note: Measurements and follow-up for #0950: driver-recorded main baseline (5 runs): /api/deployments median 2687 ms (min 2279, max 3000); /api/project-environments 1 ms; /api/dev/targets 1 ms; /api/check-plan 5 ms; /api/releases 0 ms. Handler inspection in this branch found getDeploymentsStatus already fans out independent branch summaries and row freshness/subdir git calls with Promise.all and coalesces identical (branch, subdir) freshness work; the remaining subprocess fan-out needs profiling before a safe optimization, so follow-up #0955 was filed to profile/reduce it and capture five-run before/after medians. This branchs view tests prove revisit content is visible with no skeleton while a deferred background refresh is still unresolved, then updates in place
+- 2026-10-25T00:08:54Z · note: Measurements and follow-up for #0950: driver-recorded main baseline (5 runs): /api/deployments median 2687 ms (min 2279, max 3000); /api/project-environments 1 ms; /api/dev/targets 1 ms; /api/check-plan 5 ms; /api/releases 0 ms. Handler inspection in this branch found getDeploymentsStatus already fans out independent branch summaries and row freshness/subdir git calls with Promise.all and coalesces identical (branch, subdir) freshness work; the remaining subprocess fan-out needs profiling before a safe optimization, so follow-up #0955 was filed to profile/reduce it and capture five-run before/after medians. This branch's view tests prove revisit content is visible with no skeleton while a deferred background refresh is still unresolved, then updates in place; this is the measurable no-blocking-request evidence for Releases, Checks, Deployments, and Dev. Exact wall-clock first-load/revisit page timings and an after endpoint median were not captured because this worktree's managed preview is unavailable for ad hoc endpoint benchmarking and starting repoos serve is prohibited. No latency improvement is claimed for /api/deployments.
+- 2026-10-25T00:11:24Z · body
+- 2026-10-25T00:33:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T00:38:35Z · note: handoff requested (ui-review)
 - 2026-10-25T00:48:16Z · status active→review
+- 2026-10-25T00:48:17Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-25T00:48:34Z · note: review pass 5: failed — no usable report
+- 2026-10-25T00:48:34Z · needs_input
+- 2026-10-25T00:50:31Z · review_cli_override, review_model_override
+- 2026-10-25T00:50:35Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-10-25T00:52:42Z · note: review pass 6: needs some work
+- 2026-10-25T00:52:42Z · needs_input
+- 2026-10-25T00:56:20Z · status review→active
