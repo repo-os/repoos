@@ -17,7 +17,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T11:48:58Z"
+updated_at: "2026-10-25T12:00:15Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -68,97 +68,52 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "statusReviewFailed status at 1280px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 1280
+  "label": "Reviewer failure with one compact header chip",
+  "target": "default",
+  "route": "/work?task=0952&tab=changes",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusReviewFailed"
 },
 {
-"label": "statusReviewFailed status at 760px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 760
+  "label": "Checks running with one status line",
+  "target": "default",
+  "route": "/work?task=0952&tab=changes",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusChecksRunning"
 },
 {
-"label": "statusHandoffFailed status at 1280px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusHandoffFailed",
-"viewportWidth": 1280
+  "label": "Checks failed and long filename capped at two lines",
+  "target": "default",
+  "route": "/work?task=0952&tab=changes",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusChecksFailed"
 },
 {
-"label": "statusHandoffFailed status at 760px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusHandoffFailed",
-"viewportWidth": 760
+  "label": "Status help popover open",
+  "target": "default",
+  "route": "/work?task=0952&tab=changes",
+  "highlight": ".drawer-info-popover",
+  "steps": [
+    {
+      "click": ".drawer-info-popover summary"
+    }
+  ],
+  "state": "drawer:statusHandoffFailed"
 },
 {
-"label": "statusChecksRunning status at 1280px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 1280
-},
-{
-"label": "statusChecksRunning status at 760px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 760
-},
-{
-"label": "statusConfirmingHandoff status at 1280px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 1280
-},
-{
-"label": "statusConfirmingHandoff status at 760px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 760
-},
-{
-"label": "statusChecksFailed status at 1280px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 1280
-},
-{
-"label": "statusChecksFailed status at 760px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 760
-},
-{
-"label": "Debug status details",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".debug-status-detail",
-"steps": [
-{
-"click": "button[data-test-id=\"debug-tab-status\"]"
-}
-],
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 1280
+  "label": "Debug Status details subtab",
+  "target": "default",
+  "route": "/work?task=0952&tab=changes",
+  "highlight": ".debug-panel",
+  "steps": [
+    {
+      "click": "[data-test-id=task-tab-debug]"
+    },
+    {
+      "click": "[data-test-id=debug-tab-status]"
+    }
+  ],
+  "state": "drawer:statusReviewFailed"
 }
 ]
 ```
@@ -321,3 +276,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T11:48:27Z · agent exited with an error (codex) · the agent process exited with an error — open the task to see the full output
 - 2026-10-25T11:48:27Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-25T11:48:31Z · message_delivered: 1 message(s)
+- 2026-10-25T12:00:15Z · body
