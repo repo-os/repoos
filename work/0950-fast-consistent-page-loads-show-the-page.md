@@ -3,6 +3,9 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the cursor agent exited without output: Error: [unavailable] read ETIMEDOUT"
 priority: p2
 area: web
 assigned_to: ai
@@ -177,3 +180,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T00:48:16Z · status active→review
 - 2026-10-25T00:48:17Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-25T00:48:34Z · note: review pass 5: failed — no usable report
+- 2026-10-25T00:48:34Z · needs_input
