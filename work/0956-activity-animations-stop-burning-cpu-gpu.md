@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-25T03:58:48Z"
-updated_at: "2026-10-25T03:58:58Z"
+updated_at: "2026-10-25T03:59:21Z"
 ---
 ## Problem
 
@@ -40,7 +40,11 @@ The activity indicators (RGB keystorm and the other styles in `components/activi
 - Start by measuring on main (a board with several working fixtures) so the change is proven, not assumed.
 - Do not start a second RepoOS server from a worktree (see bug #0954); use headless Playwright against the shot fixtures.
 
+## Desired UX
+Animated indicators stay fun and visible, but they cost almost nothing: they only move while on screen in a visible tab, respect reduced-motion, never exceed a small configurable number at once, and a busy board with many working tasks no longer makes the browser's GPU process or the machine fans work hard. See Desired behavior below for the specifics.
+
 ## Activity
 
 - 2026-10-25T03:58:48Z · created · njachowski@gmail.com
 - 2026-10-25T03:58:58Z · needs_input
+- 2026-10-25T03:59:21Z · body: Desired UX (added)
