@@ -471,6 +471,61 @@ describe("trusted server-side handoff", { timeout: 15_000 }, () => {
     }
   });
 
+  it("keeps task B stable when another task's bookkeeping lands on main during the check (#0954)", async () => {
+    const fx = makeFixture(0);
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      const otherPath = join(fx.root, "work", "0950-other-task.md");
+      writeFileSync(
+        otherPath,
+        `---
+id: "0950"
+title: Other task
+type: bug
+status: active
+priority: p2
+area: core
+assigned_to: ai
+branch: feat/other
+---
+## Problem
+
+Other.
+
+## Activity
+
+- 2026-01-01T00:00:00Z · status inbox→active
+`,
+      );
+      git(fx.root, ["add", "work/0950-other-task.md"]);
+      git(fx.root, ["commit", "-qm", "task 0950 on main only"]);
+
+      writeFileSync(
+        join(fx.bin, "repoos"),
+        `#!/bin/sh
+printf '\\n- activity on main\\n' >> '${otherPath}'
+git -C '${fx.root}' add work/0950-other-task.md
+git -C '${fx.root}' commit -qm 'docs(0950): record activity'
+exit 0
+`,
+        { mode: 0o755 },
+      );
+
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+
+      expect(result).toMatchObject({ ok: true, step: "done" });
+      expect(git(fx.root, ["log", "--oneline"])).toMatch(/docs\(0950\)/);
+      expect(git(fx.worktree, ["log", "--oneline"])).not.toMatch(/docs\(0950\)/);
+      expect(git(fx.worktree, ["diff", "main...HEAD", "--name-only"])).not.toContain(
+        "work/0950-other-task.md",
+      );
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
   it("tolerates a check that only writes generated output", async () => {
     // `repoos check` builds in the worktree, so `dist/` and the runtime cache
     // are expected to move. Only real work files count as drift, or every
