@@ -179,3 +179,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T10:23:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T10:29:40Z · CTO action: restart-stalled-agent (resume) · check-failed-after-retries · check failed after 2 automatic retries · the worktree changed while the gate was running (HEAD moved from 671525a3 to 4a029553) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-10-25T10:39:34Z · message_queued at 2026-10-25T10:39:34.699Z
+- 2026-10-25T10:39:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
