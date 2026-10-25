@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T10:15:47Z"
+updated_at: "2026-10-25T10:23:54Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
@@ -176,3 +176,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T09:35:34Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-10-25T09:40:42Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · the worktree changed while the gate was running (HEAD moved from 671525a3 to 4a029553) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-25T10:15:47Z · needs_input
+- 2026-10-25T10:23:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
