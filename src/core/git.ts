@@ -467,11 +467,19 @@ async function lastCommitsForDirAsyncUncoalesced(
  * per-directory untracked-file scan. Both are opt-in per repo and safe:
  * git falls back to a full scan if the daemon is unavailable.
  *
+ * OFF by default (hotfix, #0958): each server start, including preview and
+ * shot servers rooted in task worktrees, used to flip these on in the shared
+ * `.git/config`, spawning one watcher daemon per worktree and loading fseventsd
+ * on repos with many worktrees. Measured `git status` is already ~20 ms
+ * without it. Set `REPOOS_GIT_FSMONITOR=1` to opt in; a human's `false` is
+ * never overwritten.
+ *
  * Idempotent, best-effort, and cheap — call it once at startup. Skips any key
  * already set to the desired value, so a repo that has been tuned once pays
  * only two `git config --get` reads on subsequent boots.
  */
 export function tuneRepoForScale(root: string): void {
+  if (process.env.REPOOS_GIT_FSMONITOR !== "1") return;
   if (!isGitRepo(root)) return;
   for (const [key, value] of [
     ["core.fsmonitor", "true"],
