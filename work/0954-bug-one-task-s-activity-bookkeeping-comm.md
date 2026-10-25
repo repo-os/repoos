@@ -2,14 +2,14 @@
 id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T01:04:24Z"
+updated_at: "2026-10-25T01:04:49Z"
 ---
 ## Problem
 
@@ -49,3 +49,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-24T23:57:03Z · created · njachowski@gmail.com
 - 2026-10-25T00:30:23Z · body: Root cause found (driver, 2026-10-25) (added)
 - 2026-10-25T01:04:24Z · body: More evidence: it is the handoff itself (added)
+- 2026-10-25T01:04:49Z · status inbox→ready
