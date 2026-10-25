@@ -19,7 +19,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T18:37:48Z"
+updated_at: "2026-10-25T18:42:22Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -380,3 +380,4 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-25T18:30:35Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production... · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-25T18:30:35Z · note: handoff requested (cli)
 - 2026-10-25T18:37:30Z · agent exited with an error (codex) · handoff finalization was interrupted (server reload) — restart work to hand off again
+- 2026-10-25T18:42:22Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from d420f735 to 8a686f6e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
