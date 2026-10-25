@@ -3,12 +3,6 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (opencode + opencode-go/kimi-k3.1-pro) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
-debug_tldr: Engineer LLM call failed on invalid API credentials - update the provider key in Settings or .env and resume the task.
-debug_tldr_at: "2026-10-25T16:52:06Z"
-debug_tldr_key: "dev-error|error: Upstream request failed: Invalid credential"
 priority: p2
 area: web
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T16:54:24Z"
+updated_at: "2026-10-25T16:54:28Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
@@ -246,3 +240,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T16:53:11Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (2/3 crashes in 30m) · error: Reconnect OpenCode Console to continue.
 - 2026-10-25T16:53:22Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/kimi-k3.1-pro) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-25T16:54:23Z · cli_override, model_override
+- 2026-10-25T16:54:28Z · needs_input
