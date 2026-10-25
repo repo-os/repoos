@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T12:32:10Z"
+updated_at: "2026-10-25T12:49:46Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -61,52 +61,62 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "Reviewer failure with one compact header chip",
-"target": "default",
-"route": "/work?task=0952&tab=changes",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusReviewFailed"
+  "label": "Compact status: reviewer failed",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusReviewFailed"
 },
 {
-"label": "Checks running with one status line",
-"target": "default",
-"route": "/work?task=0952&tab=changes",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksRunning"
+  "label": "Compact status: not landable",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:landable"
 },
 {
-"label": "Checks failed and long filename capped at two lines",
-"target": "default",
-"route": "/work?task=0952&tab=changes",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksFailed"
+  "label": "Compact status: checks running",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusChecksRunning"
 },
 {
-"label": "Status help popover open",
-"target": "default",
-"route": "/work?task=0952&tab=changes",
-"highlight": ".drawer-info-popover",
-"steps": [
-{
-"click": ".drawer-info-popover summary"
-}
-],
-"state": "drawer:statusHandoffFailed"
+  "label": "Compact status: confirming handoff",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusConfirmingHandoff"
 },
 {
-"label": "Debug Status details subtab",
-"target": "default",
-"route": "/work?task=0952&tab=changes",
-"highlight": ".debug-panel",
-"steps": [
-{
-"click": "[data-test-id=task-tab-debug]"
+  "label": "Compact status: checks failed after retries",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusChecksFailed"
 },
 {
-"click": "[data-test-id=debug-tab-status]"
-}
-],
-"state": "drawer:statusReviewFailed"
+  "label": "Narrow drawer: two-line task path header",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-head",
+  "state": "drawer:statusChecksFailed",
+  "viewportWidth": 390
+},
+{
+  "label": "Debug Status details sub-tab",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": "[aria-label=\"Task status details\"]",
+  "steps": [
+    {
+      "click": "[data-test-id=\"debug-tab-status\"]"
+    },
+    {
+      "waitMs": 400
+    }
+  ],
+  "state": "drawer:landable"
 }
 ]
 ```
@@ -276,3 +286,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T12:20:54Z · cli_override, model_override
 - 2026-10-25T12:21:04Z · message_queued at 2026-10-25T12:21:04.926Z
 - 2026-10-25T12:32:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T12:49:46Z · body
