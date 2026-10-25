@@ -2,20 +2,27 @@
 id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
-status: active
+status: ready
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
+debug_tldr: "Engineer died waiting on serialized local fallback behind other repoos checks — end duplicate checks, then resume."
+debug_tldr_at: "2026-10-25T14:34:23Z"
+debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
+hold: true
 priority: p1
 area: core
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/bug-one-task-s-activity-bookkeeping-comm
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T13:58:16Z"
+updated_at: "2026-10-25T15:39:41Z"
 handoff_signal_retry_count: 2
-dev_error_count: 10
+dev_error_count: 11
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T12:19:20.905Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:31.757Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:44.989Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:29:04.333Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T14:33:40.068Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -143,5 +150,14 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T12:30:00Z · message_queued at 2026-10-25T12:30:00.458Z
 - 2026-10-25T12:32:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T13:29:25Z · engineer stopped by request
-- 2026-10-25T13:58:15Z · message_queued at 2026-10-25T13:58:15.775Z
-- 2026-10-25T13:58:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T14:02:07Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T14:02:09Z · message_delivered: 1 message(s)
+- 2026-10-25T14:11:27Z · message_queued at 2026-10-25T14:11:27.997Z
+- 2026-10-25T14:11:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T14:12:01Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T14:33:40Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T14:33:40Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T14:34:08Z · message_delivered: 1 message(s)
+- 2026-10-25T15:22:56Z · held
+- 2026-10-25T15:23:17Z · assigned_to
+- 2026-10-25T15:23:59Z · status active→ready
