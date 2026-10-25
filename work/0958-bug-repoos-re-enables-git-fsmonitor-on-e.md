@@ -3,12 +3,6 @@ id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: Transport"
-debug_tldr: "Runner transport dropped mid-turn after repeated crash resumes—resume engineer #0958 on the board once repoos serve and the runner are healthy."
-debug_tldr_at: "2026-10-25T15:38:09Z"
-debug_tldr_key: "dev-error|error: Transport"
 priority: p1
 area: core
 assigned_to: ai
@@ -94,3 +88,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T15:32:57Z · message_delivered: 1 message(s)
 - 2026-10-25T15:36:32Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · error: Transport
 - 2026-10-25T15:38:12Z · engineer stopped by request
+- 2026-10-25T15:38:12Z · needs_input
