@@ -16,14 +16,15 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T04:12:21Z"
+updated_at: "2026-10-25T04:38:07Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from eec677ba to d74e9b93) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: eec677bac89c446145383d0d176ce86853f65c62
 review_passes: 1
 handoff_signal_retry_count: 1
-dev_error_count: 3
+dev_error_count: 4
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:38:07.414Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -160,3 +161,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T03:15:56Z · body
 - 2026-10-25T03:17:50Z · body
 - 2026-10-25T04:12:21Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T04:38:07Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
