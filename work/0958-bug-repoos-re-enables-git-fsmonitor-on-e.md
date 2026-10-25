@@ -2,7 +2,7 @@
 id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
-status: active
+status: ready
 hold: true
 priority: p1
 area: core
@@ -12,7 +12,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T15:39:41Z"
+updated_at: "2026-10-25T15:41:19Z"
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-25T15:30:46.283Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-25T15:36:32.644Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -94,3 +94,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T15:38:26Z · needs_input
 - 2026-10-25T15:38:36Z · held
 - 2026-10-25T15:39:12Z · assigned_to
+- 2026-10-25T15:40:28Z · status active→ready
