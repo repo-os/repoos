@@ -1,27 +1,27 @@
 ---
-updated_at: "2026-10-25T01:01:03Z"
-review_passes: 5
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — failure paths hide errors; latency acceptance and final visual proof remain incomplete
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
+updated_at: "2026-10-25T08:53:54Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 9de52afd to c8e8b5e5) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 9de52afdc9ae459b5e601f6a5a6ad9b7e5294396
+review_passes: 8
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 3
 ---
 ## Problem
 
@@ -185,6 +185,64 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T00:48:34Z · needs_input
 - 2026-10-25T00:50:31Z · review_cli_override, review_model_override
 - 2026-10-25T00:50:35Z · needs_input (review-failed) cleared for review again by hello@repoos.org
-- 2026-10-25T01:01:02Z · note: review pass 1: needs some work
-- 2026-10-25T01:01:03Z · needs_input
-
+- 2026-10-25T00:52:42Z · note: review pass 6: needs some work
+- 2026-10-25T00:52:42Z · needs_input
+- 2026-10-25T00:56:20Z · status review→active
+- 2026-10-25T00:57:33Z · note: DRIVER TAKEOVER (6 review passes). Fixed the pass-6 bug: on Checks, Deployments and Releases the Refresh-failed paragraph started a new v-if chain that swallowed the cached content, so a failed background refresh blanked the page. The content template is now an independent v-if, and each of the three views has a view-level test (cached data stays visible AND the Refresh failed notice shows); the Deployments test was confirmed to fail without the fix. MEASUREMENTS: this diff changes no server code (git diff main...HEAD touches only src/ui-app and src/core/shot-fixtures.ts), so endpoint latencies after equal the recorded baseline by construction: /api/deployments 2687 ms median (5 runs), others 0-5 ms; the slow deployments handler is tracked in follow-up #0955. Client-side: first visit shows the shell plus a skeleton; revisit renders cached content with zero blocking requests and refreshes in place, proven by the revisit tests for Releases, Checks, Deployments, Dev, Secrets and Agents. Wall-clock page timings were not captured because starting a second server from a worktree is prohibited (it commits other tasks' files, see #0954).
+- 2026-10-25T00:57:42Z · note: handoff requested (ui-review)
+- 2026-10-25T01:01:54Z · handoff failed · ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
+- 2026-10-25T01:03:23Z · note: handoff requested (ui-review)
+- 2026-10-25T01:14:43Z · status active→review
+- 2026-10-25T01:14:44Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-25T01:17:07Z · note: review pass 7: needs some work
+- 2026-10-25T01:17:08Z · needs_input
+- 2026-10-25T01:17:08Z · needs_input
+- 2026-10-25T01:21:05Z · note: Pass-7 edge case fixed: page-data-cache now ignores cached entries older than 5 minutes (they are refetched with the skeleton) and caps the cache at 64 entries, with tests for inside/outside the max age. Measurements: unchanged from the earlier note; this diff changes no server code so after-change endpoint medians equal the baseline by construction (/api/deployments 2687 ms, tracked in #0955), and the per-page change is client-side (cached revisit shows content with zero blocking requests, proven by the revisit tests).
+- 2026-10-25T01:22:03Z · status review→active
+- 2026-10-25T01:22:11Z · note: handoff requested (ui-review)
+- 2026-10-25T01:34:25Z · status active→review
+- 2026-10-25T01:34:26Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-25T01:37:02Z · note: review pass 8: needs some work
+- 2026-10-25T01:37:03Z · needs_input
+- 2026-10-25T01:37:03Z · needs_input
+- 2026-10-25T01:39:03Z · status review→active
+- 2026-10-25T01:39:31Z · needs_input
+- 2026-10-25T01:39:32Z · message_queued at 2026-10-25T01:39:32.487Z
+- 2026-10-25T01:40:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T01:40:04Z · status active→review, needs_input
+- 2026-10-25T01:40:05Z · message_delivered: 1 message(s)
+- 2026-10-25T01:40:06Z · note: handoff requested (cli)
+- 2026-10-25T01:40:21Z · status active→review
+- 2026-10-25T01:40:27Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-25T01:42:40Z · note: review pass 9: needs some work
+- 2026-10-25T01:42:41Z · needs_input
+- 2026-10-25T01:42:41Z · needs_input
+- 2026-10-25T01:48:09Z · cli_override, model_override
+- 2026-10-25T01:49:28Z · note: HUMAN DECISION (Nick, 2026-10-25): the before/after measurement criteria (AC 1 and 6) are SATISFIED by this record, do not ask for more. BEFORE: first load of Releases, Checks, Deployments and Dev took about 3 seconds or more every time the user navigated to them (Nick's observation; the driver measured /api/deployments at a 2687 ms median, other endpoints under 5 ms). AFTER: the page shell and a skeleton render immediately, and a revisit within the 5-minute cache shows cached content with no skeleton and no blocking request (proven by the revisit tests). No server code changes in this task; the slow /api/deployments handler is follow-up #0955. Reviewers: treat measurements as done and review the code and the remaining loading paths only.
+- 2026-10-25T01:50:17Z · status review→active
+- 2026-10-25T01:52:13Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 9de52afd to c8e8b5e5) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-25T02:44:04Z · cli_override, model_override
+- 2026-10-25T02:44:42Z · model_override
+- 2026-10-25T02:44:53Z · model_override
+- 2026-10-25T02:45:51Z · needs_input
+- 2026-10-25T02:45:52Z · message_queued at 2026-10-25T02:45:52.832Z
+- 2026-10-25T02:46:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T03:49:11Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T04:55:25Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T05:07:49Z · cli_override, model_override
+- 2026-10-25T05:31:38Z · cli_override, model_override
+- 2026-10-25T05:31:46Z · needs_input
+- 2026-10-25T05:32:09Z · message_delivered: 1 message(s)
+- 2026-10-25T05:32:10Z · status active→ready
+- 2026-10-25T05:32:11Z · engineer stopped by request
+- 2026-10-25T05:32:18Z · status ready→active
+- 2026-10-25T05:54:05Z · message_queued at 2026-10-25T05:54:05.964Z
+- 2026-10-25T05:54:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T06:07:27Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T06:13:36Z · agent exited with an error (opencode) · ✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed.
+- 2026-10-25T08:51:58Z · cli_override, model_override
+- 2026-10-25T08:52:03Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T08:52:03Z · message_delivered: 1 message(s)
+- 2026-10-25T08:52:13Z · needs_input
+- 2026-10-25T08:52:14Z · message_queued at 2026-10-25T08:52:14.167Z
+- 2026-10-25T08:53:54Z · CTO nudge: held — an undelivered message is already queued

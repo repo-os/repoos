@@ -3,23 +3,21 @@ id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-side-panel-one-top-line-chip-at-mos
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T01:40:12Z"
+updated_at: "2026-10-25T09:16:53Z"
 check_retry_count: 2
-last_check_failure: "repoos check at 2026-10-25T01:39:19.804Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
+last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
-dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T01:39:56.740Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T01:40:06.087Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T01:40:12.635Z\",\"kind\":\"dev-error\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-10-25T02:27:40.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 9
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:13:37.050Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:14:59.301Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:16:30.197Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -64,42 +62,52 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "Short failure chip beside a long file path",
-"target": "default",
-"route": "/work?task=9999&tab=changes",
-"highlight": ".drawer-head",
-"state": "drawer:statusChecksFailed"
+  "label": "Review failed — one header chip and compact status card",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 1280
 },
 {
-"label": "Single failed-check summary above the tabs",
-"target": "default",
-"route": "/work?task=9999&tab=changes",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksFailed"
+  "label": "Not landable — single status card above tabs",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:landable",
+  "viewportWidth": 1280
 },
 {
-"label": "Waiting-for-you help popover",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".waiting-info .drawer-info-content",
-"steps": [
-{
-"click": "details.waiting-info > summary"
-}
-],
-"state": "drawer:tabExpandWarnings"
+  "label": "Checks running — status line with progress",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusChecksRunning",
+  "viewportWidth": 1280
 },
 {
-"label": "Debug status details sub-tab",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".debug-status-detail",
-"steps": [
+  "label": "Confirming handoff — compact status region",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusConfirmingHandoff",
+  "viewportWidth": 1280
+},
 {
-"click": ".debug-tabs .debug-tab:first-child"
-}
-],
-"state": "drawer:tabExpandWarnings"
+  "label": "Checks failed after retries — short chip and card",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusChecksFailed",
+  "viewportWidth": 1280
+},
+{
+  "label": "Narrow panel — header chip and two-line filename",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-head",
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 390
 }
 ]
 ```
@@ -155,8 +163,88 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T00:47:45Z · body
 - 2026-10-25T00:48:22Z · body
 - 2026-10-25T00:50:09Z · note: loading state detected: loading text "Loading changes…" on /work?task=9999&tab=changes
-- 2026-10-25T01:01:50Z · handoff failed · handoff recovery attempted · finalization failed
-- 2026-10-25T01:39:56Z · agent exited with an error (codex) · 2026-10-25T01:39:56.621982Z ERROR codex_core::session: failed to record rollout items: thread 01a17068-df13-73c1-8526-aee621e35252 not found
-- 2026-10-25T01:39:56Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-25T01:39:56.621982Z ERROR codex_core::session: failed to record rollout items: thread 01a17068-df13-73c1-8526-aee621e35252 not found
-- 2026-10-25T01:40:06Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
-- 2026-10-25T01:40:12Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T00:51:55Z · CTO nudge: held — remote validation is running
+- 2026-10-25T00:53:05Z · body
+- 2026-10-25T00:55:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T00:57:01Z · note: loading state detected: loading text "Loading changes…" on /work?task=9999&tab=changes
+- 2026-10-25T01:02:11Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-25T01:03:45Z · body
+- 2026-10-25T01:04:19Z · body
+- 2026-10-25T01:07:21Z · body
+- 2026-10-25T01:16:48Z · body
+- 2026-10-25T01:20:29Z · body
+- 2026-10-25T01:21:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T01:26:46Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-10-25T01:28:44Z · body
+- 2026-10-25T01:39:05Z · message_queued at 2026-10-25T01:39:05.680Z
+- 2026-10-25T01:39:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T01:40:08Z · agent exited with an error (codex) · 2026-10-25T01:39:59.587995Z ERROR codex_core::session: failed to record rollout items: thread 01a170aa-dc7b-7231-a134-9b6e54862525 not found
+- 2026-10-25T01:40:08Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-25T01:39:59.587995Z ERROR codex_core::session: failed to record rollout items: thread 01a170aa-dc7b-7231-a134-9b6e54862525 not found
+- 2026-10-25T01:40:12Z · message_delivered: 1 message(s)
+- 2026-10-25T01:40:21Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-25T01:40:28Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T01:47:26Z · cli_override, model_override
+- 2026-10-25T01:47:59Z · needs_input
+- 2026-10-25T01:47:59Z · message_queued at 2026-10-25T01:47:59.741Z
+- 2026-10-25T01:50:06Z · body
+- 2026-10-25T01:50:24Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T01:52:34Z · body
+- 2026-10-25T01:52:56Z · body
+- 2026-10-25T02:00:59Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-25T02:01:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T02:01:00Z · message_delivered: 1 message(s)
+- 2026-10-25T02:05:41Z · body
+- 2026-10-25T02:06:55Z · CTO nudge: held — remote validation is running
+- 2026-10-25T02:10:44Z · body
+- 2026-10-25T02:20:47Z · body
+- 2026-10-25T02:21:31Z · body
+- 2026-10-25T02:27:40Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-25T02:27:43Z · message_queued at 2026-10-25T02:27:43.811Z
+- 2026-10-25T02:31:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T02:37:02Z · body
+- 2026-10-25T02:38:32Z · body
+- 2026-10-25T02:38:49Z · body
+- 2026-10-25T02:39:09Z · body
+- 2026-10-25T02:39:17Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-25T02:39:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T02:39:18Z · message_delivered: 1 message(s)
+- 2026-10-25T02:41:29Z · body
+- 2026-10-25T02:54:56Z · body
+- 2026-10-25T03:01:56Z · message_queued at 2026-10-25T03:01:56.674Z
+- 2026-10-25T03:01:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T03:03:31Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T03:06:23Z · body
+- 2026-10-25T03:07:53Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-25T03:07:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T03:07:54Z · message_delivered: 1 message(s)
+- 2026-10-25T03:10:33Z · body
+- 2026-10-25T04:12:24Z · message_queued at 2026-10-25T04:12:24.058Z
+- 2026-10-25T04:12:25Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T04:12:28Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-25T04:12:28Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-25T04:12:37Z · message_delivered: 1 message(s)
+- 2026-10-25T04:12:42Z · engineer crash recovery: resuming cursor + composer-2.5 (2/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-10-25T04:12:56Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T05:07:59Z · cli_override, model_override
+- 2026-10-25T05:30:55Z · cli_override, model_override
+- 2026-10-25T05:30:59Z · cli_override
+- 2026-10-25T05:31:00Z · model_override
+- 2026-10-25T05:31:10Z · engineer stopped by request
+- 2026-10-25T05:31:10Z · needs_input
+- 2026-10-25T05:31:36Z · status active→ready
+- 2026-10-25T05:31:37Z · engineer stopped by request
+- 2026-10-25T05:31:44Z · status ready→active
+- 2026-10-25T06:06:49Z · message_queued at 2026-10-25T06:06:49.204Z
+- 2026-10-25T06:06:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T06:12:01Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T06:13:37Z · agent exited with an error (opencode) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-10-25T06:13:37Z · engineer crash recovery: resuming opencode + opencode-go/hy4-preview (1/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-10-25T06:13:38Z · message_delivered: 1 message(s)
+- 2026-10-25T06:14:59Z · engineer crash recovery: resuming opencode + opencode-go/hy4-preview (2/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-10-25T06:16:30Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/hy4-preview) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T08:52:04Z · cli_override, model_override
+- 2026-10-25T08:52:14Z · needs_input
+- 2026-10-25T08:52:16Z · message_queued at 2026-10-25T08:52:16.496Z
+- 2026-10-25T08:53:54Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T09:08:56Z · body
+- 2026-10-25T09:16:53Z · body
