@@ -11,7 +11,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: opencode
 model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T16:16:29Z"
+updated_at: "2026-10-25T16:16:34Z"
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-25T15:30:46.283Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-25T15:36:32.644Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -42,6 +42,23 @@ At every server start, `tuneRepoForScale(config.root)` (`src/core/git.ts`, calle
 
 ## More evidence: preview/shot servers also re-enable it
 Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(config.root) at start, including task preview servers, 'just serve-noauth', and the servers 'repoos shot' / handoff shot capture start from a task worktree. Because worktrees share the repo's .git/config, each of those starts rewrites core.fsmonitor=true and core.untrackedCache=true for the WHOLE repo, which respawns ~30 fsmonitor daemons (one per worktree). Observed 2026-10-25: after 'just clear' set both to false, #0951's engineer started 'just serve-noauth 7272' and then a second server from its worktree, and within seconds the config was true again and 27 daemons were back. Required: tuneRepoForScale must be skipped entirely in preview mode (REPOOS_PREVIEW_CHILD / --preview-overrides / any server whose root is a linked worktree) and must never override an explicit human setting; add a test that starts a preview-mode server over a worktree and asserts the shared config is unchanged.
+
+## Shots
+```json
+[
+{
+  "label": "New Git status acceleration toggle in Settings - General - Performance",
+  "target": "default",
+  "route": "/settings?setting=git.tuneForScale",
+  "highlight": "[id=\"setting-git.tuneForScale\"]",
+  "steps": [
+    {
+      "waitMs": 1500
+    }
+  ]
+}
+]
+```
 
 ## Activity
 
@@ -99,3 +116,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T16:16:14Z · status ready→active
 - 2026-10-25T16:16:20Z · model_override
 - 2026-10-25T16:16:29Z · message_queued at 2026-10-25T16:16:29.515Z
+- 2026-10-25T16:16:34Z · body
