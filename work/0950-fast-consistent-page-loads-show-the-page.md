@@ -15,7 +15,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T11:30:42Z"
+updated_at: "2026-10-25T11:34:20Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 9de52afd to c8e8b5e5) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 9de52afdc9ae459b5e601f6a5a6ad9b7e5294396
 review_passes: 8
@@ -265,3 +265,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T11:30:42Z · status active→review, needs_input
 - 2026-10-25T11:30:42Z · message_delivered: 1 message(s)
 - 2026-10-25T11:30:42Z · note: handoff requested (cli)
+- 2026-10-25T11:34:20Z · CTO nudge: held — handoff gate is running
