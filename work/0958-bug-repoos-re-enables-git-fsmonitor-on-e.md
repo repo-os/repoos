@@ -12,7 +12,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T15:38:36Z"
+updated_at: "2026-10-25T15:39:03Z"
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-25T15:30:46.283Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-25T15:36:32.644Z\",\"kind\":\"dev-error\"}]"
 ---
