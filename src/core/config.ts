@@ -2121,7 +2121,11 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       cfg.remoteValidation = { ...cfg.remoteValidation, linkThroughputFloorBps: rvLinkFloor };
     }
     const rvProbeBytes = parsed["remoteValidation.linkProbeBytes"];
-    if (typeof rvProbeBytes === "number" && Number.isInteger(rvProbeBytes) && rvProbeBytes >= 65536) {
+    if (
+      typeof rvProbeBytes === "number" &&
+      Number.isInteger(rvProbeBytes) &&
+      rvProbeBytes >= 65536
+    ) {
       cfg.remoteValidation = { ...cfg.remoteValidation, linkProbeBytes: rvProbeBytes };
     }
     const rvMetered = parsed["remoteValidation.forceLocalOnMeteredLink"];
@@ -3699,7 +3703,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       tier: "live",
       restartRequired: false,
       default: 204800,
-      description: "Skip a runner only when measured payload throughput is below this floor; RTT is measured separately. Default 204800 (200 KiB/s).",
+      description:
+        "Skip a runner only when measured payload throughput is below this floor; RTT is measured separately. Default 204800 (200 KiB/s).",
     },
     {
       key: "remoteValidation.linkProbeBytes",
@@ -3708,7 +3713,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       tier: "live",
       restartRequired: false,
       default: 1048576,
-      description: "Payload size used to measure runner link throughput. Minimum 65536; default 1048576 (1 MiB).",
+      description:
+        "Payload size used to measure runner link throughput. Minimum 65536; default 1048576 (1 MiB).",
     },
     {
       key: "remoteValidation.forceLocalOnMeteredLink",

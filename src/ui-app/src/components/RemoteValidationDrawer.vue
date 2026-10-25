@@ -416,14 +416,34 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
           />
           <label style="display: flex; flex-direction: column; gap: 2px">
             Link throughput floor (bytes/second)
-            <span class="tunnel-help" style="margin: 0">Measured payload rate required before a runner is used. RTT is excluded. Default 204800.</span>
+            <span class="tunnel-help" style="margin: 0"
+              >Measured payload rate required before a runner is used. RTT is excluded. Default
+              204800.</span
+            >
           </label>
-          <Input type="number" min="1" style="width: 110px" data-config-key="remoteValidation.linkThroughputFloorBps" :model-value="String(linkThroughputFloorBps)" @update:model-value="(v: string) => (linkThroughputFloorBps = Number(v))" />
+          <Input
+            type="number"
+            min="1"
+            style="width: 110px"
+            data-config-key="remoteValidation.linkThroughputFloorBps"
+            :model-value="String(linkThroughputFloorBps)"
+            @update:model-value="(v: string) => (linkThroughputFloorBps = Number(v))"
+          />
           <label style="display: flex; flex-direction: column; gap: 2px">
             Link probe payload (bytes)
-            <span class="tunnel-help" style="margin: 0">Payload size used for the throughput sample. Minimum 65536; default 1048576 (1 MiB).</span>
+            <span class="tunnel-help" style="margin: 0"
+              >Payload size used for the throughput sample. Minimum 65536; default 1048576 (1
+              MiB).</span
+            >
           </label>
-          <Input type="number" min="65536" style="width: 110px" data-config-key="remoteValidation.linkProbeBytes" :model-value="String(linkProbeBytes)" @update:model-value="(v: string) => (linkProbeBytes = Number(v))" />
+          <Input
+            type="number"
+            min="65536"
+            style="width: 110px"
+            data-config-key="remoteValidation.linkProbeBytes"
+            :model-value="String(linkProbeBytes)"
+            @update:model-value="(v: string) => (linkProbeBytes = Number(v))"
+          />
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px">
