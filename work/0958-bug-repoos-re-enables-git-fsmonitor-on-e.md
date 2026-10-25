@@ -16,7 +16,7 @@ model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-10-25T11:34:02Z"
 updated_at: "2026-10-25T16:53:06Z"
 dev_error_count: 5
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-25T15:30:46.283Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-25T15:36:32.644Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4-pro\",\"at\":\"2026-10-25T16:53:06.736Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -123,3 +123,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T16:20:58Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T16:50:49Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T16:53:06Z · agent exited with an error (opencode) · error: Reconnect OpenCode Console to continue.
+- 2026-10-25T16:53:06Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4-pro (1/3 crashes in 30m) · error: Reconnect OpenCode Console to continue.
