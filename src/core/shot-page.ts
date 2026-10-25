@@ -539,8 +539,7 @@ export async function captureShotPage(
   if (options.waitMs > 0) await page.waitForTimeout(options.waitMs);
   for (const step of entry.steps ?? []) await runStep(page, step, entry.route, onStepMiss);
   const mountSelector =
-    entry.highlight ??
-    (entry.highlights?.length ? entry.highlights[0] : undefined);
+    entry.highlight ?? (entry.highlights?.length ? entry.highlights[0] : undefined);
   if (mountSelector) {
     try {
       const base = page.locator(mountSelector);
