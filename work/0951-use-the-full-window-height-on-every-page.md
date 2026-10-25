@@ -2,7 +2,7 @@
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -258,4 +258,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T18:06:19Z · body
 - 2026-10-25T18:14:21Z · CTO nudge: held — remote validation is running
 - 2026-10-25T18:18:41Z · body
-- 2026-10-25T18:22:59Z · note: shots: skipped — 12 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-25T18:22:59Z · status active→review
