@@ -65,74 +65,74 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "Review failed status card",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusReviewFailed"
+"label": "Review failed status card",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailed"
 },
 {
-  "label": "Review failed card at narrow width",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusReviewFailedNarrow"
+"label": "Review failed card at narrow width",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailedNarrow"
 },
 {
-  "label": "Not landable card with checklist in info popover",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landable"
+"label": "Not landable card with checklist in info popover",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landable"
 },
 {
-  "label": "Not landable card at narrow width",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landableNarrow"
+"label": "Not landable card at narrow width",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landableNarrow"
 },
 {
-  "label": "Checks running with one status line",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunning"
+"label": "Checks running with one status line",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning"
 },
 {
-  "label": "Checks running at narrow width",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunningNarrow"
+"label": "Checks running at narrow width",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunningNarrow"
 },
 {
-  "label": "Confirming handoff with status line",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusConfirmingHandoff"
+"label": "Confirming handoff with status line",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusConfirmingHandoff"
 },
 {
-  "label": "Confirming handoff at narrow width",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusConfirmingHandoffNarrow"
+"label": "Confirming handoff at narrow width",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusConfirmingHandoffNarrow"
 },
 {
-  "label": "Checks failed after retries with detail in info popover",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksFailed"
+"label": "Checks failed after retries with detail in info popover",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailed"
 },
 {
-  "label": "Checks failed after retries at narrow width",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksFailedNarrow"
+"label": "Checks failed after retries at narrow width",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailedNarrow"
 }
 ]
 ```
