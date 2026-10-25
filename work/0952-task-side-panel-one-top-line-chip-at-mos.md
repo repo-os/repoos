@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T00:36:54Z"
+updated_at: "2026-10-25T00:37:21Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -140,3 +140,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T00:31:54Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-25T00:36:16Z · body
 - 2026-10-25T00:36:54Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T00:37:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
