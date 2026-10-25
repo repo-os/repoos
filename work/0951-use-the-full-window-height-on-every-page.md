@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T08:52:18Z"
+updated_at: "2026-10-25T08:53:34Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from eec677ba to d74e9b93) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -48,46 +48,40 @@ Every standard nav page uses the full window height: the scrollable content area
 ```json
 [
 {
-"label": "Work page at tall viewport",
-"target": "default",
-"route": "/work",
-"highlight": ".work-page",
-"viewportHeight": 1120
+  "label": "Work page at tall viewport",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".work-page"
 },
 {
-"label": "Work page at short viewport",
-"target": "default",
-"route": "/work",
-"highlight": ".work-page",
-"viewportHeight": 620
+  "label": "Work page at short viewport",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".work-page"
 },
 {
-"label": "Stories page at tall viewport",
-"target": "default",
-"route": "/stories",
-"highlight": ".stories-page",
-"viewportHeight": 1120
+  "label": "Stories page at tall viewport",
+  "target": "default",
+  "route": "/stories",
+  "highlight": ".stories-page"
 },
 {
-"label": "Stories page at short viewport",
-"target": "default",
-"route": "/stories",
-"highlight": ".stories-page",
-"viewportHeight": 620
+  "label": "Stories page at short viewport",
+  "target": "default",
+  "route": "/stories",
+  "highlight": ".stories-page"
 },
 {
-"label": "Checks page at tall viewport",
-"target": "default",
-"route": "/checks",
-"highlight": ".ck-page",
-"viewportHeight": 1120
+  "label": "Checks page at tall viewport",
+  "target": "default",
+  "route": "/checks",
+  "highlight": ".ck-page"
 },
 {
-"label": "Checks page at short viewport",
-"target": "default",
-"route": "/checks",
-"highlight": ".ck-page",
-"viewportHeight": 620
+  "label": "Checks page at short viewport",
+  "target": "default",
+  "route": "/checks",
+  "highlight": ".ck-page"
 }
 ]
 ```
@@ -169,3 +163,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T08:50:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T08:50:44Z · message_delivered: 1 message(s)
 - 2026-10-25T08:50:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T08:53:34Z · body
