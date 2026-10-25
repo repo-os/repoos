@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T19:04:12Z"
+updated_at: "2026-10-25T19:04:13Z"
 review_rounds: 1
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
@@ -267,3 +267,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T18:56:26Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · the worktree changed while the gate was running (HEAD moved from 671525a3 to 4a029553) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-25T19:04:08Z · cli_override, model_override
 - 2026-10-25T19:04:12Z · needs_input
+- 2026-10-25T19:04:13Z · message_queued at 2026-10-25T19:04:13.350Z
