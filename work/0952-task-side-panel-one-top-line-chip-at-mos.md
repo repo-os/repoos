@@ -3,6 +3,9 @@ id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-10-25T01:39:59.587995Z ERROR codex_core::session: failed to record rollout items: thread 01a170aa-dc7b-7231-a134-9b6e54862525 not found"
 priority: p2
 area: web
 assigned_to: ai
@@ -11,9 +14,11 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T01:39:06Z"
+updated_at: "2026-10-25T01:40:08Z"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T01:02:11.529Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T01:26:46.721Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T01:40:08.859Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -214,3 +219,5 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T01:28:44Z · body
 - 2026-10-25T01:39:05Z · message_queued at 2026-10-25T01:39:05.680Z
 - 2026-10-25T01:39:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T01:40:08Z · agent exited with an error (codex) · 2026-10-25T01:39:59.587995Z ERROR codex_core::session: failed to record rollout items: thread 01a170aa-dc7b-7231-a134-9b6e54862525 not found
+- 2026-10-25T01:40:08Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-25T01:39:59.587995Z ERROR codex_core::session: failed to record rollout items: thread 01a170aa-dc7b-7231-a134-9b6e54862525 not found
