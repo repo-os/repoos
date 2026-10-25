@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 1ff6ba371c2765741565b178fc674b7105d16e60
 id: "0957"
 title: "Bug: remote validation link probe rejects usable high-latency links (throughput includes ssh setup time)"
 type: bug
@@ -13,7 +11,9 @@ branch: feat/bug-remote-validation-link-probe-rejects
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T12:39:49Z"
+updated_at: "2026-10-25T13:30:04Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 1ff6ba371c2765741565b178fc674b7105d16e60
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:46:43.085Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T11:13:08.170Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 4
@@ -89,4 +89,4 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T12:35:05Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-25T12:35:06Z · note: handoff requested (cli)
 - 2026-10-25T12:39:49Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
-
+- 2026-10-25T13:30:04Z · CTO nudge: held — an undelivered message is already queued
