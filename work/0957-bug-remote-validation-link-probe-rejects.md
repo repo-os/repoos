@@ -3,6 +3,9 @@ id: "0957"
 title: "Bug: remote validation link probe rejects usable high-latency links (throughput includes ssh setup time)"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p1
 area: core
 assigned_to: ai
@@ -11,9 +14,11 @@ branch: feat/bug-remote-validation-link-probe-rejects
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T11:37:19Z"
+updated_at: "2026-10-25T11:37:37Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:46:43.085Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T11:13:08.170Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T11:37:37.086Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -43,10 +48,10 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 ```json
 [
 {
-  "label": "Remote link probe thresholds in Settings",
-  "target": "default",
-  "route": "/settings?tab=general&section=remote-validation",
-  "highlight": "#settings-section-remote-validation"
+"label": "Remote link probe thresholds in Settings",
+"target": "default",
+"route": "/settings?tab=general&section=remote-validation",
+"highlight": "#settings-section-remote-validation"
 }
 ]
 ```
@@ -73,3 +78,5 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T11:35:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-25T11:35:34Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T11:37:19Z · body
+- 2026-10-25T11:37:37Z · agent exited with an error (codex) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T11:37:37Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
