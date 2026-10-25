@@ -123,6 +123,24 @@ describe("AgentsView detected-tab loading (#0950)", () => {
     wrapper.unmount();
   });
 
+  it.each([{ agents: [] }, { agents: detectedAgents }])(
+    "keeps cached detected agents $agents visible during refresh",
+    async ({ agents }) => {
+      vi.stubGlobal("EventSource", QuietEventSource);
+      const first = await mountAgents("/?tab=detected", (url) => {
+        if (String(url).includes("/api/agents/detect"))
+          return Promise.resolve(json({ agents, cachedAt: null }));
+        return new Promise<Response>(() => {});
+      });
+      first.unmount();
+      const revisit = await mountAgents();
+      const panel = detectedPanel(revisit);
+      expect(panel.find(".page-skeleton").exists()).toBe(false);
+      expect(panel.find(agents.length ? ".detect-agent-name" : ".agent-empty").exists()).toBe(true);
+      revisit.unmount();
+    },
+  );
+
   it("shows cached detections immediately without a skeleton, then refreshes in place", async () => {
     const first = await mountAgents("/?tab=detected", async (url) => {
       if (String(url).includes("/api/agents/detect"))

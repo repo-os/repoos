@@ -457,7 +457,7 @@ async function loadDistribution(manual = false): Promise<void> {
         distributionRefreshError.value = "";
         // A cache hit is delivered synchronously by refreshPageData. Drop the
         // first-load state immediately so revisits stay quiet during revalidate.
-        if (distribution.value.length) distributionLoading.value = false;
+        distributionLoading.value = false;
       },
       (err) => {
         if (seq !== distributionSeq) return;
