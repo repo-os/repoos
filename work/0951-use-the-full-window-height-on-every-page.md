@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T00:48:20Z"
+updated_at: "2026-10-25T00:49:28Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-24T23:39:03.710Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
@@ -44,40 +44,40 @@ Every standard nav page uses the full window height: the scrollable content area
 ```json
 [
 {
-"label": "Work page at tall viewport",
-"target": "default",
-"route": "/work",
-"highlight": ".work-page"
+  "label": "Work page, tall viewport",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".work-page"
 },
 {
-"label": "Work page at short viewport",
-"target": "default",
-"route": "/work",
-"highlight": ".work-page"
+  "label": "Work page, short viewport",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".work-page"
 },
 {
-"label": "Stories page at tall viewport",
-"target": "default",
-"route": "/stories",
-"highlight": ".stories-page"
+  "label": "Stories page, tall viewport",
+  "target": "default",
+  "route": "/stories",
+  "highlight": ".stories-page"
 },
 {
-"label": "Stories page at short viewport",
-"target": "default",
-"route": "/stories",
-"highlight": ".stories-page"
+  "label": "Stories page, short viewport",
+  "target": "default",
+  "route": "/stories",
+  "highlight": ".stories-page"
 },
 {
-"label": "Checks page at tall viewport",
-"target": "default",
-"route": "/checks",
-"highlight": ".ck-page"
+  "label": "Checks page, tall viewport",
+  "target": "default",
+  "route": "/checks",
+  "highlight": ".ck-page"
 },
 {
-"label": "Checks page at short viewport",
-"target": "default",
-"route": "/checks",
-"highlight": ".ck-page"
+  "label": "Checks page, short viewport",
+  "target": "default",
+  "route": "/checks",
+  "highlight": ".ck-page"
 }
 ]
 ```
@@ -111,3 +111,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T00:47:57Z · message_delivered: 1 message(s)
 - 2026-10-25T00:47:57Z · note: handoff requested (cli)
 - 2026-10-25T00:48:20Z · CTO nudge: held — handoff gate is running
+- 2026-10-25T00:49:28Z · body
