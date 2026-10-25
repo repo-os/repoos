@@ -3,12 +3,6 @@ id: "0957"
 title: "Bug: remote validation link probe rejects usable high-latency links (throughput includes ssh setup time)"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
-debug_tldr: Every remote runner failed the link probe so checks queued locally until the test step hit the 420s timeout—resume after fixing connectivity or relaxing probe limits.
-debug_tldr_at: "2026-10-25T11:38:00Z"
-debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p1
 area: core
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/bug-remote-validation-link-probe-rejects
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T12:29:34Z"
+updated_at: "2026-10-25T12:30:01Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:46:43.085Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T11:13:08.170Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 4
@@ -88,3 +82,4 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T12:28:54Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-25T12:29:18Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-25T12:29:32Z · cli_override, model_override
+- 2026-10-25T12:30:01Z · needs_input
