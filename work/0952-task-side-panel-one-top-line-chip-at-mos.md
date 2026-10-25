@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T11:13:20Z"
+updated_at: "2026-10-25T11:28:06Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -260,3 +260,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T11:13:10Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/done-error-placement.test.ts > move-to-done inline error placement > renders in the task panel below the Move to done button, tests/reviewer-thinking-state.test.ts > reviewer thinking state in the task panel (#0209) > labels a previous-round report and withholds sign-off while a new review is pending, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-25T11:13:10Z · note: handoff requested (cli)
 - 2026-10-25T11:13:20Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T11:28:06Z · message_overdue: still queued after 60m without being delivered
