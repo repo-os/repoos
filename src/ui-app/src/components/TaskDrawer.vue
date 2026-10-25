@@ -600,10 +600,10 @@ const drawerHeaderChip = computed(() => {
     return null;
   const shortLabels: Partial<Record<DrawerStatusKey, string>> = {
     waitingForYou: compactNeedsInputChipLabel.value,
-    reviewFailed: "Review failed",
+    reviewFailed: "Reviewer failed",
     notLandable: "Not landable",
     handoffFailed: "Handoff failed",
-    checksFailedAfterRetries: "Checks failed",
+    checksFailedAfterRetries: "Checks failed after retries",
   };
   return { ...status, label: shortLabels[status.key] ?? status.label };
 });
@@ -2778,19 +2778,19 @@ const needsInputHeaderChip = computed<{ label: string; cls: string } | null>(() 
 const compactNeedsInputChipLabel = computed(() => {
   const reason = ui.active?.needsInputReason ?? "";
   const labels: Record<string, string> = {
-    "review-failed": "Review failed",
-    "review-rounds-exhausted": "Review exhausted",
-    "review-human-attention": "Needs review",
+    "review-failed": "Reviewer failed",
+    "review-rounds-exhausted": "Review still finding issues",
+    "review-human-attention": "Repeated review issues",
     "evidence-gap-exhausted": "Evidence missing",
     "dev-error": "Agent failed",
     "provider-failure": "Provider error",
-    "degenerate-output": "Agent failed",
-    "check-failed-after-retries": "Checks exhausted",
-    "cto-escalation": "Needs answer",
-    "watchdog-stuck": "Agent stopped",
-    underspecified: "Needs detail",
-    "needs-human-step": "Needs human",
-    questions: "Needs answer",
+    "degenerate-output": "Degenerate agent output",
+    "check-failed-after-retries": "Checks failed after retries",
+    "cto-escalation": "Agent asked a question",
+    "watchdog-stuck": "No agent running",
+    underspecified: "Not fully fleshed out",
+    "needs-human-step": "Needs human step",
+    questions: "Agent asked a question",
   };
   return labels[reason] ?? needsInputHeaderChip.value?.label ?? "Needs input";
 });

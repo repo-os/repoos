@@ -218,12 +218,12 @@ describe("needs_input status labels on the board card (#0511)", () => {
 describe("needs_input status labels in the task drawer (#0511)", () => {
   const drawerChipLabels: Record<string, string> = {
     "review-failed": "Reviewer failed",
-    "review-rounds-exhausted": "Review still failing",
-    "review-human-attention": "Needs human review",
+    "review-rounds-exhausted": "Review still finding issues",
+    "review-human-attention": "Repeated review issues",
     "evidence-gap-exhausted": "Evidence missing",
     "dev-error": "Agent failed",
     "provider-failure": "Provider error",
-    "degenerate-output": "Agent output failed",
+    "degenerate-output": "Degenerate agent output",
     "check-failed-after-retries": "Checks failed after retries",
     "cto-escalation": "Agent asked a question",
     "watchdog-stuck": "No agent running",
