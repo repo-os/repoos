@@ -566,10 +566,7 @@ describe("removeWorktree", () => {
           stopFsmonitor: (path) => stopped.push(path),
         }),
       ).toBe(true);
-      expect(stopped).toEqual([
-        off.path,
-        explicitOff.path,
-      ]);
+      expect(stopped).toEqual([off.path, explicitOff.path]);
     } finally {
       clean();
     }
