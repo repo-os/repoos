@@ -48,46 +48,46 @@ Every standard nav page uses the full window height: the scrollable content area
 ```json
 [
 {
-  "label": "Work page at tall viewport",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".work-page",
-  "viewportWidth": 1280
+"label": "Work page at tall viewport",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page",
+"viewportWidth": 1280
 },
 {
-  "label": "Work page at short viewport",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".work-page",
-  "viewportWidth": 1280
+"label": "Work page at short viewport",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page",
+"viewportWidth": 1280
 },
 {
-  "label": "Stories page at tall viewport",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".stories-page",
-  "viewportWidth": 1280
+"label": "Stories page at tall viewport",
+"target": "default",
+"route": "/stories",
+"highlight": ".stories-page",
+"viewportWidth": 1280
 },
 {
-  "label": "Stories page at short viewport",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".stories-page",
-  "viewportWidth": 1280
+"label": "Stories page at short viewport",
+"target": "default",
+"route": "/stories",
+"highlight": ".stories-page",
+"viewportWidth": 1280
 },
 {
-  "label": "Checks page at tall viewport",
-  "target": "default",
-  "route": "/checks",
-  "highlight": ".ck-page",
-  "viewportWidth": 1280
+"label": "Checks page at tall viewport",
+"target": "default",
+"route": "/checks",
+"highlight": ".ck-page",
+"viewportWidth": 1280
 },
 {
-  "label": "Checks page at short viewport",
-  "target": "default",
-  "route": "/checks",
-  "highlight": ".ck-page",
-  "viewportWidth": 1280
+"label": "Checks page at short viewport",
+"target": "default",
+"route": "/checks",
+"highlight": ".ck-page",
+"viewportWidth": 1280
 }
 ]
 ```
