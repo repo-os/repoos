@@ -2294,14 +2294,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // from the previous server (0288): the spawner's timer died with it, so an
   // adopted review would otherwise run without a deadline. Also registers the
   // adopted turns in `reviews` so cancellation and run/chat mode work for them.
-  reviews.armAdoptedTimeouts();
+  if (!isPreviewChild) reviews.armAdoptedTimeouts();
 
   // Re-spawn reviews a real (non-reload) shutdown killed: `handle.close()` runs
   // `reviews.cancelAll()` on SIGTERM/SIGINT, so a manual restart (or a crash)
   // leaves tasks stuck in `review` with a stale/missing report and nothing
   // adopts them. Deferred until `indexReady` — it reads `index.getTasks()`.
   const runReviewRecovery = (): void => reviews.recoverInterruptedReviews(index.getTasks());
-  void indexReady.then(runReviewRecovery, runReviewRecovery).catch(() => {});
+  if (!isPreviewChild) {
+    void indexReady.then(runReviewRecovery, runReviewRecovery).catch(() => {});
+  }
 
   reviews.bindCleanReviewHandler((task, report) => {
     void tryAutoApproveAfterCleanReview(
@@ -2562,6 +2564,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const BUILT_IN_CHECK_INTERVAL_MS = 60_000;
   const builtInRun = { inFlight: false };
   const builtInTimer = setInterval(() => {
+    if (isPreviewChild) return;
     if (builtInRun.inFlight) return;
     const agents = repoos.config.builtInAgents ?? {};
     for (const name of Object.keys(agents)) {
