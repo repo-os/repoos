@@ -3,6 +3,9 @@ id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "error: Transport"
 priority: p1
 area: core
 assigned_to: ai
@@ -11,8 +14,8 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T15:15:29Z"
-dev_error_count: 2
+updated_at: "2026-10-25T15:27:46Z"
+dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:05:48.590Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:12.715Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -83,3 +86,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T14:55:34Z · message_queued at 2026-10-25T14:55:34.367Z
 - 2026-10-25T15:00:18Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T15:15:29Z · note: handoff requested (ui-review)
+- 2026-10-25T15:27:46Z · agent exited with an error (opencode) · error: Transport
