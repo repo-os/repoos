@@ -98,26 +98,26 @@ onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDeb
 .floating-heads {
   position: fixed;
   right: 22px;
-  bottom: 22px;
+  bottom: var(--floating-head-bottom);
   z-index: 70;
   pointer-events: none;
 }
 
 .floating-heads.any-open {
-  bottom: 18px;
+  bottom: calc(var(--floating-head-bottom) - 4px);
 }
 
 .stack {
   display: flex;
   flex-direction: column-reverse;
-  gap: 8px;
+  gap: var(--floating-head-gap);
   pointer-events: auto;
 }
 
 .head-btn {
   position: relative;
-  width: 52px;
-  height: 52px;
+  width: var(--floating-head-size);
+  height: var(--floating-head-size);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -174,14 +174,9 @@ onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDeb
 @media (max-width: 760px) {
   .floating-heads {
     right: 12px;
-    bottom: calc(74px + var(--safe-bot));
   }
   .floating-heads.any-open {
     left: 12px;
-  }
-  .head-btn {
-    width: 46px;
-    height: 46px;
   }
 }
 

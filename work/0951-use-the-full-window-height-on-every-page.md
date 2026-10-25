@@ -2,7 +2,7 @@
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -11,9 +11,8 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T00:45:08Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 7e92eb4d to d02d7a0c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 7e92eb4d52c63dd4c1cdeeeb70bb3bfa89f6f8c7
+updated_at: "2026-10-25T00:51:42Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-10-24T23:39:03.710Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
 ---
@@ -45,40 +44,46 @@ Every standard nav page uses the full window height: the scrollable content area
 ```json
 [
 {
-"label": "Work page at tall viewport",
-"target": "default",
-"route": "/work",
-"highlight": ".work-page"
+  "label": "Work page at tall viewport",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".work-page",
+  "viewportHeight": 1120
 },
 {
-"label": "Work page at short viewport",
-"target": "default",
-"route": "/work",
-"highlight": ".work-page"
+  "label": "Work page at short viewport",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".work-page",
+  "viewportHeight": 620
 },
 {
-"label": "Stories page at tall viewport",
-"target": "default",
-"route": "/stories",
-"highlight": ".stories-page"
+  "label": "Stories page at tall viewport",
+  "target": "default",
+  "route": "/stories",
+  "highlight": ".stories-page",
+  "viewportHeight": 1120
 },
 {
-"label": "Stories page at short viewport",
-"target": "default",
-"route": "/stories",
-"highlight": ".stories-page"
+  "label": "Stories page at short viewport",
+  "target": "default",
+  "route": "/stories",
+  "highlight": ".stories-page",
+  "viewportHeight": 620
 },
 {
-"label": "Checks page at tall viewport",
-"target": "default",
-"route": "/checks",
-"highlight": ".ck-page"
+  "label": "Checks page at tall viewport",
+  "target": "default",
+  "route": "/checks",
+  "highlight": ".ck-page",
+  "viewportHeight": 1120
 },
 {
-"label": "Checks page at short viewport",
-"target": "default",
-"route": "/checks",
-"highlight": ".ck-page"
+  "label": "Checks page at short viewport",
+  "target": "default",
+  "route": "/checks",
+  "highlight": ".ck-page",
+  "viewportHeight": 620
 }
 ]
 ```
@@ -99,4 +104,19 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T00:06:12Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from bd41edf4 to c1705145) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-10-25T00:11:34Z · note: handoff requested (ui-review)
 - 2026-10-25T00:22:57Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 7e92eb4d to d02d7a0c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-25T00:29:50Z · note: handoff requested (ui-review)
+- 2026-10-25T00:45:07Z · note: ui verification passed: 3 of 6 shots captured with clean console
 - 2026-10-25T00:45:08Z · status active→review
+- 2026-10-25T00:46:25Z · note: review pass 1: needs some work
+- 2026-10-25T00:47:32Z · status review→active
+- 2026-10-25T00:47:32Z · note: send-back — returned to active for engineer follow-up
+- 2026-10-25T00:47:33Z · message_queued at 2026-10-25T00:47:33.988Z
+- 2026-10-25T00:47:35Z · CTO nudge: held — remote validation is running
+- 2026-10-25T00:47:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T00:47:56Z · status active→review
+- 2026-10-25T00:47:57Z · message_delivered: 1 message(s)
+- 2026-10-25T00:47:57Z · note: handoff requested (cli)
+- 2026-10-25T00:48:20Z · CTO nudge: held — handoff gate is running
+- 2026-10-25T00:49:28Z · body
+- 2026-10-25T00:49:46Z · body
+- 2026-10-25T00:51:42Z · body

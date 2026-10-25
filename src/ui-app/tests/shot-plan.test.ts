@@ -428,6 +428,31 @@ describe("buildCapturePlan", () => {
     ).toBe(true);
   });
 
+  it("keeps tall and short viewport captures distinct (#0951)", () => {
+    const { entries, collapsed } = buildCapturePlan(
+      ["default"],
+      [
+        { route: "/work", label: "Work tall", viewportHeight: 1120 },
+        { route: "/work", label: "Work short", viewportHeight: 620 },
+        { route: "/stories", label: "Stories tall", viewportHeight: 1120 },
+        { route: "/stories", label: "Stories short", viewportHeight: 620 },
+        { route: "/checks", label: "Checks tall", viewportHeight: 1120 },
+        { route: "/checks", label: "Checks short", viewportHeight: 620 },
+      ],
+    );
+
+    expect(entries).toHaveLength(6);
+    expect(collapsed).toEqual([]);
+    expect(entries.map((entry) => entry.viewportHeight)).toEqual([1120, 620, 1120, 620, 1120, 620]);
+    for (const [tall, short] of [
+      [entries[0]!, entries[1]!],
+      [entries[2]!, entries[3]!],
+      [entries[4]!, entries[5]!],
+    ]) {
+      expect(shotPlanFingerprint([tall])).not.toBe(shotPlanFingerprint([short]));
+    }
+  });
+
   it("rejects a declared target the resolution missed, with an actionable error", () => {
     const { entries, errors } = buildCapturePlan(["Docs site"], [{ target: "Landing page" }]);
     expect(entries).toEqual([]);

@@ -24,8 +24,17 @@
   --amber: #ffb454;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bot: env(safe-area-inset-bottom, 0px);
-  --page-bottom-inset: calc(88px + var(--safe-bot));
-  --page-bottom-fade-size: 112px;
+  /* Match FloatingHeads.vue: three 52px controls with 8px gaps. Keeping their
+     dimensions here lets every scroll pane reserve the actual head stack. */
+  --floating-head-size: 52px;
+  --floating-head-gap: 8px;
+  --floating-head-bottom: calc(22px + var(--safe-bot));
+  --floating-head-stack-height: calc(
+    var(--floating-head-size) + var(--floating-head-size) + var(--floating-head-size) +
+      var(--floating-head-gap) + var(--floating-head-gap)
+  );
+  --page-bottom-inset: calc(var(--floating-head-stack-height) + var(--floating-head-bottom) + 16px);
+  --page-bottom-fade-size: calc(var(--floating-head-stack-height) + var(--floating-head-bottom));
   --font-sans: "Sora", sans-serif;
   /* theme-aware semantic tokens */
   --body-gradient:
@@ -1149,10 +1158,6 @@
   align-self: stretch;
   padding: 22px 26px var(--page-bottom-inset);
   min-width: 0;
-}
-.main:has(.work-page) {
-  --page-bottom-inset: calc(154px + var(--safe-bot));
-  --page-bottom-fade-size: 160px;
 }
 /* Standard nav views span this pane's full width: do NOT add a page-level
    max-width (or centering margin) to a page shell — wide tables, step output
@@ -8635,11 +8640,15 @@
   display: none;
 }
 @media (max-width: 760px) {
+  :root {
+    --floating-head-size: 46px;
+    --floating-head-bottom: calc(74px + var(--safe-bot));
+  }
   .sidebar {
     display: none;
   }
   .main {
-    padding: 18px 16px 90px;
+    padding: 18px 16px var(--page-bottom-inset);
   }
   .tabbar {
     display: flex;
