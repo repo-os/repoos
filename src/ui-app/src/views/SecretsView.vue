@@ -81,7 +81,6 @@ async function loadEnvironments(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    let snapshotLoad: Promise<void> | undefined;
     await refreshPageData(
       "project-environments",
       () => api<{ environments: Environment[] }>("/api/project-environments"),
@@ -89,13 +88,13 @@ async function loadEnvironments(): Promise<void> {
         environments.value = data.environments;
         if (!selected.value || !data.environments.some((env) => env.id === selected.value))
           selected.value = data.environments[0]?.id ?? "";
-        snapshotLoad = loadSnapshot();
       },
       (e) => {
-        error.value = safeError(e);
+        if (environments.value.length) snapshotRefreshError.value = safeError(e);
+        else error.value = safeError(e);
       },
     );
-    await snapshotLoad;
+    await loadSnapshot();
   } catch (e) {
     error.value = safeError(e);
   } finally {
