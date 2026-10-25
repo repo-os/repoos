@@ -79,6 +79,50 @@ afterEach(async () => {
 });
 
 describe("startServer running-server registry", () => {
+  it("does not tune git config from a preview child server", async () => {
+    const root = minimalRepo();
+    process.env.REPOOS_PREVIEW_CHILD = "1";
+    const handle = await startServer({
+      root,
+      host: "127.0.0.1",
+      port: 0,
+      disableAuth: true,
+    });
+    try {
+      expect(() =>
+        execFileSync("git", ["config", "--get", "core.fsmonitor"], {
+          cwd: root,
+          encoding: "utf8",
+        }),
+      ).toThrow();
+    } finally {
+      await handle.close();
+      delete process.env.REPOOS_PREVIEW_CHILD;
+    }
+  });
+
+  it("does not tune git config when serving from a linked worktree", async () => {
+    const main = minimalRepo();
+    const wt = join(main, "task-wt");
+    git(main, ["worktree", "add", "-q", wt, "-b", "feat/task"]);
+    const handle = await startServer({
+      root: wt,
+      host: "127.0.0.1",
+      port: 0,
+      disableAuth: true,
+    });
+    try {
+      expect(() =>
+        execFileSync("git", ["config", "--get", "core.fsmonitor"], {
+          cwd: main,
+          encoding: "utf8",
+        }),
+      ).toThrow();
+    } finally {
+      await handle.close();
+    }
+  });
+
   it("honors git.tuneForScale = false during startup", async () => {
     const root = minimalRepo();
     writeFileSync(join(root, "repoos.toml"), "servePort = 0\ngit.tuneForScale = false\n");
