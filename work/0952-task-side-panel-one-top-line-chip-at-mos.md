@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-25T02:27:44.782Z: repoos check failed: ◆ Check plan"
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
@@ -205,3 +207,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T02:21:31Z · body
 - 2026-10-25T02:27:40Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-25T02:27:43Z · message_queued at 2026-10-25T02:27:43.811Z
+
