@@ -14,7 +14,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-19T05:12:47Z"
-updated_at: "2026-10-25T11:43:45Z"
+updated_at: "2026-10-25T16:50:44Z"
 last_close_out_gate_ms: 495445
 last_close_out_gate_at: "2026-10-20T15:27:19.126Z"
 review_passes: 27
@@ -408,3 +408,7 @@ RepoOS itself; read AGENTS.md first. Start from `parseDevTargets` in `src/core/c
 - 2026-10-25T11:13:19Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T11:28:06Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T11:43:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T14:02:00Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T15:32:43Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:16:26Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:50:44Z · message_overdue: still queued after 60m without being delivered

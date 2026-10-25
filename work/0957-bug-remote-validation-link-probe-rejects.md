@@ -2,26 +2,22 @@
 id: "0957"
 title: "Bug: remote validation link probe rejects usable high-latency links (throughput includes ssh setup time)"
 type: bug
-status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
-debug_tldr: Every remote runner failed the link probe so checks queued locally until the test step hit the 420s timeout—resume after fixing connectivity or relaxing probe limits.
-debug_tldr_at: "2026-10-25T11:38:00Z"
-debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
+status: done
 priority: p1
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-remote-validation-link-probe-rejects
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T11:38:00Z"
+updated_at: "2026-10-25T16:50:45Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 78db36984edf375ea554aacdafedf74bcbf50a1d
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:46:43.085Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T11:13:08.170Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T11:37:37.086Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 4
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:37.623Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:54.917Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:29:18.832Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -84,3 +80,23 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T11:37:37Z · agent exited with an error (codex) · the agent process exited with an error — open the task to see the full output
 - 2026-10-25T11:37:37Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-25T11:37:43Z · message_delivered: 1 message(s)
+- 2026-10-25T12:28:37Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-25T12:28:32.947741Z ERROR codex_core::session: failed to record rollout items: thread 01a172dc-6c08-73d1-bab4-8bd26252dd6c not found
+- 2026-10-25T12:28:54Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-25T12:29:18Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T12:29:32Z · cli_override, model_override
+- 2026-10-25T12:30:01Z · needs_input
+- 2026-10-25T12:30:02Z · message_queued at 2026-10-25T12:30:02.080Z
+- 2026-10-25T12:35:05Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-25T12:35:06Z · note: handoff requested (cli)
+- 2026-10-25T12:39:49Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-10-25T13:30:04Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T13:43:45Z · note: handoff requested (ui-review)
+- 2026-10-25T13:46:05Z · CTO nudge: held — handoff gate is running
+- 2026-10-25T13:48:48Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-10-25T13:51:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T13:56:55Z · status active→done
+- 2026-10-25T13:56:57Z · engineer stopped by request
+- 2026-10-25T14:02:08Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T15:32:54Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:16:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:50:45Z · message_overdue: still queued after 60m without being delivered

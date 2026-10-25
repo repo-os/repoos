@@ -3,22 +3,24 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
+hold: true
 priority: p2
 area: web
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T12:38:20Z"
+updated_at: "2026-10-25T17:40:15Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 review_passes: 1
 handoff_signal_retry_count: 1
-dev_error_count: 8
+dev_error_count: 12
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T16:50:26.076Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T16:53:11.305Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T16:53:22.254Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -215,4 +217,36 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T12:04:07Z · body
 - 2026-10-25T12:12:43Z · message_queued at 2026-10-25T12:12:43.765Z
 - 2026-10-25T12:17:10Z · CTO nudge: held — an undelivered message is already queued
-- 2026-10-25T12:38:20Z · CTO action: restart-stalled-agent (fresh) · check-failed-after-retries · check failed after 2 automatic retries · the worktree changed while the gate was running (HEAD moved from 671525a3 to 4a029553) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-25T13:13:15Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T14:02:04Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T14:05:03Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T14:33:41Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T14:33:41Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T14:34:18Z · message_delivered: 1 message(s)
+- 2026-10-25T14:50:02Z · CTO nudge: held — remote validation is running
+- 2026-10-25T15:38:11Z · engineer stopped by request
+- 2026-10-25T15:38:11Z · needs_input
+- 2026-10-25T15:38:36Z · held
+- 2026-10-25T15:39:12Z · assigned_to
+- 2026-10-25T15:40:28Z · status active→ready
+- 2026-10-25T16:20:32Z · assigned_to
+- 2026-10-25T16:20:38Z · released
+- 2026-10-25T16:20:56Z · status ready→active
+- 2026-10-25T16:21:03Z · cli_override, model_override
+- 2026-10-25T16:21:08Z · message_queued at 2026-10-25T16:21:08.180Z
+- 2026-10-25T16:21:28Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T16:50:24Z · agent exited with an error (opencode) · error: Upstream request failed: Invalid credential
+- 2026-10-25T16:50:26Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (1/3 crashes in 30m) · error: Upstream request failed: Invalid credential
+- 2026-10-25T16:50:47Z · message_delivered: 1 message(s)
+- 2026-10-25T16:53:11Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (2/3 crashes in 30m) · error: Reconnect OpenCode Console to continue.
+- 2026-10-25T16:53:22Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/kimi-k3.1-pro) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T16:54:23Z · cli_override, model_override
+- 2026-10-25T16:54:28Z · needs_input
+- 2026-10-25T16:54:29Z · message_queued at 2026-10-25T16:54:29.256Z
+- 2026-10-25T16:55:49Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T17:34:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T17:35:45Z · body
+- 2026-10-25T17:39:19Z · body
+- 2026-10-25T17:39:33Z · engineer stopped by request
+- 2026-10-25T17:39:47Z · held
+- 2026-10-25T17:40:15Z · assigned_to
