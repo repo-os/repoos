@@ -3,6 +3,9 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p2
 area: web
 assigned_to: ai
@@ -200,4 +203,5 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T01:34:25Z · status active→review
 - 2026-10-25T01:34:26Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-25T01:37:02Z · note: review pass 8: needs some work
+- 2026-10-25T01:37:03Z · needs_input
 - 2026-10-25T01:37:03Z · needs_input
