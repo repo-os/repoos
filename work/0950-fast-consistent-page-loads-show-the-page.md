@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T18:25:32Z"
+updated_at: "2026-10-25T18:30:35Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -371,3 +371,5 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-25T18:25:31Z · handoff_deferred: 4 queued message(s) must be read before review
 - 2026-10-25T18:25:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T18:25:32Z · message_delivered: 4 message(s)
+- 2026-10-25T18:30:35Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production... · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-25T18:30:35Z · note: handoff requested (cli)
