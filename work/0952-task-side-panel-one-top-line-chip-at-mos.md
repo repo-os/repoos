@@ -259,3 +259,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T03:03:31Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T03:06:23Z · body
 - 2026-10-25T03:07:53Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-25T03:07:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
