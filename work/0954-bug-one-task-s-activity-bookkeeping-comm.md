@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: Reading additional input from stdin...
+debug_tldr: "Handoff check timed out at 420s and Playwright stayed queued; the run then failed on stdin — wait for other checks to finish, then resume the engineer."
+debug_tldr_at: "2026-10-25T11:29:09Z"
+debug_tldr_key: dev-error|Reading additional input from stdin...
 priority: p1
 area: core
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/bug-one-task-s-activity-bookkeeping-comm
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T11:28:48Z"
+updated_at: "2026-10-25T11:29:09Z"
 handoff_signal_retry_count: 2
 dev_error_count: 7
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T11:13:07.376Z\",\"reason\":\"clean-exit-without-handoff\"}]"
