@@ -14,8 +14,8 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T18:37:43Z"
-dev_error_count: 10
+updated_at: "2026-10-25T18:37:51Z"
+dev_error_count: 11
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:34.411Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:43.560Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
