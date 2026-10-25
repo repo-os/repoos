@@ -63,6 +63,7 @@ import {
   formatNeedsInputDetailForDisplay,
   needsInputPrimaryAction,
   needsInputStatusLabel,
+  needsInputCompactChipLabel,
   needsInputSuggestionText,
   needsInputSuppressedOnReview,
   needsInputSurfaces,
@@ -591,9 +592,7 @@ const drawerHeaderChip = computed(() => {
   const status = drawerStatusSummary.value;
   if (
     !status ||
-    // Waiting states have their actionable card below the preview row; repeating
-    // the same state in the title line only squeezes the task path.
-    (status.key === "waitingForYou" && drawerWaitingCardVisible.value) ||
+    (status.key === "waitingForYou" && showAgentQuestionsBanner.value) ||
     ["checksRunning", "confirmingHandoff", "reviewerRunning", "workRunning"].includes(status.key)
   )
     return null;
@@ -2795,25 +2794,11 @@ const needsInputHeaderChip = computed<{ label: string; cls: string } | null>(() 
   };
 });
 
-const compactNeedsInputChipLabel = computed(() => {
-  const reason = ui.active?.needsInputReason ?? "";
-  const labels: Record<string, string> = {
-    "review-failed": "Review failed",
-    "review-rounds-exhausted": "Review issues",
-    "review-human-attention": "Review issues",
-    "evidence-gap-exhausted": "Evidence missing",
-    "dev-error": "Agent failed",
-    "provider-failure": "Provider error",
-    "degenerate-output": "Agent failed",
-    "check-failed-after-retries": "Checks failed",
-    "cto-escalation": "Needs input",
-    "watchdog-stuck": "Agent stopped",
-    underspecified: "Needs details",
-    "needs-human-step": "Needs human",
-    questions: "Needs input",
-  };
-  return labels[reason] ?? needsInputHeaderChip.value?.label ?? "Needs input";
-});
+const compactNeedsInputChipLabel = computed(() =>
+  ui.active
+    ? needsInputCompactChipLabel(ui.active.needsInputReason, activeNeedsInputQuestions.value)
+    : "Needs input",
+);
 
 const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   if (!ui.active || ui.active.status !== "review") return null;

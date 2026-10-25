@@ -13,7 +13,10 @@ import { useRepoStore } from "../src/stores/repo";
 import { useConfigStore } from "../src/stores/config";
 import { useUiStore } from "../src/stores/ui";
 import type { Task } from "../src/types";
-import { NEEDS_INPUT_STATUS_LABELS } from "../src/lib/needs-input-ui";
+import {
+  NEEDS_INPUT_COMPACT_CHIP_LABELS,
+  NEEDS_INPUT_STATUS_LABELS,
+} from "../src/lib/needs-input-ui";
 
 const EMPTY_COUNTS = { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 };
 
@@ -217,7 +220,7 @@ describe("needs_input status labels on the board card (#0511)", () => {
 
 describe("needs_input status surfaces in the task drawer (#0511)", () => {
   for (const [reason] of Object.entries(NEEDS_INPUT_STATUS_LABELS)) {
-    it(`keeps ${reason} in the waiting card instead of repeating it in the header`, async () => {
+    it(`shows a short header chip and the full reason in the waiting card for ${reason}`, async () => {
       const pinia = createPinia();
       setActivePinia(pinia);
       FakeEventSource.instances = [];
@@ -232,10 +235,13 @@ describe("needs_input status surfaces in the task drawer (#0511)", () => {
       const wrapper = await mountDrawer(pinia, task);
       if (reason === "questions") {
         expect(wrapper.find(".questions-for-you-banner").exists()).toBe(true);
+        expect(wrapper.find(".drawer-head .rs-needs-input").exists()).toBe(false);
       } else {
         expect(wrapper.find(".agent-waiting").exists()).toBe(true);
+        const chip = wrapper.find(".drawer-head .rs-chip.rs-needs-input");
+        expect(chip.exists()).toBe(true);
+        expect(chip.text()).toContain(NEEDS_INPUT_COMPACT_CHIP_LABELS[reason]);
       }
-      expect(wrapper.find(".rs-chip.rs-needs-input").exists()).toBe(false);
       expect(wrapper.find(".rs-reviewing").exists()).toBe(false);
     });
   }
