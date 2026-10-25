@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T18:39:03Z"
+updated_at: "2026-10-25T18:51:26Z"
 review_rounds: 1
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
@@ -263,3 +263,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T18:24:51Z · status review→active
 - 2026-10-25T18:29:34Z · body
 - 2026-10-25T18:39:03Z · body
+- 2026-10-25T18:51:26Z · handoff failed · remote validation failed: test failure: tests/check-stylesheet-config.test.ts > RepoOS dogfoods the stylesheet-guard declaration > keeps its current coverage: the real stylesheet still passes, tests/incremental-index.test.ts > resolveWorktreeStatuses > reuses cached dirtiness when the worktree HEAD has not moved on mini — fix it in the feature branch and re-run the gate
