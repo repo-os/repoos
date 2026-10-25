@@ -3,9 +3,6 @@ id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p2
 area: web
 assigned_to: ai
@@ -278,3 +275,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T05:30:59Z · cli_override
 - 2026-10-25T05:31:00Z · model_override
 - 2026-10-25T05:31:10Z · engineer stopped by request
+- 2026-10-25T05:31:10Z · needs_input
