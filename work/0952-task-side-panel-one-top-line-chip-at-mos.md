@@ -146,9 +146,9 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 "route": "/work?task=9999&tab=debug",
 "highlight": "[aria-label=\"Task status details\"]",
 "steps": [
-  {
-    "click": "button[data-test-id=\"debug-tab-status\"]"
-  }
+{
+  "click": "button[data-test-id=\"debug-tab-status\"]"
+}
 ],
 "state": "drawer:statusReviewFailed",
 "viewportWidth": 1280
@@ -250,3 +250,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T02:38:49Z · body
 - 2026-10-25T02:39:09Z · body
 - 2026-10-25T02:39:17Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-25T02:39:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
