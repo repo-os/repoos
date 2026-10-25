@@ -17,7 +17,6 @@ last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check fail
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T02:27:40.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 12
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T11:48:27.959Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -89,7 +88,7 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 "highlight": ".drawer-info-popover",
 "steps": [
 {
-  "click": ".drawer-info-popover summary"
+"click": ".drawer-info-popover summary"
 }
 ],
 "state": "drawer:statusHandoffFailed"
@@ -101,10 +100,10 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 "highlight": ".debug-panel",
 "steps": [
 {
-  "click": "[data-test-id=task-tab-debug]"
+"click": "[data-test-id=task-tab-debug]"
 },
 {
-  "click": "[data-test-id=debug-tab-status]"
+"click": "[data-test-id=debug-tab-status]"
 }
 ],
 "state": "drawer:statusReviewFailed"
