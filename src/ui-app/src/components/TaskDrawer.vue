@@ -656,9 +656,7 @@ const drawerStatusSummary = computed(() => {
     reviewFailed: review.value?.report?.summary || "No complete report",
     notLandable: `${failCount} landing check${failCount === 1 ? "" : "s"} failing`,
     handoffFailed:
-      handoffError.value ??
-      repo.doneErrorFor(task.id)?.message ??
-      "The handoff did not finish.",
+      handoffError.value ?? repo.doneErrorFor(task.id)?.message ?? "The handoff did not finish.",
     checksFailedAfterRetries: "After retries",
     checksRunning:
       activeCheckRun.value?.scope && activeCheckRun.value.scope !== "full"
@@ -682,8 +680,7 @@ const drawerStatusSummary = computed(() => {
     reviewFailed:
       "Read the latest review report, then send the task to the engineer or use Review again. The Review tab keeps the full report and retry action.",
     notLandable: landableChecklist || "This task is not ready to land yet.",
-    handoffFailed:
-      `${handoffError.value ?? repo.doneErrorFor(task.id)?.message ?? "The handoff did not finish."}\nFix it and click Review again.`,
+    handoffFailed: `${handoffError.value ?? repo.doneErrorFor(task.id)?.message ?? "The handoff did not finish."}\nFix it and click Review again.`,
     checksFailedAfterRetries: checkChip.value?.title ?? "Checks failed after retries.",
     checksRunning: "The check gate is running — open the Debug tab for live output.",
     confirmingHandoff:
@@ -691,9 +688,12 @@ const drawerStatusSummary = computed(() => {
     reviewerRunning: "The reviewer is inspecting this task.",
     workRunning: "An agent is working on this task.",
   };
-  const isError = ["reviewFailed", "notLandable", "handoffFailed", "checksFailedAfterRetries"].includes(
-    key,
-  );
+  const isError = [
+    "reviewFailed",
+    "notLandable",
+    "handoffFailed",
+    "checksFailedAfterRetries",
+  ].includes(key);
   return {
     key,
     label: labels[key],
@@ -707,12 +707,6 @@ const drawerStatusDetails = computed(() => {
   const task = ui.active;
   if (!task) return [];
   const rows: { title: string; detail: string }[] = [];
-  if (drawerStatusSummary.value) {
-    rows.push({
-      title: drawerStatusSummary.value.label,
-      detail: drawerStatusSummary.value.guidance,
-    });
-  }
   if (task.needsInput)
     rows.push({
       title: "Waiting for you",
@@ -779,6 +773,10 @@ const drawerStatusDetails = computed(() => {
       detail:
         "Read the latest review report, then send the task to the engineer or use Review again. The Review tab keeps the full report and retry action.",
     });
+  if (review.value?.running)
+    rows.push({ title: "Reviewer running", detail: "The reviewer is inspecting this task." });
+  if (repo.isRunning(task.id) || repo.pmWorkingFor(task.id))
+    rows.push({ title: "Work running", detail: "An agent is working on this task." });
   return rows;
 });
 
