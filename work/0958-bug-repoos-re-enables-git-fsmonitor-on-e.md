@@ -11,7 +11,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: opencode
 model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T16:16:21Z"
+updated_at: "2026-10-25T16:16:29Z"
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-25T15:30:46.283Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-25T15:36:32.644Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -98,3 +98,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T16:15:55Z · released
 - 2026-10-25T16:16:14Z · status ready→active
 - 2026-10-25T16:16:20Z · model_override
+- 2026-10-25T16:16:29Z · message_queued at 2026-10-25T16:16:29.515Z
