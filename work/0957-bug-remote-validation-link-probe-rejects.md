@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-remote-validation-link-probe-rejects
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T10:41:41Z"
+updated_at: "2026-10-25T10:46:43Z"
 handoff_signal_retry_count: 2
-engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:21:42.826Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:21:42.826Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T10:46:43.085Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T10:41:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T10:41:17Z · message_delivered: 1 message(s)
 - 2026-10-25T10:41:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T10:46:43Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
