@@ -5,7 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "error: Reconnect OpenCode Console to continue."
+needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (opencode + opencode-go/kimi-k3.1-pro) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 debug_tldr: Engineer LLM call failed on invalid API credentials - update the provider key in Settings or .env and resume the task.
 debug_tldr_at: "2026-10-25T16:52:06Z"
 debug_tldr_key: "dev-error|error: Upstream request failed: Invalid credential"
@@ -17,15 +17,15 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T16:53:11Z"
+updated_at: "2026-10-25T16:53:22Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 review_passes: 1
 handoff_signal_retry_count: 1
-dev_error_count: 11
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T16:50:26.076Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T16:53:11.305Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 12
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T16:50:26.076Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T16:53:11.305Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T16:53:22.254Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -244,3 +244,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T16:50:26Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (1/3 crashes in 30m) · error: Upstream request failed: Invalid credential
 - 2026-10-25T16:50:47Z · message_delivered: 1 message(s)
 - 2026-10-25T16:53:11Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (2/3 crashes in 30m) · error: Reconnect OpenCode Console to continue.
+- 2026-10-25T16:53:22Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/kimi-k3.1-pro) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
