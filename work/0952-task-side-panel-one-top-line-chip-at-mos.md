@@ -3,12 +3,6 @@ id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
-debug_tldr: "Engineer crashed while stuck in the local check queue after remote runners failed link probes—open the task transcript, fix Tailscale, then resume."
-debug_tldr_at: "2026-10-25T11:48:58Z"
-debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
@@ -94,9 +88,9 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 "route": "/work?task=0952&tab=changes",
 "highlight": ".drawer-info-popover",
 "steps": [
-  {
-    "click": ".drawer-info-popover summary"
-  }
+{
+  "click": ".drawer-info-popover summary"
+}
 ],
 "state": "drawer:statusHandoffFailed"
 },
@@ -106,12 +100,12 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 "route": "/work?task=0952&tab=changes",
 "highlight": ".debug-panel",
 "steps": [
-  {
-    "click": "[data-test-id=task-tab-debug]"
-  },
-  {
-    "click": "[data-test-id=debug-tab-status]"
-  }
+{
+  "click": "[data-test-id=task-tab-debug]"
+},
+{
+  "click": "[data-test-id=debug-tab-status]"
+}
 ],
 "state": "drawer:statusReviewFailed"
 }
@@ -279,3 +273,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T12:00:15Z · body
 - 2026-10-25T12:00:32Z · body
 - 2026-10-25T12:08:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T12:08:04Z · needs_input
