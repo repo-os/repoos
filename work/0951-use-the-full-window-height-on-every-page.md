@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: Upstream request failed: Invalid credential"
+debug_tldr: Engineer LLM call failed on invalid API credentials - update the provider key in Settings or .env and resume the task.
+debug_tldr_at: "2026-10-25T16:52:06Z"
+debug_tldr_key: "dev-error|error: Upstream request failed: Invalid credential"
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T16:50:47Z"
+updated_at: "2026-10-25T16:52:06Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
