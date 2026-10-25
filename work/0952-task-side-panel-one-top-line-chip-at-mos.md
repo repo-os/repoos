@@ -11,9 +11,8 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T00:14:40Z"
+updated_at: "2026-10-25T00:26:31Z"
 handoff_signal_retry_count: 1
-engineer_stall_resume_log: "[{\"at\":\"2026-10-25T00:14:40.082Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -58,121 +57,47 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "Review failed",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 820
+  "label": "Reviewer failure status in task drawer",
+  "target": "default",
+  "route": "/work?task=0952&tab=details",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:reviewWithBranch"
 },
 {
-"label": "Review failed narrow",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 390
+  "label": "Not landable status in task drawer",
+  "target": "default",
+  "route": "/work?task=0952&tab=details",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:landable"
 },
 {
-"label": "Not landable",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:landable",
-"viewportWidth": 820
+  "label": "Running checks status in task drawer",
+  "target": "default",
+  "route": "/work?task=0952&tab=details",
+  "highlight": ".drawer-status-summary",
+  "state": "closeOut:checkProgress"
 },
 {
-"label": "Not landable narrow",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:landable",
-"viewportWidth": 390
+  "label": "Checks failed after retries in task drawer",
+  "target": "default",
+  "route": "/work?task=0952&tab=details",
+  "highlight": ".drawer-status-summary",
+  "state": "card:reviewRoundsExhausted"
 },
 {
-"label": "Handoff failed",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusHandoffFailed",
-"viewportWidth": 820
-},
-{
-"label": "Handoff failed narrow",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusHandoffFailed",
-"viewportWidth": 390
-},
-{
-"label": "Checks running",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 820
-},
-{
-"label": "Checks running narrow",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 390
-},
-{
-"label": "Confirming handoff",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 820
-},
-{
-"label": "Confirming handoff narrow",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 390
-},
-{
-"label": "Checks failed after retries",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 820
-},
-{
-"label": "Checks failed narrow",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 390
-},
-{
-"label": "Waiting for you details",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:tabExpandWarnings",
-"viewportWidth": 820
-},
-{
-"label": "Debug status details",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": "[aria-label=\"Task status details\"]",
-"steps": [
-{
-"click": "button.debug-tab:first-child"
-}
-],
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 820
+  "label": "Full status details in Debug",
+  "target": "default",
+  "route": "/work?task=0952&tab=details",
+  "highlight": ".debug-status-detail",
+  "steps": [
+    {
+      "click": ".drawer-status-summary .drawer-info-popover summary"
+    },
+    {
+      "click": ".drawer-info-content button"
+    }
+  ],
+  "state": "closeOut:checkProgress"
 }
 ]
 ```
@@ -208,4 +133,6 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T00:08:24Z · body
 - 2026-10-25T00:09:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T00:09:33Z · message_delivered: 1 message(s)
-- 2026-10-25T00:14:40Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-25T00:22:03Z · body
+- 2026-10-25T00:25:03Z · body
+- 2026-10-25T00:26:31Z · body
