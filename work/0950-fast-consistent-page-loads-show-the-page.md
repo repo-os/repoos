@@ -11,7 +11,7 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T00:07:26Z"
+updated_at: "2026-10-25T00:08:32Z"
 review_passes: 4
 handoff_signal_retry_count: 2
 review_rounds: 2
@@ -169,3 +169,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T00:06:53Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T00:07:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T00:07:26Z · message_delivered: 1 message(s)
+- 2026-10-25T00:08:32Z · note: Measurements and follow-up for #0950: driver-recorded main baseline (5 runs): /api/deployments median 2687 ms (min 2279, max 3000); /api/project-environments 1 ms; /api/dev/targets 1 ms; /api/check-plan 5 ms; /api/releases 0 ms. Handler inspection in this branch found getDeploymentsStatus already fans out independent branch summaries and row freshness/subdir git calls with Promise.all and coalesces identical (branch, subdir) freshness work; the remaining subprocess fan-out needs profiling before a safe optimization, so follow-up #0955 was filed to profile/reduce it and capture five-run before/after medians. This branchs view tests prove revisit content is visible with no skeleton while a deferred background refresh is still unresolved, then updates in place
