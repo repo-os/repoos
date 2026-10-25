@@ -36,6 +36,25 @@ describe("page data cache", () => {
     }
   });
 
+  it("never evicts an in-flight entry when the cache is over its size bound", async () => {
+    let resolve!: (value: string) => void;
+    const pending = new Promise<string>((r) => (resolve = r));
+    const receive = vi.fn();
+    const inflight = refreshPageData("inflight", () => pending, receive);
+    for (let i = 0; i < 80; i += 1) {
+      await refreshPageData(
+        `filler-${i}`,
+        async () => i,
+        () => {},
+      );
+    }
+    resolve("done");
+    await inflight;
+    expect(receive).toHaveBeenCalledWith("done");
+    invalidatePageDataPrefix("filler-");
+    invalidatePageData("inflight");
+  });
+
   it("still shows data inside the max age", async () => {
     vi.useFakeTimers();
     try {
