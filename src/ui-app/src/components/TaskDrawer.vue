@@ -599,7 +599,7 @@ const drawerHeaderChip = computed(() => {
   if (ui.active?.status === "review" && ["reviewFailed", "notLandable"].includes(status.key))
     return null;
   const shortLabels: Partial<Record<DrawerStatusKey, string>> = {
-    waitingForYou: "Needs input",
+    waitingForYou: compactNeedsInputChipLabel.value,
     reviewFailed: "Review failed",
     notLandable: "Not landable",
     handoffFailed: "Handoff failed",
@@ -719,10 +719,10 @@ const drawerStatusDetails = computed(() => {
   if (remoteActivityText.value || activeCheckRun.value)
     rows.push({
       title: "Checks running and remote validation",
-      detail: `${remoteActivityText.value || "A check run is active."}${activeCheckRun.value ? `\n${checkProgressLabel(activeCheckRun.value)}${activeCheckRun.value.output ? `\n${activeCheckRun.value.output}` : ""}` : ""}`,
+      detail: `${remoteActivityText.value || "A check run is active."}${checkMachine.value ? `\nRunning on ${checkMachine.value}.` : ""}${activeCheckRun.value ? `\n${checkProgressLabel(activeCheckRun.value)}${activeCheckRun.value.output ? `\n${activeCheckRun.value.output}` : ""}` : ""}`,
     });
-  if (checkChip.value?.state === "fail")
-    rows.push({ title: "Checks failed / retries exhausted", detail: checkChip.value.title });
+  if (checkChip.value && !activeCheckRun.value)
+    rows.push({ title: "Latest check result", detail: checkChip.value.title });
   if (activeTldrSentence.value)
     rows.push({ title: "What happened", detail: activeTldrSentence.value });
   if (task.status === "active" && task.needsInput)
@@ -730,6 +730,12 @@ const drawerStatusDetails = computed(() => {
       title: "Action guidance",
       detail:
         "Use the available primary action to send to the engineer, restart work, or dismiss this request. The task remains active until its work is resolved.",
+    });
+  if (task.status === "review" && review.value?.report?.state === "incomplete")
+    rows.push({
+      title: "Review retry guidance",
+      detail:
+        "Read the latest review report, then send the task to the engineer or use Review again. The Review tab keeps the full report and retry action.",
     });
   return rows;
 });
@@ -2769,6 +2775,26 @@ const needsInputHeaderChip = computed<{ label: string; cls: string } | null>(() 
   };
 });
 
+const compactNeedsInputChipLabel = computed(() => {
+  const reason = ui.active?.needsInputReason ?? "";
+  const labels: Record<string, string> = {
+    "review-failed": "Review failed",
+    "review-rounds-exhausted": "Review exhausted",
+    "review-human-attention": "Needs review",
+    "evidence-gap-exhausted": "Evidence missing",
+    "dev-error": "Agent failed",
+    "provider-failure": "Provider error",
+    "degenerate-output": "Agent failed",
+    "check-failed-after-retries": "Checks exhausted",
+    "cto-escalation": "Needs answer",
+    "watchdog-stuck": "Agent stopped",
+    underspecified: "Needs detail",
+    "needs-human-step": "Needs human",
+    questions: "Needs answer",
+  };
+  return labels[reason] ?? needsInputHeaderChip.value?.label ?? "Needs input";
+});
+
 const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   if (!ui.active || ui.active.status !== "review") return null;
   if (review.value?.running) return { label: "reviewing", cls: "rs-reviewing" };
@@ -4587,7 +4613,7 @@ watch(
                 class="rs-chip drawer-status-chip"
                 :class="{
                   'ck-chip-fail':
-                    drawerHeaderChip.key.toLowerCase().includes('fail') ||
+                    drawerHeaderChip.label.toLowerCase().includes('fail') ||
                     drawerHeaderChip.key === 'notLandable',
                   'rs-needs-input': drawerHeaderChip.key === 'waitingForYou',
                 }"
@@ -5145,7 +5171,7 @@ watch(
             v-if="
               drawerStatusSummary &&
               drawerStatusSummary.key !== 'waitingForYou' &&
-              drawerStatusSummary.key !== 'handoffFailed'
+              (drawerStatusSummary.key !== 'handoffFailed' || !repo.doneErrorFor(ui.active.id))
             "
             class="drawer-status-summary"
             :class="{
@@ -5179,7 +5205,7 @@ watch(
                       : "Work is running…"
               }}
               <span v-if="activeCheckRun" class="check-progress-inline">{{
-                checkProgressLabel(activeCheckRun)
+                `${checkMachine ? `on ${checkMachine} · ` : ""}${checkProgressLabel(activeCheckRun)}`
               }}</span>
             </span>
             <details class="drawer-info-popover">
@@ -7253,9 +7279,13 @@ watch(
 }
 
 .tc-id {
+  display: -webkit-box;
   min-width: 0;
   max-width: min(180px, 34vw);
+  overflow: hidden;
+  overflow-wrap: anywhere;
   -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .drawer-status-summary {

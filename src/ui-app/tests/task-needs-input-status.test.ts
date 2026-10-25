@@ -216,8 +216,23 @@ describe("needs_input status labels on the board card (#0511)", () => {
 });
 
 describe("needs_input status labels in the task drawer (#0511)", () => {
-  for (const [reason, label] of Object.entries(NEEDS_INPUT_STATUS_LABELS)) {
-    it(`header chip shows "${label}" for ${reason}`, async () => {
+  const drawerChipLabels: Record<string, string> = {
+    "review-failed": "Reviewer failed",
+    "review-rounds-exhausted": "Review still failing",
+    "review-human-attention": "Needs human review",
+    "evidence-gap-exhausted": "Evidence missing",
+    "dev-error": "Agent failed",
+    "provider-failure": "Provider error",
+    "degenerate-output": "Agent output failed",
+    "check-failed-after-retries": "Checks failed after retries",
+    "cto-escalation": "Agent asked a question",
+    "watchdog-stuck": "No agent running",
+    underspecified: "Not fully fleshed out",
+    "needs-human-step": "Needs human step",
+    questions: "Agent asked a question",
+  };
+  for (const [reason] of Object.entries(NEEDS_INPUT_STATUS_LABELS)) {
+    it(`header chip shows a concise reason for ${reason}`, async () => {
       const pinia = createPinia();
       setActivePinia(pinia);
       FakeEventSource.instances = [];
@@ -236,7 +251,8 @@ describe("needs_input status labels in the task drawer (#0511)", () => {
       } else {
         const chip = wrapper.find(".rs-chip.rs-needs-input");
         expect(chip.exists()).toBe(true);
-        expect(chip.text()).toContain(label);
+        expect(chip.text()).toBe(drawerChipLabels[reason] ?? label);
+        expect(chip.text().split(/\s+/).length).toBeLessThanOrEqual(5);
       }
       expect(wrapper.find(".rs-reviewing").exists()).toBe(false);
     });
@@ -266,9 +282,10 @@ describe("needs_input status labels in the task drawer (#0511)", () => {
       "0506": { running: true, enabled: true, lines: [], report: null },
     };
     const wrapper = await mountDrawer(pinia, task);
-    const chip = wrapper.find(".rs-chip");
-    expect(chip.classes()).toContain("rs-reviewing");
-    expect(chip.text()).toContain("reviewing");
+    const status = wrapper.find(".drawer-status-summary");
+    expect(status.exists()).toBe(true);
+    expect(status.text()).toContain("Reviewer running");
+    expect(wrapper.find(".drawer-status-line").exists()).toBe(true);
     expect(wrapper.find(".rs-needs-input").exists()).toBe(false);
   });
 });

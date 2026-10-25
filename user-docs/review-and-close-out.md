@@ -317,7 +317,10 @@ below the preview row. When several conditions apply, it shows one status by
 priority: waiting for you, incomplete review, landing blockers, handoff error,
 exhausted checks, then active handoff/check/reviewer/work progress. Open **Debug
 → Status details** for the full checklist, failure text, timing, and guidance;
-the Review and Logs views retain their reports and output.
+the Review and Logs views retain their reports and output. The header keeps one
+short issue chip when needed, and the task path is clamped to two lines. Select
+the info icon on a status card for its action guidance; the same full text is
+available in **Debug → Status details**.
 
 A close-out can get stuck — a flaky check, a test timeout, a runner that never
 returns. While a task is in the pipeline, its task drawer shows **Stop MTD**

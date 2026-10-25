@@ -24,8 +24,8 @@ export function selectDrawerStatus(candidates: DrawerStatusCandidates): DrawerSt
     "notLandable",
     "handoffFailed",
     "checksFailedAfterRetries",
-    "confirmingHandoff",
     "checksRunning",
+    "confirmingHandoff",
     "reviewerRunning",
     "workRunning",
   ];

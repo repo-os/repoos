@@ -12,7 +12,7 @@ describe("selectDrawerStatus", () => {
     [{ reviewFailed: true, notLandable: true }, "reviewFailed"],
     [{ handoffFailed: true, notLandable: true }, "notLandable"],
     [{ reviewFailed: true, handoffFailed: true, checksRunning: true }, "reviewFailed"],
-    [{ checksRunning: true, confirmingHandoff: true }, "confirmingHandoff"],
+    [{ checksRunning: true, confirmingHandoff: true }, "checksRunning"],
     [{ checksFailedAfterRetries: true, checksRunning: true }, "checksFailedAfterRetries"],
     [{ checksFailedAfterRetries: true, confirmingHandoff: true }, "checksFailedAfterRetries"],
     [{ waitingForYou: true, reviewFailed: true }, "waitingForYou"],
