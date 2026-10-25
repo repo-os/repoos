@@ -8,10 +8,11 @@ export const PAGE_DATA_MAX_AGE_MS = 5 * 60_000;
 const MAX_ENTRIES = 64;
 
 function trimEntries(): void {
-  while (entries.size > MAX_ENTRIES) {
-    const oldest = entries.keys().next().value;
-    if (oldest === undefined) return;
-    entries.delete(oldest);
+  // Never evict an entry with a request in flight: its caller would drop the
+  // response (identity check) and an initial-load view would be left without data.
+  for (const [key, entry] of entries) {
+    if (entries.size <= MAX_ENTRIES) return;
+    if (!entry.request) entries.delete(key);
   }
 }
 
