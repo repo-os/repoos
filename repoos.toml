@@ -112,7 +112,7 @@ remoteValidation.containerImage = "repoos-ci"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
 remoteValidation.engineerSelfCheckRemote = true
-activityAnimationStyle = "rgb-keystorm"
+activityAnimationStyle = "three-dots"
 model_routing.mode = "shadow"
 model_routing.provider = "openrouter"
 activityAnimationSize = "24"
@@ -742,7 +742,6 @@ command = "just macos-build && exec env LLVM_PROFILE_FILE=/dev/null 'macos/.deri
 [[budget.allowlist]]
 cli = "opencode"
 models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash"]
-pausedModels = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash"]
 pausedReason = "Go usage limit exceeded (429) on 2026-10-22; resume when the opencode-go quota resets"
 [[budget.allowlist]]
 cli = "github copilot"
