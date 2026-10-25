@@ -359,7 +359,7 @@ onBeforeUnmount(() => {
     </header>
 
     <div class="page-scroll-body">
-      <PageSkeleton v-if="loading && !status" kind="cards" />
+      <PageSkeleton v-if="loading && !status" kind="deployments" />
       <p v-else-if="error && !status" class="dep-err">{{ error }}</p>
       <p v-if="error && status" class="dep-err" role="status">Refresh failed: {{ error }}</p>
 

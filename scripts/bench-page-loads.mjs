@@ -118,7 +118,8 @@ async function measureNavigation(page, target, navigate) {
       const el = document.querySelector(root);
       if (!el) return false;
       const now = performance.now() - sample.start;
-      if (el.querySelector("h1, h2, .page-title") && sample.shell === null) sample.shell = now;
+      if (el.querySelector("h1, .page-title, .agents-page-title") && sample.shell === null)
+        sample.shell = now;
       const skeleton = [...el.querySelectorAll(".page-skeleton")].some(
         (node) => node.getClientRects().length,
       );

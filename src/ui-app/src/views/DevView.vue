@@ -379,7 +379,7 @@ watch(
     </header>
 
     <div class="page-scroll-body">
-      <PageSkeleton v-if="loading && !targets.length" kind="cards" />
+      <PageSkeleton v-if="loading && !targets.length" kind="targets" />
       <p v-else-if="loadError && !targets.length" class="dev-state dev-state--error" role="alert">
         {{ loadError }}
       </p>

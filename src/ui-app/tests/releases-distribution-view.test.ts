@@ -871,6 +871,24 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     wrapper.unmount();
   });
 
+  it.each([{ channels: [] }, { channels: [channel()] }])(
+    "does not flash a skeleton for cached distribution $channels",
+    async ({ channels }) => {
+      api.mockImplementation((path: string) => {
+        if (path === "/api/release") return Promise.resolve(releaseStatus());
+        if (path === "/api/release/distribution") return Promise.resolve({ channels });
+        if (path === "/api/release/run") return Promise.resolve({ run: null });
+        return Promise.resolve({});
+      });
+      const first = await mountView();
+      first.unmount();
+      api.mockImplementation(() => new Promise(() => {}));
+      const revisit = await mountView();
+      expect(revisit.find(".page-skeleton").exists()).toBe(false);
+      revisit.unmount();
+    },
+  );
+
   it("shows cached distribution channels on revisit with no skeleton, then applies the refresh in place (#0950)", async () => {
     mockApi([channel()]);
     const first = await mountView();

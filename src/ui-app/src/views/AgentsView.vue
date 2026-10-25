@@ -376,6 +376,7 @@ const detected = ref<DetectedAgent[]>([]);
 /** Set of agent ids whose fresh probe is still in flight. */
 const detectPending = ref<Set<string>>(new Set());
 const detectLoading = ref(false);
+const detectHasSnapshot = ref(false);
 const detectError = ref(false);
 const detectRefreshError = ref("");
 const detectCachedAt = ref<string | null>(null);
@@ -509,13 +510,14 @@ async function checkAgents(): Promise<void> {
     "agents:detect",
     () => api<{ agents: DetectedAgent[]; cachedAt: string | null }>("/api/agents/detect"),
     (cached) => {
+      detectHasSnapshot.value = true;
       if (cached.agents.length) detected.value = cached.agents;
       detectCachedAt.value = cached.cachedAt;
     },
     (error) => {
       // A cache miss is non-fatal; the stream will populate the page. When a
       // cached snapshot exists, keep showing it and report the failed refresh.
-      if (detected.value.length)
+      if (detectHasSnapshot.value)
         detectRefreshError.value = error instanceof Error ? error.message : String(error);
     },
   );
@@ -954,7 +956,10 @@ onUnmounted(() => {
             {{ cachedAtLabel(detectCachedAt) }}
           </div>
 
-          <PageSkeleton v-if="detectLoading && !detected.length" kind="rows" />
+          <PageSkeleton
+            v-if="detectLoading && !detected.length && !detectHasSnapshot"
+            kind="rows"
+          />
           <div v-else-if="!detected.length" class="agent-empty">
             No known coding agents detected on PATH.
           </div>
