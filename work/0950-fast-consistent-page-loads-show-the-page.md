@@ -3,12 +3,6 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/fast-consistent-page-loads-show-the-page/work/.attachments/0950/shots/default-1.png`: No such file or directory (os error 2)"
-debug_tldr: "Missing handoff screenshot default-1.png in the worktree — run repoos shot for #0950 there, then restart the engineer run."
-debug_tldr_at: "2026-10-25T15:34:35Z"
-debug_tldr_key: "dev-error|2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/fast-consistent-page-loads-show-the-page/work/.attachments/0950/shots/default-1.png`: No such file or directory (os error 2)"
 priority: p2
 area: web
 assigned_to: ai
@@ -19,7 +13,7 @@ model_override: gpt-6.1-sol
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T18:03:16Z"
+updated_at: "2026-10-25T18:03:17Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -327,3 +321,4 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 - 2026-10-25T18:03:07Z · model_override
 - 2026-10-25T18:03:15Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T18:03:16Z · message_delivered: 1 message(s)
+- 2026-10-25T18:03:17Z · needs_input
