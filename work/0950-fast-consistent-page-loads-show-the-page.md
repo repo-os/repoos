@@ -2,12 +2,17 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: ready
 needs_input: true
-needs_input_reason: review-rounds-exhausted
+needs_input_reason: dev-error
+needs_input_detail: "2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/fast-consistent-page-loads-show-the-page/work/.attachments/0950/shots/default-1.png`: No such file or directory (os error 2)"
+debug_tldr: "Missing handoff screenshot default-1.png in the worktree — run repoos shot for #0950 there, then restart the engineer run."
+debug_tldr_at: "2026-10-25T15:34:35Z"
+debug_tldr_key: "dev-error|2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/fast-consistent-page-loads-show-the-page/work/.attachments/0950/shots/default-1.png`: No such file or directory (os error 2)"
+hold: true
 priority: p2
 area: web
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
@@ -15,7 +20,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T11:59:03Z"
+updated_at: "2026-10-25T16:50:46Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -23,7 +28,7 @@ last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check fail
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 5
+dev_error_count: 6
 ---
 ## Problem
 
@@ -89,6 +94,18 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 }
 ]
 ```
+
+## Performance measurements
+### Baseline (driver on main, 2026-10-25, 5 runs)
+- `/api/deployments` median **2687 ms** (min 2279, max 3000)
+- `/api/project-environments` 1 ms · `/api/dev/targets` 1 ms · `/api/check-plan` 5 ms · `/api/releases` 0 ms
+
+### After this branch (2026-10-25, `bun scripts/bench-page-loads.mjs --runs=5`)
+**Endpoint (in-process `getDeploymentsStatus`, this worktree):** median **1923 ms** (min 1785, max 2093). Same handler as baseline; machine load differs — not a claimed optimization.
+
+**Pages (headless WebKit, endpoint latencies replayed per script):** median cold → revisit — Releases 1203→657 ms, Checks 864→622 ms, Deployments 3392→3011 ms, Dev 1204→3062 ms, Secrets 10030→3013 ms, Agents 632→3023 ms. Skeleton on cold: Releases/Checks/Deployments/Dev 5/5. Skeleton on revisit: Deployments/Dev/Secrets **0/5** (cached content, no flash). Revisit wall-clock still includes the bench harness’s delayed API routes.
+
+Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 
 ## Activity
 
@@ -267,3 +284,41 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T11:30:42Z · note: handoff requested (cli)
 - 2026-10-25T11:34:20Z · CTO nudge: held — handoff gate is running
 - 2026-10-25T11:35:04Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-10-25T12:20:42Z · cli_override, model_override
+- 2026-10-25T12:20:52Z · needs_input
+- 2026-10-25T12:20:53Z · message_queued at 2026-10-25T12:20:53.788Z
+- 2026-10-25T12:22:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T12:41:12Z · body: Performance measurements (added)
+- 2026-10-25T12:41:13Z · message_queued at 2026-10-25T12:41:13.187Z
+- 2026-10-25T12:48:02Z · body: Performance measurements (added 3, removed 3)
+- 2026-10-25T12:48:03Z · message_queued at 2026-10-25T12:48:03.924Z
+- 2026-10-25T13:25:55Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T13:29:24Z · engineer stopped by request
+- 2026-10-25T14:02:05Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T14:10:18Z · message_delivered: 3 message(s)
+- 2026-10-25T14:10:21Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
+- 2026-10-25T14:10:59Z · engineer stopped by request
+- 2026-10-25T14:11:07Z · held
+- 2026-10-25T14:11:25Z · status active→ready
+- 2026-10-25T14:13:58Z · assigned_to
+- 2026-10-25T14:53:28Z · assigned_to
+- 2026-10-25T14:53:36Z · released
+- 2026-10-25T14:53:55Z · status ready→active
+- 2026-10-25T14:54:02Z · cli_override, model_override
+- 2026-10-25T14:54:15Z · message_queued at 2026-10-25T14:54:15.254Z
+- 2026-10-25T14:55:02Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T14:55:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T14:55:18Z · message_delivered: 1 message(s)
+- 2026-10-25T15:00:19Z · message_queued at 2026-10-25T15:00:19.214Z
+- 2026-10-25T15:00:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T15:03:07Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T15:04:52Z · note: highlight .page-skeleton matched nothing on /deployments
+- 2026-10-25T15:05:29Z · note: highlight .dep-page matched nothing on /deployments
+- 2026-10-25T15:06:07Z · note: highlight .page-skeleton matched nothing on /dev
+- 2026-10-25T15:06:33Z · note: highlight .dev-card matched nothing on /dev
+- 2026-10-25T15:22:56Z · held
+- 2026-10-25T15:23:17Z · assigned_to
+- 2026-10-25T15:23:59Z · status active→ready
+- 2026-10-25T15:30:45Z · agent exited with an error (codex) · 2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/fast-consistent-page-loads-show-the-page/work/.attachments/0950/shots/default-1.png`: No such file or directory (os error 2)
+- 2026-10-25T16:16:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:50:46Z · message_overdue: still queued after 60m without being delivered

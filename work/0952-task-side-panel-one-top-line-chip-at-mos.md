@@ -2,28 +2,25 @@
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
-status: active
+status: ready
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
-debug_tldr: "Engineer crashed while stuck in the local check queue after remote runners failed link probes—open the task transcript, fix Tailscale, then resume."
-debug_tldr_at: "2026-10-25T11:48:58Z"
-debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
+needs_input_detail: "error: Transport"
+hold: true
 priority: p2
 area: web
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/task-side-panel-one-top-line-chip-at-mos
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: opencode
+model_override: opencode-go/kimi-k2.7-code
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T11:48:58Z"
+updated_at: "2026-10-25T16:50:46Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T02:27:40.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 12
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T11:48:27.959Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 13
 ---
 ## Problem
 
@@ -68,97 +65,74 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "statusReviewFailed status at 1280px",
+"label": "Review failed: short header chip and status card with guidance",
 "target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 1280
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailed"
 },
 {
-"label": "statusReviewFailed status at 760px",
+"label": "Review failed at narrow width: chip wraps to one line, card stays readable",
 "target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 760
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailedNarrow"
 },
 {
-"label": "statusHandoffFailed status at 1280px",
+"label": "Not landable: single card shows the failing checklist",
 "target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusHandoffFailed",
-"viewportWidth": 1280
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landable"
 },
 {
-"label": "statusHandoffFailed status at 760px",
+"label": "Not landable at narrow width: checklist stays within the drawer",
 "target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusHandoffFailed",
-"viewportWidth": 760
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landableNarrow"
 },
 {
-"label": "statusChecksRunning status at 1280px",
+"label": "Checks running: one status line with progress, no long card copy",
 "target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 1280
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning"
 },
 {
-"label": "statusChecksRunning status at 760px",
+"label": "Checks running at narrow width: status line and progress wrap cleanly",
 "target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 760
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunningNarrow"
 },
 {
-"label": "statusConfirmingHandoff status at 1280px",
+"label": "Confirming handoff: single status line above the tabs",
 "target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 1280
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusConfirmingHandoff"
 },
 {
-"label": "statusConfirmingHandoff status at 760px",
+"label": "Confirming handoff at narrow width: status line remains one row",
 "target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 760
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusConfirmingHandoffNarrow"
 },
 {
-"label": "statusChecksFailed status at 1280px",
+"label": "Checks failed after retries: concise error card with info popover",
 "target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 1280
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailed"
 },
 {
-"label": "statusChecksFailed status at 760px",
+"label": "Checks failed after retries at narrow width: card and actions stay aligned",
 "target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 760
-},
-{
-"label": "Debug status details",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".debug-status-detail",
-"steps": [
-{
-"click": "button[data-test-id=\"debug-tab-status\"]"
-}
-],
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 1280
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailedNarrow"
 }
 ]
 ```
@@ -321,3 +295,35 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T11:48:27Z · agent exited with an error (codex) · the agent process exited with an error — open the task to see the full output
 - 2026-10-25T11:48:27Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-25T11:48:31Z · message_delivered: 1 message(s)
+- 2026-10-25T12:00:15Z · body
+- 2026-10-25T12:00:32Z · body
+- 2026-10-25T12:08:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T12:08:04Z · needs_input
+- 2026-10-25T12:20:54Z · cli_override, model_override
+- 2026-10-25T12:21:04Z · message_queued at 2026-10-25T12:21:04.926Z
+- 2026-10-25T12:32:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T12:49:46Z · body
+- 2026-10-25T13:25:56Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T13:29:29Z · engineer stopped by request
+- 2026-10-25T14:02:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T14:10:34Z · message_delivered: 1 message(s)
+- 2026-10-25T14:10:37Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/done-error-placement.test.ts > move-to-done inline error placement > renders in the task panel below the Move to done button, tests/reviewer-thinking-state.test.ts > reviewer thinking state in the task panel (#0209) > labels a previous-round report and withholds sign-off while a new review is pending, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on bee — fix it in the feature branch and re-run the gate
+- 2026-10-25T14:11:32Z · engineer stopped by request
+- 2026-10-25T14:11:39Z · held
+- 2026-10-25T14:11:58Z · status active→ready
+- 2026-10-25T14:14:07Z · assigned_to
+- 2026-10-25T15:02:32Z · assigned_to
+- 2026-10-25T15:02:40Z · released
+- 2026-10-25T15:03:04Z · status ready→active
+- 2026-10-25T15:03:12Z · cli_override, model_override
+- 2026-10-25T15:03:23Z · message_queued at 2026-10-25T15:03:23.447Z
+- 2026-10-25T15:05:18Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T15:25:03Z · body
+- 2026-10-25T15:27:47Z · agent exited with an error (opencode) · error: Transport
+- 2026-10-25T15:28:59Z · held
+- 2026-10-25T15:29:12Z · assigned_to
+- 2026-10-25T15:29:42Z · status active→ready
+- 2026-10-25T15:41:06Z · body
+- 2026-10-25T16:13:01Z · body
+- 2026-10-25T16:16:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:50:46Z · message_overdue: still queued after 60m without being delivered
