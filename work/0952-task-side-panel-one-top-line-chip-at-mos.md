@@ -49,6 +49,82 @@ The task side panel gets cluttered when a task reaches review or hits issues. Ex
 - #0950 and #0951 edit views and style.css; keep style.css edits small and merge main often.
 - Run every test touching the drawer in small groups, then `repoos check --changed main`.
 
+## Shots
+```json
+[
+  {
+    "label": "Review failed: short header chip and status card with guidance",
+    "target": "default",
+    "route": "/work?task=9999",
+    "state": "drawer:statusReviewFailed",
+    "highlight": ".drawer-status-summary"
+  },
+  {
+    "label": "Review failed at narrow width: chip wraps to one line, card stays readable",
+    "target": "default",
+    "route": "/work?task=9999",
+    "state": "drawer:statusReviewFailedNarrow",
+    "highlight": ".drawer-status-summary"
+  },
+  {
+    "label": "Not landable: single card shows the failing checklist",
+    "target": "default",
+    "route": "/work?task=9999",
+    "state": "drawer:landable",
+    "highlight": ".drawer-status-summary"
+  },
+  {
+    "label": "Not landable at narrow width: checklist stays within the drawer",
+    "target": "default",
+    "route": "/work?task=9999",
+    "state": "drawer:landableNarrow",
+    "highlight": ".drawer-status-summary"
+  },
+  {
+    "label": "Checks running: one status line with progress, no long card copy",
+    "target": "default",
+    "route": "/work?task=9999",
+    "state": "drawer:statusChecksRunning",
+    "highlight": ".drawer-status-summary"
+  },
+  {
+    "label": "Checks running at narrow width: status line and progress wrap cleanly",
+    "target": "default",
+    "route": "/work?task=9999",
+    "state": "drawer:statusChecksRunningNarrow",
+    "highlight": ".drawer-status-summary"
+  },
+  {
+    "label": "Confirming handoff: single status line above the tabs",
+    "target": "default",
+    "route": "/work?task=9999",
+    "state": "drawer:statusConfirmingHandoff",
+    "highlight": ".drawer-status-summary"
+  },
+  {
+    "label": "Confirming handoff at narrow width: status line remains one row",
+    "target": "default",
+    "route": "/work?task=9999",
+    "state": "drawer:statusConfirmingHandoffNarrow",
+    "highlight": ".drawer-status-summary"
+  },
+  {
+    "label": "Checks failed after retries: concise error card with info popover",
+    "target": "default",
+    "route": "/work?task=9999",
+    "state": "drawer:statusChecksFailed",
+    "highlight": ".drawer-status-summary"
+  },
+  {
+    "label": "Checks failed after retries at narrow width: card and actions stay aligned",
+    "target": "default",
+    "route": "/work?task=9999",
+    "state": "drawer:statusChecksFailedNarrow",
+    "highlight": ".drawer-status-summary"
+  }
+]
+```
+
 ## Screenshots
 
 ![25](/api/tasks/0952/attachments/att_2aafd889-22f6-440a-afec-6e552e0a61e9.webp)
