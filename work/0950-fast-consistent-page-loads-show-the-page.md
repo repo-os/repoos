@@ -11,7 +11,7 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T00:06:32Z"
+updated_at: "2026-10-25T00:06:53Z"
 review_passes: 4
 handoff_signal_retry_count: 2
 review_rounds: 2
@@ -166,3 +166,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T00:03:12Z · note: BASELINE (measured by the driver on main's running server, in-process API client, median of 5, 2026-10-25): /api/deployments 2687ms (min 2279, max 3000); /api/project-environments 1ms; /api/dev/targets 1ms; /api/check-plan 5ms; /api/releases 0ms. So the multi-second wait is server-side in /api/deployments (git work per service/branch), not in the other endpoints; the other pages' waits are client-side (blank until fetch, no cache between visits).
 - 2026-10-25T00:03:25Z · message_queued at 2026-10-25T00:03:25.672Z
 - 2026-10-25T00:06:32Z · body
+- 2026-10-25T00:06:53Z · CTO nudge: held — an undelivered message is already queued
