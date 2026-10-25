@@ -5,7 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: Reading additional input from stdin...
+needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p2
 area: web
 assigned_to: ai
@@ -14,14 +14,14 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T01:40:13Z"
+updated_at: "2026-10-25T01:40:25Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from eec677ba to d74e9b93) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: eec677bac89c446145383d0d176ce86853f65c62
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-24T23:39:03.710Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
-dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T01:39:59.808Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T01:40:13.663Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 3
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T01:39:59.808Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T01:40:13.663Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T01:40:25.828Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -136,3 +136,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T01:39:59Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-25T01:39:57.861759Z ERROR codex_core::session: failed to record rollout items: thread 01a170ac-5ad0-7e71-9e8e-d1abd26933d6 not found
 - 2026-10-25T01:40:03Z · message_delivered: 1 message(s)
 - 2026-10-25T01:40:13Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-25T01:40:25Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
