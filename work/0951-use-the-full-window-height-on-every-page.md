@@ -142,3 +142,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T02:03:01Z · body
 - 2026-10-25T02:07:45Z · body
 - 2026-10-25T02:09:15Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-25T02:09:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
