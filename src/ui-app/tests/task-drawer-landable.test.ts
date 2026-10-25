@@ -149,8 +149,14 @@ describe("task drawer landing pre-checks (#0867)", () => {
     expect(title).toContain("Merge with main");
     expect(title).toContain("src/core/types.ts conflicts with main");
 
-    await wrapper.findAll("button.tab-btn").find((tab) => tab.text().includes("Debug"))!.trigger("click");
-    await wrapper.findAll("button.debug-tab").find((tab) => tab.text().includes("Status details"))!.trigger("click");
+    await wrapper
+      .findAll("button.tab-btn")
+      .find((tab) => tab.text().includes("Debug"))!
+      .trigger("click");
+    await wrapper
+      .findAll("button.debug-tab")
+      .find((tab) => tab.text().includes("Status details"))!
+      .trigger("click");
     expect(wrapper.find('[aria-label="Task status details"]').text()).toContain(
       "src/core/types.ts conflicts with main",
     );

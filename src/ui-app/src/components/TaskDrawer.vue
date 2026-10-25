@@ -525,11 +525,7 @@ const checkChip = computed(() => {
       state: "running" as const,
       slow: !!slow,
       slowDetail: slow?.detail ?? null,
-      label: localQueue
-        ? localQueue.label
-        : poolQueue
-          ? poolQueue.label
-          : "Checks running",
+      label: localQueue ? localQueue.label : poolQueue ? poolQueue.label : "Checks running",
       title: localQueue
         ? localQueue.title
         : poolQueue
@@ -561,13 +557,21 @@ const checkChip = computed(() => {
     }
     const dur = formatDuration(last.durationMs ?? 0);
     return last.passed
-        ? { state: "pass" as const, label: "Checks passed", title: `Checks passed · ${dur}. Open the Debug tab for the run.` }
-        : { state: "fail" as const, label: "Checks failed", title: `Checks failed · ${dur}. Open the Debug tab for the run.` };
+      ? {
+          state: "pass" as const,
+          label: "Checks passed",
+          title: `Checks passed · ${dur}. Open the Debug tab for the run.`,
+        }
+      : {
+          state: "fail" as const,
+          label: "Checks failed",
+          title: `Checks failed · ${dur}. Open the Debug tab for the run.`,
+        };
   }
   const row = lastDurableCheck.value;
   if (!row || row.outcome === "cancelled") return null;
   if (Date.now() - Date.parse(row.startedAt) > DURABLE_CHIP_MAX_AGE_MS) return null;
-    const dur = row.durationMs != null ? ` · ${formatDuration(row.durationMs)}` : "";
+  const dur = row.durationMs != null ? ` · ${formatDuration(row.durationMs)}` : "";
   const title = `Last recorded check run (${relTime(row.startedAt)}) — open the Debug tab`;
   if (row.outcome === "skipped") {
     return {
@@ -585,10 +589,15 @@ const checkChip = computed(() => {
 
 const drawerHeaderChip = computed(() => {
   const status = drawerStatusSummary.value;
-  if (!status || ["checksRunning", "confirmingHandoff", "reviewerRunning", "workRunning"].includes(status.key)) return null;
+  if (
+    !status ||
+    ["checksRunning", "confirmingHandoff", "reviewerRunning", "workRunning"].includes(status.key)
+  )
+    return null;
   // A task already in Review has its lifecycle status in the row; avoid
   // repeating review failures and landability there as a second status label.
-  if (ui.active?.status === "review" && ["reviewFailed", "notLandable"].includes(status.key)) return null;
+  if (ui.active?.status === "review" && ["reviewFailed", "notLandable"].includes(status.key))
+    return null;
   const shortLabels: Partial<Record<DrawerStatusKey, string>> = {
     waitingForYou: "Needs input",
     reviewFailed: "Review failed",
@@ -4573,7 +4582,7 @@ watch(
               />
               <span class="tc-id mono">{{ ui.active.path }}</span>
               <button
-              v-if="drawerHeaderChip"
+                v-if="drawerHeaderChip"
                 type="button"
                 class="rs-chip drawer-status-chip"
                 :class="{
@@ -4816,7 +4825,7 @@ watch(
                 Last successful close-out gate: {{ lastCloseOutGateLabel }}
               </p>
               <div
-              v-if="false && inPipeline && activeCheckRun"
+                v-if="false && inPipeline && activeCheckRun"
                 class="check-progress close-out-check-progress"
                 role="status"
                 data-test-id="close-out-check-progress"
