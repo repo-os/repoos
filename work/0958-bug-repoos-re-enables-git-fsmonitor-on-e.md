@@ -11,7 +11,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T11:35:28Z"
+updated_at: "2026-10-25T12:02:09Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ At every server start, `tuneRepoForScale(config.root)` (`src/core/git.ts`, calle
 - 2026-10-25T11:35:12Z · status inbox→ready
 - 2026-10-25T11:35:27Z · cli_override, model_override
 - 2026-10-25T11:35:28Z · status ready→active, branch
+- 2026-10-25T12:02:09Z · message_queued at 2026-10-25T12:02:09.828Z
