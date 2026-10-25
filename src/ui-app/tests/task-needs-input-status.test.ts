@@ -217,19 +217,19 @@ describe("needs_input status labels on the board card (#0511)", () => {
 
 describe("needs_input status labels in the task drawer (#0511)", () => {
   const drawerChipLabels: Record<string, string> = {
-    "review-failed": "Reviewer failed",
-    "review-rounds-exhausted": "Review still finding issues",
-    "review-human-attention": "Repeated review issues",
+    "review-failed": "Review failed",
+    "review-rounds-exhausted": "Review issues",
+    "review-human-attention": "Review issues",
     "evidence-gap-exhausted": "Evidence missing",
     "dev-error": "Agent failed",
     "provider-failure": "Provider error",
-    "degenerate-output": "Degenerate agent output",
-    "check-failed-after-retries": "Checks failed after retries",
-    "cto-escalation": "Agent asked a question",
-    "watchdog-stuck": "No agent running",
-    underspecified: "Not fully fleshed out",
-    "needs-human-step": "Needs human step",
-    questions: "Agent asked a question",
+    "degenerate-output": "Agent failed",
+    "check-failed-after-retries": "Checks failed",
+    "cto-escalation": "Needs input",
+    "watchdog-stuck": "Agent stopped",
+    underspecified: "Needs details",
+    "needs-human-step": "Needs human",
+    questions: "Needs input",
   };
   for (const [reason] of Object.entries(NEEDS_INPUT_STATUS_LABELS)) {
     it(`header chip shows a concise reason for ${reason}`, async () => {
@@ -252,7 +252,7 @@ describe("needs_input status labels in the task drawer (#0511)", () => {
         const chip = wrapper.find(".rs-chip.rs-needs-input");
         expect(chip.exists()).toBe(true);
         expect(chip.text()).toBe(drawerChipLabels[reason] ?? NEEDS_INPUT_STATUS_LABELS[reason]);
-        expect(chip.text().split(/\s+/).length).toBeLessThanOrEqual(5);
+        expect(chip.text().split(/\s+/).length).toBeLessThanOrEqual(2);
       }
       expect(wrapper.find(".rs-reviewing").exists()).toBe(false);
     });

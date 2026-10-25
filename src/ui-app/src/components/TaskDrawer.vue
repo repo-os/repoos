@@ -723,11 +723,6 @@ const drawerStatusDetails = computed(() => {
     });
   if (checkChip.value && !activeCheckRun.value)
     rows.push({ title: "Latest check result", detail: checkChip.value.title });
-  if (checkChip.value?.state === "running")
-    rows.push({
-      title: "Checks running",
-      detail: `${checkChip.value.title}\n${remoteActivityText.value || "A check run is active."}${checkMachine.value ? `\nRunning on ${checkMachine.value}.` : ""}${activeCheckRun.value ? `\n${checkProgressLabel(activeCheckRun.value)}${activeCheckRun.value.output ? `\n${activeCheckRun.value.output}` : ""}` : ""}`,
-    });
   if (activeTldrSentence.value)
     rows.push({ title: "What happened", detail: activeTldrSentence.value });
   if (task.status === "active" && task.needsInput)
