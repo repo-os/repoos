@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T13:25:56Z"
+updated_at: "2026-10-25T13:29:29Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -109,12 +109,12 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 "route": "/work?task=9999&tab=debug",
 "highlight": "[aria-label=\"Task status details\"]",
 "steps": [
-  {
-    "click": "[data-test-id=\"debug-tab-status\"]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": "[data-test-id=\"debug-tab-status\"]"
+},
+{
+  "waitMs": 400
+}
 ],
 "state": "drawer:landable"
 }
@@ -288,3 +288,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T12:32:10Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T12:49:46Z · body
 - 2026-10-25T13:25:56Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T13:29:29Z · engineer stopped by request
