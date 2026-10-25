@@ -519,7 +519,17 @@ export async function captureShotPage(
       });
     }
   }
-  const navigation = await page.goto(url, { waitUntil: "load", timeout: SHOT_NAV_TIMEOUT_MS });
+  let navigation: Awaited<ReturnType<ShotDriverPage["goto"]>> | null = null;
+  try {
+    navigation = await page.goto(url, { waitUntil: "load", timeout: SHOT_NAV_TIMEOUT_MS });
+  } catch {
+    // Some viewports never reach `load` while the shell is already interactive
+    // (short captures on Work were timing out here during #0951 evidence).
+    navigation = await page.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: SHOT_NAV_TIMEOUT_MS,
+    });
+  }
   const status = navigationStatus(navigation);
   try {
     await page.waitForLoadState("networkidle", { timeout: 10_000 });
@@ -528,6 +538,18 @@ export async function captureShotPage(
   }
   if (options.waitMs > 0) await page.waitForTimeout(options.waitMs);
   for (const step of entry.steps ?? []) await runStep(page, step, entry.route, onStepMiss);
+  const mountSelector =
+    entry.highlight ??
+    (entry.highlights?.length ? entry.highlights[0] : undefined);
+  if (mountSelector) {
+    try {
+      const base = page.locator(mountSelector);
+      const target = typeof base.first === "function" ? base.first() : base;
+      await target.waitFor({ timeout: SHOT_NAV_TIMEOUT_MS });
+    } catch {
+      /* highlight/selector miss handlers report a spinner or empty shell */
+    }
+  }
   // #0866: did the declared fixture actually render, and did the target serve
   // the app module at all? Both are checked on the settled page, BEFORE the
   // screenshot, so a wrong target is reported as a failed shot, not a pass.
