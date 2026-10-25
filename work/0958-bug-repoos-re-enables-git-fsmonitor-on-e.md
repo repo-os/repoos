@@ -61,3 +61,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T12:05:48Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-25T12:05:51Z · message_delivered: 1 message(s)
 - 2026-10-25T12:13:01Z · body: More evidence: preview/shot servers also re-enable it (added)
+- 2026-10-25T12:13:01Z · message_queued at 2026-10-25T12:13:01.517Z
