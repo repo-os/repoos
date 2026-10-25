@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T08:52:14Z"
+updated_at: "2026-10-25T08:52:16Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -289,3 +289,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T06:16:30Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/hy4-preview) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-25T08:52:04Z · cli_override, model_override
 - 2026-10-25T08:52:14Z · needs_input
+- 2026-10-25T08:52:16Z · message_queued at 2026-10-25T08:52:16.496Z
