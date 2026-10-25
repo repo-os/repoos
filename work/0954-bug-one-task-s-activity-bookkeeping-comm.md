@@ -3,9 +3,6 @@ id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "2026-10-25T12:20:15.449100Z ERROR codex_core::session: failed to record rollout items: thread 01a172f8-48e4-7612-adfc-febbe9efde72 not found"
 priority: p1
 area: core
 assigned_to: ai
@@ -139,3 +136,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T12:20:44Z · agent exited with an error (codex) · 2026-10-25T12:20:15.449100Z ERROR codex_core::session: failed to record rollout items: thread 01a172f8-48e4-7612-adfc-febbe9efde72 not found
 - 2026-10-25T12:20:44Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-25T12:20:15.449100Z ERROR codex_core::session: failed to record rollout items: thread 01a172f8-48e4-7612-adfc-febbe9efde72 not found
 - 2026-10-25T12:24:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T12:24:50Z · needs_input
