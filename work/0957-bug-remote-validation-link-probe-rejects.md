@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: the agent process exited with an error — open the task to see the full output
+debug_tldr: Every remote runner failed the link probe so checks queued locally until the test step hit the 420s timeout—resume after fixing connectivity or relaxing probe limits.
+debug_tldr_at: "2026-10-25T11:38:00Z"
+debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p1
 area: core
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/bug-remote-validation-link-probe-rejects
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T11:37:43Z"
+updated_at: "2026-10-25T11:38:00Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:46:43.085Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T11:13:08.170Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 1
