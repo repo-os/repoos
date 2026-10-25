@@ -11,7 +11,7 @@ branch: feat/bug-remote-validation-link-probe-rejects
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T11:35:34Z"
+updated_at: "2026-10-25T11:37:19Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:46:43.085Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T11:13:08.170Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -39,6 +39,18 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - Do not start a second RepoOS server from a worktree (see #0954). Use fake `run` injection as the existing probe tests do.
 - This is p1: it blocks every handoff whenever the laptop is on a relay or slow network.
 
+## Shots
+```json
+[
+{
+  "label": "Remote link probe thresholds in Settings",
+  "target": "default",
+  "route": "/settings?tab=general&section=remote-validation",
+  "highlight": "#settings-section-remote-validation"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-25T09:39:56Z · created · njachowski@gmail.com
@@ -60,3 +72,4 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T11:35:14Z · message_queued at 2026-10-25T11:35:14.897Z
 - 2026-10-25T11:35:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-25T11:35:34Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T11:37:19Z · body
