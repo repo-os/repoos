@@ -86,6 +86,7 @@ async function loadEnvironments(): Promise<void> {
       () => api<{ environments: Environment[] }>("/api/project-environments"),
       (data) => {
         environments.value = data.environments;
+        loading.value = false;
         if (!selected.value || !data.environments.some((env) => env.id === selected.value))
           selected.value = data.environments[0]?.id ?? "";
         // Load keys as soon as the environment list is known (including a
@@ -149,6 +150,11 @@ async function loadSnapshot(): Promise<void> {
   // before it answers (cached list vs fresh list), the late response must not
   // show one environment's keys under another's selection.
   const requestedEnv = selected.value;
+  if (snapshot.value?.environment !== requestedEnv) {
+    snapshot.value = null;
+    error.value = "";
+    snapshotRefreshError.value = "";
+  }
   try {
     await refreshPageData(
       `secrets:${requestedEnv}`,
@@ -169,6 +175,7 @@ async function loadSnapshot(): Promise<void> {
       },
     );
   } catch (e) {
+    if (selected.value !== requestedEnv) return;
     if (snapshot.value) snapshotRefreshError.value = safeError(e);
     else error.value = safeError(e);
   }
@@ -335,7 +342,7 @@ onMounted(() => {
         </p>
         <Button variant="accent" @click="createOpen = true">Create environment</Button>
       </section>
-      <PageSkeleton v-else-if="loading && !snapshot" kind="table" />
+      <PageSkeleton v-else-if="(loading || selected) && !snapshot && !error" kind="table" />
       <section v-else-if="snapshot" class="secrets-ledger" aria-label="Environment keys">
         <p v-if="snapshotRefreshError" class="secrets-error" role="status">
           Refresh failed: {{ snapshotRefreshError }}

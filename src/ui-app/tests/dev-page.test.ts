@@ -184,6 +184,25 @@ describe("Dev loading shot", () => {
     wrapper.unmount();
   });
 
+  it.each([{ targets: [] }, { targets: [target()] }])(
+    "renders cached targets with $targets while revalidating",
+    async ({ targets }) => {
+      installFetch({ targets });
+      const first = mountView();
+      await flush();
+      first.unmount();
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => new Promise(() => {})),
+      );
+      const revisit = mountView();
+      await nextTick();
+      expect(revisit.find(".page-skeleton").exists()).toBe(false);
+      expect(revisit.find(targets.length ? ".dev-card" : ".dev-empty").exists()).toBe(true);
+      revisit.unmount();
+    },
+  );
+
   it("shows cached targets immediately on revisit and applies the refresh in place", async () => {
     installFetch({ targets: [target({ label: "Cached service" })] });
     const first = mountView();

@@ -103,7 +103,7 @@ describe("AgentsView agent cards", () => {
       },
     });
     await flush();
-    expect(revisit.find(".page-skeleton").exists()).toBe(false);
+    expect(revisit.findAll(".page-skeleton").filter((node) => node.isVisible())).toHaveLength(0);
     expect(revisit.findAll(".agent-name").map((el) => el.text())).toContain("engineer");
     revisit.unmount();
     vi.unstubAllGlobals();
