@@ -3,9 +3,6 @@ id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p1
 area: core
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T13:40:29Z"
+updated_at: "2026-10-25T13:40:30Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:50.937Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:29:40.632Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:30:06.686Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -59,3 +56,4 @@ At every server start, `tuneRepoForScale(config.root)` (`src/core/git.ts`, calle
 - 2026-10-25T13:04:27Z · message_queued at 2026-10-25T13:04:27.668Z
 - 2026-10-25T13:08:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T13:40:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T13:40:30Z · needs_input
