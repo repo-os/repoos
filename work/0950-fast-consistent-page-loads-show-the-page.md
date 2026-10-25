@@ -251,3 +251,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T10:15:43Z · needs_input
 - 2026-10-25T10:15:43Z · message_delivered: 1 message(s)
 - 2026-10-25T10:24:34Z · message_queued at 2026-10-25T10:24:34.631Z
+- 2026-10-25T10:24:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
