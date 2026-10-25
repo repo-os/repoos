@@ -514,12 +514,6 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
     <template v-if="view === 'status'">
       <section class="changes-summary" aria-label="Task status details">
         <div class="changes-summary-title">Status details</div>
-        <div v-if="repo.doneErrorFor(task.id)" class="debug-status-detail">
-          <strong>Close-out failed</strong>
-          <p>{{ repo.doneErrorFor(task.id)?.message }}</p>
-          <p>{{ repo.doneErrorFor(task.id)?.detail }}</p>
-          <p>{{ repo.doneErrorFor(task.id)?.hint }}</p>
-        </div>
         <article v-for="row in statusDetails" :key="row.title" class="debug-status-detail">
           <strong>{{ row.title }}</strong>
           <p class="debug-status-text">{{ row.detail }}</p>
