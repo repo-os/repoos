@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: opencode
 model_override: opencode-go/kimi-k2.7-code
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T15:05:18Z"
+updated_at: "2026-10-25T15:25:03Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -61,62 +61,25 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "Compact status: reviewer failed",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusReviewFailed"
+  "label": "Review failed status summary",
+  "target": "default",
+  "route": "/work?task=0952&tab=changes",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusReviewFailed"
 },
 {
-"label": "Compact status: not landable",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:landable"
+  "label": "Checks running status summary",
+  "target": "default",
+  "route": "/work?task=0952&tab=changes",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusChecksRunning"
 },
 {
-"label": "Compact status: checks running",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksRunning"
-},
-{
-"label": "Compact status: confirming handoff",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusConfirmingHandoff"
-},
-{
-"label": "Compact status: checks failed after retries",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksFailed"
-},
-{
-"label": "Narrow drawer: two-line task path header",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-head",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 390
-},
-{
-"label": "Debug Status details sub-tab",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": "[aria-label=\"Task status details\"]",
-"steps": [
-{
-"click": "[data-test-id=\"debug-tab-status\"]"
-},
-{
-"waitMs": 400
-}
-],
-"state": "drawer:landable"
+  "label": "Debug status details",
+  "target": "default",
+  "route": "/work?task=0952&tab=debug",
+  "highlight": ".debug-status-details",
+  "state": "drawer:debugLogs"
 }
 ]
 ```
@@ -302,3 +265,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T15:03:12Z · cli_override, model_override
 - 2026-10-25T15:03:23Z · message_queued at 2026-10-25T15:03:23.447Z
 - 2026-10-25T15:05:18Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T15:25:03Z · body
