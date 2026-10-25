@@ -276,3 +276,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T19:04:26Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/kimi-k3.1-pro) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-25T19:11:38Z · cli_override, model_override
 - 2026-10-25T19:11:43Z · needs_input
+- 2026-10-25T19:11:43Z · message_queued at 2026-10-25T19:11:43.629Z
