@@ -174,7 +174,9 @@ describe("task drawer check chip (#0564)", () => {
     const wrapper = await mountDrawer(pinia, makeTask());
     expect(wrapper.find(".drawer-status-summary").text()).toContain("Checks running");
     expect(wrapper.find(".drawer-status-line").text()).toContain("on macbook");
-    expect(wrapper.find(".drawer-status-line").text()).toContain("step 5 of 12 · tests 140/289 files");
+    expect(wrapper.find(".drawer-status-line").text()).toContain(
+      "step 5 of 12 · tests 140/289 files",
+    );
 
     // The remote half completes mid-gate and lands in the durable history.
     checkRunsPayload = [
