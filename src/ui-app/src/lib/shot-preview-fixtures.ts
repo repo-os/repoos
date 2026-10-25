@@ -1009,6 +1009,84 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         deletions: 8,
       });
       break;
+    case "drawer:statusReviewFailed":
+      ensureFixtureTask(repo, "review", { branch: "feat/shot-fixture" });
+      repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        running: false,
+        enabled: true,
+        report: {
+          id: "shot-review-failed",
+          at: new Date().toISOString(),
+          agent: "Fixture reviewer",
+          cli: "fixture",
+          model: "fixture",
+          branch: "feat/shot-fixture",
+          state: "incomplete",
+          markdown: "",
+        },
+      };
+      repo.seedDiffStats(SHOT_PREVIEW_FIXTURE_TASK_ID, {
+        filesChanged: 2,
+        additions: 18,
+        deletions: 4,
+      });
+      break;
+    case "drawer:statusChecksRunning": {
+      ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
+        {
+          id: "shot-drawer-check-running",
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "merge-gate",
+          startedAt: new Date(Date.now() - 70_000).toISOString(),
+          finishedAt: null,
+          durationMs: null,
+          running: true,
+          passed: null,
+          code: null,
+          output: "",
+          scope: "changed:main",
+          machine: "fixture host",
+          stepsDone: 3,
+          stepsTotal: 8,
+          currentStep: 4,
+          stepName: "tests",
+          testsDone: 24,
+          testsTotal: 72,
+        },
+      ];
+      break;
+    }
+    case "drawer:statusConfirmingHandoff":
+      ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
+      repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID] = "check";
+      break;
+    case "drawer:statusHandoffFailed":
+      ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
+      repo.setHandoffError(SHOT_PREVIEW_FIXTURE_TASK_ID, "The fixture handoff check failed.");
+      break;
+    case "drawer:statusChecksFailed":
+      ensureFixtureTask(repo, "active", {
+        branch: "feat/shot-fixture",
+        extra: { check_retry_count: 2 },
+      });
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
+        {
+          id: "shot-drawer-check-failed",
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "merge-gate",
+          startedAt: new Date(Date.now() - 240_000).toISOString(),
+          finishedAt: new Date(Date.now() - 10_000).toISOString(),
+          durationMs: 230_000,
+          running: false,
+          passed: false,
+          code: 1,
+          output: "The test step failed after retries.",
+          scope: "changed:main",
+          machine: "fixture host",
+        },
+      ];
+      break;
     case "drawer:landable":
       // #0867 — a review task whose landing checklist has one real failing
       // merge, so a capture shows the same result the command prints.
