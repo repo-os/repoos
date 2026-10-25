@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T18:22:59Z"
+updated_at: "2026-10-25T18:23:00Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/check-stylesheet-config.test.ts > RepoOS dogfoods the stylesheet-guard declaration > keeps its current coverage: the real stylesheet still passes, tests/incremental-index.test.ts > resolveWorktreeStatuses > reuses cached dirtiness when the worktree HEAD has not moved on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: "09df4a4720f8564ce4f2a09741613fcee57783c0"
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
@@ -259,3 +259,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T18:14:21Z · CTO nudge: held — remote validation is running
 - 2026-10-25T18:18:41Z · body
 - 2026-10-25T18:22:59Z · status active→review
+- 2026-10-25T18:23:00Z · note: shots: skipped — 12 shots already captured — an engineer-made capture pre-empts the automatic one
