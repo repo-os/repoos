@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-25T18:24:51Z"
-review_passes: 2
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -13,6 +11,9 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
+updated_at: "2026-10-25T18:24:51Z"
+review_rounds: 1
+review_passes: 2
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
 dev_error_count: 12
@@ -259,4 +260,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T18:22:59Z · status active→review
 - 2026-10-25T18:23:00Z · note: shots: skipped — 12 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-25T18:24:50Z · note: review pass 2: needs some work
-
+- 2026-10-25T18:24:51Z · status review→active
