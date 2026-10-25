@@ -14,9 +14,9 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T13:41:06Z"
+updated_at: "2026-10-25T13:41:07Z"
 dev_error_count: 5
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T13:40:41.701Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T13:40:41.701Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T13:41:07.291Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ At every server start, `tuneRepoForScale(config.root)` (`src/core/git.ts`, calle
 - 2026-10-25T13:40:30Z · message_delivered: 1 message(s)
 - 2026-10-25T13:40:41Z · agent exited with an error (codex) · Reading additional input from stdin...
 - 2026-10-25T13:40:41Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-25T13:41:07Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
