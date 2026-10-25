@@ -62,6 +62,7 @@ async function load(): Promise<void> {
       () => api<{ ok: boolean; runs: CheckRunRow[] }>("/api/check-runs?limit=300"),
       (res) => {
         runs.value = res.runs ?? [];
+        loading.value = false;
         error.value = "";
       },
       (e) => {

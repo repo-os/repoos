@@ -222,6 +222,7 @@ async function load(silent = false): Promise<void> {
       () => api<DevTargetsResponse>("/api/dev/targets"),
       (res) => {
         targets.value = res.targets ?? [];
+        loading.value = false;
         configErrors.value = res.errors ?? [];
         loadError.value = "";
       },

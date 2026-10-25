@@ -56,6 +56,22 @@ describe("CheckRunsPanel loading (#0950)", () => {
     wrapper.unmount();
   });
 
+  it.each([{ rows: [] }, { rows: [run()] }])(
+    "renders cached history with $rows while revalidating",
+    async ({ rows }) => {
+      api.mockResolvedValue({ ok: true, runs: rows } as never);
+      const first = mount(CheckRunsPanel);
+      await flushPromises();
+      first.unmount();
+      api.mockImplementation(() => new Promise(() => {}));
+      const revisit = mount(CheckRunsPanel);
+      await nextTick();
+      expect(revisit.find(".page-skeleton").exists()).toBe(false);
+      expect(revisit.find(rows.length ? ".cr-table" : ".cr-empty").exists()).toBe(true);
+      revisit.unmount();
+    },
+  );
+
   it("renders the cached history immediately on revisit and applies the refresh in place", async () => {
     api.mockImplementation(() => Promise.resolve(runHistory()));
     const first = mount(CheckRunsPanel);

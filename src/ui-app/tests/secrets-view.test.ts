@@ -90,6 +90,19 @@ describe("SecretsView (#0929)", () => {
     wrapper.unmount();
   });
 
+  it("renders a cached empty environment list while revalidating", async () => {
+    api.mockResolvedValue({ environments: [] } as never);
+    const first = mountPage();
+    await flushPromises();
+    first.unmount();
+    api.mockImplementation(() => new Promise(() => {}));
+    const revisit = mountPage();
+    await flushPromises();
+    expect(revisit.find(".page-skeleton").exists()).toBe(false);
+    expect(revisit.find(".secrets-empty").exists()).toBe(true);
+    revisit.unmount();
+  });
+
   it("shows cached keys immediately while both resources revalidate", async () => {
     const first = mountPage();
     await flushPromises();
@@ -104,31 +117,47 @@ describe("SecretsView (#0929)", () => {
     revisit.unmount();
   });
 
-  it("ignores a late snapshot for an environment that is no longer selected", async () => {
-    const first = mountPage();
-    await flushPromises();
-    first.unmount();
-
-    let finishDev!: (value: unknown) => void;
-    const lateDev = new Promise((resolve) => (finishDev = resolve));
-    const onlyIntegration = {
-      ...(envs as { environments: Array<{ id: string }> }),
-      environments: (envs as { environments: Array<{ id: string }> }).environments.filter(
-        (env) => env.id === "integration",
-      ),
-    };
-    api.mockImplementation(async (path: string) => {
-      if (path === "/api/project-environments") return onlyIntegration as never;
-      if (decodeURIComponent(path.split("/")[3] ?? "") === "dev-nick") return lateDev as never;
-      return answer(path) as never;
-    });
-    const revisit = mountPage();
-    await flushPromises();
-    finishDev(snapshots["dev-nick"]);
-    await flushPromises();
-    expect(revisit.text()).not.toContain("DATABASE_URL");
-    revisit.unmount();
-  });
+  it.each(["success", "failure"])(
+    "keeps environment keys isolated when the previous request ends in %s",
+    async (outcome) => {
+      const first = mountPage();
+      await flushPromises();
+      first.unmount();
+      // Only the old environment has a cached snapshot.
+      invalidatePageData("secrets:integration");
+      let finishDev!: (value: unknown) => void;
+      let failDev!: (error: Error) => void;
+      let finishIntegration!: (value: unknown) => void;
+      const lateDev = new Promise((resolve, reject) => {
+        finishDev = resolve;
+        failDev = reject;
+      });
+      const integration = new Promise((resolve) => (finishIntegration = resolve));
+      api.mockImplementation(async (path: string) => {
+        if (path === "/api/project-environments")
+          return {
+            environments: envs.environments.filter((env) => env.id === "integration"),
+          } as never;
+        return (path.includes("/dev-nick/") ? lateDev : integration) as never;
+      });
+      const revisit = mountPage();
+      await flushPromises();
+      expect(revisit.get(".secrets-picker").text()).toContain("integration");
+      expect(revisit.text()).not.toContain("DATABASE_URL");
+      expect(revisit.find(".page-skeleton").exists()).toBe(true);
+      if (outcome === "success") finishDev(snapshots["dev-nick"]);
+      else failDev(new Error("old environment offline"));
+      await flushPromises();
+      expect(revisit.text()).not.toContain("DATABASE_URL");
+      expect(revisit.find("[role=alert]").exists()).toBe(false);
+      expect(revisit.find(".page-skeleton").exists()).toBe(true);
+      finishIntegration(snapshots.integration);
+      await flushPromises();
+      expect(revisit.find(".secrets-ledger").exists()).toBe(true);
+      expect(revisit.find(".page-skeleton").exists()).toBe(false);
+      revisit.unmount();
+    },
+  );
 
   it("opens the removal dialog from its registered fake shot fixture", async () => {
     window.history.replaceState({}, "", "/secrets?shotState=secrets%3AremoveDialog");
