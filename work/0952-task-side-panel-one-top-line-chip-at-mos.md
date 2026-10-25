@@ -8,10 +8,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-side-panel-one-top-line-chip-at-mos
-cli_override: cursor
-model_override: composer-2.5
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T11:28:06Z"
+updated_at: "2026-10-25T11:29:30Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -261,3 +261,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T11:13:10Z · note: handoff requested (cli)
 - 2026-10-25T11:13:20Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T11:28:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T11:29:30Z · cli_override, model_override
