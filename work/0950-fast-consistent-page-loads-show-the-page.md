@@ -16,7 +16,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T01:03:23Z"
+updated_at: "2026-10-25T01:14:43Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
 last_handoff_failure_sha: 413529d4b34cf43f4d943ad34cbb5d7c9add1eff
 review_passes: 5
@@ -194,3 +194,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T00:57:42Z · note: handoff requested (ui-review)
 - 2026-10-25T01:01:54Z · handoff failed · ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
 - 2026-10-25T01:03:23Z · note: handoff requested (ui-review)
+- 2026-10-25T01:14:43Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
