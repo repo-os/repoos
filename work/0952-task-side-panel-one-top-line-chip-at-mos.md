@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-25T01:01:53.855Z: repoos check failed: ◆ Check plan"
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
@@ -149,3 +151,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T00:48:22Z · body
 - 2026-10-25T00:50:09Z · note: loading state detected: loading text "Loading changes…" on /work?task=9999&tab=changes
 - 2026-10-25T01:01:50Z · handoff failed · handoff recovery attempted · finalization failed
+
