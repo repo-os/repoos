@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — Missing measurements, uncovered loading paths, and the Secrets refresh race block sign-off."
@@ -16,7 +16,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T01:49:28Z"
+updated_at: "2026-10-25T01:50:17Z"
 review_passes: 8
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -220,3 +220,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T01:42:41Z · needs_input
 - 2026-10-25T01:48:09Z · cli_override, model_override
 - 2026-10-25T01:49:28Z · note: HUMAN DECISION (Nick, 2026-10-25): the before/after measurement criteria (AC 1 and 6) are SATISFIED by this record, do not ask for more. BEFORE: first load of Releases, Checks, Deployments and Dev took about 3 seconds or more every time the user navigated to them (Nick's observation; the driver measured /api/deployments at a 2687 ms median, other endpoints under 5 ms). AFTER: the page shell and a skeleton render immediately, and a revisit within the 5-minute cache shows cached content with no skeleton and no blocking request (proven by the revisit tests). No server code changes in this task; the slow /api/deployments handler is follow-up #0955. Reviewers: treat measurements as done and review the code and the remaining loading paths only.
+- 2026-10-25T01:50:17Z · status review→active
