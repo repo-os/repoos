@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T12:41:12Z"
+updated_at: "2026-10-25T12:41:13Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -282,3 +282,4 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out for a real se
 - 2026-10-25T12:20:53Z · message_queued at 2026-10-25T12:20:53.788Z
 - 2026-10-25T12:22:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T12:41:12Z · body: Performance measurements (added)
+- 2026-10-25T12:41:13Z · message_queued at 2026-10-25T12:41:13.187Z
