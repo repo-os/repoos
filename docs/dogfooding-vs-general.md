@@ -182,3 +182,8 @@ When something in the pipeline breaks, ask in order:
 
 And the standing question: *is this failing because of something we chose to do
 to ourselves?* The `dist/` case says the answer is "yes" more often than it feels.
+
+
+## Git fsmonitor daemon cost (2026-10-25)
+
+RepoOS originally enabled `core.fsmonitor` and `core.untrackedCache` on every server start. Linked worktrees share Git configuration, and each task checkout could start its own fsmonitor daemon. On Nick's Mac, 31 daemons watched trees including `node_modules`, driving `fseventsd` above 100% CPU, memory above 1 GB, and severe machine load. RepoOS now preserves explicitly configured values, exposes `git.tuneForScale = false`, stops a checkout's daemon as it removes that worktree, and `repoos doctor` warns above eight daemons.

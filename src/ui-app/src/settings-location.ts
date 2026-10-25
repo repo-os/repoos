@@ -304,6 +304,7 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
     "tailscale hetzner remote validation runner configure disposable vm cloud",
   tunnelEnabled: "cloudflare tunnel publish publishing hostname public",
   "closeOut.timeoutMs": "close out move to done mtd merge pipeline budget timeout hung",
+  "git.tuneForScale": "git status fsmonitor daemon file watcher load acceleration performance",
   "closeOut.gate":
     "close out move to done mtd merge gate full suite scoped reuse changed tests cheaper faster",
   "closeOut.candidate":

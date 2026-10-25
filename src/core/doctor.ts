@@ -26,6 +26,7 @@ import {
   statSync,
 } from "node:fs";
 import { delimiter, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { execFileSync } from "node:child_process";
 import {
   findRepoRoot,
   isLinkedWorktreeRoot,
@@ -152,6 +153,7 @@ export interface DoctorOptions {
   appleGitPathProbe?: (binary: string) => boolean;
   /** Injectable short-window syspolicyd CPU delta in seconds. */
   syspolicydCpuProbe?: () => Promise<number | null>;
+  fsmonitorDaemonCount?: () => number;
 }
 
 function gitSignature(binary: string, probe: (path: string) => string | null): string | null {
@@ -2160,6 +2162,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
     ...(await guard("layout", "layout.error", () => checkLayout(root, config))),
     ...(await guard("runtime", "runtime.error", () => checkRuntime(root, config, hasBin, plan))),
     ...(await guard("runtime", "runtime.macos-diagnostic.error", async () => macGitFinding(opts))),
+    ...fsmonitorFinding(opts),
     ...(await guard("runtime", "runtime.compatibility.error", () =>
       checkAgentCompatibility(config, hasBin),
     )),
@@ -2191,6 +2194,33 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
     summary,
     findings,
   };
+}
+
+export const FSMONITOR_DAEMON_WARN_THRESHOLD = 8;
+
+function fsmonitorFinding(opts: DoctorOptions): DoctorFinding[] {
+  let count: number;
+  try {
+    count =
+      opts.fsmonitorDaemonCount?.() ??
+      execFileSync("ps", ["-axo", "command"], { encoding: "utf8" })
+        .split("\n")
+        .filter((line) => /git fsmonitor--daemon run/.test(line)).length;
+  } catch {
+    return [];
+  }
+  if (count > FSMONITOR_DAEMON_WARN_THRESHOLD)
+    return [
+      finding(
+        "runtime.fsmonitor-daemons",
+        "runtime",
+        "warn",
+        `${count} Git fsmonitor daemons are running`,
+        `${count} daemons are active. Each watches a checkout, including large dependency trees, and can consume substantial CPU and memory.`,
+        "Set `git.tuneForScale = false` in repoos.toml and run `git fsmonitor--daemon stop` in affected checkouts.",
+      ),
+    ];
+  return [];
 }
 
 /** Every remediation from a report, deduplicated, in finding order. */

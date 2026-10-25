@@ -99,6 +99,17 @@ describe("resolveSettingLocation", () => {
     expect(isGeneralSchemaFieldKey("remoteValidation.healthCheck")).toBe(true);
   });
 
+  it("gives Git status acceleration a rendered General row", () => {
+    expect(
+      resolveSettingLocation(
+        "git.tuneForScale",
+        field({ key: "git.tuneForScale", type: "boolean" }),
+        ctx,
+      ),
+    ).toEqual({ tab: "general", hasUiRow: true });
+    expect(isGeneralSchemaFieldKey("git.tuneForScale")).toBe(true);
+  });
+
   // #0573 — the close-out budget must render as a real Settings control, not
   // fall through to the raw repoos.toml editor.
   it("gives closeOut.timeoutMs a rendered General row", () => {

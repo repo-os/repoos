@@ -1157,7 +1157,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const logger = createLogger(config.root);
   // Best-effort: enable git's fsmonitor + untracked-cache so the per-worktree
   // `git status` calls in every index build stop doing full tree scans.
-  tuneRepoForScale(config.root);
+  tuneRepoForScale(config.root, config.git?.tuneForScale !== false);
   const index = new LiveIndex(config);
   // Non-blocking: with 200+ tasks, the git-heavy full index build can take
   // several seconds even after parallelizing it (buildIndexAsync). Kicking it

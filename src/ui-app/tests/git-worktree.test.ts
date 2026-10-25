@@ -22,6 +22,8 @@ import {
   worktreeStatusAsync,
   resetWorktree,
   removeWorktree,
+  stopFsmonitorDaemon,
+  tuneRepoForScale,
   listWorktrees,
   dirtyFiles,
   filterIgnorableMainDirtyPaths,
@@ -474,7 +476,55 @@ describe("resetWorktree", () => {
   });
 });
 
+describe("tuneRepoForScale", () => {
+  it("preserves explicit false values and only defaults unset keys", () => {
+    const { root, clean } = makeRepo();
+    try {
+      git(root, ["config", "core.fsmonitor", "false"]);
+      git(root, ["config", "core.untrackedCache", "false"]);
+      tuneRepoForScale(root);
+      expect(git(root, ["config", "--get", "core.fsmonitor"])).toBe("false");
+      expect(git(root, ["config", "--get", "core.untrackedCache"])).toBe("false");
+      git(root, ["config", "--unset", "core.fsmonitor"]);
+      git(root, ["config", "--unset", "core.untrackedCache"]);
+      tuneRepoForScale(root, false);
+      expect(() => git(root, ["config", "--get", "core.fsmonitor"])).toThrow();
+      tuneRepoForScale(root);
+      expect(git(root, ["config", "--get", "core.fsmonitor"])).toBe("true");
+    } finally {
+      clean();
+    }
+  });
+});
+
 describe("removeWorktree", () => {
+  it("stops fsmonitor when a clean worktree is removed", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/fsmonitor-stop");
+      const stopped: string[] = [];
+      expect(
+        removeWorktree(root, "feat/fsmonitor-stop", {
+          stopFsmonitor: (path) => stopped.push(path),
+        }),
+      ).toBe(true);
+      expect(stopped).toEqual([wt.path]);
+    } finally {
+      clean();
+    }
+  });
+
+  it("stops fsmonitor with the checkout as cwd using the supplied git runner", () => {
+    const calls: unknown[][] = [];
+    stopFsmonitorDaemon("/tmp/checkout", ((...args: unknown[]) => {
+      calls.push(args);
+      return {} as never;
+    }) as never);
+    expect(calls[0]?.[0]).toBe("git");
+    expect(calls[0]?.[1]).toEqual(["fsmonitor--daemon", "stop"]);
+    expect((calls[0]?.[2] as { cwd: string }).cwd).toBe("/tmp/checkout");
+  });
+
   it("heals a worktree whose directory was deleted out from under it", () => {
     const { root, clean } = makeRepo();
     try {
