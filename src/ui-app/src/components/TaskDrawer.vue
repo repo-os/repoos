@@ -600,10 +600,10 @@ const drawerHeaderChip = computed(() => {
     return null;
   const shortLabels: Partial<Record<DrawerStatusKey, string>> = {
     waitingForYou: compactNeedsInputChipLabel.value,
-    reviewFailed: "Reviewer failed",
-    notLandable: "Not landable",
+    reviewFailed: "Review failed",
+    notLandable: "Blocked",
     handoffFailed: "Handoff failed",
-    checksFailedAfterRetries: "Checks failed after retries",
+    checksFailedAfterRetries: "Checks failed",
   };
   return { ...status, label: shortLabels[status.key] ?? status.label };
 });
@@ -723,6 +723,11 @@ const drawerStatusDetails = computed(() => {
     });
   if (checkChip.value && !activeCheckRun.value)
     rows.push({ title: "Latest check result", detail: checkChip.value.title });
+  if (checkChip.value?.state === "running")
+    rows.push({
+      title: "Checks running",
+      detail: `${checkChip.value.title}\n${remoteActivityText.value || "A check run is active."}${checkMachine.value ? `\nRunning on ${checkMachine.value}.` : ""}${activeCheckRun.value ? `\n${checkProgressLabel(activeCheckRun.value)}${activeCheckRun.value.output ? `\n${activeCheckRun.value.output}` : ""}` : ""}`,
+    });
   if (activeTldrSentence.value)
     rows.push({ title: "What happened", detail: activeTldrSentence.value });
   if (task.status === "active" && task.needsInput)
@@ -2778,19 +2783,19 @@ const needsInputHeaderChip = computed<{ label: string; cls: string } | null>(() 
 const compactNeedsInputChipLabel = computed(() => {
   const reason = ui.active?.needsInputReason ?? "";
   const labels: Record<string, string> = {
-    "review-failed": "Reviewer failed",
-    "review-rounds-exhausted": "Review still finding issues",
-    "review-human-attention": "Repeated review issues",
+    "review-failed": "Review failed",
+    "review-rounds-exhausted": "Review issues",
+    "review-human-attention": "Review issues",
     "evidence-gap-exhausted": "Evidence missing",
     "dev-error": "Agent failed",
     "provider-failure": "Provider error",
-    "degenerate-output": "Degenerate agent output",
-    "check-failed-after-retries": "Checks failed after retries",
-    "cto-escalation": "Agent asked a question",
-    "watchdog-stuck": "No agent running",
-    underspecified: "Not fully fleshed out",
-    "needs-human-step": "Needs human step",
-    questions: "Agent asked a question",
+    "degenerate-output": "Agent failed",
+    "check-failed-after-retries": "Checks failed",
+    "cto-escalation": "Needs input",
+    "watchdog-stuck": "Agent stopped",
+    underspecified: "Needs details",
+    "needs-human-step": "Needs human",
+    questions: "Needs input",
   };
   return labels[reason] ?? needsInputHeaderChip.value?.label ?? "Needs input";
 });
@@ -5249,6 +5254,10 @@ watch(
             :task-id="ui.active.id"
             :task-title="ui.active.title"
             @open-debugger="openDebuggerFromError"
+            @open-status-details="
+              ui.activeTab = 'debug';
+              ui.debugView = 'status';
+            "
             @open-support="openSupportFromError"
             @open-conflict="openConflictFromError"
             @dismiss="repo.dismissDoneError(ui.active.id)"
@@ -7281,7 +7290,7 @@ watch(
 .tc-id {
   display: -webkit-box;
   min-width: 0;
-  max-width: min(180px, 34vw);
+  max-width: min(220px, 34vw);
   overflow: hidden;
   overflow-wrap: anywhere;
   -webkit-line-clamp: 2;
@@ -7377,6 +7386,55 @@ watch(
 }
 
 .drawer-info-content button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+:deep(.done-error-help) {
+  position: relative;
+  justify-self: end;
+}
+
+:deep(.done-error-help summary) {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--txt-dim);
+  cursor: pointer;
+  list-style: none;
+}
+
+:deep(.done-error-help summary::-webkit-details-marker) {
+  display: none;
+}
+
+:deep(.done-error-help-popover) {
+  position: absolute;
+  z-index: 20;
+  right: 0;
+  bottom: calc(100% + 6px);
+  width: min(280px, calc(100vw - 48px));
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-1);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+  color: var(--txt-dim);
+  font-size: 12px;
+}
+
+:deep(.done-error-help-popover p) {
+  margin: 0 0 8px;
+}
+
+:deep(.done-error-help-popover button) {
   padding: 0;
   border: 0;
   background: transparent;
