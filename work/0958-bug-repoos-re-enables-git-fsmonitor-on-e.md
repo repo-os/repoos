@@ -3,6 +3,9 @@ id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +14,9 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T12:02:10Z"
+updated_at: "2026-10-25T12:05:48Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:05:48.590Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -46,3 +51,5 @@ At every server start, `tuneRepoForScale(config.root)` (`src/core/git.ts`, calle
 - 2026-10-25T11:35:28Z · status ready→active, branch
 - 2026-10-25T12:02:09Z · message_queued at 2026-10-25T12:02:09.828Z
 - 2026-10-25T12:02:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T12:05:48Z · agent exited with an error (codex) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T12:05:48Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
