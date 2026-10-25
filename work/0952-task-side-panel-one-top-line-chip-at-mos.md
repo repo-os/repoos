@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T01:20:29Z"
+updated_at: "2026-10-25T01:21:34Z"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T01:02:11.529Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -156,3 +156,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T01:07:21Z · body
 - 2026-10-25T01:16:48Z · body
 - 2026-10-25T01:20:29Z · body
+- 2026-10-25T01:21:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
