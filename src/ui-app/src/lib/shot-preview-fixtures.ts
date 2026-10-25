@@ -1014,6 +1014,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
         running: false,
         enabled: true,
+        lines: [],
         report: {
           id: "shot-review-failed",
           at: new Date().toISOString(),
