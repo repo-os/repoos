@@ -3,12 +3,6 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
-debug_tldr: Changed-path tests exited with code 1 while 10-minute shell timeouts stalled the agent — open the task log and rerun repoos check --changed main.
-debug_tldr_at: "2026-10-25T14:34:23Z"
-debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
@@ -230,3 +224,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T14:34:18Z · message_delivered: 1 message(s)
 - 2026-10-25T14:50:02Z · CTO nudge: held — remote validation is running
 - 2026-10-25T15:38:11Z · engineer stopped by request
+- 2026-10-25T15:38:11Z · needs_input
