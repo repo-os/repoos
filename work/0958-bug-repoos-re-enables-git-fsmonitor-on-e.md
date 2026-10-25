@@ -17,7 +17,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T18:32:44Z"
+updated_at: "2026-10-25T18:37:02Z"
 dev_error_count: 8
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:04:35.221Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -149,3 +149,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T18:24:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T18:25:41Z · body
 - 2026-10-25T18:32:44Z · body
+- 2026-10-25T18:37:02Z · handoff_deferred: 1 queued message(s) must be read before review
