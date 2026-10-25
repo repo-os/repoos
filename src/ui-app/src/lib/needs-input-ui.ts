@@ -189,7 +189,10 @@ export function needsInputStatusLabel(reason: string | undefined, hasQuestions =
 }
 
 /** A few words for the drawer's single header chip; full text lives in the waiting card and Debug tab. */
-export function needsInputCompactChipLabel(reason: string | undefined, hasQuestions = false): string {
+export function needsInputCompactChipLabel(
+  reason: string | undefined,
+  hasQuestions = false,
+): string {
   const key = resolveNeedsInputReasonKey(reason, hasQuestions);
   if (!key) return "Needs input";
   return NEEDS_INPUT_COMPACT_CHIP_LABELS[key] ?? "Needs input";
