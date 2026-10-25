@@ -2,7 +2,7 @@
 id: "0957"
 title: "Bug: remote validation link probe rejects usable high-latency links (throughput includes ssh setup time)"
 type: bug
-status: review
+status: active
 priority: p1
 area: core
 assigned_to: ai
