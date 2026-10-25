@@ -11,7 +11,7 @@ branch: feat/bug-one-task-s-activity-bookkeeping-comm
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T01:17:41Z"
+updated_at: "2026-10-25T01:18:58Z"
 ---
 ## Problem
 
@@ -59,3 +59,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T01:11:55Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T01:15:32Z · body
 - 2026-10-25T01:17:41Z · body
+- 2026-10-25T01:18:58Z · handoff_deferred: 1 queued message(s) must be read before review
