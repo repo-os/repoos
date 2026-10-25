@@ -448,41 +448,45 @@ describe("trusted server-side handoff", { timeout: 15_000 }, () => {
     }
   });
 
-  it("tolerates a task-file-only bookkeeping commit during the check", { timeout: 30_000 }, async () => {
-    const fx = makeFixture(0);
-    const oldPath = process.env.PATH ?? "";
-    process.env.PATH = `${fx.bin}:${oldPath}`;
-    try {
-      writeFileSync(
-        join(fx.bin, "repoos"),
-        "#!/bin/sh\nprintf '\\n- activity recorded\\n' >> work/0001-handoff.md\ngit add work/0001-handoff.md\ngit commit -qm 'docs(0001): record activity'\nexit 0\n",
-        { mode: 0o755 },
-      );
+  it(
+    "tolerates a task-file-only bookkeeping commit during the check",
+    { timeout: 30_000 },
+    async () => {
+      const fx = makeFixture(0);
+      const oldPath = process.env.PATH ?? "";
+      process.env.PATH = `${fx.bin}:${oldPath}`;
+      try {
+        writeFileSync(
+          join(fx.bin, "repoos"),
+          "#!/bin/sh\nprintf '\\n- activity recorded\\n' >> work/0001-handoff.md\ngit add work/0001-handoff.md\ngit commit -qm 'docs(0001): record activity'\nexit 0\n",
+          { mode: 0o755 },
+        );
 
-      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+        const result = await handoffTask(fx.config, readTask(fx), request(fx));
 
-      expect(result.ok).toBe(true);
-      expect(git(fx.worktree, ["show", "--name-only", "--format=", "HEAD"])).toBe(
-        "work/0001-handoff.md",
-      );
-    } finally {
-      process.env.PATH = oldPath;
-      fx.clean();
-    }
-  });
+        expect(result.ok).toBe(true);
+        expect(git(fx.worktree, ["show", "--name-only", "--format=", "HEAD"])).toBe(
+          "work/0001-handoff.md",
+        );
+      } finally {
+        process.env.PATH = oldPath;
+        fx.clean();
+      }
+    },
+  );
 
   it(
     "keeps task B stable when another task's bookkeeping lands on main during the check (#0954)",
     { timeout: 30_000 },
     async () => {
-    const fx = makeFixture(0);
-    const oldPath = process.env.PATH ?? "";
-    process.env.PATH = `${fx.bin}:${oldPath}`;
-    try {
-      const otherPath = join(fx.root, "work", "0950-other-task.md");
-      writeFileSync(
-        otherPath,
-        `---
+      const fx = makeFixture(0);
+      const oldPath = process.env.PATH ?? "";
+      process.env.PATH = `${fx.bin}:${oldPath}`;
+      try {
+        const otherPath = join(fx.root, "work", "0950-other-task.md");
+        writeFileSync(
+          otherPath,
+          `---
 id: "0950"
 title: Other task
 type: bug
@@ -500,13 +504,13 @@ Other.
 
 - 2026-01-01T00:00:00Z · status inbox→active
 `,
-      );
-      git(fx.root, ["add", "work/0950-other-task.md"]);
-      git(fx.root, ["commit", "-qm", "task 0950 on main only"]);
+        );
+        git(fx.root, ["add", "work/0950-other-task.md"]);
+        git(fx.root, ["commit", "-qm", "task 0950 on main only"]);
 
-      writeFileSync(
-        join(fx.bin, "repoos"),
-        `#!/bin/sh
+        writeFileSync(
+          join(fx.bin, "repoos"),
+          `#!/bin/sh
 before=$(git -C '${fx.worktree}' rev-parse HEAD)
 printf '\\n- activity on main\\n' >> '${otherPath}'
 git -C '${fx.root}' add work/0950-other-task.md
@@ -515,26 +519,27 @@ after=$(git -C '${fx.worktree}' rev-parse HEAD)
 printf '%s\\n%s\\n' "$before" "$after" > '${join(fx.bin, "task-b-heads")}'
 exit 0
 `,
-        { mode: 0o755 },
-      );
+          { mode: 0o755 },
+        );
 
-      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+        const result = await handoffTask(fx.config, readTask(fx), request(fx));
 
-      expect(result).toMatchObject({ ok: true, step: "done" });
-      expect(git(fx.root, ["log", "--oneline"])).toMatch(/docs\(0950\)/);
-      expect(git(fx.worktree, ["log", "--oneline"])).not.toMatch(/docs\(0950\)/);
-      const [headBefore, headAfter] = readFileSync(join(fx.bin, "task-b-heads"), "utf8")
-        .trim()
-        .split("\n");
-      expect(headAfter).toBe(headBefore);
-      expect(git(fx.worktree, ["diff", "main...HEAD", "--name-only"])).not.toContain(
-        "work/0950-other-task.md",
-      );
-    } finally {
-      process.env.PATH = oldPath;
-      fx.clean();
-    }
-  });
+        expect(result).toMatchObject({ ok: true, step: "done" });
+        expect(git(fx.root, ["log", "--oneline"])).toMatch(/docs\(0950\)/);
+        expect(git(fx.worktree, ["log", "--oneline"])).not.toMatch(/docs\(0950\)/);
+        const [headBefore, headAfter] = readFileSync(join(fx.bin, "task-b-heads"), "utf8")
+          .trim()
+          .split("\n");
+        expect(headAfter).toBe(headBefore);
+        expect(git(fx.worktree, ["diff", "main...HEAD", "--name-only"])).not.toContain(
+          "work/0950-other-task.md",
+        );
+      } finally {
+        process.env.PATH = oldPath;
+        fx.clean();
+      }
+    },
+  );
 
   it("tolerates a check that only writes generated output", async () => {
     // `repoos check` builds in the worktree, so `dist/` and the runtime cache
