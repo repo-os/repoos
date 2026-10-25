@@ -130,12 +130,30 @@ describe("selectDrawerStatus priority", () => {
     // review failed no report, not landable, handoff failed, checks running,
     // confirming handoff, checks failed after retries, waiting for you.
     const combos: { candidates: Candidates; expected: DrawerStatusKey }[] = [
-      { candidates: { ...allFalse, reviewFailed: true, notLandable: true }, expected: "reviewFailed" },
-      { candidates: { ...allFalse, notLandable: true, checksRunning: true }, expected: "notLandable" },
-      { candidates: { ...allFalse, handoffFailed: true, checksFailedAfterRetries: true }, expected: "handoffFailed" },
-      { candidates: { ...allFalse, checksRunning: true, confirmingHandoff: true }, expected: "checksRunning" },
-      { candidates: { ...allFalse, checksFailedAfterRetries: true, workRunning: true }, expected: "checksFailedAfterRetries" },
-      { candidates: { ...allFalse, waitingForYou: true, checksRunning: true }, expected: "waitingForYou" },
+      {
+        candidates: { ...allFalse, reviewFailed: true, notLandable: true },
+        expected: "reviewFailed",
+      },
+      {
+        candidates: { ...allFalse, notLandable: true, checksRunning: true },
+        expected: "notLandable",
+      },
+      {
+        candidates: { ...allFalse, handoffFailed: true, checksFailedAfterRetries: true },
+        expected: "handoffFailed",
+      },
+      {
+        candidates: { ...allFalse, checksRunning: true, confirmingHandoff: true },
+        expected: "checksRunning",
+      },
+      {
+        candidates: { ...allFalse, checksFailedAfterRetries: true, workRunning: true },
+        expected: "checksFailedAfterRetries",
+      },
+      {
+        candidates: { ...allFalse, waitingForYou: true, checksRunning: true },
+        expected: "waitingForYou",
+      },
     ];
     for (const { candidates, expected } of combos) {
       expect(selectDrawerStatus(candidates)).toBe(expected);

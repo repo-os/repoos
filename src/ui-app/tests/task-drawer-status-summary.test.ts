@@ -238,7 +238,7 @@ describe("task drawer status summary (#0952)", () => {
     expect(wrapper.find(".drawer-status-chip").exists()).toBe(false);
   });
 
-  it("lists the active status and its guidance in Debug → Status details", async () => {
+  it("lists the full landable checklist in Debug → Status details", async () => {
     const pinia = setup();
     const repo = useRepoStore();
     repo.seedLandable("0001", {
