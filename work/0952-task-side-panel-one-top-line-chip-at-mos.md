@@ -62,97 +62,97 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "statusReviewFailed status at 1280px",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 1280
+"label": "statusReviewFailed status at 1280px",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 1280
 },
 {
-  "label": "statusReviewFailed status at 760px",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 760
+"label": "statusReviewFailed status at 760px",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 760
 },
 {
-  "label": "statusHandoffFailed status at 1280px",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusHandoffFailed",
-  "viewportWidth": 1280
+"label": "statusHandoffFailed status at 1280px",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusHandoffFailed",
+"viewportWidth": 1280
 },
 {
-  "label": "statusHandoffFailed status at 760px",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusHandoffFailed",
-  "viewportWidth": 760
+"label": "statusHandoffFailed status at 760px",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusHandoffFailed",
+"viewportWidth": 760
 },
 {
-  "label": "statusChecksRunning status at 1280px",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusChecksRunning",
-  "viewportWidth": 1280
+"label": "statusChecksRunning status at 1280px",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusChecksRunning",
+"viewportWidth": 1280
 },
 {
-  "label": "statusChecksRunning status at 760px",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusChecksRunning",
-  "viewportWidth": 760
+"label": "statusChecksRunning status at 760px",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusChecksRunning",
+"viewportWidth": 760
 },
 {
-  "label": "statusConfirmingHandoff status at 1280px",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusConfirmingHandoff",
-  "viewportWidth": 1280
+"label": "statusConfirmingHandoff status at 1280px",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusConfirmingHandoff",
+"viewportWidth": 1280
 },
 {
-  "label": "statusConfirmingHandoff status at 760px",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusConfirmingHandoff",
-  "viewportWidth": 760
+"label": "statusConfirmingHandoff status at 760px",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusConfirmingHandoff",
+"viewportWidth": 760
 },
 {
-  "label": "statusChecksFailed status at 1280px",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusChecksFailed",
-  "viewportWidth": 1280
+"label": "statusChecksFailed status at 1280px",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusChecksFailed",
+"viewportWidth": 1280
 },
 {
-  "label": "statusChecksFailed status at 760px",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusChecksFailed",
-  "viewportWidth": 760
+"label": "statusChecksFailed status at 760px",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusChecksFailed",
+"viewportWidth": 760
 },
 {
-  "label": "Debug status details",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".debug-status-detail",
-  "steps": [
-    {
-      "click": "button[data-test-id=\"debug-tab-status\"]"
-    }
-  ],
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 1280
+"label": "Debug status details",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".debug-status-detail",
+"steps": [
+  {
+    "click": "button[data-test-id=\"debug-tab-status\"]"
+  }
+],
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 1280
 }
 ]
 ```
