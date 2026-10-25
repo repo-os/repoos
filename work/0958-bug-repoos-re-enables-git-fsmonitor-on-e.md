@@ -11,7 +11,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T12:11:22Z"
+updated_at: "2026-10-25T12:23:00Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ At every server start, `tuneRepoForScale(config.root)` (`src/core/git.ts`, calle
 - 2026-10-25T11:35:28Z · status ready→active, branch
 - 2026-10-25T12:11:21Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-25T12:11:22Z · note: handoff requested (cli)
+- 2026-10-25T12:23:00Z · CTO action: restart-stalled-agent (resume) · agent never started — no session exists for this task
