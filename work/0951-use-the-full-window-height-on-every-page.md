@@ -1,8 +1,12 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: check-failed-after-retries
 priority: p2
 area: web
 assigned_to: ai
@@ -11,11 +15,10 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T02:42:51Z"
+updated_at: "2026-10-25T02:49:39Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from eec677ba to d74e9b93) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: eec677bac89c446145383d0d176ce86853f65c62
 review_passes: 1
-last_check_failure: "repoos check at 2026-10-24T23:39:03.710Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
 dev_error_count: 3
 ---
@@ -146,3 +149,5 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T02:11:55Z · CTO nudge: held — remote validation is running
 - 2026-10-25T02:26:55Z · CTO nudge: held — remote validation is running
 - 2026-10-25T02:42:51Z · body
+- 2026-10-25T02:49:39Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · the worktree changed while the gate was running (HEAD moved from 671525a3 to 4a029553) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+
