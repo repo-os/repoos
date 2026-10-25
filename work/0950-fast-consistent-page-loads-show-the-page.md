@@ -263,3 +263,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T11:30:06Z · message_queued at 2026-10-25T11:30:06.323Z
 - 2026-10-25T11:30:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T11:30:42Z · status active→review, needs_input
+- 2026-10-25T11:30:42Z · message_delivered: 1 message(s)
