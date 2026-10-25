@@ -3,6 +3,9 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
@@ -11,14 +14,15 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T14:05:03Z"
+updated_at: "2026-10-25T14:33:41Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 review_passes: 1
 handoff_signal_retry_count: 1
-dev_error_count: 8
+dev_error_count: 9
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T14:33:41.307Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -218,3 +222,5 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T13:13:15Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T14:02:04Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T14:05:03Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T14:33:41Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T14:33:41Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
