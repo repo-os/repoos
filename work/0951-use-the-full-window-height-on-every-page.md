@@ -5,6 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: check-failed-after-retries
+needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 debug_tldr: "Handoff refused because HEAD moved mid-gate (WIP self-check commits)—stabilize the worktree, run repoos check once, then retry review."
 debug_tldr_at: "2026-10-25T02:50:09Z"
 debug_tldr_key: check-failed-after-retries|
@@ -16,15 +17,15 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T04:38:22Z"
+updated_at: "2026-10-25T04:38:28Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from eec677ba to d74e9b93) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: eec677bac89c446145383d0d176ce86853f65c62
 review_passes: 1
 handoff_signal_retry_count: 1
-dev_error_count: 5
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:38:07.414Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:38:22.509Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 6
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:38:07.414Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:38:22.509Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:38:28.173Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -164,3 +165,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T04:38:07Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
 - 2026-10-25T04:38:17Z · message_delivered: 1 message(s)
 - 2026-10-25T04:38:22Z · engineer crash recovery: resuming cursor + composer-2.5 (2/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-10-25T04:38:28Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
