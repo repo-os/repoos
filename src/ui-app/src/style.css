@@ -1162,14 +1162,29 @@
 
 .main {
   flex: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   align-self: stretch;
+  overflow: hidden;
   /* Full-height views own their scrollports and put the shared end inset on
      that scroller. Padding here would instead recreate an empty bottom band. */
   padding: 22px 26px 0;
   padding-inline-end: max(26px, var(--page-inline-end-inset));
   min-width: 0;
+}
+/* Routed shells fill the pane so height:100% / nested flex scrollports resolve (#0951). */
+.main > :not(.spin) {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+/* Flow pages without an internal scrollport scroll here; fill pages clip at the shell. */
+.main
+  > :not(.spin):not(.page-scroll):not(.work-page):not(.agents-page):not(.ctx-page):not(
+    .inputs-board-page
+  ) {
+  overflow-y: auto;
 }
 /* Standard nav views span this pane's full width: do NOT add a page-level
    max-width (or centering margin) to a page shell — wide tables, step output
@@ -1586,7 +1601,8 @@
   flex-direction: column;
   min-width: 0;
   flex: 1 1 0;
-  height: calc(100vh - 211px);
+  min-height: 0;
+  align-self: stretch;
   position: relative;
 }
 .col-head {

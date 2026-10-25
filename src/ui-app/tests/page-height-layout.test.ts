@@ -13,8 +13,10 @@ describe("standard page height and floating controls", () => {
     expect(css).toMatch(/#app\s*\{[^}]*height:\s*100dvh/s);
     expect(css).toMatch(/\.body\s*\{[^}]*flex:\s*1;[^}]*min-height:\s*0;/s);
     expect(css).toMatch(
-      /\.main\s*\{[^}]*overflow-y:\s*auto;[^}]*min-height:\s*0;[^}]*padding:\s*22px 26px 0/s,
+      /\.main\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*min-height:\s*0;[^}]*padding:\s*22px 26px 0/s,
     );
+    expect(css).toMatch(/\.main > :not\(\.spin\)\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;/s);
+    expect(css).not.toMatch(/\.board-col\s*\{[^}]*height:\s*calc\(100vh/);
   });
 
   it("uses a theme-token fade and shared end inset below fixed controls", () => {
