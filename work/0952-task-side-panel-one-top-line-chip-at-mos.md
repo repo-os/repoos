@@ -3,7 +3,6 @@ id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
 status: ready
-hold: true
 priority: p2
 area: web
 assigned_to: ai
@@ -12,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T15:02:32Z"
+updated_at: "2026-10-25T15:02:40Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -298,3 +297,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T14:11:58Z · status active→ready
 - 2026-10-25T14:14:07Z · assigned_to
 - 2026-10-25T15:02:32Z · assigned_to
+- 2026-10-25T15:02:40Z · released
