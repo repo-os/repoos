@@ -737,9 +737,14 @@
   content: "";
   position: fixed;
   z-index: 45;
-  left: 210px;
+  /* Keep the fade local to the floating agent heads. A full-width viewport
+     gradient reads as a bottom band on pages whose content is shorter than
+     the window; Work's own parked controls and integration bar have opaque
+     surfaces of their own. */
+  left: auto;
   right: 0;
   bottom: 0;
+  width: calc(var(--floating-head-size) + 44px);
   height: var(--page-bottom-fade-size);
   background: linear-gradient(to bottom, transparent, var(--bg));
   pointer-events: none;
@@ -1806,7 +1811,7 @@
 }
 @media (max-width: 760px) {
   .body::after {
-    left: 0;
+    width: calc(var(--floating-head-size) + 24px);
   }
   .work-page {
     height: auto;
