@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
@@ -12,7 +11,8 @@ branch: feat/bug-one-task-s-activity-bookkeeping-comm
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T08:59:45Z"
+updated_at: "2026-10-25T09:08:54Z"
+handoff_signal_retry_count: 2
 dev_error_count: 6
 ---
 ## Problem
@@ -105,4 +105,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T08:57:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T08:57:45Z · message_delivered: 1 message(s)
 - 2026-10-25T08:59:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-
+- 2026-10-25T09:08:54Z · message_queued at 2026-10-25T09:08:54.348Z
