@@ -29,7 +29,7 @@ describe("standard page height and floating controls", () => {
     expect(css).toMatch(
       /\.body::after\s*\{[^}]*position:\s*fixed;[^}]*left:\s*auto;[^}]*right:\s*0;[^}]*width:\s*calc\(var\(--floating-head-size\) \+ 44px\);[^}]*background:\s*linear-gradient\(to bottom, transparent, var\(--bg\)\)/s,
     );
-    expect(css).toMatch(/full-width viewport gradient reads as a bottom band/);
+    expect(css).toMatch(/full-width viewport[\s\S]*?gradient reads as a bottom band/);
     expect(css).toMatch(
       /--page-bottom-fade-size:\s*calc\(var\(--floating-head-stack-height\) \+ var\(--floating-head-bottom\)\)/,
     );
