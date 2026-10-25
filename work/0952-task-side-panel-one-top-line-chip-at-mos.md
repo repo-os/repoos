@@ -5,7 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
+needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (opencode + opencode-go/hy4-preview) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p2
 area: web
 assigned_to: ai
@@ -14,13 +14,13 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: opencode
 model_override: opencode-go/hy4-preview
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T06:14:59Z"
+updated_at: "2026-10-25T06:16:30Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T02:27:40.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 8
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:13:37.050Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:14:59.301Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 9
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:13:37.050Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:14:59.301Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:16:30.197Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -289,3 +289,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T06:13:37Z · engineer crash recovery: resuming opencode + opencode-go/hy4-preview (1/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-10-25T06:13:38Z · message_delivered: 1 message(s)
 - 2026-10-25T06:14:59Z · engineer crash recovery: resuming opencode + opencode-go/hy4-preview (2/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-10-25T06:16:30Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/hy4-preview) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
