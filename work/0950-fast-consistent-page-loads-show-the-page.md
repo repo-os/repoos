@@ -322,3 +322,4 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 - 2026-10-25T18:03:15Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T18:03:16Z · message_delivered: 1 message(s)
 - 2026-10-25T18:03:17Z · needs_input
+- 2026-10-25T18:03:17Z · message_queued at 2026-10-25T18:03:17.565Z
