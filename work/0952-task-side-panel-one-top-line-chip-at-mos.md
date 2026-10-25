@@ -15,7 +15,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: opencode
 model_override: opencode-go/kimi-k2.7-code
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T16:13:01Z"
+updated_at: "2026-10-25T16:16:27Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -65,74 +65,74 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "Review failed: short header chip and status card with guidance",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusReviewFailed"
+"label": "Review failed: short header chip and status card with guidance",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailed"
 },
 {
-  "label": "Review failed at narrow width: chip wraps to one line, card stays readable",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusReviewFailedNarrow"
+"label": "Review failed at narrow width: chip wraps to one line, card stays readable",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailedNarrow"
 },
 {
-  "label": "Not landable: single card shows the failing checklist",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landable"
+"label": "Not landable: single card shows the failing checklist",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landable"
 },
 {
-  "label": "Not landable at narrow width: checklist stays within the drawer",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landableNarrow"
+"label": "Not landable at narrow width: checklist stays within the drawer",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landableNarrow"
 },
 {
-  "label": "Checks running: one status line with progress, no long card copy",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunning"
+"label": "Checks running: one status line with progress, no long card copy",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning"
 },
 {
-  "label": "Checks running at narrow width: status line and progress wrap cleanly",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunningNarrow"
+"label": "Checks running at narrow width: status line and progress wrap cleanly",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunningNarrow"
 },
 {
-  "label": "Confirming handoff: single status line above the tabs",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusConfirmingHandoff"
+"label": "Confirming handoff: single status line above the tabs",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusConfirmingHandoff"
 },
 {
-  "label": "Confirming handoff at narrow width: status line remains one row",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusConfirmingHandoffNarrow"
+"label": "Confirming handoff at narrow width: status line remains one row",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusConfirmingHandoffNarrow"
 },
 {
-  "label": "Checks failed after retries: concise error card with info popover",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksFailed"
+"label": "Checks failed after retries: concise error card with info popover",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailed"
 },
 {
-  "label": "Checks failed after retries at narrow width: card and actions stay aligned",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksFailedNarrow"
+"label": "Checks failed after retries at narrow width: card and actions stay aligned",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailedNarrow"
 }
 ]
 ```
@@ -325,3 +325,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T15:29:42Z · status active→ready
 - 2026-10-25T15:41:06Z · body
 - 2026-10-25T16:13:01Z · body
+- 2026-10-25T16:16:27Z · message_overdue: still queued after 60m without being delivered
