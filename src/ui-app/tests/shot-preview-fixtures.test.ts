@@ -465,6 +465,9 @@ describe("shot preview board fixtures (#0743)", () => {
     } else if (fixture === "drawer:statusConfirmingHandoff") {
       expect(repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID]).toBe("check");
     } else {
+      expect(task?.path).toBe(
+        "work/9999-task-side-panel-status-chip-two-line-header-width-verification.md",
+      );
       expect(repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID]?.[0]?.passed).toBe(false);
       expect(task?.extra?.check_retry_count).toBe(2);
     }
