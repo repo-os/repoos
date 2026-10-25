@@ -303,3 +303,4 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 - 2026-10-25T14:55:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T14:55:18Z · message_delivered: 1 message(s)
 - 2026-10-25T15:00:19Z · message_queued at 2026-10-25T15:00:19.214Z
+- 2026-10-25T15:00:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
