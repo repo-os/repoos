@@ -162,6 +162,49 @@ describe("ChecksView default tab (#0738)", () => {
     wrapper.unmount();
   });
 
+  it("keeps the cached plan visible and shows a refresh-failed notice when the background refresh fails", async () => {
+    const initial = await mountChecks("/checks?tab=plan");
+    initial.wrapper.unmount();
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (String(url).includes("/api/check-plan")) throw new Error("refresh boom");
+        if (String(url).includes("/api/integration/pipeline"))
+          return jsonResponse({
+            ok: true,
+            pipeline: { empty: true, active: null, queue: [], at: "" },
+          });
+        if (String(url).includes("/api/remote-validation/status"))
+          return jsonResponse(idleRemote());
+        return jsonResponse({ ok: true });
+      }),
+    );
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/", component: { template: "<div/>" } },
+        { path: "/checks", name: "checks", component: ChecksView },
+      ],
+    });
+    await router.push("/checks?tab=plan");
+    await router.isReady();
+    const wrapper = mount(ChecksView, {
+      global: { plugins: [pinia, router], stubs: { teleport: true, Transition: true } },
+    });
+    await nextTick();
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    expect(wrapper.text()).toContain("Profile");
+
+    await flushPromises();
+    expect(wrapper.text()).toContain("Refresh failed");
+    expect(wrapper.text()).toContain("Profile");
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   async function mountChecks(initialPath: string) {
     vi.stubGlobal(
       "fetch",

@@ -128,6 +128,40 @@ describe("ReleasesView Published to (#0445)", () => {
     wrapper.unmount();
   });
 
+  it("keeps cached release data visible and shows a refresh-failed notice when the background refresh fails", async () => {
+    mockApi([channel()]);
+    const first = await mountView();
+    first.unmount();
+
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.reject(new Error("refresh boom"));
+      if (path === "/api/release/distribution")
+        return Promise.resolve({ releaseVersion: "1.2.3", releaseTag: "v1.2.3", channels: [] });
+      if (path === "/api/release/run")
+        return Promise.resolve({
+          state: "idle",
+          phase: null,
+          message: "",
+          startedAt: null,
+          updatedAt: null,
+        });
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await nextTick();
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.3");
+
+    await flushPromises();
+    expect(wrapper.text()).toContain("Refresh failed");
+    expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.3");
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   it("makes the current release and its distribution sync state the primary summary", async () => {
     mockApi([channel()]);
     const wrapper = await mountView();

@@ -419,7 +419,7 @@ const RESULT_ICON: Record<string, string> = {
         <p v-if="error && plan" class="ck-err" role="status">Refresh failed: {{ error }}</p>
         <p v-else-if="error" class="ck-err">{{ error }}</p>
 
-        <template v-else-if="plan">
+        <template v-if="plan">
           <!-- Controls: which profile, and the changed-path fast mode. -->
           <section class="ck-controls">
             <label class="ck-control">
