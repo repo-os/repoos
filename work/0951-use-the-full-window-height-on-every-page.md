@@ -12,8 +12,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
 updated_at: "2026-10-25T00:45:08Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 7e92eb4d to d02d7a0c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 7e92eb4d52c63dd4c1cdeeeb70bb3bfa89f6f8c7
 last_check_failure: "repoos check at 2026-10-24T23:39:03.710Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
 ---
@@ -102,3 +100,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T00:29:50Z · note: handoff requested (ui-review)
 - 2026-10-25T00:45:07Z · note: ui verification passed: 3 of 6 shots captured with clean console
 - 2026-10-25T00:45:08Z · status active→review
+
