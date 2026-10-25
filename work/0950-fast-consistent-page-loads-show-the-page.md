@@ -2,26 +2,32 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: review
+status: active
 needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — refresh failures hide stale page content on three views; required before/after timings are missing.
+needs_input_reason: dev-error
+needs_input_detail: handoff finalization was interrupted (server reload) — restart work to hand off again
+debug_tldr: "Handoff finalization was cut off by a RepoOS server reload—resume the engineer on #0950 and request review again."
+debug_tldr_at: "2026-10-25T18:37:48Z"
+debug_tldr_key: dev-error|handoff finalization was interrupted (server reload) — restart work to hand off again
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: opencode
+model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T01:14:43Z"
-review_passes: 5
+updated_at: "2026-10-25T18:37:48Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
+review_passes: 8
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 7
 ---
 ## Problem
 
@@ -87,6 +93,52 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 }
 ]
 ```
+
+## Performance measurements
+Measured 2026-10-26, five samples per endpoint/page. This replaces the earlier latency-replay figures: the old harness included a 3-second wait for an absent skeleton and those figures are not valid navigation timings.
+
+### Method
+
+Built the pre-feature UI from Git main (`7d064df87455`, all 863 archived UI blobs verified against that revision) entirely inside this worktree. Served that UI and this branch UI against the same isolated, authenticated fixture backend in headless WebKit at 1440×900. No injected API delay; service workers disabled. Cold means a new document/context; revisit means sidebar navigation away and back in the same context. Content readiness is the first sampled animation frame containing visible real content and no visible skeleton; timing includes browser navigation/action overhead. Skeleton checks no longer wait for a missing element or count hidden tabs. Secrets uses the empty environment state; Agents uses the default agents tab. Deferred-response component tests separately cover populated/cached views and refresh failures.
+
+Reproduce baseline UI with `git archive main src/ui-app src/core src/server` extracted into `.repoos/page-load-baseline`, then `bunx vite build --config .repoos/page-load-baseline/src/ui-app/vite.config.ts`. Run `bun scripts/bench-page-loads.mjs --runs=5 --baseline-ui=.repoos/page-load-baseline/dist/ui`; after-only runs omit `--baseline-ui`. Raw five-sample results are printed by the script. This run used `.repoos/page-load-benchmark.log` for the reconstructed baseline and `.repoos/page-load-benchmark-final.log` for the final branch build.
+
+### Per-page median time to content (ms)
+
+| Page | Before cold | After cold | Before revisit | After revisit | After revisit skeletons |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Releases | 422 | 354 | 607 | 476 | 0/5 |
+| Checks | 410 | 408 | 614 | 414 | 0/5 |
+| Deployments | 412 | 416 | 631 | 398 | 0/5 |
+| Dev | 420 | 397 | 629 | 429 | 0/5 |
+| Secrets | 417 | 401 | 434 | 441 | 0/5 |
+| Agents | 643 | 415 | 451 | 472 | 0/5 |
+
+Cold shell medians after the change (ms): Releases 321, Checks 408, Deployments 416, Dev 397, Secrets 401, Agents 415. Fast fixture requests can settle before a sampled frame; the deterministic first-load skeleton tests and loading shot fixtures cover slow responses. No production page speedup is inferred from fixture timings; Secrets/Agents revisits are roughly unchanged at this latency.
+
+### Per-endpoint HTTP median (ms, identical fixture backend)
+
+| Endpoint | Before | After |
+| --- | ---: | ---: |
+| `/api/release` | 42 | 28 |
+| `/api/release/distribution` | 45 | 20 |
+| `/api/check-plan` | 1 | 1 |
+| `/api/check-runs?limit=300` | 2 | 1 |
+| `/api/deployments` | 64 | 41 |
+| `/api/dev/targets` | 1 | 1 |
+| `/api/project-environments` | 1 | 1 |
+| `/api/agents/detect` | 0 | 0 |
+
+### Real-worktree slow endpoint
+
+Previously recorded driver baseline: `/api/deployments` median 2687 ms (2279–3000, five samples). In this run the actual worktree `getDeploymentsStatus()` handler measured median **2508 ms** (2335–2688; samples 2688, 2508, 2357, 2335, 2626). This is in-process handler time, distinct from the small fixture HTTP endpoint above. Earlier attempts ranged higher under different host load; no server optimization or causal server speedup is claimed. The handler already parallelizes independent branch summaries and coalesces identical freshness work. Follow-up **#0955** tracks profiling/reducing the remaining git subprocess fan-out.
+
+### Review follow-up and visual QA
+
+Cached empty lists now render without skeletons on Checks, Dev, Secrets, detected Agents and Releases distribution. Table-driven tests cover empty/populated responses; Secrets tests cover late success and failure after the selected environment changes, and the previous keys are cleared immediately. Skeletons now match Dev stacked target cards and Deployments branch cards plus a matrix; table skeletons use aligned row columns. Reduced-motion styles apply to every shape. Four fresh fixture PNGs were captured under `.repoos/page-load-shots-final/` for visual inspection; the four corresponding managed handoff shots remain declared.
+
+## Implementation follow-up
+The current branch already migrated Check Runs, detected Agents and release distribution to the shared skeleton/cache. This continuation fixes cached empty lists on Checks, Dev and Secrets, clears the previous environment snapshot immediately when selection changes, and guards late snapshot failures as well as successes. Table-driven race tests cover both late outcomes; empty and populated list cases cover cached revisits. The page benchmark now uses a separately built baseline UI from Git against the same authenticated fixture backend, measures DOM content readiness without waiting for an absent skeleton, and ignores skeletons in hidden tabs. Existing loading/loaded shots for Deployments and Dev remain declared; current captures are being verified before handoff.
 
 ## Activity
 
@@ -188,4 +240,143 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T00:52:42Z · note: review pass 6: needs some work
 - 2026-10-25T00:52:42Z · needs_input
 - 2026-10-25T00:56:20Z · status review→active
+- 2026-10-25T00:57:33Z · note: DRIVER TAKEOVER (6 review passes). Fixed the pass-6 bug: on Checks, Deployments and Releases the Refresh-failed paragraph started a new v-if chain that swallowed the cached content, so a failed background refresh blanked the page. The content template is now an independent v-if, and each of the three views has a view-level test (cached data stays visible AND the Refresh failed notice shows); the Deployments test was confirmed to fail without the fix. MEASUREMENTS: this diff changes no server code (git diff main...HEAD touches only src/ui-app and src/core/shot-fixtures.ts), so endpoint latencies after equal the recorded baseline by construction: /api/deployments 2687 ms median (5 runs), others 0-5 ms; the slow deployments handler is tracked in follow-up #0955. Client-side: first visit shows the shell plus a skeleton; revisit renders cached content with zero blocking requests and refreshes in place, proven by the revisit tests for Releases, Checks, Deployments, Dev, Secrets and Agents. Wall-clock page timings were not captured because starting a second server from a worktree is prohibited (it commits other tasks' files, see #0954).
+- 2026-10-25T00:57:42Z · note: handoff requested (ui-review)
+- 2026-10-25T01:01:54Z · handoff failed · ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
+- 2026-10-25T01:03:23Z · note: handoff requested (ui-review)
 - 2026-10-25T01:14:43Z · status active→review
+- 2026-10-25T01:14:44Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-25T01:17:07Z · note: review pass 7: needs some work
+- 2026-10-25T01:17:08Z · needs_input
+- 2026-10-25T01:17:08Z · needs_input
+- 2026-10-25T01:21:05Z · note: Pass-7 edge case fixed: page-data-cache now ignores cached entries older than 5 minutes (they are refetched with the skeleton) and caps the cache at 64 entries, with tests for inside/outside the max age. Measurements: unchanged from the earlier note; this diff changes no server code so after-change endpoint medians equal the baseline by construction (/api/deployments 2687 ms, tracked in #0955), and the per-page change is client-side (cached revisit shows content with zero blocking requests, proven by the revisit tests).
+- 2026-10-25T01:22:03Z · status review→active
+- 2026-10-25T01:22:11Z · note: handoff requested (ui-review)
+- 2026-10-25T01:34:25Z · status active→review
+- 2026-10-25T01:34:26Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-25T01:37:02Z · note: review pass 8: needs some work
+- 2026-10-25T01:37:03Z · needs_input
+- 2026-10-25T01:37:03Z · needs_input
+- 2026-10-25T01:39:03Z · status review→active
+- 2026-10-25T01:39:31Z · needs_input
+- 2026-10-25T01:39:32Z · message_queued at 2026-10-25T01:39:32.487Z
+- 2026-10-25T01:40:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T01:40:04Z · status active→review, needs_input
+- 2026-10-25T01:40:05Z · message_delivered: 1 message(s)
+- 2026-10-25T01:40:06Z · note: handoff requested (cli)
+- 2026-10-25T01:40:21Z · status active→review
+- 2026-10-25T01:40:27Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-25T01:42:40Z · note: review pass 9: needs some work
+- 2026-10-25T01:42:41Z · needs_input
+- 2026-10-25T01:42:41Z · needs_input
+- 2026-10-25T01:48:09Z · cli_override, model_override
+- 2026-10-25T01:49:28Z · note: HUMAN DECISION (Nick, 2026-10-25): the before/after measurement criteria (AC 1 and 6) are SATISFIED by this record, do not ask for more. BEFORE: first load of Releases, Checks, Deployments and Dev took about 3 seconds or more every time the user navigated to them (Nick's observation; the driver measured /api/deployments at a 2687 ms median, other endpoints under 5 ms). AFTER: the page shell and a skeleton render immediately, and a revisit within the 5-minute cache shows cached content with no skeleton and no blocking request (proven by the revisit tests). No server code changes in this task; the slow /api/deployments handler is follow-up #0955. Reviewers: treat measurements as done and review the code and the remaining loading paths only.
+- 2026-10-25T01:50:17Z · status review→active
+- 2026-10-25T01:52:13Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 9de52afd to c8e8b5e5) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-25T02:44:04Z · cli_override, model_override
+- 2026-10-25T02:44:42Z · model_override
+- 2026-10-25T02:44:53Z · model_override
+- 2026-10-25T02:45:51Z · needs_input
+- 2026-10-25T02:45:52Z · message_queued at 2026-10-25T02:45:52.832Z
+- 2026-10-25T02:46:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T03:49:11Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T04:55:25Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T05:07:49Z · cli_override, model_override
+- 2026-10-25T05:31:38Z · cli_override, model_override
+- 2026-10-25T05:31:46Z · needs_input
+- 2026-10-25T05:32:09Z · message_delivered: 1 message(s)
+- 2026-10-25T05:32:10Z · status active→ready
+- 2026-10-25T05:32:11Z · engineer stopped by request
+- 2026-10-25T05:32:18Z · status ready→active
+- 2026-10-25T05:54:05Z · message_queued at 2026-10-25T05:54:05.964Z
+- 2026-10-25T05:54:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T06:07:27Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T06:13:36Z · agent exited with an error (opencode) · ✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed.
+- 2026-10-25T08:51:58Z · cli_override, model_override
+- 2026-10-25T08:52:03Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T08:52:03Z · message_delivered: 1 message(s)
+- 2026-10-25T08:52:13Z · needs_input
+- 2026-10-25T08:52:14Z · message_queued at 2026-10-25T08:52:14.167Z
+- 2026-10-25T08:53:54Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T09:41:26Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-25T09:53:59Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T10:15:43Z · needs_input
+- 2026-10-25T10:15:43Z · message_delivered: 1 message(s)
+- 2026-10-25T10:24:34Z · message_queued at 2026-10-25T10:24:34.631Z
+- 2026-10-25T10:24:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T10:29:36Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T11:13:09Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production... · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-25T11:13:09Z · note: handoff requested (cli)
+- 2026-10-25T11:28:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T11:29:28Z · cli_override, model_override
+- 2026-10-25T11:29:29Z · message_delivered: 1 message(s)
+- 2026-10-25T11:30:06Z · message_queued at 2026-10-25T11:30:06.323Z
+- 2026-10-25T11:30:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T11:30:42Z · status active→review, needs_input
+- 2026-10-25T11:30:42Z · message_delivered: 1 message(s)
+- 2026-10-25T11:30:42Z · note: handoff requested (cli)
+- 2026-10-25T11:34:20Z · CTO nudge: held — handoff gate is running
+- 2026-10-25T11:35:04Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-10-25T12:20:42Z · cli_override, model_override
+- 2026-10-25T12:20:52Z · needs_input
+- 2026-10-25T12:20:53Z · message_queued at 2026-10-25T12:20:53.788Z
+- 2026-10-25T12:22:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T12:41:12Z · body: Performance measurements (added)
+- 2026-10-25T12:41:13Z · message_queued at 2026-10-25T12:41:13.187Z
+- 2026-10-25T12:48:02Z · body: Performance measurements (added 3, removed 3)
+- 2026-10-25T12:48:03Z · message_queued at 2026-10-25T12:48:03.924Z
+- 2026-10-25T13:25:55Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T13:29:24Z · engineer stopped by request
+- 2026-10-25T14:02:05Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T14:10:18Z · message_delivered: 3 message(s)
+- 2026-10-25T14:10:21Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
+- 2026-10-25T14:10:59Z · engineer stopped by request
+- 2026-10-25T14:11:07Z · held
+- 2026-10-25T14:11:25Z · status active→ready
+- 2026-10-25T14:13:58Z · assigned_to
+- 2026-10-25T14:53:28Z · assigned_to
+- 2026-10-25T14:53:36Z · released
+- 2026-10-25T14:53:55Z · status ready→active
+- 2026-10-25T14:54:02Z · cli_override, model_override
+- 2026-10-25T14:54:15Z · message_queued at 2026-10-25T14:54:15.254Z
+- 2026-10-25T14:55:02Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T14:55:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T14:55:18Z · message_delivered: 1 message(s)
+- 2026-10-25T15:00:19Z · message_queued at 2026-10-25T15:00:19.214Z
+- 2026-10-25T15:00:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T15:03:07Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T15:04:52Z · note: highlight .page-skeleton matched nothing on /deployments
+- 2026-10-25T15:05:29Z · note: highlight .dep-page matched nothing on /deployments
+- 2026-10-25T15:06:07Z · note: highlight .page-skeleton matched nothing on /dev
+- 2026-10-25T15:06:33Z · note: highlight .dev-card matched nothing on /dev
+- 2026-10-25T15:22:56Z · held
+- 2026-10-25T15:23:17Z · assigned_to
+- 2026-10-25T15:23:59Z · status active→ready
+- 2026-10-25T15:30:45Z · agent exited with an error (codex) · 2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/fast-consistent-page-loads-show-the-page/work/.attachments/0950/shots/default-1.png`: No such file or directory (os error 2)
+- 2026-10-25T16:16:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:50:46Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T18:02:38Z · assigned_to
+- 2026-10-25T18:02:44Z · released
+- 2026-10-25T18:03:01Z · status ready→active
+- 2026-10-25T18:03:07Z · model_override
+- 2026-10-25T18:03:15Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T18:03:16Z · message_delivered: 1 message(s)
+- 2026-10-25T18:03:17Z · needs_input
+- 2026-10-25T18:03:17Z · message_queued at 2026-10-25T18:03:17.565Z
+- 2026-10-25T18:09:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T18:10:49Z · cli_override, model_override
+- 2026-10-25T18:10:50Z · message_queued at 2026-10-25T18:10:50.981Z
+- 2026-10-25T18:11:54Z · body
+- 2026-10-25T18:12:36Z · body: Implementation follow-up (added)
+- 2026-10-25T18:12:37Z · message_queued at 2026-10-25T18:12:37.216Z
+- 2026-10-25T18:14:17Z · body
+- 2026-10-25T18:19:14Z · body: Performance measurements (added 29, removed 7)
+- 2026-10-25T18:19:14Z · message_queued at 2026-10-25T18:19:14.537Z
+- 2026-10-25T18:19:35Z · note: Visually inspected all four final PNGs: Deployments shell plus branch-card/table skeleton and populated matrix; Dev shell plus stacked target-card skeleton and running/stopped target cards. The final WebKit benchmark observed no visible skeleton on any of 30 cached revisits. Baseline and final per-page/endpoint medians, method and limitations are recorded in Performance measurements.
+- 2026-10-25T18:21:45Z · body
+- 2026-10-25T18:25:31Z · handoff_deferred: 4 queued message(s) must be read before review
+- 2026-10-25T18:25:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T18:25:32Z · message_delivered: 4 message(s)
+- 2026-10-25T18:30:35Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production... · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-25T18:30:35Z · note: handoff requested (cli)
+- 2026-10-25T18:37:30Z · agent exited with an error (codex) · handoff finalization was interrupted (server reload) — restart work to hand off again
