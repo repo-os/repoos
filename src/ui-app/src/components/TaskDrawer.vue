@@ -2784,25 +2784,12 @@ const staleNeedsInputOnReview = computed(() =>
   ui.active ? needsInputSuppressedOnReview(ui.active) : false,
 );
 
-const needsInputHeaderChip = computed<{ label: string; cls: string } | null>(() => {
-  if (!ui.active || !needsInputSurfaces(ui.active)) return null;
-  // The dedicated question banner already signals this — avoid a second chip (#0566).
-  if (showAgentQuestionsBanner.value) return null;
-  // A stale flag must not hide a live review or engineer session (#0511 R2).
-  if (review.value?.running || repo.isRunning(ui.active.id) || handoffBusy.value) return null;
-  return {
-    label: needsInputStatusLabel(ui.active.needsInputReason, activeNeedsInputQuestions.value),
-    cls: "rs-needs-input",
-  };
-});
-
 const compactNeedsInputChipLabel = computed(() =>
   ui.active
     ? needsInputCompactChipLabel(ui.active.needsInputReason, activeNeedsInputQuestions.value)
     : "Needs input",
 );
 
-const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   if (!ui.active || ui.active.status !== "review") return null;
   if (review.value?.running) return { label: "reviewing", cls: "rs-reviewing" };
   if (awaitingFreshReview.value) return { label: "awaiting fresh review", cls: "rs-reviewing" };
