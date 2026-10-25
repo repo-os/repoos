@@ -14,7 +14,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T13:08:15Z"
+updated_at: "2026-10-25T13:40:29Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:50.937Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:29:40.632Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:30:06.686Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -58,3 +58,4 @@ At every server start, `tuneRepoForScale(config.root)` (`src/core/git.ts`, calle
 - 2026-10-25T12:30:06Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-25T13:04:27Z · message_queued at 2026-10-25T13:04:27.668Z
 - 2026-10-25T13:08:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T13:40:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
