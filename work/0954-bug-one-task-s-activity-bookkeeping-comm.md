@@ -3,12 +3,6 @@ id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: Reading additional input from stdin...
-debug_tldr: "Handoff check timed out at 420s and Playwright stayed queued; the run then failed on stdin — wait for other checks to finish, then resume the engineer."
-debug_tldr_at: "2026-10-25T11:29:09Z"
-debug_tldr_key: dev-error|Reading additional input from stdin...
 priority: p1
 area: core
 assigned_to: ai
@@ -135,3 +129,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T11:34:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-25T11:35:14Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T11:40:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T11:40:10Z · needs_input
