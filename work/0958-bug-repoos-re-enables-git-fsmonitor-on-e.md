@@ -16,6 +16,7 @@ model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
 updated_at: "2026-10-25T18:37:34Z"
 dev_error_count: 9
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:34.411Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -150,3 +151,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T18:37:03Z · needs_input
 - 2026-10-25T18:37:03Z · needs_input
 - 2026-10-25T18:37:03Z · message_delivered: 1 message(s)
+- 2026-10-25T18:37:34Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 2:54 AM.
