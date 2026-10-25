@@ -19,7 +19,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T18:47:41Z"
+updated_at: "2026-10-25T18:57:51Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from d420f735 to 8a686f6e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: d420f735ea3fe8a3a301d4b821a50f5efdda1ffc
 review_passes: 8
@@ -382,3 +382,4 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-25T18:37:30Z · agent exited with an error (codex) · handoff finalization was interrupted (server reload) — restart work to hand off again
 - 2026-10-25T18:42:22Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from d420f735 to 8a686f6e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-10-25T18:47:41Z · note: handoff requested (ui-review)
+- 2026-10-25T18:57:51Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/incremental-index.test.ts > resolveWorktreeStatuses > reuses cached dirtiness when the worktree HEAD has not moved on thinkpad — fix it in the feature branch and re-run the gate
