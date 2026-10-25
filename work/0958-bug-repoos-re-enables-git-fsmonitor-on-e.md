@@ -17,7 +17,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T12:06:51Z"
+updated_at: "2026-10-25T12:13:01Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:05:48.590Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -46,6 +46,9 @@ At every server start, `tuneRepoForScale(config.root)` (`src/core/git.ts`, calle
 - Do not start a second RepoOS server from a worktree (bug #0954).
 - Nick has already set core.fsmonitor=false and core.untrackedCache=false by hand in repoos, divot, lightingai, pn and squishy; the fix must not undo that.
 
+## More evidence: preview/shot servers also re-enable it
+Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(config.root) at start, including task preview servers, 'just serve-noauth', and the servers 'repoos shot' / handoff shot capture start from a task worktree. Because worktrees share the repo's .git/config, each of those starts rewrites core.fsmonitor=true and core.untrackedCache=true for the WHOLE repo, which respawns ~30 fsmonitor daemons (one per worktree). Observed 2026-10-25: after 'just clear' set both to false, #0951's engineer started 'just serve-noauth 7272' and then a second server from its worktree, and within seconds the config was true again and 27 daemons were back. Required: tuneRepoForScale must be skipped entirely in preview mode (REPOOS_PREVIEW_CHILD / --preview-overrides / any server whose root is a linked worktree) and must never override an explicit human setting; add a test that starts a preview-mode server over a worktree and asserts the shared config is unchanged.
+
 ## Activity
 
 - 2026-10-25T11:34:02Z · created · njachowski@gmail.com
@@ -57,3 +60,4 @@ At every server start, `tuneRepoForScale(config.root)` (`src/core/git.ts`, calle
 - 2026-10-25T12:05:48Z · agent exited with an error (codex) · the agent process exited with an error — open the task to see the full output
 - 2026-10-25T12:05:48Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-25T12:05:51Z · message_delivered: 1 message(s)
+- 2026-10-25T12:13:01Z · body: More evidence: preview/shot servers also re-enable it (added)
