@@ -3,9 +3,6 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — refresh failures hide stale page content on three views; required before/after timings are missing.
 priority: p2
 area: web
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T01:17:07Z"
+updated_at: "2026-10-25T01:17:08Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -195,3 +192,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T01:14:43Z · status active→review
 - 2026-10-25T01:14:44Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-25T01:17:07Z · note: review pass 7: needs some work
+- 2026-10-25T01:17:08Z · needs_input
