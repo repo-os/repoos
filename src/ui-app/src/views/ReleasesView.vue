@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useUiStore } from "../stores/ui";
-import { Bug, Check, Copy, FileClock, RotateCcw, Sparkles, X } from "lucide-vue-next";
+import { Bug, Check, Copy, FileClock, RefreshCw, RotateCcw, Sparkles, X } from "lucide-vue-next";
 import { copyToClipboard } from "../lib/clipboard";
 import ActivityIndicator from "../components/ActivityIndicator.vue";
 import Button from "../components/ui/button.vue";
@@ -222,6 +222,7 @@ let distributionSeq = 0;
 const distribution = ref<DistributionChannel[]>([]);
 const distributionReleaseVersion = ref<string | null>(null);
 const distributionLoading = ref(false);
+const distributionRefreshing = ref(false);
 /** Non-blocking refresh failure while cached channels stay on screen (#0950). */
 const distributionRefreshError = ref("");
 const distributionCiFailure = ref<DistributionSummary["ciFailure"]>(null);
@@ -427,12 +428,19 @@ async function load(): Promise<void> {
  * lookups can be slow or fail, and neither must affect the page, so a failure
  * simply hides the section.
  */
-async function loadDistribution(): Promise<void> {
+async function loadDistribution(manual = false): Promise<void> {
   // A release landing while the mount-time lookup is still in flight starts a
   // second lookup; the older response must not overwrite the newer one or
   // clear the loading indicator while the newer lookup is still pending.
   const seq = ++distributionSeq;
-  distributionLoading.value = true;
+  if (manual) {
+    // The user asked for a fresh downstream check; bypass the page cache. The
+    // normal mount/revisit path stays silent while stale channels are visible.
+    invalidatePageData("release-distribution");
+    distributionRefreshing.value = true;
+  } else if (!distribution.value.length) {
+    distributionLoading.value = true;
+  }
   if (!distribution.value.length) distributionRefreshError.value = "";
   try {
     // Also revisits through the shared page cache (#0950): cached channels
@@ -447,6 +455,9 @@ async function loadDistribution(): Promise<void> {
         distributionReleaseVersion.value = data.releaseVersion ?? null;
         distributionCiFailure.value = data.ciFailure ?? null;
         distributionRefreshError.value = "";
+        // A cache hit is delivered synchronously by refreshPageData. Drop the
+        // first-load state immediately so revisits stay quiet during revalidate.
+        if (distribution.value.length) distributionLoading.value = false;
       },
       (err) => {
         if (seq !== distributionSeq) return;
@@ -455,7 +466,10 @@ async function loadDistribution(): Promise<void> {
       },
     );
   } finally {
-    if (seq === distributionSeq) distributionLoading.value = false;
+    if (seq === distributionSeq) {
+      distributionLoading.value = false;
+      distributionRefreshing.value = false;
+    }
   }
 }
 
@@ -1207,10 +1221,15 @@ onBeforeUnmount(() => {
                 <Button
                   variant="outline"
                   size="sm"
-                  :disabled="distributionLoading"
-                  @click="loadDistribution"
+                  :disabled="distributionLoading || distributionRefreshing"
+                  @click="loadDistribution(true)"
                 >
-                  {{ distributionLoading ? "Checking…" : "Check again" }}
+                  <RefreshCw
+                    v-if="distributionRefreshing"
+                    class="rel-dist-refreshing btn-ico spin"
+                    aria-hidden="true"
+                  />
+                  {{ distributionRefreshing ? "Checking…" : "Check again" }}
                 </Button>
               </div>
               <p class="rel-dist-sub">
@@ -1227,10 +1246,6 @@ onBeforeUnmount(() => {
                  lone spinner. A "Check again" recheck keeps the channels on
                  screen and shows the compact indicator below. -->
             <PageSkeleton v-if="distributionLoading && !distribution.length" kind="cards" />
-            <div v-else-if="distributionLoading" class="rel-dist-loading" role="status">
-              <span class="rel-dist-loading-spin" aria-hidden="true"></span>
-              Checking distribution channels…
-            </div>
             <p v-if="distributionCiFailure" class="ff-error" role="alert">
               The release workflow failed<template v-if="distributionCiFailure.failedStep">
                 at “{{ distributionCiFailure.failedStep }}”</template
@@ -1949,24 +1964,6 @@ onBeforeUnmount(() => {
 .rel-dist-sub code {
   font-family: var(--mono);
   color: var(--txt-dim);
-}
-.rel-dist-loading {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--txt-faint);
-  font-size: 12.5px;
-  padding: 4px 0 2px;
-}
-/* Small inline variant of the shared `.spin` indicator (same keyframes). */
-.rel-dist-loading-spin {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  border: 2px solid var(--border);
-  border-top-color: var(--cyan);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
 }
 .rel-dist-channels {
   display: grid;
