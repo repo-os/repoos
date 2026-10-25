@@ -4,7 +4,7 @@ title: "Use the full window height on every page: content scrolls down to the bo
 type: feature
 status: active
 needs_input: true
-needs_input_reason: dev-error
+needs_input_reason: check-failed-after-retries
 needs_input_detail: "error: This API key has expired. Create a new API key in OpenCode Console and replace it in your client or secret store. Signing in again will not renew this key."
 priority: p2
 area: web
@@ -14,12 +14,12 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T19:04:18Z"
+updated_at: "2026-10-25T19:04:20Z"
 review_rounds: 1
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
-dev_error_count: 13
+dev_error_count: 14
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T19:04:14.798Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
