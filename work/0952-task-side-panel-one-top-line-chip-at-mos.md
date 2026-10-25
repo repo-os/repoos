@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T00:48:22Z"
+updated_at: "2026-10-25T00:50:09Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -57,42 +57,42 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "Short failure chip beside a long file path",
-  "target": "default",
-  "route": "/work?task=9999&tab=changes",
-  "highlight": ".drawer-head",
-  "state": "drawer:statusChecksFailed"
+"label": "Short failure chip beside a long file path",
+"target": "default",
+"route": "/work?task=9999&tab=changes",
+"highlight": ".drawer-head",
+"state": "drawer:statusChecksFailed"
 },
 {
-  "label": "Single failed-check summary above the tabs",
-  "target": "default",
-  "route": "/work?task=9999&tab=changes",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksFailed"
+"label": "Single failed-check summary above the tabs",
+"target": "default",
+"route": "/work?task=9999&tab=changes",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailed"
 },
 {
-  "label": "Waiting-for-you help popover",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".waiting-info .drawer-info-content",
-  "steps": [
-    {
-      "click": "details.waiting-info > summary"
-    }
-  ],
-  "state": "drawer:tabExpandWarnings"
+"label": "Waiting-for-you help popover",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".waiting-info .drawer-info-content",
+"steps": [
+  {
+    "click": "details.waiting-info > summary"
+  }
+],
+"state": "drawer:tabExpandWarnings"
 },
 {
-  "label": "Debug status details sub-tab",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".debug-status-detail",
-  "steps": [
-    {
-      "click": ".debug-tabs .debug-tab:first-child"
-    }
-  ],
-  "state": "drawer:tabExpandWarnings"
+"label": "Debug status details sub-tab",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".debug-status-detail",
+"steps": [
+  {
+    "click": ".debug-tabs .debug-tab:first-child"
+  }
+],
+"state": "drawer:tabExpandWarnings"
 }
 ]
 ```
@@ -147,3 +147,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T00:46:32Z · message_delivered: 1 message(s)
 - 2026-10-25T00:47:45Z · body
 - 2026-10-25T00:48:22Z · body
+- 2026-10-25T00:50:09Z · note: loading state detected: loading text "Loading changes…" on /work?task=9999&tab=changes
