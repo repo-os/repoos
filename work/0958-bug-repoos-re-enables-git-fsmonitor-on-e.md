@@ -8,8 +8,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T11:35:12Z"
+updated_at: "2026-10-25T11:35:27Z"
 ---
 ## Problem
 
@@ -40,3 +42,4 @@ At every server start, `tuneRepoForScale(config.root)` (`src/core/git.ts`, calle
 
 - 2026-10-25T11:34:02Z · created · njachowski@gmail.com
 - 2026-10-25T11:35:12Z · status inbox→ready
+- 2026-10-25T11:35:27Z · cli_override, model_override
