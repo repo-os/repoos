@@ -478,6 +478,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
       <button
         type="button"
         class="debug-tab"
+        data-test-id="debug-tab-status"
         :class="{ active: view === 'status' }"
         @click="view = 'status'"
       >
