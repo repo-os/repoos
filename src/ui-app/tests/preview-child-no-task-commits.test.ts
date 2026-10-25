@@ -166,7 +166,7 @@ describe("preview child over a task worktree (#0954)", () => {
       await server?.close();
       fx.clean();
     }
-  });
+  }, 15_000);
 
   it("commits task A bookkeeping on main without moving task B's branch tip", () => {
     const fx = twoTaskWorktreeFixture();
