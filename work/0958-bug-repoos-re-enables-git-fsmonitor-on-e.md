@@ -2,7 +2,7 @@
 id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T11:35:28Z"
+updated_at: "2026-10-25T12:11:22Z"
 ---
 ## Problem
 
@@ -44,3 +44,5 @@ At every server start, `tuneRepoForScale(config.root)` (`src/core/git.ts`, calle
 - 2026-10-25T11:35:12Z · status inbox→ready
 - 2026-10-25T11:35:27Z · cli_override, model_override
 - 2026-10-25T11:35:28Z · status ready→active, branch
+- 2026-10-25T12:11:21Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-25T12:11:22Z · note: handoff requested (cli)
