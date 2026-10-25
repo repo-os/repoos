@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T02:05:41Z"
+updated_at: "2026-10-25T02:06:55Z"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T01:02:11.529Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T01:26:46.721Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 3
@@ -59,60 +59,60 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "Drawer header one short chip and two-line path",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".drawer-head",
-  "state": "drawer:statusChecksFailed",
-  "viewportWidth": 390
+"label": "Drawer header one short chip and two-line path",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".drawer-head",
+"state": "drawer:statusChecksFailed",
+"viewportWidth": 390
 },
 {
-  "label": "Single status card and live status line",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunning",
-  "viewportWidth": 1280
+"label": "Single status card and live status line",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning",
+"viewportWidth": 1280
 },
 {
-  "label": "Not landable status card",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landable",
-  "viewportWidth": 1280
+"label": "Not landable status card",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landable",
+"viewportWidth": 1280
 },
 {
-  "label": "Status card info popover",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".drawer-info-content",
-  "steps": [
-    {
-      "click": ".drawer-status-summary .drawer-info-popover summary"
-    },
-    {
-      "waitMs": 200
-    }
-  ],
-  "state": "drawer:statusChecksRunning",
-  "viewportWidth": 1280
+"label": "Status card info popover",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".drawer-info-content",
+"steps": [
+  {
+    "click": ".drawer-status-summary .drawer-info-popover summary"
+  },
+  {
+    "waitMs": 200
+  }
+],
+"state": "drawer:statusChecksRunning",
+"viewportWidth": 1280
 },
 {
-  "label": "Debug Status details sub-tab",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": "[aria-label=\"Task status details\"]",
-  "steps": [
-    {
-      "click": "[data-test-id=\"debug-tab-status\"]"
-    },
-    {
-      "waitMs": 200
-    }
-  ],
-  "state": "drawer:statusChecksFailed",
-  "viewportWidth": 1280
+"label": "Debug Status details sub-tab",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": "[aria-label=\"Task status details\"]",
+"steps": [
+  {
+    "click": "[data-test-id=\"debug-tab-status\"]"
+  },
+  {
+    "waitMs": 200
+  }
+],
+"state": "drawer:statusChecksFailed",
+"viewportWidth": 1280
 }
 ]
 ```
@@ -199,3 +199,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T02:01:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T02:01:00Z · message_delivered: 1 message(s)
 - 2026-10-25T02:05:41Z · body
+- 2026-10-25T02:06:55Z · CTO nudge: held — remote validation is running
