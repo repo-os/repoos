@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: f185ead88674bb966d324ec308d0482eb9893e3c
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T09:25:41Z"
+updated_at: "2026-10-25T09:29:44Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: f185ead88674bb966d324ec308d0482eb9893e3c
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 review_passes: 1
@@ -172,4 +172,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T09:19:38Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T09:20:44Z · note: handoff requested (ui-review)
 - 2026-10-25T09:25:41Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
-
+- 2026-10-25T09:29:44Z · note: handoff requested (ui-review)
