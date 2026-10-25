@@ -5,7 +5,7 @@ type: bug
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
+needs_input_detail: "2026-10-25T12:28:32.947741Z ERROR codex_core::session: failed to record rollout items: thread 01a172dc-6c08-73d1-bab4-8bd26252dd6c not found"
 debug_tldr: Every remote runner failed the link probe so checks queued locally until the test step hit the 420s timeout—resume after fixing connectivity or relaxing probe limits.
 debug_tldr_at: "2026-10-25T11:38:00Z"
 debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
@@ -17,11 +17,11 @@ branch: feat/bug-remote-validation-link-probe-rejects
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T11:38:00Z"
+updated_at: "2026-10-25T12:28:37Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:46:43.085Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T11:13:08.170Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T11:37:37.086Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:37.623Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -84,3 +84,4 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T11:37:37Z · agent exited with an error (codex) · the agent process exited with an error — open the task to see the full output
 - 2026-10-25T11:37:37Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-25T11:37:43Z · message_delivered: 1 message(s)
+- 2026-10-25T12:28:37Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-25T12:28:32.947741Z ERROR codex_core::session: failed to record rollout items: thread 01a172dc-6c08-73d1-bab4-8bd26252dd6c not found
