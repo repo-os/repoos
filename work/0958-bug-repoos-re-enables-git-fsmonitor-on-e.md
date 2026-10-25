@@ -3,6 +3,9 @@ id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "error: Reconnect OpenCode Console to continue."
 priority: p1
 area: core
 assigned_to: ai
@@ -11,8 +14,8 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: opencode
 model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T16:50:49Z"
-dev_error_count: 4
+updated_at: "2026-10-25T16:53:06Z"
+dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-25T15:30:46.283Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-25T15:36:32.644Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -119,3 +122,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T16:16:34Z · body
 - 2026-10-25T16:20:58Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T16:50:49Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T16:53:06Z · agent exited with an error (opencode) · error: Reconnect OpenCode Console to continue.
