@@ -13,7 +13,7 @@ model_override: opencode-go/hy4-preview
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T05:54:06Z"
+updated_at: "2026-10-25T06:07:27Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 9de52afd to c8e8b5e5) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 9de52afdc9ae459b5e601f6a5a6ad9b7e5294396
 review_passes: 8
@@ -238,3 +238,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T05:32:18Z · status ready→active
 - 2026-10-25T05:54:05Z · message_queued at 2026-10-25T05:54:05.964Z
 - 2026-10-25T05:54:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T06:07:27Z · CTO nudge: held — an undelivered message is already queued
