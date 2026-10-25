@@ -53,7 +53,12 @@ Fixture.
 `;
 }
 
-function twoTaskWorktreeFixture(): { main: string; worktreeB: string; taskAPath: string; clean: () => void } {
+function twoTaskWorktreeFixture(): {
+  main: string;
+  worktreeB: string;
+  taskAPath: string;
+  clean: () => void;
+} {
   const main = mkdtempSync(join(tmpdir(), "repoos-preview-no-commit-"));
   roots.push(main);
   const worktreeB = `${main}-task-b`;
@@ -168,10 +173,7 @@ describe("preview child over a task worktree (#0954)", () => {
     const worktreeHeadBefore = git(fx.worktreeB, ["rev-parse", "HEAD"]);
     const mainHeadBefore = git(fx.main, ["rev-parse", "HEAD"]);
 
-    writeFileSync(
-      fx.taskAPath,
-      readFileSync(fx.taskAPath, "utf8") + "\n- activity on main only\n",
-    );
+    writeFileSync(fx.taskAPath, readFileSync(fx.taskAPath, "utf8") + "\n- activity on main only\n");
     expect(commitTaskFile(fx.main, fx.taskAPath, "docs(0950): record activity")).toBe(true);
 
     expect(git(fx.main, ["rev-parse", "HEAD"])).not.toBe(mainHeadBefore);
