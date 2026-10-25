@@ -2492,9 +2492,11 @@ export function removeWorktree(
   const removeArgs = (): string[] =>
     force ? ["worktree", "remove", "--force", path] : ["worktree", "remove", path];
 
-  // Stop only after confirming removal is permitted; a failed dirty-worktree
-  // removal must leave its active checkout and daemon alone.
-  if (force || worktreeHasNoUncommittedWork(path))
+  // Stop only after confirming removal is permitted, and only when this repo
+  // actually has fsmonitor enabled — otherwise there is no daemon to stop and
+  // the extra git spawn per removal is wasted. A failed dirty-worktree removal
+  // must leave its active checkout and daemon alone.
+  if (existsSync(path) && fsmonitorEnabledAt(root) && (force || worktreeHasNoUncommittedWork(path)))
     (opts.stopFsmonitor ?? stopFsmonitorDaemon)(path);
   const first = gitCapture(root, removeArgs());
   if (first.status === 0) return true;
@@ -2525,6 +2527,17 @@ export function removeWorktree(
   pruneWorktrees(root);
   // Success == the branch no longer resolves to any registered worktree.
   return !worktreePaths(root).has(branch);
+}
+
+/**
+ * Whether this checkout's merged Git config enables `core.fsmonitor`. An unset
+ * or false value means Git never started a daemon here, so worktree teardown
+ * can skip the extra `git fsmonitor--daemon stop` spawn.
+ */
+function fsmonitorEnabledAt(root: string): boolean {
+  const value = git(root, ["config", "--get", "core.fsmonitor"]);
+  if (value === null) return false;
+  return !["", "0", "false", "no", "off"].includes(value.trim().toLowerCase());
 }
 
 /**

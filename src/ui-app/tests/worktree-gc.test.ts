@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -8,6 +8,11 @@ import { worktreesDir } from "../../core/config.js";
 import { sweepStaleWorktrees, sweepAndWarn, countWorktrees } from "../../core/worktree-gc.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
+
+// Every fixture here creates, merges and removes several real Git worktrees.
+// Teardown also asks Git to stop that checkout's fsmonitor daemon (#0958), so
+// the 5s default is too tight on a loaded laptop.
+vi.setConfig({ testTimeout: 20_000 });
 
 function git(root: string, args: string[]): string {
   return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
