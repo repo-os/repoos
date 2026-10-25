@@ -19,7 +19,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T19:03:14Z"
+updated_at: "2026-10-25T19:14:46Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/incremental-index.test.ts > resolveWorktreeStatuses > reuses cached dirtiness when the worktree HEAD has not moved on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 8a686f6e99c339ddf551e110a4374da7ebe7937e
 review_passes: 8
@@ -384,3 +384,4 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-25T18:47:41Z · note: handoff requested (ui-review)
 - 2026-10-25T18:57:51Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/incremental-index.test.ts > resolveWorktreeStatuses > reuses cached dirtiness when the worktree HEAD has not moved on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-25T19:03:14Z · note: handoff requested (ui-review)
+- 2026-10-25T19:14:46Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
