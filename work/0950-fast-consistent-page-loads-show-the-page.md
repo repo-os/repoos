@@ -1,29 +1,27 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T11:35:04Z"
+updated_at: "2026-10-25T12:48:03Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 4
+dev_error_count: 5
 ---
 ## Problem
 
@@ -89,6 +87,18 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 }
 ]
 ```
+
+## Performance measurements
+### Baseline (driver on main, 2026-10-25, 5 runs)
+- `/api/deployments` median **2687 ms** (min 2279, max 3000)
+- `/api/project-environments` 1 ms · `/api/dev/targets` 1 ms · `/api/check-plan` 5 ms · `/api/releases` 0 ms
+
+### After this branch (2026-10-25, `bun scripts/bench-page-loads.mjs --runs=5`)
+**Endpoint (in-process `getDeploymentsStatus`, this worktree):** median **1923 ms** (min 1785, max 2093). Same handler as baseline; machine load differs — not a claimed optimization.
+
+**Pages (headless WebKit, endpoint latencies replayed per script):** median cold → revisit — Releases 1203→657 ms, Checks 864→622 ms, Deployments 3392→3011 ms, Dev 1204→3062 ms, Secrets 10030→3013 ms, Agents 632→3023 ms. Skeleton on cold: Releases/Checks/Deployments/Dev 5/5. Skeleton on revisit: Deployments/Dev/Secrets **0/5** (cached content, no flash). Revisit wall-clock still includes the bench harness’s delayed API routes.
+
+Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 
 ## Activity
 
@@ -267,4 +277,11 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T11:30:42Z · note: handoff requested (cli)
 - 2026-10-25T11:34:20Z · CTO nudge: held — handoff gate is running
 - 2026-10-25T11:35:04Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
-
+- 2026-10-25T12:20:42Z · cli_override, model_override
+- 2026-10-25T12:20:52Z · needs_input
+- 2026-10-25T12:20:53Z · message_queued at 2026-10-25T12:20:53.788Z
+- 2026-10-25T12:22:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T12:41:12Z · body: Performance measurements (added)
+- 2026-10-25T12:41:13Z · message_queued at 2026-10-25T12:41:13.187Z
+- 2026-10-25T12:48:02Z · body: Performance measurements (added 3, removed 3)
+- 2026-10-25T12:48:03Z · message_queued at 2026-10-25T12:48:03.924Z

@@ -8,16 +8,15 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-side-panel-one-top-line-chip-at-mos
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T11:34:20Z"
+updated_at: "2026-10-25T12:49:46Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T02:27:40.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 11
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T09:42:35.946Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T09:43:29.158Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 12
 ---
 ## Problem
 
@@ -62,97 +61,62 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "statusReviewFailed status at 1280px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 1280
+  "label": "Compact status: reviewer failed",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusReviewFailed"
 },
 {
-"label": "statusReviewFailed status at 760px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 760
+  "label": "Compact status: not landable",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:landable"
 },
 {
-"label": "statusHandoffFailed status at 1280px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusHandoffFailed",
-"viewportWidth": 1280
+  "label": "Compact status: checks running",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusChecksRunning"
 },
 {
-"label": "statusHandoffFailed status at 760px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusHandoffFailed",
-"viewportWidth": 760
+  "label": "Compact status: confirming handoff",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusConfirmingHandoff"
 },
 {
-"label": "statusChecksRunning status at 1280px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 1280
+  "label": "Compact status: checks failed after retries",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusChecksFailed"
 },
 {
-"label": "statusChecksRunning status at 760px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 760
+  "label": "Narrow drawer: two-line task path header",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-head",
+  "state": "drawer:statusChecksFailed",
+  "viewportWidth": 390
 },
 {
-"label": "statusConfirmingHandoff status at 1280px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 1280
-},
-{
-"label": "statusConfirmingHandoff status at 760px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 760
-},
-{
-"label": "statusChecksFailed status at 1280px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 1280
-},
-{
-"label": "statusChecksFailed status at 760px",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 760
-},
-{
-"label": "Debug status details",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".debug-status-detail",
-"steps": [
-{
-"click": "button[data-test-id=\"debug-tab-status\"]"
-}
-],
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 1280
+  "label": "Debug Status details sub-tab",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": "[aria-label=\"Task status details\"]",
+  "steps": [
+    {
+      "click": "[data-test-id=\"debug-tab-status\"]"
+    },
+    {
+      "waitMs": 400
+    }
+  ],
+  "state": "drawer:landable"
 }
 ]
 ```
@@ -311,3 +275,15 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T11:30:06Z · message_queued at 2026-10-25T11:30:06.975Z
 - 2026-10-25T11:31:10Z · body
 - 2026-10-25T11:34:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T11:47:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T11:48:27Z · agent exited with an error (codex) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T11:48:27Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T11:48:31Z · message_delivered: 1 message(s)
+- 2026-10-25T12:00:15Z · body
+- 2026-10-25T12:00:32Z · body
+- 2026-10-25T12:08:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T12:08:04Z · needs_input
+- 2026-10-25T12:20:54Z · cli_override, model_override
+- 2026-10-25T12:21:04Z · message_queued at 2026-10-25T12:21:04.926Z
+- 2026-10-25T12:32:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T12:49:46Z · body
