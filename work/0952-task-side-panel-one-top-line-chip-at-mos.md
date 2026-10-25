@@ -3,6 +3,9 @@ id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
 priority: p2
 area: web
 assigned_to: ai
@@ -11,13 +14,13 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: opencode
 model_override: opencode-go/hy4-preview
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T06:12:01Z"
+updated_at: "2026-10-25T06:13:37Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T02:27:40.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 6
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:12:28.556Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:12:42.852Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:12:56.953Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 7
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:13:37.050Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -282,3 +285,5 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T06:06:49Z · message_queued at 2026-10-25T06:06:49.204Z
 - 2026-10-25T06:06:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-25T06:12:01Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T06:13:37Z · agent exited with an error (opencode) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-10-25T06:13:37Z · engineer crash recovery: resuming opencode + opencode-go/hy4-preview (1/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
