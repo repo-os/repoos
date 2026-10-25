@@ -3,6 +3,9 @@ id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-10-25T12:28:11.157970Z ERROR codex_core::session: failed to record rollout items: thread 01a172f3-eeea-7400-b3e6-187ab6d38b71 not found"
 priority: p1
 area: core
 assigned_to: ai
@@ -11,9 +14,9 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T12:21:09Z"
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:05:48.590Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-10-25T12:28:12Z"
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:05:48.590Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:12.715Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -60,3 +63,5 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T12:21:05Z · cli_override, model_override
 - 2026-10-25T12:21:09Z · needs_input
 - 2026-10-25T12:21:09Z · message_queued at 2026-10-25T12:21:09.661Z
+- 2026-10-25T12:28:12Z · agent exited with an error (codex) · 2026-10-25T12:28:11.157970Z ERROR codex_core::session: failed to record rollout items: thread 01a172f3-eeea-7400-b3e6-187ab6d38b71 not found
+- 2026-10-25T12:28:12Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · 2026-10-25T12:28:11.157970Z ERROR codex_core::session: failed to record rollout items: thread 01a172f3-eeea-7400-b3e6-187ab6d38b71 not found
