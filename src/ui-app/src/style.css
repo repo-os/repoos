@@ -9041,6 +9041,8 @@
   min-height: 0;
   overflow-y: auto;
   padding-right: 3px;
+  /* Same end inset as .main: these pages scroll here, not in the pane. */
+  padding-bottom: var(--page-bottom-inset);
   scrollbar-width: none;
 }
 .page-scroll-body::-webkit-scrollbar {
