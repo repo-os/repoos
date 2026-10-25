@@ -3,6 +3,9 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — failure paths hide errors; latency acceptance and final visual proof remain incomplete
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +16,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T01:01:02Z"
+updated_at: "2026-10-25T01:01:03Z"
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 review_passes: 4
 handoff_signal_retry_count: 2
@@ -183,3 +186,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T00:50:31Z · review_cli_override, review_model_override
 - 2026-10-25T00:50:35Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-25T01:01:02Z · note: review pass 1: needs some work
+- 2026-10-25T01:01:03Z · needs_input
