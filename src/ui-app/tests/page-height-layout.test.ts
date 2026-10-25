@@ -40,7 +40,9 @@ describe("standard page height and floating controls", () => {
       /\.main\s*\{[^}]*padding-inline-end:\s*max\(26px, var\(--page-inline-end-inset\)\)/s,
     );
     expect(css).toMatch(/--floating-head-size:\s*46px/);
-    expect(css).toMatch(/@media \(max-width: 760px\)[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0/s);
+    expect(css).toMatch(
+      /@media \(max-width: 760px\)[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0/s,
+    );
     expect(floatingHeads).toMatch(/\.stack\s*\{[^}]*gap:\s*var\(--floating-head-gap\)/s);
     expect(floatingHeads).toMatch(
       /\.head-btn\s*\{[^}]*width:\s*var\(--floating-head-size\);[^}]*height:\s*var\(--floating-head-size\)/s,
