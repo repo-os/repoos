@@ -3,9 +3,10 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: active
+hold: true
 priority: p2
 area: web
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
@@ -13,7 +14,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T15:06:33Z"
+updated_at: "2026-10-25T15:23:17Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -309,3 +310,5 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 - 2026-10-25T15:05:29Z · note: highlight .dep-page matched nothing on /deployments
 - 2026-10-25T15:06:07Z · note: highlight .page-skeleton matched nothing on /dev
 - 2026-10-25T15:06:33Z · note: highlight .dev-card matched nothing on /dev
+- 2026-10-25T15:22:56Z · held
+- 2026-10-25T15:23:17Z · assigned_to
