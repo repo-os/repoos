@@ -11,10 +11,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/use-the-full-window-height-on-every-page
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T01:40:25Z"
+updated_at: "2026-10-25T01:47:27Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from eec677ba to d74e9b93) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: eec677bac89c446145383d0d176ce86853f65c62
 review_passes: 1
@@ -137,3 +137,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T01:40:03Z · message_delivered: 1 message(s)
 - 2026-10-25T01:40:13Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-25T01:40:25Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T01:47:27Z · cli_override, model_override
