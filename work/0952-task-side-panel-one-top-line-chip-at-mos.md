@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T01:03:45Z"
+updated_at: "2026-10-25T01:04:19Z"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T01:02:11.529Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -58,39 +58,39 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "Drawer with review failure status",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:reviewWithBranch"
+"label": "Drawer with review failure status",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:reviewWithBranch"
 },
 {
-  "label": "Drawer with landability status",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landable"
+"label": "Drawer with landability status",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landable"
 },
 {
-  "label": "Drawer with live check progress",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "checks:progress"
+"label": "Drawer with live check progress",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "checks:progress"
 },
 {
-  "label": "Drawer confirming handoff",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "closeOut:active"
+"label": "Drawer confirming handoff",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "closeOut:active"
 },
 {
-  "label": "Drawer after check retries fail",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".drawer-status-summary",
-  "state": "dev:failed"
+"label": "Drawer after check retries fail",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".drawer-status-summary",
+"state": "dev:failed"
 }
 ]
 ```
@@ -152,3 +152,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T00:57:01Z · note: loading state detected: loading text "Loading changes…" on /work?task=9999&tab=changes
 - 2026-10-25T01:02:11Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-25T01:03:45Z · body
+- 2026-10-25T01:04:19Z · body
