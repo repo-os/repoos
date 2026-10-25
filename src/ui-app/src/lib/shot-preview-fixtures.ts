@@ -627,6 +627,24 @@ const SHOT_EVIDENCE_VERIFICATION: UiHandoffVerificationEvidence = {
   warnings: [],
 };
 
+/** Record that a fixture was applied, fail-soft for non-DOM tests. */
+function setShotPreviewAppliedAttr(fixture: string): void {
+  try {
+    document.documentElement.setAttribute(SHOT_PREVIEW_APPLIED_ATTR, fixture);
+  } catch {
+    /* non-DOM test environments */
+  }
+}
+
+/** Shrink the task drawer so narrow-width shots verify header wrapping. */
+function setNarrowDrawerWidth(): void {
+  try {
+    useUiStore().drawerWidth = 360;
+  } catch {
+    /* store may not exist in some test setups */
+  }
+}
+
 /** Apply a named fixture to the live board (preview builds only). */
 export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFixtureId): void {
   // #0866: record that the app actually applied the fixture, so a capture can
@@ -1088,6 +1106,31 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           machine: "fixture host",
         },
       ];
+      break;
+    case "drawer:statusReviewFailedNarrow":
+      applyShotPreviewFixture(repo, "drawer:statusReviewFailed");
+      setShotPreviewAppliedAttr("drawer:statusReviewFailedNarrow");
+      setNarrowDrawerWidth();
+      break;
+    case "drawer:statusChecksRunningNarrow":
+      applyShotPreviewFixture(repo, "drawer:statusChecksRunning");
+      setShotPreviewAppliedAttr("drawer:statusChecksRunningNarrow");
+      setNarrowDrawerWidth();
+      break;
+    case "drawer:statusConfirmingHandoffNarrow":
+      applyShotPreviewFixture(repo, "drawer:statusConfirmingHandoff");
+      setShotPreviewAppliedAttr("drawer:statusConfirmingHandoffNarrow");
+      setNarrowDrawerWidth();
+      break;
+    case "drawer:statusChecksFailedNarrow":
+      applyShotPreviewFixture(repo, "drawer:statusChecksFailed");
+      setShotPreviewAppliedAttr("drawer:statusChecksFailedNarrow");
+      setNarrowDrawerWidth();
+      break;
+    case "drawer:landableNarrow":
+      applyShotPreviewFixture(repo, "drawer:landable");
+      setShotPreviewAppliedAttr("drawer:landableNarrow");
+      setNarrowDrawerWidth();
       break;
     case "drawer:landable":
       // #0867 — a review task whose landing checklist has one real failing
