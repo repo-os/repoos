@@ -3,9 +3,6 @@ id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T09:54:34Z"
+updated_at: "2026-10-25T10:15:47Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -258,3 +255,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T09:49:35Z · message_queued at 2026-10-25T09:49:35.605Z
 - 2026-10-25T09:49:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-25T09:54:34Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T10:15:47Z · needs_input
