@@ -100,3 +100,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T05:30:18Z · status active→ready
 - 2026-10-25T05:30:34Z · status ready→active
 - 2026-10-25T05:54:05Z · message_queued at 2026-10-25T05:54:05.146Z
+- 2026-10-25T05:54:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
