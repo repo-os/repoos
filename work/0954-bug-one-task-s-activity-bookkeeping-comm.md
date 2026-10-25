@@ -5,11 +5,11 @@ type: bug
 status: inbox
 priority: p1
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-24T23:57:03Z"
+updated_at: "2026-10-25T00:30:23Z"
 ---
 ## Problem
 
@@ -38,6 +38,10 @@ A task's bookkeeping commits go to main (the control checkout), never into anoth
 - Related older notes in AGENTS.md: "commands run in worktrees append activity lines to other tasks' work files (restore from main)". Fix the cause instead of relying on that rule.
 - Run every test touching task-file commits (`commitTaskFile`, patchTaskFile, handoff gate, worktree guard) in small groups, then `repoos check --changed main`.
 
+## Root cause found (driver, 2026-10-25)
+The stray bookkeeping commits come from a task PREVIEW server. #0951 had a managed preview (port 65253, process 'repoos-use-the-full-window-height...' with cwd = #0951's worktree), and #0947 had one earlier (port 52520). A preview is a full RepoOS server rooted in the task worktree, so its engineer-activity recorder (src/server/agents.ts, 'record activity') and stalled-engineer watchdog (src/server/engineer-crash-recovery.ts, 'resume stalled engineer') ran against EVERY active task and committed those tasks' work-file updates into the preview's own worktree. That moved the task's HEAD during its handoff check (failed 3 times for #0951) and put other tasks' work files in its diff. This is the same duplicate-server hazard AGENTS.md describes for serve-noauth. Stopping the preview (repoos preview <id> --stop) cured it immediately. Fix: previews must run in a mode that records no task activity, runs no watchdog or auto-engineering, and never commits (a read-only, UI-only server for the worktree), and/or the preview start should refuse to write task files. Add a test that a preview-mode server does not commit task files. Also consider auto-stopping a task's preview when its handoff gate starts.
+
 ## Activity
 
 - 2026-10-24T23:57:03Z · created · njachowski@gmail.com
+- 2026-10-25T00:30:23Z · body: Root cause found (driver, 2026-10-25) (added)
