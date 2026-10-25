@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
+debug_tldr: "Handoff deferred: unread queued messages — read them in the task thread, apply any updates, then request review again."
+debug_tldr_at: "2026-10-25T18:04:51Z"
+debug_tldr_key: "dev-error|✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p1
 area: core
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T18:04:39Z"
+updated_at: "2026-10-25T18:04:51Z"
 dev_error_count: 8
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:04:35.221Z\",\"kind\":\"dev-error\"}]"
 ---
