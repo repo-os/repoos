@@ -44,4 +44,17 @@ describe("standard page height and floating controls", () => {
     );
     expect(css).toMatch(/\.work-page \.parked-lists\s*\{[^}]*z-index:\s*55;/s);
   });
+
+  it("reserves more than the three stacked head buttons at scroll end (#0951)", () => {
+    const size = 52;
+    const gap = 8;
+    const stack = size * 3 + gap * 2;
+    const bottom = 22;
+    const clearance = 16;
+    const minInset = stack + bottom + clearance;
+    expect(minInset).toBeGreaterThan(190);
+    expect(css).toContain(
+      `--page-bottom-inset: calc(var(--floating-head-stack-height) + var(--floating-head-bottom) + ${clearance}px)`,
+    );
+  });
 });
