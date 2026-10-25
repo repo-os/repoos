@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from d420f735 to 8a686f6e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: d420f735ea3fe8a3a301d4b821a50f5efdda1ffc
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
@@ -20,8 +22,6 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
 updated_at: "2026-10-25T18:42:22Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -381,3 +381,4 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-25T18:30:35Z · note: handoff requested (cli)
 - 2026-10-25T18:37:30Z · agent exited with an error (codex) · handoff finalization was interrupted (server reload) — restart work to hand off again
 - 2026-10-25T18:42:22Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from d420f735 to 8a686f6e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+
