@@ -11,7 +11,7 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T00:38:35Z"
+updated_at: "2026-10-25T00:48:16Z"
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 review_passes: 4
 handoff_signal_retry_count: 2
@@ -174,4 +174,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T00:11:24Z · body
 - 2026-10-25T00:33:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T00:38:35Z · note: handoff requested (ui-review)
-
+- 2026-10-25T00:48:16Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
