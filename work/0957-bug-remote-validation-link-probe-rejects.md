@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-remote-validation-link-probe-rejects
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T09:44:48Z"
+updated_at: "2026-10-25T09:48:42Z"
 ---
 ## Problem
 
@@ -40,3 +40,4 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T09:39:56Z · created · njachowski@gmail.com
 - 2026-10-25T09:41:23Z · status inbox→ready
 - 2026-10-25T09:44:48Z · status ready→active, branch
+- 2026-10-25T09:48:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
