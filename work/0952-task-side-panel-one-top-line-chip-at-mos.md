@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T08:53:54Z"
+updated_at: "2026-10-25T09:08:56Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -62,97 +62,52 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "Review failed — one card above tabs (desktop)",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 1280
+  "label": "Review failed — one header chip and compact status card",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 1280
 },
 {
-"label": "Review failed — one card above tabs (narrow)",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 390
+  "label": "Not landable — single status card above tabs",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:landable",
+  "viewportWidth": 1280
 },
 {
-"label": "Not landable — checklist in status region (desktop)",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:landable",
-"viewportWidth": 1280
+  "label": "Checks running — status line with progress",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusChecksRunning",
+  "viewportWidth": 1280
 },
 {
-"label": "Not landable — checklist in status region (narrow)",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:landable",
-"viewportWidth": 390
+  "label": "Confirming handoff — compact status region",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusConfirmingHandoff",
+  "viewportWidth": 1280
 },
 {
-"label": "Checks running — status line with progress (desktop)",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 1280
+  "label": "Checks failed after retries — short chip and card",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusChecksFailed",
+  "viewportWidth": 1280
 },
 {
-"label": "Checks running — status line with progress (narrow)",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 390
-},
-{
-"label": "Confirming handoff — status line (desktop)",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 1280
-},
-{
-"label": "Confirming handoff — status line (narrow)",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 390
-},
-{
-"label": "Checks failed after retries — short header chip (desktop)",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-head",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 1280
-},
-{
-"label": "Checks failed after retries — two-line filename (narrow)",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-head",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 390
-},
-{
-"label": "Debug Status details — full guidance archive",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": "[aria-label=\"Task status details\"]",
-"steps": [
-{
-"click": "button[data-test-id=\"debug-tab-status\"]"
-}
-],
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 1280
+  "label": "Narrow panel — header chip and two-line filename",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-head",
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 390
 }
 ]
 ```
@@ -291,3 +246,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T08:52:14Z · needs_input
 - 2026-10-25T08:52:16Z · message_queued at 2026-10-25T08:52:16.496Z
 - 2026-10-25T08:53:54Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T09:08:56Z · body
