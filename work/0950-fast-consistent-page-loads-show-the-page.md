@@ -10,12 +10,12 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T11:59:03Z"
+updated_at: "2026-10-25T12:20:42Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -267,3 +267,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T11:30:42Z · note: handoff requested (cli)
 - 2026-10-25T11:34:20Z · CTO nudge: held — handoff gate is running
 - 2026-10-25T11:35:04Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-10-25T12:20:42Z · cli_override, model_override
