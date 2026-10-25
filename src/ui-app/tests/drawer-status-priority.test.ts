@@ -11,9 +11,12 @@ describe("selectDrawerStatus", () => {
     [{ reviewFailed: true }, "reviewFailed"],
     [{ reviewFailed: true, notLandable: true }, "reviewFailed"],
     [{ handoffFailed: true, notLandable: true }, "notLandable"],
+    [{ reviewFailed: true, handoffFailed: true, checksRunning: true }, "reviewFailed"],
     [{ checksRunning: true, confirmingHandoff: true }, "confirmingHandoff"],
     [{ checksFailedAfterRetries: true, checksRunning: true }, "checksFailedAfterRetries"],
+    [{ checksFailedAfterRetries: true, confirmingHandoff: true }, "checksFailedAfterRetries"],
     [{ waitingForYou: true, reviewFailed: true }, "waitingForYou"],
+    [{ waitingForYou: true, notLandable: true, handoffFailed: true }, "waitingForYou"],
     [{ checksRunning: true }, "checksRunning"],
     [{}, null],
   ])("selects one status by priority for %o", (candidates, expected) => {

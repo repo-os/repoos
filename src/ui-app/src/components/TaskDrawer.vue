@@ -123,7 +123,7 @@ import type { ShotMeta } from "../types";
 import AddShotModal from "./AddShotModal.vue";
 import DeleteShotDialog from "./DeleteShotDialog.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
-import { selectDrawerStatus } from "../lib/drawer-status-priority";
+import { selectDrawerStatus, type DrawerStatusKey } from "../lib/drawer-status-priority";
 import DebugPanel from "./DebugPanel.vue";
 import DiffFileViewer from "./DiffFileViewer.vue";
 import type { DiffFile } from "../lib/diff-files";
@@ -526,10 +526,10 @@ const checkChip = computed(() => {
       slow: !!slow,
       slowDetail: slow?.detail ?? null,
       label: localQueue
-        ? `${localQueue.label} · ${elapsed}`
+        ? localQueue.label
         : poolQueue
-          ? `${poolQueue.label} · ${elapsed}`
-          : `Checks running${machine ? ` on ${machine}` : ""}${run.stepsDone != null || run.currentStep != null || run.stepsTotal != null || run.testsTotal != null ? ` · ${checkProgressLabel(run)}` : ""} · ${elapsed}`,
+          ? poolQueue.label
+          : "Checks running",
       title: localQueue
         ? localQueue.title
         : poolQueue
@@ -561,26 +561,42 @@ const checkChip = computed(() => {
     }
     const dur = formatDuration(last.durationMs ?? 0);
     return last.passed
-      ? { state: "pass" as const, label: `Checks passed · ${dur}`, title: "Open the Debug tab" }
-      : { state: "fail" as const, label: `Checks failed · ${dur}`, title: "Open the Debug tab" };
+        ? { state: "pass" as const, label: "Checks passed", title: `Checks passed · ${dur}. Open the Debug tab for the run.` }
+        : { state: "fail" as const, label: "Checks failed", title: `Checks failed · ${dur}. Open the Debug tab for the run.` };
   }
   const row = lastDurableCheck.value;
   if (!row || row.outcome === "cancelled") return null;
   if (Date.now() - Date.parse(row.startedAt) > DURABLE_CHIP_MAX_AGE_MS) return null;
-  const dur = row.durationMs != null ? ` · ${formatDuration(row.durationMs)}` : "";
+    const dur = row.durationMs != null ? ` · ${formatDuration(row.durationMs)}` : "";
   const title = `Last recorded check run (${relTime(row.startedAt)}) — open the Debug tab`;
   if (row.outcome === "skipped") {
     return {
       state: "skip" as const,
-      label: `No checks configured${dur}`,
+      label: "No checks configured",
       title:
         "The last recorded check run was skipped — this repo has no check plan, so nothing " +
         "was verified. Open the Debug tab for the reminder.",
     };
   }
   return row.outcome === "pass"
-    ? { state: "pass" as const, label: `Checks passed${dur}`, title }
-    : { state: "fail" as const, label: `Checks failed${dur}`, title };
+    ? { state: "pass" as const, label: "Checks passed", title: `Checks passed${dur}. ${title}` }
+    : { state: "fail" as const, label: "Checks failed", title: `Checks failed${dur}. ${title}` };
+});
+
+const drawerHeaderChip = computed(() => {
+  const status = drawerStatusSummary.value;
+  if (!status || ["checksRunning", "confirmingHandoff", "reviewerRunning", "workRunning"].includes(status.key)) return null;
+  // A task already in Review has its lifecycle status in the row; avoid
+  // repeating review failures and landability there as a second status label.
+  if (ui.active?.status === "review" && ["reviewFailed", "notLandable"].includes(status.key)) return null;
+  const shortLabels: Partial<Record<DrawerStatusKey, string>> = {
+    waitingForYou: "Needs input",
+    reviewFailed: "Review failed",
+    notLandable: "Not landable",
+    handoffFailed: "Handoff failed",
+    checksFailedAfterRetries: "Checks failed",
+  };
+  return { ...status, label: shortLabels[status.key] ?? status.label };
 });
 
 /** One compact, priority-ordered status model for the drawer header and status region. */
@@ -4557,26 +4573,26 @@ watch(
               />
               <span class="tc-id mono">{{ ui.active.path }}</span>
               <button
-                v-if="drawerStatusSummary"
+              v-if="drawerHeaderChip"
                 type="button"
                 class="rs-chip drawer-status-chip"
                 :class="{
                   'ck-chip-fail':
-                    drawerStatusSummary.key.includes('fail') ||
-                    drawerStatusSummary.key === 'notLandable',
-                  'rs-needs-input': drawerStatusSummary.key === 'waitingForYou',
+                    drawerHeaderChip.key.toLowerCase().includes('fail') ||
+                    drawerHeaderChip.key === 'notLandable',
+                  'rs-needs-input': drawerHeaderChip.key === 'waitingForYou',
                 }"
-                :aria-label="`${drawerStatusSummary.label}. Open Debug status details`"
+                :aria-label="`${drawerHeaderChip.label}. Open Debug status details`"
                 @click="
                   ui.activeTab = 'debug';
                   ui.debugView = 'status';
                 "
               >
                 <ActivityIndicator
-                  v-if="['checks-running', 'work-running'].includes(drawerStatusSummary.key)"
+                  v-if="['checksRunning', 'workRunning'].includes(drawerHeaderChip.key)"
                   class="ck-chip-spin"
                 />
-                {{ drawerStatusSummary.label }}
+                {{ drawerHeaderChip.label }}
               </button>
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}
@@ -4800,14 +4816,7 @@ watch(
                 Last successful close-out gate: {{ lastCloseOutGateLabel }}
               </p>
               <div
-                v-if="
-                  inPipeline &&
-                  activeCheckRun &&
-                  (activeCheckRun.stepsDone != null ||
-                    activeCheckRun.currentStep != null ||
-                    activeCheckRun.stepsTotal != null ||
-                    activeCheckRun.testsTotal != null)
-                "
+              v-if="false && inPipeline && activeCheckRun"
                 class="check-progress close-out-check-progress"
                 role="status"
                 data-test-id="close-out-check-progress"
@@ -4917,7 +4926,7 @@ watch(
                 </li>
               </ul>
             </div>
-            <span v-if="review?.running" class="drawer-run reviewing" role="status">
+            <span v-if="false && review?.running" class="drawer-run reviewing" role="status">
               <ActivityIndicator variant="reviewing" label="Reviewing…" />
               Reviewer is reviewing this task…
             </span>
@@ -5127,12 +5136,12 @@ watch(
             v-if="
               drawerStatusSummary &&
               drawerStatusSummary.key !== 'waitingForYou' &&
-              !repo.doneErrorFor(ui.active.id)
+              drawerStatusSummary.key !== 'handoffFailed'
             "
             class="drawer-status-summary"
             :class="{
               'is-error':
-                drawerStatusSummary.key.includes('Failed') ||
+                drawerStatusSummary.key.toLowerCase().includes('failed') ||
                 drawerStatusSummary.key === 'notLandable',
             }"
             aria-label="Task status"
@@ -5151,7 +5160,15 @@ watch(
               role="status"
             >
               <ActivityIndicator />
-              {{ remoteActivityText || drawerStatusSummary.label }}
+              {{
+                drawerStatusSummary.key === "checksRunning"
+                  ? "Running checks…"
+                  : drawerStatusSummary.key === "confirmingHandoff"
+                    ? "Confirming handoff…"
+                    : drawerStatusSummary.key === "reviewerRunning"
+                      ? "Reviewer is working…"
+                      : "Work is running…"
+              }}
               <span v-if="activeCheckRun" class="check-progress-inline">{{
                 checkProgressLabel(activeCheckRun)
               }}</span>
@@ -7218,11 +7235,18 @@ watch(
 }
 
 .drawer-status-chip {
+  min-width: 0;
   flex: 0 1 auto;
-  max-width: 130px;
+  max-width: 112px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tc-id {
+  min-width: 0;
+  max-width: min(180px, 34vw);
+  -webkit-line-clamp: 2;
 }
 
 .drawer-status-summary {

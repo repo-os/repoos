@@ -12,7 +12,11 @@ export interface DrawerStatusCandidates {
 
 export type DrawerStatusKey = keyof DrawerStatusCandidates;
 
-/** Shared priority for the single drawer chip and above-tabs status summary. */
+/**
+ * Shared priority for the drawer's single status card and status line.
+ * Human action comes first, then an incomplete review, landing blockers,
+ * handoff errors, exhausted checks, and finally live/routine activity.
+ */
 export function selectDrawerStatus(candidates: DrawerStatusCandidates): DrawerStatusKey | null {
   const priority: DrawerStatusKey[] = [
     "waitingForYou",
