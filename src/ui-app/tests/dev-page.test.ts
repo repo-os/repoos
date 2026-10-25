@@ -219,7 +219,10 @@ describe("Dev loading shot", () => {
     await flush();
     first.unmount();
 
-    vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("refresh offline"))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.reject(new Error("refresh offline"))),
+    );
     const revisited = mountView();
     await flush();
 

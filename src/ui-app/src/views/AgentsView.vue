@@ -561,7 +561,9 @@ async function checkAgents(): Promise<void> {
     detectPending.value = new Set();
     detectLoading.value = false;
     if (!detected.value.length) detectError.value = true;
-    else detectRefreshError.value = "Could not refresh detected coding agents. Showing the last saved list.";
+    else
+      detectRefreshError.value =
+        "Could not refresh detected coding agents. Showing the last saved list.";
     es.close();
     activeStream = null;
   };
