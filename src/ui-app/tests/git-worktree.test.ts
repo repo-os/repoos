@@ -801,9 +801,7 @@ describe("commitTaskFile commits only the task file (#0353)", () => {
       expect(git(root, ["rev-parse", "HEAD"])).not.toBe(mainBefore);
       expect(git(taskB, ["rev-parse", "HEAD"])).toBe(taskBBefore);
       expect(git(taskB, ["diff", "--name-only"])).toBe("");
-      expect(git(root, ["show", "--name-only", "--format=", "HEAD"])).toBe(
-        "work/0950-task-a.md",
-      );
+      expect(git(root, ["show", "--name-only", "--format=", "HEAD"])).toBe("work/0950-task-a.md");
     } finally {
       try {
         git(root, ["worktree", "remove", "--force", taskB]);
