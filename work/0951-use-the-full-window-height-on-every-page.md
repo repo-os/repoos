@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: f185ead88674bb966d324ec308d0482eb9893e3c
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
@@ -14,8 +16,6 @@ created_at: "2026-10-24T22:51:41Z"
 updated_at: "2026-10-25T09:25:41Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from eec677ba to d74e9b93) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: eec677bac89c446145383d0d176ce86853f65c62
 review_passes: 1
 handoff_signal_retry_count: 1
 dev_error_count: 6
@@ -172,3 +172,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T09:19:38Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T09:20:44Z · note: handoff requested (ui-review)
 - 2026-10-25T09:25:41Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
+
