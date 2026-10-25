@@ -498,10 +498,14 @@ async function checkAgents(): Promise<void> {
   detectError.value = false;
   detectRefreshError.value = "";
   detectHintCopied.value = "";
+  // Show the shared first-load skeleton while both the saved snapshot and the
+  // live probe are pending. Cached rows arrive synchronously below and keep
+  // the skeleton hidden during background revalidation.
+  detectLoading.value = true;
 
   // The server snapshot is useful immediately on a revisit. Keep it in the
   // shared page cache while the SSE probe refreshes the individual agents.
-  await refreshPageData(
+  void refreshPageData(
     "agents:detect",
     () => api<{ agents: DetectedAgent[]; cachedAt: string | null }>("/api/agents/detect"),
     (cached) => {
