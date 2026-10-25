@@ -2,14 +2,14 @@
 id: "0957"
 title: "Bug: remote validation link probe rejects usable high-latency links (throughput includes ssh setup time)"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T09:39:56Z"
+updated_at: "2026-10-25T09:41:23Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 ## Activity
 
 - 2026-10-25T09:39:56Z · created · njachowski@gmail.com
+- 2026-10-25T09:41:23Z · status inbox→ready
