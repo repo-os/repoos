@@ -60,4 +60,10 @@ describe("standard page height and floating controls", () => {
       `--page-bottom-inset: calc(var(--floating-head-stack-height) + var(--floating-head-bottom) + ${clearance}px)`,
     );
   });
+
+  it("keeps the internally scrolling Work columns clear of fixed bottom controls", () => {
+    expect(css).toMatch(
+      /\.col-body\s*\{[^}]*overflow-y:\s*auto;[\s\S]*padding:\s*4px 8px var\(--page-bottom-inset\)/s,
+    );
+  });
 });
