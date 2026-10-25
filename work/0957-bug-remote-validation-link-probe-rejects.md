@@ -14,10 +14,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-remote-validation-link-probe-rejects
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T12:29:18Z"
+updated_at: "2026-10-25T12:29:32Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:46:43.085Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T11:13:08.170Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 4
@@ -87,3 +87,4 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T12:28:37Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-25T12:28:32.947741Z ERROR codex_core::session: failed to record rollout items: thread 01a172dc-6c08-73d1-bab4-8bd26252dd6c not found
 - 2026-10-25T12:28:54Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-25T12:29:18Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T12:29:32Z · cli_override, model_override
