@@ -57,3 +57,4 @@ At every server start, `tuneRepoForScale(config.root)` (`src/core/git.ts`, calle
 - 2026-10-25T13:08:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T13:40:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T13:40:30Z · needs_input
+- 2026-10-25T13:40:30Z · message_delivered: 1 message(s)
