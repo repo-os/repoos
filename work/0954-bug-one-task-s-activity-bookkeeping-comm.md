@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
@@ -63,3 +64,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T01:18:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T01:18:58Z · message_delivered: 1 message(s)
 - 2026-10-25T01:36:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
