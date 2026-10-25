@@ -19,7 +19,6 @@ last_handoff_failure_sha: eec677bac89c446145383d0d176ce86853f65c62
 review_passes: 1
 handoff_signal_retry_count: 1
 dev_error_count: 6
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:38:07.414Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:38:22.509Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T04:38:28.173Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
