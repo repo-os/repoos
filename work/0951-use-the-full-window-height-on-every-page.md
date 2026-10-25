@@ -11,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T00:47:32Z"
+updated_at: "2026-10-25T00:47:33Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-24T23:39:03.710Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
@@ -104,3 +104,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T00:46:25Z · note: review pass 1: needs some work
 - 2026-10-25T00:47:32Z · status review→active
 - 2026-10-25T00:47:32Z · note: send-back — returned to active for engineer follow-up
+- 2026-10-25T00:47:33Z · message_queued at 2026-10-25T00:47:33.988Z
