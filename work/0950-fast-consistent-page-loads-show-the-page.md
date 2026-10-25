@@ -13,7 +13,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T18:10:50Z"
+updated_at: "2026-10-25T18:11:54Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -58,32 +58,32 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 ```json
 [
 {
-"label": "Deployments first load skeleton",
-"target": "default",
-"route": "/deployments",
-"highlight": ".page-skeleton",
-"state": "deployments:loading"
+  "label": "Deployments first load skeleton",
+  "target": "default",
+  "route": "/deployments",
+  "highlight": ".page-skeleton",
+  "state": "deployments:loading"
 },
 {
-"label": "Deployments loaded view",
-"target": "default",
-"route": "/deployments",
-"highlight": ".dep-page",
-"state": "deployments:environmentBinding"
+  "label": "Deployments loaded view",
+  "target": "default",
+  "route": "/deployments",
+  "highlight": ".dep-page",
+  "state": "deployments:environmentBinding"
 },
 {
-"label": "Dev first load skeleton",
-"target": "default",
-"route": "/dev",
-"highlight": ".page-skeleton",
-"state": "dev:loading"
+  "label": "Dev first load skeleton",
+  "target": "default",
+  "route": "/dev",
+  "highlight": ".page-skeleton",
+  "state": "dev:loading"
 },
 {
-"label": "Dev running target",
-"target": "default",
-"route": "/dev",
-"highlight": ".dev-card",
-"state": "dev:running"
+  "label": "Dev running target",
+  "target": "default",
+  "route": "/dev",
+  "highlight": ".dev-card",
+  "state": "dev:running"
 }
 ]
 ```
@@ -326,3 +326,4 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 - 2026-10-25T18:09:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T18:10:49Z · cli_override, model_override
 - 2026-10-25T18:10:50Z · message_queued at 2026-10-25T18:10:50.981Z
+- 2026-10-25T18:11:54Z · body
