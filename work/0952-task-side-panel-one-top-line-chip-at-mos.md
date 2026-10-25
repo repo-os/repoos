@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-24T23:59:08Z"
+updated_at: "2026-10-25T00:04:45Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -57,121 +57,121 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "Review failed",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 820
+"label": "Review failed",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 820
 },
 {
-  "label": "Review failed narrow",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 390
+"label": "Review failed narrow",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 390
 },
 {
-  "label": "Not landable",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:landable",
-  "viewportWidth": 820
+"label": "Not landable",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:landable",
+"viewportWidth": 820
 },
 {
-  "label": "Not landable narrow",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:landable",
-  "viewportWidth": 390
+"label": "Not landable narrow",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:landable",
+"viewportWidth": 390
 },
 {
-  "label": "Handoff failed",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusHandoffFailed",
-  "viewportWidth": 820
+"label": "Handoff failed",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusHandoffFailed",
+"viewportWidth": 820
 },
 {
-  "label": "Handoff failed narrow",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusHandoffFailed",
-  "viewportWidth": 390
+"label": "Handoff failed narrow",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusHandoffFailed",
+"viewportWidth": 390
 },
 {
-  "label": "Checks running",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusChecksRunning",
-  "viewportWidth": 820
+"label": "Checks running",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusChecksRunning",
+"viewportWidth": 820
 },
 {
-  "label": "Checks running narrow",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusChecksRunning",
-  "viewportWidth": 390
+"label": "Checks running narrow",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusChecksRunning",
+"viewportWidth": 390
 },
 {
-  "label": "Confirming handoff",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusConfirmingHandoff",
-  "viewportWidth": 820
+"label": "Confirming handoff",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusConfirmingHandoff",
+"viewportWidth": 820
 },
 {
-  "label": "Confirming handoff narrow",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusConfirmingHandoff",
-  "viewportWidth": 390
+"label": "Confirming handoff narrow",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusConfirmingHandoff",
+"viewportWidth": 390
 },
 {
-  "label": "Checks failed after retries",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusChecksFailed",
-  "viewportWidth": 820
+"label": "Checks failed after retries",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusChecksFailed",
+"viewportWidth": 820
 },
 {
-  "label": "Checks failed narrow",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusChecksFailed",
-  "viewportWidth": 390
+"label": "Checks failed narrow",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusChecksFailed",
+"viewportWidth": 390
 },
 {
-  "label": "Waiting for you details",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:tabExpandWarnings",
-  "viewportWidth": 820
+"label": "Waiting for you details",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:tabExpandWarnings",
+"viewportWidth": 820
 },
 {
-  "label": "Debug status details",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": "[aria-label=\"Task status details\"]",
-  "steps": [
-    {
-      "click": "button.debug-tab:first-child"
-    }
-  ],
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 820
+"label": "Debug status details",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": "[aria-label=\"Task status details\"]",
+"steps": [
+  {
+    "click": "button.debug-tab:first-child"
+  }
+],
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 820
 }
 ]
 ```
@@ -203,3 +203,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-24T23:55:54Z · message_queued at 2026-10-24T23:55:54.440Z
 - 2026-10-24T23:56:53Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-24T23:59:08Z · body
+- 2026-10-25T00:04:45Z · body
