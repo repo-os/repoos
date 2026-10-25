@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T00:26:31Z"
+updated_at: "2026-10-25T00:31:54Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -57,47 +57,47 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "Reviewer failure status in task drawer",
-  "target": "default",
-  "route": "/work?task=0952&tab=details",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:reviewWithBranch"
+"label": "Reviewer failure status in task drawer",
+"target": "default",
+"route": "/work?task=0952&tab=details",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:reviewWithBranch"
 },
 {
-  "label": "Not landable status in task drawer",
-  "target": "default",
-  "route": "/work?task=0952&tab=details",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landable"
+"label": "Not landable status in task drawer",
+"target": "default",
+"route": "/work?task=0952&tab=details",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landable"
 },
 {
-  "label": "Running checks status in task drawer",
-  "target": "default",
-  "route": "/work?task=0952&tab=details",
-  "highlight": ".drawer-status-summary",
-  "state": "closeOut:checkProgress"
+"label": "Running checks status in task drawer",
+"target": "default",
+"route": "/work?task=0952&tab=details",
+"highlight": ".drawer-status-summary",
+"state": "closeOut:checkProgress"
 },
 {
-  "label": "Checks failed after retries in task drawer",
-  "target": "default",
-  "route": "/work?task=0952&tab=details",
-  "highlight": ".drawer-status-summary",
-  "state": "card:reviewRoundsExhausted"
+"label": "Checks failed after retries in task drawer",
+"target": "default",
+"route": "/work?task=0952&tab=details",
+"highlight": ".drawer-status-summary",
+"state": "card:reviewRoundsExhausted"
 },
 {
-  "label": "Full status details in Debug",
-  "target": "default",
-  "route": "/work?task=0952&tab=details",
-  "highlight": ".debug-status-detail",
-  "steps": [
-    {
-      "click": ".drawer-status-summary .drawer-info-popover summary"
-    },
-    {
-      "click": ".drawer-info-content button"
-    }
-  ],
-  "state": "closeOut:checkProgress"
+"label": "Full status details in Debug",
+"target": "default",
+"route": "/work?task=0952&tab=details",
+"highlight": ".debug-status-detail",
+"steps": [
+  {
+    "click": ".drawer-status-summary .drawer-info-popover summary"
+  },
+  {
+    "click": ".drawer-info-content button"
+  }
+],
+"state": "closeOut:checkProgress"
 }
 ]
 ```
@@ -136,3 +136,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T00:22:03Z · body
 - 2026-10-25T00:25:03Z · body
 - 2026-10-25T00:26:31Z · body
+- 2026-10-25T00:31:54Z · message_queued at 2026-10-25T00:31:54.176Z
