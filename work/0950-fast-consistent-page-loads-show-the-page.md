@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 priority: p2
@@ -15,7 +15,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T11:59:02Z"
+updated_at: "2026-10-25T11:59:03Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -267,4 +267,3 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T11:30:42Z · note: handoff requested (cli)
 - 2026-10-25T11:34:20Z · CTO nudge: held — handoff gate is running
 - 2026-10-25T11:35:04Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
-- 2026-10-25T11:59:02Z · status active→review
