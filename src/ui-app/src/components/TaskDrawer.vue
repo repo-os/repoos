@@ -602,7 +602,9 @@ const drawerHeaderChip = computed(() => {
     return null;
   const shortLabels: Partial<Record<DrawerStatusKey, string>> = {
     waitingForYou: compactNeedsInputChipLabel.value,
-    reviewFailed: "Review failed",
+    // Name the reviewer as the failure source so this never reads as a
+    // duplicate of the task's current `review` lifecycle status.
+    reviewFailed: "Reviewer failed",
     notLandable: "Blocked",
     handoffFailed: "Handoff failed",
     checksFailedAfterRetries: "Checks failed",
