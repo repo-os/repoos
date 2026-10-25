@@ -1,12 +1,13 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
 needs_input: true
 needs_input_reason: check-failed-after-retries
+debug_tldr: "Handoff refused because HEAD moved mid-gate (WIP self-check commits)—stabilize the worktree, run repoos check once, then retry review."
+debug_tldr_at: "2026-10-25T02:50:09Z"
+debug_tldr_key: check-failed-after-retries|
 priority: p2
 area: web
 assigned_to: ai
@@ -15,7 +16,9 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T02:49:39Z"
+updated_at: "2026-10-25T02:50:09Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from eec677ba to d74e9b93) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: eec677bac89c446145383d0d176ce86853f65c62
 review_passes: 1
