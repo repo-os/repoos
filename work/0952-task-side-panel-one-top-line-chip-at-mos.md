@@ -3,6 +3,10 @@ id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "error: Transport"
+hold: true
 priority: p2
 area: web
 assigned_to: ai
@@ -11,12 +15,12 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: opencode
 model_override: opencode-go/kimi-k2.7-code
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T15:25:03Z"
+updated_at: "2026-10-25T15:28:59Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T02:27:40.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 12
+dev_error_count: 13
 ---
 ## Problem
 
@@ -61,25 +65,25 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "Review failed status summary",
-  "target": "default",
-  "route": "/work?task=0952&tab=changes",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusReviewFailed"
+"label": "Review failed status summary",
+"target": "default",
+"route": "/work?task=0952&tab=changes",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailed"
 },
 {
-  "label": "Checks running status summary",
-  "target": "default",
-  "route": "/work?task=0952&tab=changes",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunning"
+"label": "Checks running status summary",
+"target": "default",
+"route": "/work?task=0952&tab=changes",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning"
 },
 {
-  "label": "Debug status details",
-  "target": "default",
-  "route": "/work?task=0952&tab=debug",
-  "highlight": ".debug-status-details",
-  "state": "drawer:debugLogs"
+"label": "Debug status details",
+"target": "default",
+"route": "/work?task=0952&tab=debug",
+"highlight": ".debug-status-details",
+"state": "drawer:debugLogs"
 }
 ]
 ```
@@ -266,3 +270,5 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T15:03:23Z · message_queued at 2026-10-25T15:03:23.447Z
 - 2026-10-25T15:05:18Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T15:25:03Z · body
+- 2026-10-25T15:27:47Z · agent exited with an error (opencode) · error: Transport
+- 2026-10-25T15:28:59Z · held
