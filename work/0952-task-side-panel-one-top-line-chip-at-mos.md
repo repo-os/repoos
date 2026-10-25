@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T00:46:32Z"
+updated_at: "2026-10-25T00:47:45Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -57,97 +57,42 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "Review failure summary",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 1280
+  "label": "Short failure chip beside a long file path",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": ".drawer-head",
+  "state": "drawer:statusChecksFailed"
 },
 {
-"label": "Review failure summary at narrow width",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 760
+  "label": "Single failed-check summary above the tabs",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusChecksFailed"
 },
 {
-"label": "Not landable summary",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:landable",
-"viewportWidth": 1280
+  "label": "Waiting-for-you help popover",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".waiting-info .drawer-info-content",
+  "steps": [
+    {
+      "click": "details.waiting-info > summary"
+    }
+  ],
+  "state": "drawer:tabExpandWarnings"
 },
 {
-"label": "Not landable summary at narrow width",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:landable",
-"viewportWidth": 760
-},
-{
-"label": "Checks running status",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 1280
-},
-{
-"label": "Checks running status at narrow width",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 760
-},
-{
-"label": "Confirming handoff status",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 1280
-},
-{
-"label": "Confirming handoff status at narrow width",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 760
-},
-{
-"label": "Checks failed after retries",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 1280
-},
-{
-"label": "Checks failed after retries at narrow width",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 760
-},
-{
-"label": "Debug status details",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": "[aria-label=\"Task status details\"]",
-"steps": [
-{
-"click": "button.debug-tab"
-}
-],
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 1280
+  "label": "Debug status details sub-tab",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": ".debug-status-detail",
+  "steps": [
+    {
+      "click": ".debug-tabs .debug-tab:first-child"
+    }
+  ],
+  "state": "drawer:tabExpandWarnings"
 }
 ]
 ```
@@ -200,3 +145,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T00:46:31Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-25T00:46:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T00:46:32Z · message_delivered: 1 message(s)
+- 2026-10-25T00:47:45Z · body
