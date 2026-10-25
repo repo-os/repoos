@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  PAGE_DATA_MAX_AGE_MS,
   invalidatePageData,
   invalidatePageDataPrefix,
   refreshPageData,
@@ -18,6 +19,35 @@ describe("page data cache", () => {
     expect(receive.mock.calls[1][0]).toBe("first");
     expect(receive.mock.calls[2][0]).toBe("updated");
     expect(fetcher).toHaveBeenCalledOnce();
+  });
+
+  it("does not show cached data older than the max age, and refetches", async () => {
+    vi.useFakeTimers();
+    try {
+      const receive = vi.fn();
+      await refreshPageData("resource", async () => "old", receive);
+      vi.setSystemTime(Date.now() + PAGE_DATA_MAX_AGE_MS + 1_000);
+      const fresh = vi.fn();
+      await refreshPageData("resource", async () => "new", fresh);
+      expect(fresh).toHaveBeenCalledTimes(1);
+      expect(fresh).toHaveBeenCalledWith("new");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("still shows data inside the max age", async () => {
+    vi.useFakeTimers();
+    try {
+      const receive = vi.fn();
+      await refreshPageData("resource", async () => "recent", receive);
+      vi.setSystemTime(Date.now() + PAGE_DATA_MAX_AGE_MS - 1_000);
+      const again = vi.fn();
+      await refreshPageData("resource", async () => "newer", again);
+      expect(again.mock.calls[0][0]).toBe("recent");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("keeps stale data visible when refresh fails", async () => {
