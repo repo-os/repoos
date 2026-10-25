@@ -6,6 +6,9 @@ status: review
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: "the cursor agent exited without output: Error: [unavailable] read ETIMEDOUT"
+debug_tldr: Cursor API read timed out during review — retry review or switch reviewer agent once connectivity is stable.
+debug_tldr_at: "2026-10-25T00:48:54Z"
+debug_tldr_key: "review-failed|the cursor agent exited without output: Error: [unavailable] read ETIMEDOUT"
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T00:48:34Z"
+updated_at: "2026-10-25T00:48:54Z"
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 review_passes: 4
 handoff_signal_retry_count: 2
