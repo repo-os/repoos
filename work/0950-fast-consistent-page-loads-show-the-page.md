@@ -16,7 +16,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T01:22:03Z"
+updated_at: "2026-10-25T01:22:11Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -199,3 +199,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T01:17:08Z · needs_input
 - 2026-10-25T01:21:05Z · note: Pass-7 edge case fixed: page-data-cache now ignores cached entries older than 5 minutes (they are refetched with the skeleton) and caps the cache at 64 entries, with tests for inside/outside the max age. Measurements: unchanged from the earlier note; this diff changes no server code so after-change endpoint medians equal the baseline by construction (/api/deployments 2687 ms, tracked in #0955), and the per-page change is client-side (cached revisit shows content with zero blocking requests, proven by the revisit tests).
 - 2026-10-25T01:22:03Z · status review→active
+- 2026-10-25T01:22:11Z · note: handoff requested (ui-review)
