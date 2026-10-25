@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T02:01:00Z"
+updated_at: "2026-10-25T02:05:41Z"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T01:02:11.529Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T01:26:46.721Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 3
@@ -59,84 +59,60 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "Review failed status card (desktop)",
-"target": "default",
-"route": "/work?task=9999&tab=review",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 1280
+  "label": "Drawer header one short chip and two-line path",
+  "target": "default",
+  "route": "/work?task=9999&tab=review",
+  "highlight": ".drawer-head",
+  "state": "drawer:statusChecksFailed",
+  "viewportWidth": 390
 },
 {
-"label": "Review failed status card (narrow)",
-"target": "default",
-"route": "/work?task=9999&tab=review",
-"highlight": ".drawer-head",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 390
+  "label": "Single status card and live status line",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusChecksRunning",
+  "viewportWidth": 1280
 },
 {
-"label": "Not landable status card (desktop)",
-"target": "default",
-"route": "/work?task=9999&tab=review",
-"highlight": ".drawer-status-summary",
-"state": "drawer:landable",
-"viewportWidth": 1280
+  "label": "Not landable status card",
+  "target": "default",
+  "route": "/work?task=9999&tab=review",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:landable",
+  "viewportWidth": 1280
 },
 {
-"label": "Not landable status card (narrow)",
-"target": "default",
-"route": "/work?task=9999&tab=review",
-"highlight": ".drawer-head",
-"state": "drawer:landable",
-"viewportWidth": 390
+  "label": "Status card info popover",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": ".drawer-info-content",
+  "steps": [
+    {
+      "click": ".drawer-status-summary .drawer-info-popover summary"
+    },
+    {
+      "waitMs": 200
+    }
+  ],
+  "state": "drawer:statusChecksRunning",
+  "viewportWidth": 1280
 },
 {
-"label": "Checks running status card (desktop)",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 1280
-},
-{
-"label": "Checks running status card (narrow)",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".drawer-head",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 390
-},
-{
-"label": "Confirming handoff status card (desktop)",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 1280
-},
-{
-"label": "Confirming handoff status card (narrow)",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".drawer-head",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 390
-},
-{
-"label": "Checks failed after retries (desktop)",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 1280
-},
-{
-"label": "Checks failed two-line path (narrow)",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".drawer-head",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 390
+  "label": "Debug Status details sub-tab",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": "[aria-label=\"Task status details\"]",
+  "steps": [
+    {
+      "click": "[data-test-id=\"debug-tab-status\"]"
+    },
+    {
+      "waitMs": 200
+    }
+  ],
+  "state": "drawer:statusChecksFailed",
+  "viewportWidth": 1280
 }
 ]
 ```
@@ -222,3 +198,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T02:00:59Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-25T02:01:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-25T02:01:00Z · message_delivered: 1 message(s)
+- 2026-10-25T02:05:41Z · body
