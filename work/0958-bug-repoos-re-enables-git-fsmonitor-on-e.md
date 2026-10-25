@@ -3,12 +3,6 @@ id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
-debug_tldr: "Handoff deferred: unread queued messages — read them in the task thread, apply any updates, then request review again."
-debug_tldr_at: "2026-10-25T18:04:51Z"
-debug_tldr_key: "dev-error|✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p1
 area: core
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T18:37:02Z"
+updated_at: "2026-10-25T18:37:03Z"
 dev_error_count: 8
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:04:35.221Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -151,3 +145,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T18:32:44Z · body
 - 2026-10-25T18:37:02Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-25T18:37:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T18:37:03Z · needs_input
