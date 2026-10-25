@@ -5,6 +5,7 @@ type: bug
 status: active
 needs_input: true
 needs_input_reason: dev-error
+needs_input_detail: "error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 2:54 AM."
 priority: p1
 area: core
 assigned_to: ai
@@ -13,8 +14,8 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T18:37:03Z"
-dev_error_count: 8
+updated_at: "2026-10-25T18:37:34Z"
+dev_error_count: 9
 ---
 ## Problem
 
