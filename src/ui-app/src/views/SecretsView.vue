@@ -37,6 +37,7 @@ const selected = ref("");
 const snapshot = ref<Snapshot | null>(null);
 const loading = ref(true);
 const error = ref("");
+const snapshotRefreshError = ref("");
 const query = ref("");
 const createOpen = ref(false);
 const newName = ref("");
@@ -154,13 +155,20 @@ async function loadSnapshot(): Promise<void> {
         if (selected.value !== requestedEnv) return;
         snapshot.value = value;
         error.value = "";
+        snapshotRefreshError.value = "";
       },
       (e) => {
+        if (selected.value !== requestedEnv) return;
+        if (snapshot.value) {
+          snapshotRefreshError.value = safeError(e);
+          return;
+        }
         error.value = safeError(e);
       },
     );
   } catch (e) {
-    error.value = safeError(e);
+    if (snapshot.value) snapshotRefreshError.value = safeError(e);
+    else error.value = safeError(e);
   }
 }
 function safeError(e: unknown): string {
@@ -327,6 +335,9 @@ onMounted(() => {
       </section>
       <PageSkeleton v-else-if="loading && !snapshot" kind="table" />
       <section v-else-if="snapshot" class="secrets-ledger" aria-label="Environment keys">
+        <p v-if="snapshotRefreshError" class="secrets-error" role="status">
+          Refresh failed: {{ snapshotRefreshError }}
+        </p>
         <p v-if="environmentFile" class="secrets-file">
           <code>{{ environmentFile }}</code>
         </p>

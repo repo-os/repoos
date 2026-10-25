@@ -938,7 +938,7 @@ onUnmounted(() => {
             {{ cachedAtLabel(detectCachedAt) }}
           </div>
 
-          <div v-if="detectLoading && !detected.length" class="detect-loading">Probing PATH…</div>
+          <PageSkeleton v-if="detectLoading && !detected.length" kind="rows" />
           <div v-else-if="!detected.length" class="agent-empty">
             No known coding agents detected on PATH.
           </div>

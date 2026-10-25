@@ -82,6 +82,9 @@ async function mountView(): Promise<VueWrapper> {
 
 beforeEach(() => {
   invalidatePageData("release-status");
+  // The Published-to list is cached too (#0950); without clearing it every
+  // test below would inherit the channels a previous test captured.
+  invalidatePageData("release-distribution");
   vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
 });
 
@@ -272,7 +275,7 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     vi.useRealTimers();
   });
 
-  it("shows a loading indicator in Published to while the first lookup is in flight", async () => {
+  it("shows a skeleton in Published to while the first lookup is in flight (#0950)", async () => {
     // Never resolves: keeps distributionLoading true through the mount flush.
     api.mockImplementation((path: string) => {
       if (path === "/api/release") return Promise.resolve(releaseStatus());
@@ -290,9 +293,10 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     const wrapper = await mountView();
 
     expect(wrapper.find(".rel-dist").exists()).toBe(true);
-    expect(wrapper.find(".rel-dist-loading").exists()).toBe(true);
-    expect(wrapper.find(".rel-dist-loading-spin").exists()).toBe(true);
-    expect(wrapper.text()).toContain("Checking distribution channels");
+    // Card-shaped skeleton, not a lone spinner or a text line.
+    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(true);
+    expect(wrapper.find(".rel-dist-loading").exists()).toBe(false);
+    expect(wrapper.find(".rel-dist-loading-spin").exists()).toBe(false);
     expect(wrapper.find(".rel-dist-channels").exists()).toBe(false);
     wrapper.unmount();
   });
@@ -818,10 +822,89 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     await flushPromises();
     expect(lookups).toHaveLength(2);
 
-    // The OLDER lookup settles first: the newer one is still pending.
+    // The OLDER lookup settles first: the newer one is still pending, so the
+    // card stays in its loading shape. No channels yet → the skeleton shows
+    // (the compact recheck indicator only appears beside existing channels).
     lookups[0]!({ releaseVersion: "1.2.3", releaseTag: "v1.2.3", channels: [channel()] });
     await flushPromises();
-    expect(wrapper.find(".rel-dist-loading").exists()).toBe(true);
+    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("shows cached distribution channels on revisit with no skeleton, then applies the refresh in place (#0950)", async () => {
+    mockApi([channel()]);
+    const first = await mountView();
+    expect(first.find(".rel-dist-channels").exists()).toBe(true);
+    first.unmount();
+
+    let finish!: (value: unknown) => void;
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return new Promise((resolve) => {
+          finish = resolve;
+        });
+      if (path === "/api/release/run")
+        return Promise.resolve({
+          state: "idle",
+          phase: null,
+          message: "",
+          startedAt: null,
+          updatedAt: null,
+        });
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await nextTick();
+
+    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(false);
+    expect(wrapper.find(".rel-dist-channels").exists()).toBe(true);
+    expect(wrapper.find(".rel-dist").text()).toContain("npm");
+
+    finish({
+      releaseVersion: "1.2.4",
+      releaseTag: "v1.2.4",
+      channels: [channel({ version: "1.2.4" })],
+    });
+    await flushPromises();
+    expect(wrapper.find(".rel-dist").text()).toContain("1.2.4");
+    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("keeps cached channels visible when the background distribution refresh fails (#0950)", async () => {
+    mockApi([channel()]);
+    const first = await mountView();
+    first.unmount();
+
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution") return Promise.reject(new Error("boom"));
+      if (path === "/api/release/run")
+        return Promise.resolve({
+          state: "idle",
+          phase: null,
+          message: "",
+          startedAt: null,
+          updatedAt: null,
+        });
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await nextTick();
+    expect(wrapper.find(".rel-dist-channels").exists()).toBe(true);
+
+    await flushPromises();
+    expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.3");
+    expect(wrapper.find(".rel-dist-channels").exists()).toBe(true);
+    expect(wrapper.text()).toContain("Refresh failed");
+    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(false);
     wrapper.unmount();
   });
 });

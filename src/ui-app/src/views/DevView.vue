@@ -226,8 +226,8 @@ async function load(silent = false): Promise<void> {
         loadError.value = "";
       },
       (err) => {
-        if (targets.value.length)
-          loadError.value = err instanceof Error ? err.message : String(err);
+        if (silent) return;
+        loadError.value = err instanceof Error ? err.message : String(err);
       },
     );
   } catch (err) {

@@ -88,7 +88,10 @@ watch(
   () => testRun.value.finishedAt,
   (finishedAt, previous) => {
     if (!finishedAt || finishedAt === previous) return;
+    // A finished run also lands in the Runs tab's history, so that cache has
+    // to go too: otherwise the default tab shows a history missing this run.
     invalidatePageDataPrefix("check-plan:");
+    invalidatePageDataPrefix("check-runs:");
     if (activeTab.value === "plan") void load();
   },
 );
