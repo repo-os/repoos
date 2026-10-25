@@ -20,7 +20,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T15:38:58Z"
+updated_at: "2026-10-25T16:16:27Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -320,3 +320,4 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 - 2026-10-25T15:23:17Z · assigned_to
 - 2026-10-25T15:23:59Z · status active→ready
 - 2026-10-25T15:30:45Z · agent exited with an error (codex) · 2026-10-25T15:05:44.672856Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/fast-consistent-page-loads-show-the-page/work/.attachments/0950/shots/default-1.png`: No such file or directory (os error 2)
+- 2026-10-25T16:16:27Z · message_overdue: still queued after 60m without being delivered
