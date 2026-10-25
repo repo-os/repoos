@@ -13362,6 +13362,11 @@
     flex-direction: column-reverse;
     align-items: flex-start;
     width: min(640px, calc(100vw - 210px - 26px - 520px));
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(12px);
   }
   .work-page .archived-rows,
   .work-page .human-rows {
