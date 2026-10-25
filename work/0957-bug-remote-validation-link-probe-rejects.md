@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0957"
 title: "Bug: remote validation link probe rejects usable high-latency links (throughput includes ssh setup time)"
 type: bug
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-remote-validation-link-probe-rejects
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T09:48:42Z"
+updated_at: "2026-10-25T10:10:16Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -42,4 +42,4 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T09:41:23Z · status inbox→ready
 - 2026-10-25T09:44:48Z · status ready→active, branch
 - 2026-10-25T09:48:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-
+- 2026-10-25T10:10:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
