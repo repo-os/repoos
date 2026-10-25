@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T11:30:06Z"
+updated_at: "2026-10-25T11:31:10Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -62,52 +62,97 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "Review failed — one header chip and compact status card",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 1280
+  "label": "statusReviewFailed status at 1280px",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 1280
 },
 {
-"label": "Not landable — single status card above tabs",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:landable",
-"viewportWidth": 1280
+  "label": "statusReviewFailed status at 760px",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 760
 },
 {
-"label": "Checks running — status line with progress",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksRunning",
-"viewportWidth": 1280
+  "label": "statusHandoffFailed status at 1280px",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusHandoffFailed",
+  "viewportWidth": 1280
 },
 {
-"label": "Confirming handoff — compact status region",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusConfirmingHandoff",
-"viewportWidth": 1280
+  "label": "statusHandoffFailed status at 760px",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusHandoffFailed",
+  "viewportWidth": 760
 },
 {
-"label": "Checks failed after retries — short chip and card",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-pre-tabs",
-"state": "drawer:statusChecksFailed",
-"viewportWidth": 1280
+  "label": "statusChecksRunning status at 1280px",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusChecksRunning",
+  "viewportWidth": 1280
 },
 {
-"label": "Narrow panel — header chip and two-line filename",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-head",
-"state": "drawer:statusReviewFailed",
-"viewportWidth": 390
+  "label": "statusChecksRunning status at 760px",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusChecksRunning",
+  "viewportWidth": 760
+},
+{
+  "label": "statusConfirmingHandoff status at 1280px",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusConfirmingHandoff",
+  "viewportWidth": 1280
+},
+{
+  "label": "statusConfirmingHandoff status at 760px",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusConfirmingHandoff",
+  "viewportWidth": 760
+},
+{
+  "label": "statusChecksFailed status at 1280px",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusChecksFailed",
+  "viewportWidth": 1280
+},
+{
+  "label": "statusChecksFailed status at 760px",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusChecksFailed",
+  "viewportWidth": 760
+},
+{
+  "label": "Debug status details",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": ".debug-status-detail",
+  "steps": [
+    {
+      "click": "button[data-test-id=\"debug-tab-status\"]"
+    }
+  ],
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 1280
 }
 ]
 ```
@@ -264,3 +309,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T11:29:30Z · cli_override, model_override
 - 2026-10-25T11:29:32Z · message_delivered: 2 message(s)
 - 2026-10-25T11:30:06Z · message_queued at 2026-10-25T11:30:06.975Z
+- 2026-10-25T11:31:10Z · body
