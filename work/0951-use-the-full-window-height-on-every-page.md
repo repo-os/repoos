@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bd41edf4 to c1705145) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: bd41edf4d251865e906a2b7445e981c2d2f885e5
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T00:06:12Z"
+updated_at: "2026-10-25T00:11:34Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bd41edf4 to c1705145) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: bd41edf4d251865e906a2b7445e981c2d2f885e5
 last_check_failure: "repoos check at 2026-10-24T23:39:03.710Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
 ---
@@ -97,4 +97,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-24T23:54:16Z · handoff failed · check failed after 2 automatic retries · the worktree changed while the gate was running (HEAD moved from 671525a3 to 4a029553) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-10-24T23:56:07Z · note: handoff requested (ui-review)
 - 2026-10-25T00:06:12Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from bd41edf4 to c1705145) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-
+- 2026-10-25T00:11:34Z · note: handoff requested (ui-review)
