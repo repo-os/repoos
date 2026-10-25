@@ -255,6 +255,7 @@ export function defaultMaxConcurrentAgents(): number {
 }
 
 export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
+  git: { tuneForScale: true },
   workDir: "work",
   docsDir: "docs",
   skillsDir: "skills",
@@ -2212,6 +2213,9 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       cfg.pressureGuard = { ...cfg.pressureGuard, maxPsiMemoryAvg10: pgPsi };
     }
 
+    const tuneForScale = parsed["git.tuneForScale"];
+    if (typeof tuneForScale === "boolean") cfg.git = { tuneForScale };
+
     // [closeOut] section — wall-clock budget for one Move-to-done attempt
     // (#0573). Invalid/negative values are clamped back to the default with a
     // clear warning rather than failing config load: a typo in repoos.toml must
@@ -2952,6 +2956,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "While a check, handoff gate, close-out stage or bundle upload is running, " +
         "flag it in the bell when its elapsed time exceeds this multiple of the median " +
         "of recent passing runs of the same kind (at least 5 samples). Default 1.5.",
+    },
+    {
+      key: "git.tuneForScale",
+      label: "Git status acceleration",
+      type: "boolean",
+      tier: "restart",
+      restartRequired: true,
+      default: DEFAULT_CONFIG.git?.tuneForScale ?? true,
+      description:
+        "Enable Git's fsmonitor daemon and untracked cache for faster status scans. Each active checkout can start a daemon; turn this off if process or file-watcher load is high.",
     },
     {
       key: "closeOut.timeoutMs",
@@ -4241,6 +4255,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "model_routing.humanStepCheck",
   "model_routing.humanStepSticky",
   // Close-out (Move to done) pipeline budget (#0573)
+  "git.tuneForScale",
   "closeOut.timeoutMs",
   "closeOut.gate",
   "closeOut.candidate",

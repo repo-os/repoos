@@ -349,22 +349,35 @@ export async function lastCommitsForDirAsync(
  * per-directory untracked-file scan. Both are opt-in per repo and safe:
  * git falls back to a full scan if the daemon is unavailable.
  *
- * Idempotent, best-effort, and cheap — call it once at startup. Skips any key
- * already set to the desired value, so a repo that has been tuned once pays
- * only two `git config --get` reads on subsequent boots.
+ * Idempotent, best-effort, and cheap — call it once at startup. Existing
+ * values, including an explicit false, belong to the repository owner.
  */
-export function tuneRepoForScale(root: string): void {
-  if (!isGitRepo(root)) return;
+export function tuneRepoForScale(root: string, enabled = true): void {
+  if (!enabled || !isGitRepo(root)) return;
   for (const [key, value] of [
     ["core.fsmonitor", "true"],
     ["core.untrackedCache", "true"],
   ]) {
     try {
-      if (git(root, ["config", "--get", key]) === value) continue;
+      if (git(root, ["config", "--get", key]) !== null) continue;
       git(root, ["config", key, value]);
     } catch {
       /* best-effort: an old git or a read-only .git/config just means no speedup */
     }
+  }
+}
+
+/** Stop the fsmonitor daemon attached to a checkout before removing it. */
+export function stopFsmonitorDaemon(worktree: string, run: typeof spawnSync = spawnSync): void {
+  try {
+    run("git", ["fsmonitor--daemon", "stop"], {
+      cwd: worktree,
+      encoding: "utf8",
+      stdio: "ignore",
+      timeout: 4000,
+    });
+  } catch {
+    /* daemon may be unsupported or already stopped */
   }
 }
 
@@ -2416,6 +2429,8 @@ export interface RemoveWorktreeOptions {
    * candidate, or GC of a tree it has already established is merged and clean.
    */
   force?: boolean;
+  /** Test seam for verifying daemon teardown without starting Git daemons. */
+  stopFsmonitor?: (worktree: string) => void;
 }
 
 /**
@@ -2456,6 +2471,10 @@ export function removeWorktree(
   const removeArgs = (): string[] =>
     force ? ["worktree", "remove", "--force", path] : ["worktree", "remove", path];
 
+  // Stop only after confirming removal is permitted; a failed dirty-worktree
+  // removal must leave its active checkout and daemon alone.
+  if (force || worktreeHasNoUncommittedWork(path))
+    (opts.stopFsmonitor ?? stopFsmonitorDaemon)(path);
   const first = gitCapture(root, removeArgs());
   if (first.status === 0) return true;
   if (/is a main working tree|checked out at/i.test(first.stderr)) return false;
