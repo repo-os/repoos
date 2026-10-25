@@ -1629,7 +1629,9 @@
   gap: 10px;
   overflow-y: auto;
   min-height: 0;
-  padding: 4px 8px 10px;
+  /* Work columns own their scrollbars inside .main, so the page pane's
+     bottom padding cannot protect their final cards from the fixed controls. */
+  padding: 4px 8px var(--page-bottom-inset);
   scrollbar-width: none;
 }
 .col-body::-webkit-scrollbar {
@@ -1840,6 +1842,7 @@
   .col-body {
     overflow: visible;
     min-height: 40px;
+    padding-bottom: 10px;
   }
   .board-col.scrollable::after {
     display: none;
