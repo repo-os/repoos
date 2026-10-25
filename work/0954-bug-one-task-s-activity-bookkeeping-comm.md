@@ -3,25 +3,19 @@ id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: Reading additional input from stdin...
-debug_tldr: "Handoff check timed out at 420s and Playwright stayed queued; the run then failed on stdin — wait for other checks to finish, then resume the engineer."
-debug_tldr_at: "2026-10-25T11:29:09Z"
-debug_tldr_key: dev-error|Reading additional input from stdin...
 priority: p1
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-one-task-s-activity-bookkeeping-comm
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T11:35:14Z"
+updated_at: "2026-10-25T12:32:09Z"
 handoff_signal_retry_count: 2
-dev_error_count: 7
-engineer_stall_resume_log: "[{\"at\":\"2026-10-25T11:13:07.376Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T11:28:48.838Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 10
+engineer_stall_resume_log: "[{\"at\":\"2026-10-25T12:19:20.905Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:31.757Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:44.989Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:29:04.333Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -134,3 +128,17 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T11:34:19Z · message_queued at 2026-10-25T11:34:19.386Z
 - 2026-10-25T11:34:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-25T11:35:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T11:40:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T11:40:10Z · needs_input
+- 2026-10-25T11:40:11Z · message_delivered: 1 message(s)
+- 2026-10-25T11:45:12Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-25T12:14:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T12:19:20Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-25T12:28:31Z · agent exited with an error (codex) · 2026-10-25T12:28:30.609191Z ERROR codex_core::session: failed to record rollout items: thread 01a17300-56d9-7e41-b049-c00b10cbe884 not found
+- 2026-10-25T12:28:31Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-25T12:28:30.609191Z ERROR codex_core::session: failed to record rollout items: thread 01a17300-56d9-7e41-b049-c00b10cbe884 not found
+- 2026-10-25T12:28:44Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-25T12:29:04Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T12:29:26Z · cli_override, model_override
+- 2026-10-25T12:29:59Z · needs_input
+- 2026-10-25T12:30:00Z · message_queued at 2026-10-25T12:30:00.458Z
+- 2026-10-25T12:32:09Z · CTO nudge: held — an undelivered message is already queued

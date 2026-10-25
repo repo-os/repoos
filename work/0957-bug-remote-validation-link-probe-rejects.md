@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 1ff6ba371c2765741565b178fc674b7105d16e60
 id: "0957"
 title: "Bug: remote validation link probe rejects usable high-latency links (throughput includes ssh setup time)"
 type: bug
@@ -8,12 +10,14 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-remote-validation-link-probe-rejects
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T11:35:15Z"
+updated_at: "2026-10-25T12:39:49Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:46:43.085Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-25T11:13:08.170Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 4
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:37.623Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:54.917Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:29:18.832Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -39,6 +43,18 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - Do not start a second RepoOS server from a worktree (see #0954). Use fake `run` injection as the existing probe tests do.
 - This is p1: it blocks every handoff whenever the laptop is on a relay or slow network.
 
+## Shots
+```json
+[
+{
+"label": "Remote link probe thresholds in Settings",
+"target": "default",
+"route": "/settings?tab=general&section=remote-validation",
+"highlight": "#settings-section-remote-validation"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-25T09:39:56Z · created · njachowski@gmail.com
@@ -59,3 +75,18 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T11:29:32Z · cli_override, model_override
 - 2026-10-25T11:35:14Z · message_queued at 2026-10-25T11:35:14.897Z
 - 2026-10-25T11:35:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T11:35:34Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T11:37:19Z · body
+- 2026-10-25T11:37:37Z · agent exited with an error (codex) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T11:37:37Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T11:37:43Z · message_delivered: 1 message(s)
+- 2026-10-25T12:28:37Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-25T12:28:32.947741Z ERROR codex_core::session: failed to record rollout items: thread 01a172dc-6c08-73d1-bab4-8bd26252dd6c not found
+- 2026-10-25T12:28:54Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-25T12:29:18Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T12:29:32Z · cli_override, model_override
+- 2026-10-25T12:30:01Z · needs_input
+- 2026-10-25T12:30:02Z · message_queued at 2026-10-25T12:30:02.080Z
+- 2026-10-25T12:35:05Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-25T12:35:06Z · note: handoff requested (cli)
+- 2026-10-25T12:39:49Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+

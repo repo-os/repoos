@@ -3,29 +3,22 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: Reading additional input from stdin...
-debug_tldr: "Remote runners failed link probes and the local check sat 8+ minutes behind another gate—restore runners or wait, then rerun repoos check."
-debug_tldr_at: "2026-10-25T11:28:23Z"
-debug_tldr_key: dev-error|Reading additional input from stdin...
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/use-the-full-window-height-on-every-page
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T11:28:23Z"
+updated_at: "2026-10-25T12:17:10Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 review_passes: 1
 handoff_signal_retry_count: 1
-dev_error_count: 7
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T11:28:03.815Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 8
 ---
 ## Problem
 
@@ -59,42 +52,48 @@ Every standard nav page uses the full window height: the scrollable content area
 "target": "default",
 "route": "/work",
 "highlight": ".work-page",
-"viewportWidth": 1280
+"viewportWidth": 1280,
+"viewportHeight": 1120
 },
 {
 "label": "Work page at short viewport",
 "target": "default",
 "route": "/work",
 "highlight": ".work-page",
-"viewportWidth": 1280
+"viewportWidth": 1280,
+"viewportHeight": 620
 },
 {
 "label": "Stories page at tall viewport",
 "target": "default",
 "route": "/stories",
 "highlight": ".stories-page",
-"viewportWidth": 1280
+"viewportWidth": 1280,
+"viewportHeight": 1120
 },
 {
 "label": "Stories page at short viewport",
 "target": "default",
 "route": "/stories",
 "highlight": ".stories-page",
-"viewportWidth": 1280
+"viewportWidth": 1280,
+"viewportHeight": 620
 },
 {
 "label": "Checks page at tall viewport",
 "target": "default",
 "route": "/checks",
 "highlight": ".ck-page",
-"viewportWidth": 1280
+"viewportWidth": 1280,
+"viewportHeight": 1120
 },
 {
 "label": "Checks page at short viewport",
 "target": "default",
 "route": "/checks",
 "highlight": ".ck-page",
-"viewportWidth": 1280
+"viewportWidth": 1280,
+"viewportHeight": 620
 }
 ]
 ```
@@ -201,3 +200,18 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T11:28:03Z · agent exited with an error (codex) · Reading additional input from stdin...
 - 2026-10-25T11:28:03Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-25T11:28:07Z · note: adopted orphaned engineer pid 80014
+- 2026-10-25T11:43:40Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T11:45:08Z · body
+- 2026-10-25T11:47:24Z · cli_override, model_override
+- 2026-10-25T11:47:29Z · needs_input
+- 2026-10-25T11:47:29Z · message_queued at 2026-10-25T11:47:29.851Z
+- 2026-10-25T11:52:13Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T11:59:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T11:59:05Z · message_delivered: 1 message(s)
+- 2026-10-25T12:00:43Z · body
+- 2026-10-25T12:01:20Z · body
+- 2026-10-25T12:02:05Z · body
+- 2026-10-25T12:03:36Z · body
+- 2026-10-25T12:04:07Z · body
+- 2026-10-25T12:12:43Z · message_queued at 2026-10-25T12:12:43.765Z
+- 2026-10-25T12:17:10Z · CTO nudge: held — an undelivered message is already queued

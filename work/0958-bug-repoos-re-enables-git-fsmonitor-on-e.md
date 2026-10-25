@@ -3,15 +3,23 @@ id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-10-25T12:28:11.157970Z ERROR codex_core::session: failed to record rollout items: thread 01a172f3-eeea-7400-b3e6-187ab6d38b71 not found"
+debug_tldr: "Codex engineer hit usage limits — add credits or retry after 8:50 PM, then resume task #0958."
+debug_tldr_at: "2026-10-25T12:28:29Z"
+debug_tldr_key: "dev-error|2026-10-25T12:28:11.157970Z ERROR codex_core::session: failed to record rollout items: thread 01a172f3-eeea-7400-b3e6-187ab6d38b71 not found"
 priority: p1
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T11:35:28Z"
+updated_at: "2026-10-25T12:29:48Z"
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:05:48.590Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T12:28:12.715Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -38,9 +46,26 @@ At every server start, `tuneRepoForScale(config.root)` (`src/core/git.ts`, calle
 - Do not start a second RepoOS server from a worktree (bug #0954).
 - Nick has already set core.fsmonitor=false and core.untrackedCache=false by hand in repoos, divot, lightingai, pn and squishy; the fix must not undo that.
 
+## More evidence: preview/shot servers also re-enable it
+Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(config.root) at start, including task preview servers, 'just serve-noauth', and the servers 'repoos shot' / handoff shot capture start from a task worktree. Because worktrees share the repo's .git/config, each of those starts rewrites core.fsmonitor=true and core.untrackedCache=true for the WHOLE repo, which respawns ~30 fsmonitor daemons (one per worktree). Observed 2026-10-25: after 'just clear' set both to false, #0951's engineer started 'just serve-noauth 7272' and then a second server from its worktree, and within seconds the config was true again and 27 daemons were back. Required: tuneRepoForScale must be skipped entirely in preview mode (REPOOS_PREVIEW_CHILD / --preview-overrides / any server whose root is a linked worktree) and must never override an explicit human setting; add a test that starts a preview-mode server over a worktree and asserts the shared config is unchanged.
+
 ## Activity
 
 - 2026-10-25T11:34:02Z · created · njachowski@gmail.com
 - 2026-10-25T11:35:12Z · status inbox→ready
 - 2026-10-25T11:35:27Z · cli_override, model_override
 - 2026-10-25T11:35:28Z · status ready→active, branch
+- 2026-10-25T12:02:09Z · message_queued at 2026-10-25T12:02:09.828Z
+- 2026-10-25T12:02:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T12:05:48Z · agent exited with an error (codex) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T12:05:48Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T12:05:51Z · message_delivered: 1 message(s)
+- 2026-10-25T12:13:01Z · body: More evidence: preview/shot servers also re-enable it (added)
+- 2026-10-25T12:13:01Z · message_queued at 2026-10-25T12:13:01.517Z
+- 2026-10-25T12:17:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T12:21:05Z · cli_override, model_override
+- 2026-10-25T12:21:09Z · needs_input
+- 2026-10-25T12:21:09Z · message_queued at 2026-10-25T12:21:09.661Z
+- 2026-10-25T12:28:12Z · agent exited with an error (codex) · 2026-10-25T12:28:11.157970Z ERROR codex_core::session: failed to record rollout items: thread 01a172f3-eeea-7400-b3e6-187ab6d38b71 not found
+- 2026-10-25T12:28:12Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · 2026-10-25T12:28:11.157970Z ERROR codex_core::session: failed to record rollout items: thread 01a172f3-eeea-7400-b3e6-187ab6d38b71 not found
+- 2026-10-25T12:28:17Z · message_delivered: 2 message(s)
