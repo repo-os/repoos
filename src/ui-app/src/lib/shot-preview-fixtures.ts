@@ -1069,6 +1069,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "drawer:statusChecksFailed":
       ensureFixtureTask(repo, "active", {
         branch: "feat/shot-fixture",
+        path: "work/9999-task-side-panel-status-chip-two-line-header-width-verification.md",
         extra: { check_retry_count: 2 },
       });
       repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
