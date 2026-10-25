@@ -181,3 +181,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T10:39:34Z · message_queued at 2026-10-25T10:39:34.699Z
 - 2026-10-25T10:39:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-25T10:41:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T10:41:59Z · message_delivered: 1 message(s)
