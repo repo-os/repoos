@@ -14,13 +14,13 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: opencode
 model_override: opencode-go/hy4-preview
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T06:13:38Z"
+updated_at: "2026-10-25T06:14:59Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T02:27:40.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 7
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:13:37.050Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 8
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:13:37.050Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:14:59.301Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -288,3 +288,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T06:13:37Z · agent exited with an error (opencode) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-10-25T06:13:37Z · engineer crash recovery: resuming opencode + opencode-go/hy4-preview (1/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-10-25T06:13:38Z · message_delivered: 1 message(s)
+- 2026-10-25T06:14:59Z · engineer crash recovery: resuming opencode + opencode-go/hy4-preview (2/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
