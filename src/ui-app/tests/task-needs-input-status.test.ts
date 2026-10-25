@@ -215,24 +215,9 @@ describe("needs_input status labels on the board card (#0511)", () => {
   });
 });
 
-describe("needs_input status labels in the task drawer (#0511)", () => {
-  const drawerChipLabels: Record<string, string> = {
-    "review-failed": "Review failed",
-    "review-rounds-exhausted": "Review issues",
-    "review-human-attention": "Review issues",
-    "evidence-gap-exhausted": "Evidence missing",
-    "dev-error": "Agent failed",
-    "provider-failure": "Provider error",
-    "degenerate-output": "Agent failed",
-    "check-failed-after-retries": "Checks failed",
-    "cto-escalation": "Needs input",
-    "watchdog-stuck": "Agent stopped",
-    underspecified: "Needs details",
-    "needs-human-step": "Needs human",
-    questions: "Needs input",
-  };
+describe("needs_input status surfaces in the task drawer (#0511)", () => {
   for (const [reason] of Object.entries(NEEDS_INPUT_STATUS_LABELS)) {
-    it(`header chip shows a concise reason for ${reason}`, async () => {
+    it(`keeps ${reason} in the waiting card instead of repeating it in the header`, async () => {
       const pinia = createPinia();
       setActivePinia(pinia);
       FakeEventSource.instances = [];
@@ -247,13 +232,10 @@ describe("needs_input status labels in the task drawer (#0511)", () => {
       const wrapper = await mountDrawer(pinia, task);
       if (reason === "questions") {
         expect(wrapper.find(".questions-for-you-banner").exists()).toBe(true);
-        expect(wrapper.find(".rs-chip.rs-needs-input").exists()).toBe(false);
       } else {
-        const chip = wrapper.find(".rs-chip.rs-needs-input");
-        expect(chip.exists()).toBe(true);
-        expect(chip.text()).toBe(drawerChipLabels[reason] ?? NEEDS_INPUT_STATUS_LABELS[reason]);
-        expect(chip.text().split(/\s+/).length).toBeLessThanOrEqual(2);
+        expect(wrapper.find(".agent-waiting").exists()).toBe(true);
       }
+      expect(wrapper.find(".rs-chip.rs-needs-input").exists()).toBe(false);
       expect(wrapper.find(".rs-reviewing").exists()).toBe(false);
     });
   }
@@ -409,6 +391,7 @@ describe("agent questions needs_input (#0566)", () => {
     expect(wrapper.findAll(".questions-for-you-banner")).toHaveLength(1);
     expect(wrapper.find(".agent-waiting").exists()).toBe(false);
     expect(wrapper.find(".drawer-head .rs-needs-input").exists()).toBe(false);
+    expect(wrapper.find(".drawer-status-summary").exists()).toBe(false);
   });
 
   it("routes to PM without prefilling the compose box and sends question context", async () => {
