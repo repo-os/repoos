@@ -3,12 +3,6 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the cursor agent exited without output: Error: [unavailable] read ETIMEDOUT"
-debug_tldr: Cursor API read timed out during review — retry review or switch reviewer agent once connectivity is stable.
-debug_tldr_at: "2026-10-25T00:48:54Z"
-debug_tldr_key: "review-failed|the cursor agent exited without output: Error: [unavailable] read ETIMEDOUT"
 priority: p2
 area: web
 assigned_to: ai
@@ -19,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T00:50:31Z"
+updated_at: "2026-10-25T00:50:35Z"
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 review_passes: 4
 handoff_signal_retry_count: 2
@@ -187,3 +181,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T00:48:34Z · note: review pass 5: failed — no usable report
 - 2026-10-25T00:48:34Z · needs_input
 - 2026-10-25T00:50:31Z · review_cli_override, review_model_override
+- 2026-10-25T00:50:35Z · needs_input (review-failed) cleared for review again by hello@repoos.org
