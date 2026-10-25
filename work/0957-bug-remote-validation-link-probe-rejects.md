@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-remote-validation-link-probe-rejects
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-25T10:41:16Z"
+updated_at: "2026-10-25T10:41:17Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T10:21:42.826Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -50,3 +50,4 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-25T10:29:35Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-25T10:34:34Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T10:41:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T10:41:17Z · message_delivered: 1 message(s)
