@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: Transport"
+debug_tldr: "Runner transport dropped mid-turn after repeated crash resumes—resume engineer #0958 on the board once repoos serve and the runner are healthy."
+debug_tldr_at: "2026-10-25T15:38:09Z"
+debug_tldr_key: "dev-error|error: Transport"
 priority: p1
 area: core
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T15:36:32Z"
+updated_at: "2026-10-25T15:38:09Z"
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-25T15:30:46.283Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-10-25T15:36:32.644Z\",\"kind\":\"dev-error\"}]"
 ---
