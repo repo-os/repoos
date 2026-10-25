@@ -66,4 +66,10 @@ describe("standard page height and floating controls", () => {
       /\.col-body\s*\{[^}]*overflow-y:\s*auto;[\s\S]*padding:\s*4px 8px var\(--page-bottom-inset\)/s,
     );
   });
+
+  it("clears floating heads in page-scroll views (Checks, Releases, Deployments)", () => {
+    expect(css).toMatch(
+      /\.page-scroll-body\s*\{[^}]*padding-bottom:\s*var\(--page-bottom-inset\)/s,
+    );
+  });
 });
