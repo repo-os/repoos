@@ -20,7 +20,7 @@ review_passes: 2
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
 dev_error_count: 16
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T19:04:14.798Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T19:04:20.654Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T19:04:26.411Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T19:04:14.798Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T19:04:20.654Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T19:04:26.411Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-25T19:11:48.902Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -281,3 +281,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T19:11:43Z · needs_input
 - 2026-10-25T19:11:43Z · message_queued at 2026-10-25T19:11:43.629Z
 - 2026-10-25T19:11:48Z · agent exited with an error (codex) · Reading additional input from stdin...
+- 2026-10-25T19:11:48Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · Reading additional input from stdin...
