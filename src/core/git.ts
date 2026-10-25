@@ -264,7 +264,10 @@ function parseAheadCounts(out: string | null): Map<string, number> {
   return map;
 }
 
-const aheadCountsCache = new Map<string, { at: number; map: Map<string, number> }>();
+const aheadCountsCache = new Map<
+  string,
+  { at: number; fingerprint: string; map: Map<string, number> }
+>();
 const AHEAD_COUNTS_TTL_MS = 20_000;
 
 /**
@@ -272,23 +275,28 @@ const AHEAD_COUNTS_TTL_MS = 20_000;
  * `git for-each-ref %(ahead-behind:main)` through execFileSync on the server's
  * main thread on every worktree-status reconcile; over ~100 branches and 20k+
  * commits that child burned 60%+ CPU for seconds while the event loop sat
- * blocked, so the server stopped answering (2026-10-25). Async + a 20 s cache.
+ * blocked, so the server stopped answering (2026-10-25). Async + a 20 s cache,
+ * valid only while `fingerprint` (every worktree's HEAD, main's included) is
+ * unchanged, so a commit is never hidden behind a stale count.
  */
 export async function branchAheadCountsAsync(
   root: string,
   base: string | null,
+  fingerprint = "",
 ): Promise<Map<string, number>> {
   if (!base) return new Map();
   const key = `${root}\0${base}`;
   const hit = aheadCountsCache.get(key);
-  if (hit && Date.now() - hit.at < AHEAD_COUNTS_TTL_MS) return new Map(hit.map);
+  if (hit && hit.fingerprint === fingerprint && Date.now() - hit.at < AHEAD_COUNTS_TTL_MS) {
+    return new Map(hit.map);
+  }
   const out = await gitAsync(
     root,
     ["for-each-ref", `--format=%(refname:short) %(ahead-behind:${base})`, "refs/heads/"],
     60_000,
   );
   const map = parseAheadCounts(out);
-  aheadCountsCache.set(key, { at: Date.now(), map });
+  aheadCountsCache.set(key, { at: Date.now(), fingerprint, map });
   return new Map(map);
 }
 
@@ -1062,7 +1070,11 @@ export async function resolveWorktreeStatuses(
   if (wanted.size === 0) return { statuses, cache, changed: false };
 
   const worktrees = worktreeList(root);
-  const aheadCounts = await branchAheadCountsAsync(root, opts.baseBranch);
+  const fingerprint = [...worktrees]
+    .map(([branch, entry]) => `${branch}:${entry.head}`)
+    .sort()
+    .join(",");
+  const aheadCounts = await branchAheadCountsAsync(root, opts.baseBranch, fingerprint);
 
   let realRoot = root;
   try {
