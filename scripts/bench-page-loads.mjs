@@ -122,18 +122,15 @@ async function readyOrReport(page, target, phase) {
     await page.waitForFunction(CONTENT_READY, target.root, { timeout: 30_000 });
   } catch (err) {
     const state = await page
-      .evaluate(
-        (sel) => {
-          const root = document.querySelector(sel);
-          return {
-            root: !!root,
-            skeleton: !!document.querySelector(".page-skeleton"),
-            kids: root ? root.children.length : -1,
-            text: root ? root.textContent.slice(0, 200) : null,
-          };
-        },
-        target.root,
-      )
+      .evaluate((sel) => {
+        const root = document.querySelector(sel);
+        return {
+          root: !!root,
+          skeleton: !!document.querySelector(".page-skeleton"),
+          kids: root ? root.children.length : -1,
+          text: root ? root.textContent.slice(0, 200) : null,
+        };
+      }, target.root)
       .catch((e) => ({ error: String(e) }));
     throw new Error(
       `${target.id} ${phase}: content never became ready (${JSON.stringify(state)}) — ${
@@ -147,7 +144,9 @@ async function applyLatency(page) {
   await page.route("**/api/**", async (route) => {
     const url = route.request().url();
     const path = new URL(url).pathname;
-    const delay = Object.entries(LATENCY).find(([key]) => key !== "default" && path.startsWith(key));
+    const delay = Object.entries(LATENCY).find(
+      ([key]) => key !== "default" && path.startsWith(key),
+    );
     await new Promise((r) => setTimeout(r, delay ? delay[1] : LATENCY.default));
     await route.continue();
   });
@@ -155,11 +154,9 @@ async function applyLatency(page) {
 
 async function sawSkeleton(page, root, timeout) {
   try {
-    await page.waitForFunction(
-      (sel) => !!document.querySelector(`${sel} .page-skeleton`),
-      root,
-      { timeout },
-    );
+    await page.waitForFunction((sel) => !!document.querySelector(`${sel} .page-skeleton`), root, {
+      timeout,
+    });
     return true;
   } catch {
     return false;
@@ -258,7 +255,9 @@ console.log("## Endpoint (server-side work, in-process, no HTTP server)");
 console.log("");
 if (endpoint) {
   console.log(`- root: \`${REPO_ROOT}\``);
-  console.log(`- \`GET /api/deployments\` → getDeploymentsStatus(): median ${fmt(endpoint.median)} (min ${fmt(endpoint.min)}, max ${fmt(endpoint.max)}, ${RUNS} runs: ${endpoint.runs.map(fmt).join(", ")})`);
+  console.log(
+    `- \`GET /api/deployments\` → getDeploymentsStatus(): median ${fmt(endpoint.median)} (min ${fmt(endpoint.min)}, max ${fmt(endpoint.max)}, ${RUNS} runs: ${endpoint.runs.map(fmt).join(", ")})`,
+  );
 }
 
 let pages;
@@ -271,7 +270,9 @@ console.log("");
 console.log("## Pages (headless WebKit, recorded endpoint latencies replayed)");
 console.log("");
 if (pages) {
-  console.log("| Page | Cold (before) | Revisit (after) | Skeleton on cold | Skeleton on revisit |");
+  console.log(
+    "| Page | Cold (before) | Revisit (after) | Skeleton on cold | Skeleton on revisit |",
+  );
   console.log("| --- | --- | --- | --- | --- |");
   for (const p of pages) {
     const cold = p.cold.length ? median(p.cold) : NaN;

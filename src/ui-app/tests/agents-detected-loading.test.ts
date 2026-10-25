@@ -137,7 +137,10 @@ describe("AgentsView detected-tab loading (#0950)", () => {
 
 describe("Agents page panels share the skeleton (#0950)", () => {
   it("RemindersPanel shows the skeleton, not a loading line", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
     const pinia = createPinia();
     setActivePinia(pinia);
     const wrapper = mount(RemindersPanel, { global: { plugins: [pinia, await panelRouter()] } });
@@ -150,11 +153,17 @@ describe("Agents page panels share the skeleton (#0950)", () => {
   });
 
   it("ScheduledTasksPanel shows the skeleton, not a loading line", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
     const pinia = createPinia();
     setActivePinia(pinia);
     const wrapper = mount(ScheduledTasksPanel, {
-      global: { plugins: [pinia, await panelRouter()], stubs: { teleport: true, Transition: true } },
+      global: {
+        plugins: [pinia, await panelRouter()],
+        stubs: { teleport: true, Transition: true },
+      },
     });
     await flushPromises();
 
@@ -165,7 +174,10 @@ describe("Agents page panels share the skeleton (#0950)", () => {
   });
 
   it("ModelProvidersPanel shows the skeleton, not a loading line", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
     const pinia = createPinia();
     setActivePinia(pinia);
     const wrapper = mount(ModelProvidersPanel, { global: { plugins: [pinia] } });
