@@ -14,10 +14,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/use-the-full-window-height-on-every-page
-cli_override: opencode
-model_override: opencode-go/kimi-k3.1-pro
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T16:53:22Z"
+updated_at: "2026-10-25T16:54:23Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
@@ -245,3 +245,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T16:50:47Z · message_delivered: 1 message(s)
 - 2026-10-25T16:53:11Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (2/3 crashes in 30m) · error: Reconnect OpenCode Console to continue.
 - 2026-10-25T16:53:22Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/kimi-k3.1-pro) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T16:54:23Z · cli_override, model_override
