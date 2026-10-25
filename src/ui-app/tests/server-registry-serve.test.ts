@@ -101,6 +101,27 @@ describe("startServer running-server registry", () => {
     }
   });
 
+  it("does not tune git config when --preview-overrides is active", async () => {
+    const root = minimalRepo();
+    const handle = await startServer({
+      root,
+      host: "127.0.0.1",
+      port: 0,
+      disableAuth: true,
+      previewOverrides: true,
+    });
+    try {
+      expect(() =>
+        execFileSync("git", ["config", "--get", "core.fsmonitor"], {
+          cwd: root,
+          encoding: "utf8",
+        }),
+      ).toThrow();
+    } finally {
+      await handle.close();
+    }
+  });
+
   it("does not tune git config when serving from a linked worktree", async () => {
     const main = minimalRepo();
     const wt = join(main, "task-wt");

@@ -499,7 +499,6 @@ closeOut.postPublishCommand = ""      # optional shell install in main after loc
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
-| `git.tuneForScale` | boolean | `true` | yes | Enables Git fsmonitor and the untracked cache to speed status scans. Each checkout may start a file-watching daemon; disable with `git.tuneForScale = false` if daemon, CPU, or memory load is high. Existing `core.fsmonitor` and `core.untrackedCache` values are preserved. |
 | `closeOut.timeoutMs` | number | `360000` (6 min) | yes | Total wall-clock budget for **one** close-out attempt — from when the job leaves the queue until it reaches `failed`, `done`, or is removed by a user cancel. A close-out that runs past it is aborted: in-flight build/check/publish children are killed, the throwaway candidate worktree is torn down, and the job is recorded as a retryable `failed` whose reason starts `close-out timed out after …`. The task stays in `review` with its feature branch and worktree untouched, so **Move to done** can be retried. The single validating retry, main-drift resyncs, and remote validation (host-pool queue wait included) all spend the **same** budget, and per-step child timeouts are capped to whatever budget remains. `0` disables the ceiling (the unbounded pre-#0573 behaviour). Invalid or negative values are ignored with a `[closeOut] timeoutMs …` console warning and fall back to the default. |
 | `closeOut.gate` | string | `"scoped"` | yes | How much of the merge gate a Move to done re-runs (#0724). The candidate already passed the identical full gate at handoff, so the close-out compares the candidate tree against the tree the handoff gate recorded and picks a mode. `"reuse"` runs the cheap steps and skips the suite when the candidate tree is identical to the tested tree or main advanced with bookkeeping only; `"scoped"` (default) reuses in those cases and otherwise runs `repoos check --changed <tested base>`; `"full"` always runs the whole suite. Releases and paths under `check.fullSuitePaths` always run the full suite, and a scoped failure is retried once as the full suite. Invalid values are ignored with a warning and fall back to `"scoped"`. |
 
@@ -893,6 +892,27 @@ inheritEnv = false
 | `worktrees.inheritEnv` | boolean | `false` | yes | When true, RepoOS symlinks the main checkout's `.env` into each task worktree so worktree-local build or preview commands can read project secrets. |
 | `worktrees.candidate` | string | *(see `closeOut.candidate`)* | yes | Same as `closeOut.candidate` when the close-out section does not set it. |
 | `worktrees.installCommand` | string | *(empty)* | yes | Same as `closeOut.installCommand` when the close-out section does not set it. |
+| `git.tuneForScale` | boolean | `true` | yes | Enables Git fsmonitor and the untracked cache to speed the `git status` scans the index build runs in every checkout. Existing explicitly configured `core.fsmonitor` / `core.untrackedCache` values, including `false`, are never overwritten. See [Git status acceleration](#git-status-acceleration). |
+
+### Git status acceleration
+
+At startup the main checkout tunes two Git settings that make repeated
+`git status` scans cheaper: `core.fsmonitor` (Git's built-in filesystem monitor
+daemon) and `core.untrackedCache`. Both are best-effort; Git falls back to a
+full scan when a daemon is unavailable.
+
+`git.tuneForScale = false` is the off switch (Settings → General →
+Performance). It also matters that only an **unset** key is written: if you have
+set `core.fsmonitor` or `core.untrackedCache` yourself, in `.git/config` or
+globally, RepoOS leaves your value alone even when the setting is on.
+
+Preview and shot servers (`REPOOS_PREVIEW_CHILD=1` or `--preview-overrides`) and
+any server rooted in a linked worktree skip the tune, because worktrees share
+the repository's `.git/config` and a preview start must not rewrite it. When a
+worktree is removed — review close-out, Move to done, or worktree GC — RepoOS
+runs `git fsmonitor--daemon stop` in that checkout first, so daemons do not
+accumulate for finished tasks. `repoos doctor` warns when more than eight
+fsmonitor daemons are running, names the CPU/memory cost, and prints the fix.
 
 **`inheritEnv` is off by default and must be opted into deliberately.** Every
 worktree is another place RepoOS's root `.env` configuration is reachable.

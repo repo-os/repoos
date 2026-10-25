@@ -495,7 +495,7 @@ describe("shouldTuneRepoForScaleAtStartup", () => {
         shouldTuneRepoForScaleAtStartup({
           root,
           tuneForScale: true,
-          previewOverrides: ["auth.enabled"],
+          previewOverrides: true,
         }),
       ).toBe(false);
       expect(shouldTuneRepoForScaleAtStartup({ root, tuneForScale: false })).toBe(false);
@@ -552,6 +552,24 @@ describe("removeWorktree", () => {
     expect(calls[0]?.[0]).toBe("git");
     expect(calls[0]?.[1]).toEqual(["fsmonitor--daemon", "stop"]);
     expect((calls[0]?.[2] as { cwd: string }).cwd).toBe("/tmp/checkout");
+  });
+
+  it("leaves a dirty worktree's daemon alone when removal is refused", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/fsmonitor-dirty");
+      writeFileSync(join(wt.path, "scratch.txt"), "uncommitted\n");
+      const stopped: string[] = [];
+      expect(
+        removeWorktree(root, "feat/fsmonitor-dirty", {
+          stopFsmonitor: (path) => stopped.push(path),
+        }),
+      ).toBe(false);
+      expect(stopped).toEqual([]);
+      expect(existsSync(join(wt.path, "scratch.txt"))).toBe(true);
+    } finally {
+      clean();
+    }
   });
 
   it("heals a worktree whose directory was deleted out from under it", () => {
