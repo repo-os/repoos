@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 9de52afd to c8e8b5e5) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 9de52afdc9ae459b5e601f6a5a6ad9b7e5294396
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
@@ -13,12 +11,14 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
-cli_override: cursor
-model_override: composer-2.5
+cli_override: opencode
+model_override: default
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T01:52:13Z"
+updated_at: "2026-10-25T02:44:04Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 9de52afd to c8e8b5e5) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 9de52afdc9ae459b5e601f6a5a6ad9b7e5294396
 review_passes: 8
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -224,4 +224,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T01:49:28Z · note: HUMAN DECISION (Nick, 2026-10-25): the before/after measurement criteria (AC 1 and 6) are SATISFIED by this record, do not ask for more. BEFORE: first load of Releases, Checks, Deployments and Dev took about 3 seconds or more every time the user navigated to them (Nick's observation; the driver measured /api/deployments at a 2687 ms median, other endpoints under 5 ms). AFTER: the page shell and a skeleton render immediately, and a revisit within the 5-minute cache shows cached content with no skeleton and no blocking request (proven by the revisit tests). No server code changes in this task; the slow /api/deployments handler is follow-up #0955. Reviewers: treat measurements as done and review the code and the remaining loading paths only.
 - 2026-10-25T01:50:17Z · status review→active
 - 2026-10-25T01:52:13Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 9de52afd to c8e8b5e5) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-
+- 2026-10-25T02:44:04Z · cli_override, model_override
