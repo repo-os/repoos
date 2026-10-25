@@ -17,7 +17,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T14:50:02Z"
+updated_at: "2026-10-25T15:38:11Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
@@ -229,3 +229,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T14:33:41Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-10-25T14:34:18Z · message_delivered: 1 message(s)
 - 2026-10-25T14:50:02Z · CTO nudge: held — remote validation is running
+- 2026-10-25T15:38:11Z · engineer stopped by request
