@@ -482,12 +482,8 @@ describe("shouldTuneRepoForScaleAtStartup", () => {
     const { root, clean } = makeRepo();
     try {
       const wt = ensureWorktree(root, "feat/tune-gate");
-      expect(
-        shouldTuneRepoForScaleAtStartup({ root, tuneForScale: true }),
-      ).toBe(true);
-      expect(
-        shouldTuneRepoForScaleAtStartup({ root: wt.path, tuneForScale: true }),
-      ).toBe(false);
+      expect(shouldTuneRepoForScaleAtStartup({ root, tuneForScale: true })).toBe(true);
+      expect(shouldTuneRepoForScaleAtStartup({ root: wt.path, tuneForScale: true })).toBe(false);
       expect(
         shouldTuneRepoForScaleAtStartup({
           root,
@@ -502,9 +498,7 @@ describe("shouldTuneRepoForScaleAtStartup", () => {
           previewOverrides: ["auth.enabled"],
         }),
       ).toBe(false);
-      expect(
-        shouldTuneRepoForScaleAtStartup({ root, tuneForScale: false }),
-      ).toBe(false);
+      expect(shouldTuneRepoForScaleAtStartup({ root, tuneForScale: false })).toBe(false);
     } finally {
       clean();
     }

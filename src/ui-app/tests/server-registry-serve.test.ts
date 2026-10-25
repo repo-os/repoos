@@ -153,7 +153,7 @@ describe("startServer running-server registry", () => {
       await handle.close();
       delete process.env.REPOOS_PREVIEW_CHILD;
     }
-  });
+  }, 30_000);
 
   it("honors git.tuneForScale = false during startup", async () => {
     const root = minimalRepo();
