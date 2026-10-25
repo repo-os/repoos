@@ -3,6 +3,9 @@ id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p2
 area: web
 assigned_to: ai
@@ -11,13 +14,13 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T09:16:53Z"
+updated_at: "2026-10-25T09:42:35Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T02:27:40.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 9
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:13:37.050Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:14:59.301Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/hy4-preview\",\"at\":\"2026-10-25T06:16:30.197Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 10
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T09:42:35.946Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -62,52 +65,52 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "Review failed — one header chip and compact status card",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 1280
+"label": "Review failed — one header chip and compact status card",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 1280
 },
 {
-  "label": "Not landable — single status card above tabs",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landable",
-  "viewportWidth": 1280
+"label": "Not landable — single status card above tabs",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landable",
+"viewportWidth": 1280
 },
 {
-  "label": "Checks running — status line with progress",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusChecksRunning",
-  "viewportWidth": 1280
+"label": "Checks running — status line with progress",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusChecksRunning",
+"viewportWidth": 1280
 },
 {
-  "label": "Confirming handoff — compact status region",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusConfirmingHandoff",
-  "viewportWidth": 1280
+"label": "Confirming handoff — compact status region",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusConfirmingHandoff",
+"viewportWidth": 1280
 },
 {
-  "label": "Checks failed after retries — short chip and card",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusChecksFailed",
-  "viewportWidth": 1280
+"label": "Checks failed after retries — short chip and card",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-pre-tabs",
+"state": "drawer:statusChecksFailed",
+"viewportWidth": 1280
 },
 {
-  "label": "Narrow panel — header chip and two-line filename",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-head",
-  "state": "drawer:statusReviewFailed",
-  "viewportWidth": 390
+"label": "Narrow panel — header chip and two-line filename",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-head",
+"state": "drawer:statusReviewFailed",
+"viewportWidth": 390
 }
 ]
 ```
@@ -248,3 +251,5 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T08:53:54Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T09:08:56Z · body
 - 2026-10-25T09:16:53Z · body
+- 2026-10-25T09:42:35Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-25T09:42:35Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
