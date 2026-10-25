@@ -110,10 +110,10 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 "highlight": "[aria-label=\"Task status details\"]",
 "steps": [
 {
-  "click": "[data-test-id=\"debug-tab-status\"]"
+"click": "[data-test-id=\"debug-tab-status\"]"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ],
 "state": "drawer:landable"
