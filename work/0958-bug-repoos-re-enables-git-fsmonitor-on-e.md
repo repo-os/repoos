@@ -53,7 +53,7 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 "highlight": "[id=\"setting-git.tuneForScale\"]",
 "steps": [
 {
-  "waitMs": 1500
+"waitMs": 1500
 }
 ]
 }
