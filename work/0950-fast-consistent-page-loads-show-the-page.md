@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: ready
 hold: true
 priority: p2
 area: web
@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T14:11:07Z"
+updated_at: "2026-10-25T14:11:25Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -293,3 +293,4 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 - 2026-10-25T14:10:21Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
 - 2026-10-25T14:10:59Z · engineer stopped by request
 - 2026-10-25T14:11:07Z · held
+- 2026-10-25T14:11:25Z · status active→ready
