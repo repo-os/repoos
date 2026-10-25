@@ -2,7 +2,7 @@
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
-status: active
+status: ready
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: Transport"
@@ -15,7 +15,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: opencode
 model_override: opencode-go/kimi-k2.7-code
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T15:29:12Z"
+updated_at: "2026-10-25T15:29:42Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -273,3 +273,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T15:27:47Z · agent exited with an error (opencode) · error: Transport
 - 2026-10-25T15:28:59Z · held
 - 2026-10-25T15:29:12Z · assigned_to
+- 2026-10-25T15:29:42Z · status active→ready
