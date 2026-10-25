@@ -1585,6 +1585,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Initialize job processing (runs after emitEvent is available) (0118)
   triggerJobProcessing = () => {
+    if (!isControlPlane) return;
     if (processingJob) return;
     processingJob = true;
     setImmediate(async () => {
@@ -1781,7 +1782,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   };
 
   // Trigger processing of recovered jobs on startup
-  if (triggerRecoveryJobs) {
+  if (triggerRecoveryJobs && isControlPlane) {
     setImmediate(triggerRecoveryJobs);
   }
 
@@ -2095,7 +2096,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Adopt any agent children that survived a server restart (0214).
   // Reads the durable registry, checks PID aliveness, and re-attaches
   // to still-running children so isRunning() reports true immediately.
-  runner.adoptRunningAgents();
+  if (isControlPlane) runner.adoptRunningAgents();
 
   // Recover any pending handoff requests from a previous interrupted turn (#0235).
   // Validates each request (task still exists, active, branch matches) and
@@ -2106,12 +2107,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // and silently drop valid requests (`if (!task) clearPendingHandoff()`),
   // leaving the task stuck `active` with its work uncommitted.
   const runHandoffRecovery = (): void => runner.recoverPendingHandoffs();
-  void indexReady.then(runHandoffRecovery, runHandoffRecovery).catch(() => {});
+  if (isControlPlane) {
+    void indexReady.then(runHandoffRecovery, runHandoffRecovery).catch(() => {});
+  }
 
   const runOrphanEngineerReconcile = (): void => {
     runner.reconcileOrphanedEngineers(index.getTasks());
   };
-  void indexReady.then(runOrphanEngineerReconcile, runOrphanEngineerReconcile).catch(() => {});
+  if (isControlPlane) {
+    void indexReady.then(runOrphanEngineerReconcile, runOrphanEngineerReconcile).catch(() => {});
+  }
 
   // The one-time area-format migration (#0583) runs once AFTER the index has
   // populated: any task file whose `area` frontmatter still carries a legacy
@@ -2454,7 +2459,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const ctoIntervalMs =
     ((config as unknown as Record<string, unknown>)?.ctoMonitorIntervalMs as number | undefined) ||
     5 * 60 * 1000;
-  ctoMonitor.start(ctoIntervalMs);
+  if (isControlPlane) ctoMonitor.start(ctoIntervalMs);
 
   // Review activity is transient server state, not task-file frontmatter. Add
   // its small authoritative summary to index-shaped API responses so a board
@@ -2808,7 +2813,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // server was up is finalized from its durable log. Deferred until `indexReady`
   // so an adopted completion can resolve its draft task.
   const runFreeformAdoption = (): void => freeformRuns.adopt();
-  void indexReady.then(runFreeformAdoption, runFreeformAdoption).catch(() => {});
+  if (isControlPlane) {
+    void indexReady.then(runFreeformAdoption, runFreeformAdoption).catch(() => {});
+  }
 
   /**
    * #0507: the single entry point for EVERY route into `review` that is not the
@@ -4538,14 +4545,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       void reload.bootSelfHeal();
 
       // Agent supervisor: periodic health checks and safe recovery (0112)
-      supervisor = new AgentSupervisor(config, index, emitEvent);
-      supervisor.start();
+      if (isControlPlane) {
+        supervisor = new AgentSupervisor(config, index, emitEvent);
+        supervisor.start();
+      }
 
       // Task watchdog: surface active tasks whose agent session is dead or
       // stalled (0180). Guarded so it never fires while the server is handing
       // over to a reload replacement.
       const watchdogConfig = config.watchdog ?? {};
-      watchdog = new TaskWatchdog(
+      if (isControlPlane) watchdog = new TaskWatchdog(
         config,
         index,
         runner,
@@ -4558,7 +4567,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           logger,
         },
       );
-      if (watchdogConfig.enabled !== false) watchdog.start();
+      if (watchdog && watchdogConfig.enabled !== false) watchdog.start();
 
       // Telegram transport resume (#0531): a stored `transport.mode =
       // "polling"` must survive a restart — re-arm the long-poll loop at

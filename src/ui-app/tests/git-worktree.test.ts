@@ -781,6 +781,60 @@ describe("dirtyFiles / commitDirtyFiles (0204)", () => {
 });
 
 describe("commitTaskFile commits only the task file (#0353)", () => {
+  it("keeps task A bookkeeping on main while task B has its own worktree", () => {
+    const { root, clean } = makeRepo();
+    const taskB = `${root}-task-b`;
+    try {
+      mkdirSync(join(root, "work"), { recursive: true });
+      const taskAPath = join(root, "work", "0950-task-a.md");
+      writeFileSync(taskAPath, "before\n");
+      git(root, ["add", "work/0950-task-a.md"]);
+      git(root, ["commit", "-qm", "add task A"]);
+      git(root, ["branch", "feat/task-b"]);
+      git(root, ["worktree", "add", "-q", taskB, "feat/task-b"]);
+
+      const mainBefore = git(root, ["rev-parse", "HEAD"]);
+      const taskBBefore = git(taskB, ["rev-parse", "HEAD"]);
+      writeFileSync(taskAPath, "before\n- activity recorded\n");
+      expect(commitTaskFile(root, taskAPath, "docs(0950): record activity")).toBe(true);
+
+      expect(git(root, ["rev-parse", "HEAD"])).not.toBe(mainBefore);
+      expect(git(taskB, ["rev-parse", "HEAD"])).toBe(taskBBefore);
+      expect(git(taskB, ["diff", "--name-only"])).toBe("");
+      expect(git(root, ["show", "--name-only", "--format=", "HEAD"])).toBe(
+        "work/0950-task-a.md",
+      );
+    } finally {
+      try {
+        git(root, ["worktree", "remove", "--force", taskB]);
+      } catch {
+        rmSync(taskB, { recursive: true, force: true });
+      }
+      clean();
+    }
+  });
+
+  it("refuses commits from a preview child", () => {
+    const { root, clean } = makeRepo();
+    const oldPreview = process.env.REPOOS_PREVIEW_CHILD;
+    try {
+      mkdirSync(join(root, "work"), { recursive: true });
+      const taskPath = join(root, "work", "0950-task.md");
+      writeFileSync(taskPath, "bookkeeping\n");
+      process.env.REPOOS_PREVIEW_CHILD = "1";
+
+      expect(commitTaskFile(root, taskPath, "docs(0950): record activity")).toBe(false);
+      expect(git(root, ["log", "-1", "--format=%s"])).toBe("init");
+      expect(git(root, ["status", "--porcelain", "--", "work/0950-task.md"])).toContain(
+        "?? work/0950-task.md",
+      );
+    } finally {
+      if (oldPreview === undefined) delete process.env.REPOOS_PREVIEW_CHILD;
+      else process.env.REPOOS_PREVIEW_CHILD = oldPreview;
+      clean();
+    }
+  });
+
   it("leaves an unrelated staged file staged and commits just the task file", () => {
     const { root, clean } = makeRepo();
     try {
