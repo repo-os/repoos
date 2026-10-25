@@ -14,9 +14,9 @@ branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T18:04:34Z"
+updated_at: "2026-10-25T18:04:35Z"
 dev_error_count: 8
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4-pro\",\"at\":\"2026-10-25T16:53:06.736Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4-pro\",\"at\":\"2026-10-25T16:53:17.358Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4-pro\",\"at\":\"2026-10-25T16:53:23.411Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:04:35.221Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -139,3 +139,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T18:03:16Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T18:04:34Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-25T18:04:34Z · agent exited with an error (codex) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-10-25T18:04:35Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
