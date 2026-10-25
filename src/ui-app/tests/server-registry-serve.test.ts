@@ -123,6 +123,38 @@ describe("startServer running-server registry", () => {
     }
   });
 
+  it("keeps human-disabled fsmonitor when a preview child serves from a linked worktree (#0958)", async () => {
+    const main = minimalRepo();
+    git(main, ["config", "core.fsmonitor", "false"]);
+    git(main, ["config", "core.untrackedCache", "false"]);
+    const wt = join(main, "task-wt");
+    git(main, ["worktree", "add", "-q", wt, "-b", "feat/preview-shot"]);
+    process.env.REPOOS_PREVIEW_CHILD = "1";
+    const handle = await startServer({
+      root: wt,
+      host: "127.0.0.1",
+      port: 0,
+      disableAuth: true,
+    });
+    try {
+      expect(
+        execFileSync("git", ["config", "--get", "core.fsmonitor"], {
+          cwd: main,
+          encoding: "utf8",
+        }).trim(),
+      ).toBe("false");
+      expect(
+        execFileSync("git", ["config", "--get", "core.untrackedCache"], {
+          cwd: main,
+          encoding: "utf8",
+        }).trim(),
+      ).toBe("false");
+    } finally {
+      await handle.close();
+      delete process.env.REPOOS_PREVIEW_CHILD;
+    }
+  });
+
   it("honors git.tuneForScale = false during startup", async () => {
     const root = minimalRepo();
     writeFileSync(join(root, "repoos.toml"), "servePort = 0\ngit.tuneForScale = false\n");
