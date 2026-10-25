@@ -6,13 +6,13 @@ status: active
 hold: true
 priority: p2
 area: web
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T17:39:47Z"
+updated_at: "2026-10-25T17:40:15Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
@@ -249,3 +249,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T17:39:19Z · body
 - 2026-10-25T17:39:33Z · engineer stopped by request
 - 2026-10-25T17:39:47Z · held
+- 2026-10-25T17:40:15Z · assigned_to
