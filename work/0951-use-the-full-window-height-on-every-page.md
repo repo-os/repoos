@@ -14,7 +14,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T01:39:59Z"
+updated_at: "2026-10-25T01:40:03Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from eec677ba to d74e9b93) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: eec677bac89c446145383d0d176ce86853f65c62
 review_passes: 1
@@ -134,3 +134,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T01:32:09Z · body
 - 2026-10-25T01:39:59Z · agent exited with an error (codex) · 2026-10-25T01:39:57.861759Z ERROR codex_core::session: failed to record rollout items: thread 01a170ac-5ad0-7e71-9e8e-d1abd26933d6 not found
 - 2026-10-25T01:39:59Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-25T01:39:57.861759Z ERROR codex_core::session: failed to record rollout items: thread 01a170ac-5ad0-7e71-9e8e-d1abd26933d6 not found
+- 2026-10-25T01:40:03Z · message_delivered: 1 message(s)
