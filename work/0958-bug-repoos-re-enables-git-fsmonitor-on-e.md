@@ -2,7 +2,7 @@
 id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
-status: review
+status: active
 priority: p1
 area: core
 assigned_to: ai
