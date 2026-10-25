@@ -27,8 +27,9 @@ describe("standard page height and floating controls", () => {
       /--page-bottom-inset:\s*calc\(var\(--floating-head-stack-height\) \+ var\(--floating-head-bottom\) \+ 16px\)/,
     );
     expect(css).toMatch(
-      /\.body::after\s*\{[^}]*position:\s*fixed;[^}]*background:\s*linear-gradient\(to bottom, transparent, var\(--bg\)\)/s,
+      /\.body::after\s*\{[^}]*position:\s*fixed;[^}]*left:\s*auto;[^}]*right:\s*0;[^}]*width:\s*calc\(var\(--floating-head-size\) \+ 44px\);[^}]*background:\s*linear-gradient\(to bottom, transparent, var\(--bg\)\)/s,
     );
+    expect(css).toMatch(/full-width viewport gradient reads as a bottom band/);
     expect(css).toMatch(
       /--page-bottom-fade-size:\s*calc\(var\(--floating-head-stack-height\) \+ var\(--floating-head-bottom\)\)/,
     );
