@@ -5,7 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: Reading additional input from stdin...
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 debug_tldr: "Remote runners failed link probes and the local check sat 8+ minutes behind another gate—restore runners or wait, then rerun repoos check."
 debug_tldr_at: "2026-10-25T11:28:23Z"
 debug_tldr_key: dev-error|Reading additional input from stdin...
@@ -17,15 +17,15 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T11:28:23Z"
+updated_at: "2026-10-25T11:43:40Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 review_passes: 1
 handoff_signal_retry_count: 1
-dev_error_count: 7
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T11:28:03.815Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 8
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T11:28:03.815Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T11:43:40.281Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -201,3 +201,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T11:28:03Z · agent exited with an error (codex) · Reading additional input from stdin...
 - 2026-10-25T11:28:03Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-25T11:28:07Z · note: adopted orphaned engineer pid 80014
+- 2026-10-25T11:43:40Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
