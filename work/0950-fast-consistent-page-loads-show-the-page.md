@@ -1,10 +1,8 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 priority: p2
@@ -17,13 +15,15 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T11:35:04Z"
+updated_at: "2026-10-25T11:59:02Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 4
+dev_error_count: 5
 ---
 ## Problem
 
@@ -267,4 +267,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T11:30:42Z · note: handoff requested (cli)
 - 2026-10-25T11:34:20Z · CTO nudge: held — handoff gate is running
 - 2026-10-25T11:35:04Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
-
+- 2026-10-25T11:59:02Z · status active→review
