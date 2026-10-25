@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T00:51:55Z"
+updated_at: "2026-10-25T00:53:05Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -77,7 +77,7 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 "highlight": ".waiting-info .drawer-info-content",
 "steps": [
 {
-  "click": "details.waiting-info > summary"
+"click": "details.waiting-info > summary"
 }
 ],
 "state": "drawer:tabExpandWarnings"
@@ -89,7 +89,7 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 "highlight": ".debug-status-detail",
 "steps": [
 {
-  "click": ".debug-tabs .debug-tab:first-child"
+"click": ".debug-tabs .debug-tab:first-child"
 }
 ],
 "state": "drawer:tabExpandWarnings"
@@ -149,3 +149,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T00:48:22Z · body
 - 2026-10-25T00:50:09Z · note: loading state detected: loading text "Loading changes…" on /work?task=9999&tab=changes
 - 2026-10-25T00:51:55Z · CTO nudge: held — remote validation is running
+- 2026-10-25T00:53:05Z · body
