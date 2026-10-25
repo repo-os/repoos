@@ -13,7 +13,7 @@ describe("standard page height and floating controls", () => {
     expect(css).toMatch(/#app\s*\{[^}]*height:\s*100dvh/s);
     expect(css).toMatch(/\.body\s*\{[^}]*flex:\s*1;[^}]*min-height:\s*0;/s);
     expect(css).toMatch(
-      /\.main\s*\{[^}]*overflow-y:\s*auto;[^}]*min-height:\s*0;[^}]*padding:[^;]*var\(--page-bottom-inset\)/s,
+      /\.main\s*\{[^}]*overflow-y:\s*auto;[^}]*min-height:\s*0;[^}]*padding:\s*22px 26px 0/s,
     );
   });
 
@@ -27,7 +27,7 @@ describe("standard page height and floating controls", () => {
       /--page-bottom-inset:\s*calc\(var\(--floating-head-stack-height\) \+ var\(--floating-head-bottom\) \+ 24px\)/,
     );
     expect(css).toMatch(
-      /\.body::after\s*\{[^}]*position:\s*fixed;[^}]*left:\s*auto;[^}]*right:\s*0;[^}]*width:\s*calc\(var\(--floating-head-size\) \+ 44px\);[^}]*background:\s*linear-gradient\(to bottom, transparent, var\(--bg\)\)/s,
+      /\.body::after\s*\{[^}]*position:\s*fixed;[^}]*left:\s*auto;[^}]*right:\s*0;[^}]*width:\s*calc\(var\(--floating-head-size\) \+ var\(--floating-head-inline-offset\) \+ 22px\);[^}]*background:\s*linear-gradient\(to bottom, transparent, var\(--bg\)\)/s,
     );
     expect(css).toMatch(/full-width viewport[\s\S]*?gradient reads as a bottom band/);
     expect(css).toMatch(
@@ -40,7 +40,7 @@ describe("standard page height and floating controls", () => {
       /\.main\s*\{[^}]*padding-inline-end:\s*max\(26px, var\(--page-inline-end-inset\)\)/s,
     );
     expect(css).toMatch(/--floating-head-size:\s*46px/);
-    expect(css).toMatch(/padding:\s*18px 16px var\(--page-bottom-inset\)/);
+    expect(css).toMatch(/@media \(max-width: 760px\)[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0/s);
     expect(floatingHeads).toMatch(/\.stack\s*\{[^}]*gap:\s*var\(--floating-head-gap\)/s);
     expect(floatingHeads).toMatch(
       /\.head-btn\s*\{[^}]*width:\s*var\(--floating-head-size\);[^}]*height:\s*var\(--floating-head-size\)/s,

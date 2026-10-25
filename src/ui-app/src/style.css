@@ -30,6 +30,9 @@
   --floating-head-gap: 8px;
   --floating-head-bottom: calc(22px + var(--safe-bot));
   --floating-head-inline-offset: 22px;
+  --page-inline-end-inset: calc(
+    var(--floating-head-size) + var(--floating-head-inline-offset) + 12px
+  );
   --floating-head-stack-height: calc(
     var(--floating-head-size) + var(--floating-head-size) + var(--floating-head-size) +
       var(--floating-head-gap) + var(--floating-head-gap)
@@ -1165,6 +1168,7 @@
   /* Full-height views own their scrollports and put the shared end inset on
      that scroller. Padding here would instead recreate an empty bottom band. */
   padding: 22px 26px 0;
+  padding-inline-end: max(26px, var(--page-inline-end-inset));
   min-width: 0;
 }
 /* Standard nav views span this pane's full width: do NOT add a page-level
@@ -8664,6 +8668,7 @@
   }
   .main {
     padding: 18px 16px 0;
+    padding-inline-end: max(16px, var(--page-inline-end-inset));
   }
   .tabbar {
     display: flex;
