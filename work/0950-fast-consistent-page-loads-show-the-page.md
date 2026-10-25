@@ -13,7 +13,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T18:14:17Z"
+updated_at: "2026-10-25T18:19:14Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -89,16 +89,47 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 ```
 
 ## Performance measurements
-### Baseline (driver on main, 2026-10-25, 5 runs)
-- `/api/deployments` median **2687 ms** (min 2279, max 3000)
-- `/api/project-environments` 1 ms · `/api/dev/targets` 1 ms · `/api/check-plan` 5 ms · `/api/releases` 0 ms
+Measured 2026-10-26, five samples per endpoint/page. This replaces the earlier latency-replay figures: the old harness included a 3-second wait for an absent skeleton and those figures are not valid navigation timings.
 
-### After this branch (2026-10-25, `bun scripts/bench-page-loads.mjs --runs=5`)
-**Endpoint (in-process `getDeploymentsStatus`, this worktree):** median **1923 ms** (min 1785, max 2093). Same handler as baseline; machine load differs — not a claimed optimization.
+### Method
 
-**Pages (headless WebKit, endpoint latencies replayed per script):** median cold → revisit — Releases 1203→657 ms, Checks 864→622 ms, Deployments 3392→3011 ms, Dev 1204→3062 ms, Secrets 10030→3013 ms, Agents 632→3023 ms. Skeleton on cold: Releases/Checks/Deployments/Dev 5/5. Skeleton on revisit: Deployments/Dev/Secrets **0/5** (cached content, no flash). Revisit wall-clock still includes the bench harness’s delayed API routes.
+Built the pre-feature UI from Git main (`7d064df87455`, all 863 archived UI blobs verified against that revision) entirely inside this worktree. Served that UI and this branch UI against the same isolated, authenticated fixture backend in headless WebKit at 1440×900. No injected API delay; service workers disabled. Cold means a new document/context; revisit means sidebar navigation away and back in the same context. Content readiness is the first sampled animation frame containing visible real content and no visible skeleton; timing includes browser navigation/action overhead. Skeleton checks no longer wait for a missing element or count hidden tabs. Secrets uses the empty environment state; Agents uses the default agents tab. Deferred-response component tests separately cover populated/cached views and refresh failures.
 
-Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
+Reproduce baseline UI with `git archive main src/ui-app src/core src/server` extracted into `.repoos/page-load-baseline`, then `bunx vite build --config .repoos/page-load-baseline/src/ui-app/vite.config.ts`. Run `bun scripts/bench-page-loads.mjs --runs=5 --baseline-ui=.repoos/page-load-baseline/dist/ui`; after-only runs omit `--baseline-ui`. Raw five-sample results are printed by the script. This run used `.repoos/page-load-benchmark.log` for the reconstructed baseline and `.repoos/page-load-benchmark-final.log` for the final branch build.
+
+### Per-page median time to content (ms)
+
+| Page | Before cold | After cold | Before revisit | After revisit | After revisit skeletons |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Releases | 422 | 354 | 607 | 476 | 0/5 |
+| Checks | 410 | 408 | 614 | 414 | 0/5 |
+| Deployments | 412 | 416 | 631 | 398 | 0/5 |
+| Dev | 420 | 397 | 629 | 429 | 0/5 |
+| Secrets | 417 | 401 | 434 | 441 | 0/5 |
+| Agents | 643 | 415 | 451 | 472 | 0/5 |
+
+Cold shell medians after the change (ms): Releases 321, Checks 408, Deployments 416, Dev 397, Secrets 401, Agents 415. Fast fixture requests can settle before a sampled frame; the deterministic first-load skeleton tests and loading shot fixtures cover slow responses. No production page speedup is inferred from fixture timings; Secrets/Agents revisits are roughly unchanged at this latency.
+
+### Per-endpoint HTTP median (ms, identical fixture backend)
+
+| Endpoint | Before | After |
+| --- | ---: | ---: |
+| `/api/release` | 42 | 28 |
+| `/api/release/distribution` | 45 | 20 |
+| `/api/check-plan` | 1 | 1 |
+| `/api/check-runs?limit=300` | 2 | 1 |
+| `/api/deployments` | 64 | 41 |
+| `/api/dev/targets` | 1 | 1 |
+| `/api/project-environments` | 1 | 1 |
+| `/api/agents/detect` | 0 | 0 |
+
+### Real-worktree slow endpoint
+
+Previously recorded driver baseline: `/api/deployments` median 2687 ms (2279–3000, five samples). In this run the actual worktree `getDeploymentsStatus()` handler measured median **2508 ms** (2335–2688; samples 2688, 2508, 2357, 2335, 2626). This is in-process handler time, distinct from the small fixture HTTP endpoint above. Earlier attempts ranged higher under different host load; no server optimization or causal server speedup is claimed. The handler already parallelizes independent branch summaries and coalesces identical freshness work. Follow-up **#0955** tracks profiling/reducing the remaining git subprocess fan-out.
+
+### Review follow-up and visual QA
+
+Cached empty lists now render without skeletons on Checks, Dev, Secrets, detected Agents and Releases distribution. Table-driven tests cover empty/populated responses; Secrets tests cover late success and failure after the selected environment changes, and the previous keys are cleared immediately. Skeletons now match Dev stacked target cards and Deployments branch cards plus a matrix; table skeletons use aligned row columns. Reduced-motion styles apply to every shape. Four fresh fixture PNGs were captured under `.repoos/page-load-shots-final/` for visual inspection; the four corresponding managed handoff shots remain declared.
 
 ## Implementation follow-up
 The current branch already migrated Check Runs, detected Agents and release distribution to the shared skeleton/cache. This continuation fixes cached empty lists on Checks, Dev and Secrets, clears the previous environment snapshot immediately when selection changes, and guards late snapshot failures as well as successes. Table-driven race tests cover both late outcomes; empty and populated list cases cover cached revisits. The page benchmark now uses a separately built baseline UI from Git against the same authenticated fixture backend, measures DOM content readiness without waiting for an absent skeleton, and ignores skeletons in hidden tabs. Existing loading/loaded shots for Deployments and Dev remain declared; current captures are being verified before handoff.
@@ -333,3 +364,4 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-25T18:12:36Z · body: Implementation follow-up (added)
 - 2026-10-25T18:12:37Z · message_queued at 2026-10-25T18:12:37.216Z
 - 2026-10-25T18:14:17Z · body
+- 2026-10-25T18:19:14Z · body: Performance measurements (added 29, removed 7)
