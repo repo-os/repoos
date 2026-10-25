@@ -11,10 +11,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/use-the-full-window-height-on-every-page
-cli_override: opencode
-model_override: opencode-go/kimi-k3.1-pro
+cli_override: codex
+model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T19:04:26Z"
+updated_at: "2026-10-25T19:11:38Z"
 review_rounds: 1
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
@@ -277,3 +277,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T19:04:18Z · message_delivered: 1 message(s)
 - 2026-10-25T19:04:20Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (2/3 crashes in 30m) · error: This API key has expired. Create a new API key in OpenCode Console and replace it in your client or secret store. Signing in again will not renew this key.
 - 2026-10-25T19:04:26Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/kimi-k3.1-pro) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T19:11:38Z · cli_override, model_override
