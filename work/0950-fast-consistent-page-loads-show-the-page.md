@@ -249,3 +249,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T09:41:26Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-10-25T09:53:59Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T10:15:43Z · needs_input
+- 2026-10-25T10:15:43Z · message_delivered: 1 message(s)
