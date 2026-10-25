@@ -52,6 +52,10 @@ release soak), a few patterns recur. Full CLI table and incident notes:
   requests, do not run the task watchdog or engineer recovery, and the shared git
   commit helper refuses commits from a preview child. This prevents a shot
   capture rooted in task B's worktree from recording task A's activity there.
+  During handoff validation, a concurrent RepoOS commit that changes only the
+  handed-off task's own `work/<id>-*.md` file is tolerated, matching close-out's
+  bookkeeping allowance; source changes and another task's task file still
+  invalidate the handoff.
 - **Stray `repoos.toml` on the feature branch** (#0827): handoff and Move to done
   both fail fast when the branch diff against `main` touches `repoos.toml` and
   the task did not declare that file in its title, `paths`, or `config` area —
