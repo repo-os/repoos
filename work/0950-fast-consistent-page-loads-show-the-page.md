@@ -16,7 +16,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T00:57:42Z"
+updated_at: "2026-10-25T01:01:54Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -190,3 +190,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T00:56:20Z · status review→active
 - 2026-10-25T00:57:33Z · note: DRIVER TAKEOVER (6 review passes). Fixed the pass-6 bug: on Checks, Deployments and Releases the Refresh-failed paragraph started a new v-if chain that swallowed the cached content, so a failed background refresh blanked the page. The content template is now an independent v-if, and each of the three views has a view-level test (cached data stays visible AND the Refresh failed notice shows); the Deployments test was confirmed to fail without the fix. MEASUREMENTS: this diff changes no server code (git diff main...HEAD touches only src/ui-app and src/core/shot-fixtures.ts), so endpoint latencies after equal the recorded baseline by construction: /api/deployments 2687 ms median (5 runs), others 0-5 ms; the slow deployments handler is tracked in follow-up #0955. Client-side: first visit shows the shell plus a skeleton; revisit renders cached content with zero blocking requests and refreshes in place, proven by the revisit tests for Releases, Checks, Deployments, Dev, Secrets and Agents. Wall-clock page timings were not captured because starting a second server from a worktree is prohibited (it commits other tasks' files, see #0954).
 - 2026-10-25T00:57:42Z · note: handoff requested (ui-review)
+- 2026-10-25T01:01:54Z · handoff failed · ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
