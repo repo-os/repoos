@@ -3,6 +3,9 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "error: Upstream request failed: Invalid credential"
 priority: p2
 area: web
 assigned_to: ai
@@ -11,15 +14,15 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-25T16:21:28Z"
+updated_at: "2026-10-25T16:50:26Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: bd55eb7fddf954d47a02c9ae7f5b40934735b236
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 review_passes: 1
 handoff_signal_retry_count: 1
-dev_error_count: 9
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T14:33:41.307Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 10
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-25T16:50:26.076Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -234,3 +237,5 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-25T16:21:03Z · cli_override, model_override
 - 2026-10-25T16:21:08Z · message_queued at 2026-10-25T16:21:08.180Z
 - 2026-10-25T16:21:28Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T16:50:24Z · agent exited with an error (opencode) · error: Upstream request failed: Invalid credential
+- 2026-10-25T16:50:26Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (1/3 crashes in 30m) · error: Upstream request failed: Invalid credential
