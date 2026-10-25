@@ -13,7 +13,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T18:11:54Z"
+updated_at: "2026-10-25T18:12:36Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -58,32 +58,32 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 ```json
 [
 {
-  "label": "Deployments first load skeleton",
-  "target": "default",
-  "route": "/deployments",
-  "highlight": ".page-skeleton",
-  "state": "deployments:loading"
+"label": "Deployments first load skeleton",
+"target": "default",
+"route": "/deployments",
+"highlight": ".page-skeleton",
+"state": "deployments:loading"
 },
 {
-  "label": "Deployments loaded view",
-  "target": "default",
-  "route": "/deployments",
-  "highlight": ".dep-page",
-  "state": "deployments:environmentBinding"
+"label": "Deployments loaded view",
+"target": "default",
+"route": "/deployments",
+"highlight": ".dep-page",
+"state": "deployments:environmentBinding"
 },
 {
-  "label": "Dev first load skeleton",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".page-skeleton",
-  "state": "dev:loading"
+"label": "Dev first load skeleton",
+"target": "default",
+"route": "/dev",
+"highlight": ".page-skeleton",
+"state": "dev:loading"
 },
 {
-  "label": "Dev running target",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".dev-card",
-  "state": "dev:running"
+"label": "Dev running target",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-card",
+"state": "dev:running"
 }
 ]
 ```
@@ -99,6 +99,9 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 **Pages (headless WebKit, endpoint latencies replayed per script):** median cold → revisit — Releases 1203→657 ms, Checks 864→622 ms, Deployments 3392→3011 ms, Dev 1204→3062 ms, Secrets 10030→3013 ms, Agents 632→3023 ms. Skeleton on cold: Releases/Checks/Deployments/Dev 5/5. Skeleton on revisit: Deployments/Dev/Secrets **0/5** (cached content, no flash). Revisit wall-clock still includes the bench harness’s delayed API routes.
 
 Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
+
+## Implementation follow-up
+The current branch already migrated Check Runs, detected Agents and release distribution to the shared skeleton/cache. This continuation fixes cached empty lists on Checks, Dev and Secrets, clears the previous environment snapshot immediately when selection changes, and guards late snapshot failures as well as successes. Table-driven race tests cover both late outcomes; empty and populated list cases cover cached revisits. The page benchmark now uses a separately built baseline UI from Git against the same authenticated fixture backend, measures DOM content readiness without waiting for an absent skeleton, and ignores skeletons in hidden tabs. Existing loading/loaded shots for Deployments and Dev remain declared; current captures are being verified before handoff.
 
 ## Activity
 
@@ -327,3 +330,4 @@ Follow-up **#0955** profiles `/api/deployments` subprocess fan-out.
 - 2026-10-25T18:10:49Z · cli_override, model_override
 - 2026-10-25T18:10:50Z · message_queued at 2026-10-25T18:10:50.981Z
 - 2026-10-25T18:11:54Z · body
+- 2026-10-25T18:12:36Z · body: Implementation follow-up (added)
