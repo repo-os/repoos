@@ -17,7 +17,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T12:00:32Z"
+updated_at: "2026-10-25T12:08:04Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -68,52 +68,52 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "Reviewer failure with one compact header chip",
-  "target": "default",
-  "route": "/work?task=0952&tab=changes",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusReviewFailed"
+"label": "Reviewer failure with one compact header chip",
+"target": "default",
+"route": "/work?task=0952&tab=changes",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailed"
 },
 {
-  "label": "Checks running with one status line",
-  "target": "default",
-  "route": "/work?task=0952&tab=changes",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunning"
+"label": "Checks running with one status line",
+"target": "default",
+"route": "/work?task=0952&tab=changes",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning"
 },
 {
-  "label": "Checks failed and long filename capped at two lines",
-  "target": "default",
-  "route": "/work?task=0952&tab=changes",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksFailed"
+"label": "Checks failed and long filename capped at two lines",
+"target": "default",
+"route": "/work?task=0952&tab=changes",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailed"
 },
 {
-  "label": "Status help popover open",
-  "target": "default",
-  "route": "/work?task=0952&tab=changes",
-  "highlight": ".drawer-info-popover",
-  "steps": [
-    {
-      "click": ".drawer-info-popover summary"
-    }
-  ],
-  "state": "drawer:statusHandoffFailed"
+"label": "Status help popover open",
+"target": "default",
+"route": "/work?task=0952&tab=changes",
+"highlight": ".drawer-info-popover",
+"steps": [
+  {
+    "click": ".drawer-info-popover summary"
+  }
+],
+"state": "drawer:statusHandoffFailed"
 },
 {
-  "label": "Debug Status details subtab",
-  "target": "default",
-  "route": "/work?task=0952&tab=changes",
-  "highlight": ".debug-panel",
-  "steps": [
-    {
-      "click": "[data-test-id=task-tab-debug]"
-    },
-    {
-      "click": "[data-test-id=debug-tab-status]"
-    }
-  ],
-  "state": "drawer:statusReviewFailed"
+"label": "Debug Status details subtab",
+"target": "default",
+"route": "/work?task=0952&tab=changes",
+"highlight": ".debug-panel",
+"steps": [
+  {
+    "click": "[data-test-id=task-tab-debug]"
+  },
+  {
+    "click": "[data-test-id=debug-tab-status]"
+  }
+],
+"state": "drawer:statusReviewFailed"
 }
 ]
 ```
@@ -278,3 +278,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T11:48:31Z · message_delivered: 1 message(s)
 - 2026-10-25T12:00:15Z · body
 - 2026-10-25T12:00:32Z · body
+- 2026-10-25T12:08:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
