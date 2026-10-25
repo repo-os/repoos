@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T02:38:49Z"
+updated_at: "2026-10-25T02:39:09Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-25T02:27:44.782Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
@@ -61,11 +61,97 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "test",
+  "label": "Review failed — one card above tabs (desktop)",
   "target": "default",
   "route": "/work?task=9999",
   "highlight": ".drawer-pre-tabs",
-  "state": "drawer:statusReviewFailed"
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 1280
+},
+{
+  "label": "Review failed — one card above tabs (narrow)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 390
+},
+{
+  "label": "Not landable — checklist in status region (desktop)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:landable",
+  "viewportWidth": 1280
+},
+{
+  "label": "Not landable — checklist in status region (narrow)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:landable",
+  "viewportWidth": 390
+},
+{
+  "label": "Checks running — status line with progress (desktop)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusChecksRunning",
+  "viewportWidth": 1280
+},
+{
+  "label": "Checks running — status line with progress (narrow)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusChecksRunning",
+  "viewportWidth": 390
+},
+{
+  "label": "Confirming handoff — status line (desktop)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusConfirmingHandoff",
+  "viewportWidth": 1280
+},
+{
+  "label": "Confirming handoff — status line (narrow)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-pre-tabs",
+  "state": "drawer:statusConfirmingHandoff",
+  "viewportWidth": 390
+},
+{
+  "label": "Checks failed after retries — short header chip (desktop)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-head",
+  "state": "drawer:statusChecksFailed",
+  "viewportWidth": 1280
+},
+{
+  "label": "Checks failed after retries — two-line filename (narrow)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-head",
+  "state": "drawer:statusChecksFailed",
+  "viewportWidth": 390
+},
+{
+  "label": "Debug Status details — full guidance archive",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": "[aria-label=\"Task status details\"]",
+  "steps": [
+    {
+      "click": "button[data-test-id=\"debug-tab-status\"]"
+    }
+  ],
+  "state": "drawer:statusReviewFailed",
+  "viewportWidth": 1280
 }
 ]
 ```
@@ -162,3 +248,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T02:37:02Z · body
 - 2026-10-25T02:38:32Z · body
 - 2026-10-25T02:38:49Z · body
+- 2026-10-25T02:39:09Z · body
