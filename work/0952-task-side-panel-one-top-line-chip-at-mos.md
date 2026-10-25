@@ -256,3 +256,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T09:49:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-25T09:54:34Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-25T10:15:47Z · needs_input
+- 2026-10-25T10:15:47Z · message_queued at 2026-10-25T10:15:47.735Z
