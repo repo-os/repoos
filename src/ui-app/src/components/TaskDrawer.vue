@@ -646,32 +646,61 @@ const drawerStatusSummary = computed(() => {
     reviewerRunning: "Reviewer running",
     workRunning: "Work running",
   } as const;
-  const detail =
-    key === "waitingForYou"
-      ? needsInputBannerText(
-          task.needsInputReason,
-          activeNeedsInputQuestions.value,
-          task.needsInputDetail,
+  const failCount = landable.value?.summary.fail ?? 0;
+  const shortDetails: Record<DrawerStatusKey, string> = {
+    waitingForYou: needsInputBannerText(
+      task.needsInputReason,
+      activeNeedsInputQuestions.value,
+      task.needsInputDetail,
+    ),
+    reviewFailed: review.value?.report?.summary || "No complete report",
+    notLandable: `${failCount} landing check${failCount === 1 ? "" : "s"} failing`,
+    handoffFailed:
+      handoffError.value ??
+      repo.doneErrorFor(task.id)?.message ??
+      "The handoff did not finish.",
+    checksFailedAfterRetries: "After retries",
+    checksRunning:
+      activeCheckRun.value?.scope && activeCheckRun.value.scope !== "full"
+        ? `Changed-path (${activeCheckRun.value.scope})`
+        : "",
+    confirmingHandoff: "",
+    reviewerRunning: "",
+    workRunning: "",
+  };
+  const landableChecklist = landable.value
+    ? landable.value.checks
+        .map(
+          (check) =>
+            `${check.status.toUpperCase()}: ${check.label} — ${check.detail}${check.nextStep ? `; next: ${check.nextStep}` : ""}`,
         )
-      : key === "reviewFailed"
-        ? review.value?.report?.summary ||
-          "Reviewer failed without producing a report. Open Review and use Review again to retry."
-        : key === "notLandable"
-          ? `${landable.value?.summary.fail ?? 0} landing checks are failing.`
-          : key === "handoffFailed"
-            ? (handoffError.value ??
-              repo.doneErrorFor(task.id)?.message ??
-              "The handoff did not finish.")
-            : key === "checksFailedAfterRetries"
-              ? (checkChip.value?.title ?? "Checks failed after retries.")
-              : key === "reviewerRunning"
-                ? "The reviewer is inspecting this task."
-                : key === "workRunning"
-                  ? "An agent is working on this task."
-                  : awaitingFreshReview.value
-                    ? "Confirming handoff; the reviewer should start automatically. Use Review again if it does not."
-                    : handoffStepLabel.value;
-  return { key, label: labels[key], detail };
+        .join("\n")
+    : "";
+  const guidance: Record<DrawerStatusKey, string> = {
+    waitingForYou:
+      "Choose the suggested action, answer questions in PM, or dismiss this request. The task stays active until its work is resolved.",
+    reviewFailed:
+      "Read the latest review report, then send the task to the engineer or use Review again. The Review tab keeps the full report and retry action.",
+    notLandable: landableChecklist || "This task is not ready to land yet.",
+    handoffFailed:
+      `${handoffError.value ?? repo.doneErrorFor(task.id)?.message ?? "The handoff did not finish."}\nFix it and click Review again.`,
+    checksFailedAfterRetries: checkChip.value?.title ?? "Checks failed after retries.",
+    checksRunning: "The check gate is running — open the Debug tab for live output.",
+    confirmingHandoff:
+      "RepoOS is finalizing the handoff. The task stays active until the checks pass.",
+    reviewerRunning: "The reviewer is inspecting this task.",
+    workRunning: "An agent is working on this task.",
+  };
+  const isError = ["reviewFailed", "notLandable", "handoffFailed", "checksFailedAfterRetries"].includes(
+    key,
+  );
+  return {
+    key,
+    label: labels[key],
+    detail: shortDetails[key],
+    guidance: guidance[key],
+    isError,
+  };
 });
 
 const drawerStatusDetails = computed(() => {
@@ -2789,37 +2818,6 @@ const compactNeedsInputChipLabel = computed(() =>
     ? needsInputCompactChipLabel(ui.active.needsInputReason, activeNeedsInputQuestions.value)
     : "Needs input",
 );
-
-  if (!ui.active || ui.active.status !== "review") return null;
-  if (review.value?.running) return { label: "reviewing", cls: "rs-reviewing" };
-  if (awaitingFreshReview.value) return { label: "awaiting fresh review", cls: "rs-reviewing" };
-  if (repo.isRunning(ui.active.id)) {
-    // A running agent on an already-review task, outside auto-review, means
-    // the server silently resumed the engineer to fix a post-handoff
-    // `repoos check` failure or resolve a close-out merge conflict
-    // (handoff.ts's scheduleCheckFailureRetry / scheduleMergeConflictRetry) —
-    // never that the task regressed to active. Label it distinctly. The
-    // counters are read through the shared helper so they survive the full
-    // Task a `task.updated` SSE payload carries (they live in `extra` there).
-    if (retryCountFrom(ui.active, "mergeConflict")) {
-      return { label: "fixing merge conflict", cls: "rs-coding" };
-    }
-    return retryCountFrom(ui.active, "check")
-      ? { label: "fixing check failure", cls: "rs-coding" }
-      : { label: "coding", cls: "rs-coding" };
-  }
-  if (review.value?.report?.state === "incomplete") {
-    return { label: "review incomplete", cls: "rs-incomplete" };
-  }
-  // A "good to go" verdict needs nothing from the human beyond the normal
-  // Move to done, so it shows no chip: a "waiting for human" label read like
-  // an unanswered question (needs_input has its own chip).
-  if (verdict.value?.label === "good to go") return null;
-  if (verdict.value) {
-    return { label: "review findings", cls: "rs-incomplete" };
-  }
-  return null;
-});
 
 /** Compact lifecycle counts: D = dev passes, R = review passes. The server
  * bumps `review_passes` only when a review finishes with a parseable verdict
