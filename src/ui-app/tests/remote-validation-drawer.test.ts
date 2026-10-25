@@ -392,7 +392,7 @@ describe("RemoteValidationDrawer", () => {
       });
 
       const numbers = wrapper.findAll('input[type="number"]');
-      expect(numbers).toHaveLength(3);
+      expect(numbers).toHaveLength(5);
       expect((numbers[1]!.element as HTMLInputElement).value).toBe("180");
       expect((numbers[2]!.element as HTMLInputElement).value).toBe("90");
 
@@ -401,6 +401,11 @@ describe("RemoteValidationDrawer", () => {
       await flush();
       expect(config.form["remoteValidation.bundleUploadBudgetSecs"]).toBe(240);
       expect(config.form["remoteValidation.bundleUploadStallSecs"]).toBe(60);
+      await numbers[3]!.setValue("409600");
+      await numbers[4]!.setValue("2097152");
+      await flush();
+      expect(config.form["remoteValidation.linkThroughputFloorBps"]).toBe(409600);
+      expect(config.form["remoteValidation.linkProbeBytes"]).toBe(2097152);
       expect(
         calls.some(
           (c) =>
