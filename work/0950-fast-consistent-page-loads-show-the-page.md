@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T12:22:09Z"
+updated_at: "2026-10-25T12:41:12Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5ac37b70f277593bff5904521ca3a553199965cb
 review_passes: 8
@@ -87,6 +87,18 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 }
 ]
 ```
+
+## Performance measurements
+### Baseline (driver on main, 2026-10-25, 5 runs)
+- `/api/deployments` median **2687 ms** (min 2279, max 3000)
+- `/api/project-environments` 1 ms · `/api/dev/targets` 1 ms · `/api/check-plan` 5 ms · `/api/releases` 0 ms
+
+### After this branch (2026-10-25, `bun scripts/bench-page-loads.mjs --runs=5`)
+**Endpoint (in-process `getDeploymentsStatus`, same worktree):** median **1923 ms** (min 1785, max 2093). No server-handler change claimed; machine load differs from baseline run.
+
+**Pages (headless WebKit, endpoint latencies replayed per script):** median cold → revisit time-to-content — Releases 1203→657 ms, Checks 864→622 ms, Deployments 3392→3011 ms, Dev 1204→3062 ms, Secrets 10030→3013 ms, Agents 632→3023 ms. Skeleton on cold: Releases/Checks/Deployments/Dev 5/5; Secrets 0/5. Skeleton on revisit: Deployments/Dev/Secrets **0/5** (cached content, no flash). Revisit wall-clock still includes the bench’s delayed API routes; the UX win is instant cached render without skeleton.
+
+Follow-up **#0955** profiles `/api/deployments` subprocess fan-out for a real server-side win.
 
 ## Activity
 
@@ -269,3 +281,4 @@ Several pages (Releases, Checks, Deployments, Dev on first load, and likely Secr
 - 2026-10-25T12:20:52Z · needs_input
 - 2026-10-25T12:20:53Z · message_queued at 2026-10-25T12:20:53.788Z
 - 2026-10-25T12:22:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T12:41:12Z · body: Performance measurements (added)
