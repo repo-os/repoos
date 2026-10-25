@@ -252,6 +252,46 @@ export function branchAheadCounts(root: string, base: string | null): Map<string
   return map;
 }
 
+function parseAheadCounts(out: string | null): Map<string, number> {
+  const map = new Map<string, number>();
+  if (!out) return map;
+  for (const line of out.split("\n")) {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length < 2) continue;
+    const ahead = Number(parts[1]);
+    if (parts[0] && Number.isFinite(ahead)) map.set(parts[0], ahead);
+  }
+  return map;
+}
+
+const aheadCountsCache = new Map<string, { at: number; map: Map<string, number> }>();
+const AHEAD_COUNTS_TTL_MS = 20_000;
+
+/**
+ * Non-blocking, briefly cached `branchAheadCounts`. The synchronous version ran
+ * `git for-each-ref %(ahead-behind:main)` through execFileSync on the server's
+ * main thread on every worktree-status reconcile; over ~100 branches and 20k+
+ * commits that child burned 60%+ CPU for seconds while the event loop sat
+ * blocked, so the server stopped answering (2026-10-25). Async + a 20 s cache.
+ */
+export async function branchAheadCountsAsync(
+  root: string,
+  base: string | null,
+): Promise<Map<string, number>> {
+  if (!base) return new Map();
+  const key = `${root}\0${base}`;
+  const hit = aheadCountsCache.get(key);
+  if (hit && Date.now() - hit.at < AHEAD_COUNTS_TTL_MS) return new Map(hit.map);
+  const out = await gitAsync(
+    root,
+    ["for-each-ref", `--format=%(refname:short) %(ahead-behind:${base})`, "refs/heads/"],
+    60_000,
+  );
+  const map = parseAheadCounts(out);
+  aheadCountsCache.set(key, { at: Date.now(), map });
+  return new Map(map);
+}
+
 /** Last commit subject + ISO date touching a specific file. */
 export function lastCommitForFile(
   root: string,
@@ -1014,7 +1054,7 @@ export async function resolveWorktreeStatuses(
   if (wanted.size === 0) return { statuses, cache, changed: false };
 
   const worktrees = worktreeList(root);
-  const aheadCounts = branchAheadCounts(root, opts.baseBranch);
+  const aheadCounts = await branchAheadCountsAsync(root, opts.baseBranch);
 
   let realRoot = root;
   try {
