@@ -4554,19 +4554,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // stalled (0180). Guarded so it never fires while the server is handing
       // over to a reload replacement.
       const watchdogConfig = config.watchdog ?? {};
-      if (isControlPlane) watchdog = new TaskWatchdog(
-        config,
-        index,
-        runner,
-        watchdogConfig.stalenessMs ?? 5 * 60 * 1000,
-        {
-          autoTransition: watchdogConfig.autoTransition !== false,
-          canRun: () => !(reload?.isReloading ?? false),
-          reviews,
-          onDiagnosableFailure: (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
-          logger,
-        },
-      );
+      if (isControlPlane)
+        watchdog = new TaskWatchdog(
+          config,
+          index,
+          runner,
+          watchdogConfig.stalenessMs ?? 5 * 60 * 1000,
+          {
+            autoTransition: watchdogConfig.autoTransition !== false,
+            canRun: () => !(reload?.isReloading ?? false),
+            reviews,
+            onDiagnosableFailure: (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
+            logger,
+          },
+        );
       if (watchdog && watchdogConfig.enabled !== false) watchdog.start();
 
       // Telegram transport resume (#0531): a stored `transport.mode =
