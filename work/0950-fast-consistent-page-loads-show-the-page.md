@@ -13,7 +13,7 @@ model_override: gpt-6.1-sol
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T07:09:30Z"
+updated_at: "2026-10-26T07:14:38Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 61f6a9e583e6a34607e604633e11927b873fca74
 review_passes: 9
@@ -410,3 +410,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T06:45:17Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-10-26T07:09:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-26T07:09:30Z · needs_input
+- 2026-10-26T07:14:38Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
