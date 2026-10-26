@@ -3,9 +3,6 @@ id: "0963"
 title: Build the simplified client project board
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Problem, Acceptance criteria, Notes for AI; body under 400 characters (excluding original prompt)"
 priority: p2
 area: web
 assigned_to: ai
@@ -76,3 +73,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-10-26T19:45:25Z · screenshots
 - 2026-10-26T19:47:08Z · needs_input
 - 2026-10-26T19:47:47Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added); Related (added)
+- 2026-10-26T19:47:47Z · needs_input
