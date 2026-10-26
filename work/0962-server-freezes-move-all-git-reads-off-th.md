@@ -2,17 +2,20 @@
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
-status: review
+status: active
 needs_merge: true
 priority: p0
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-freezes-move-all-git-reads-off-th
-cli_override: codex
-model_override: gpt-6.1-sol
+cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T19:30:12Z"
+updated_at: "2026-10-26T19:31:05Z"
+handoff_signal_retry_count: 1
+dev_error_count: 4
+engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
 The RepoOS server (single Bun main thread) repeatedly freezes or becomes unusably slow (UI never loads, accepts then resets connections) because it runs blocking git child processes per task/branch on the same thread that serves HTTP. With ~910 tasks, ~100 branches, 27 worktrees, each spawn costs 0.1-0.3 s on macOS (syspolicyd). Fixed one loop at a time so far (live-index per-file git, dir-log walk cache, async ahead-count cache, GET /api/system/worktree-gc preview cache) but others remain: worktreeStatus() callers (task-watchdog.ts, indexer.ts), per-task `git rev-list --count`, per-branch `merge-base --is-ancestor` (worktree-gc.ts, task-dependencies.ts, worktree-handoff-guard.ts, done.ts), sync `git log --name-only -- work` walks (indexer.ts:76, story-definition-files.ts).
@@ -51,5 +54,56 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T09:28:10Z · status inbox→active
 - 2026-10-26T09:28:17Z · cli_override, model_override
 - 2026-10-26T09:28:17Z · branch
-- 2026-10-26T19:14:26Z · status active→review
-- 2026-10-26T19:30:12Z · needs_merge
+- 2026-10-26T09:28:30Z · message_queued at 2026-10-26T09:28:30.887Z
+- 2026-10-26T09:28:41Z · agent exited with an error (codex) · 2026-10-26T09:28:35.512993Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-10-26T09:28:41Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · 2026-10-26T09:28:35.512993Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-10-26T09:28:44Z · message_delivered: 1 message(s)
+- 2026-10-26T09:28:59Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · 2026-10-26T09:28:49.831801Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-10-26T09:29:08Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-26T10:04:52Z · cli_override, model_override
+- 2026-10-26T10:04:57Z · needs_input
+- 2026-10-26T10:04:58Z · message_queued at 2026-10-26T10:04:58.089Z
+- 2026-10-26T10:05:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T10:56:54Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T11:14:37Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T11:14:38Z · message_queued at 2026-10-26T11:14:38.107Z
+- 2026-10-26T11:33:32Z · agent exited with an error (opencode) · error: Go usage limit exceeded
+- 2026-10-26T11:33:32Z · engineer crash recovery: switched opencode + opencode-go/kimi-k3.1-pro → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · error: Go usage limit exceeded
+- 2026-10-26T11:33:35Z · message_delivered: 2 message(s)
+- 2026-10-26T11:33:36Z · message_queued at 2026-10-26T11:33:36.352Z
+- 2026-10-26T11:38:49Z · cli_override, model_override
+- 2026-10-26T11:38:51Z · cli_override
+- 2026-10-26T11:38:55Z · cli_override
+- 2026-10-26T11:38:57Z · model_override
+- 2026-10-26T12:32:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T12:35:13Z · cli_override, model_override
+- 2026-10-26T12:36:33Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T12:41:09Z · body
+- 2026-10-26T12:47:27Z · body
+- 2026-10-26T14:00:52Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T14:01:00Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:10:54Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:25:12Z · needs_input
+- 2026-10-26T14:25:20Z · held
+- 2026-10-26T14:25:26Z · assigned_to
+- 2026-10-26T14:25:39Z · status active→ready
+- 2026-10-26T14:44:17Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:53:31Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T15:31:01Z · cli_override, model_override
+- 2026-10-26T18:50:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T18:50:15Z · released, assigned_to
+- 2026-10-26T18:50:38Z · status ready→active
+- 2026-10-26T18:50:45Z · cli_override, model_override
+- 2026-10-26T18:50:50Z · message_delivered: 1 message(s)
+- 2026-10-26T18:50:50Z · message_queued at 2026-10-26T18:50:50.681Z
+- 2026-10-26T18:55:01Z · body
+- 2026-10-26T18:57:30Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-26T18:57:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-26T18:57:31Z · message_delivered: 1 message(s)
+- 2026-10-26T18:58:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-26T19:02:23Z · note: handoff requested (ui-review)
+- 2026-10-26T19:14:27Z · status active→review
+- 2026-10-26T19:14:30Z · note: shots: skipped — the diff (16 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-26T19:15:58Z · note: review pass 1: good to go
+- 2026-10-26T19:30:11Z · needs_merge
+- 2026-10-26T19:31:05Z · status review→active

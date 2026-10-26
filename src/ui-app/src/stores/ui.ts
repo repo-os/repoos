@@ -76,7 +76,7 @@ export const useUiStore = defineStore("ui", () => {
   /** Sub-view of the Debug tab: the task logs (default), the task-scoped
    *  Debugger chat, or the branch's merge conflict. Shared so a "Fix" handoff
    *  can land directly on the chat. */
-  const debugView = ref<"logs" | "debugger" | "conflict">("logs");
+  const debugView = ref<"logs" | "debugger" | "conflict" | "status">("logs");
   /**
    * A request for the Debug tab to reveal one task's check execution (#0458).
    * Set when a pipeline stage is clicked: the Debug panel scrolls to (and

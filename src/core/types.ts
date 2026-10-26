@@ -481,8 +481,14 @@ export interface ModelProviderKeysConfig {
   clefFlashApiKey?: string;
 }
 
+export interface GitConfig {
+  tuneForScale?: boolean;
+}
+
 /** Resolved configuration (after defaults + repoos.toml merge). */
 export interface RepoOSConfig {
+  /** Git status performance tuning; enabled by default. */
+  git?: GitConfig;
   /** Absolute path to the repo root. */
   root: string;
   /** Directory holding task files, relative to root. Default "work". */
@@ -600,6 +606,13 @@ export interface RepoOSConfig {
   modelProviders?: ModelProviderKeysConfig;
   /** Remote validation runner — runs the close-out build+test off this machine. */
   remoteValidation?: RemoteValidationConfig;
+  /**
+   * Machine-wide heavy build/test slots shared by engineer builds, tests and
+   * local checks (#0961). When set, overrides `localChecks.maxConcurrent`.
+   */
+  heavySlots?: number;
+  /** Vitest worker cap for engineer-launched runs (#0961). */
+  vitest?: { maxWorkers?: number };
   /** Local `repoos check` concurrency on this machine (#0836). */
   localChecks?: LocalChecksConfig;
   /** Shared Playwright concurrency (#0836). */
@@ -1106,6 +1119,8 @@ export interface LocalChecksConfig {
 export interface PlaywrightLimitsConfig {
   /** Max concurrent Playwright browser sessions. Default 1. */
   maxConcurrent?: number;
+  /** Workers inside one Playwright run launched by an engineer. Default 2. */
+  workers?: number;
   queueTimeoutMs?: number;
 }
 
@@ -1114,8 +1129,7 @@ export interface PressureGuardConfig {
   /** Default true — waits instead of piling on when memory or load pressure is high. */
   enabled?: boolean;
   /**
-   * Load average per CPU above this blocks new work only when swap/compressor
-   * readings are unavailable; otherwise it is advisory. Default 4.
+   * Load average per CPU above this blocks new work. Default 3 (#0961).
    */
   maxLoadPerCpu?: number;
   /** Block when available memory falls below this fraction of RAM. Default 0.08. */
@@ -1127,9 +1141,13 @@ export interface PressureGuardConfig {
   maxSwapUsedRatio?: number;
   /**
    * Warn (not block) when the macOS compressor holds more than this fraction of RAM.
-   * Default 0.35.
+   * Default 0.35. An absolute byte cap (`maxCompressorBytes`) blocks on its own.
    */
   maxCompressorRatio?: number;
+  /** Block when the compressor pool exceeds this many bytes. Default 8 GiB (#0961). */
+  maxCompressorBytes?: number;
+  /** Block when sampled CPU idle is below this percent. Default 5 (#0961). */
+  minIdleCpuPercent?: number;
   /** Seconds of vm_stat/vmstat deltas for activity rates. Default 30. */
   activityWindowSec?: number;
   /** Block when sustained swap in+out exceeds this (bytes/s). Default 1 MiB/s. */

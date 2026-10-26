@@ -1408,6 +1408,7 @@ interface StatsSystemView {
   };
   topProcesses?: { byCpu: StatsTopProcess[]; byMemory: StatsTopProcess[] };
   globalEngineers?: { own: number; others: number; servers: unknown[] } | null;
+  heavyJobs?: { running: number; queued: number };
 }
 
 function fmtStatBytes(bytes: number): string {
@@ -1449,6 +1450,10 @@ function printSystemSummary(system: StatsSystemView): void {
       ),
     );
     if (p.reason) console.log(`    ${c.yellow(p.reason)}`);
+  }
+  const heavy = system.heavyJobs;
+  if (heavy) {
+    console.log(c.dim(`  heavy jobs: ${heavy.running} running, ${heavy.queued} queued`));
   }
   const g = system.globalEngineers;
   if (g) {

@@ -1,20 +1,25 @@
 /**
  * Pressure guard (#0836, #0871, #0918).
  *
- * The guard holds new work when the machine is paying a memory cost: sustained
- * swap I/O or pageout rates, low reclaimable memory, macOS memory-pressure
- * warnings, or Linux PSI — not merely high but quiet swap/compressor occupancy.
- * Load average is only a fallback when memory readings are unavailable.
+ * The guard holds new work when the machine is paying a memory or CPU cost:
+ * sustained swap I/O or pageout rates, low reclaimable memory, macOS
+ * memory-pressure critical, Linux PSI, a compressor pool above the byte cap,
+ * load above the per-CPU limit, or CPU idle below the floor (#0961). Swap-used
+ * ratio and compressor *ratio* stay advisory — a quiet pool under the byte cap
+ * must not block. Running engineers are never killed.
  *
  * Running engineers are never killed. The guard only defers *starts* and
  * browser steps, with a reason the UI and queue markers can show.
  */
+import { cpus } from "node:os";
 import type { RepoOSConfig } from "./types.js";
 import { readPlatformMemoryActivity } from "./memory-activity.js";
 import {
   pressureActivityWindowSec,
   pressureGuardEnabled,
+  pressureMaxCompressorBytes,
   pressureMaxCompressorRatio,
+  pressureMinIdleCpuPercent,
   pressureMaxLoadPerCpu,
   pressureMaxPageoutBytesPerSec,
   pressureMaxPsiMemoryAvg10,
@@ -50,6 +55,8 @@ export interface PressureSnapshot {
   pageoutBytesPerSec: number | null;
   activityWindowSec: number | null;
   psiMemoryAvg10: number | null;
+  /** Instantaneous idle CPU percent when sampled; null when unknown. */
+  cpuIdlePercent: number | null;
   /** `memory` when memory readings are available, else `load`. */
   source: "memory" | "load";
   /** Critical reasons only — non-empty means new work is held. */
@@ -65,6 +72,8 @@ export interface PressureThresholds {
   minAvailableMemRatio: number;
   maxSwapUsedRatio: number;
   maxCompressorRatio: number;
+  maxCompressorBytes: number;
+  minIdleCpuPercent: number;
   activityWindowSec: number;
   maxSwapIoBytesPerSec: number;
   maxPageoutBytesPerSec: number;
@@ -96,10 +105,12 @@ function fmtPct(ratio: number): string {
 
 export function pressureThresholds(config?: RepoOSConfig): PressureThresholds {
   return {
-    maxLoadPerCpu: config ? pressureMaxLoadPerCpu(config) : 4,
+    maxLoadPerCpu: config ? pressureMaxLoadPerCpu(config) : 3,
     minAvailableMemRatio: config ? pressureMinAvailableMemRatio(config) : 0.08,
     maxSwapUsedRatio: config ? pressureMaxSwapUsedRatio(config) : 0.5,
     maxCompressorRatio: config ? pressureMaxCompressorRatio(config) : 0.35,
+    maxCompressorBytes: config ? pressureMaxCompressorBytes(config) : 8 * 1024 * 1024 * 1024,
+    minIdleCpuPercent: config ? pressureMinIdleCpuPercent(config) : 5,
     activityWindowSec: config ? pressureActivityWindowSec(config) : 30,
     maxSwapIoBytesPerSec: config ? pressureMaxSwapIoBytesPerSec(config) : 1024 * 1024,
     maxPageoutBytesPerSec: config ? pressureMaxPageoutBytesPerSec(config) : 256 * 1024,
@@ -163,6 +174,7 @@ export function evaluatePressure(
   const activityWindowSec = sample.activityWindowSec ?? null;
   const psiMemoryAvg10 = sample.psiMemoryAvg10 ?? null;
   const memoryPressureLevel = sample.memoryPressureLevel ?? null;
+  const cpuIdlePercent = sample.cpuIdlePercent ?? null;
 
   const reasons: string[] = [];
   const warnings: string[] = [];
@@ -186,10 +198,15 @@ export function evaluatePressure(
     );
   }
 
-  if (memoryPressureLevel === "warn" || memoryPressureLevel === "critical") {
+  // macOS sits at "warn" for long stretches when the compressor is busy even
+  // with no paging and plenty of free memory, so only "critical" blocks; paging
+  // activity and the free-percentage floor catch real thrashing.
+  if (memoryPressureLevel === "critical") {
     reasons.push(
-      `macOS memory_pressure reports ${memoryPressureLevel} — holding new work until memory pressure eases. ${ACTIVITY_DIAG}`,
+      `macOS memory_pressure reports critical — holding new work until memory pressure eases. ${ACTIVITY_DIAG}`,
     );
+  } else if (memoryPressureLevel === "warn") {
+    warnings.push("macOS memory_pressure reports warn (advisory)");
   }
 
   if (psiMemoryAvg10 !== null && psiMemoryAvg10 > thresholds.maxPsiMemoryAvg10) {
@@ -243,7 +260,12 @@ export function evaluatePressure(
     }
   }
 
-  if (compressorRatio !== null) {
+  if (compressorBytes !== null && compressorBytes >= thresholds.maxCompressorBytes) {
+    reasons.push(
+      `memory compressor is holding ${fmtBytes(compressorBytes)} (limit ` +
+        `${fmtBytes(thresholds.maxCompressorBytes)}) — holding new work until the compressor shrinks`,
+    );
+  } else if (compressorRatio !== null) {
     if (compressorRatio >= thresholds.maxCompressorRatio) {
       const amount = compressorBytes !== null ? ` (${fmtBytes(compressorBytes)} of RAM)` : "";
       warnings.push(
@@ -258,15 +280,18 @@ export function evaluatePressure(
     }
   }
 
+  if (cpuIdlePercent !== null && cpuIdlePercent < thresholds.minIdleCpuPercent) {
+    reasons.push(
+      `CPU idle is ${cpuIdlePercent.toFixed(0)}% (below ${thresholds.minIdleCpuPercent}%) — ` +
+        "holding new work until the machine has idle CPU",
+    );
+  }
+
   if (loadPerCpu > thresholds.maxLoadPerCpu) {
-    const detail =
+    reasons.push(
       `system load is high (${loadPerCpu.toFixed(1)}× per CPU, limit ` +
-      `${thresholds.maxLoadPerCpu}×)`;
-    if (source === "load") {
-      reasons.push(`${detail} — waiting for headroom before starting more work`);
-    } else {
-      warnings.push(`${detail}, but memory pressure is normal — not holding starts`);
-    }
+        `${thresholds.maxLoadPerCpu}×) — waiting for headroom before starting more work`,
+    );
   }
 
   const reason = reasons.length > 0 ? reasons.join("; ") : null;
@@ -287,6 +312,7 @@ export function evaluatePressure(
     pageoutBytesPerSec,
     activityWindowSec,
     psiMemoryAvg10,
+    cpuIdlePercent,
     source,
     reasons,
     warnings,
@@ -315,6 +341,25 @@ function mergeActivityReadings(
   };
 }
 
+let lastCpuSample: { idle: number; total: number } | null = null;
+
+/** Idle CPU since the previous call. The first call returns null (no delta yet). */
+export function sampleCpuIdlePercent(): number | null {
+  const list = cpus();
+  let idle = 0;
+  let total = 0;
+  for (const cpu of list) {
+    idle += cpu.times.idle;
+    total += cpu.times.user + cpu.times.nice + cpu.times.sys + cpu.times.idle + cpu.times.irq;
+  }
+  const prev = lastCpuSample;
+  lastCpuSample = { idle, total };
+  if (!prev) return null;
+  const dt = total - prev.total;
+  if (dt <= 0) return null;
+  return Math.max(0, Math.min(100, ((idle - prev.idle) / dt) * 100));
+}
+
 /** Current machine pressure, using the configured thresholds. */
 export function pressureSnapshot(
   config?: RepoOSConfig,
@@ -331,7 +376,10 @@ export function pressureSnapshot(
     config,
     runCommand,
   );
-  return evaluatePressure(readings, pressureThresholds(config));
+  return evaluatePressure(
+    { ...readings, cpuIdlePercent: sampleCpuIdlePercent() },
+    pressureThresholds(config),
+  );
 }
 
 /** Current machine readings without evaluating them (kept for diagnostics). */

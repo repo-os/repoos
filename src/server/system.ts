@@ -12,6 +12,7 @@ import { basename, join } from "node:path";
 import { cpus, totalmem, freemem, loadavg, platform } from "node:os";
 import { availableMemBytes } from "../core/sysmem.js";
 import { pressureSnapshotForDisplay, type PressureSnapshot } from "../core/pressure-guard.js";
+import { heavyJobCounts, localCheckLockRoot } from "../core/cross-process-slots.js";
 import { registeredEngineerCount, type GlobalEngineerCount } from "../core/global-engineers.js";
 import type { RepoOSConfig } from "../core/types.js";
 import type { RunningAgentInfo } from "./agents.js";
@@ -138,6 +139,8 @@ export interface SystemStats {
   repo: RepoStats | null;
   /** Memory-first pressure verdict (#0871). */
   pressure: PressureSnapshot;
+  /** Shared build/test slots on this host (#0961). */
+  heavyJobs: { running: number; queued: number };
   /** Top CPU and memory consumers across the whole machine, RepoOS vs other. */
   topProcesses: TopProcesses;
   /** Engineers across every registered RepoOS server on this machine (#0871). */
@@ -757,6 +760,9 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
     serve,
     repo: opts.root ? sampleRepoStats(opts.root, opts.worktreeWarnThreshold) : null,
     pressure: pressureSnapshotForDisplay(opts.config),
+    heavyJobs: heavyJobCounts(
+      localCheckLockRoot(opts.root ?? opts.config?.root ?? ".", opts.config?.cacheDir ?? ".repoos"),
+    ),
     topProcesses,
     globalEngineers: opts.root ? registeredEngineerCount(opts.root) : null,
     serverPid,

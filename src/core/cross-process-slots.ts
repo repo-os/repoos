@@ -413,6 +413,23 @@ export async function acquireCrossProcessSlot(opts: SlotAcquireOptions): Promise
   const started = Date.now();
   const deadline = started + Math.max(0, opts.waitTimeoutMs);
   let held: string | null = null;
+  let waiterPath: string | null = null;
+  const clearWaiter = (): void => {
+    if (!waiterPath) return;
+    try {
+      rmSync(waiterPath, { force: true });
+    } catch {
+      /* already gone */
+    }
+    waiterPath = null;
+  };
+  const markWaiting = (): void => {
+    if (waiterPath) return;
+    const dir = join(opts.lockRoot, ".queue");
+    mkdirSync(dir, { recursive: true });
+    waiterPath = join(dir, `${process.pid}-${randomBytes(3).toString("hex")}`);
+    writeFileSync(waiterPath, String(process.pid), "utf8");
+  };
   let heartbeat: ReturnType<typeof setInterval> | undefined;
   const signalHandlers = new Map<NodeJS.Signals, () => void>();
 
@@ -433,6 +450,7 @@ export async function acquireCrossProcessSlot(opts: SlotAcquireOptions): Promise
   while (!held) {
     held = tryTakeSlot(opts.lockRoot, slots, opts.meta, opts.staleAfterMs, opts.reclaimGraceMs);
     if (held) {
+      clearWaiter();
       for (const signal of ["SIGTERM", "SIGINT"] as const) {
         const handler = () => {
           release();
@@ -459,11 +477,13 @@ export async function acquireCrossProcessSlot(opts: SlotAcquireOptions): Promise
       heartbeat.unref?.();
       return release;
     }
+    markWaiting();
     const active = countActiveSlots(opts.lockRoot, opts.staleAfterMs, opts.reclaimGraceMs);
     const ahead = Math.max(0, active);
     const position = ahead + 1;
     opts.onQueued?.(ahead, position);
     if (Date.now() >= deadline) {
+      clearWaiter();
       throw new SlotQueueTimeoutError(
         `timed out after ${Math.round((Date.now() - started) / 1000)}s waiting for a free slot ` +
           `(limit ${slots}) — another check or Playwright run may be stuck. ` +
@@ -473,6 +493,36 @@ export async function acquireCrossProcessSlot(opts: SlotAcquireOptions): Promise
     await new Promise((r) => setTimeout(r, 500));
   }
   return release;
+}
+
+/** Live waiters parked on this slot root (dead pids are ignored). */
+export function countSlotWaiters(lockRoot: string): number {
+  const dir = join(lockRoot, ".queue");
+  let names: string[] = [];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return 0;
+  }
+  let n = 0;
+  for (const name of names) {
+    try {
+      const pid = Number(readFileSync(join(dir, name), "utf8").trim());
+      if (processIsAlive(pid)) n++;
+      else rmSync(join(dir, name), { force: true });
+    } catch {
+      /* raced */
+    }
+  }
+  return n;
+}
+
+export function heavyJobCounts(lockRoot: string): { running: number; queued: number } {
+  const holders = inspectCrossProcessSlots(lockRoot);
+  return {
+    running: holders.filter((h) => h.pid && !h.dead).length,
+    queued: countSlotWaiters(lockRoot),
+  };
 }
 
 export function localCheckLockRoot(repoRoot: string, cacheDir: string): string {

@@ -2,26 +2,26 @@
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
-status: active
-needs_input: true
-needs_input_reason: check-failed-after-retries
-needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
+status: done
 priority: p2
 area: web
+merged_commit: 41225126a56253c64f1c2651c6ddb22b11c8e1b5
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/use-the-full-window-height-on-every-page
-cli_override: opencode
-model_override: opencode-go/kimi-k3.1-pro
+cli_override: cursor
+model_override: composer-2.5
+review_model_override: grok-4.7-low
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T09:16:41Z"
-check_retry_count: 2
+updated_at: "2026-10-26T17:08:02Z"
+last_close_out_gate_ms: 316648
+last_close_out_gate_at: "2026-10-26T17:07:04.950Z"
+review_passes: 4
+review_rounds: 2
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
-review_rounds: 1
-review_passes: 2
 handoff_signal_retry_count: 1
-dev_error_count: 30
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-26T09:03:29.170Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 36
+engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
 
@@ -55,6 +55,7 @@ Every standard nav page uses the full window height: the scrollable content area
 "target": "default",
 "route": "/work",
 "highlight": ".work-page",
+"state": "pages:scroll",
 "viewportWidth": 1280,
 "viewportHeight": 1120
 },
@@ -63,6 +64,7 @@ Every standard nav page uses the full window height: the scrollable content area
 "target": "default",
 "route": "/work",
 "highlight": ".work-page",
+"state": "pages:scroll",
 "viewportWidth": 1280,
 "viewportHeight": 620
 },
@@ -71,6 +73,7 @@ Every standard nav page uses the full window height: the scrollable content area
 "target": "default",
 "route": "/stories",
 "highlight": ".stories-page",
+"state": "pages:scroll",
 "viewportWidth": 1280,
 "viewportHeight": 1120
 },
@@ -79,6 +82,7 @@ Every standard nav page uses the full window height: the scrollable content area
 "target": "default",
 "route": "/stories",
 "highlight": ".stories-page",
+"state": "pages:scroll",
 "viewportWidth": 1280,
 "viewportHeight": 620
 },
@@ -87,6 +91,7 @@ Every standard nav page uses the full window height: the scrollable content area
 "target": "default",
 "route": "/checks",
 "highlight": ".ck-page",
+"state": "pages:scroll",
 "viewportWidth": 1280,
 "viewportHeight": 1120
 },
@@ -95,6 +100,7 @@ Every standard nav page uses the full window height: the scrollable content area
 "target": "default",
 "route": "/checks",
 "highlight": ".ck-page",
+"state": "pages:scroll",
 "viewportWidth": 1280,
 "viewportHeight": 620
 }
@@ -358,3 +364,67 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T09:15:40Z · note: highlight .work-page matched nothing on /work
 - 2026-10-26T09:16:15Z · note: highlight .stories-page matched nothing on /stories
 - 2026-10-26T09:16:41Z · note: highlight .ck-page matched nothing on /checks
+- 2026-10-26T09:33:28Z · cli_override, model_override
+- 2026-10-26T09:36:37Z · status active→review
+- 2026-10-26T09:36:37Z · note: shots: skipped — 47 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T09:36:53Z · note: review pass 3: failed — no usable report
+- 2026-10-26T10:04:33Z · review_cli_override, review_model_override
+- 2026-10-26T11:07:01Z · note: review pass 4: failed — no usable report
+- 2026-10-26T11:14:40Z · review_cli_override, review_model_override
+- 2026-10-26T11:14:46Z · needs_input (check-failed-after-retries) cleared for review again by human
+- 2026-10-26T11:16:33Z · note: review pass 5: needs some work
+- 2026-10-26T11:16:33Z · status review→active
+- 2026-10-26T11:22:01Z · message_queued at 2026-10-26T11:22:01.302Z
+- 2026-10-26T11:22:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-26T11:27:01Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T12:27:45Z · agent exited with an error (antigravity) · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retryable":true,"error_id":"7465488f-966a-4889-ba7d-0fe40a6c6fdd-294"}
+- 2026-10-26T12:27:45Z · engineer crash recovery: switched antigravity + gemini-3.8-flash-medium → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retry…
+- 2026-10-26T12:27:55Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T12:27:56Z · message_delivered: 1 message(s)
+- 2026-10-26T12:37:15Z · model_override
+- 2026-10-26T12:41:57Z · cli_override, model_override
+- 2026-10-26T12:42:02Z · needs_input
+- 2026-10-26T12:42:02Z · message_queued at 2026-10-26T12:42:02.892Z
+- 2026-10-26T12:42:26Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T12:47:10Z · body
+- 2026-10-26T13:20:51Z · body
+- 2026-10-26T13:57:54Z · body
+- 2026-10-26T14:00:51Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-26T14:00:52Z · agent exited with an error (codex) · 2026-10-26T12:57:54.690636Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
+- 2026-10-26T14:00:53Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-26T12:57:54.690636Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
+- 2026-10-26T14:01:01Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:01:01Z · message_delivered: 1 message(s)
+- 2026-10-26T14:04:43Z · body
+- 2026-10-26T14:07:13Z · body
+- 2026-10-26T14:08:03Z · body
+- 2026-10-26T14:10:47Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-26T14:12:46Z · body
+- 2026-10-26T14:13:43Z · body
+- 2026-10-26T14:14:20Z · body
+- 2026-10-26T14:16:03Z · CTO nudge: held — remote validation is running
+- 2026-10-26T14:23:22Z · body
+- 2026-10-26T14:25:17Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · 2026-10-26T14:17:07.350737Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/use-the-full-window-height-on-every-page/work/.attachments/0951/shots/default-32.png`: No such file…
+- 2026-10-26T14:25:26Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-26T14:44:28Z · cli_override, model_override
+- 2026-10-26T14:44:33Z · needs_input
+- 2026-10-26T14:44:34Z · message_queued at 2026-10-26T14:44:34.200Z
+- 2026-10-26T14:48:49Z · body
+- 2026-10-26T15:12:00Z · body
+- 2026-10-26T15:15:05Z · body
+- 2026-10-26T15:18:41Z · body
+- 2026-10-26T15:21:10Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-26T15:21:10Z · agent exited with an error (cursor) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-10-26T15:21:10Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-10-26T15:21:13Z · message_delivered: 1 message(s)
+- 2026-10-26T15:21:35Z · review_cli_override, review_model_override
+- 2026-10-26T15:21:37Z · review_model_override
+- 2026-10-26T15:24:44Z · body
+- 2026-10-26T15:51:58Z · body
+- 2026-10-26T15:55:48Z · needs_input
+- 2026-10-26T15:55:49Z · needs_input
+- 2026-10-26T16:10:51Z · status active→review
+- 2026-10-26T16:10:51Z · note: shots: skipped — 63 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T16:13:06Z · note: review pass 6: needs some work
+- 2026-10-26T16:17:00Z · note: ui verification passed: 3 of 6 shots captured with clean console (1 shot warning)
+- 2026-10-26T17:07:04Z · close-out gate completed in 317s
+- 2026-10-26T17:08:02Z · status done→done, release:success

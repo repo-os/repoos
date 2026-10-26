@@ -198,6 +198,8 @@ const serve = computed(() => systemStats.value?.serve ?? null);
 
 /** Memory-first pressure verdict (#0871). Absent on older servers. */
 const pressure = computed(() => systemStats.value?.pressure ?? null);
+const heavyRunning = computed(() => systemStats.value?.heavyJobs?.running ?? 0);
+const heavyQueued = computed(() => systemStats.value?.heavyJobs?.queued ?? 0);
 
 /** Top CPU / memory consumers across the whole machine (#0871). */
 const topProcesses = computed(() => systemStats.value?.topProcesses ?? null);
@@ -327,6 +329,9 @@ const serveMessage = computed(() => {
               Pressure: {{ pressure.level }} · swap {{ fmtRatio(pressure.swapUsedRatio) }} ·
               compressor {{ fmtRatio(pressure.compressorRatio) }}
             </span>
+            <span class="heavy-jobs" data-heavy-jobs>
+              {{ heavyRunning }} heavy jobs running, {{ heavyQueued }} queued
+            </span>
             <span v-if="serve" :class="{ 'serve-bad': serve.level !== 'ok' }">
               Serve: {{ serve.total
               }}<template v-if="serve.strays"> ({{ serve.strays }} stray)</template
@@ -430,6 +435,9 @@ const serveMessage = computed(() => {
             {{ fmtRatio(pressure.compressorRatio) }} · available
             {{ fmtRatio(pressure.availableMemRatio) }}</span
           >
+        </div>
+        <div class="pressure-detail heavy-jobs" data-heavy-jobs>
+          {{ heavyRunning }} heavy jobs running, {{ heavyQueued }} queued
         </div>
         <div v-if="pressure.reason" class="pressure-detail">{{ pressure.reason }}</div>
         <div v-else-if="pressure.warnings.length" class="pressure-detail">

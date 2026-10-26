@@ -63,6 +63,7 @@ import {
   formatNeedsInputDetailForDisplay,
   needsInputPrimaryAction,
   needsInputStatusLabel,
+  needsInputCompactChipLabel,
   needsInputSuggestionText,
   needsInputSuppressedOnReview,
   needsInputSurfaces,
@@ -123,6 +124,7 @@ import type { ShotMeta } from "../types";
 import AddShotModal from "./AddShotModal.vue";
 import DeleteShotDialog from "./DeleteShotDialog.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
+import { selectDrawerStatus, type DrawerStatusKey } from "../lib/drawer-status-priority";
 import DebugPanel from "./DebugPanel.vue";
 import DiffFileViewer from "./DiffFileViewer.vue";
 import type { DiffFile } from "../lib/diff-files";
@@ -524,11 +526,8 @@ const checkChip = computed(() => {
       state: "running" as const,
       slow: !!slow,
       slowDetail: slow?.detail ?? null,
-      label: localQueue
-        ? `${localQueue.label} · ${elapsed}`
-        : poolQueue
-          ? `${poolQueue.label} · ${elapsed}`
-          : `Checks running${machine ? ` on ${machine}` : ""}${run.stepsDone != null || run.currentStep != null || run.stepsTotal != null || run.testsTotal != null ? ` · ${checkProgressLabel(run)}` : ""} · ${elapsed}`,
+      elapsed,
+      label: localQueue ? localQueue.label : poolQueue ? poolQueue.label : "Checks running",
       title: localQueue
         ? localQueue.title
         : poolQueue
@@ -560,8 +559,16 @@ const checkChip = computed(() => {
     }
     const dur = formatDuration(last.durationMs ?? 0);
     return last.passed
-      ? { state: "pass" as const, label: `Checks passed · ${dur}`, title: "Open the Debug tab" }
-      : { state: "fail" as const, label: `Checks failed · ${dur}`, title: "Open the Debug tab" };
+      ? {
+          state: "pass" as const,
+          label: "Checks passed",
+          title: `Checks passed · ${dur}. Open the Debug tab for the run.`,
+        }
+      : {
+          state: "fail" as const,
+          label: "Checks failed",
+          title: `Checks failed · ${dur}. Open the Debug tab for the run.`,
+        };
   }
   const row = lastDurableCheck.value;
   if (!row || row.outcome === "cancelled") return null;
@@ -571,15 +578,231 @@ const checkChip = computed(() => {
   if (row.outcome === "skipped") {
     return {
       state: "skip" as const,
-      label: `No checks configured${dur}`,
+      label: "No checks configured",
       title:
         "The last recorded check run was skipped — this repo has no check plan, so nothing " +
         "was verified. Open the Debug tab for the reminder.",
     };
   }
   return row.outcome === "pass"
-    ? { state: "pass" as const, label: `Checks passed${dur}`, title }
-    : { state: "fail" as const, label: `Checks failed${dur}`, title };
+    ? { state: "pass" as const, label: "Checks passed", title: `Checks passed${dur}. ${title}` }
+    : { state: "fail" as const, label: "Checks failed", title: `Checks failed${dur}. ${title}` };
+});
+
+const drawerHeaderChip = computed(() => {
+  const status = drawerStatusSummary.value;
+  const running = checkChip.value?.state === "running" ? checkChip.value : null;
+  const slowRun = running?.slow ? running : null;
+  if (
+    !status ||
+    (status.key === "waitingForYou" && showAgentQuestionsBanner.value) ||
+    (["checksRunning", "confirmingHandoff", "reviewerRunning", "workRunning"].includes(
+      status.key,
+    ) &&
+      !(slowRun && status.key === "checksRunning"))
+  )
+    return null;
+  // A run past its expected duration is the one case a live check is a header
+  // chip: a few words, with the elapsed time in a warning treatment (#0952).
+  if (slowRun && status.key === "checksRunning") {
+    return {
+      ...status,
+      label: "Slow",
+      duration: slowRun.elapsed,
+      slow: true as const,
+      slowDetail: slowRun.slowDetail,
+    };
+  }
+  // A task already in Review has its lifecycle status in the row; avoid
+  // repeating review failures and landability there as a second status label.
+  if (ui.active?.status === "review" && ["reviewFailed", "notLandable"].includes(status.key))
+    return null;
+  const shortLabels: Partial<Record<DrawerStatusKey, string>> = {
+    waitingForYou: compactNeedsInputChipLabel.value,
+    // Name the reviewer as the failure source so this never reads as a
+    // duplicate of the task's current `review` lifecycle status.
+    reviewFailed: "Reviewer failed",
+    notLandable: "Blocked",
+    handoffFailed: "Handoff failed",
+    checksFailedAfterRetries: "Checks failed",
+  };
+  return {
+    ...status,
+    label: shortLabels[status.key] ?? status.label,
+    duration: null as string | null,
+    slow: false as const,
+    slowDetail: null as string | null,
+  };
+});
+
+/** One compact, priority-ordered status model for the drawer header and status region. */
+const drawerStatusSummary = computed(() => {
+  const task = ui.active;
+  if (!task) return null;
+  const key = selectDrawerStatus({
+    // The question banner and regular needs-input card are the waiting card.
+    // Include them in the same priority decision so they cannot coexist with a
+    // lower-priority status summary (for example a live check run).
+    waitingForYou: drawerWaitingCardVisible.value,
+    reviewFailed:
+      task.status === "review" &&
+      (review.value?.report?.state === "incomplete" || task.needsInputReason === "review-failed"),
+    notLandable: task.status === "review" && Boolean(landable.value && !landable.value.landable),
+    handoffFailed: Boolean(handoffError.value || repo.doneErrorFor(task.id)),
+    checksRunning: Boolean(activeCheckRun.value),
+    confirmingHandoff: handoffBusy.value || awaitingFreshReview.value,
+    checksFailedAfterRetries: Boolean(
+      checkChip.value?.state === "fail" && retryCountFrom(task, "check"),
+    ),
+    reviewerRunning: Boolean(review.value?.running),
+    workRunning: repo.isRunning(task.id) || repo.pmWorkingFor(task.id),
+  });
+  if (!key) return null;
+  const labels = {
+    waitingForYou: "Needs input",
+    reviewFailed: "Review failed",
+    notLandable: "Not landable",
+    handoffFailed: "Handoff failed",
+    checksRunning: "Checks running",
+    confirmingHandoff: "Confirming handoff",
+    checksFailedAfterRetries: "Checks failed",
+    reviewerRunning: "Reviewer running",
+    workRunning: "Work running",
+  } as const;
+  const failCount = landable.value?.summary.fail ?? 0;
+  const shortDetails: Record<DrawerStatusKey, string> = {
+    waitingForYou: needsInputBannerText(
+      task.needsInputReason,
+      activeNeedsInputQuestions.value,
+      task.needsInputDetail,
+    ),
+    reviewFailed: review.value?.report?.summary || "No complete report",
+    notLandable: `${failCount} landing check${failCount === 1 ? "" : "s"} failing`,
+    handoffFailed:
+      handoffError.value ?? repo.doneErrorFor(task.id)?.message ?? "The handoff did not finish.",
+    checksFailedAfterRetries: "After retries",
+    checksRunning:
+      activeCheckRun.value?.scope && activeCheckRun.value.scope !== "full"
+        ? `Changed-path (${activeCheckRun.value.scope})`
+        : "",
+    confirmingHandoff: "",
+    reviewerRunning: "",
+    workRunning: "",
+  };
+  const landableChecklist = landable.value
+    ? landable.value.checks
+        .map(
+          (check) =>
+            `${check.status.toUpperCase()}: ${check.label} — ${check.detail}${check.nextStep ? `; next: ${check.nextStep}` : ""}`,
+        )
+        .join("\n")
+    : "";
+  const guidance: Record<DrawerStatusKey, string> = {
+    waitingForYou:
+      "Choose the suggested action, answer questions in PM, or dismiss this request. The task stays active until its work is resolved.",
+    reviewFailed:
+      "Read the latest review report, then send the task to the engineer or use Review again. The Review tab keeps the full report and retry action.",
+    notLandable: landableChecklist || "This task is not ready to land yet.",
+    handoffFailed: `${handoffError.value ?? repo.doneErrorFor(task.id)?.message ?? "The handoff did not finish."}\nFix it and click Review again.`,
+    checksFailedAfterRetries: checkChip.value?.title ?? "Checks failed after retries.",
+    checksRunning: "The check gate is running — open the Debug tab for live output.",
+    confirmingHandoff:
+      "RepoOS is finalizing the handoff. The task stays active until the checks pass.",
+    reviewerRunning: "The reviewer is inspecting this task.",
+    workRunning: "An agent is working on this task.",
+  };
+  const isError = [
+    "reviewFailed",
+    "notLandable",
+    "handoffFailed",
+    "checksFailedAfterRetries",
+  ].includes(key);
+  return {
+    key,
+    label: labels[key],
+    detail: shortDetails[key],
+    guidance: guidance[key],
+    isError,
+  };
+});
+
+const drawerStatusDetails = computed(() => {
+  const task = ui.active;
+  if (!task) return [];
+  const rows: { title: string; detail: string }[] = [];
+  if (task.needsInput)
+    rows.push({
+      title: "Waiting for you",
+      detail: `${needsInputBannerText(task.needsInputReason, activeNeedsInputQuestions.value, task.needsInputDetail)}${activeNeedsInputDetailLine.value ? `\n${activeNeedsInputDetailLine.value}` : ""}${needsInputSuggestionText(task.needsInputReason, activeNeedsInputQuestions.value) ? `\n${needsInputSuggestionText(task.needsInputReason, activeNeedsInputQuestions.value)}` : ""}${activeTldrSentence.value ? `\n${activeTldrSentence.value}` : ""}`,
+    });
+  if (
+    task.status === "review" &&
+    (review.value?.report?.state === "incomplete" || task.needsInputReason === "review-failed")
+  )
+    rows.push({
+      title: "Reviewer failed — no complete report",
+      detail: `${review.value?.report?.summary || "The reviewer did not produce a complete report."}\nOpen the Review tab to inspect the run and use Review again to retry.`,
+    });
+  if (landable.value)
+    rows.push({
+      title: landable.value.landable ? "Landable summary" : "Not landable checklist",
+      detail: landable.value.checks
+        .map(
+          (check) =>
+            `${check.status.toUpperCase()}: ${check.label} — ${check.detail}${check.nextStep ? `; next: ${check.nextStep}` : ""}`,
+        )
+        .join("\n"),
+    });
+  if (handoffError.value)
+    rows.push({
+      title: "Handoff failed",
+      detail: `${handoffError.value}\nFix it and click Review again.`,
+    });
+  const doneError = repo.doneErrorFor(task.id);
+  if (doneError)
+    rows.push({
+      title: "Close-out failed",
+      detail: `${doneError.message}\n${doneError.detail ?? ""}\n${doneError.hint ?? ""}\n${doneError.tldr ?? ""}`,
+    });
+  if (handoffBusy.value)
+    rows.push({
+      title: "Handoff check guidance",
+      detail: "This task stays active until the checks pass.",
+    });
+  if (awaitingFreshReview.value)
+    rows.push({
+      title: "Awaiting review guidance",
+      detail:
+        "RepoOS should start the reviewer automatically. If it does not, use Review again in the Review tab.",
+    });
+  if (remoteActivityText.value || activeCheckRun.value)
+    rows.push({
+      title: "Checks running and remote validation",
+      detail: `${remoteActivityText.value || "A check run is active."}${checkMachine.value ? `\nRunning on ${checkMachine.value}.` : ""}${activeCheckRun.value ? `\n${checkProgressLabel(activeCheckRun.value)}${activeCheckRun.value.output ? `\n${activeCheckRun.value.output}` : ""}` : ""}`,
+    });
+  if (checkChip.value && !activeCheckRun.value)
+    rows.push({ title: "Latest check result", detail: checkChip.value.title });
+  if (checkChip.value?.state === "running" && checkChip.value.slow && checkChip.value.slowDetail)
+    rows.push({ title: "Longer than expected", detail: checkChip.value.slowDetail });
+  if (activeTldrSentence.value)
+    rows.push({ title: "What happened", detail: activeTldrSentence.value });
+  if (task.status === "active" && task.needsInput)
+    rows.push({
+      title: "Action guidance",
+      detail:
+        "Use the available primary action to send to the engineer, restart work, or dismiss this request. The task remains active until its work is resolved.",
+    });
+  if (task.status === "review" && review.value?.report?.state === "incomplete")
+    rows.push({
+      title: "Review retry guidance",
+      detail:
+        "Read the latest review report, then send the task to the engineer or use Review again. The Review tab keeps the full report and retry action.",
+    });
+  if (review.value?.running)
+    rows.push({ title: "Reviewer running", detail: "The reviewer is inspecting this task." });
+  if (repo.isRunning(task.id) || repo.pmWorkingFor(task.id))
+    rows.push({ title: "Work running", detail: "An agent is working on this task." });
+  return rows;
 });
 
 const open = computed(() => ui.active !== null || ui.isNew);
@@ -2601,53 +2824,29 @@ const showAgentQuestionsBanner = computed(() => {
   return key === "questions" || key === "cto-escalation";
 });
 
+/** True only while one of the actionable waiting cards is actually visible. */
+const drawerWaitingCardVisible = computed(() => {
+  const task = ui.active;
+  if (!task || !needsInputSurfaces(task)) return false;
+  if (showAgentQuestionsBanner.value) return true;
+  return Boolean(
+    !handoffBusy.value &&
+    !awaitingFreshReview.value &&
+    !staleNeedsInputOnReview.value &&
+    !review.value?.running &&
+    !repo.isRunning(task.id),
+  );
+});
+
 const staleNeedsInputOnReview = computed(() =>
   ui.active ? needsInputSuppressedOnReview(ui.active) : false,
 );
 
-const needsInputHeaderChip = computed<{ label: string; cls: string } | null>(() => {
-  if (!ui.active || !needsInputSurfaces(ui.active)) return null;
-  // The dedicated question banner already signals this — avoid a second chip (#0566).
-  if (showAgentQuestionsBanner.value) return null;
-  // A stale flag must not hide a live review or engineer session (#0511 R2).
-  if (review.value?.running || repo.isRunning(ui.active.id) || handoffBusy.value) return null;
-  return {
-    label: needsInputStatusLabel(ui.active.needsInputReason, activeNeedsInputQuestions.value),
-    cls: "rs-needs-input",
-  };
-});
-
-const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
-  if (!ui.active || ui.active.status !== "review") return null;
-  if (review.value?.running) return { label: "reviewing", cls: "rs-reviewing" };
-  if (awaitingFreshReview.value) return { label: "awaiting fresh review", cls: "rs-reviewing" };
-  if (repo.isRunning(ui.active.id)) {
-    // A running agent on an already-review task, outside auto-review, means
-    // the server silently resumed the engineer to fix a post-handoff
-    // `repoos check` failure or resolve a close-out merge conflict
-    // (handoff.ts's scheduleCheckFailureRetry / scheduleMergeConflictRetry) —
-    // never that the task regressed to active. Label it distinctly. The
-    // counters are read through the shared helper so they survive the full
-    // Task a `task.updated` SSE payload carries (they live in `extra` there).
-    if (retryCountFrom(ui.active, "mergeConflict")) {
-      return { label: "fixing merge conflict", cls: "rs-coding" };
-    }
-    return retryCountFrom(ui.active, "check")
-      ? { label: "fixing check failure", cls: "rs-coding" }
-      : { label: "coding", cls: "rs-coding" };
-  }
-  if (review.value?.report?.state === "incomplete") {
-    return { label: "review incomplete", cls: "rs-incomplete" };
-  }
-  // A "good to go" verdict needs nothing from the human beyond the normal
-  // Move to done, so it shows no chip: a "waiting for human" label read like
-  // an unanswered question (needs_input has its own chip).
-  if (verdict.value?.label === "good to go") return null;
-  if (verdict.value) {
-    return { label: "review findings", cls: "rs-incomplete" };
-  }
-  return null;
-});
+const compactNeedsInputChipLabel = computed(() =>
+  ui.active
+    ? needsInputCompactChipLabel(ui.active.needsInputReason, activeNeedsInputQuestions.value)
+    : "Needs input",
+);
 
 /** Compact lifecycle counts: D = dev passes, R = review passes. The server
  * bumps `review_passes` only when a review finishes with a parseable verdict
@@ -4429,42 +4628,35 @@ watch(
                 :aria-label="`Copy link to task ${ui.active.id}`"
               />
               <span class="tc-id mono">{{ ui.active.path }}</span>
-              <span
-                v-if="reviewSubstate"
-                class="rs-chip"
-                :class="reviewSubstate.cls"
-                :title="reviewSubstate.label"
-                >{{ reviewSubstate.label }}</span
-              >
-              <span
-                v-else-if="needsInputHeaderChip"
-                class="rs-chip"
-                :class="needsInputHeaderChip.cls"
-                :title="needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)"
-                >{{ needsInputHeaderChip.label }}</span
-              >
               <button
-                v-if="checkChip"
+                v-if="drawerHeaderChip"
                 type="button"
-                class="ck-chip"
-                :class="`ck-chip-${checkChip.state}`"
-                :title="checkChip.title"
-                @click="ui.activeTab = 'debug'"
+                class="rs-chip drawer-status-chip"
+                :class="{
+                  'ck-chip-fail':
+                    drawerHeaderChip.label.toLowerCase().includes('fail') ||
+                    drawerHeaderChip.key === 'notLandable',
+                  'ck-chip-slow': drawerHeaderChip.slow,
+                  'rs-needs-input': drawerHeaderChip.key === 'waitingForYou',
+                }"
+                :aria-label="
+                  drawerHeaderChip.slow
+                    ? `Slow check, ${drawerHeaderChip.duration}. ${drawerHeaderChip.slowDetail ?? ''} Open Debug status details`
+                    : `${drawerHeaderChip.label}. Open Debug status details`
+                "
+                @click="
+                  ui.activeTab = 'debug';
+                  ui.debugView = 'status';
+                "
               >
-                <ActivityIndicator v-if="checkChip.state === 'running'" class="ck-chip-spin" />
-                {{ checkChip.label }}
-                <span
-                  v-if="checkChip.slow"
-                  class="ck-slow-badge"
-                  data-test-id="task-check-slow"
-                  tabindex="0"
-                  :aria-label="`Slow check. ${checkChip.slowDetail ?? ''}`"
-                  :data-tip="
-                    checkChip.slowDetail ?? 'This check is slower than typical for its kind'
-                  "
-                >
-                  slow
-                </span>
+                <ActivityIndicator
+                  v-if="['checksRunning', 'workRunning'].includes(drawerHeaderChip.key)"
+                  class="ck-chip-spin"
+                />
+                {{ drawerHeaderChip.label }}
+                <span v-if="drawerHeaderChip.duration" class="drawer-chip-overlong">{{
+                  drawerHeaderChip.duration
+                }}</span>
               </button>
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}
@@ -4566,68 +4758,6 @@ watch(
               >
                 <CheckCheck class="size-3.5" /> Mark done
               </Button>
-            </div>
-            <!-- #0897: the remote runner is queued or running for this task —
-               name the phase, host, elapsed time and any job ahead of it. -->
-            <div v-if="remoteActivityText" class="ff-notice drawer-remote-activity" role="status">
-              <ActivityIndicator />
-              <span>{{ remoteActivityText }}</span>
-            </div>
-            <!-- #0507: the handoff finalization is in flight. The task is still
-               `active` on purpose, so without this it would read as "nothing
-               happened" for the whole length of the check. -->
-            <div v-if="handoffBusy" class="ff-notice drawer-handoff-banner">
-              <ActivityIndicator />
-              <span>{{ handoffStepLabel }}</span>
-              <div
-                v-if="
-                  activeCheckRun &&
-                  (activeCheckRun.stepsDone != null ||
-                    activeCheckRun.currentStep != null ||
-                    activeCheckRun.stepsTotal != null ||
-                    activeCheckRun.testsTotal != null)
-                "
-                class="check-progress"
-                data-test-id="check-progress"
-                role="status"
-              >
-                <progress
-                  v-if="checkProgressPercent(activeCheckRun) !== null"
-                  :value="checkProgressPercent(activeCheckRun) ?? 0"
-                  max="100"
-                />
-                <span>{{ checkProgressLabel(activeCheckRun) }}</span>
-                <span v-if="activeCheckRun.attempt && activeCheckRun.attempt > 1">
-                  attempt {{ activeCheckRun.attempt
-                  }}<template v-if="activeCheckRun.attemptReason">
-                    · {{ activeCheckRun.attemptReason }}</template
-                  >
-                </span>
-              </div>
-              <span class="drawer-handoff-sub">
-                This task stays <strong>active</strong> until the checks pass.
-              </span>
-            </div>
-            <div
-              v-else-if="awaitingFreshReview"
-              class="ff-notice drawer-handoff-banner"
-              role="status"
-            >
-              <span
-                ><strong>Awaiting a new review.</strong> The report below is from before the latest
-                engineering handoff.</span
-              >
-              <span class="drawer-handoff-sub"
-                >RepoOS should start the reviewer automatically. If it does not, use
-                <strong>Review again</strong> in the Review tab.</span
-              >
-            </div>
-            <div v-else-if="handoffError" class="ff-error drawer-handoff-banner">
-              <span>
-                <strong>Not moved to review.</strong> The handoff finalization stopped:
-                {{ handoffError }}
-              </span>
-              <span class="drawer-handoff-sub">Fix it and click Review again.</span>
             </div>
             <div class="quickbar-row">
               <Select
@@ -4750,14 +4880,7 @@ watch(
                 Last successful close-out gate: {{ lastCloseOutGateLabel }}
               </p>
               <div
-                v-if="
-                  inPipeline &&
-                  activeCheckRun &&
-                  (activeCheckRun.stepsDone != null ||
-                    activeCheckRun.currentStep != null ||
-                    activeCheckRun.stepsTotal != null ||
-                    activeCheckRun.testsTotal != null)
-                "
+                v-if="false && inPipeline && activeCheckRun"
                 class="check-progress close-out-check-progress"
                 role="status"
                 data-test-id="close-out-check-progress"
@@ -4822,7 +4945,7 @@ watch(
               </Button>
             </div>
             <div
-              v-if="ui.active.status === 'review' && landable"
+              v-if="false && ui.active.status === 'review' && landable"
               class="ff-notice landable-checks"
               :class="landable.landable ? 'is-landable' : 'is-blocked'"
               aria-live="polite"
@@ -4867,12 +4990,12 @@ watch(
                 </li>
               </ul>
             </div>
-            <span v-if="review?.running" class="drawer-run reviewing" role="status">
+            <span v-if="false && review?.running" class="drawer-run reviewing" role="status">
               <ActivityIndicator variant="reviewing" label="Reviewing…" />
               Reviewer is reviewing this task…
             </span>
             <span
-              v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)"
+              v-if="false && ui.active.status === 'active' && repo.isRunning(ui.active.id)"
               class="drawer-run"
             >
               <ActivityIndicator />
@@ -4889,7 +5012,7 @@ watch(
             <!-- 0381: PM at work on this task — a draft flesh-out OR a live PM
                chat turn (the flag is the same server-side registry). Cleared
                on every run exit path server-side. -->
-            <span v-if="repo.pmWorkingFor(ui.active.id)" class="drawer-run" role="status">
+            <span v-if="false && repo.pmWorkingFor(ui.active.id)" class="drawer-run" role="status">
               <ActivityIndicator activity="agent" />
               {{
                 ui.active.status === "draft"
@@ -4897,32 +5020,6 @@ watch(
                   : "PM is working on this task…"
               }}
             </span>
-            <DoneErrorCard
-              v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
-              class="drawer-done-error"
-              mode="panel"
-              :message="repo.doneErrorFor(ui.active.id)!.message"
-              :step="repo.doneErrorFor(ui.active.id)!.step"
-              :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
-              :detail="repo.doneErrorFor(ui.active.id)!.detail"
-              :log-path="repo.doneErrorFor(ui.active.id)!.logPath"
-              :hint="repo.doneErrorFor(ui.active.id)!.hint"
-              :failed-at="repo.doneErrorFor(ui.active.id)!.failedAt"
-              :tldr="repo.doneErrorFor(ui.active.id)!.tldr"
-              :summary="repo.doneErrorFor(ui.active.id)!.summary"
-              :action="repo.doneErrorFor(ui.active.id)!.action"
-              :tldr-diagnosing="
-                !repo.doneErrorFor(ui.active.id)!.tldr && repo.debugTldrWorkingFor(ui.active.id)
-              "
-              :retry-hint="autoRepairRetryHint"
-              :task-id="ui.active.id"
-              :task-title="ui.active.title"
-              @open-debugger="openDebuggerFromError"
-              @open-support="openSupportFromError"
-              @open-conflict="openConflictFromError"
-              @dismiss="repo.dismissDoneError(ui.active.id)"
-              @refresh-install-retry="repo.refreshInstallAndRetryIntegration(ui.active.id)"
-            />
             <div
               v-if="
                 (ui.active.status === 'active' || ui.active.status === 'review') &&
@@ -5099,6 +5196,93 @@ watch(
               {{ shotWarning }}
             </p>
           </div>
+          <section
+            v-if="
+              drawerStatusSummary &&
+              drawerStatusSummary.key !== 'waitingForYou' &&
+              (drawerStatusSummary.key !== 'handoffFailed' || !repo.doneErrorFor(ui.active.id))
+            "
+            class="drawer-status-summary"
+            :class="{ 'is-error': drawerStatusSummary.isError }"
+            aria-label="Task status"
+          >
+            <div class="drawer-status-summary-copy">
+              <strong>{{ drawerStatusSummary.label }}</strong>
+              <span v-if="drawerStatusSummary.detail">{{ drawerStatusSummary.detail }}</span>
+            </div>
+            <span
+              v-if="
+                ['checksRunning', 'confirmingHandoff', 'reviewerRunning', 'workRunning'].includes(
+                  drawerStatusSummary.key,
+                )
+              "
+              class="drawer-status-line"
+              role="status"
+            >
+              <ActivityIndicator />
+              {{
+                drawerStatusSummary.key === "checksRunning"
+                  ? "Running checks…"
+                  : drawerStatusSummary.key === "confirmingHandoff"
+                    ? handoffStepLabel
+                    : drawerStatusSummary.key === "reviewerRunning"
+                      ? "Reviewer is working…"
+                      : "Work is running…"
+              }}
+              <span v-if="activeCheckRun" class="check-progress-inline">{{
+                `${checkMachine ? `on ${checkMachine} · ` : ""}${checkProgressLabel(activeCheckRun)}`
+              }}</span>
+            </span>
+            <details class="drawer-info-popover">
+              <summary aria-label="Help for this task status"><Info class="size-3.5" /></summary>
+              <div class="drawer-info-content" role="note">
+                <p>{{ drawerStatusSummary.guidance }}</p>
+                <button
+                  type="button"
+                  @click="
+                    ui.activeTab = 'debug';
+                    ui.debugView = 'status';
+                  "
+                >
+                  Open Status details
+                </button>
+              </div>
+            </details>
+          </section>
+          <DoneErrorCard
+            v-if="
+              ui.active.status === 'review' &&
+              drawerStatusSummary?.key === 'handoffFailed' &&
+              repo.doneErrorFor(ui.active.id)
+            "
+            class="drawer-done-error"
+            mode="panel"
+            :message="repo.doneErrorFor(ui.active.id)!.message"
+            :step="repo.doneErrorFor(ui.active.id)!.step"
+            :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
+            :detail="repo.doneErrorFor(ui.active.id)!.detail"
+            :log-path="repo.doneErrorFor(ui.active.id)!.logPath"
+            :hint="repo.doneErrorFor(ui.active.id)!.hint"
+            :failed-at="repo.doneErrorFor(ui.active.id)!.failedAt"
+            :tldr="repo.doneErrorFor(ui.active.id)!.tldr"
+            :summary="repo.doneErrorFor(ui.active.id)!.summary"
+            :action="repo.doneErrorFor(ui.active.id)!.action"
+            :tldr-diagnosing="
+              !repo.doneErrorFor(ui.active.id)!.tldr && repo.debugTldrWorkingFor(ui.active.id)
+            "
+            :retry-hint="autoRepairRetryHint"
+            :task-id="ui.active.id"
+            :task-title="ui.active.title"
+            @open-debugger="openDebuggerFromError"
+            @open-status-details="
+              ui.activeTab = 'debug';
+              ui.debugView = 'status';
+            "
+            @open-support="openSupportFromError"
+            @open-conflict="openConflictFromError"
+            @dismiss="repo.dismissDoneError(ui.active.id)"
+            @refresh-install-retry="repo.refreshInstallAndRetryIntegration(ui.active.id)"
+          />
           <!-- Critical status lives above the tabs so it is visible no matter
              which tab is open — a "needs input" / "reviewer crashed" message
              buried in one tab is a message the human never sees. -->
@@ -5137,10 +5321,7 @@ watch(
               </div>
             </div>
           </div>
-          <div
-            v-else-if="ui.active && ui.active.needsInput && !handoffBusy && !awaitingFreshReview"
-            class="drawer-critical"
-          >
+          <div v-else-if="drawerWaitingCardVisible && ui.active" class="drawer-critical">
             <div class="agent-waiting" :class="{ 'agent-waiting-static': staleNeedsInputOnReview }">
               <span v-if="!staleNeedsInputOnReview" class="agent-waiting-dot"></span>
               <div>
@@ -5165,17 +5346,24 @@ watch(
                 <div v-if="activeNeedsInputDetailLine" class="agent-waiting-detail">
                   {{ activeNeedsInputDetailLine }}
                 </div>
-                <div
-                  v-if="
-                    !staleNeedsInputOnReview &&
-                    needsInputSuggestionText(ui.active.needsInputReason, activeNeedsInputQuestions)
-                  "
-                  class="agent-waiting-suggestion"
-                >
-                  {{
-                    needsInputSuggestionText(ui.active.needsInputReason, activeNeedsInputQuestions)
-                  }}
-                </div>
+                <details class="drawer-info-popover waiting-info">
+                  <summary aria-label="Help for waiting for you"><Info class="size-3.5" /></summary>
+                  <div class="drawer-info-content" role="note">
+                    <p>
+                      Choose the suggested action, answer questions in PM, or dismiss this request.
+                      The task stays active until its work is resolved.
+                    </p>
+                    <button
+                      type="button"
+                      @click="
+                        ui.activeTab = 'debug';
+                        ui.debugView = 'status';
+                      "
+                    >
+                      Open Status details
+                    </button>
+                  </div>
+                </details>
                 <div class="agent-waiting-actions">
                   <Button
                     v-if="needsInputPrimary && !staleNeedsInputOnReview"
@@ -5234,25 +5422,6 @@ watch(
                     <ActivityIndicator v-if="dismissNeedsInputBusy" />
                     {{ dismissNeedsInputBusy ? "Dismissing…" : "Dismiss" }}
                   </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- The Debugger's one-line tl;dr for the current failure (#0570):
-             the plain-language "what happened / what to do" summary, additive
-             to the banner and the raw detail in the tabs below. Lives above
-             the tabs so it is visible no matter which tab is open. -->
-          <div v-if="activeTldrSentence || activeTldrDiagnosing" class="drawer-critical">
-            <div class="debug-tldr" role="status">
-              <Lightbulb class="debug-tldr-icon" />
-              <div class="debug-tldr-body">
-                <div class="debug-tldr-label">tl;dr — what happened</div>
-                <div v-if="activeTldrSentence" class="debug-tldr-sentence">
-                  {{ activeTldrSentence }}
-                </div>
-                <div v-else class="debug-tldr-diagnosing">
-                  <ActivityIndicator label="Debugger diagnosing" />
-                  Diagnosing…
                 </div>
               </div>
             </div>
@@ -6608,7 +6777,12 @@ watch(
           </div>
         </div>
         <div v-else-if="ui.activeTab === 'debug'" class="drawer-body">
-          <DebugPanel v-if="ui.active" :task="ui.active" v-model:view="ui.debugView" />
+          <DebugPanel
+            v-if="ui.active"
+            :task="ui.active"
+            :status-details="drawerStatusDetails"
+            v-model:view="ui.debugView"
+          />
         </div>
         <template v-else-if="ui.activeTab === 'pm'">
           <!-- #0515: the chat itself is the shared <PmChatSurface>, which the
@@ -7108,5 +7282,188 @@ watch(
   display: block;
   color: var(--txt-faint);
   font-size: 11px;
+}
+
+.drawer-status-chip {
+  min-width: 0;
+  flex: 0 1 auto;
+  max-width: 112px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drawer-status-chip.ck-chip-slow {
+  max-width: 148px;
+  color: var(--red);
+  border-color: var(--red-border-tint);
+  background: var(--red-tint);
+}
+
+.drawer-chip-overlong {
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tc-id {
+  display: -webkit-box;
+  min-width: 0;
+  max-width: min(220px, 34vw);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.drawer-status-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  align-items: start;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--txt);
+  font-size: 12px;
+}
+
+.drawer-status-summary.is-error {
+  border-color: var(--red-border-tint, var(--border));
+  background: var(--red-tint);
+}
+
+.drawer-status-summary-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.drawer-status-summary-copy span {
+  color: var(--txt-dim);
+  line-height: 1.4;
+}
+
+.drawer-status-line {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--txt-dim);
+  font-size: 11px;
+}
+
+.check-progress-inline {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.drawer-info-popover {
+  position: relative;
+  justify-self: end;
+}
+
+.drawer-info-popover summary {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--txt-dim);
+  cursor: pointer;
+  list-style: none;
+}
+
+.drawer-info-popover summary::-webkit-details-marker {
+  display: none;
+}
+
+.drawer-info-popover summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.drawer-info-content {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(280px, calc(100vw - 48px));
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-1);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+  color: var(--txt-dim);
+}
+
+.drawer-info-content p {
+  margin: 0 0 8px;
+}
+
+.drawer-info-content button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+:deep(.done-error-help) {
+  position: relative;
+  justify-self: end;
+}
+
+:deep(.done-error-help summary) {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--txt-dim);
+  cursor: pointer;
+  list-style: none;
+}
+
+:deep(.done-error-help summary::-webkit-details-marker) {
+  display: none;
+}
+
+:deep(.done-error-help-popover) {
+  position: absolute;
+  z-index: 20;
+  right: 0;
+  bottom: calc(100% + 6px);
+  width: min(280px, calc(100vw - 48px));
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-1);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+  color: var(--txt-dim);
+  font-size: 12px;
+}
+
+:deep(.done-error-help-popover p) {
+  margin: 0 0 8px;
+}
+
+:deep(.done-error-help-popover button) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 560px) {
+  .drawer-status-summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
 }
 </style>

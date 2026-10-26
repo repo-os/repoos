@@ -2,25 +2,25 @@
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
-status: ready
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: Transport"
-hold: true
+status: done
 priority: p2
 area: web
-assigned_to: human
+merged_commit: cdfb5ac3a9c3146bdc4152b94a2f5abb6f75b56d
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-side-panel-one-top-line-chip-at-mos
-cli_override: opencode
-model_override: opencode-go/kimi-k2.7-code
+cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-26T09:03:36Z"
-check_retry_count: 2
+updated_at: "2026-10-26T18:34:34Z"
+last_close_out_gate_ms: 1370715
+last_close_out_gate_at: "2026-10-26T18:32:46.250Z"
+review_passes: 3
+review_rounds: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T02:27:40.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 13
+dev_error_count: 14
 ---
 ## Problem
 
@@ -65,14 +65,14 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "Review failed: short header chip and status card with guidance",
+"label": "Review failed: short header chip and status card",
 "target": "default",
 "route": "/work?task=9999",
 "highlight": ".drawer-status-summary",
 "state": "drawer:statusReviewFailed"
 },
 {
-"label": "Review failed at narrow width: chip wraps to one line, card stays readable",
+"label": "Review failed at a narrow panel width",
 "target": "default",
 "route": "/work?task=9999",
 "highlight": ".drawer-status-summary",
@@ -86,53 +86,60 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 "state": "drawer:landable"
 },
 {
-"label": "Not landable at narrow width: checklist stays within the drawer",
+"label": "Not landable at a narrow panel width",
 "target": "default",
 "route": "/work?task=9999",
 "highlight": ".drawer-status-summary",
 "state": "drawer:landableNarrow"
 },
 {
-"label": "Checks running: one status line with progress, no long card copy",
+"label": "Checks running: one status line above the tabs",
 "target": "default",
 "route": "/work?task=9999",
 "highlight": ".drawer-status-summary",
 "state": "drawer:statusChecksRunning"
 },
 {
-"label": "Checks running at narrow width: status line and progress wrap cleanly",
+"label": "Checks running at a narrow panel width",
 "target": "default",
 "route": "/work?task=9999",
 "highlight": ".drawer-status-summary",
 "state": "drawer:statusChecksRunningNarrow"
 },
 {
-"label": "Confirming handoff: single status line above the tabs",
+"label": "Confirming handoff: one status line",
 "target": "default",
 "route": "/work?task=9999",
 "highlight": ".drawer-status-summary",
 "state": "drawer:statusConfirmingHandoff"
 },
 {
-"label": "Confirming handoff at narrow width: status line remains one row",
+"label": "Confirming handoff at a narrow panel width",
 "target": "default",
 "route": "/work?task=9999",
 "highlight": ".drawer-status-summary",
 "state": "drawer:statusConfirmingHandoffNarrow"
 },
 {
-"label": "Checks failed after retries: concise error card with info popover",
+"label": "Checks failed after retries: short chip and one card",
 "target": "default",
 "route": "/work?task=9999",
 "highlight": ".drawer-status-summary",
 "state": "drawer:statusChecksFailed"
 },
 {
-"label": "Checks failed after retries at narrow width: card and actions stay aligned",
+"label": "Checks failed at a narrow panel width",
 "target": "default",
 "route": "/work?task=9999",
 "highlight": ".drawer-status-summary",
 "state": "drawer:statusChecksFailedNarrow"
+},
+{
+"label": "Debug status details lists the full removed copy",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": "[aria-label=\"Task status details\"]",
+"state": "drawer:statusDetails"
 }
 ]
 ```
@@ -332,3 +339,66 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-26T06:59:38Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T07:53:29Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T09:03:36Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T11:14:37Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T12:36:05Z · assigned_to
+- 2026-10-26T12:36:11Z · released
+- 2026-10-26T12:36:30Z · status ready→active
+- 2026-10-26T12:36:38Z · cli_override, model_override
+- 2026-10-26T12:36:39Z · note: agent fallback: antigravity + gemini-3.8-flash-medium is paused (out of usage since 2026-10-26T12:27:45.440Z: AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retryabl) — using codex + gpt-6-luna
+- 2026-10-26T12:37:00Z · message_delivered: 1 message(s)
+- 2026-10-26T12:37:15Z · model_override
+- 2026-10-26T14:24:36Z · needs_input
+- 2026-10-26T14:24:45Z · held
+- 2026-10-26T14:24:52Z · assigned_to
+- 2026-10-26T14:25:04Z · status active→ready
+- 2026-10-26T15:31:22Z · cli_override, model_override
+- 2026-10-26T15:31:24Z · model_override
+- 2026-10-26T15:37:39Z · released, assigned_to
+- 2026-10-26T15:38:00Z · status ready→active
+- 2026-10-26T15:38:09Z · cli_override, model_override
+- 2026-10-26T15:38:14Z · message_queued at 2026-10-26T15:38:14.459Z
+- 2026-10-26T15:43:15Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/done-error-placement.test.ts > move-to-done inline error placement > renders in the task panel below the Move to done button, tests/reviewer-thinking-state.test.ts > reviewer thinking state in the task panel (#0209) > labels a previous-round report and withholds sign-off while a new review is pending, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-26T15:43:15Z · note: handoff requested (cli)
+- 2026-10-26T15:55:36Z · status active→review
+- 2026-10-26T15:55:36Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T15:57:40Z · note: review pass 1: needs some work
+- 2026-10-26T15:57:41Z · message_queued at 2026-10-26T15:57:40.996Z
+- 2026-10-26T15:57:41Z · status review→active
+- 2026-10-26T16:02:50Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/done-error-placement.test.ts > move-to-done inline error placement > renders in the task panel below the Move to done button, tests/reviewer-thinking-state.test.ts > reviewer thinking state in the task panel (#0209) > labels a previous-round report and withholds sign-off while a new review is pending, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-26T16:02:50Z · note: handoff requested (cli)
+- 2026-10-26T16:14:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-26T16:14:41Z · status active→review
+- 2026-10-26T16:14:42Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T16:14:42Z · message_queued at 2026-10-26T16:14:42.261Z
+- 2026-10-26T16:14:42Z · status review→active
+- 2026-10-26T16:19:15Z · status active→review
+- 2026-10-26T16:19:15Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T16:19:15Z · message_delivered: 3 message(s)
+- 2026-10-26T16:19:15Z · status review→active
+- 2026-10-26T16:19:38Z · note: handoff requested (ui-review)
+- 2026-10-26T16:20:18Z · status active→review
+- 2026-10-26T16:20:19Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T16:20:19Z · message_queued at 2026-10-26T16:20:19.463Z
+- 2026-10-26T16:20:19Z · status review→active
+- 2026-10-26T16:20:20Z · message_delivered: 1 message(s)
+- 2026-10-26T16:23:40Z · body
+- 2026-10-26T16:57:48Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-26T16:57:48Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-26T16:59:54Z · body
+- 2026-10-26T17:02:42Z · body
+- 2026-10-26T17:08:16Z · body
+- 2026-10-26T17:10:41Z · body
+- 2026-10-26T17:12:59Z · needs_input
+- 2026-10-26T17:12:59Z · needs_input
+- 2026-10-26T17:24:13Z · status active→review
+- 2026-10-26T17:24:14Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T17:26:05Z · note: review pass 2: needs some work
+- 2026-10-26T17:26:06Z · status review→active
+- 2026-10-26T17:31:53Z · body
+- 2026-10-26T17:37:45Z · body
+- 2026-10-26T17:54:03Z · status active→review
+- 2026-10-26T17:54:04Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T17:56:21Z · note: review pass 3: needs some work
+- 2026-10-26T18:32:14Z · needs_input (dev-error) dismissed by hello@repoos.org
+- 2026-10-26T18:32:46Z · close-out gate completed in 1371s
+- 2026-10-26T18:34:34Z · status done→done, release:success

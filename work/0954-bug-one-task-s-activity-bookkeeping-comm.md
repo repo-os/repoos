@@ -2,27 +2,19 @@
 id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
-status: ready
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
-debug_tldr: "Engineer died waiting on serialized local fallback behind other repoos checks — end duplicate checks, then resume."
-debug_tldr_at: "2026-10-25T14:34:23Z"
-debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
-hold: true
+status: active
 priority: p1
 area: core
-assigned_to: human
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-one-task-s-activity-bookkeeping-comm
 cli_override: cursor
-model_override: composer-2.5
+model_override: grok-4.7-low
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T15:39:41Z"
+updated_at: "2026-10-26T18:55:30Z"
 handoff_signal_retry_count: 2
 dev_error_count: 12
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T12:19:20.905Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T14:33:40.068Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -161,3 +153,13 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T15:22:56Z · held
 - 2026-10-25T15:23:17Z · assigned_to
 - 2026-10-25T15:23:59Z · status active→ready
+- 2026-10-26T15:31:40Z · cli_override, model_override
+- 2026-10-26T18:49:28Z · released, assigned_to
+- 2026-10-26T18:49:49Z · status ready→active
+- 2026-10-26T18:49:59Z · cli_override, model_override
+- 2026-10-26T18:50:07Z · needs_input
+- 2026-10-26T18:50:07Z · message_queued at 2026-10-26T18:50:07.824Z
+- 2026-10-26T18:53:28Z · body
+- 2026-10-26T18:55:29Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-26T18:55:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-26T18:55:30Z · message_delivered: 1 message(s)

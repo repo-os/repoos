@@ -2,14 +2,16 @@
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
-status: inbox
+status: active
 priority: p1
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/bound-local-load-shared-build-test-slots
+cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-25T15:37:17Z"
+updated_at: "2026-10-26T19:26:22Z"
 ---
 ## Problem
 
@@ -32,10 +34,50 @@ On 2026-10-25 a 10-core, 24 GB Mac with five engineers running reached load 40 t
 - [ ] Run every test touching local check slots, pressureGuard, agent spawn and the check runner in small groups, then `repoos check --changed main`.
 
 ## Notes for AI
-
 - Do not start a second RepoOS server from a worktree (bug #0954).
 - Related: #0958 (fsmonitor re-enable), #0954 (preview servers commit into other worktrees), #0960 (hold). This task is the one that keeps the machine usable when several engineers run.
+
+### Measurement (2026-10-27, this machine)
+
+Fixture, not a compiler storm: 4 simulated engineers, each spawning 8 one-shot `sleep` processes, sharing `.repoos/local-check-slots`.
+
+| Budget | Peak concurrent sleeps | 1-minute load (before → after) |
+| --- | --- | --- |
+| 4 slots (one stack per engineer) | 32 | 9.11 → 9.11 |
+| 2 slots (`heavySlots` default) | 16 | 9.11 → 9.18 |
+
+Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap that matters here is process count: the shared budget cut the concurrent children in half (32 → 16). A five-engineer in-process run of the same semaphore peaked at 2 holders and a killed holder released its slot (see `local-resource-gates.test.ts`).
+
+## Shots
+```json
+[
+{
+"label": "Heavy slots and pressure limits in Settings",
+"target": "default",
+"route": "/settings?tab=general&section=performance",
+"highlight": "[data-settings-section=\"performance\"]"
+},
+{
+"label": "Dashboard heavy-job line",
+"target": "default",
+"route": "/",
+"highlight": "[data-heavy-jobs]"
+}
+]
+```
 
 ## Activity
 
 - 2026-10-25T15:37:17Z · created · njachowski@gmail.com
+- 2026-10-26T18:53:51Z · status inbox→ready
+- 2026-10-26T19:01:44Z · status ready→active
+- 2026-10-26T19:01:51Z · cli_override, model_override
+- 2026-10-26T19:01:51Z · branch
+- 2026-10-26T19:02:04Z · message_queued at 2026-10-26T19:02:04.142Z
+- 2026-10-26T19:19:58Z · body: Notes for AI (added 7)
+- 2026-10-26T19:19:58Z · body
+- 2026-10-26T19:19:58Z · message_queued at 2026-10-26T19:19:58.813Z
+- 2026-10-26T19:23:29Z · body
+- 2026-10-26T19:26:22Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-10-26T19:26:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-26T19:26:22Z · message_delivered: 2 message(s)

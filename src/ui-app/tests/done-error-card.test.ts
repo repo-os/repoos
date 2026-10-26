@@ -184,6 +184,22 @@ describe("DoneErrorCard (panel mode — the task panel)", () => {
     expect(wrapper.emitted("open-support")).toHaveLength(1);
   });
 
+  it("keeps canned failure guidance in an accessible help popover", async () => {
+    const wrapper = mount(DoneErrorCard, {
+      props: { mode: "panel", message: "boom", hint: "Retry after resolving the conflict." },
+    });
+    const summary = wrapper.find(
+      '.done-error-help summary[aria-label="Help for this close-out failure"]',
+    );
+    expect(summary.exists()).toBe(true);
+    expect(summary.element.tagName).toBe("SUMMARY");
+    expect(wrapper.find(".done-error-help-popover").text()).toContain(
+      "Retry after resolving the conflict.",
+    );
+    await wrapper.find(".done-error-help-popover button").trigger("click");
+    expect(wrapper.emitted("open-status-details")).toHaveLength(1);
+  });
+
   it("shows a local clock time in the panel headline when failedAt is set", async () => {
     const failedAt = "2026-09-23T04:32:00.000Z";
     const wrapper = mount(DoneErrorCard, {
