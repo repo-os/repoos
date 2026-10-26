@@ -19,7 +19,7 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T14:04:43Z"
+updated_at: "2026-10-26T14:07:13Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
@@ -56,52 +56,58 @@ Every standard nav page uses the full window height: the scrollable content area
 ```json
 [
 {
-"label": "Work full-height tall populated board",
-"target": "default",
-"route": "/work",
-"highlight": ".work-page",
-"state": "pages:scroll",
-"viewportWidth": 1280
+  "label": "Work populated full-height at 1120px",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".work-page",
+  "state": "pages:scroll",
+  "viewportWidth": 1280,
+  "viewportHeight": 1120
 },
 {
-"label": "Work full-height short populated board",
-"target": "default",
-"route": "/work",
-"highlight": ".work-page",
-"state": "pages:scroll",
-"viewportWidth": 1280
+  "label": "Work populated full-height at 620px",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".work-page",
+  "state": "pages:scroll",
+  "viewportWidth": 1280,
+  "viewportHeight": 620
 },
 {
-"label": "Stories full-height tall populated list",
-"target": "default",
-"route": "/stories",
-"highlight": ".stories-page",
-"state": "pages:scroll",
-"viewportWidth": 1280
+  "label": "Stories populated full-height at 1120px",
+  "target": "default",
+  "route": "/stories",
+  "highlight": ".stories-page",
+  "state": "pages:scroll",
+  "viewportWidth": 1280,
+  "viewportHeight": 1120
 },
 {
-"label": "Stories full-height short populated list",
-"target": "default",
-"route": "/stories",
-"highlight": ".stories-page",
-"state": "pages:scroll",
-"viewportWidth": 1280
+  "label": "Stories populated full-height at 620px",
+  "target": "default",
+  "route": "/stories",
+  "highlight": ".stories-page",
+  "state": "pages:scroll",
+  "viewportWidth": 1280,
+  "viewportHeight": 620
 },
 {
-"label": "Checks full-height tall progress",
-"target": "default",
-"route": "/checks",
-"highlight": ".ck-page",
-"state": "checks:progress",
-"viewportWidth": 1280
+  "label": "Checks populated full-height at 1120px",
+  "target": "default",
+  "route": "/checks",
+  "highlight": ".ck-page",
+  "state": "checks:progress",
+  "viewportWidth": 1280,
+  "viewportHeight": 1120
 },
 {
-"label": "Checks full-height short progress",
-"target": "default",
-"route": "/checks",
-"highlight": ".ck-page",
-"state": "checks:progress",
-"viewportWidth": 1280
+  "label": "Checks populated full-height at 620px",
+  "target": "default",
+  "route": "/checks",
+  "highlight": ".ck-page",
+  "state": "checks:progress",
+  "viewportWidth": 1280,
+  "viewportHeight": 620
 }
 ]
 ```
@@ -394,3 +400,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T14:01:01Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T14:01:01Z · message_delivered: 1 message(s)
 - 2026-10-26T14:04:43Z · body
+- 2026-10-26T14:07:13Z · body
