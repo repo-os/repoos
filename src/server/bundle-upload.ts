@@ -26,8 +26,8 @@ export const DEFAULT_BUNDLE_UPLOAD_BUDGET_SECS = 180;
 export const DEFAULT_BUNDLE_UPLOAD_STALL_SECS = 90;
 /** Small probe payload for link quality (#0917). */
 export const LINK_PROBE_BYTES = 1024 * 1024;
-/** RTT above this → prefer local gate when allowed (#0917). */
-export const HIGH_RTT_MS = 1000;
+/** RTT above this → prefer local gate when allowed (#0917). 5000 (was 1000): a relayed path measures ~1.1 s RTT yet uploads fine; the throughput rule below covers slow links. */
+export const HIGH_RTT_MS = 5000;
 /** Upload alone longer than this at measured rate → prefer local (#0917). */
 export const SLOW_UPLOAD_BUDGET_SECS = 180;
 

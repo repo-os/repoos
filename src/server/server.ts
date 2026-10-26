@@ -3297,13 +3297,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     null;
   router.register("GET", "/api/system/worktree-gc", (_ctx, _req, res) => {
     const jobs = jobCoordinator.allJobs().filter((j) => j.phase !== "done" && j.phase !== "failed");
-    if (!worktreeGcPreview || Date.now() - worktreeGcPreview.at > 5 * 60_000) {
-      worktreeGcPreview = {
-        at: Date.now(),
-        report: sweepStaleWorktrees(config, { mode: "full", dryRun: true }),
-      };
-    }
-    const report = worktreeGcPreview.report;
+    // Never compute here: the dry-run takes ~30 s of blocking git on the main
+    // thread and the Control page polls this route. Serve the last cached
+    // report, or an empty placeholder until a POST (cleanup) has produced one.
+    const report =
+      worktreeGcPreview?.report ??
+      ({
+        mode: "full",
+        dryRun: true,
+        removedWorktrees: [],
+        removedBranches: [],
+        keptDirty: [],
+        prunedMetadata: false,
+        errors: [],
+      } as ReturnType<typeof sweepStaleWorktrees>);
     return json(res, 200, {
       report,
       activeCloseOutTaskIds: jobs.map((j) => j.taskId),
