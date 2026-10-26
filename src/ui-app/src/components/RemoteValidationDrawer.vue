@@ -153,6 +153,24 @@ const bundleUploadStallSecs = computed({
     }
   },
 });
+const linkThroughputFloorBps = computed({
+  get: () => Number(config.form["remoteValidation.linkThroughputFloorBps"] ?? 204800),
+  set: (v: number) => {
+    const n = Math.round(Number(v));
+    if (Number.isFinite(n) && n > 0) {
+      void config.setConfigValues({ "remoteValidation.linkThroughputFloorBps": n });
+    }
+  },
+});
+const linkProbeBytes = computed({
+  get: () => Number(config.form["remoteValidation.linkProbeBytes"] ?? 1048576),
+  set: (v: number) => {
+    const n = Math.round(Number(v));
+    if (Number.isFinite(n) && n >= 65536) {
+      void config.setConfigValues({ "remoteValidation.linkProbeBytes": n });
+    }
+  },
+});
 const forceLocalOnMeteredLink = computed({
   get: () => !!config.form["remoteValidation.forceLocalOnMeteredLink"],
   set: (v: boolean) => {
@@ -395,6 +413,36 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
             data-config-key="remoteValidation.bundleUploadStallSecs"
             :model-value="String(bundleUploadStallSecs)"
             @update:model-value="(v: string) => (bundleUploadStallSecs = Number(v))"
+          />
+          <label style="display: flex; flex-direction: column; gap: 2px">
+            Link throughput floor (bytes/second)
+            <span class="tunnel-help" style="margin: 0"
+              >Measured payload rate required before a runner is used. RTT is excluded. Default
+              204800.</span
+            >
+          </label>
+          <Input
+            type="number"
+            min="1"
+            style="width: 110px"
+            data-config-key="remoteValidation.linkThroughputFloorBps"
+            :model-value="String(linkThroughputFloorBps)"
+            @update:model-value="(v: string) => (linkThroughputFloorBps = Number(v))"
+          />
+          <label style="display: flex; flex-direction: column; gap: 2px">
+            Link probe payload (bytes)
+            <span class="tunnel-help" style="margin: 0"
+              >Payload size used for the throughput sample. Minimum 65536; default 1048576 (1
+              MiB).</span
+            >
+          </label>
+          <Input
+            type="number"
+            min="65536"
+            style="width: 110px"
+            data-config-key="remoteValidation.linkProbeBytes"
+            :model-value="String(linkProbeBytes)"
+            @update:model-value="(v: string) => (linkProbeBytes = Number(v))"
           />
         </div>
 

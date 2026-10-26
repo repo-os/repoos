@@ -7,11 +7,13 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
+import { nextTick } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import * as apiMod from "../src/api";
 import { useAuthStore } from "../src/stores/auth";
 import Select from "../src/components/ui/select/root.vue";
 import DeploymentsView from "../src/views/DeploymentsView.vue";
+import { invalidatePageData } from "../src/composables/page-data-cache";
 
 const api = vi.spyOn(apiMod, "api");
 
@@ -96,6 +98,7 @@ async function mountView(role: "admin" | "member" = "admin"): Promise<VueWrapper
 }
 
 beforeEach(() => {
+  invalidatePageData("deployments");
   vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
 });
 
@@ -106,6 +109,78 @@ afterEach(() => {
 });
 
 describe("DeploymentsView matrix (#0365)", () => {
+  it("shows cached deployments immediately on revisit and applies the refresh in place", async () => {
+    api.mockResolvedValue(status());
+    const first = await mountView();
+    first.unmount();
+
+    let finish!: (value: unknown) => void;
+    api.mockImplementation((path) => {
+      if (path === "/api/deployments") return new Promise((resolve) => (finish = resolve)) as never;
+      if (path === "/api/project-environments")
+        return Promise.resolve({ environments: [] }) as never;
+      throw new Error(`Unexpected API route: ${path}`);
+    });
+    const wrapper = mount(DeploymentsView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await nextTick();
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    expect(wrapper.text()).toContain("Landing page");
+
+    finish?.(
+      status({
+        rows: [{ ...status().rows[0], name: "Updated service", service: "Updated service" }],
+      }),
+    );
+    await flushPromises();
+    expect(wrapper.text()).toContain("Updated service");
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it.each([{ initial: status() }, { initial: status({ enabled: false, rows: [], branches: [] }) }])(
+    "shows refresh errors with cached deployments $initial",
+    async ({ initial }) => {
+      api.mockResolvedValue(initial);
+      const first = await mountView();
+      first.unmount();
+
+      api.mockImplementation((path) => {
+        if (path === "/api/deployments") return Promise.reject(new Error("refresh boom")) as never;
+        if (path === "/api/project-environments")
+          return Promise.resolve({ environments: [] }) as never;
+        throw new Error(`Unexpected API route: ${path}`);
+      });
+      const wrapper = mount(DeploymentsView, {
+        attachTo: document.body,
+        global: { plugins: [createPinia()] },
+      });
+      await nextTick();
+      expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+      expect(wrapper.text()).toContain(
+        initial.rows.length ? "Landing page" : "Deployments aren't configured",
+      );
+
+      await flushPromises();
+      expect(wrapper.text()).toContain("Refresh failed");
+      expect(wrapper.text()).toContain(
+        initial.rows.length ? "Landing page" : "Deployments aren't configured",
+      );
+      expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+      wrapper.unmount();
+    },
+  );
+
+  it("pins the first-load skeleton for its declared shot fixture", async () => {
+    window.history.replaceState({}, "", "/deployments?shotState=deployments%3Aloading");
+    const wrapper = await mountView();
+    expect(wrapper.find(".page-skeleton").exists()).toBe(true);
+    expect(api).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
   it("renders the registered environment-binding capture fixture without API data", async () => {
     window.history.replaceState({}, "", "/deployments?shotState=deployments%3AenvironmentBinding");
     const wrapper = await mountView();

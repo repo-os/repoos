@@ -8,6 +8,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { setPriority } from "node:os";
 import {
   patternKillWarning,
   processGroupKillSupported,
@@ -5142,6 +5143,24 @@ export async function runBoardAgent(
   return { result, quarantined };
 }
 
+/**
+ * Run an engineer/reviewer turn at lower CPU priority so the RepoOS server and
+ * UI keep winning the scheduler while agents' builds and tests saturate the
+ * machine. Niceness is inherited by every descendant the agent spawns.
+ * Best-effort; `REPOOS_AGENT_NICE=0` disables, default 10.
+ */
+function lowerAgentPriority(pid: number | undefined): void {
+  if (pid === undefined) return;
+  const raw = process.env.REPOOS_AGENT_NICE;
+  const nice = raw === undefined ? 10 : Number(raw);
+  if (!Number.isInteger(nice) || nice <= 0 || nice > 19) return;
+  try {
+    setPriority(pid, nice);
+  } catch {
+    /* process already gone or not permitted: run at normal priority */
+  }
+}
+
 export class AgentRunner {
   private entries = new Map<string, Entry>();
   /**
@@ -7153,6 +7172,7 @@ export class AgentRunner {
         // Own process group on POSIX so turn end can reap the whole tree (#0675).
         detached: processGroupKillSupported(),
       });
+      lowerAgentPriority(proc.pid);
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       this.logger?.agent(taskId, "error", `Failed to spawn agent: ${reason}`, { cmd, args });

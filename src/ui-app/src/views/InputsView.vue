@@ -587,15 +587,20 @@ function tryOpenInput(ref: string, attempt: number): void {
 <style scoped>
 .inputs-page {
   width: 100%;
-  padding: 0 0 80px;
+  padding: 0 0 var(--page-bottom-inset);
   box-sizing: border-box;
 }
 .inputs-board-page {
-  height: 100%;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding-bottom: 0;
+}
+@media (min-width: 761px) {
+  /* Desktop/tablet columns scroll inside the board; outer shell stays flush. */
+  .inputs-board-page {
+    padding-bottom: 0;
+  }
 }
 .inputs-board-page .input-filters {
   flex-shrink: 0;
@@ -928,16 +933,17 @@ function tryOpenInput(ref: string, attempt: number): void {
 .detail-select {
   align-self: stretch;
 }
-@media (max-width: 650px) {
+@media (max-width: 760px) {
   .inputs-page {
     width: 100%;
-    padding: 20px 14px 70px;
+    padding: 20px 14px var(--page-bottom-inset);
     box-sizing: border-box;
   }
   .inputs-board-page {
     height: auto;
     min-height: initial;
     display: block;
+    padding-bottom: var(--page-bottom-inset);
   }
   .inputs-board-page .inputs-board {
     min-height: initial;

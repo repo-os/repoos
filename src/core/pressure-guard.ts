@@ -186,10 +186,15 @@ export function evaluatePressure(
     );
   }
 
-  if (memoryPressureLevel === "warn" || memoryPressureLevel === "critical") {
+  // macOS sits at "warn" for long stretches when the compressor is busy even
+  // with no paging and plenty of free memory, so only "critical" blocks; paging
+  // activity and the free-percentage floor catch real thrashing.
+  if (memoryPressureLevel === "critical") {
     reasons.push(
-      `macOS memory_pressure reports ${memoryPressureLevel} — holding new work until memory pressure eases. ${ACTIVITY_DIAG}`,
+      `macOS memory_pressure reports critical — holding new work until memory pressure eases. ${ACTIVITY_DIAG}`,
     );
+  } else if (memoryPressureLevel === "warn") {
+    warnings.push("macOS memory_pressure reports warn (advisory)");
   }
 
   if (psiMemoryAvg10 !== null && psiMemoryAvg10 > thresholds.maxPsiMemoryAvg10) {

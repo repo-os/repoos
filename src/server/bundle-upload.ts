@@ -25,9 +25,9 @@ export const DEFAULT_BUNDLE_UPLOAD_BUDGET_SECS = 180;
 /** No bytes written for this long → treat as stalled (#0917). */
 export const DEFAULT_BUNDLE_UPLOAD_STALL_SECS = 90;
 /** Small probe payload for link quality (#0917). */
-export const LINK_PROBE_BYTES = 64 * 1024;
-/** RTT above this → prefer local gate when allowed (#0917). */
-export const HIGH_RTT_MS = 1000;
+export const LINK_PROBE_BYTES = 1024 * 1024;
+/** RTT above this → prefer local gate when allowed (#0917). 5000 (was 1000): a relayed path measures ~1.1 s RTT yet uploads fine; the throughput rule below covers slow links. */
+export const HIGH_RTT_MS = 5000;
 /** Upload alone longer than this at measured rate → prefer local (#0917). */
 export const SLOW_UPLOAD_BUDGET_SECS = 180;
 
@@ -441,8 +441,38 @@ export function shouldPreferLocalGate(params: {
 /** Floor for link probe throughput — below this, skip the host (#0917). */
 export const LINK_THROUGHPUT_FLOOR_BPS = 200 * 1024;
 
-export function linkProbeAcceptable(probe: LinkProbeResult): boolean {
-  return probe.ok && probe.throughputBps >= LINK_THROUGHPUT_FLOOR_BPS;
+export function linkProbeAcceptable(
+  probe: LinkProbeResult,
+  floorBps = LINK_THROUGHPUT_FLOOR_BPS,
+): boolean {
+  return probe.ok && probe.throughputBps >= floorBps;
+}
+
+/** Retry a failed probe once to ride out a transient network interruption. */
+export async function probeLinkWithRetry(
+  probe: () => Promise<LinkProbeResult>,
+  floorBps = LINK_THROUGHPUT_FLOOR_BPS,
+  wait: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+): Promise<LinkProbeResult> {
+  let result = await probe();
+  if (!linkProbeAcceptable(result, floorBps)) {
+    await wait(500);
+    result = await probe();
+  }
+  return result;
+}
+
+export function formatLinkProbeFailure(
+  host: string,
+  probe: LinkProbeResult,
+  floorBps: number,
+): string {
+  const measuredKbps = Math.round(probe.throughputBps / 1024);
+  return (
+    `host ${host} skipped: link probe failed (RTT ${probe.rttMs} ms, ` +
+    `${measuredKbps} KB/s measured, ${Math.round(floorBps / 1024)} KB/s floor)` +
+    (probe.detail ? `: ${probe.detail}` : "")
+  );
 }
 
 /**
@@ -456,6 +486,7 @@ export async function probeHostLink(
     args: string[],
     opts: { timeoutMs: number; stdin?: Buffer },
   ) => Promise<{ code: number | null; output: string; timedOut: boolean }>,
+  options: { payloadBytes?: number } = {},
 ): Promise<LinkProbeResult> {
   const rttStart = Date.now();
   const echo = await run("ssh", [...sshTransferArgs(host), `${host.user}@${host.ip}`, "true"], {
@@ -470,7 +501,7 @@ export async function probeHostLink(
       detail: echo.timedOut ? "link probe timed out" : tail(echo.output),
     };
   }
-  const payload = Buffer.alloc(LINK_PROBE_BYTES, 0x61);
+  const payload = Buffer.alloc(options.payloadBytes ?? LINK_PROBE_BYTES, 0x61);
   const xferStart = Date.now();
   const xfer = await run(
     "ssh",
@@ -486,7 +517,10 @@ export async function probeHostLink(
       detail: xfer.timedOut ? "link throughput probe timed out" : tail(xfer.output),
     };
   }
-  const throughputBps = xferMs > 0 ? Math.round((payload.length * 1000) / xferMs) : 0;
+  // Each ssh command has a new connection. Subtract the measured setup RTT so
+  // the bandwidth estimate reflects payload transfer rather than key exchange.
+  const transferMs = Math.max(1, xferMs - rttMs);
+  const throughputBps = Math.round((payload.length * 1000) / transferMs);
   return { ok: true, rttMs, throughputBps };
 }
 
