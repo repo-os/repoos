@@ -2,7 +2,9 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
 priority: p2
 area: web
 assigned_to: ai
@@ -388,3 +390,4 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-26T05:38:54Z · message_queued at 2026-10-26T05:38:54.572Z
 - 2026-10-26T05:38:55Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-26T05:52:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-26T05:52:09Z · status active→review, needs_input
