@@ -377,3 +377,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T12:37:15Z · model_override
 - 2026-10-26T12:41:57Z · cli_override, model_override
 - 2026-10-26T12:42:02Z · needs_input
+- 2026-10-26T12:42:02Z · message_queued at 2026-10-26T12:42:02.892Z
