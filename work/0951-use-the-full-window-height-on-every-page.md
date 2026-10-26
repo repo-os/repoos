@@ -21,7 +21,7 @@ review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 22
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-26T06:59:32.338Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-26T06:59:32.338Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-26T07:01:44.621Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -301,3 +301,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T06:23:50Z · body
 - 2026-10-26T06:38:15Z · body
 - 2026-10-26T06:59:32Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection stalled repeatedly
+- 2026-10-26T07:01:44Z · engineer crash recovery: resuming cursor + composer-2.5 (2/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
