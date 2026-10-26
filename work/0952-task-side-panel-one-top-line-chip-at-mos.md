@@ -20,7 +20,6 @@ last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check fail
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T02:27:40.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 14
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-26T16:57:48.608Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
