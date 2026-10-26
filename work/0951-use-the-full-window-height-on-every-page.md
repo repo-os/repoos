@@ -13,10 +13,10 @@ created_by: njachowski@gmail.com
 branch: feat/use-the-full-window-height-on-every-page
 cli_override: antigravity
 model_override: gemini-3.8-flash-medium
-review_cli_override: github copilot
-review_model_override: default
+review_cli_override: codex
+review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T11:07:01Z"
+updated_at: "2026-10-26T11:14:40Z"
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 review_rounds: 1
 review_passes: 2
@@ -365,3 +365,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T09:36:53Z · note: review pass 3: failed — no usable report
 - 2026-10-26T10:04:33Z · review_cli_override, review_model_override
 - 2026-10-26T11:07:01Z · note: review pass 4: failed — no usable report
+- 2026-10-26T11:14:40Z · review_cli_override, review_model_override
