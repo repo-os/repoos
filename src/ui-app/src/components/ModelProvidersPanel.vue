@@ -13,6 +13,7 @@ import type {
   DeepInfraUsage,
 } from "../types";
 import Button from "./ui/button.vue";
+import PageSkeleton from "./PageSkeleton.vue";
 
 const rows = ref<ModelProviderRow[]>([]);
 const loading = ref(false);
@@ -216,7 +217,7 @@ onMounted(() => {
     </div>
 
     <div v-if="loadError" class="mp-error">{{ loadError }}</div>
-    <div v-else-if="loading && !rows.length" class="agent-empty">Loading providers…</div>
+    <PageSkeleton v-else-if="loading && !rows.length" kind="rows" />
 
     <div v-for="row in rows" :key="row.id" class="mp-row" :data-provider-id="row.id">
       <div class="mp-row-head">
