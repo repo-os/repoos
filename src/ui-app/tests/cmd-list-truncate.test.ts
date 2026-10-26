@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 describe("repoos list title column (#0704)", () => {
-  it("truncates long titles so the area column stays aligned", () => {
+  it("truncates long titles so the area column stays aligned", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-list-"));
     roots.push(root);
     const work = join(root, "work");
@@ -49,7 +49,7 @@ body
       out += line + "\n";
     };
     try {
-      cmdList();
+      await cmdList();
     } finally {
       console.log = log;
     }

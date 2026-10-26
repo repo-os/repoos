@@ -92,6 +92,9 @@ export class GitWorker {
   private buffered = "";
   private stderrTail = "";
   private closed = false;
+  private childGitCalls = new Map<number, { id: number; label: string; startedAt: number }>();
+  private blockerKey = "";
+  private blockerValue: Map<string, DependencyBlocker[]> | null = null;
 
   constructor(private readonly root: string) {}
 
@@ -161,12 +164,21 @@ export class GitWorker {
   }
 
   async dependencyBlockers(root: string, tasks: Task[]): Promise<Map<string, DependencyBlocker[]>> {
+    const key = tasks
+      .map(
+        (task) =>
+          `${task.id}\0${task.status}\0${task.branch ?? ""}\0${task.mergedCommit ?? ""}\0${task.isArchived ? 1 : 0}\0${(task.dependsOn ?? []).join(",")}`,
+      )
+      .join("\n");
+    if (this.blockerValue && key === this.blockerKey) return this.blockerValue;
     const rows = await this.request<Array<[string, DependencyBlocker[]]>>(
       "dependency-blockers",
       { root, tasks },
       150_000,
     );
-    return new Map(rows);
+    this.blockerKey = key;
+    this.blockerValue = new Map(rows);
+    return this.blockerValue;
   }
 
   async sweep(
@@ -203,12 +215,19 @@ export class GitWorker {
 
   inFlight(now = Date.now()): GitWorkerJobInfo[] {
     const jobs = this.active ? [this.active, ...this.queue] : this.queue;
-    return jobs.map((job) => ({
+    const queued = jobs.map((job) => ({
       id: job.id,
       label: `git-worker ${job.kind}`,
-      state: job.startedAt === null ? "queued" : "running",
+      state: job.startedAt === null ? ("queued" as const) : ("running" as const),
       ageMs: Math.max(0, now - (job.startedAt ?? job.enqueuedAt)),
     }));
+    const calls = [...this.childGitCalls.values()].map((call) => ({
+      id: call.id,
+      label: call.label,
+      state: "running" as const,
+      ageMs: Math.max(0, now - call.startedAt),
+    }));
+    return [...calls, ...queued];
   }
 
   close(): void {
@@ -284,12 +303,32 @@ export class GitWorker {
       const line = this.buffered.slice(0, newline);
       this.buffered = this.buffered.slice(newline + 1);
       if (!line) continue;
-      let message: { id?: number; ok?: boolean; value?: unknown; error?: string };
+      let message: {
+        id?: number;
+        ok?: boolean;
+        value?: unknown;
+        error?: string;
+        type?: string;
+        label?: string;
+        startedAt?: number;
+        end?: boolean;
+      };
       try {
         message = JSON.parse(line);
       } catch {
         this.onExit(new Error("git worker returned malformed JSON"));
         return;
+      }
+      if (message.type === "git-call" && typeof message.id === "number") {
+        if (message.end) this.childGitCalls.delete(message.id);
+        else {
+          this.childGitCalls.set(message.id, {
+            id: message.id,
+            label: message.label ?? "git",
+            startedAt: message.startedAt ?? Date.now(),
+          });
+        }
+        continue;
       }
       const job = this.active;
       if (!job || message.id !== job.id) continue;

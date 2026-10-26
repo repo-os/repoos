@@ -38,6 +38,7 @@ import {
   handoffSinceLastCommit,
 } from "../../server/task-watchdog";
 import { parseTask } from "../../core/task";
+import { worktreePathForBranch } from "../../core/git";
 import { createRepoOS } from "../../core/repoos";
 import {
   ENGINEER_STALL_RESUME_LOG_KEY,
@@ -397,22 +398,22 @@ describe("classifyDeadAgentReason", () => {
 });
 
 describe("autoTransitionTarget", () => {
-  it("returns ready for a task with no branch", () => {
+  it("returns ready for a task with no branch", async () => {
     const fx = makeFx(1000);
     const task = { ...parseTaskAt(fx), branch: "" };
-    expect(autoTransitionTarget(fx.config, task)).toBe("ready");
+    expect(await autoTransitionTarget(fx.config, task)).toBe("ready");
     fx.clean();
   });
 
-  it("returns ready when the branch has no worktree holding work", () => {
+  it("returns ready when the branch has no worktree holding work", async () => {
     const fx = makeGitFx(1000);
-    expect(autoTransitionTarget(fx.config, parseTaskAt(fx))).toBe("ready");
+    expect(await autoTransitionTarget(fx.config, parseTaskAt(fx))).toBe("ready");
     fx.clean();
   });
 
-  it("returns review when the branch worktree holds committed work (#0172 never-commit shape)", () => {
+  it("returns review when the branch worktree holds committed work (#0172 never-commit shape)", async () => {
     const fx = makeGitFx(1000, { committedWork: true });
-    expect(autoTransitionTarget(fx.config, parseTaskAt(fx))).toBe("review");
+    expect(await autoTransitionTarget(fx.config, parseTaskAt(fx))).toBe("review");
     fx.clean();
   });
 });
@@ -841,7 +842,9 @@ Stuck twice.
     // reason — backdate every file so the worktree is genuinely stale too.
     const fx = makeGitFx(600_000, { committedWork: true });
     try {
-      const wt = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x");
+      const wt =
+        worktreePathForBranch(fx.root, "feat/x") ??
+        join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x");
       backdateTree(wt, new Date(Date.now() - 600_000));
 
       const index = new LiveIndex(fx.config);
@@ -1258,7 +1261,7 @@ Findings to address.
 - 2026-10-21T11:20:00Z · status review→active
 `,
     );
-    expect(handoffSinceLastCommit(fx.config, parseTaskAt(fx))).toBe(false);
+    expect(await handoffSinceLastCommit(fx.config, parseTaskAt(fx))).toBe(false);
     fx.clean();
   });
 });

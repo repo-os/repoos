@@ -175,7 +175,7 @@ function main(): void {
       break;
     case "list":
     case "ls":
-      cmdList(rest[0]);
+      void cmdList(rest[0]);
       break;
     case "status":
       void cmdStatus(rest);
@@ -215,7 +215,7 @@ function main(): void {
       break;
     case "rm":
     case "delete":
-      cmdRm(rest);
+      void cmdRm(rest);
       break;
     case "update":
       cmdUpdate(rest);

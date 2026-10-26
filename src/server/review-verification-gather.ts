@@ -5,7 +5,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { execFileSync } from "node:child_process";
+import { gitOutputAsync } from "../core/git.js";
 import type { ReviewVerificationResult } from "../core/review-verification.js";
 import {
   evaluateReviewVerification,
@@ -17,20 +17,10 @@ import { changedPathsVsBase } from "../core/git.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { readUiHandoffGateEvidence, taskNeedsBrowserUiVerification } from "./ui-handoff-gate.js";
 
-function gitDiff(worktree: string, baseBranch: string, path: string): string {
-  try {
-    const base = execFileSync("git", ["merge-base", baseBranch, "HEAD"], {
-      cwd: worktree,
-      encoding: "utf8",
-    }).trim();
-    if (!base) return "";
-    return execFileSync("git", ["diff", base, "HEAD", "--", path], {
-      cwd: worktree,
-      encoding: "utf8",
-    });
-  } catch {
-    return "";
-  }
+async function gitDiff(worktree: string, baseBranch: string, path: string): Promise<string> {
+  const base = await gitOutputAsync(worktree, ["merge-base", baseBranch, "HEAD"], 15_000);
+  if (!base) return "";
+  return (await gitOutputAsync(worktree, ["diff", base, "HEAD", "--", path], 30_000)) ?? "";
 }
 
 function readTestFileContents(
@@ -52,16 +42,13 @@ function readTestFileContents(
   return out;
 }
 
-function listTrackedTestFiles(worktree: string, globs: string[]): string[] {
+async function listTrackedTestFiles(worktree: string, globs: string[]): Promise<string[]> {
   try {
     // List every tracked file, then filter with the same glob compiler used
     // elsewhere, so a Swift/Python/Go test glob means exactly what its author
     // expects (a raw git pathspec would not).
-    const out = execFileSync("git", ["ls-files"], {
-      cwd: worktree,
-      encoding: "utf8",
-      maxBuffer: 64 * 1024 * 1024,
-    });
+    const out = await gitOutputAsync(worktree, ["ls-files"], 30_000);
+    if (out === null) return [];
     return out
       .split("\n")
       .map((s) => s.trim())
@@ -87,7 +74,7 @@ export function gatherReviewVerificationWithoutWorktree(
 }
 
 /** Run mechanical verification for a task sitting in `review`. */
-export function gatherReviewVerification(
+export async function gatherReviewVerification(
   config: RepoOSConfig,
   task: Task,
   worktree: string,
@@ -99,10 +86,10 @@ export function gatherReviewVerification(
   const changedPaths = changedPathsVsBase(worktree, baseBranch);
   const paths = changedPaths ?? [];
   const checkTsDiff = paths.includes("src/commands/check.ts")
-    ? gitDiff(worktree, baseBranch, "src/commands/check.ts")
+    ? await gitDiff(worktree, baseBranch, "src/commands/check.ts")
     : "";
   const repoosTomlDiff = paths.includes("repoos.toml")
-    ? gitDiff(worktree, baseBranch, "repoos.toml")
+    ? await gitDiff(worktree, baseBranch, "repoos.toml")
     : "";
 
   const { guardTestCheck, testGlobs } = resolvedReviewVerification(config);
@@ -122,7 +109,7 @@ export function gatherReviewVerification(
       changedTestFiles = readTestFileContents(worktree, changedTestPaths, testGlobs);
       branchTestFiles = readTestFileContents(
         worktree,
-        listTrackedTestFiles(worktree, testGlobs),
+        await listTrackedTestFiles(worktree, testGlobs),
         testGlobs,
       );
     }

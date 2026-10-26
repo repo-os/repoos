@@ -82,6 +82,14 @@ function worktreeAddFailure(run: GitRun): string {
  * the event loop for the OS round-trip, so N tasks in a `for` loop costs N
  * full serial round-trips no matter how idle the machine is.
  */
+export function gitOutputAsync(
+  root: string,
+  args: string[],
+  timeoutMs = 4000,
+): Promise<string | null> {
+  return gitAsync(root, args, timeoutMs);
+}
+
 function gitAsync(root: string, args: string[], timeoutMs = 4000): Promise<string | null> {
   return new Promise((resolve) => {
     const untrack = trackGitCall(root, args);
@@ -291,8 +299,35 @@ export async function branchRefSnapshotAsync(
   const hit = branchRefsCache.get(key);
   if (hit && hit.fingerprint === fingerprint) return cloneBranchRefs(hit.snapshot);
   const snapshot = parseBranchRefs(await gitAsync(root, branchRefArgs(base), base ? 60_000 : 4000));
+  if (base) await fillMissingAheadCounts(root, base, snapshot);
   branchRefsCache.set(key, { fingerprint, snapshot });
   return cloneBranchRefs(snapshot);
+}
+
+/**
+ * `%(ahead-behind:)` is empty on git before 2.41 and when the merge base cannot
+ * be computed. Missing must not become "0 ahead" or a branch with real commits
+ * reads clean. One rev-list per such branch, off the HTTP thread.
+ */
+async function fillMissingAheadCounts(
+  root: string,
+  base: string,
+  snapshot: BranchRefSnapshot,
+): Promise<void> {
+  const missing = [...snapshot.branches].filter(
+    (branch) => branch !== base && !snapshot.aheadCounts.has(branch),
+  );
+  if (missing.length === 0) return;
+  const queue = [...missing];
+  await Promise.all(
+    Array.from({ length: Math.min(4, queue.length) }, async () => {
+      for (let branch = queue.shift(); branch; branch = queue.shift()) {
+        const out = await gitAsync(root, ["rev-list", "--count", `${base}..${branch}`], 60_000);
+        const count = Number(out);
+        if (out !== null && Number.isFinite(count)) snapshot.aheadCounts.set(branch, count);
+      }
+    }),
+  );
 }
 
 /** Commits-ahead count for every local branch relative to `base`, in one query. */

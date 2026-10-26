@@ -2100,7 +2100,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       onReviewDone: (sessionKey, exitedCleanly, reviewKind) => {
         if (!reviews) return;
         try {
-          reviews.handleReviewDone(sessionKey, exitedCleanly, reviewKind);
+          void reviews.handleReviewDone(sessionKey, exitedCleanly, reviewKind);
         } catch (err) {
           console.error(`[repoos] review completion handler threw: ${(err as Error).message}`);
         }
@@ -2848,10 +2848,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
    * is no runner capability to re-adopt. A reload mid-handoff simply leaves the
    * task `active`, and asking again is one click.
    */
-  const startUnifiedHandoff = (
+  const startUnifiedHandoff = async (
     task: Task,
     opts: { origin: HandoffOrigin; skipChecks?: boolean; actor?: string } = { origin: "api" },
-  ): { started: boolean; reason?: string } => {
+  ): Promise<{ started: boolean; reason?: string }> => {
     // #0886: once Move to done owns the task, no handoff may start — and in
     // particular nothing here may write the task file. The old path wrote a
     // "handoff requested" note unconditionally, which re-serialized a task file
@@ -2868,7 +2868,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (!runner.markHandoffInFlight(task.id)) {
       return { started: false, reason: "a handoff is already running for this task" };
     }
-    const branchHead = readTaskBranchHead(config, task);
+    const branchHead = await readTaskBranchHead(config, task);
     if (shouldParkForIdenticalHandoffFailures(task, branchHead)) {
       runner.releaseHandoffInFlight(task.id);
       const last = lastHandoffFailureFromBody(task.body);
@@ -3010,7 +3010,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       );
       return false;
     }
-    startUnifiedHandoff(prev, { origin: "task-file" });
+    void startUnifiedHandoff(prev, { origin: "task-file" });
     return false;
   });
 
@@ -4742,7 +4742,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // The same unified handoff the PATCH /api/tasks/:id review branch
           // starts (commit + validate gate); the actor is the presser, so the
           // activity entry never falls back to "human".
-          const result = startUnifiedHandoff(task, {
+          const result = await startUnifiedHandoff(task, {
             origin: "ui-review",
             actor: actor.email,
           });

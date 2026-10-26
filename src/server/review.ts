@@ -1394,7 +1394,11 @@ export class ReviewManager {
   }
 
   /** Durable review-turn completion hook (0288). */
-  handleReviewDone(sessionKey: string, exitedCleanly = false, reviewKind?: "run" | "chat"): void {
+  async handleReviewDone(
+    sessionKey: string,
+    exitedCleanly = false,
+    reviewKind?: "run" | "chat",
+  ): Promise<void> {
     const taskId = taskIdFromReviewKey(sessionKey);
     const run = this.runs.get(taskId);
     // The run/chat distinction and cancel state are persisted (reviewKind in
@@ -1486,7 +1490,7 @@ export class ReviewManager {
     if (hasReport) {
       const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
       const verification = workdir
-        ? gatherReviewVerification(
+        ? await gatherReviewVerification(
             this.config,
             task,
             workdir,

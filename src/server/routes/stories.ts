@@ -401,7 +401,7 @@ export const deleteStory: RouteHandler = async (ctx, _req, res, params) => {
     return json(res, 404, { error: `story not found: ${params.param1}` });
   }
   try {
-    deleteStoryFile(
+    await deleteStoryFile(
       config,
       join(config.root, definition.path),
       `stories(${definition.number || definition.key}): delete`,

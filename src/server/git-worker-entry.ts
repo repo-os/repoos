@@ -11,6 +11,11 @@ import {
 import { buildIndexDetailedAsync } from "../core/indexer.js";
 import { taskDependencyBlockersForAll } from "../core/task-dependencies.js";
 import { countWorktrees, sweepStaleWorktrees, type GcMode } from "../core/worktree-gc.js";
+import { setGitCallSink } from "../core/git-inflight.js";
+
+setGitCallSink((event) => {
+  process.stdout.write(`${JSON.stringify({ type: "git-call", ...event })}\n`);
+});
 
 interface RequestMessage {
   id: number;

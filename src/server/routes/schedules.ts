@@ -64,13 +64,13 @@ export const patchSchedule: RouteHandler = async (ctx, req, res, p) => {
   }
 };
 
-export const deleteSchedule: RouteHandler = (ctx, _req, res, p) => {
+export const deleteSchedule: RouteHandler = async (ctx, _req, res, p) => {
   const id = p.param1;
   if (!id) return json(res, 400, { error: "id required" });
   const existing = getSchedule(ctx.config, id);
   if (!existing) return json(res, 404, { error: "schedule not found" });
   try {
-    deleteScheduleDataFile(
+    await deleteScheduleDataFile(
       ctx.config,
       join(ctx.config.root, existing.path),
       `schedules(${id}): delete`,
