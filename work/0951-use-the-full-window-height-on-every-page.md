@@ -359,3 +359,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T09:16:41Z · note: highlight .ck-page matched nothing on /checks
 - 2026-10-26T09:33:28Z · cli_override, model_override
 - 2026-10-26T09:36:37Z · status active→review
+- 2026-10-26T09:36:37Z · note: shots: skipped — 47 shots already captured — an engineer-made capture pre-empts the automatic one
