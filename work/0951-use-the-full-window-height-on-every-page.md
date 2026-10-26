@@ -3,6 +3,9 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: check-failed-after-retries
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p2
 area: web
 assigned_to: ai
@@ -11,13 +14,13 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T08:57:00Z"
+updated_at: "2026-10-26T09:03:28Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
-dev_error_count: 29
+dev_error_count: 30
 ---
 ## Problem
 
@@ -346,3 +349,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T08:44:37Z · message_queued at 2026-10-26T08:44:37.232Z
 - 2026-10-26T08:45:40Z · body
 - 2026-10-26T08:57:00Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T09:03:28Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
