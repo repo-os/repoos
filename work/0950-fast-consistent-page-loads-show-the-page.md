@@ -3,6 +3,9 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 164h31m2s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryable\":true,\"error_id\":\"be1a842a-8f64-4840-bb85-bb04f5c1c7fc-1\"}"
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +16,7 @@ model_override: gemini-3.8-flash-high
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T14:45:29Z"
+updated_at: "2026-10-26T14:45:37Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
 review_passes: 9
@@ -21,7 +24,7 @@ last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check fail
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 11
+dev_error_count: 12
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:26:05.071Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:44:23.994Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:44:35.028Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -437,3 +440,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T14:45:24Z · cli_override, model_override
 - 2026-10-26T14:45:29Z · needs_input
 - 2026-10-26T14:45:29Z · message_queued at 2026-10-26T14:45:29.436Z
+- 2026-10-26T14:45:36Z · agent exited with an error (antigravity) · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 164h31m2s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retryable":true,"error_id":"be1a842a-8f64-4840-bb85-bb04f5c1c7fc-1"}
