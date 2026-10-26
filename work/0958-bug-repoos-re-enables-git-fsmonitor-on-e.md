@@ -10,8 +10,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
+cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-26T17:08:16Z"
+updated_at: "2026-10-26T17:08:23Z"
 dev_error_count: 11
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:34.411Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:43.560Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:51.791Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -169,3 +171,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-26T15:31:12Z · model_override
 - 2026-10-26T17:07:55Z · released, assigned_to
 - 2026-10-26T17:08:16Z · status ready→active
+- 2026-10-26T17:08:23Z · cli_override, model_override
