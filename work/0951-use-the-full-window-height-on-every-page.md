@@ -14,12 +14,12 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/use-the-full-window-height-on-every-page
-cli_override: codex
-model_override: gpt-6.1-sol
+cli_override: cursor
+model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T14:25:26Z"
+updated_at: "2026-10-26T14:44:28Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
@@ -410,3 +410,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T14:23:22Z · body
 - 2026-10-26T14:25:17Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · 2026-10-26T14:17:07.350737Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/use-the-full-window-height-on-every-page/work/.attachments/0951/shots/default-32.png`: No such file…
 - 2026-10-26T14:25:26Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-26T14:44:28Z · cli_override, model_override
