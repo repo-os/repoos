@@ -11,7 +11,7 @@ branch: feat/bound-local-load-shared-build-test-slots
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-26T21:27:58Z"
+updated_at: "2026-10-26T21:28:05Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-26T20:30:15.157Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:38:45.831Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:47:01.501Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -102,3 +102,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-26T21:15:14Z · model_override
 - 2026-10-26T21:27:51Z · needs_input (watchdog-stuck) dismissed by hello@repoos.org
 - 2026-10-26T21:27:58Z · note: handoff requested (ui-review)
+- 2026-10-26T21:28:05Z · handoff failed · ui-review handoff failed at commit · no implementation found since the branch diverged; use no_source_change: true to force a no-op handoff
