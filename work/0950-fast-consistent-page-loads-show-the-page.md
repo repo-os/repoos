@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — Surface the Releases distribution refresh error when its cached channel list is empty.
@@ -16,7 +16,7 @@ model_override: gpt-6.1-sol
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T05:38:49Z"
+updated_at: "2026-10-26T05:38:50Z"
 review_passes: 9
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -385,3 +385,5 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-26T05:35:26Z · note: review pass 10: needs some work
 - 2026-10-26T05:35:26Z · needs_input
 - 2026-10-26T05:38:49Z · cli_override, model_override
+- 2026-10-26T05:38:50Z · status review→active
+- 2026-10-26T05:38:50Z · note: send-back — returned to active for engineer follow-up
