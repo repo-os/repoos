@@ -2,7 +2,7 @@
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: check-failed-after-retries
 needs_input_detail: Reading additional input from stdin...
@@ -14,7 +14,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T09:36:36Z"
+updated_at: "2026-10-26T09:36:37Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-26T06:15:46.061Z: repoos check failed: ◆ Check plan"
 review_rounds: 1
