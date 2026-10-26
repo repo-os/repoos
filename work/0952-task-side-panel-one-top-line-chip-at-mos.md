@@ -359,3 +359,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-26T16:14:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-26T16:14:41Z · status active→review
 - 2026-10-26T16:14:42Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T16:14:42Z · message_queued at 2026-10-26T16:14:42.261Z
