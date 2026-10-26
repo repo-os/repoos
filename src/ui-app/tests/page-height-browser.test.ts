@@ -8,6 +8,14 @@ const css = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
 const inputsCss = readFileSync(resolve(__dirname, "../src/views/InputsView.vue"), "utf8")
   .split("<style scoped>")[1]
   .split("</style>")[0];
+const componentCss = ["IntegrationStatusBar", "FloatingHeads"]
+  .map(
+    (name) =>
+      readFileSync(resolve(__dirname, `../src/components/${name}.vue`), "utf8")
+        .split("<style scoped>")[1]
+        .split("</style>")[0],
+  )
+  .join("\n");
 const content =
   '<div style="height:1600px;flex-shrink:0"></div><button id="last">Last item</button>';
 const columns = Array.from(
@@ -52,6 +60,25 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
     afterAll(async () => {
       await browser?.close();
     });
+
+    it.each([320, 390, 760])(
+      "keeps pipeline controls outside the head stack at %spx",
+      async (width) => {
+        const page = await browser.newPage({ viewport: { width, height: 620 } });
+        try {
+          await page.setContent(
+            `<style>${css}\n${componentCss}</style><div id="app"><div class="ibar-wrap"><div class="ibar"><div class="ibar-top">Pipeline<button class="ibar-toggle">⌃</button></div></div></div><div class="floating-heads"><div class="stack"><button class="head-btn">A</button><button class="head-btn">B</button><button class="head-btn">C</button></div></div></div>`,
+          );
+          const edges = await page.evaluate(() => ({
+            pipelineRight: document.querySelector(".ibar-wrap")!.getBoundingClientRect().right,
+            headsLeft: document.querySelector(".floating-heads")!.getBoundingClientRect().left,
+          }));
+          expect(edges.pipelineRight).toBeLessThan(edges.headsLeft);
+        } finally {
+          await page.close();
+        }
+      },
+    );
 
     for (const [width, height] of [
       [1280, 620],

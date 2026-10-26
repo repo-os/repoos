@@ -1529,7 +1529,7 @@
      available page height and each status column owns its own scroll area.
      This keeps the page header and controls in place while scanning tasks. */
 .work-page {
-  height: 100%;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -4675,7 +4675,7 @@
 .ctx-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1 1 auto;
   min-height: 0;
 }
 .repo-grid {
@@ -9081,7 +9081,7 @@
 /* Stationary page chrome (#0949): the header, title, and tabs stay put
    while the content under them scrolls. Same shape as .agents-page. */
 .page-scroll {
-  height: 100%;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -9124,10 +9124,11 @@
 }
 
 /* raw repoos.toml editor (#0375) — its own Settings tab, filling the
-   available height: .main is a stretched flex item, so height:100% resolves,
-   and each level below is a flex column handing the leftover space down. */
+   available height: routed shells are flex children of .main and hand the
+   leftover space down through nested flex columns. */
 .settings-page--fill {
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -9711,7 +9712,7 @@
 /* Keep the page chrome stable on desktop; long agent forms scroll within
      the active tab rather than moving the title and tab strip. */
 .agents-page {
-  height: 100%;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
