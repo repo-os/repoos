@@ -15,10 +15,8 @@ area: core
 assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/bug-one-task-s-activity-bookkeeping-comm
-cli_override: cursor
-model_override: composer-2.5
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-25T15:39:41Z"
+updated_at: "2026-10-26T15:31:40Z"
 handoff_signal_retry_count: 2
 dev_error_count: 12
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T12:19:20.905Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -161,3 +159,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T15:22:56Z · held
 - 2026-10-25T15:23:17Z · assigned_to
 - 2026-10-25T15:23:59Z · status active→ready
+- 2026-10-26T15:31:40Z · cli_override, model_override
