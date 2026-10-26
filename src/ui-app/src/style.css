@@ -737,22 +737,6 @@
 /* Fixed bottom controls sit above the scrolling pane. Fade the final slice of
    page content into the theme background and keep one shared scroll inset so
    the last row can clear those controls. */
-.body::after {
-  content: "";
-  position: fixed;
-  z-index: 45;
-  /* Keep the fade local to the floating agent heads. A full-width viewport
-     gradient reads as a bottom band on pages whose content is shorter than
-     the window; Work's own parked controls and integration bar have opaque
-     surfaces of their own. */
-  left: auto;
-  right: 0;
-  bottom: 0;
-  width: calc(var(--floating-head-size) + var(--floating-head-inline-offset) + 22px);
-  height: var(--page-bottom-fade-size);
-  background: linear-gradient(to bottom, transparent, var(--bg));
-  pointer-events: none;
-}
 .sidebar {
   width: 210px;
   flex-shrink: 0;
@@ -1855,9 +1839,6 @@
   .board {
     display: flex;
     flex-wrap: wrap;
-  }
-  .body::after {
-    width: calc(var(--floating-head-size) + var(--floating-head-inline-offset) + 12px);
   }
   .work-page {
     height: auto;

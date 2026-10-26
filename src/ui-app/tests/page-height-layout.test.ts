@@ -36,10 +36,11 @@ describe("standard page height and floating controls", () => {
     expect(css).toMatch(
       /--page-bottom-inset:\s*calc\(var\(--floating-head-stack-height\) \+ var\(--floating-head-bottom\) \+ 24px\)/,
     );
-    expect(css).toMatch(
-      /\.body::after\s*\{[^}]*position:\s*fixed;[^}]*left:\s*auto;[^}]*right:\s*0;[^}]*width:\s*calc\(var\(--floating-head-size\) \+ var\(--floating-head-inline-offset\) \+ 22px\);[^}]*background:\s*linear-gradient\(to bottom, transparent, var\(--bg\)\)/s,
-    );
-    expect(css).toMatch(/full-width viewport[\s\S]*?gradient reads as a bottom band/);
+    // The floating heads carry no fade strip of their own; it read as a line.
+    expect(css).not.toMatch(/\.body::after\s*\{/);
+    // Work floats its bottom controls on a fade and drops the blank head lane.
+    expect(css).toMatch(/\.work-page::after\s*\{[^}]*position:\s*fixed;[^}]*linear-gradient/s);
+    expect(css).toMatch(/\.main:has\(> \.work-page\)\s*\{[^}]*padding-inline-end:\s*26px/s);
     expect(css).toMatch(
       /--page-bottom-fade-size:\s*calc\(var\(--floating-head-stack-height\) \+ var\(--floating-head-bottom\)\)/,
     );
@@ -67,9 +68,8 @@ describe("standard page height and floating controls", () => {
       /\.floating-heads\s*\{[^}]*bottom:\s*var\(--floating-head-bottom\)/s,
     );
     expect(css).toMatch(/\.work-page \.parked-lists\s*\{[^}]*z-index:\s*55;/s);
-    expect(css).toMatch(
-      /\.work-page \.parked-lists\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--bg\) 88%, transparent\);[^}]*backdrop-filter:\s*blur\(12px\)/s,
-    );
+    // The toggles float on the page fade without a panel of their own.
+    expect(css).not.toMatch(/\.work-page \.parked-lists\s*\{[^}]*border:/s);
   });
 
   it("reserves more than the three stacked head buttons at scroll end (#0951)", () => {
