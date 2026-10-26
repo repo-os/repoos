@@ -91,11 +91,18 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
     for (const [width, height] of [
       [1280, 620],
       [1280, 1120],
+      [1024, 620],
+      [860, 620],
       [800, 620],
+      [761, 620],
+      [760, 620],
+      [651, 620],
+      [650, 620],
+      [320, 620],
       [700, 620],
       [390, 620],
     ]) {
-      const activeShells = width <= 760 ? [...shells, ...mobileShells] : shells;
+      const activeShells = width <= 860 ? [...shells, ...mobileShells] : shells;
       it.each(activeShells)(
         `%s reaches the bottom and exposes its last item at ${width}×${height}`,
         async (_name, rootClass, body) => {
@@ -116,7 +123,15 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
               }
               scroller.scrollTop = scroller.scrollHeight;
               const lastRect = last.getBoundingClientRect();
+              const probe = document.createElement("div");
+              probe.style.height = "var(--page-bottom-inset)";
+              probe.style.position = "absolute";
+              root.append(probe);
+              const inset = probe.getBoundingClientRect().height;
+              probe.remove();
               return {
+                inset,
+                scrollOwner: scroller.id,
                 rootBottom: root.getBoundingClientRect().bottom,
                 scrollBottom: scroller.getBoundingClientRect().bottom,
                 scrollTop: scroller.getBoundingClientRect().top,
@@ -127,7 +142,14 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
             expect(geometry.rootBottom).toBeCloseTo(height, 0);
             expect(geometry.scrollBottom).toBeCloseTo(height, 0);
             expect(geometry.lastTop).toBeGreaterThanOrEqual(geometry.scrollTop);
-            expect(geometry.lastBottom).toBeLessThanOrEqual(height - 24);
+            // Wrapped desktop board rows can be shorter than the inset itself.
+            // Their columns scroll independently and have a safe inline inset;
+            // outer scrollers must clear the entire fixed control stack.
+            const clearance = width > 760 && /Work|Inputs board/.test(_name) ? 24 : geometry.inset;
+            expect(geometry.lastBottom).toBeLessThanOrEqual(height - clearance + 1);
+            if (width <= 760 && /Inputs board|Agents playground/.test(_name)) {
+              expect(geometry.scrollOwner).toBe("root");
+            }
           } finally {
             await page.close();
           }
