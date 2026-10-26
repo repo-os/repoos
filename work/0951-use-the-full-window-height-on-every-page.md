@@ -422,3 +422,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T15:55:48Z · needs_input
 - 2026-10-26T15:55:49Z · needs_input
 - 2026-10-26T16:10:51Z · status active→review
+- 2026-10-26T16:10:51Z · note: shots: skipped — 63 shots already captured — an engineer-made capture pre-empts the automatic one
