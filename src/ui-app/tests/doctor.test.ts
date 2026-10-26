@@ -110,6 +110,14 @@ describe("runDoctor", () => {
     expect(item?.severity).toBe("warn");
     expect(item?.detail).toContain("9 daemons");
     expect(item?.remediation).toContain("git.tuneForScale = false");
+    expect(item?.remediation).toContain("git config core.fsmonitor false");
+  });
+
+  it.each([0, 1, 8])("reports %i fsmonitor daemons below the warning threshold", async (count) => {
+    const report = await runDoctor({ root: cleanProject(), fsmonitorDaemonCount: () => count });
+    const item = findingById(report, "runtime.fsmonitor-daemons");
+    expect(item?.severity).toBe("pass");
+    expect(item?.title).toContain(`${count} Git fsmonitor daemon`);
   });
 
   it("classifies representative codesign verbose output", () => {

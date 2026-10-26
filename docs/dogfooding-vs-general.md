@@ -208,9 +208,9 @@ The fix has four parts:
   and prints the one-line fix. `git.tuneForScale = false` in `repoos.toml`
   (Settings → General → Performance) is the off switch.
 
-This is still a default-on feature: it speeds up the per-worktree
-`git status` scans the index build runs, and worktree removal keeps the daemon
-count bounded. If a machine still thrashes — or a human deliberately disabled
-the setting — the off switch and the preserved explicit `false` are the escape
-hatches.
-
+The RepoOS setting defaults off: cleanup bounds daemons to existing worktrees,
+but a project with many active worktrees can still exceed the eight-daemon
+warning threshold. Users can opt in for faster per-worktree `git status` scans.
+Disabling RepoOS tuning leaves existing Git config untouched; set
+`core.fsmonitor = false` in Git to prevent new daemons and stop running daemons
+in affected checkouts.

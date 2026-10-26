@@ -203,6 +203,21 @@ describe("startServer running-server registry", () => {
     }
   }, 30_000);
 
+  it("leaves git acceleration off by default on a main checkout", async () => {
+    const root = minimalRepo();
+    const handle = await startServer({ root, host: "127.0.0.1", port: 0, disableAuth: true });
+    try {
+      expect(() =>
+        execFileSync("git", ["config", "--get", "core.fsmonitor"], {
+          cwd: root,
+          encoding: "utf8",
+        }),
+      ).toThrow();
+    } finally {
+      await handle.close();
+    }
+  }, 30_000);
+
   it("writes registry file once listening and removes it on close", async () => {
     const root = minimalRepo();
     const port = await reservePort();
