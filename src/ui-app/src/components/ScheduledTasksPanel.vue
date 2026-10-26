@@ -22,6 +22,7 @@ import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
 import DeleteConfirmDialog from "./DeleteConfirmDialog.vue";
+import PageSkeleton from "./PageSkeleton.vue";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
@@ -33,7 +34,7 @@ const repo = useRepoStore();
 const ui = useUiStore();
 const router = useRouter();
 
-const loading = ref(false);
+const loading = ref(true);
 const error = ref("");
 const editorOpen = ref(false);
 const editingId = ref<string | null>(null);
@@ -282,7 +283,9 @@ function consumeShotEditorOpen(): void {
 watch(() => ui.scheduleEditorShotOpen, consumeShotEditorOpen);
 
 onMounted(() => {
-  void repo.refreshSchedules();
+  void repo.refreshSchedules().finally(() => {
+    loading.value = false;
+  });
   consumeShotEditorOpen();
 });
 </script>
@@ -307,7 +310,7 @@ onMounted(() => {
       <code>schedules/</code> and run inside this server.
     </p>
     <p v-if="error" class="ff-error">{{ error }}</p>
-    <p v-if="loading" class="agent-desc">Loading schedules…</p>
+    <PageSkeleton v-if="loading && !schedules.length" kind="rows" />
     <p v-else-if="!schedules.length" class="agent-desc">
       No schedules yet. Add one to automate documentation audits, health checks, or other
       maintenance work.

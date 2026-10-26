@@ -13,7 +13,7 @@ branch: feat/diagnose-4-pre-existing-full-suite-test-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T22:39:47Z"
-updated_at: "2026-10-24T16:55:11Z"
+updated_at: "2026-10-26T14:53:28Z"
 last_close_out_gate_ms: 116390
 last_close_out_gate_at: "2026-10-19T03:11:47.656Z"
 review_passes: 1
@@ -178,3 +178,20 @@ Runner comparison: failures reproduce on current `main` in this worktree (same W
 - 2026-10-24T14:01:22Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-24T16:06:11Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-24T16:55:11Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T11:13:16Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T11:28:05Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T11:43:43Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T14:01:56Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T15:32:30Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:16:25Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:50:40Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T18:03:13Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T05:32:29Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T06:59:36Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T07:53:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T09:03:33Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T11:14:35Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:00:58Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:10:51Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:44:15Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:53:28Z · message_overdue: still queued after 60m without being delivered

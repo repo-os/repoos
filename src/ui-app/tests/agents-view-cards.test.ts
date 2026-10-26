@@ -11,6 +11,34 @@ async function flush(): Promise<void> {
 }
 
 describe("AgentsView agent cards", () => {
+  it("renders the page tabs while config is still loading", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const config = useConfigStore();
+    expect(config.loaded).toBe(false);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/", component: { template: "<div />" } }],
+    });
+    await router.push("/");
+    const wrapper = mount(AgentsView, {
+      global: {
+        plugins: [pinia, router],
+        stubs: { teleport: true, Transition: true, VoiceDictate: true },
+      },
+    });
+
+    expect(wrapper.find(".agents-page-title").text()).toBe("Agents");
+    expect(wrapper.find(".agent-tabs").exists()).toBe(true);
+    expect(wrapper.find(".page-skeleton").exists()).toBe(true);
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+  });
+
   it("lists default headless agents as PM, Engineer, Reviewer", async () => {
     vi.stubGlobal(
       "fetch",
@@ -68,6 +96,16 @@ describe("AgentsView agent cards", () => {
     expect(wrapper.find(".agent-skills-help").exists()).toBe(false);
 
     wrapper.unmount();
+    const revisit = mount(AgentsView, {
+      global: {
+        plugins: [pinia, router],
+        stubs: { teleport: true, Transition: true, VoiceDictate: true },
+      },
+    });
+    await flush();
+    expect(revisit.findAll(".page-skeleton").filter((node) => node.isVisible())).toHaveLength(0);
+    expect(revisit.findAll(".agent-name").map((el) => el.text())).toContain("engineer");
+    revisit.unmount();
     vi.unstubAllGlobals();
   });
 });

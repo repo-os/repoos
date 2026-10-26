@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useUiStore } from "../stores/ui";
-import { Bug, Check, Copy, FileClock, RotateCcw, Sparkles, X } from "lucide-vue-next";
+import { Bug, Check, Copy, FileClock, RefreshCw, RotateCcw, Sparkles, X } from "lucide-vue-next";
 import { copyToClipboard } from "../lib/clipboard";
 import ActivityIndicator from "../components/ActivityIndicator.vue";
 import Button from "../components/ui/button.vue";
@@ -16,6 +16,8 @@ import { api, JSON_OPTS } from "../api";
 import { parseAnsi, stripAnsi } from "../lib/ansi";
 import FailedTestsList from "../components/FailedTestsList.vue";
 import { nextReleaseVersion } from "../releases";
+import PageSkeleton from "../components/PageSkeleton.vue";
+import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
 
 interface ReleaseStatus {
   enabled: boolean;
@@ -220,6 +222,9 @@ let distributionSeq = 0;
 const distribution = ref<DistributionChannel[]>([]);
 const distributionReleaseVersion = ref<string | null>(null);
 const distributionLoading = ref(false);
+const distributionRefreshing = ref(false);
+/** Non-blocking refresh failure while cached channels stay on screen (#0950). */
+const distributionRefreshError = ref("");
 const distributionCiFailure = ref<DistributionSummary["ciFailure"]>(null);
 const copiedCommand = ref("");
 let copyTimer: ReturnType<typeof setTimeout> | null = null;
@@ -400,7 +405,17 @@ async function load(): Promise<void> {
   loading.value = true;
   loadError.value = "";
   try {
-    status.value = await api<ReleaseStatus>("/api/release");
+    await refreshPageData(
+      "release-status",
+      () => api<ReleaseStatus>("/api/release"),
+      (data) => {
+        status.value = data;
+        loadError.value = "";
+      },
+      (err) => {
+        loadError.value = err instanceof Error ? err.message : String(err);
+      },
+    );
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -411,27 +426,50 @@ async function load(): Promise<void> {
 /**
  * Load the distribution summary separately from the release status. Its
  * lookups can be slow or fail, and neither must affect the page, so a failure
- * simply hides the section.
+ * keeps cached channels visible with a non-blocking retry notice.
  */
-async function loadDistribution(): Promise<void> {
+async function loadDistribution(manual = false): Promise<void> {
   // A release landing while the mount-time lookup is still in flight starts a
   // second lookup; the older response must not overwrite the newer one or
   // clear the loading indicator while the newer lookup is still pending.
   const seq = ++distributionSeq;
-  distributionLoading.value = true;
+  if (manual) {
+    // The user asked for a fresh downstream check; bypass the page cache. The
+    // normal mount/revisit path stays silent while stale channels are visible.
+    invalidatePageData("release-distribution");
+    distributionRefreshing.value = true;
+  } else if (!distribution.value.length) {
+    distributionLoading.value = true;
+  }
+  if (!distribution.value.length) distributionRefreshError.value = "";
   try {
-    const data = await api<DistributionSummary>("/api/release/distribution");
-    if (seq !== distributionSeq) return;
-    distribution.value = data.channels ?? [];
-    distributionReleaseVersion.value = data.releaseVersion ?? null;
-    distributionCiFailure.value = data.ciFailure ?? null;
-  } catch {
-    if (seq !== distributionSeq) return;
-    distribution.value = [];
-    distributionReleaseVersion.value = null;
-    distributionCiFailure.value = null;
+    // Also revisits through the shared page cache (#0950): cached channels
+    // render at once instead of flashing a skeleton every time the page is
+    // reopened, and a failed refresh keeps them visible.
+    await refreshPageData(
+      "release-distribution",
+      () => api<DistributionSummary>("/api/release/distribution"),
+      (data) => {
+        if (seq !== distributionSeq) return;
+        distribution.value = data.channels ?? [];
+        distributionReleaseVersion.value = data.releaseVersion ?? null;
+        distributionCiFailure.value = data.ciFailure ?? null;
+        distributionRefreshError.value = "";
+        // A cache hit is delivered synchronously by refreshPageData. Drop the
+        // first-load state immediately so revisits stay quiet during revalidate.
+        distributionLoading.value = false;
+      },
+      (err) => {
+        if (seq !== distributionSeq) return;
+        distributionRefreshError.value =
+          err instanceof Error ? err.message : "Could not refresh distribution channels.";
+      },
+    );
   } finally {
-    if (seq === distributionSeq) distributionLoading.value = false;
+    if (seq === distributionSeq) {
+      distributionLoading.value = false;
+      distributionRefreshing.value = false;
+    }
   }
 }
 
@@ -794,6 +832,10 @@ async function release(): Promise<void> {
       }),
     );
     releasePosting = false;
+    invalidatePageData("release-status");
+    // A cut release invalidates the channel list too: the versions below are
+    // about to change, so a revisit must not be served the pre-release set.
+    invalidatePageData("release-distribution");
     run.value = result.run;
     // Re-assert the releasing flag (kept only when the returned run is still
     // in flight) and drop polls issued while the POST was in flight — they
@@ -878,8 +920,11 @@ async function pollRun(): Promise<void> {
         runLog.value = "";
         notesError.value = "";
         notesHint.value = "";
+        // The cut shipped, so every release-derived view of the world is
+        // stale: drop the cached status and channel list before reloading.
         debuggerSent.value = false;
         debuggerErr.value = "";
+        invalidatePageData("release-distribution");
         await Promise.all([load(), loadDistribution()]);
       } else if (latest.state === "failed" && latest.message) {
         // A failed phase reports its full command output (repoos check log, build
@@ -1006,10 +1051,13 @@ onBeforeUnmount(() => {
     </header>
 
     <div class="page-scroll-body">
-      <div v-if="loading" class="spin"></div>
+      <PageSkeleton v-if="loading && !status" kind="cards" />
       <p v-else-if="loadError && !status" class="rel-error">{{ loadError }}</p>
+      <p v-if="loadError && status" class="rel-error" role="status">
+        Refresh failed: {{ loadError }}
+      </p>
 
-      <template v-else-if="status">
+      <template v-if="status">
         <div v-if="!status.enabled" class="rel-card rel-empty">
           Releases aren't configured for this repository. Add a <code>[release]</code> block in
           <a class="rel-link" href="/settings?tab=toml">repoos.toml</a> to turn this page on.
@@ -1163,20 +1211,27 @@ onBeforeUnmount(() => {
             </div>
           </section>
 
-          <!-- Where users install this release. Rendered only when the project
-             declares [[distribution]] destinations; stays up (with a loading
-             indicator) while the first lookup is in flight. -->
-          <section v-if="distribution.length || distributionLoading" class="rel-card rel-dist">
+          <!-- Keep lookup failures visible even when the cached channel list is
+               empty, so the user can retry. Successful empty results hide this panel. -->
+          <section
+            v-if="distribution.length || distributionLoading || distributionRefreshError"
+            class="rel-card rel-dist"
+          >
             <div class="rel-dist-head">
               <div class="rel-dist-title-row">
                 <h2 class="rel-dist-title">Published to</h2>
                 <Button
                   variant="outline"
                   size="sm"
-                  :disabled="distributionLoading"
-                  @click="loadDistribution"
+                  :disabled="distributionLoading || distributionRefreshing"
+                  @click="loadDistribution(true)"
                 >
-                  {{ distributionLoading ? "Checking…" : "Check again" }}
+                  <RefreshCw
+                    v-if="distributionRefreshing"
+                    class="rel-dist-refreshing btn-ico spin"
+                    aria-hidden="true"
+                  />
+                  {{ distributionRefreshing ? "Checking…" : "Check again" }}
                 </Button>
               </div>
               <p class="rel-dist-sub">
@@ -1189,13 +1244,10 @@ onBeforeUnmount(() => {
               </p>
             </div>
 
-            <!-- While the lookup is in flight show the spinner: alone on the
-               first load (the card would otherwise look broken-empty), and
-               alongside the channels during a "Check again" recheck. -->
-            <div v-if="distributionLoading" class="rel-dist-loading" role="status">
-              <span class="rel-dist-loading-spin" aria-hidden="true"></span>
-              Checking distribution channels…
-            </div>
+            <!-- First lookup: a skeleton shaped like the channel cards, not a
+                 lone spinner. A "Check again" recheck keeps the channels on
+                 screen and shows the compact indicator below. -->
+            <PageSkeleton v-if="distributionLoading && !distribution.length" kind="cards" />
             <p v-if="distributionCiFailure" class="ff-error" role="alert">
               The release workflow failed<template v-if="distributionCiFailure.failedStep">
                 at “{{ distributionCiFailure.failedStep }}”</template
@@ -1203,6 +1255,9 @@ onBeforeUnmount(() => {
               <a :href="distributionCiFailure.runUrl" target="_blank" rel="noreferrer"
                 >View the failed run ↗</a
               >
+            </p>
+            <p v-if="distributionRefreshError" class="rel-error" role="status">
+              Refresh failed: {{ distributionRefreshError }}
             </p>
             <div v-if="distribution.length" class="rel-dist-channels">
               <article v-for="channel in distribution" :key="channel.name" class="rel-channel">
@@ -1907,24 +1962,6 @@ onBeforeUnmount(() => {
 .rel-dist-sub code {
   font-family: var(--mono);
   color: var(--txt-dim);
-}
-.rel-dist-loading {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--txt-faint);
-  font-size: 12.5px;
-  padding: 4px 0 2px;
-}
-/* Small inline variant of the shared `.spin` indicator (same keyframes). */
-.rel-dist-loading-spin {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  border: 2px solid var(--border);
-  border-top-color: var(--cyan);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
 }
 .rel-dist-channels {
   display: grid;

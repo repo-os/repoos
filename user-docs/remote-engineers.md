@@ -13,6 +13,12 @@ extend that to the engineer process itself: a task's engineer runs in its own
 git worktree on a chosen host, while the board, transcript, review and close-out
 stay on the machine you are using.
 
+Remote validation also works from high-latency networks when the transfer
+bandwidth is sufficient: its link probe measures RTT separately from payload
+throughput and retries once before skipping an unreachable host. In Settings
+→ Remote validation, adjust `remoteValidation.linkThroughputFloorBps` and
+`remoteValidation.linkProbeBytes` if the network needs different thresholds.
+
 Local execution remains the default. A remote session is opt-in per repo and can
 always fall back to local.
 
