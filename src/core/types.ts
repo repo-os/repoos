@@ -481,8 +481,14 @@ export interface ModelProviderKeysConfig {
   clefFlashApiKey?: string;
 }
 
+export interface GitConfig {
+  tuneForScale?: boolean;
+}
+
 /** Resolved configuration (after defaults + repoos.toml merge). */
 export interface RepoOSConfig {
+  /** Git status performance tuning; enabled by default. */
+  git?: GitConfig;
   /** Absolute path to the repo root. */
   root: string;
   /** Directory holding task files, relative to root. Default "work". */
@@ -1288,6 +1294,10 @@ export interface RemoteValidationConfig {
    * Abort when no bytes are written for this long (#0917). Default 90s.
    */
   bundleUploadStallSecs?: number;
+  /** Minimum measured link throughput in bytes per second. Default 204800. */
+  linkThroughputFloorBps?: number;
+  /** Payload size used by SSH link probing. Default 1048576. */
+  linkProbeBytes?: number;
   /** Force the close-out gate local — skip bundle upload (#0917). */
   forceLocalOnMeteredLink?: boolean;
 }

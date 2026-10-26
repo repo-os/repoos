@@ -2,18 +2,25 @@
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
-status: active
+status: done
 priority: p2
 area: web
+merged_commit: cdfb5ac3a9c3146bdc4152b94a2f5abb6f75b56d
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-side-panel-one-top-line-chip-at-mos
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T01:04:19Z"
+updated_at: "2026-10-26T18:34:34Z"
+last_close_out_gate_ms: 1370715
+last_close_out_gate_at: "2026-10-26T18:32:46.250Z"
+review_passes: 3
+review_rounds: 2
+last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
-engineer_stall_resume_log: "[{\"at\":\"2026-10-25T01:02:11.529Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-10-25T02:27:40.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 14
 ---
 ## Problem
 
@@ -58,39 +65,81 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "Drawer with review failure status",
+"label": "Review failed: short header chip and status card",
 "target": "default",
-"route": "/work?task=0952&tab=debug",
+"route": "/work?task=9999",
 "highlight": ".drawer-status-summary",
-"state": "drawer:reviewWithBranch"
+"state": "drawer:statusReviewFailed"
 },
 {
-"label": "Drawer with landability status",
+"label": "Review failed at a narrow panel width",
 "target": "default",
-"route": "/work?task=0952&tab=debug",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailedNarrow"
+},
+{
+"label": "Not landable: single card shows the failing checklist",
+"target": "default",
+"route": "/work?task=9999",
 "highlight": ".drawer-status-summary",
 "state": "drawer:landable"
 },
 {
-"label": "Drawer with live check progress",
+"label": "Not landable at a narrow panel width",
 "target": "default",
-"route": "/work?task=0952&tab=debug",
+"route": "/work?task=9999",
 "highlight": ".drawer-status-summary",
-"state": "checks:progress"
+"state": "drawer:landableNarrow"
 },
 {
-"label": "Drawer confirming handoff",
+"label": "Checks running: one status line above the tabs",
 "target": "default",
-"route": "/work?task=0952&tab=debug",
+"route": "/work?task=9999",
 "highlight": ".drawer-status-summary",
-"state": "closeOut:active"
+"state": "drawer:statusChecksRunning"
 },
 {
-"label": "Drawer after check retries fail",
+"label": "Checks running at a narrow panel width",
 "target": "default",
-"route": "/work?task=0952&tab=debug",
+"route": "/work?task=9999",
 "highlight": ".drawer-status-summary",
-"state": "dev:failed"
+"state": "drawer:statusChecksRunningNarrow"
+},
+{
+"label": "Confirming handoff: one status line",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusConfirmingHandoff"
+},
+{
+"label": "Confirming handoff at a narrow panel width",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusConfirmingHandoffNarrow"
+},
+{
+"label": "Checks failed after retries: short chip and one card",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailed"
+},
+{
+"label": "Checks failed at a narrow panel width",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailedNarrow"
+},
+{
+"label": "Debug status details lists the full removed copy",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": "[aria-label=\"Task status details\"]",
+"state": "drawer:statusDetails"
 }
 ]
 ```
@@ -153,3 +202,203 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T01:02:11Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-25T01:03:45Z · body
 - 2026-10-25T01:04:19Z · body
+- 2026-10-25T01:07:21Z · body
+- 2026-10-25T01:16:48Z · body
+- 2026-10-25T01:20:29Z · body
+- 2026-10-25T01:21:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T01:26:46Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-10-25T01:28:44Z · body
+- 2026-10-25T01:39:05Z · message_queued at 2026-10-25T01:39:05.680Z
+- 2026-10-25T01:39:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T01:40:08Z · agent exited with an error (codex) · 2026-10-25T01:39:59.587995Z ERROR codex_core::session: failed to record rollout items: thread 01a170aa-dc7b-7231-a134-9b6e54862525 not found
+- 2026-10-25T01:40:08Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-25T01:39:59.587995Z ERROR codex_core::session: failed to record rollout items: thread 01a170aa-dc7b-7231-a134-9b6e54862525 not found
+- 2026-10-25T01:40:12Z · message_delivered: 1 message(s)
+- 2026-10-25T01:40:21Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-25T01:40:28Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T01:47:26Z · cli_override, model_override
+- 2026-10-25T01:47:59Z · needs_input
+- 2026-10-25T01:47:59Z · message_queued at 2026-10-25T01:47:59.741Z
+- 2026-10-25T01:50:06Z · body
+- 2026-10-25T01:50:24Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T01:52:34Z · body
+- 2026-10-25T01:52:56Z · body
+- 2026-10-25T02:00:59Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-25T02:01:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T02:01:00Z · message_delivered: 1 message(s)
+- 2026-10-25T02:05:41Z · body
+- 2026-10-25T02:06:55Z · CTO nudge: held — remote validation is running
+- 2026-10-25T02:10:44Z · body
+- 2026-10-25T02:20:47Z · body
+- 2026-10-25T02:21:31Z · body
+- 2026-10-25T02:27:40Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-25T02:27:43Z · message_queued at 2026-10-25T02:27:43.811Z
+- 2026-10-25T02:31:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T02:37:02Z · body
+- 2026-10-25T02:38:32Z · body
+- 2026-10-25T02:38:49Z · body
+- 2026-10-25T02:39:09Z · body
+- 2026-10-25T02:39:17Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-25T02:39:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T02:39:18Z · message_delivered: 1 message(s)
+- 2026-10-25T02:41:29Z · body
+- 2026-10-25T02:54:56Z · body
+- 2026-10-25T03:01:56Z · message_queued at 2026-10-25T03:01:56.674Z
+- 2026-10-25T03:01:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T03:03:31Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T03:06:23Z · body
+- 2026-10-25T03:07:53Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-25T03:07:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T03:07:54Z · message_delivered: 1 message(s)
+- 2026-10-25T03:10:33Z · body
+- 2026-10-25T04:12:24Z · message_queued at 2026-10-25T04:12:24.058Z
+- 2026-10-25T04:12:25Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T04:12:28Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-25T04:12:28Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-25T04:12:37Z · message_delivered: 1 message(s)
+- 2026-10-25T04:12:42Z · engineer crash recovery: resuming cursor + composer-2.5 (2/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-10-25T04:12:56Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T05:07:59Z · cli_override, model_override
+- 2026-10-25T05:30:55Z · cli_override, model_override
+- 2026-10-25T05:30:59Z · cli_override
+- 2026-10-25T05:31:00Z · model_override
+- 2026-10-25T05:31:10Z · engineer stopped by request
+- 2026-10-25T05:31:10Z · needs_input
+- 2026-10-25T05:31:36Z · status active→ready
+- 2026-10-25T05:31:37Z · engineer stopped by request
+- 2026-10-25T05:31:44Z · status ready→active
+- 2026-10-25T06:06:49Z · message_queued at 2026-10-25T06:06:49.204Z
+- 2026-10-25T06:06:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T06:12:01Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T06:13:37Z · agent exited with an error (opencode) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-10-25T06:13:37Z · engineer crash recovery: resuming opencode + opencode-go/hy4-preview (1/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-10-25T06:13:38Z · message_delivered: 1 message(s)
+- 2026-10-25T06:14:59Z · engineer crash recovery: resuming opencode + opencode-go/hy4-preview (2/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-10-25T06:16:30Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/hy4-preview) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-25T08:52:04Z · cli_override, model_override
+- 2026-10-25T08:52:14Z · needs_input
+- 2026-10-25T08:52:16Z · message_queued at 2026-10-25T08:52:16.496Z
+- 2026-10-25T08:53:54Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T09:08:56Z · body
+- 2026-10-25T09:16:53Z · body
+- 2026-10-25T09:42:35Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-25T09:42:35Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-25T09:43:09Z · message_delivered: 1 message(s)
+- 2026-10-25T09:43:29Z · engineer crash recovery: resuming cursor + composer-2.5 (2/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-10-25T09:49:35Z · message_queued at 2026-10-25T09:49:35.605Z
+- 2026-10-25T09:49:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-25T09:54:34Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T10:15:47Z · needs_input
+- 2026-10-25T10:15:47Z · message_queued at 2026-10-25T10:15:47.735Z
+- 2026-10-25T11:13:10Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/done-error-placement.test.ts > move-to-done inline error placement > renders in the task panel below the Move to done button, tests/reviewer-thinking-state.test.ts > reviewer thinking state in the task panel (#0209) > labels a previous-round report and withholds sign-off while a new review is pending, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-25T11:13:10Z · note: handoff requested (cli)
+- 2026-10-25T11:13:20Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T11:28:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T11:29:30Z · cli_override, model_override
+- 2026-10-25T11:29:32Z · message_delivered: 2 message(s)
+- 2026-10-25T11:30:06Z · message_queued at 2026-10-25T11:30:06.975Z
+- 2026-10-25T11:31:10Z · body
+- 2026-10-25T11:34:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T11:47:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T11:48:27Z · agent exited with an error (codex) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T11:48:27Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-10-25T11:48:31Z · message_delivered: 1 message(s)
+- 2026-10-25T12:00:15Z · body
+- 2026-10-25T12:00:32Z · body
+- 2026-10-25T12:08:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-25T12:08:04Z · needs_input
+- 2026-10-25T12:20:54Z · cli_override, model_override
+- 2026-10-25T12:21:04Z · message_queued at 2026-10-25T12:21:04.926Z
+- 2026-10-25T12:32:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T12:49:46Z · body
+- 2026-10-25T13:25:56Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T13:29:29Z · engineer stopped by request
+- 2026-10-25T14:02:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T14:10:34Z · message_delivered: 1 message(s)
+- 2026-10-25T14:10:37Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/done-error-placement.test.ts > move-to-done inline error placement > renders in the task panel below the Move to done button, tests/reviewer-thinking-state.test.ts > reviewer thinking state in the task panel (#0209) > labels a previous-round report and withholds sign-off while a new review is pending, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on bee — fix it in the feature branch and re-run the gate
+- 2026-10-25T14:11:32Z · engineer stopped by request
+- 2026-10-25T14:11:39Z · held
+- 2026-10-25T14:11:58Z · status active→ready
+- 2026-10-25T14:14:07Z · assigned_to
+- 2026-10-25T15:02:32Z · assigned_to
+- 2026-10-25T15:02:40Z · released
+- 2026-10-25T15:03:04Z · status ready→active
+- 2026-10-25T15:03:12Z · cli_override, model_override
+- 2026-10-25T15:03:23Z · message_queued at 2026-10-25T15:03:23.447Z
+- 2026-10-25T15:05:18Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-25T15:25:03Z · body
+- 2026-10-25T15:27:47Z · agent exited with an error (opencode) · error: Transport
+- 2026-10-25T15:28:59Z · held
+- 2026-10-25T15:29:12Z · assigned_to
+- 2026-10-25T15:29:42Z · status active→ready
+- 2026-10-25T15:41:06Z · body
+- 2026-10-25T16:13:01Z · body
+- 2026-10-25T16:16:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:50:46Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T18:03:16Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T05:32:32Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T06:59:38Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T07:53:29Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T09:03:36Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T11:14:37Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T12:36:05Z · assigned_to
+- 2026-10-26T12:36:11Z · released
+- 2026-10-26T12:36:30Z · status ready→active
+- 2026-10-26T12:36:38Z · cli_override, model_override
+- 2026-10-26T12:36:39Z · note: agent fallback: antigravity + gemini-3.8-flash-medium is paused (out of usage since 2026-10-26T12:27:45.440Z: AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retryabl) — using codex + gpt-6-luna
+- 2026-10-26T12:37:00Z · message_delivered: 1 message(s)
+- 2026-10-26T12:37:15Z · model_override
+- 2026-10-26T14:24:36Z · needs_input
+- 2026-10-26T14:24:45Z · held
+- 2026-10-26T14:24:52Z · assigned_to
+- 2026-10-26T14:25:04Z · status active→ready
+- 2026-10-26T15:31:22Z · cli_override, model_override
+- 2026-10-26T15:31:24Z · model_override
+- 2026-10-26T15:37:39Z · released, assigned_to
+- 2026-10-26T15:38:00Z · status ready→active
+- 2026-10-26T15:38:09Z · cli_override, model_override
+- 2026-10-26T15:38:14Z · message_queued at 2026-10-26T15:38:14.459Z
+- 2026-10-26T15:43:15Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/done-error-placement.test.ts > move-to-done inline error placement > renders in the task panel below the Move to done button, tests/reviewer-thinking-state.test.ts > reviewer thinking state in the task panel (#0209) > labels a previous-round report and withholds sign-off while a new review is pending, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-26T15:43:15Z · note: handoff requested (cli)
+- 2026-10-26T15:55:36Z · status active→review
+- 2026-10-26T15:55:36Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T15:57:40Z · note: review pass 1: needs some work
+- 2026-10-26T15:57:41Z · message_queued at 2026-10-26T15:57:40.996Z
+- 2026-10-26T15:57:41Z · status review→active
+- 2026-10-26T16:02:50Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/done-error-placement.test.ts > move-to-done inline error placement > renders in the task panel below the Move to done button, tests/reviewer-thinking-state.test.ts > reviewer thinking state in the task panel (#0209) > labels a previous-round report and withholds sign-off while a new review is pending, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-26T16:02:50Z · note: handoff requested (cli)
+- 2026-10-26T16:14:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-26T16:14:41Z · status active→review
+- 2026-10-26T16:14:42Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T16:14:42Z · message_queued at 2026-10-26T16:14:42.261Z
+- 2026-10-26T16:14:42Z · status review→active
+- 2026-10-26T16:19:15Z · status active→review
+- 2026-10-26T16:19:15Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T16:19:15Z · message_delivered: 3 message(s)
+- 2026-10-26T16:19:15Z · status review→active
+- 2026-10-26T16:19:38Z · note: handoff requested (ui-review)
+- 2026-10-26T16:20:18Z · status active→review
+- 2026-10-26T16:20:19Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T16:20:19Z · message_queued at 2026-10-26T16:20:19.463Z
+- 2026-10-26T16:20:19Z · status review→active
+- 2026-10-26T16:20:20Z · message_delivered: 1 message(s)
+- 2026-10-26T16:23:40Z · body
+- 2026-10-26T16:57:48Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-26T16:57:48Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-26T16:59:54Z · body
+- 2026-10-26T17:02:42Z · body
+- 2026-10-26T17:08:16Z · body
+- 2026-10-26T17:10:41Z · body
+- 2026-10-26T17:12:59Z · needs_input
+- 2026-10-26T17:12:59Z · needs_input
+- 2026-10-26T17:24:13Z · status active→review
+- 2026-10-26T17:24:14Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T17:26:05Z · note: review pass 2: needs some work
+- 2026-10-26T17:26:06Z · status review→active
+- 2026-10-26T17:31:53Z · body
+- 2026-10-26T17:37:45Z · body
+- 2026-10-26T17:54:03Z · status active→review
+- 2026-10-26T17:54:04Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T17:56:21Z · note: review pass 3: needs some work
+- 2026-10-26T18:32:14Z · needs_input (dev-error) dismissed by hello@repoos.org
+- 2026-10-26T18:32:46Z · close-out gate completed in 1371s
+- 2026-10-26T18:34:34Z · status done→done, release:success

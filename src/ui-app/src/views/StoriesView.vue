@@ -385,7 +385,6 @@ function lastActivity(story: { lastActivity: string | null }): string {
 .stories-page {
   width: 100%;
   box-sizing: border-box;
-  padding: 0 0 80px;
 }
 .stories-page :deep(.page-desc code),
 .stories-notice code,

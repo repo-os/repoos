@@ -892,6 +892,32 @@ inheritEnv = false
 | `worktrees.inheritEnv` | boolean | `false` | yes | When true, RepoOS symlinks the main checkout's `.env` into each task worktree so worktree-local build or preview commands can read project secrets. |
 | `worktrees.candidate` | string | *(see `closeOut.candidate`)* | yes | Same as `closeOut.candidate` when the close-out section does not set it. |
 | `worktrees.installCommand` | string | *(empty)* | yes | Same as `closeOut.installCommand` when the close-out section does not set it. |
+| `git.tuneForScale` | boolean | `false` | yes | Enables Git fsmonitor and the untracked cache to speed the `git status` scans the index build runs in every checkout. Existing explicitly configured `core.fsmonitor` / `core.untrackedCache` values, including `false`, are never overwritten. See [Git status acceleration](#git-status-acceleration). |
+
+### Git status acceleration
+
+When enabled, startup from the main checkout tunes two Git settings that make repeated
+`git status` scans cheaper: `core.fsmonitor` (Git's built-in filesystem monitor
+daemon) and `core.untrackedCache`. Both are best-effort; Git falls back to a
+full scan when a daemon is unavailable.
+
+`git.tuneForScale` defaults to `false` because every active worktree can start
+its own daemon, even when finished worktrees are cleaned up. Turn it on in
+Settings → General → Performance when faster status scans justify that cost.
+Only an **unset** key is written: if you have
+set `core.fsmonitor` or `core.untrackedCache` yourself, in `.git/config` or
+globally, RepoOS leaves your value alone even when the setting is on.
+
+Preview and shot servers (`REPOOS_PREVIEW_CHILD=1` or `--preview-overrides`) and
+any server rooted in a linked worktree skip the tune, because worktrees share
+the repository's `.git/config` and a preview start must not rewrite it. When a
+worktree is removed — review close-out, Move to done, or worktree GC — RepoOS
+runs `git fsmonitor--daemon stop` in that checkout first, so daemons do not
+accumulate for finished tasks. `repoos doctor` warns when more than eight
+fsmonitor daemons are running, names the CPU/memory cost, and prints the fix.
+Turning the RepoOS setting off does not unset a Git value it previously wrote;
+run `git config core.fsmonitor false` in the main checkout to prevent new
+daemons, then `git fsmonitor--daemon stop` in affected checkouts to stop existing ones.
 
 **`inheritEnv` is off by default and must be opted into deliberately.** Every
 worktree is another place RepoOS's root `.env` configuration is reachable.
@@ -1825,6 +1851,8 @@ passed a real end-to-end proof.
 | `remoteValidation.retryOtherHosts` | boolean | `true` when 2+ hosts configured, else `false` | yes | When a transient failure (timeout, ssh drop, host overload) occurs on one host with the `tailscale` provider, retry the run on another healthy, free host before applying `fallbackToLocal`. A non-transient result (red gate, config error) never retries. Default `true` when at least two hosts are configured (`tailscaleHost` + `tailscaleHosts` or two `tailscaleHosts` entries); `false` otherwise. Only applies to the `tailscale` provider. |
 | `remoteValidation.bundleUploadBudgetSecs` | number | `180` | yes | Wall-clock cap for one candidate bundle upload attempt during close-out. A stalled or slow transfer is aborted and retried on another runner (or falls back locally) instead of hanging until SSH fails. |
 | `remoteValidation.bundleUploadStallSecs` | number | `90` | yes | Abort an upload when no bytes have been written for this long. Catches wedged hosts before a multi-minute broken pipe. |
+| `remoteValidation.linkThroughputFloorBps` | number | `204800` | yes | Minimum measured payload throughput in bytes per second. SSH setup/RTT is measured separately and is not counted against throughput. |
+| `remoteValidation.linkProbeBytes` | number | `1048576` | yes | Payload size in bytes for runner link measurement. Minimum `65536`; default is 1 MiB. |
 | `remoteValidation.forceLocalOnMeteredLink` | boolean | `false` | yes | Skip uploading the candidate bundle and run the full gate locally when you are on a slow uplink or metered hotspot. Auto-detect also runs when link probing shows a long upload. |
 | `remoteValidation.engineerSelfCheckRemote` | boolean | `true` when remote validation is enabled | yes | Managed engineers run install + build + tests on the runner during `repoos check` (format/lint stay local). Handoff reuses a green remote pass at the same commit. Turn off to run the full gate on the laptop again. |
 

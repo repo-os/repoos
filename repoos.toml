@@ -29,7 +29,7 @@ servePort = 7171
 # machine (10 cores: floor(10/2), capped at 8) — bump it up if the machine
 # still looks idle under load, or down if it's straining. See
 # src/core/config.ts defaultMaxConcurrentAgents() for the formula and why.
-maxConcurrentAgents = 5
+maxConcurrentAgents = 3
 
 # CTO agent (0174) monitor interval in milliseconds (default 5 minutes)
 ctoMonitorIntervalMs = 300000
@@ -112,13 +112,13 @@ remoteValidation.containerImage = "repoos-ci"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
 remoteValidation.engineerSelfCheckRemote = true
-activityAnimationStyle = "rgb-keystorm"
+activityAnimationStyle = "three-dots"
 model_routing.mode = "shadow"
 model_routing.provider = "openrouter"
 activityAnimationSize = "24"
 model_routing.humanStepCheck = true
 remoteValidation.browserCaptureMode = "runner-available"
-pressureGuard.enabled = false
+pressureGuard.enabled = true
 remoteValidation.offloadBrowserSteps = true
 [[remoteValidation.tailscaleHosts]]
 host = "thinkpad"
@@ -674,8 +674,8 @@ service = "http://localhost:7171"
 access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"]
 [[agents]]
 name = "engineer"
-cli = "codex"
-model = "gpt-6-luna"
+cli = "cursor"
+model = "grok-4.7-high"
 enabled = true
 instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. For a UI-visible change, declare what a reviewer should see with `repoos update <id> --shots '<JSON>'` (never a full `--body`, which replaces the whole task and is refused): one to three entries, each with an explicit `target` (the main app target for app screens, the Docs site target only for user-docs pages: a shot on the wrong target renders the wrong screen and fails review), a `route` that really serves that screen (a task drawer opens from a route such as `/work?task=<id>&tab=changes`, not from `/`), a `state` fixture when the UI is conditional, and a `highlight` selector that exists on the page; then open the captured PNG and confirm it shows the change. Before you hand off: re-read the newest review report in `.repoos/reviews/<id>/` and any message sent to you, fix EVERY item, and when a finding names a bug, find its whole class (grep for the same pattern in sibling paths, callers, config/schema/docs/test registrations) and fix all instances with a table-driven test instead of patching one. A new config key needs a Settings control, a `getConfigSchema()` entry, an entry in the supported-keys list and docs (`tests/config-docs.test.ts` fails otherwise). Run `repoos check --changed main` once and only hand off when it passes; end your final message with `::repoos-handoff-ready::` alone on its own line. After a merge conflict with main, merge main into your branch, keep both sides, take main's copy of `work/<id>-*.md`, rebuild, then hand off. Never edit `repoos.toml`, never commit `dist/`, never add a runtime dependency, and never move your own task out of `active`. If an acceptance criterion needs a human (a real device, account or runner), say so in the task notes and ask for it to be split into a held human task instead of claiming it works. Uses Bun, not Node: `bun`/`bunx`/`bun run`, never a new bare `node`/`npm`/`npx` call unless it is strictly a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Explains what they're doing in chat as they work — reasoning, choices, progress updates. Always write file paths in shell commands relative to the worktree root (e.g. `src/core/x.test.ts`), never with `../`: Copilot's path verification denies paths outside the worktree and, with no one to prompt, fails the turn."
 skills = ["frontend-design", "frontend-testing"]
@@ -701,7 +701,7 @@ instructions = "A general-purpose, repository-aware assistant. Answers questions
 name = "CTO"
 cli = "opencode"
 model = "opencode-go/glm-5.3-flash"
-enabled = true
+enabled = false
 instructions = "CTO board monitor (0174): detects stuck tasks, stale reviews, and broken builds. Nudges agents or escalates to human. Never moves tasks to done, never modifies config, never commits or pushes, never deletes files, never kills processes by name. Be quiet and precise: one nudge or one escalation per event, with the evidence (task id, timestamps, the exact reason), never a repeated reminder for the same condition. Before you call an engineer stalled, check that it is really idle: a live engineer process or child (`repoos check`, vitest, a remote validation wait, a headless browser), an active handoff gate, a running review, or a machine under heavy pressure (high swap use, load far above core count) all mean wait, not nudge; say that the machine is the cause and which non-RepoOS processes use the most CPU or memory. Treat these as distinct conditions and say which one you found: (1) a phantom runner (RepoOS says an engineer is running but there is no process: `repoos start` answers `already running`), which needs a restart, not a message; (2) an engineer that crashed or exited with an error (an exit with an error is not a handoff, and the stale needs-input flag clears once it resumes; a crash-prone agent or model should be replaced by the next allowed one, which only a human or driver can do, so escalate it with the failure count; never replace a human-set override); (3) a review loop: reviews that repeat `needs some work` on the same unchanged commit or evidence, or a green review on a commit that conflicts with main, which needs the findings sent back to the engineer or a merge of main, not another review; (4) evidence-only findings (stale or wrong captures), which need a refresh or a corrected shot declaration (explicit target, a route that serves the screen), not code changes; (5) a landing blocked by uncommitted or untracked files on main: name the files and who probably owns them and ask a human, never delete or commit them yourself, except the safe actions you are configured for. Escalate to a human, with the evidence, anything that needs a decision: a model switch, deleting unknown files, an acceptance criterion that needs a human step, a task that has gone more than about five review passes, or machine pressure that stops engineers making progress."
 [[agents]]
 name = "data analyst"
@@ -741,15 +741,18 @@ command = "just macos-build && exec env LLVM_PROFILE_FILE=/dev/null 'macos/.deri
 
 [[budget.allowlist]]
 cli = "opencode"
-models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash"]
-pausedModels = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash"]
+models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash", "opencode-go/kimi-k2.7-code", "opencode-go/kimi-k3.1-pro", "opencode-go/deepseek-v4-pro", "opencode-go/glm-5.3"]
 pausedReason = "Go usage limit exceeded (429) on 2026-10-22; resume when the opencode-go quota resets"
 [[budget.allowlist]]
 cli = "github copilot"
 models = ["default"]
 [[budget.allowlist]]
 cli = "cursor"
-models = ["composer-2.5"]
+models = ["composer-2.5", "grok-4.7-low"]
 [[budget.allowlist]]
 cli = "codex"
-models = ["gpt-6-luna"]
+models = ["gpt-6-luna", "gpt-6.1-sol"]
+[[budget.allowlist]]
+cli = "antigravity"
+models = ["gemini-3.8-flash-medium", "gemini-3.8-flash-high"]
+pausedModels = [{ model = "gemini-3.8-flash-medium", pausedReason = "out of usage since 2026-10-26T12:27:45.440Z: AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryabl" }, { model = "gemini-3.8-flash-high", pausedReason = "out of usage since 2026-10-26T14:45:37.315Z: AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 164h31m2s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryable" }]

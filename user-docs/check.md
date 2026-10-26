@@ -261,7 +261,11 @@ engineers (`REPOOS_AGENT=1`) always use the board's runner (Hetzner or Tailscale
 Run `repoos check` once before handoff — not after every edit — to avoid WIP
 checkpoint churn. Handoff reuses a green **full** remote pass at the same commit
 when `remoteValidation.engineerSelfCheckRemote` is on (default); a scoped
-self-check does not skip handoff's full runner pass. Pass `--local-tests` to force
+self-check does not skip handoff's full runner pass. The link probe separates
+SSH setup latency from payload throughput and retries once before skipping a
+host, so checks from high-latency networks can use a runner when the actual
+transfer rate meets `remoteValidation.linkThroughputFloorBps`. Its sample size
+is controlled by `remoteValidation.linkProbeBytes`. Pass `--local-tests` to force
 the full local suite even when remote validation is enabled.
 
 ## Failed-first re-runs and isolation triage
@@ -376,9 +380,9 @@ queue position; what the server has queued next; and the last completed run.
 **Refresh** shows a spinner, then "Updated just now" (or an error toast).
 Idle means no holders and no waiters on that host.
 
-On the task page itself, a chip appears while a check is in progress —
-"Checks running on mini · 2m 34s" — and stays afterwards showing the result
-inline; click it to open the task's Debug tab with the full check output.
+On the task page, a routine check stays on the status line under the preview
+("Running checks…") and its result lives in the Debug tab. A chip appears in
+the header only when that run is longer than expected.
 
 ### Slow-run alerts (#0720)
 
@@ -392,8 +396,9 @@ checks above (× median)"), you get:
 - One **bell** item per run (`Slow check`) with elapsed vs typical, host, and
   the current phase when known (upload, install, build, tests). It clears
   automatically when the run finishes — nothing to dismiss.
-- An amber **slow** badge on the task card (handoff / close-out hints), the
-  task drawer's check chip, and the **Remote runners** row for that job.
+- An amber **slow** badge on the task card (handoff / close-out hints) and the
+  **Remote runners** row for that job. The task drawer instead shows one red
+  header chip, **Slow** plus the elapsed time.
 - A persistent **Checks slow lately** notice when three or more of the last
   ten completed runs of a kind were slow, naming the common factor (same host,
   local load, and so on).

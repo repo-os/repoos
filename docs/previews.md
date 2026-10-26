@@ -493,6 +493,10 @@ fixture the preview applies before capture (preview builds only, via
 - `board:withReviewTask` — board shows a review-column fixture card
 - `drawer:tabExpandWarnings` — task drawer with a failed handoff, blocked
   landing checklist and needs-input card, for normal and expanded tab captures.
+- `drawer:statusReviewFailed`, `drawer:statusChecksRunning`,
+  `drawer:statusHandoffFailed`, `drawer:statusConfirmingHandoff`, and
+  `drawer:statusChecksFailed` — focused task drawer states for the compact
+  status summary and priority order.
 - `board:cardChips` — multi-area human-assigned card with seeded diff stats,
   so the area, human and file chips all render (#0776, #0795)
 - `card:noChanges` — ready human-assigned card with a branch and zero diff
