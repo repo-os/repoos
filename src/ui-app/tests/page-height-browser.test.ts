@@ -48,6 +48,14 @@ const shells = [
   ],
 ] as const;
 
+const mobileShells = [
+  [
+    "Agents playground",
+    "agents-page",
+    header + `<div class="agents-tab-content agents-tab-content--playground">${content}</div>`,
+  ],
+] as const;
+
 // Same optional browser dependency as the UI smoke check; no browser install is
 // performed by a test. When present this catches CSS geometry jsdom cannot.
 describe.skipIf(!existsSync(webkit.executablePath()))(
@@ -84,9 +92,11 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       [1280, 620],
       [1280, 1120],
       [800, 620],
+      [700, 620],
       [390, 620],
     ]) {
-      it.each(shells)(
+      const activeShells = width <= 760 ? [...shells, ...mobileShells] : shells;
+      it.each(activeShells)(
         `%s reaches the bottom and exposes its last item at ${width}×${height}`,
         async (_name, rootClass, body) => {
           const page = await browser.newPage({ viewport: { width, height } });

@@ -94,4 +94,16 @@ describe("standard page height and floating controls", () => {
       /\.page-scroll-body\s*\{[^}]*padding-bottom:\s*var\(--page-bottom-inset\)/s,
     );
   });
+
+  it("restores shared clearance when Agents playground and Inputs board return to normal flow (#0951)", () => {
+    expect(css).toMatch(
+      /@media \(min-width: 761px\)[\s\S]*?\.agents-tab-content--playground\s*\{[^}]*padding-bottom:\s*0;/s,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 760px\)[\s\S]*?\.agents-tab-content--playground\s*\{[^}]*padding-bottom:\s*var\(--page-bottom-inset\);/s,
+    );
+    expect(inputsVue).toMatch(
+      /@media \(max-width: 760px\)[\s\S]*?\.inputs-board-page\s*\{[^}]*padding-bottom:\s*var\(--page-bottom-inset\);/s,
+    );
+  });
 });
