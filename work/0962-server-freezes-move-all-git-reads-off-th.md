@@ -3,14 +3,13 @@ id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
 status: ready
-hold: true
 priority: p0
 area: core
-assigned_to: human
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-freezes-move-all-git-reads-off-th
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T18:50:06Z"
+updated_at: "2026-10-26T18:50:15Z"
 handoff_signal_retry_count: 1
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-26T11:33:32.912Z\",\"kind\":\"usage-limit\"}]"
@@ -90,3 +89,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T14:53:31Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T15:31:01Z · cli_override, model_override
 - 2026-10-26T18:50:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T18:50:15Z · released, assigned_to
