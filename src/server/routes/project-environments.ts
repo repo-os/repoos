@@ -7,7 +7,7 @@ import {
   chmodSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import {
   projectEnvironmentSourceHasKey,
   readProjectEnvironment,
@@ -160,8 +160,11 @@ export const createProjectEnvironment: RouteHandler = async (ctx, req, res) => {
       return send(res, 409, { error: "That environment already exists" });
     const sourcePath = `.env.${id}`;
     const source = join(ctx.config.root, sourcePath);
-    execFileSync("git", ["-C", ctx.config.root, "check-ignore", "-q", "--", sourcePath], {
-      stdio: "ignore",
+    await new Promise<void>((resolvePromise, reject) => {
+      execFile("git", ["-C", ctx.config.root, "check-ignore", "-q", "--", sourcePath], (error) => {
+        if (error) reject(error);
+        else resolvePromise();
+      });
     });
     if (existsSync(source))
       return send(res, 409, { error: "The environment source file already exists" });

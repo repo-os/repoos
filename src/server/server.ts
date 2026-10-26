@@ -79,6 +79,8 @@
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { gitWorkerInFlight } from "./git-worker.js";
+import { getGitWorker } from "./git-worker.js";
 import {
   existsSync,
   mkdirSync,
@@ -378,6 +380,7 @@ import {
   pmStoryInterrupt,
   // Tasks routes
   getTasks,
+  getTaskContext,
   createTask,
   createFreeformTask,
   finalizeFreeformRun,
@@ -1515,7 +1518,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const offGitMutation = onGitMutation((mutatedRoot) => {
     // A worktree commit shares `.git` with the root checkout but must not be
     // read as "the main checkout changed" — only a mutation of this checkout.
-    if (isSameCheckout(mutatedRoot, config.root)) repoStatusNotifier.notify();
+    if (isSameCheckout(mutatedRoot, config.root)) {
+      repoStatusNotifier.notify();
+      getGitWorker(config.root).invalidate();
+    }
   });
 
   // Per-task `repoos check` run tracking for the Debug tab (0310): the
@@ -3317,7 +3323,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       blocked: closeOutLock.closingOut() || jobs.length > 0,
     });
   });
-  router.register("POST", "/api/system/worktree-gc", (_ctx, _req, res) => {
+  router.register("POST", "/api/system/worktree-gc", async (_ctx, _req, res) => {
     const jobs = jobCoordinator.allJobs().filter((j) => j.phase !== "done" && j.phase !== "failed");
     if (closeOutLock.closingOut() || jobs.length > 0) {
       const ids = jobs.map((j) => `#${j.taskId}`);
@@ -3325,8 +3331,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         error: `Worktree cleanup is paused while a close-out is active${ids.length ? `: ${ids.join(", ")}` : ""}.`,
       });
     }
-    worktreeGcPreview = null;
-    return json(res, 200, sweepStaleWorktrees(config, { mode: "full" }));
+    const result = await getGitWorker(config.root).sweep(config, { mode: "full" });
+    worktreeGcPreview = { at: Date.now(), report: result.report };
+    return json(res, 200, result.report);
   });
   router.register("POST", "/api/system/kill-process", async (_ctx, req, res) => {
     const body = (await readBody(req)) as { pid?: unknown };
@@ -3434,6 +3441,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Task routes
   router.register("GET", "/api/tasks", getTasks);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/context$/, getTaskContext);
   router.register("POST", "/api/tasks", createTask);
   router.register("POST", "/api/tasks/freeform", createFreeformTask);
   // Durable freeform PM run state (#0403): in-flight record and/or persisted
@@ -3929,6 +3937,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const method = req.method ?? "GET";
     const url = new URL(req.url ?? "/", "http://localhost");
     const path = url.pathname;
+    const requestStartedAt = Date.now();
+    const stuckTimer = setTimeout(() => {
+      const gitCalls = gitWorkerInFlight(config.root);
+      logger.system("warn", `STUCK ${method} ${path}`, {
+        method,
+        route: path,
+        ageMs: Date.now() - requestStartedAt,
+        gitCalls,
+      });
+    }, 10_000);
 
     try {
       if (method === "OPTIONS") {
@@ -4201,6 +4219,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         });
       }
       return json(res, code, { error: msg });
+    } finally {
+      clearTimeout(stuckTimer);
+      logger.system("info", "HTTP request complete", {
+        method,
+        route: path,
+        durationMs: Date.now() - requestStartedAt,
+      });
     }
   });
 

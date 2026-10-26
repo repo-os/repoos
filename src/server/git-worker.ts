@@ -360,6 +360,10 @@ export function getGitWorker(root: string): GitWorker {
   return worker;
 }
 
+export function gitWorkerInFlight(root: string): GitWorkerJobInfo[] {
+  return workers.get(root)?.inFlight() ?? [];
+}
+
 export function closeGitWorker(root: string): void {
   workers.get(root)?.close();
   workers.delete(root);

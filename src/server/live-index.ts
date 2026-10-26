@@ -50,6 +50,7 @@ import { isStoryPmWorking, listStoryDefinitions } from "../core/story-definition
 import { patchTaskFile, type PatchTaskOptions } from "./write.js";
 import { taskDependencyBlockers } from "../core/task-dependencies.js";
 import type { CloseOutOutcomeEvent } from "./close-out-outcome.js";
+import { getGitWorker } from "./git-worker.js";
 
 export type RepoEvent =
   | { type: "task.created"; task: Task; at: string }
@@ -416,7 +417,8 @@ export class LiveIndex {
    * it.
    */
   async refreshAllAsync(opts: { indexBuildGate?: () => void | Promise<void> } = {}): Promise<void> {
-    const idx = await buildIndexAsync(this.config, { fastWorktreeStatus: true });
+    const built = await getGitWorker(this.config.root).buildIndex(this.config, true);
+    const idx = built.index;
     // `indexBuildGate` parks the build HERE — after the git-heavy work, before
     // the swap. Note what that does and does not prove: it proves the build's
     // result has not been published, and hence that a listener which bound
@@ -426,8 +428,8 @@ export class LiveIndex {
     await opts.indexBuildGate?.();
     this.byId.clear();
     this.pathToId.clear();
-    this.useGit = isGitRepo(this.config.root);
-    this.branchCache = this.useGit ? localBranches(this.config.root) : new Set();
+    this.useGit = built.git.useGit;
+    this.branchCache = new Set(built.git.branches);
     for (const t of idx.tasks) {
       this.byId.set(t.id, t);
       this.pathToId.set(t.absPath, t.id);
@@ -453,12 +455,12 @@ export class LiveIndex {
    */
   async reconcileWorktreeStatus(): Promise<void> {
     if (!this.useGit) return;
-    const baseBranch = currentBranch(this.config.root);
     const branches = [...this.byId.values()].map((t) => t.branch).filter((b): b is string => !!b);
-    const { statuses, cache, changed } = await resolveWorktreeStatuses(this.config.root, branches, {
-      baseBranch,
-      cache: readWorktreeDirtyCache(this.config),
-    });
+    const { statuses, cache, changed } = await getGitWorker(this.config.root).reconcile(
+      this.config,
+      branches,
+      readWorktreeDirtyCache(this.config),
+    );
     if (changed) writeWorktreeDirtyCache(this.config, cache);
     for (const [id, t] of this.byId) {
       if (!t.branch) continue;

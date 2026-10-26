@@ -76,6 +76,7 @@ const FILE_CLI_MATCHERS: Matcher[] = [
   exact("PUT", "/api/project-environment-bindings"),
   exact("GET", "/api/health"),
   exact("GET", "/api/tasks"),
+  re("GET", /^\/api\/tasks\/([^/]+)\/context$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)$/.source),
   exact("POST", "/api/tasks"),
   re("DELETE", /^\/api\/tasks\/([^/]+)$/.source),

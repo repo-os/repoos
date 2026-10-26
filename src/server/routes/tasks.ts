@@ -46,6 +46,7 @@ import type { ServerResponse } from "node:http";
 import { Readable } from "node:stream";
 import type { LiveIndex, RepoEvent } from "../live-index.js";
 import type { Logger } from "../../core/logger.js";
+import { getGitWorker } from "../git-worker.js";
 import { getCurrentUser } from "./auth.js";
 import { requestUsedLocalCliToken } from "../local-token.js";
 import { overrideRefusal } from "../agent-model-allowlist.js";
@@ -96,7 +97,7 @@ import {
   GitDirtyCheckError,
   ensureHotfix,
   agentTouchedFiles,
-  isAncestor,
+  isAncestorAsync,
   removeWorktree,
   deleteBranch,
   pruneWorktrees,
@@ -249,29 +250,71 @@ function isSectionPatch(value: unknown): value is { heading: string; content: st
   );
 }
 
-export const getTasks: RouteHandler = (ctx, req, res) => {
+export const getTasks: RouteHandler = async (ctx, req, res) => {
   const { config, index, reviews, runner } = ctx;
   const url = new URL(req.url ?? "/", "http://localhost");
   const status = url.searchParams.get("status") as Status | null;
+  const full = url.searchParams.get("full") === "1";
+  const allowedFields = new Set(["id", "title", "status", "priority"]);
+  const requestedFields = (url.searchParams.get("fields") ?? "id,title,status,priority")
+    .split(",")
+    .map((field) => field.trim())
+    .filter((field) => allowedFields.has(field));
+  const limitValue = Number(url.searchParams.get("limit") ?? "100");
+  const limit = Number.isFinite(limitValue)
+    ? Math.max(1, Math.min(500, Math.floor(limitValue)))
+    : 100;
+  const cursor = url.searchParams.get("cursor");
   if (status && !(STATUSES as readonly string[]).includes(status)) {
     return json(res, 400, { error: `Invalid status "${status}"` });
   }
+  if (!full && requestedFields.length === 0) {
+    return json(res, 400, { error: "fields must include one of: id, title, status, priority" });
+  }
   const allTasks = index.getTasks();
-  const tasks = allTasks
+  const filtered = allTasks
     .filter((task) => !status || task.status === status)
-    .map((task) => ({
-      ...task,
-      blockedBy: taskDependencyBlockers(config.root, task, allTasks),
-    }))
-    .map((task) =>
-      withCheckpointRecovery(
-        withPmWorking(
-          withPendingHandoff(withReviewStatus(withPreviewTargets(task, config), reviews), runner),
-        ),
-        config,
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .filter((task) => !cursor || task.id.localeCompare(cursor) > 0);
+  const page = filtered.slice(0, limit);
+  if (!full) {
+    const tasks = page.map((task) =>
+      Object.fromEntries(requestedFields.map((field) => [field, task[field as keyof Task]])),
+    );
+    return json(res, 200, {
+      tasks,
+      nextCursor: filtered.length > limit ? (page.at(-1)?.id ?? null) : null,
+    });
+  }
+  const blockers = await getGitWorker(config.root).dependencyBlockers(config.root, allTasks);
+  const detailed: Task[] = [];
+  const fullTasks = full ? filtered : page;
+  for (let start = 0; start < fullTasks.length; start += 100) {
+    const batch = fullTasks.slice(start, start + 100);
+    detailed.push(
+      ...batch.map((task) =>
+        withCheckpointRecovery(
+          withPmWorking(
+            withPendingHandoff(
+              withReviewStatus(
+                withPreviewTargets({ ...task, blockedBy: blockers.get(task.id) ?? [] }, config),
+                reviews,
+              ),
+              runner,
+            ),
+          ),
+          config,
+        )!,
       ),
     );
-  return json(res, 200, tasks);
+    if (start + 100 < fullTasks.length) await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  return full
+    ? json(res, 200, detailed)
+    : json(res, 200, {
+        tasks: detailed,
+        nextCursor: filtered.length > limit ? (page.at(-1)?.id ?? null) : null,
+      });
 };
 
 export const createTask: RouteHandler = async (ctx, req, res) => {
@@ -837,26 +880,75 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   });
 };
 
-export const getTask: RouteHandler = (ctx, _req, res, params) => {
+export const getTask: RouteHandler = async (ctx, _req, res, params) => {
   const { config, index, previews, reviews, runner } = ctx;
   const id = params.param1;
   const t = index.getTask(id);
-  return t
-    ? json(res, 200, {
-        ...withCheckpointRecovery(
-          withPmWorking(
-            withPendingHandoff(withReviewStatus(withPreviewTargets(t, config), reviews), runner),
-          ),
-          config,
-        ),
-        blockedBy: taskDependencyBlockers(config.root, t, index.getTasks()),
-        // A running preview, else the building entry from a start in flight —
-        // a long native build must read as `building` in the UI, not as
-        // "no preview" (#0943).
-        preview: previews.get(t.id) ?? previews.startingInfo(t.id) ?? null,
-        attachmentCloud: taskAttachmentCloudStates(config, t.id, t.body),
-      })
-    : json(res, 404, { error: `Task #${id} not found` });
+  if (!t) return json(res, 404, { error: `Task #${id} not found` });
+  const blockers = await getGitWorker(config.root).dependencyBlockers(
+    config.root,
+    index.getTasks(),
+  );
+  return json(res, 200, {
+    ...withCheckpointRecovery(
+      withPmWorking(
+        withPendingHandoff(withReviewStatus(withPreviewTargets(t, config), reviews), runner),
+      ),
+      config,
+    ),
+    blockedBy: blockers.get(t.id) ?? [],
+    // A running preview, else the building entry from a start in flight —
+    // a long native build must read as `building` in the UI, not as
+    // "no preview" (#0943).
+    preview: previews.get(t.id) ?? previews.startingInfo(t.id) ?? null,
+    attachmentCloud: taskAttachmentCloudStates(config, t.id, t.body),
+  });
+};
+
+export const getTaskContext: RouteHandler = async (ctx, _req, res, params) => {
+  const task = ctx.index.getTask(params.param1);
+  if (!task) return json(res, 404, { error: "Task not found" });
+  const tasks = ctx.index.getTasks();
+  const byId = new Map(tasks.map((candidate) => [candidate.id, candidate]));
+  const summary = (candidate: Task) => ({
+    id: candidate.id,
+    title: candidate.title,
+    status: candidate.status,
+    priority: candidate.priority,
+    area: candidate.area,
+    story: candidate.story,
+    branch: candidate.branch,
+    worktree: candidate.git.worktreePath,
+    branchExists: candidate.git.branchExists,
+  });
+  const related = tasks
+    .filter(
+      (candidate) =>
+        candidate.id !== task.id &&
+        ((task.story && candidate.story === task.story) ||
+          (task.area && candidate.area === task.area)),
+    )
+    .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""))
+    .slice(0, 12)
+    .map(summary);
+  const enriched = withReviewStatus(withPreviewTargets(task, ctx.config), ctx.reviews);
+  const blockers = await getGitWorker(ctx.config.root).dependencyBlockers(ctx.config.root, tasks);
+  return json(res, 200, {
+    task: enriched,
+    dependencies: (task.dependsOn ?? []).flatMap((id): Record<string, unknown>[] => {
+      const dependency = byId.get(id);
+      return dependency ? [summary(dependency)] : [{ id, missing: true }];
+    }),
+    dependents: tasks.filter((candidate) => candidate.dependsOn?.includes(task.id)).map(summary),
+    blockedBy: blockers.get(task.id) ?? [],
+    related,
+    branch: {
+      name: task.branch ?? null,
+      exists: task.git.branchExists,
+      worktree: task.git.worktreePath,
+      dirty: task.git.dirty,
+    },
+  });
 };
 
 export const patchTask: RouteHandler = async (ctx, req, res, params) => {
@@ -3634,8 +3726,14 @@ export const clearKeptWorktree: RouteHandler = async (ctx, req, res, params) => 
     return json(res, 400, { error: "Only a done task with a recorded branch can be cleared" });
   }
   const root = config.root;
-  const mainBranch = ["main", "master"].find((name) => isAncestor(root, name, name) === true);
-  if (!mainBranch || isAncestor(root, branch, mainBranch) !== true) {
+  let mainBranch: string | undefined;
+  for (const name of ["main", "master"]) {
+    if ((await isAncestorAsync(root, name, name)) === true) {
+      mainBranch = name;
+      break;
+    }
+  }
+  if (!mainBranch || (await isAncestorAsync(root, branch, mainBranch)) !== true) {
     return json(res, 409, {
       error: `Branch ${branch} is not merged into ${mainBranch ?? "main"} — refusing to discard its worktree`,
     });
@@ -4442,7 +4540,7 @@ export const getDiffStatsForTask: RouteHandler = async (ctx, _req, res, params) 
       noWorktree: true,
     });
   }
-  // Async (spawn-based) rather than the sync/execFileSync getDiffStats: every
+  // Async (spawn-based) rather than the blocking getDiffStats: every
   // card on the Work board fires this on mount, and the synchronous version
   // blocked the whole event loop for each one serially — including whatever
   // GET /api/tasks/:id a drawer-opening click was waiting behind.
