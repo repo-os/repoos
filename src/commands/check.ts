@@ -1105,6 +1105,8 @@ interface StepContext {
   isolationRuns?: number;
   /** Echo step child output (default true, see RunPlanOptions.echo). */
   echo: boolean;
+  /** Outer timeout from the check plan (`[[check.steps]].timeoutMs`). */
+  stepTimeoutMs?: number;
 }
 
 /** What a built-in `kind` handler returns. */
@@ -1630,10 +1632,10 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
   // A full unscoped run is ~10min healthy and can legitimately reach ~25min on
   // a slow box; a too-tight cap SIGTERMs a green suite (exit 143). Vitest's own
   // per-test timeout fails a genuine hang fast — this is the outer backstop.
-  // Scoped runs still execute the full wrapped suite (main pass + boot-timing);
-  // on a laptop that legitimately finishes in ~5–6 minutes, a 300s cap SIGTERMs
-  // a green run (exit 143) — see AGENTS.md debugging-check-failures.
-  const timeoutMs = changedRef ? 420_000 : 1_500_000;
+  // Scoped runs still execute the full wrapped suite (main pass + boot-timing).
+  // Honor the plan's `timeoutMs` when set (repoos.toml's tests step is 15m);
+  // fall back to the historical caps only when the step did not declare one.
+  const timeoutMs = ctx.stepTimeoutMs ?? (changedRef ? 420_000 : 1_500_000);
   const res = await runCommand({ command, cwd: ctx.cwd, timeoutMs, env, echo: ctx.echo });
   if (res.status === "passed") {
     return {
@@ -1992,6 +1994,7 @@ export async function runCheckPlan(
         previousFailedTests: opts.previousFailedTests,
         isolationRuns: opts.isolationRuns,
         echo: opts.echo !== false,
+        stepTimeoutMs: step.timeoutMs,
       });
     } else if (missingBinaries(step.requires).length > 0) {
       outcome = {
