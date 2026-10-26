@@ -121,3 +121,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T20:21:30Z · needs_input
 - 2026-10-26T20:21:31Z · needs_input
 - 2026-10-26T20:30:41Z · status active→review
+- 2026-10-26T20:30:41Z · note: shots: skipped — the diff (16 changed paths) touches no capture target's globs — no UI change to capture
