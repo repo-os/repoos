@@ -12,7 +12,6 @@ cli_override: opencode
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-24T23:57:03Z"
 updated_at: "2026-10-26T21:14:26Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-26T20:09:18.481Z: repoos check failed: check-fmt:check — timed out — timed out after 120s"
 handoff_signal_retry_count: 2
 dev_error_count: 12
@@ -174,3 +173,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-26T21:13:59Z · body
 - 2026-10-26T21:14:24Z · cli_override, model_override
 - 2026-10-26T21:14:26Z · model_override
+
