@@ -481,8 +481,14 @@ export interface ModelProviderKeysConfig {
   clefFlashApiKey?: string;
 }
 
+export interface GitConfig {
+  tuneForScale?: boolean;
+}
+
 /** Resolved configuration (after defaults + repoos.toml merge). */
 export interface RepoOSConfig {
+  /** Git status performance tuning; enabled by default. */
+  git?: GitConfig;
   /** Absolute path to the repo root. */
   root: string;
   /** Directory holding task files, relative to root. Default "work". */

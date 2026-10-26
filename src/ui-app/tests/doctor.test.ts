@@ -104,6 +104,22 @@ function namespacedProject(): string {
 }
 
 describe("runDoctor", () => {
+  it("warns when fsmonitor daemon count exceeds the threshold", async () => {
+    const report = await runDoctor({ root: cleanProject(), fsmonitorDaemonCount: () => 9 });
+    const item = findingById(report, "runtime.fsmonitor-daemons");
+    expect(item?.severity).toBe("warn");
+    expect(item?.detail).toContain("9 daemons");
+    expect(item?.remediation).toContain("git.tuneForScale = false");
+    expect(item?.remediation).toContain("git config core.fsmonitor false");
+  });
+
+  it.each([0, 1, 8])("reports %i fsmonitor daemons below the warning threshold", async (count) => {
+    const report = await runDoctor({ root: cleanProject(), fsmonitorDaemonCount: () => count });
+    const item = findingById(report, "runtime.fsmonitor-daemons");
+    expect(item?.severity).toBe("pass");
+    expect(item?.title).toContain(`${count} Git fsmonitor daemon`);
+  });
+
   it("classifies representative codesign verbose output", () => {
     expect(classifyGitSignature("Executable=/opt/homebrew/bin/git\nSignature=adhoc\n")).toBe(
       "ad-hoc signed",
@@ -204,6 +220,7 @@ describe("runDoctor", () => {
       probePort: 1,
       hasBinary: tools("git", "bun", "node"),
       platform: "linux",
+      fsmonitorDaemonCount: () => 0,
     });
     expect(report.project.root).toBe(root);
     expect(report.schemaVersion).toBe(1);
@@ -957,6 +974,7 @@ describe("dev/preview target dependency installs (#0859 E5)", () => {
       probePort: 1,
       hasBinary: tools("git", "bun", "node"),
       platform: "linux",
+      fsmonitorDaemonCount: () => 0,
     });
     const finding = findingById(report, "runtime.target-dependencies");
     expect(finding?.severity).toBe("warn");
@@ -974,6 +992,7 @@ describe("dev/preview target dependency installs (#0859 E5)", () => {
       probePort: 1,
       hasBinary: tools("git", "bun", "node"),
       platform: "linux",
+      fsmonitorDaemonCount: () => 0,
     });
     const finding = findingById(report, "runtime.target-dependencies");
     expect(finding?.severity).toBe("pass");
