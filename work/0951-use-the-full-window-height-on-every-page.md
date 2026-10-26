@@ -5,7 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "error: invalid model selection (--model \"gemini-3.8-flash-high\" --effort \"\"): model gemini-3.8-flash-high is not recognized as a known model or custom model in settings"
+needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (antigravity + gemini-3.8-flash-high) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p2
 area: web
 assigned_to: ai
@@ -16,14 +16,14 @@ model_override: gemini-3.8-flash-high
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T12:57:51Z"
+updated_at: "2026-10-26T12:58:03Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
-dev_error_count: 67
+dev_error_count: 68
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
-engineer_crash_log: "[{\"cli\":\"antigravity\",\"model\":\"gemini-3.8-flash-high\",\"at\":\"2026-10-26T12:57:39.536Z\",\"kind\":\"dev-error\"},{\"cli\":\"antigravity\",\"model\":\"gemini-3.8-flash-high\",\"at\":\"2026-10-26T12:57:51.294Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"antigravity\",\"model\":\"gemini-3.8-flash-high\",\"at\":\"2026-10-26T12:57:39.536Z\",\"kind\":\"dev-error\"},{\"cli\":\"antigravity\",\"model\":\"gemini-3.8-flash-high\",\"at\":\"2026-10-26T12:57:51.294Z\",\"kind\":\"dev-error\"},{\"cli\":\"antigravity\",\"model\":\"gemini-3.8-flash-high\",\"at\":\"2026-10-26T12:58:03.244Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -433,3 +433,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T12:57:39Z · agent exited with an error (antigravity) · error: invalid model selection (--model "gemini-3.8-flash-high" --effort ""): model gemini-3.8-flash-high is not recognized as a known model or custom model in settings
 - 2026-10-26T12:57:39Z · engineer crash recovery: resuming antigravity + gemini-3.8-flash-high (1/3 crashes in 30m) · error: invalid model selection (--model "gemini-3.8-flash-high" --effort ""): model gemini-3.8-flash-high is not recognized as a known model or custom model in settings
 - 2026-10-26T12:57:51Z · engineer crash recovery: resuming antigravity + gemini-3.8-flash-high (2/3 crashes in 30m) · error: invalid model selection (--model "gemini-3.8-flash-high" --effort ""): model gemini-3.8-flash-high is not recognized as a known model or custom model in settings
+- 2026-10-26T12:58:03Z · engineer crash recovery: surfaced instead of switching — a human-set task override (antigravity + gemini-3.8-flash-high) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
