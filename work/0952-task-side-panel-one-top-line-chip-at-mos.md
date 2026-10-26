@@ -2,7 +2,7 @@
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
