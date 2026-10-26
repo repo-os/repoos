@@ -3,6 +3,9 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-10-26T12:57:54.690636Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request"
 priority: p2
 area: web
 assigned_to: ai
@@ -13,12 +16,12 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T14:00:51Z"
+updated_at: "2026-10-26T14:00:52Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
-dev_error_count: 31
+dev_error_count: 32
 engineer_crash_log: "[{\"cli\":\"antigravity\",\"model\":\"gemini-3.8-flash-medium\",\"at\":\"2026-10-26T12:27:45.440Z\",\"kind\":\"usage-limit\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
@@ -383,3 +386,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T13:20:51Z · body
 - 2026-10-26T13:57:54Z · body
 - 2026-10-26T14:00:51Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-26T14:00:52Z · agent exited with an error (codex) · 2026-10-26T12:57:54.690636Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
