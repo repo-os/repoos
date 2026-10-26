@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 cli_override: opencode
+model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-26T21:39:30Z"
+updated_at: "2026-10-26T21:39:33Z"
 ---
 ## Problem
 
@@ -46,3 +47,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-26T18:53:55Z · status inbox→ready
 - 2026-10-26T21:39:24Z · cli_override
 - 2026-10-26T21:39:30Z · cli_override
+- 2026-10-26T21:39:33Z · model_override
