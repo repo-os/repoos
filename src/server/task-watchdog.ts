@@ -850,11 +850,7 @@ export class TaskWatchdog {
     return true;
   }
 
-  private async surfaceTask(
-    task: Task,
-    target: "ready" | "review",
-    reason: string,
-  ): Promise<void> {
+  private async surfaceTask(task: Task, target: "ready" | "review", reason: string): Promise<void> {
     const current = this.readCurrent(task);
     if (current.status !== "active") return;
     if (alreadySurfaced(current.body)) return;
