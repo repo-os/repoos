@@ -14,13 +14,14 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T09:03:28Z"
+updated_at: "2026-10-26T09:03:29Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 30
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-26T09:03:29.170Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -350,3 +351,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T08:45:40Z · body
 - 2026-10-26T08:57:00Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-26T09:03:28Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-26T09:03:29Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
