@@ -3,12 +3,6 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the codex agent exited without output: Reading additional input from stdin... error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:14 PM."
-debug_tldr: "Codex reviewer hit ChatGPT usage limit — switch to another reviewer agent or retry review after 11:14 PM."
-debug_tldr_at: "2026-10-26T15:09:18Z"
-debug_tldr_key: "review-failed|the codex agent exited without output: Reading additional input from stdin... error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:14 PM."
 priority: p2
 area: web
 assigned_to: ai
@@ -18,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: grok-4.7-low
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T15:19:42Z"
+updated_at: "2026-10-26T15:19:45Z"
 review_passes: 9
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -457,3 +451,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T15:08:52Z · needs_input
 - 2026-10-26T15:19:41Z · review_cli_override, review_model_override
 - 2026-10-26T15:19:42Z · review_model_override
+- 2026-10-26T15:19:45Z · needs_input (review-failed) cleared for review again by hello@repoos.org
