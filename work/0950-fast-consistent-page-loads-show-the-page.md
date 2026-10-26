@@ -3,6 +3,9 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the codex agent exited without output: Reading additional input from stdin... error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:14 PM."
 priority: p2
 area: web
 assigned_to: ai
@@ -449,3 +452,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T15:08:39Z · status active→review
 - 2026-10-26T15:08:39Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-26T15:08:52Z · note: review pass 11: failed — no usable report
+- 2026-10-26T15:08:52Z · needs_input
