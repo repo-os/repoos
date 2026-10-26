@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 priority: p2
@@ -15,7 +15,7 @@ model_override: gpt-6.1-sol
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T06:10:02Z"
+updated_at: "2026-10-26T06:10:37Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: c06d8125ad1f23b81fdf90ad161dd35484849592
 review_passes: 9
@@ -404,3 +404,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T05:56:31Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-10-26T05:59:53Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-26T06:10:02Z · note: Review pass 10 implementation is complete at fd3d3bca0 and the worktree is clean. All 141 affected tests passed in three small groups. The required repoos check --changed main passed staleness, formatting/lint, build, contrast and UI smoke, but its tests step timed out after 420s with 46/602 selected files completed and no assertion failure reported. Remote validation fell back locally after a 1469ms runner link probe. Final-tree repoos shot was attempted and refused because #0951 occupies the single preview slot. No new captures were claimed or reused as current. Handoff remains blocked until the preview slot is freed and the scoped gate passes; no handoff-ready signal is being emitted.
+- 2026-10-26T06:10:37Z · status active→review
