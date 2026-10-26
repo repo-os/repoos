@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
+last_handoff_failure_sha: d67f37d97ea4a41e593594dc457494f6c9c44e6b
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
@@ -82,3 +84,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T11:38:55Z · cli_override
 - 2026-10-26T11:38:57Z · model_override
 - 2026-10-26T12:30:55Z · handoff failed · task-file handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
+
