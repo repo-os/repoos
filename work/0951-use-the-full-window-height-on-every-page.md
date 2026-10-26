@@ -300,3 +300,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T06:23:50Z · body
 - 2026-10-26T06:38:15Z · body
 - 2026-10-26T09:36:36Z · status active→review
+- 2026-10-26T09:36:36Z · note: handoff requested (cli)
