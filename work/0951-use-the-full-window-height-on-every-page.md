@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-26T11:16:33Z"
-review_passes: 3
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -15,8 +13,10 @@ model_override: gemini-3.8-flash-medium
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
+updated_at: "2026-10-26T11:16:33Z"
+review_rounds: 2
+review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
-review_rounds: 1
 handoff_signal_retry_count: 1
 dev_error_count: 30
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-26T09:03:29.170Z\",\"kind\":\"dev-error\"}]"
@@ -365,4 +365,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T11:14:40Z · review_cli_override, review_model_override
 - 2026-10-26T11:14:46Z · needs_input (check-failed-after-retries) cleared for review again by human
 - 2026-10-26T11:16:33Z · note: review pass 5: needs some work
-
+- 2026-10-26T11:16:33Z · status review→active
