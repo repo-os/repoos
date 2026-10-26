@@ -5,7 +5,7 @@ type: bug
 status: ready
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 debug_tldr: "Engineer died waiting on serialized local fallback behind other repoos checks — end duplicate checks, then resume."
 debug_tldr_at: "2026-10-25T14:34:23Z"
 debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
@@ -20,7 +20,7 @@ model_override: composer-2.5
 created_at: "2026-10-24T23:57:03Z"
 updated_at: "2026-10-25T15:39:41Z"
 handoff_signal_retry_count: 2
-dev_error_count: 11
+dev_error_count: 12
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T12:19:20.905Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T14:33:40.068Z\",\"kind\":\"dev-error\"}]"
 ---

@@ -84,6 +84,18 @@ function writeTask(
   commitTaskFile(config.root, task.absPath, commitMessage);
 }
 
+/**
+ * Crashes that are the network or provider flaking, not the model/agent
+ * misbehaving (2026-10-26: ENOTFOUND api2.cursor.sh, "Connection stalled
+ * repeatedly", codex "failed to refresh available models: request timed out",
+ * ). These get a higher
+ * crash threshold and a growing pause before the relaunch, so a blip does not
+ * strand the task as "needs input" within a minute.
+ */
+const TRANSIENT_CRASH_RE =
+  /ENOTFOUND|EAI_AGAIN|ETIMEDOUT|ECONNRESET|ECONNREFUSED|socket hang up|fetch failed|request timed out|Connection stalled|Transport error|temporarily unavailable/i;
+const TRANSIENT_THRESHOLD_FACTOR = 4;
+
 function thresholdFor(config: RepoOSConfig): number {
   const value = config.watchdog?.engineerCrashFailoverThreshold;
   return typeof value === "number" && Number.isFinite(value) && value >= 1
@@ -213,7 +225,8 @@ export async function recoverEngineerAfterCrash(
         });
       }
     }
-    const threshold = thresholdFor(config);
+    const transient = TRANSIENT_CRASH_RE.test(reason);
+    const threshold = thresholdFor(config) * (transient ? TRANSIENT_THRESHOLD_FACTOR : 1);
     const windowMs = windowFor(config);
     const crashes = recordEngineerCrash(
       parseEngineerCrashLog(task.extra?.[ENGINEER_CRASH_LOG_KEY]),
@@ -260,6 +273,10 @@ export async function recoverEngineerAfterCrash(
     }
 
     const launch = deps.launch ?? relaunchEngineerOnActiveTask;
+    if (transient && !deps.launch) {
+      // Back off 30 s per crash (max 5 min) so the network can recover.
+      await new Promise((resolve) => setTimeout(resolve, Math.min(300_000, 30_000 * plan.crashes)));
+    }
     const instruction =
       plan.action === "failover"
         ? failoverInstruction(plan, reason)

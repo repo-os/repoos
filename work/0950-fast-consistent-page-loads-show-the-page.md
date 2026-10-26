@@ -2,32 +2,32 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: handoff finalization was interrupted (server reload) — restart work to hand off again
-debug_tldr: "Handoff finalization was cut off by a RepoOS server reload—resume the engineer on #0950 and request review again."
-debug_tldr_at: "2026-10-25T18:37:48Z"
-debug_tldr_key: dev-error|handoff finalization was interrupted (server reload) — restart work to hand off again
+needs_input_detail: "RetriableError: Connection stalled"
+debug_tldr: "The engineer harness lost its connection (stalled link), not the build — wait for Playwright slots to clear, then retry Start or handoff."
+debug_tldr_at: "2026-10-26T12:27:58Z"
+debug_tldr_key: "dev-error|RetriableError: Connection stalled"
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
-cli_override: opencode
-model_override: opencode-go/kimi-k3.1-pro
-review_cli_override: github copilot
-review_model_override: default
+cli_override: cursor
+model_override: grok-4.7-high
+review_cli_override: codex
+review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T19:14:45Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/incremental-index.test.ts > resolveWorktreeStatuses > reuses cached dirtiness when the worktree HEAD has not moved on thinkpad — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 8a686f6e99c339ddf551e110a4374da7ebe7937e
-review_passes: 8
+updated_at: "2026-10-26T13:23:11Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
+review_passes: 9
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 7
+dev_error_count: 8
 ---
 ## Problem
 
@@ -139,6 +139,9 @@ Cached empty lists now render without skeletons on Checks, Dev, Secrets, detecte
 
 ## Implementation follow-up
 The current branch already migrated Check Runs, detected Agents and release distribution to the shared skeleton/cache. This continuation fixes cached empty lists on Checks, Dev and Secrets, clears the previous environment snapshot immediately when selection changes, and guards late snapshot failures as well as successes. Table-driven race tests cover both late outcomes; empty and populated list cases cover cached revisits. The page benchmark now uses a separately built baseline UI from Git against the same authenticated fixture backend, measures DOM content readiness without waiting for an absent skeleton, and ignores skeletons in hidden tabs. Existing loading/loaded shots for Deployments and Dev remain declared; current captures are being verified before handoff.
+
+## Review pass 10 follow-up
+Retained the committed distribution empty-result fix and its empty/populated retry tests. Audited Releases status/distribution, Checks plan/Runs, Deployments, Dev, detected Agents and Secrets. Fixed Agents hiding its entire detected panel when an empty cached list is followed by an SSE failure; both fetch and stream failures now remain visible. Moved Secrets metadata refresh errors outside the snapshot-dependent ledger so a pending snapshot cannot hide them. Dev now distinguishes a loaded empty target list from an initial failure and preserves the empty state beside a non-blocking refresh notice. Empty/populated failure tests now cover each migrated view; Secrets additionally covers a pending snapshot. The pre-existing empty check-plan test explicitly covers failure with no steps. All 141 affected tests passed in three small groups. The loading-placeholder grep found only intentional in-place activity indicators: Check Runs refresh-button icon, Releases Check again spinner, Agents per-agent probe icon and model/update-check button text. These do not replace page content; shared skeletons cover first loads. No further measurement or cache-eviction/Secrets-selection-race changes were made.
 
 ## Activity
 
@@ -383,4 +386,43 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-25T18:42:22Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from d420f735 to 8a686f6e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-10-25T18:47:41Z · note: handoff requested (ui-review)
 - 2026-10-25T18:57:51Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/incremental-index.test.ts > resolveWorktreeStatuses > reuses cached dirtiness when the worktree HEAD has not moved on thinkpad — fix it in the feature branch and re-run the gate
-- 2026-10-25T19:14:45Z · status active→review
+- 2026-10-25T19:03:14Z · note: handoff requested (ui-review)
+- 2026-10-25T19:14:46Z · status active→review
+- 2026-10-25T19:14:46Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T05:32:23Z · needs_input (dev-error) cleared for review again by human
+- 2026-10-26T05:35:26Z · note: review pass 10: needs some work
+- 2026-10-26T05:35:26Z · needs_input
+- 2026-10-26T05:38:49Z · cli_override, model_override
+- 2026-10-26T05:38:50Z · status review→active
+- 2026-10-26T05:38:50Z · note: send-back — returned to active for engineer follow-up
+- 2026-10-26T05:38:54Z · needs_input
+- 2026-10-26T05:38:54Z · message_queued at 2026-10-26T05:38:54.572Z
+- 2026-10-26T05:38:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T05:52:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-26T05:52:09Z · status active→review, needs_input
+- 2026-10-26T05:52:09Z · message_delivered: 1 message(s)
+- 2026-10-26T05:52:10Z · note: handoff requested (cli)
+- 2026-10-26T05:54:53Z · CTO nudge: held — handoff gate is running
+- 2026-10-26T05:56:18Z · body: Review pass 10 follow-up (added)
+- 2026-10-26T05:56:18Z · message_queued at 2026-10-26T05:56:18.329Z
+- 2026-10-26T05:56:31Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-10-26T05:59:53Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T06:10:02Z · note: Review pass 10 implementation is complete at fd3d3bca0 and the worktree is clean. All 141 affected tests passed in three small groups. The required repoos check --changed main passed staleness, formatting/lint, build, contrast and UI smoke, but its tests step timed out after 420s with 46/602 selected files completed and no assertion failure reported. Remote validation fell back locally after a 1469ms runner link probe. Final-tree repoos shot was attempted and refused because #0951 occupies the single preview slot. No new captures were claimed or reused as current. Handoff remains blocked until the preview slot is freed and the scoped gate passes; no handoff-ready signal is being emitted.
+- 2026-10-26T06:10:37Z · status active→review
+- 2026-10-26T06:10:37Z · message_delivered: 1 message(s)
+- 2026-10-26T06:10:38Z · note: handoff requested (cli)
+- 2026-10-26T06:15:01Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-10-26T06:40:13Z · note: handoff requested (ui-review)
+- 2026-10-26T06:45:17Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-10-26T07:52:50Z · note: handoff requested (ui-review)
+- 2026-10-26T08:00:42Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-10-26T11:14:46Z · review_cli_override, review_model_override
+- 2026-10-26T11:27:14Z · cli_override, model_override
+- 2026-10-26T11:27:18Z · model_override
+- 2026-10-26T11:28:06Z · model_override
+- 2026-10-26T11:37:01Z · message_queued at 2026-10-26T11:37:01.229Z
+- 2026-10-26T11:37:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-26T11:48:54Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T12:12:59Z · body
+- 2026-10-26T12:37:26Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T13:23:11Z · message_delivered: 1 message(s)

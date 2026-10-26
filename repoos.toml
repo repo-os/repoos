@@ -743,12 +743,17 @@ command = "just macos-build && exec env LLVM_PROFILE_FILE=/dev/null 'macos/.deri
 cli = "opencode"
 models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash", "opencode-go/kimi-k2.7-code", "opencode-go/kimi-k3.1-pro", "opencode-go/deepseek-v4-pro", "opencode-go/glm-5.3"]
 pausedReason = "Go usage limit exceeded (429) on 2026-10-22; resume when the opencode-go quota resets"
+pausedModels = [{ model = "opencode-go/kimi-k3.1-pro", pausedReason = "out of usage since 2026-10-26T11:33:32.912Z: error: Go usage limit exceeded" }]
 [[budget.allowlist]]
 cli = "github copilot"
 models = ["default"]
 [[budget.allowlist]]
 cli = "cursor"
-models = ["composer-2.5"]
+models = ["composer-2.5", "grok-4.7-low"]
 [[budget.allowlist]]
 cli = "codex"
-models = ["gpt-6-luna"]
+models = ["gpt-6-luna", "gpt-6.1-sol"]
+[[budget.allowlist]]
+cli = "antigravity"
+models = ["gemini-3.8-flash-medium", "gemini-3.8-flash-high"]
+pausedModels = [{ model = "gemini-3.8-flash-medium", pausedReason = "out of usage since 2026-10-26T12:27:45.440Z: AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryabl" }]
