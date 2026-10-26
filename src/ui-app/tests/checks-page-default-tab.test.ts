@@ -162,7 +162,7 @@ describe("ChecksView default tab (#0738)", () => {
     wrapper.unmount();
   });
 
-  it("keeps the cached plan visible and shows a refresh-failed notice when the background refresh fails", async () => {
+  it("shows a refresh failure while the cached check plan has no steps", async () => {
     const initial = await mountChecks("/checks?tab=plan");
     initial.wrapper.unmount();
 

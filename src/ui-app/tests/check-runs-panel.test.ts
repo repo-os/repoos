@@ -95,22 +95,24 @@ describe("CheckRunsPanel loading (#0950)", () => {
     wrapper.unmount();
   });
 
-  it("keeps the cached history visible and shows a non-blocking refresh error", async () => {
-    api.mockImplementation(() => Promise.resolve(runHistory()));
-    const first = mount(CheckRunsPanel);
-    await flushPromises();
-    first.unmount();
+  it.each([{ rows: [] }, { rows: [run()] }])(
+    "shows refresh errors with cached rows $rows",
+    async ({ rows }) => {
+      api.mockImplementation(() => Promise.resolve({ ok: true, runs: rows }));
+      const first = mount(CheckRunsPanel);
+      await flushPromises();
+      first.unmount();
 
-    api.mockImplementation(() => Promise.reject(new Error("refresh boom")));
-    const wrapper = mount(CheckRunsPanel);
-    await flushPromises();
+      api.mockImplementation(() => Promise.reject(new Error("refresh boom")));
+      const wrapper = mount(CheckRunsPanel);
+      await flushPromises();
 
-    expect(wrapper.find(".cr-table").exists()).toBe(true);
-    expect(wrapper.text()).toContain("1 run");
-    expect(wrapper.text()).toContain("Refresh failed");
-    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
-    wrapper.unmount();
-  });
+      expect(wrapper.find(rows.length ? ".cr-table" : ".cr-empty").exists()).toBe(true);
+      expect(wrapper.find(".cr-err").text()).toContain("refresh boom");
+      expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+      wrapper.unmount();
+    },
+  );
 
   it("does not start a second request when a refresh is already in flight", async () => {
     let started = 0;

@@ -177,36 +177,43 @@ describe("AgentsView detected-tab loading (#0950)", () => {
     revisit.unmount();
   });
 
-  it("keeps the cached detection list visible when refresh fails", async () => {
-    const first = await mountAgents("/?tab=detected", async (url) => {
-      if (String(url).includes("/api/agents/detect"))
-        return json({ agents: detectedAgents, cachedAt: "2026-10-25T00:00:00Z" });
-      return new Promise<Response>(() => {});
-    });
-    first.unmount();
+  it.each([{ agents: [] }, { agents: detectedAgents }])(
+    "shows refresh errors with cached detected agents $agents",
+    async ({ agents }) => {
+      const first = await mountAgents("/?tab=detected", async (url) => {
+        if (String(url).includes("/api/agents/detect"))
+          return json({ agents, cachedAt: "2026-10-25T00:00:00Z" });
+        return new Promise<Response>(() => {});
+      });
+      first.unmount();
 
-    class FailedEventSource {
-      onerror: (() => void) | null = null;
-      addEventListener(): void {}
-      close(): void {}
-      static latest: FailedEventSource;
-      constructor() {
-        FailedEventSource.latest = this;
+      class FailedEventSource {
+        onerror: (() => void) | null = null;
+        addEventListener(): void {}
+        close(): void {}
+        static latest: FailedEventSource;
+        constructor() {
+          FailedEventSource.latest = this;
+        }
       }
-    }
-    vi.stubGlobal("EventSource", FailedEventSource);
-    const revisit = await mountAgents("/?tab=detected", async () => {
-      throw new Error("refresh offline");
-    });
-    // The stale snapshot is rendered before the probe stream reports failure.
-    FailedEventSource.latest.onerror?.();
-    await flushPromises();
+      vi.stubGlobal("EventSource", FailedEventSource);
+      const revisit = await mountAgents("/?tab=detected", async () => {
+        throw new Error("refresh offline");
+      });
+      // The stale snapshot is rendered before the probe stream reports failure.
+      FailedEventSource.latest.onerror?.();
+      await flushPromises();
 
-    expect(revisit.find(".detect-agent-name").text()).toBe("Codex");
-    expect(revisit.text()).toContain("Refresh failed");
-    expect(revisit.find(".page-skeleton").exists()).toBe(false);
-    revisit.unmount();
-  });
+      expect(
+        detectedPanel(revisit)
+          .find(agents.length ? ".detect-agent-name" : ".agent-empty")
+          .exists(),
+      ).toBe(true);
+      expect(detectedPanel(revisit).find("[role=status]").text()).toContain("Refresh failed");
+      expect(revisit.find(".page-skeleton").exists()).toBe(false);
+      revisit.unmount();
+    },
+  );
 });
 
 describe("Agents page panels share the skeleton (#0950)", () => {

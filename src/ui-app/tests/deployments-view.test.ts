@@ -140,31 +140,38 @@ describe("DeploymentsView matrix (#0365)", () => {
     wrapper.unmount();
   });
 
-  it("keeps cached deployments visible and shows a refresh-failed notice when the background refresh fails", async () => {
-    api.mockResolvedValue(status());
-    const first = await mountView();
-    first.unmount();
+  it.each([{ initial: status() }, { initial: status({ enabled: false, rows: [], branches: [] }) }])(
+    "shows refresh errors with cached deployments $initial",
+    async ({ initial }) => {
+      api.mockResolvedValue(initial);
+      const first = await mountView();
+      first.unmount();
 
-    api.mockImplementation((path) => {
-      if (path === "/api/deployments") return Promise.reject(new Error("refresh boom")) as never;
-      if (path === "/api/project-environments")
-        return Promise.resolve({ environments: [] }) as never;
-      throw new Error(`Unexpected API route: ${path}`);
-    });
-    const wrapper = mount(DeploymentsView, {
-      attachTo: document.body,
-      global: { plugins: [createPinia()] },
-    });
-    await nextTick();
-    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
-    expect(wrapper.text()).toContain("Landing page");
+      api.mockImplementation((path) => {
+        if (path === "/api/deployments") return Promise.reject(new Error("refresh boom")) as never;
+        if (path === "/api/project-environments")
+          return Promise.resolve({ environments: [] }) as never;
+        throw new Error(`Unexpected API route: ${path}`);
+      });
+      const wrapper = mount(DeploymentsView, {
+        attachTo: document.body,
+        global: { plugins: [createPinia()] },
+      });
+      await nextTick();
+      expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+      expect(wrapper.text()).toContain(
+        initial.rows.length ? "Landing page" : "Deployments aren't configured",
+      );
 
-    await flushPromises();
-    expect(wrapper.text()).toContain("Refresh failed");
-    expect(wrapper.text()).toContain("Landing page");
-    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
-    wrapper.unmount();
-  });
+      await flushPromises();
+      expect(wrapper.text()).toContain("Refresh failed");
+      expect(wrapper.text()).toContain(
+        initial.rows.length ? "Landing page" : "Deployments aren't configured",
+      );
+      expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+      wrapper.unmount();
+    },
+  );
 
   it("pins the first-load skeleton for its declared shot fixture", async () => {
     window.history.replaceState({}, "", "/deployments?shotState=deployments%3Aloading");

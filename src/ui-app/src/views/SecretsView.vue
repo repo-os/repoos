@@ -328,6 +328,9 @@ onMounted(() => {
           >Reload</Button
         >
       </div>
+      <p v-if="snapshotRefreshError" class="secrets-error" role="status">
+        Refresh failed: {{ snapshotRefreshError }}
+      </p>
       <p v-if="message" class="secrets-message" role="status">{{ message }}</p>
       <section
         v-if="!loading && !environments.length"
@@ -344,9 +347,6 @@ onMounted(() => {
       </section>
       <PageSkeleton v-else-if="(loading || selected) && !snapshot && !error" kind="table" />
       <section v-else-if="snapshot" class="secrets-ledger" aria-label="Environment keys">
-        <p v-if="snapshotRefreshError" class="secrets-error" role="status">
-          Refresh failed: {{ snapshotRefreshError }}
-        </p>
         <p v-if="environmentFile" class="secrets-file">
           <code>{{ environmentFile }}</code>
         </p>
