@@ -11,6 +11,7 @@ import { parseTask } from "../core/task.js";
 import type { LiveIndex } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";
 import { resolveAgentForTask, noAgentAvailableMessage, pausedAgentFallbackNote } from "./agents.js";
+import { isHoldActive } from "../core/task-selection.js";
 import type { Logger } from "../core/logger.js";
 export type EngineerLaunchResult =
   | {
@@ -39,7 +40,7 @@ export async function relaunchEngineerOnActiveTask(
   deps: EngineerLaunchDeps,
   task: Task,
   instruction: string,
-  opts: { freshSession?: boolean; fromCrashRecovery?: boolean } = {},
+  opts: { freshSession?: boolean; fromCrashRecovery?: boolean; force?: boolean } = {},
 ): Promise<EngineerLaunchResult> {
   const { config, index, runner, logger } = deps;
   const id = task.id;
@@ -49,6 +50,20 @@ export async function relaunchEngineerOnActiveTask(
   }
   if (task.status !== "active") {
     return { ok: false, reason: `Task #${id} is not active` };
+  }
+  // #0960: a held task is inert for ALL automation. Only an explicit human/driver
+  // command that clears the hold (or `repoos start --force`) may start it. This
+  // is the single chokepoint shared by /start, the CTO monitor, the watchdog and
+  // crash recovery, so a held task cannot be started by any of them.
+  if (isHoldActive(task) && !opts.force) {
+    const reason = task.holdReason ? `: ${task.holdReason}` : "";
+    const until = task.holdUntil ? ` (auto-releases ${task.holdUntil})` : "";
+    return {
+      ok: false,
+      reason: `Task #${id} is held${reason}${until} — use "repoos unhold ${id}" to release it${
+        opts.fromCrashRecovery ? "" : ", or " + `"repoos start ${id} --force"`
+      }`,
+    };
   }
   runner.releasePhantomForStart(id);
   if (runner.isRunning(id)) {

@@ -27,6 +27,16 @@ interface CommonOpts {
   wait: boolean;
   now: boolean;
   port?: number;
+  /** `repoos hold`: free-text reason the task was parked (#0960). */
+  reason?: string;
+  /** `repoos hold`: ISO-8601 auto-release time (#0960). */
+  until?: string;
+  /** `repoos hold`: who placed the hold (#0960); defaults to "driver" server-side. */
+  by?: string;
+  /** `repoos unhold --start`: start the engineer after releasing the hold (#0960). */
+  start?: boolean;
+  /** `repoos start --force`: start even a held task (#0960). */
+  force?: boolean;
 }
 
 function parseCommonFlags(args: string[]): { rest: string[]; opts: CommonOpts; error?: string } {
@@ -37,6 +47,20 @@ function parseCommonFlags(args: string[]): { rest: string[]; opts: CommonOpts; e
     if (a === "--json") opts.json = true;
     else if (a === "--wait") opts.wait = true;
     else if (a === "--now") opts.now = true;
+    else if (a === "--reason") {
+      const v = args[++i];
+      if (v === undefined) return { rest, opts, error: "--reason requires a value" };
+      opts.reason = v;
+    } else if (a === "--until") {
+      const v = args[++i];
+      if (v === undefined) return { rest, opts, error: "--until requires a value" };
+      opts.until = v;
+    } else if (a === "--by") {
+      const v = args[++i];
+      if (v === undefined) return { rest, opts, error: "--by requires a value" };
+      opts.by = v;
+    } else if (a === "--start") opts.start = true;
+    else if (a === "--force") opts.force = true;
     else if (a === "--port") {
       const p = args[++i];
       const n = Number(p);
@@ -154,16 +178,79 @@ export async function cmdStart(args: string[]): Promise<number> {
   }
   const id = idParts[0];
   if (!id) {
-    printErr("Usage: repoos start <id> [--fresh] [--json] [--port N]");
+    printErr("Usage: repoos start <id> [--fresh] [--force] [--json] [--port N]");
     return 1;
   }
   const api = new RepoOsApi({ port: opts.port });
   try {
     await ensureServer(api);
-    const body = fresh ? { mode: "fresh" } : {};
+    const body: Record<string, unknown> = fresh ? { mode: "fresh" } : {};
+    if (opts.force) body.force = true;
     const data = await api.requestOk("POST", `/api/tasks/${id}/start`, body);
     if (opts.json) printJson(data);
     else console.log(c.green("  ✓ ") + c.dim(`started #${id}`));
+    return 0;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
+export async function cmdHold(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const id = rest[0];
+  if (!id) {
+    printErr('Usage: repoos hold <id> --reason "<text>" [--until <date>] [--by <who>] [--json] [--port N]');
+    return 1;
+  }
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const body: Record<string, unknown> = {};
+    // #0960: `--reason` documents why the task was parked — shown on the board.
+    if (opts.reason !== undefined) body.reason = opts.reason;
+    if (opts.until !== undefined) body.until = opts.until;
+    if (opts.by !== undefined) body.by = opts.by;
+    const data = await api.requestOk("POST", `/api/tasks/${id}/hold`, body);
+    if (opts.json) printJson(data);
+    else {
+      console.log(c.green("  ✓ ") + c.dim(`held #${id}`));
+      if (opts.reason) console.log(c.dim(`    reason: ${opts.reason}`));
+      if (opts.until) console.log(c.dim(`    releases: ${opts.until}`));
+    }
+    return 0;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
+export async function cmdUnhold(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const id = rest[0];
+  if (!id) {
+    printErr("Usage: repoos unhold <id> [--start] [--json] [--port N]");
+    return 1;
+  }
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const body: Record<string, unknown> = {};
+    if (opts.start) body.start = true;
+    const data = await api.requestOk("POST", `/api/tasks/${id}/unhold`, body);
+    if (opts.json) printJson(data);
+    else {
+      console.log(c.green("  ✓ ") + c.dim(`released hold on #${id}`));
+      if (opts.start) console.log(c.green("  ✓ ") + c.dim(`started #${id}`));
+    }
     return 0;
   } catch (e) {
     printErr((e as RepoOsApiError).message);
@@ -187,7 +274,14 @@ export async function cmdPause(args: string[]): Promise<number> {
     await ensureServer(api);
     const data = await api.requestOk("POST", `/api/tasks/${id}/pause`, {});
     if (opts.json) printJson(data);
-    else console.log(c.green("  ✓ ") + c.dim(`paused #${id}`));
+    else {
+      console.log(c.green("  ✓ ") + c.dim(`paused #${id}`));
+      console.log(
+        c.dim(
+          `    pause stops the current run only — to keep a task quiet for ALL automation, use \`repoos hold ${id} --reason "…"\``,
+        ),
+      );
+    }
     return 0;
   } catch (e) {
     printErr((e as RepoOsApiError).message);

@@ -3,6 +3,8 @@ import type { Task } from "../../core/types.js";
 import {
   conflictingPairs,
   criticalPathWeights,
+  isHoldActive,
+  isHoldExpired,
   isSelectableReady,
   orderReadyTasks,
   priorityRank,
@@ -63,6 +65,43 @@ describe("taskIsHeld", () => {
   it("treats a hold tag as equivalent", () => {
     expect(taskIsHeld(task({ id: "3", tags: ["hold"] }))).toBe(true);
     expect(taskIsHeld(task({ id: "4", tags: ["HOLD"] }))).toBe(true);
+  });
+});
+
+describe("isHoldExpired", () => {
+  it("is never expired when holdUntil is unset", () => {
+    expect(isHoldExpired(undefined)).toBe(false);
+  });
+
+  it("is expired once the auto-release time passes", () => {
+    expect(isHoldExpired("2000-01-01T00:00:00Z")).toBe(true);
+    expect(isHoldExpired(new Date(Date.now() + 60_000).toISOString())).toBe(false);
+  });
+
+  it("treats an unparseable holdUntil as never expired", () => {
+    expect(isHoldExpired("not-a-date")).toBe(false);
+  });
+});
+
+describe("isHoldActive", () => {
+  it("is true for a held (flag or tag) task whose holdUntil has not passed", () => {
+    expect(isHoldActive(task({ id: "1", isHeld: true }))).toBe(true);
+    expect(isHoldActive(task({ id: "2", tags: ["hold"] }))).toBe(true);
+    expect(
+      isHoldActive(
+        task({ id: "3", isHeld: true, holdUntil: new Date(Date.now() + 60_000).toISOString() }),
+      ),
+    ).toBe(true);
+  });
+
+  it("is false for a task that is not held", () => {
+    expect(isHoldActive(task({ id: "4" }))).toBe(false);
+  });
+
+  it("is false once the auto-release time passes, even if flagged", () => {
+    expect(
+      isHoldActive(task({ id: "5", isHeld: true, holdUntil: "2000-01-01T00:00:00Z" })),
+    ).toBe(false);
   });
 });
 

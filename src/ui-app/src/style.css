@@ -2750,6 +2750,28 @@
   box-shadow: 0 0 6px var(--red);
   animation: tcpulse 1.1s ease-in-out infinite;
 }
+/* #0960: the "Held" badge — a deliberate, durable state that parks the task
+   out of ALL automation. Violet distinguishes it from the amber "paused" pill:
+   a pause is a transient stop, a hold is an intentional, documented block. */
+.tc-held {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--violet);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: "JetBrains Mono", monospace;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--violet-border-tint);
+  background: var(--violet-dim);
+  cursor: help;
+}
+.tc-held-until {
+  opacity: 0.75;
+}
 /* Shared hotfix badge (#0644): a red pill on the board card and the task
    drawer. `main` is the riskier variant, so it gets a full-strength red ring
    and a pulsing dot while the branch variant stays a quiet tinted pill.
@@ -13372,7 +13394,8 @@
   flex-wrap: wrap;
 }
 .archived-toggle,
-.human-toggle {
+.human-toggle,
+.held-toggle {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -13404,13 +13427,15 @@
   color: var(--violet);
 }
 .archived-chevron,
-.human-chevron {
+.human-chevron,
+.held-chevron {
   width: 14px;
   height: 14px;
   transition: transform 0.15s ease;
 }
 .archived-chevron.open,
-.human-chevron.open {
+.human-chevron.open,
+.held-chevron.open {
   transform: rotate(-90deg);
 }
 /* Desktop: dock the toggle row bottom-left on the same row as the pinned
@@ -13438,7 +13463,8 @@
     pointer-events: auto;
   }
   .work-page .archived-toggle,
-  .work-page .human-toggle {
+  .work-page .human-toggle,
+  .work-page .held-toggle {
     background: color-mix(in srgb, var(--bg) 70%, transparent);
     backdrop-filter: blur(8px);
   }
@@ -13461,7 +13487,8 @@
     padding-inline-end: 26px;
   }
   .work-page .archived-rows,
-  .work-page .human-rows {
+  .work-page .human-rows,
+  .work-page .held-rows {
     margin: 0 0 8px;
     align-self: stretch;
     background: var(--panel-solid);
@@ -13532,6 +13559,73 @@
   height: 12px;
   flex: none;
   color: var(--violet);
+}
+
+/* #0960: the Held list reuses the violet hold cue from the board card badge, so
+   the parked-tasks list reads as "the cards carrying that badge". */
+.held-toggle {
+  color: var(--violet);
+  border-color: var(--violet-border-tint);
+}
+.archived-rows li + li .archived-row,
+.human-rows li + li .human-row,
+.held-rows li + li .held-row {
+  border-top: 1px solid var(--border);
+}
+.held-rows {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  overflow: hidden;
+}
+.held-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--txt-dim);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.held-row:hover {
+  background: color-mix(in srgb, var(--violet) 8%, transparent);
+  color: var(--txt);
+}
+.held-row:focus-visible {
+  outline: 2px solid var(--accent, var(--cyan));
+  outline-offset: -2px;
+}
+.held-id {
+  color: var(--txt-faint);
+  flex-shrink: 0;
+}
+.held-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.held-reason {
+  flex-shrink: 0;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: italic;
+  color: var(--txt-faint);
+}
+.held-status {
+  flex-shrink: 0;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
 }
 
 /* Review confirmation (0507). Body-teleported like every other confirm modal

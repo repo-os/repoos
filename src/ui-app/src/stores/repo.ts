@@ -981,6 +981,22 @@ export const useRepoStore = defineStore("repo", () => {
       .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")),
   );
 
+  /** Held tasks (#0960) for the work queue's collapsible Held list: tasks
+   *  parked out of ALL automation. A hold whose auto-release time has passed is
+   *  inactive, so it is excluded — this mirrors `isHoldActive` on the server. */
+  const heldTasks = computed<Task[]>(() =>
+    tasks.value
+      .filter((t) => {
+        if (!t.isHeld || t.isArchived) return false;
+        if (t.holdUntil) {
+          const until = Date.parse(t.holdUntil);
+          if (Number.isFinite(until) && until <= Date.now()) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")),
+  );
+
   function setSortOrder(order: SortOrder): void {
     sortOrder.value = order;
     try {
@@ -4216,6 +4232,7 @@ export const useRepoStore = defineStore("repo", () => {
     byStatus,
     archivedTasks,
     humanTasks,
+    heldTasks,
     statusColor,
     connectSSE,
     refresh,

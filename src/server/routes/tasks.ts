@@ -68,6 +68,8 @@ import { humanStepOverrideSuppresses } from "../../core/human-step-override.js";
 import { humanStepFlagDetail } from "../../core/human-step-decision.js";
 import { runHumanStepDecisionCheck } from "../human-step-decision.js";
 import { HumanStepSplitError, splitHumanStepTask } from "../human-step-split.js";
+import { isHoldActive } from "../../core/task-selection.js";
+import { relaunchEngineerOnActiveTask } from "../engineer-launch.js";
 import {
   answeringQuestionsMatchTask,
   wrapPmMessageWithQuestionContext,
@@ -2320,7 +2322,13 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   if (!existing) {
     return json(res, 404, { error: `Task #${id} not found` });
   }
-  if (existing.assignee === "human" && action !== "archive" && action !== "unarchive") {
+  if (
+    existing.assignee === "human" &&
+    action !== "archive" &&
+    action !== "unarchive" &&
+    action !== "hold" &&
+    action !== "unhold"
+  ) {
     return json(res, 400, {
       error: `Task #${id} is assigned to a human; change its board status directly`,
     });
@@ -2451,17 +2459,33 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: `Task #${id} is archived — unarchive it before starting work`,
       });
     }
+    const body = (await readBody(req)) as {
+      mode?: unknown;
+      instruction?: unknown;
+      overrideDependencies?: unknown;
+      force?: unknown;
+      [key: string]: unknown;
+    };
+    // #0960: a held task is inert for ALL automation — only `repoos unhold`
+    // (which clears the hold) or `repoos start --force` may start it. This is an
+    // explicit human/driver command, so `--force` is honored here.
+    const force = body.force === true;
+    if (isHoldActive(existing) && !force) {
+      const reason = existing.holdReason ? `: ${existing.holdReason}` : "";
+      const until = existing.holdUntil ? ` (auto-releases ${existing.holdUntil})` : "";
+      return json(res, 409, {
+        ok: false,
+        held: true,
+        reason: existing.holdReason,
+        until: existing.holdUntil,
+        error: `Task #${id} is held${reason}${until} — use "repoos unhold ${id}" to release it, or "repoos start ${id} --force"`,
+      });
+    }
     if (isEvidenceRefreshActive(id)) {
       return json(res, 409, {
         error: `Evidence refresh is in progress for #${id}; wait for it to finish before starting the engineer`,
       });
     }
-    const body = (await readBody(req)) as {
-      mode?: unknown;
-      instruction?: unknown;
-      overrideDependencies?: unknown;
-      [key: string]: unknown;
-    };
     // #0684: refuse overrides this route will not apply rather than accepting
     // (200) and silently dropping them — see rejectIgnoredOverrides.
     if (rejectIgnoredOverrides(res, id, body)) return;
@@ -3300,6 +3324,107 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       task: index.getTask(updated.id),
       stopped: stopRes.stopped,
       reason: stopRes.reason,
+    });
+  }
+
+  // Hold / unhold (#0960): a single durable, documented state that makes a task
+  // inert for ALL automation. Unlike `pause`, which only stops the current run
+  // (and the CTO monitor could restart it), a hold blocks every auto-start path
+  // — dispatch, CTO restart/nudge, watchdog resume, crash recovery, and
+  // queued-message delivery — until a human/driver explicitly releases it.
+  // Held tasks keep their status (a held `active` task stops its engineer but
+  // stays `active`; a held `ready` one simply never auto-dispatches).
+  //
+  // Allowed on human-assigned tasks too (like archive/unarchive): a hold is
+  // about automation inertness, and there is no other action that expresses it.
+  if (action === "hold") {
+    const body = (await readBody(req)) as {
+      reason?: unknown;
+      until?: unknown;
+      by?: unknown;
+      [key: string]: unknown;
+    };
+    const reason = typeof body?.reason === "string" ? body.reason.trim() || undefined : undefined;
+    const until = typeof body?.until === "string" ? body.until.trim() || undefined : undefined;
+    const by = typeof body?.by === "string" ? body.by.trim() || undefined : undefined;
+    const at = new Date().toISOString();
+    // Stop any live engineer run — a held task must not have automation in
+    // flight. (Review runs and close-out are human/driver-invoked machinery, so
+    // they are left to their own guards.)
+    const stopRes = runner.stop(id);
+    if (stopRes.stopped) runner.markPaused(id);
+    const updated = patchTaskFile(
+      config,
+      existing.absPath,
+      {
+        hold: true,
+        holdReason: reason ?? null,
+        holdUntil: until ?? null,
+        holdBy: by ?? getCurrentUser(req, config)?.email ?? null,
+        holdAt: at,
+      },
+      { onStatusChange: onServerStatusChange },
+    );
+    index.applyFileChange(updated.absPath);
+    return json(res, 200, {
+      ok: true,
+      task: index.getTask(updated.id),
+      stopped: stopRes.stopped,
+      reason: stopRes.reason,
+    });
+  }
+
+  if (action === "unhold") {
+    const body = (await readBody(req)) as {
+      start?: unknown;
+      [key: string]: unknown;
+    };
+    const wantStart = body?.start === true;
+    const updated = patchTaskFile(
+      config,
+      existing.absPath,
+      {
+        hold: false,
+        holdReason: null,
+        holdUntil: null,
+        holdBy: null,
+        holdAt: null,
+      },
+      { onStatusChange: onServerStatusChange },
+    );
+    index.applyFileChange(updated.absPath);
+    // Optional `--start`: re-launch the engineer on the now-released task. This
+    // routes through the central chokepoint so its hold guard (already cleared)
+    // plus all the usual active/running checks still apply.
+    let launch: Awaited<ReturnType<typeof relaunchEngineerOnActiveTask>> | undefined;
+    if (wantStart) {
+      const unheld = index.getTask(updated.id);
+      if (!unheld) {
+        return json(res, 409, {
+          ok: false,
+          error: `Task #${id} not found after release`,
+          released: true,
+        });
+      }
+      launch = await relaunchEngineerOnActiveTask(
+        { config, index, runner, logger },
+        unheld,
+        "",
+        {},
+      );
+      if (!launch.ok) {
+        return json(res, 409, {
+          ok: false,
+          error: launch.reason,
+          released: true,
+        });
+      }
+    }
+    return json(res, 200, {
+      ok: true,
+      task: index.getTask(updated.id),
+      started: launch?.ok ?? false,
+      pid: launch && "pid" in launch ? (launch as { pid?: number }).pid : undefined,
     });
   }
 

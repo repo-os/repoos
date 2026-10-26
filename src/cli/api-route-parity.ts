@@ -33,7 +33,7 @@ const CONTROL_API_MATCHERS: Matcher[] = [
   re("POST", /^\/api\/tasks\/([^/]+)\/(send-back)$/.source),
   re(
     "POST",
-    /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen|archive|unarchive|split)$/
+    /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen|archive|unarchive|split|hold|unhold)$/
       .source,
   ),
   re("POST", /^\/api\/tasks\/([^/]+)\/done\/cancel$/.source),

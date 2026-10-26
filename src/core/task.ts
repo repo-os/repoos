@@ -36,6 +36,10 @@ const KEY_ORDER = [
   "is_archived",
   "archive_detail",
   "hold",
+  "hold_reason",
+  "hold_until",
+  "hold_by",
+  "hold_at",
   "paths",
   "priority",
   "area",
@@ -507,6 +511,12 @@ export function parseTask(args: ParseTaskArgs): Task {
         ? data.archive_detail
         : undefined,
     isHeld: data.hold === true,
+    holdReason:
+      typeof data.hold_reason === "string" && data.hold_reason.trim() ? data.hold_reason : undefined,
+    holdUntil:
+      typeof data.hold_until === "string" && data.hold_until.trim() ? data.hold_until : undefined,
+    holdBy: typeof data.hold_by === "string" && data.hold_by.trim() ? data.hold_by : undefined,
+    holdAt: typeof data.hold_at === "string" && data.hold_at.trim() ? data.hold_at : undefined,
     paths: Array.isArray(data.paths)
       ? data.paths
           .map(String)
@@ -620,8 +630,15 @@ export function serializeTask(task: Task): string {
   }
   // #0690: `hold` and `paths` are only ever written when set — clearing the
   // hold removes the key so a released task parses back exactly as one that was
-  // never held.
-  if (task.isHeld) data.hold = true;
+  // never held. #0960: the hold's reason/until/by/at ride along only while the
+  // hold itself is set, so releasing the task drops them all together.
+  if (task.isHeld) {
+    data.hold = true;
+    if (task.holdReason) data.hold_reason = task.holdReason;
+    if (task.holdUntil) data.hold_until = task.holdUntil;
+    if (task.holdBy) data.hold_by = task.holdBy;
+    if (task.holdAt) data.hold_at = task.holdAt;
+  }
   if (task.paths?.length) data.paths = task.paths;
   if (task.agentOverride) data.agent_override = task.agentOverride;
   if (task.cliOverride) data.cli_override = task.cliOverride;

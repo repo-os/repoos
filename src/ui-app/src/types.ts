@@ -102,6 +102,16 @@ export interface Task {
   isArchived?: boolean;
   /** Optional free-text reason the task was archived; absent when none was given. */
   archiveDetail?: string;
+  /** True when the task is held out of ALL automation (#0960). Orthogonal to `status`. */
+  isHeld?: boolean;
+  /** Free-text reason a human gave when placing the hold (#0960). */
+  holdReason?: string;
+  /** Optional ISO-8601 UTC auto-release time (#0960). Once past, the hold is inactive. */
+  holdUntil?: string;
+  /** Who placed the hold (#0960) — email or CLI actor. */
+  holdBy?: string;
+  /** When the hold was placed (#0960), ISO-8601 UTC. */
+  holdAt?: string;
   priority: string;
   area: string;
   /** Parsed area list (#0583); `area` is the comma-joined display form. */
@@ -365,6 +375,16 @@ export interface BoardTask {
   isArchived?: boolean;
   /** Optional free-text reason the task was archived; absent when none was given. */
   archiveDetail?: string;
+  /** True when the task is held out of ALL automation (#0960). Orthogonal to `status`. */
+  isHeld?: boolean;
+  /** Free-text reason a human gave when placing the hold (#0960). */
+  holdReason?: string;
+  /** Optional ISO-8601 UTC auto-release time (#0960). Once past, the hold is inactive. */
+  holdUntil?: string;
+  /** Who placed the hold (#0960) — email or CLI actor. */
+  holdBy?: string;
+  /** When the hold was placed (#0960), ISO-8601 UTC. */
+  holdAt?: string;
   priority: string;
   area: string;
   /** The parsed area list (#0583) — one chip per entry in the UI. */

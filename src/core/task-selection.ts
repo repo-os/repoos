@@ -68,6 +68,17 @@ export function taskAreaSet(task: Task): Set<string> {
 }
 
 /**
+ * Whether a hold's optional auto-release time has already passed. An unset or
+ * unparseable `holdUntil` is never expired.
+ */
+export function isHoldExpired(holdUntil: string | undefined, now: number = Date.now()): boolean {
+  if (!holdUntil) return false;
+  const t = Date.parse(holdUntil);
+  if (!Number.isFinite(t)) return false;
+  return t <= now;
+}
+
+/**
  * A task is parked out of auto-start by a `hold` flag OR a `hold` tag — the
  * "flag/label" spelling lets a human hold work without editing frontmatter
  * directly. Held tasks keep their status; they are only skipped by the picker.
@@ -75,6 +86,18 @@ export function taskAreaSet(task: Task): Set<string> {
 export function taskIsHeld(task: Task): boolean {
   if (task.isHeld === true) return true;
   return task.tags.some((tag) => tag.trim().toLowerCase() === "hold");
+}
+
+/**
+ * The single predicate every automation must consult before starting an
+ * engineer or acting on a task (#0960): the task is held (flag or `hold` tag)
+ * AND not past its optional auto-release time. A held task is inert for ALL
+ * automation; only an explicit human/driver command that clears the hold starts
+ * it.
+ */
+export function isHoldActive(task: Task, now: number = Date.now()): boolean {
+  if (isHoldExpired(task.holdUntil, now)) return false;
+  return taskIsHeld(task);
 }
 
 /** Ready candidates eligible for auto-start, before slot/conflict ordering. */
