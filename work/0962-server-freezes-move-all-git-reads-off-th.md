@@ -12,7 +12,7 @@ branch: feat/server-freezes-move-all-git-reads-off-th
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T19:51:29Z"
+updated_at: "2026-10-26T19:57:02Z"
 handoff_signal_retry_count: 1
 dev_error_count: 4
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
@@ -109,3 +109,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T19:31:05Z · status review→active
 - 2026-10-26T19:41:26Z · note: handoff requested (ui-review)
 - 2026-10-26T19:51:29Z · message_queued at 2026-10-26T19:51:29.675Z
+- 2026-10-26T19:57:02Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — timed out — timed out after 420s
