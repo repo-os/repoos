@@ -12,6 +12,7 @@ import { nextTick } from "vue";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
 import { useUiStore } from "../src/stores/ui";
 import { useRepoStore } from "../src/stores/repo";
+import { useNoticesStore } from "../src/stores/notices";
 import type { Task } from "../src/types";
 import { EMPTY_COUNTS, FakeEventSource, flush, json, makeTask } from "./component-test-helpers";
 
@@ -236,6 +237,57 @@ describe("task drawer status summary (#0952)", () => {
 
     // No header chip for a routine running state.
     expect(wrapper.find(".drawer-status-chip").exists()).toBe(false);
+  });
+
+  it("shows a red Slow chip with the elapsed time when the running check is over-long", async () => {
+    const pinia = setup();
+    const repo = useRepoStore();
+    const notices = useNoticesStore();
+    const task = makeTask({
+      status: "active",
+      branch: "feat/status-summary",
+      git: {
+        branchExists: true,
+        worktreeExists: true,
+        lastCommit: null,
+        lastCommitAt: null,
+        worktreePath: "/tmp/repo/.worktrees/0001",
+        dirty: false,
+      },
+    });
+    repo.taskChecks["0001"] = [
+      {
+        id: "0001-merge-gate-1",
+        taskId: "0001",
+        kind: "merge-gate",
+        startedAt: new Date(Date.now() - 70_000).toISOString(),
+        finishedAt: null,
+        durationMs: null,
+        running: true,
+        passed: null,
+        code: null,
+        output: "",
+        scope: "full",
+        machine: "macbook",
+      },
+    ];
+    notices.slowRunItems = [
+      {
+        id: "slow:0001",
+        taskId: "0001",
+        message: "Slow check",
+        detail: "1m 10s elapsed, typical 30s",
+      },
+    ];
+    const wrapper = await mountDrawer(pinia, task);
+    const chip = wrapper.find(".drawer-status-chip");
+    expect(chip.exists()).toBe(true);
+    expect(chip.classes()).toContain("ck-chip-slow");
+    expect(chip.text()).toContain("Slow");
+    expect(chip.text()).toMatch(/\d+m \d+s/);
+    expect(chip.text()).not.toContain("Checks running");
+    expect(chip.attributes("title")).toBeUndefined();
+    expect(wrapper.findAll(".drawer-status-chip")).toHaveLength(1);
   });
 
   it("lists the full landable checklist in Debug → Status details", async () => {
