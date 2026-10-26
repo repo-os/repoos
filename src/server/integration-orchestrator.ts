@@ -1370,7 +1370,7 @@ export class CloseOutOrchestrator {
     failedPhase: JobPhase,
     reason: string | undefined,
     onRecorded?: () => void,
-  ): { ok: boolean; reason?: string } {
+  ): Promise<{ ok: boolean; reason?: string }> {
     // Ownership guard (#0736): a superseded run's failure belongs to the old
     // attempt, whose record is gone. Never tear down the replacement's
     // candidate or overwrite its job with `failed`.

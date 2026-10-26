@@ -5056,7 +5056,7 @@ export async function quarantineStrayFiles(
   cwd: string,
   cacheDir: string,
   before: BoardRunSnapshot | null,
-): string[] {
+): Promise<string[]> {
   if (!before) return [];
   const after = await snapshotDirty(cwd);
   if (!after) return [];
