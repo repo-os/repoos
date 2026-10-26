@@ -14,7 +14,7 @@ branch: feat/server-freezes-move-all-git-reads-off-th
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T20:57:15Z"
+updated_at: "2026-10-26T21:10:40Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -126,3 +126,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T20:32:02Z · status review→active
 - 2026-10-26T20:53:31Z · body
 - 2026-10-26T20:57:15Z · body
+- 2026-10-26T21:10:40Z · handoff failed · remote validation failed: test failure: tests/input-story-delete-routes.test.ts > DELETE /api/inputs/:id > removes the input file and its attachments, tests/input-story-delete-routes.test.ts > DELETE /api/stories/:key > removes the definition file, emits definitionsChanged, leaves tasks alone on thinkpad — fix it in the feature branch and re-run the gate
