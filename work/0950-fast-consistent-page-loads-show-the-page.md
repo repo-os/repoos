@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-26T15:21:43Z"
-review_passes: 10
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
@@ -17,6 +15,8 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: grok-4.7-low
 created_at: "2026-10-24T16:13:34Z"
+updated_at: "2026-10-26T15:28:17Z"
+review_passes: 10
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 review_rounds: 2
@@ -457,4 +457,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T15:19:45Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-26T15:21:43Z · note: review pass 12: needs some work
 - 2026-10-26T15:21:43Z · needs_input
-
+- 2026-10-26T15:28:17Z · note: ui verification passed: 4 of 4 shots captured with clean console
