@@ -15,7 +15,6 @@ updated_at: "2026-10-26T18:55:30Z"
 handoff_signal_retry_count: 2
 dev_error_count: 12
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T12:19:20.905Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-25T14:33:40.068Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
