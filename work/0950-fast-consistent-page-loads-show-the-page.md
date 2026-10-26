@@ -25,7 +25,7 @@ handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 10
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:26:05.071Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:26:05.071Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:44:23.994Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -434,3 +434,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T14:44:18Z · needs_input
 - 2026-10-26T14:44:18Z · message_queued at 2026-10-26T14:44:18.765Z
 - 2026-10-26T14:44:23Z · agent exited with an error (codex) · Reading additional input from stdin...
+- 2026-10-26T14:44:23Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · Reading additional input from stdin...
