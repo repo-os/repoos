@@ -13,7 +13,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: grok-4.7-low
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T15:35:39Z"
+updated_at: "2026-10-26T15:36:52Z"
 last_close_out_gate_ms: 642649
 last_close_out_gate_at: "2026-10-26T15:35:39.943Z"
 review_passes: 10
@@ -459,4 +459,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T15:21:43Z · needs_input
 - 2026-10-26T15:28:17Z · note: ui verification passed: 4 of 4 shots captured with clean console
 - 2026-10-26T15:35:39Z · close-out gate completed in 643s
-
+- 2026-10-26T15:36:52Z · status done→done, release:success
