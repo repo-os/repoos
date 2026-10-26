@@ -15,7 +15,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-21T13:43:38Z"
-updated_at: "2026-10-26T14:10:53Z"
+updated_at: "2026-10-26T14:44:17Z"
 last_close_out_gate_ms: 148327
 last_close_out_gate_at: "2026-10-22T01:33:58.206Z"
 review_passes: 5
@@ -262,3 +262,4 @@ Start from `screenshotFlagError` in `src/commands/tasks.ts` and the flag parsing
 - 2026-10-26T11:14:37Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T14:01:00Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T14:10:53Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:44:17Z · message_overdue: still queued after 60m without being delivered
