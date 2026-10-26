@@ -305,3 +305,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T07:05:20Z · body
 - 2026-10-26T07:05:36Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-26T07:08:44Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-26T07:08:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
