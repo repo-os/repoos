@@ -2217,10 +2217,18 @@ function fsmonitorFinding(opts: DoctorOptions): DoctorFinding[] {
         "warn",
         `${count} Git fsmonitor daemons are running`,
         `${count} daemons are active. Each watches a checkout, including large dependency trees, and can consume substantial CPU and memory.`,
-        "Set `git.tuneForScale = false` in repoos.toml and run `git fsmonitor--daemon stop` in affected checkouts.",
+        "Run `git config core.fsmonitor false` in the main checkout; set `git.tuneForScale = false` in repoos.toml and run `git fsmonitor--daemon stop` in affected checkouts.",
       ),
     ];
-  return [];
+  return [
+    finding(
+      "runtime.fsmonitor-daemons",
+      "runtime",
+      "pass",
+      `${count} Git fsmonitor daemon${count === 1 ? "" : "s"} running`,
+      `Below the warning threshold of ${FSMONITOR_DAEMON_WARN_THRESHOLD} daemons.`,
+    ),
+  ];
 }
 
 /** Every remediation from a report, deduplicated, in finding order. */

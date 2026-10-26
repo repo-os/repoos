@@ -33,7 +33,7 @@ describe("repoos.toml and environment docs", () => {
       type: "boolean",
       tier: "restart",
       restartRequired: true,
-      default: true,
+      default: false,
     });
     expect(field?.description).toMatch(/daemon/i);
     expect(SUPPORTED_TOML_KEYS).toContain("git.tuneForScale");

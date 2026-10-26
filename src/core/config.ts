@@ -255,7 +255,7 @@ export function defaultMaxConcurrentAgents(): number {
 }
 
 export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
-  git: { tuneForScale: true },
+  git: { tuneForScale: false },
   workDir: "work",
   docsDir: "docs",
   skillsDir: "skills",
@@ -2977,9 +2977,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       type: "boolean",
       tier: "restart",
       restartRequired: true,
-      default: DEFAULT_CONFIG.git?.tuneForScale ?? true,
+      default: DEFAULT_CONFIG.git?.tuneForScale ?? false,
       description:
-        "Enable Git's fsmonitor daemon and untracked cache for faster status scans. Each active checkout can start a daemon; turn this off if process or file-watcher load is high.",
+        "Enable Git's fsmonitor daemon and untracked cache for faster status scans. Each active checkout can start a daemon and add file-watcher load; leave this off on projects with many worktrees.",
     },
     {
       key: "closeOut.timeoutMs",
