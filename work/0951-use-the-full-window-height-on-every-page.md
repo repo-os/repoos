@@ -13,7 +13,7 @@ model_override: gemini-3.8-flash-high
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T12:46:29Z"
+updated_at: "2026-10-26T12:57:32Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
@@ -425,3 +425,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T12:46:22Z · engineer crash recovery: switched antigravity + gemini-3.8-flash-high → opencode + opencode-go/deepseek-v4.1-flash after 33/3 crashes in 30m · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h30m16s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retry…
 - 2026-10-26T12:46:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-26T12:46:29Z · needs_input
+- 2026-10-26T12:57:32Z · CTO action: restart-stalled-agent (resume) · check-failed-after-retries · check failed after 2 automatic retries · the worktree changed while the gate was running (HEAD moved from 671525a3 to 4a029553) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
