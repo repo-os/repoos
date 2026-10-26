@@ -15,11 +15,11 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/use-the-full-window-height-on-every-page
 cli_override: antigravity
-model_override: gemini-3.8-flash-medium
+model_override: gemini-3.8-flash-high
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T12:30:36Z"
+updated_at: "2026-10-26T12:37:15Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
@@ -380,3 +380,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T12:27:45Z · engineer crash recovery: switched antigravity + gemini-3.8-flash-medium → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retry…
 - 2026-10-26T12:27:55Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T12:27:56Z · message_delivered: 1 message(s)
+- 2026-10-26T12:37:15Z · model_override
