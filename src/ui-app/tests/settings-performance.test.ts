@@ -24,8 +24,11 @@ vi.mock("vue-router", () => ({
 
 describe("Settings — performance controls (#0836)", () => {
   const keys = [
+    "heavySlots",
+    "vitest.maxWorkers",
     "localChecks.maxConcurrent",
     "localChecks.queueTimeoutMs",
+    "playwright.workers",
     "playwright.maxConcurrent",
     "playwright.queueTimeoutMs",
     "pressureGuard.enabled",
@@ -33,6 +36,8 @@ describe("Settings — performance controls (#0836)", () => {
     "pressureGuard.minAvailableMemRatio",
     "pressureGuard.maxSwapUsedRatio",
     "pressureGuard.maxCompressorRatio",
+    "pressureGuard.maxCompressorBytes",
+    "pressureGuard.minIdleCpuPercent",
     "pressureGuard.activityWindowSec",
     "pressureGuard.maxSwapIoBytesPerSec",
     "pressureGuard.maxPageoutBytesPerSec",

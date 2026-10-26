@@ -972,17 +972,22 @@ provider = "none"
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `maxConcurrentAgents` | number | derived from CPU count | yes | How many agent CLI processes (start/send/chat) may run at once; extras queue. Must be 1–16. The default is computed from this machine's CPU count and capped sensibly. |
-| `localChecks.maxConcurrent` | select (1–8) | `2` | yes | Cross-process cap on local `repoos check` runs on this machine; extras queue with a visible position (#0836). |
+| `heavySlots` | select (1–8) | `2` | yes | Machine-wide budget for engineer builds, tests and local checks. Extra heavy jobs queue. When set, this is the shared pool (`localChecks.maxConcurrent` follows it). |
+| `vitest.maxWorkers` | select (1–16) | `2` | yes | Vitest worker cap (`VITEST_MAX_WORKERS`) for processes an engineer launches. |
+| `localChecks.maxConcurrent` | select (1–8) | `2` | yes | Cross-process cap on local `repoos check` runs on this machine; extras queue with a visible position (#0836). Shares the heavy-slot pool when `heavySlots` is set. |
 | `localChecks.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long a queued local check may wait for a slot before failing with an actionable timeout (minimum 60000). |
 | `localChecks.staleAfterMs` | number | `75000` | yes | Mark a silent but live local check holder as wedged after this heartbeat age (minimum 15000). |
 | `localChecks.reclaimGraceMs` | number | `150000` | yes | Grace after marking a holder wedged before reclaiming its managed process group (minimum 15000). |
 | `playwright.maxConcurrent` | select (1–4) | `1` | yes | Shared cap on headless Playwright work (smoke, contrast audit, shots, UI verification). |
+| `playwright.workers` | select (1–8) | `2` | yes | Playwright workers inside one engineer-launched run (`PLAYWRIGHT_WORKERS`). |
 | `playwright.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long queued Playwright work may wait for the shared browser slot before timing out (minimum 60000). |
-| `pressureGuard.enabled` | boolean | `true` | yes | When on, delay new local checks, browser steps and engineer starts while paging activity, reclaimable memory, or load is high. Running engineers are never killed. |
-| `pressureGuard.maxLoadPerCpu` | number | `4` | yes | Load average per CPU used as the pressure signal when swap/compressor readings are unavailable; when memory stats are available it is shown as a warning only. |
+| `pressureGuard.enabled` | boolean | `true` | yes | When on, delay new local checks, browser steps and engineer starts while paging, reclaimable memory, compressor size, load or idle CPU crosses a limit. Running engineers are never killed. |
+| `pressureGuard.maxLoadPerCpu` | number | `3` | yes | Block new work when the 1-minute load average per CPU exceeds this value. |
 | `pressureGuard.minAvailableMemRatio` | number | `0.08` | yes | Block starts when reclaimable memory falls below this fraction of total RAM. |
 | `pressureGuard.maxSwapUsedRatio` | number | `0.5` | yes | Warn when swap in use exceeds this fraction of total swap (occupancy alone does not block — see activity rates below). |
-| `pressureGuard.maxCompressorRatio` | number | `0.35` | yes | Warn when the macOS memory compressor holds more than this fraction of total RAM (occupancy alone does not block). |
+| `pressureGuard.maxCompressorRatio` | number | `0.35` | yes | Warn when the macOS memory compressor holds more than this fraction of total RAM. The fraction alone does not block. |
+| `pressureGuard.maxCompressorBytes` | number | `8589934592` | yes | Block when the memory compressor holds at least this many bytes (default 8 GiB). |
+| `pressureGuard.minIdleCpuPercent` | number | `5` | yes | Block when sampled CPU idle falls below this percentage. |
 | `pressureGuard.activityWindowSec` | number | `30` | yes | Rolling window for swap I/O and pageout rates from `vm_stat` (macOS) or `/proc/vmstat` (Linux). |
 | `pressureGuard.maxSwapIoBytesPerSec` | number | `1048576` | yes | Block when sustained swap in+out over the activity window exceeds this rate (bytes/s). Default 1 MiB/s. |
 | `pressureGuard.maxPageoutBytesPerSec` | number | `262144` | yes | Block when sustained pageouts over the activity window exceed this rate (bytes/s). Default 256 KiB/s. |

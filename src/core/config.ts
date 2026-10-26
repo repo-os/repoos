@@ -368,11 +368,17 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   },
   playwright: {
     maxConcurrent: 1,
+    workers: 2,
     queueTimeoutMs: 45 * 60 * 1000,
+  },
+  vitest: {
+    maxWorkers: 2,
   },
   pressureGuard: {
     enabled: true,
-    maxLoadPerCpu: 4,
+    maxLoadPerCpu: 3,
+    maxCompressorBytes: 8 * 1024 * 1024 * 1024,
+    minIdleCpuPercent: 5,
     minAvailableMemRatio: 0.08,
     maxSwapUsedRatio: 0.5,
     maxCompressorRatio: 0.35,
@@ -2146,6 +2152,25 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       );
     }
 
+    const heavySlots = parsed["heavySlots"];
+    if (
+      typeof heavySlots === "number" &&
+      Number.isInteger(heavySlots) &&
+      heavySlots >= 1 &&
+      heavySlots <= 8
+    ) {
+      cfg.heavySlots = heavySlots;
+      cfg.localChecks = { ...cfg.localChecks, maxConcurrent: heavySlots };
+    }
+    const vitestWorkers = parsed["vitest.maxWorkers"];
+    if (
+      typeof vitestWorkers === "number" &&
+      Number.isInteger(vitestWorkers) &&
+      vitestWorkers >= 1 &&
+      vitestWorkers <= 16
+    ) {
+      cfg.vitest = { ...cfg.vitest, maxWorkers: vitestWorkers };
+    }
     const lcMax = parsed["localChecks.maxConcurrent"];
     if (typeof lcMax === "number" && Number.isInteger(lcMax) && lcMax >= 1 && lcMax <= 8) {
       cfg.localChecks = { ...cfg.localChecks, maxConcurrent: lcMax };
@@ -2162,6 +2187,15 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
           [key.endsWith("staleAfterMs") ? "staleAfterMs" : "reclaimGraceMs"]: Math.floor(value),
         };
       }
+    }
+    const pwWorkers = parsed["playwright.workers"];
+    if (
+      typeof pwWorkers === "number" &&
+      Number.isInteger(pwWorkers) &&
+      pwWorkers >= 1 &&
+      pwWorkers <= 8
+    ) {
+      cfg.playwright = { ...cfg.playwright, workers: pwWorkers };
     }
     const pwMax = parsed["playwright.maxConcurrent"];
     if (typeof pwMax === "number" && Number.isInteger(pwMax) && pwMax >= 1 && pwMax <= 4) {
@@ -2186,6 +2220,18 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     const pgSwap = parsed["pressureGuard.maxSwapUsedRatio"];
     if (typeof pgSwap === "number" && Number.isFinite(pgSwap) && pgSwap > 0 && pgSwap <= 1) {
       cfg.pressureGuard = { ...cfg.pressureGuard, maxSwapUsedRatio: pgSwap };
+    }
+    const pgCompressorBytes = parsed["pressureGuard.maxCompressorBytes"];
+    if (
+      typeof pgCompressorBytes === "number" &&
+      Number.isFinite(pgCompressorBytes) &&
+      pgCompressorBytes > 0
+    ) {
+      cfg.pressureGuard = { ...cfg.pressureGuard, maxCompressorBytes: pgCompressorBytes };
+    }
+    const pgIdle = parsed["pressureGuard.minIdleCpuPercent"];
+    if (typeof pgIdle === "number" && Number.isFinite(pgIdle) && pgIdle >= 0 && pgIdle <= 100) {
+      cfg.pressureGuard = { ...cfg.pressureGuard, minIdleCpuPercent: pgIdle };
     }
     const pgCompressor = parsed["pressureGuard.maxCompressorRatio"];
     if (
@@ -3214,6 +3260,34 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         `Default (${defaultMaxConcurrentAgents()}) is computed from this machine's CPU count.`,
     },
     {
+      key: "heavySlots",
+      label: "Heavy slots",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "2",
+      options: Array.from({ length: 8 }, (_, i) => ({
+        value: String(i + 1),
+        label: String(i + 1),
+      })),
+      description:
+        "Machine-wide budget for engineer builds, tests and local checks. Extra heavy jobs queue. Default 2, so several engineers share two build/test stacks.",
+    },
+    {
+      key: "vitest.maxWorkers",
+      label: "Vitest workers per engineer run",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "2",
+      options: Array.from({ length: 16 }, (_, i) => ({
+        value: String(i + 1),
+        label: String(i + 1),
+      })),
+      description:
+        "Vitest worker cap (VITEST_MAX_WORKERS) for processes an engineer launches. Default 2.",
+    },
+    {
       key: "localChecks.maxConcurrent",
       label: "Local check concurrency",
       type: "select",
@@ -3225,7 +3299,21 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: String(i + 1),
       })),
       description:
-        "How many local `repoos check` runs may execute at once on this machine. Extra runs wait with a visible queue position. Default 2.",
+        "How many local `repoos check` runs may execute at once on this machine. Extra runs wait with a visible queue position. When Heavy slots is set, that budget is the shared pool. Default 2.",
+    },
+    {
+      key: "playwright.workers",
+      label: "Playwright workers per engineer run",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "2",
+      options: Array.from({ length: 8 }, (_, i) => ({
+        value: String(i + 1),
+        label: String(i + 1),
+      })),
+      description:
+        "Playwright worker cap for a run an engineer launches (PLAYWRIGHT_WORKERS). Default 2. Separate from how many browser sessions may run at once.",
     },
     {
       key: "playwright.maxConcurrent",
@@ -3249,7 +3337,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: true,
       description:
-        "When paging activity, reclaimable memory, or load is high, delay new local checks, browser steps and engineer starts until the machine has headroom instead of piling on.",
+        "When paging, reclaimable memory, compressor size, load or idle CPU crosses a limit, delay new local checks, browser steps and engineer starts until the machine has headroom.",
     },
     {
       key: "pressureGuard.maxLoadPerCpu",
@@ -3257,9 +3345,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       type: "number",
       tier: "live",
       restartRequired: false,
-      default: 4,
+      default: 3,
       description:
-        "Block new work when the 1-minute load average per CPU exceeds this value and memory readings are unavailable; when memory stats are available it is surfaced as a warning only. Default 4.",
+        "Block new work when the 1-minute load average per CPU exceeds this value, whether or not memory stats are available. Default 3.",
     },
     {
       key: "pressureGuard.minAvailableMemRatio",
@@ -3289,7 +3377,26 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: 0.35,
       description:
-        "Warn when the macOS memory compressor holds more than this fraction of total RAM (occupancy alone does not block). Default 0.35 (35%).",
+        "Warn when the macOS memory compressor holds more than this fraction of total RAM. The fraction alone does not block; the byte cap does. Default 0.35 (35%).",
+    },
+    {
+      key: "pressureGuard.maxCompressorBytes",
+      label: "Pressure guard: max compressor bytes",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 8 * 1024 * 1024 * 1024,
+      description:
+        "Block new work when the memory compressor holds at least this many bytes. Default 8589934592 (8 GiB), the 2026-10-25 incident floor.",
+    },
+    {
+      key: "pressureGuard.minIdleCpuPercent",
+      label: "Pressure guard: minimum idle CPU %",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 5,
+      description: "Block new work when sampled CPU idle falls below this percentage. Default 5.",
     },
     {
       key: "pressureGuard.activityWindowSec",
@@ -4088,17 +4195,22 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "worktrees.inheritEnv",
   // Agents
   "maxConcurrentAgents",
+  "heavySlots",
+  "vitest.maxWorkers",
   "localChecks.maxConcurrent",
   "localChecks.queueTimeoutMs",
   "localChecks.staleAfterMs",
   "localChecks.reclaimGraceMs",
   "playwright.maxConcurrent",
+  "playwright.workers",
   "playwright.queueTimeoutMs",
   "pressureGuard.enabled",
   "pressureGuard.maxLoadPerCpu",
   "pressureGuard.minAvailableMemRatio",
   "pressureGuard.maxSwapUsedRatio",
   "pressureGuard.maxCompressorRatio",
+  "pressureGuard.maxCompressorBytes",
+  "pressureGuard.minIdleCpuPercent",
   "pressureGuard.activityWindowSec",
   "pressureGuard.maxSwapIoBytesPerSec",
   "pressureGuard.maxPageoutBytesPerSec",

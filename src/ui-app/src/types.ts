@@ -1902,6 +1902,8 @@ export interface SystemStats {
   topProcesses?: TopProcesses;
   /** Engineers across every registered RepoOS server on this machine (#0871). */
   globalEngineers?: GlobalEngineerCount | null;
+  /** Shared build/test slots (#0961). */
+  heavyJobs?: { running: number; queued: number };
   serverPid: number;
   at: string;
 }
@@ -1922,6 +1924,7 @@ export interface PressureSnapshot {
   pageoutBytesPerSec: number | null;
   activityWindowSec: number | null;
   psiMemoryAvg10: number | null;
+  cpuIdlePercent?: number | null;
   source: "memory" | "load";
   reasons: string[];
   warnings: string[];
