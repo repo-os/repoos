@@ -5,6 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: check-failed-after-retries
+needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p2
 area: web
 assigned_to: ai
@@ -13,14 +14,14 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T07:22:56Z"
+updated_at: "2026-10-26T07:22:57Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-26T06:15:46.061Z: repoos check failed: ◆ Check plan"
 review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 25
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T07:21:34.758Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T07:22:24.808Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T07:21:34.758Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T07:22:24.808Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T07:22:57.120Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -315,3 +316,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T07:20:26Z · body
 - 2026-10-26T07:21:34Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · 2026-10-26T07:19:42.037831Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/use-the-full-window-height-on-every-page/work/.attachments/0951/shots/default-15.png`: No such file…
 - 2026-10-26T07:22:24Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · 2026-10-26T07:21:44.620571Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-10-26T07:22:57Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
