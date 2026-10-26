@@ -159,3 +159,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-26T18:49:49Z · status ready→active
 - 2026-10-26T18:49:59Z · cli_override, model_override
 - 2026-10-26T18:50:07Z · needs_input
+- 2026-10-26T18:50:07Z · message_queued at 2026-10-26T18:50:07.824Z
