@@ -25,7 +25,7 @@ review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
 dev_error_count: 34
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T14:00:53.205Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:10:47.338Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T14:00:53.205Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:10:47.338Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:25:17.884Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
@@ -408,3 +408,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T14:14:20Z · body
 - 2026-10-26T14:16:03Z · CTO nudge: held — remote validation is running
 - 2026-10-26T14:23:22Z · body
+- 2026-10-26T14:25:17Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · 2026-10-26T14:17:07.350737Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/use-the-full-window-height-on-every-page/work/.attachments/0951/shots/default-32.png`: No such file…
