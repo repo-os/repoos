@@ -724,8 +724,11 @@ describe("open project environment source in editor (#0953)", () => {
     );
     const response = fx.response();
     await listProjectEnvironments(fx.ctx, fx.req(), response.res, {});
-    const environments = (response.fake.payload as { environments: { id: string; sources: { path: string; exists: boolean }[] }[] })
-      .environments;
+    const environments = (
+      response.fake.payload as {
+        environments: { id: string; sources: { path: string; exists: boolean }[] }[];
+      }
+    ).environments;
     expect(environments.find((env) => env.id === "dev")!.sources[0]).toMatchObject({
       path: ".env.dev",
       exists: true,
@@ -760,10 +763,9 @@ describe("open project environment source in editor (#0953)", () => {
     const response = fx.response();
     await openProjectEnvironmentSourceInEditor(
       fx.ctx,
-      fx.req(
-        JSON.stringify({ source: "../../etc/passwd", file: ".env.dev" }),
-        { socket: { remoteAddress: "127.0.0.1" } },
-      ),
+      fx.req(JSON.stringify({ source: "../../etc/passwd", file: ".env.dev" }), {
+        socket: { remoteAddress: "127.0.0.1" },
+      }),
       response.res,
       { param1: "dev" },
     );
@@ -824,7 +826,9 @@ describe("open project environment source in editor (#0953)", () => {
       { param1: "dev" },
     );
     expect(noFile.fake.status).toBe(400);
-    expect(noFile.fake.payload).toEqual({ error: "The environment source file does not exist yet" });
+    expect(noFile.fake.payload).toEqual({
+      error: "The environment source file does not exist yet",
+    });
   });
 
   it("requires a signed-in user", async () => {

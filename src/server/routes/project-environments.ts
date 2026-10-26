@@ -328,9 +328,7 @@ export const openProjectEnvironmentSourceInEditor: RouteHandler = async (ctx, re
   if (!requireSignedIn(req, ctx.config, res)) return;
   if (!originAllowed(req)) return send(res, 403, { error: "Request origin rejected" });
   const forwarded = Boolean(
-    req.headers["x-forwarded-for"] ||
-      req.headers["x-real-ip"] ||
-      req.headers["cf-connecting-ip"],
+    req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || req.headers["cf-connecting-ip"],
   );
   if (forwarded || !isLoopbackAddress(req.socket?.remoteAddress))
     return send(res, 403, { error: "Only available from the machine running RepoOS" });

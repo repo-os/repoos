@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, type ComponentPublicInstance } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  type ComponentPublicInstance,
+} from "vue";
 import Button from "../components/ui/button.vue";
 import Select from "../components/ui/select/root.vue";
 import SelectContent from "../components/ui/select/content.vue";
@@ -195,9 +202,7 @@ const editorConfigured = computed(() => {
   const devCommand =
     typeof inspector?.editorCommand === "string" ? inspector.editorCommand.trim() : "";
   if (devCommand) return inspector?.enabled !== false;
-  const generalCommand = (
-    config.data?.editor as { command?: string } | undefined
-  )?.command?.trim();
+  const generalCommand = (config.data?.editor as { command?: string } | undefined)?.command?.trim();
   return !!generalCommand;
 });
 const selectedEnv = computed(() => environments.value.find((item) => item.id === selected.value));
@@ -528,7 +533,11 @@ onBeforeUnmount(() => {
           </div>
           <label class="secrets-search"
             ><span aria-hidden="true">⌕</span
-            ><input v-model="query" type="search" placeholder="Search keys" aria-label="Search keys"
+            ><input
+              v-model="query"
+              type="search"
+              placeholder="Search keys"
+              aria-label="Search keys"
           /></label>
           <Button v-if="canManage" variant="accent" @click="beginAdd">Add key</Button>
         </div>
@@ -590,7 +599,13 @@ onBeforeUnmount(() => {
                 :aria-expanded="openMenuKey === row.name"
                 @click="toggleMenu(row, $event)"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
                   <circle cx="12" cy="5" r="1.7" />
                   <circle cx="12" cy="12" r="1.7" />
                   <circle cx="12" cy="19" r="1.7" />
@@ -621,9 +636,7 @@ onBeforeUnmount(() => {
                 </button>
               </div>
             </div>
-            <span v-else-if="row.status === 'inherited'" class="secrets-readonly"
-              >read-only</span
-            >
+            <span v-else-if="row.status === 'inherited'" class="secrets-readonly">read-only</span>
             <div v-if="editingKey === row.name" class="secrets-inline-form">
               <label class="sr-only" :for="`secret-${row.name}`">New value for {{ row.name }}</label
               ><input
