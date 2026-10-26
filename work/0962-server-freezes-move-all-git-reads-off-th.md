@@ -7,7 +7,7 @@ priority: p0
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/server-freezes-move-all-git-reads-off-th
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-26T07:54:06Z"
@@ -49,3 +49,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T09:27:53Z · released
 - 2026-10-26T09:28:10Z · status inbox→active
 - 2026-10-26T09:28:17Z · cli_override, model_override
+- 2026-10-26T09:28:17Z · branch
