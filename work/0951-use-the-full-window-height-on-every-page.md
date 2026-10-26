@@ -5,6 +5,10 @@ type: feature
 status: review
 needs_input: true
 needs_input_reason: dev-error
+needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
+debug_tldr: "Handoff was deferred because queued task messages were not read—open #0951’s messages, address them, then request review again."
+debug_tldr_at: "2026-10-26T15:21:29Z"
+debug_tldr_key: "dev-error|✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p2
 area: web
 assigned_to: ai
@@ -14,12 +18,13 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: grok-4.7-low
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T16:17:00Z"
-review_passes: 4
+updated_at: "2026-10-26T16:10:51Z"
 review_rounds: 2
+review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
 dev_error_count: 36
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-26T15:21:10.445Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
@@ -418,10 +423,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T15:21:35Z · review_cli_override, review_model_override
 - 2026-10-26T15:21:37Z · review_model_override
 - 2026-10-26T15:24:44Z · body
-- 2026-10-26T15:51:58Z · body
-- 2026-10-26T15:55:48Z · needs_input
-- 2026-10-26T15:55:49Z · needs_input
 - 2026-10-26T16:10:51Z · status active→review
-- 2026-10-26T16:10:51Z · note: shots: skipped — 63 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-10-26T16:13:06Z · note: review pass 6: needs some work
-- 2026-10-26T16:17:00Z · note: ui verification passed: 3 of 6 shots captured with clean console (1 shot warning)

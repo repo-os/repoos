@@ -857,7 +857,10 @@ export async function cmdShot(args: string[]): Promise<number> {
         let png: Buffer;
         const warnings: string[] = [];
         try {
-          await page.setViewportSize(opts.viewport);
+          await page.setViewportSize({
+            width: entry.viewportWidth ?? opts.viewport.width,
+            height: entry.viewportHeight ?? opts.viewport.height,
+          });
           png = await captureShotPage(
             page,
             pageUrl,

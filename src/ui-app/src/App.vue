@@ -133,7 +133,7 @@ onUnmounted(() => {
 
         <div class="main">
           <div v-if="repo.loading" class="spin"></div>
-          <RouterView v-else />
+          <RouterView v-else class="main-route" />
         </div>
       </div>
 

@@ -11,6 +11,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "closeOut:checkProgress",
   "closeOut:checkProgressUnknown",
   "checks:progress",
+  // Populated Work and Stories pages for full-height layout captures (#0951).
+  "pages:scroll",
   // #0778 — like closeOut:active, but the attempt has been idle past the stall
   // threshold, so the task card renders the stalled Cancel/Retry actions.
   "closeOut:stalled",
