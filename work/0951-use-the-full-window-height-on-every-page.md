@@ -3,12 +3,6 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryable\":true,\"error_id\":\"7465488f-966a-4889-ba7d-0fe40a6c6fdd-294\"}"
-debug_tldr: "Antigravity individual quota hit (429) — switch engineer/reviewer in Agents or wait ~7 days for reset, then resume #0951."
-debug_tldr_at: "2026-10-26T12:30:36Z"
-debug_tldr_key: "dev-error|AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryable\":true,\"error_id\":\"7465488f-966a-4889-ba7d-0fe40a6c6fdd-294\"}"
 priority: p2
 area: web
 assigned_to: ai
@@ -19,7 +13,7 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T12:41:57Z"
+updated_at: "2026-10-26T12:42:02Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
@@ -382,3 +376,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T12:27:56Z · message_delivered: 1 message(s)
 - 2026-10-26T12:37:15Z · model_override
 - 2026-10-26T12:41:57Z · cli_override, model_override
+- 2026-10-26T12:42:02Z · needs_input
