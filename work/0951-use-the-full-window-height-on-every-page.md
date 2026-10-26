@@ -21,7 +21,7 @@ review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 29
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T07:21:34.758Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T07:22:24.808Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T07:22:57.120Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T07:30:05.362Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T07:30:16.654Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T07:30:30.569Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T07:30:05.362Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T07:30:16.654Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T07:30:30.569Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-26T07:53:22.491Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -333,3 +333,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T07:51:08Z · body
 - 2026-10-26T07:53:21Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-26T07:53:22Z · agent exited with an error (cursor) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-10-26T07:53:22Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
