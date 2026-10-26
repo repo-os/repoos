@@ -11,9 +11,8 @@ area: core
 assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
-model_override: gpt-6-sol
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-26T14:53:31Z"
+updated_at: "2026-10-26T15:31:12Z"
 dev_error_count: 11
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:34.411Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:43.560Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:51.791Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -168,3 +167,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-26T14:10:54Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T14:44:18Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T14:53:31Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T15:31:12Z · model_override
