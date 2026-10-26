@@ -20,7 +20,7 @@ review_passes: 2
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
 dev_error_count: 20
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-26T05:32:39.459Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-26T05:32:39.459Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-26T05:32:45.304Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -291,3 +291,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T05:32:44Z · needs_input
 - 2026-10-26T05:32:44Z · message_queued at 2026-10-26T05:32:44.853Z
 - 2026-10-26T05:32:45Z · agent exited with an error (opencode) · Reading additional input from stdin...
+- 2026-10-26T05:32:45Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (2/3 crashes in 30m) · Reading additional input from stdin...
