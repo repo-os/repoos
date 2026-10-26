@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
+debug_tldr: "Handoff was deferred because queued task messages were not read—open #0951’s messages, address them, then request review again."
+debug_tldr_at: "2026-10-26T15:21:29Z"
+debug_tldr_key: "dev-error|✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p2
 area: web
 assigned_to: ai
@@ -16,7 +19,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T15:21:13Z"
+updated_at: "2026-10-26T15:21:29Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
