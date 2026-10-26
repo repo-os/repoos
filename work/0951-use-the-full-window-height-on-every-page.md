@@ -3,6 +3,9 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h35m43s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryable\":true,\"error_id\":\"2479682e-5d43-490e-92b9-43c59761e9b4-152\"}"
 priority: p2
 area: web
 assigned_to: ai
@@ -13,13 +16,14 @@ model_override: gemini-3.8-flash-medium
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T12:32:17Z"
+updated_at: "2026-10-26T12:40:56Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
-dev_error_count: 30
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-26T09:03:29.170Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 31
+engineer_crash_log: "[{\"cli\":\"antigravity\",\"model\":\"gemini-3.8-flash-medium\",\"at\":\"2026-10-26T12:40:56.230Z\",\"kind\":\"usage-limit\"}]"
+engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
 
@@ -373,3 +377,5 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T12:27:17Z · message_queued at 2026-10-26T12:27:17.709Z
 - 2026-10-26T12:27:18Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-26T12:32:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T12:40:56Z · agent exited with an error (antigravity) · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h35m43s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retryable":true,"error_id":"2479682e-5d43-490e-92b9-43c59761e9b4-152"}
+- 2026-10-26T12:40:56Z · engineer crash recovery: switched antigravity + gemini-3.8-flash-medium → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h35m43s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retry…
