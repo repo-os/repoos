@@ -43,6 +43,12 @@ describe("standard page height and floating controls", () => {
     );
     expect(css).toMatch(/--floating-head-size:\s*46px/);
     expect(css).toMatch(
+      /@media \(max-width: 760px\)[\s\S]*?#app\s*\{[^}]*--floating-head-size:\s*46px/s,
+    );
+    expect(css).not.toMatch(
+      /@media \(max-width: 760px\)[\s\S]*?:root\s*\{[^}]*--floating-head-size:\s*46px/s,
+    );
+    expect(css).toMatch(
       /@media \(max-width: 760px\)[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0/s,
     );
     expect(floatingHeads).toMatch(/\.stack\s*\{[^}]*gap:\s*var\(--floating-head-gap\)/s);

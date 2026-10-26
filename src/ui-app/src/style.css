@@ -8674,7 +8674,11 @@
   display: none;
 }
 @media (max-width: 760px) {
-  :root {
+  /* Override on #app, not :root — a second :root block would replace
+     classic-dark in the theme-contrast scanner (last wins). #app wraps both
+     .body and the teleported floating heads so everyone inherits the mobile
+     inset above the tab bar. */
+  #app {
     --floating-head-size: 46px;
     --floating-head-bottom: calc(74px + var(--safe-bot));
     --floating-head-inline-offset: 12px;
