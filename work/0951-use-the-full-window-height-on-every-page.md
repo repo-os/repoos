@@ -19,7 +19,7 @@ model_override: gemini-3.8-flash-high
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T12:46:22Z"
+updated_at: "2026-10-26T12:46:29Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
@@ -430,3 +430,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T12:46:06Z · engineer crash recovery: switched antigravity + gemini-3.8-flash-high → opencode + opencode-go/deepseek-v4.1-flash after 31/3 crashes in 30m · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h30m33s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retry…
 - 2026-10-26T12:46:15Z · engineer crash recovery: switched antigravity + gemini-3.8-flash-high → opencode + opencode-go/deepseek-v4.1-flash after 32/3 crashes in 30m · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h30m25s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retry…
 - 2026-10-26T12:46:22Z · engineer crash recovery: switched antigravity + gemini-3.8-flash-high → opencode + opencode-go/deepseek-v4.1-flash after 33/3 crashes in 30m · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h30m16s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retry…
+- 2026-10-26T12:46:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
