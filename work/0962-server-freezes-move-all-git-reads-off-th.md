@@ -17,7 +17,7 @@ branch: feat/server-freezes-move-all-git-reads-off-th
 cli_override: cursor
 model_override: grok-4.7-high
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T11:38:57Z"
+updated_at: "2026-10-26T11:39:00Z"
 handoff_signal_retry_count: 1
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-26T11:33:32.912Z\",\"kind\":\"usage-limit\"}]"
