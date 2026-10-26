@@ -2,7 +2,7 @@
 id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
-status: ready
+status: active
 needs_input: true
 needs_input_reason: dev-error
 priority: p1
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-26T17:07:55Z"
+updated_at: "2026-10-26T17:08:16Z"
 dev_error_count: 11
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:34.411Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:43.560Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:51.791Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -168,3 +168,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-26T14:53:31Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T15:31:12Z · model_override
 - 2026-10-26T17:07:55Z · released, assigned_to
+- 2026-10-26T17:08:16Z · status ready→active
