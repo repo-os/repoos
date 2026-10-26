@@ -13448,11 +13448,36 @@
     flex-direction: column-reverse;
     align-items: flex-start;
     width: min(640px, calc(100vw - 210px - 26px - 520px));
-    padding: 8px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--bg) 88%, transparent);
-    backdrop-filter: blur(12px);
+    /* No panel of its own: the toggles float on the bottom fade below, level
+       with the sidebar version pill and the integration pill. */
+    padding: 0;
+    pointer-events: none;
+  }
+  .work-page .parked-lists > * {
+    pointer-events: auto;
+  }
+  .work-page .archived-toggle,
+  .work-page .human-toggle {
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    backdrop-filter: blur(8px);
+  }
+  /* Cards scrolling under the floating bottom controls fade out so the
+     toggles and the integration pill stay legible on top of them. */
+  .work-page::after {
+    content: "";
+    position: fixed;
+    left: 210px;
+    right: 0;
+    bottom: 0;
+    height: 84px;
+    z-index: 50;
+    background: linear-gradient(to bottom, transparent, var(--bg) 70%);
+    pointer-events: none;
+  }
+  /* The agent heads float over the board like the bottom controls, so the
+     Work page uses the full width instead of reserving a blank head lane. */
+  .main:has(> .work-page) {
+    padding-inline-end: 26px;
   }
   .work-page .archived-rows,
   .work-page .human-rows {
