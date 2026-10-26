@@ -14,9 +14,9 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-freezes-move-all-git-reads-off-th
-cli_override: claude code
+cli_override: github copilot
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T11:38:49Z"
+updated_at: "2026-10-26T11:38:51Z"
 handoff_signal_retry_count: 1
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-26T11:33:32.912Z\",\"kind\":\"usage-limit\"}]"
@@ -77,3 +77,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T11:33:35Z · message_delivered: 2 message(s)
 - 2026-10-26T11:33:36Z · message_queued at 2026-10-26T11:33:36.352Z
 - 2026-10-26T11:38:49Z · cli_override, model_override
+- 2026-10-26T11:38:51Z · cli_override
