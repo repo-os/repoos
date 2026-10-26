@@ -34,7 +34,7 @@ import {
   removeWorktree,
   deleteBranch,
   pruneWorktrees,
-  isAncestor,
+  mergedBranches,
 } from "./git.js";
 
 const CANDIDATE_BRANCH_PREFIX = "repoos/integrate/";
@@ -177,6 +177,8 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
   const scoped = listWorktrees(root).filter(
     (w) => !w.isMain && !w.isBare && isInside(wtDir, w.path),
   );
+  const mergedIntoMain =
+    opts.mode === "full" ? mergedBranches(root, mainBranch) : new Set<string>();
 
   // `forceWorktree` is only ever true where this sweep has ALREADY decided the
   // tree's contents may be discarded: a throwaway `repoos/integrate/<id>`
@@ -257,7 +259,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
       continue;
     }
 
-    const merged = isAncestor(root, branch, mainBranch) === true;
+    const merged = mergedIntoMain.has(branch);
     const clean = worktreeClean(w.path);
     if (merged && clean) {
       remove(branch, w.path, /* forceBranch */ false, /* forceWorktree */ true);
