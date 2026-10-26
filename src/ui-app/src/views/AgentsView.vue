@@ -39,6 +39,8 @@ import DialogDescription from "../components/ui/dialog/description.vue";
 import DialogOverlay from "../components/ui/dialog/overlay.vue";
 import DialogTitle from "../components/ui/dialog/title.vue";
 import { useAgentFavorites } from "../composables/useAgentFavorites";
+import PageSkeleton from "../components/PageSkeleton.vue";
+import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
 
 const config = useConfigStore();
 const router = useRouter();
@@ -374,7 +376,8 @@ const detected = ref<DetectedAgent[]>([]);
 /** Set of agent ids whose fresh probe is still in flight. */
 const detectPending = ref<Set<string>>(new Set());
 const detectLoading = ref(false);
-const detectError = ref(false);
+const detectHasSnapshot = ref(false);
+const detectRefreshError = ref("");
 const detectCachedAt = ref<string | null>(null);
 const detectHintCopied = ref<string>("");
 const openCompatId = ref<string | null>(null);
@@ -492,21 +495,29 @@ const detectRows = computed<DetectRow[]>(() => {
 let activeStream: EventSource | null = null;
 
 async function checkAgents(): Promise<void> {
-  detectError.value = false;
+  detectRefreshError.value = "";
   detectHintCopied.value = "";
+  // Show the shared first-load skeleton while both the saved snapshot and the
+  // live probe are pending. Cached rows arrive synchronously below and keep
+  // the skeleton hidden during background revalidation.
+  detectLoading.value = true;
 
-  // 1. Load cached results immediately so the page isn't blank.
-  try {
-    const cached = await api<{ agents: DetectedAgent[]; cachedAt: string | null }>(
-      "/api/agents/detect",
-    );
-    if (cached.agents.length) {
-      detected.value = cached.agents;
+  // The server snapshot is useful immediately on a revisit. Keep it in the
+  // shared page cache while the SSE probe refreshes the individual agents.
+  void refreshPageData(
+    "agents:detect",
+    () => api<{ agents: DetectedAgent[]; cachedAt: string | null }>("/api/agents/detect"),
+    (cached) => {
+      detectHasSnapshot.value = true;
+      if (cached.agents.length) detected.value = cached.agents;
       detectCachedAt.value = cached.cachedAt;
-    }
-  } catch {
-    // Cache miss is non-fatal; the stream will populate.
-  }
+    },
+    (error) => {
+      // A cache miss is non-fatal; the stream will populate the page. When a
+      // cached snapshot exists, keep showing it and report the failed refresh.
+      detectRefreshError.value = error instanceof Error ? error.message : String(error);
+    },
+  );
 
   // 2. Open SSE stream for fresh probes.
   activeStream?.close();
@@ -544,6 +555,7 @@ async function checkAgents(): Promise<void> {
     }
     detectPending.value = new Set();
     detectLoading.value = false;
+    detectRefreshError.value = "";
     es.close();
     activeStream = null;
   });
@@ -551,7 +563,8 @@ async function checkAgents(): Promise<void> {
   es.onerror = () => {
     detectPending.value = new Set();
     detectLoading.value = false;
-    if (!detected.value.length) detectError.value = true;
+    detectRefreshError.value =
+      "Could not refresh detected coding agents. Showing the last saved list.";
     es.close();
     activeStream = null;
   };
@@ -564,7 +577,10 @@ async function checkAgents(): Promise<void> {
  */
 async function refreshDetected(): Promise<void> {
   const refresh = Object.keys(updates.value).length > 0;
-  if (refresh) await checkAgents();
+  if (refresh) {
+    invalidatePageData("agents:detect");
+    await checkAgents();
+  }
   await checkForUpdates(refresh);
 }
 
@@ -701,29 +717,32 @@ onUnmounted(() => {
       </div>
     </header>
 
-    <div v-if="!config.loaded" class="spin"></div>
+    <div class="agent-tabs">
+      <button
+        v-for="t in AGENT_TABS"
+        :key="t"
+        type="button"
+        class="tab-btn"
+        :class="{ active: activeTab === t }"
+        @click="activeTab = t"
+      >
+        {{ AGENT_TAB_LABELS[t] }}
+        <span
+          v-if="t === 'reminders' && reminders.due.length"
+          class="chip"
+          aria-label="Due reminders"
+          >{{ reminders.due.length }}</span
+        >
+      </button>
+    </div>
+
+    <PageSkeleton v-if="!config.loaded" kind="cards" />
 
     <template v-else>
-      <div class="agent-tabs">
-        <button
-          v-for="t in AGENT_TABS"
-          :key="t"
-          type="button"
-          class="tab-btn"
-          :class="{ active: activeTab === t }"
-          @click="activeTab = t"
-        >
-          {{ AGENT_TAB_LABELS[t] }}
-          <span
-            v-if="t === 'reminders' && reminders.due.length"
-            class="chip"
-            aria-label="Due reminders"
-            >{{ reminders.due.length }}</span
-          >
-        </button>
-      </div>
-
-      <div class="agents-tab-content">
+      <div
+        class="agents-tab-content"
+        :class="{ 'agents-tab-content--playground': activeTab === 'playground' }"
+      >
         <div
           class="agent-tab-panel"
           v-show="activeTab === 'default'"
@@ -894,7 +913,6 @@ onUnmounted(() => {
 
         <div
           class="agent-tab-panel"
-          v-if="!detectError"
           v-show="activeTab === 'detected'"
           style="padding: 0 18px 6px; margin-bottom: 16px"
         >
@@ -922,6 +940,9 @@ onUnmounted(() => {
             missing. Update checks contact only the supported public source after you request them;
             results are cached for 6 hours.
           </div>
+          <p v-if="detectRefreshError" class="detect-update-error" role="status">
+            Refresh failed: {{ detectRefreshError }}
+          </p>
           <div v-if="updateError" class="detect-update-error">
             Update checks are temporarily unavailable.
           </div>
@@ -932,7 +953,10 @@ onUnmounted(() => {
             {{ cachedAtLabel(detectCachedAt) }}
           </div>
 
-          <div v-if="detectLoading && !detected.length" class="detect-loading">Probing PATH…</div>
+          <PageSkeleton
+            v-if="detectLoading && !detected.length && !detectHasSnapshot"
+            kind="rows"
+          />
           <div v-else-if="!detected.length" class="agent-empty">
             No known coding agents detected on PATH.
           </div>

@@ -271,14 +271,21 @@ describe("evaluatePressure", () => {
     expect(snapshot.reason).toMatch(/available memory is low/i);
   });
 
-  it("holds on macOS memory_pressure warn and critical", () => {
-    for (const level of ["warn", "critical"] as const) {
-      const snapshot = evaluatePressure(
-        readings({ memoryPressureLevel: level }),
-        pressureThresholds(config()),
-      );
-      expect(snapshot.reason).toMatch(/memory_pressure reports/);
-    }
+  it("holds on macOS memory_pressure critical", () => {
+    const snapshot = evaluatePressure(
+      readings({ memoryPressureLevel: "critical" }),
+      pressureThresholds(config()),
+    );
+    expect(snapshot.reason).toMatch(/memory_pressure reports critical/);
+  });
+
+  it("treats macOS memory_pressure warn as advisory, not a hold", () => {
+    const snapshot = evaluatePressure(
+      readings({ memoryPressureLevel: "warn" }),
+      pressureThresholds(config()),
+    );
+    expect(snapshot.level).not.toBe("critical");
+    expect(snapshot.warnings.join(" ")).toMatch(/memory_pressure reports warn/);
   });
 
   it("holds on thrashing activity then clears when rates recover", () => {
@@ -301,14 +308,45 @@ describe("evaluatePressure", () => {
     expect(recovering.reason).toBeNull();
   });
 
-  it("treats high load as a warning when memory stats are available", () => {
+  it("holds when load exceeds the per-CPU limit even with memory stats", () => {
     const snapshot = evaluatePressure(
       readings({ loadPerCpu: 99, swapUsedBytes: 0, compressorBytes: 0 }),
       pressureThresholds(config()),
     );
-    expect(snapshot.level).toBe("warning");
-    expect(snapshot.reason).toBeNull();
-    expect(snapshot.warnings.join(" ")).toMatch(/load is high/i);
+    expect(snapshot.level).toBe("critical");
+    expect(snapshot.reason).toMatch(/load is high/i);
+  });
+
+  it("holds on the 2026-10-25 incident readings", () => {
+    const gb = 1024 ** 3;
+    const snapshot = evaluatePressure(
+      {
+        ...readings({
+          totalMemBytes: 24 * gb,
+          compressorBytes: 10 * gb,
+          loadPerCpu: 2.3,
+          availableMemRatio: 0.25,
+          swapIoBytesPerSec: 0,
+          pageoutBytesPerSec: 0,
+        }),
+        cpuIdlePercent: 0,
+      },
+      pressureThresholds(config()),
+    );
+    expect(snapshot.level).toBe("critical");
+    expect(snapshot.reason).toMatch(/compressor/i);
+    expect(snapshot.reason).toMatch(/idle/i);
+    expect(snapshot.reason).not.toMatch(/2\.3×/);
+    const held = pressureReason(config(), {
+      ...readings({
+        totalMemBytes: 24 * gb,
+        compressorBytes: 10 * gb,
+        loadPerCpu: 4.1,
+      }),
+      cpuIdlePercent: 0,
+    });
+    expect(held).toMatch(/compressor/i);
+    expect(held).toMatch(/load is high/i);
   });
 
   it("falls back to load as a hold when memory stats are unavailable", () => {
@@ -348,7 +386,7 @@ describe("evaluatePressure", () => {
     expect(snapshot.source).toBe("memory");
     expect(snapshot.level).toBe("critical");
     expect(snapshot.reason).toMatch(/PSI memory pressure avg10/i);
-    expect(snapshot.warnings.join(" ")).toMatch(/load is high/i);
+    expect(snapshot.reason).toMatch(/load is high/i);
   });
 
   it("respects configured swap I/O threshold", () => {

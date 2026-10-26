@@ -24,6 +24,21 @@
   --amber: #ffb454;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bot: env(safe-area-inset-bottom, 0px);
+  /* Match FloatingHeads.vue: three 52px controls with 8px gaps. Keeping their
+     dimensions here lets every scroll pane reserve the actual head stack. */
+  --floating-head-size: 52px;
+  --floating-head-gap: 8px;
+  --floating-head-bottom: calc(22px + var(--safe-bot));
+  --floating-head-inline-offset: 22px;
+  --page-inline-end-inset: calc(
+    var(--floating-head-size) + var(--floating-head-inline-offset) + 12px
+  );
+  --floating-head-stack-height: calc(
+    var(--floating-head-size) + var(--floating-head-size) + var(--floating-head-size) +
+      var(--floating-head-gap) + var(--floating-head-gap)
+  );
+  --page-bottom-inset: calc(var(--floating-head-stack-height) + var(--floating-head-bottom) + 24px);
+  --page-bottom-fade-size: calc(var(--floating-head-stack-height) + var(--floating-head-bottom));
   --font-sans: "Sora", sans-serif;
   /* theme-aware semantic tokens */
   --body-gradient:
@@ -717,10 +732,17 @@
   flex: 1;
   display: flex;
   min-height: 0;
+  position: relative;
 }
+/* Fixed bottom controls sit above the scrolling pane. Fade the final slice of
+   page content into the theme background and keep one shared scroll inset so
+   the last row can clear those controls. */
 .sidebar {
   width: 210px;
   flex-shrink: 0;
+  /* Long navigation stays in the shell instead of scrolling the document. */
+  min-height: 0;
+  overflow-y: auto;
   padding: 14px 11px;
   display: flex;
   flex-direction: column;
@@ -1127,9 +1149,30 @@
 
 .main {
   flex: 1;
-  overflow-y: auto;
-  padding: 22px 26px 60px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  align-self: stretch;
+  overflow: hidden;
+  /* Full-height views own their scrollports and put the shared end inset on
+     that scroller. Padding here would instead recreate an empty bottom band. */
+  padding: 22px 26px 0;
+  padding-inline-end: max(26px, var(--page-inline-end-inset));
   min-width: 0;
+}
+/* Routed shells fill the pane so height:100% / nested flex scrollports resolve (#0951). */
+.main > :not(.spin) {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+/* Flow pages without an internal scrollport scroll here; fill pages clip at the shell. */
+.main
+  > :not(.spin):not(.page-scroll):not(.work-page):not(.agents-page):not(.ctx-page):not(
+    .inputs-board-page
+  ) {
+  overflow-y: auto;
+  padding-bottom: var(--page-bottom-inset);
 }
 /* Standard nav views span this pane's full width: do NOT add a page-level
    max-width (or centering margin) to a page shell — wide tables, step output
@@ -1473,7 +1516,7 @@
      available page height and each status column owns its own scroll area.
      This keeps the page header and controls in place while scanning tasks. */
 .work-page {
-  height: 100%;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -1546,7 +1589,8 @@
   flex-direction: column;
   min-width: 0;
   flex: 1 1 0;
-  height: calc(100vh - 211px);
+  min-height: 0;
+  align-self: stretch;
   position: relative;
 }
 .col-head {
@@ -1596,8 +1640,19 @@
   gap: 10px;
   overflow-y: auto;
   min-height: 0;
-  padding: 4px 8px 10px;
+  /* Work columns own their scrollbars inside .main, so the page pane's
+     bottom padding cannot protect their final cards from the fixed controls. */
+  padding: 4px 8px 0;
   scrollbar-width: none;
+}
+/* A flex spacer adds scrollable clearance without imposing the inset as the
+   scrollport's minimum physical height (important for wrapped tablet rows). */
+.col-body::after {
+  content: "";
+  flex: 0 0 var(--page-bottom-inset);
+  /* Leave content visible even in a short wrapped row. The inline safe inset
+     already keeps the head stack outside the columns. */
+  max-height: 50%;
 }
 .col-body::-webkit-scrollbar {
   display: none;
@@ -1764,7 +1819,11 @@
 
 @media (max-width: 1250px) {
   .board {
-    flex-wrap: wrap;
+    /* Bound wrapped rows to the available board height, rather than their
+       cards' intrinsic height. Each column keeps its own scrollport. */
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: minmax(0, 1fr);
   }
   /* No column-gap to subtract here anymore (see .board) — the columns'
        own padding provides the horizontal spacing, so three fit exactly. */
@@ -1777,10 +1836,17 @@
   }
 }
 @media (max-width: 760px) {
+  .board {
+    display: flex;
+    flex-wrap: wrap;
+  }
   .work-page {
     height: auto;
     min-height: initial;
     display: block;
+    /* Columns rejoin the outer scroller at this width, so only the final
+       column needs end clearance rather than a large gap after every column. */
+    padding-bottom: var(--page-bottom-inset);
   }
   .work-page .board {
     display: flex;
@@ -1804,7 +1870,9 @@
   .col-body {
     overflow: visible;
     min-height: 40px;
+    padding-bottom: 10px;
   }
+  .col-body::after,
   .board-col.scrollable::after {
     display: none;
   }
@@ -2047,9 +2115,15 @@
   margin-bottom: 9px;
 }
 .tc-id {
+  display: -webkit-box;
+  max-width: min(180px, 38vw);
+  overflow: hidden;
+  overflow-wrap: anywhere;
   font-size: 10px;
   color: var(--txt-faint);
   font-family: "JetBrains Mono", monospace;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 /* Pink diagonal "Preview" corner banner, shown only on tasks with a live
      preview. Pure CSS: rotated band that folds around the card's top-left
@@ -4591,7 +4665,7 @@
 .ctx-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1 1 auto;
   min-height: 0;
 }
 .repo-grid {
@@ -4603,8 +4677,10 @@
   min-height: 0;
 }
 @media (max-width: 860px) {
-  .ctx-page {
+  .main > .ctx-page {
     height: auto;
+    overflow-y: auto;
+    padding-bottom: var(--page-bottom-inset);
   }
   .repo-grid {
     grid-template-columns: 1fr;
@@ -4820,7 +4896,7 @@
 .doc-view {
   max-width: 100%;
   min-width: 0;
-  padding: 24px 28px;
+  padding: 24px 28px var(--page-bottom-inset);
   overflow-y: auto;
   min-height: 0;
   white-space: pre-wrap;
@@ -8609,11 +8685,21 @@
   display: none;
 }
 @media (max-width: 760px) {
+  /* Override on #app, not :root — a second :root block would replace
+     classic-dark in the theme-contrast scanner (last wins). #app wraps both
+     .body and the teleported floating heads so everyone inherits the mobile
+     inset above the tab bar. */
+  #app {
+    --floating-head-size: 46px;
+    --floating-head-bottom: calc(74px + var(--safe-bot));
+    --floating-head-inline-offset: 12px;
+  }
   .sidebar {
     display: none;
   }
   .main {
-    padding: 18px 16px 90px;
+    padding: 18px 16px 0;
+    padding-inline-end: max(16px, var(--page-inline-end-inset));
   }
   .tabbar {
     display: flex;
@@ -8985,7 +9071,7 @@
 /* Stationary page chrome (#0949): the header, title, and tabs stay put
    while the content under them scrolls. Same shape as .agents-page. */
 .page-scroll {
-  height: 100%;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -8998,12 +9084,26 @@
   min-height: 0;
   overflow-y: auto;
   padding-right: 3px;
+  /* These pages scroll here, not in .main; the last row must clear the fixed
+     controls without shortening the scrollport itself. */
+  padding-bottom: var(--page-bottom-inset);
   scrollbar-width: none;
 }
 .page-scroll-body::-webkit-scrollbar {
   display: none;
 }
 @media (max-width: 760px) {
+  /* At narrow widths these shells return their contents to normal flow.
+     Keep scrolling on the full-height routed root rather than clipping it. */
+  .main > .work-page,
+  .main > .agents-page,
+  .main > .inputs-board-page,
+  .main > .page-scroll:not(.settings-page--fill) {
+    overflow-y: auto;
+  }
+  .inputs-board-page {
+    padding-bottom: var(--page-bottom-inset);
+  }
   .page-scroll:not(.settings-page--fill) {
     height: auto;
     min-height: initial;
@@ -9017,19 +9117,20 @@
 }
 
 /* raw repoos.toml editor (#0375) — its own Settings tab, filling the
-   available height: .main is a stretched flex item, so height:100% resolves,
-   and each level below is a flex column handing the leftover space down. */
+   available height: routed shells are flex children of .main and hand the
+   leftover space down through nested flex columns. */
 .settings-page--fill {
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  /* reclaim most of .main's 60px bottom padding for the editor */
-  margin-bottom: -40px;
 }
 .settings-page--fill > .page-scroll-body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* The editor is not the page scroller; its textarea owns end clearance. */
+  padding-bottom: 0;
 }
 .settings-page--fill .settings-panels,
 .settings-page--fill .toml-panel,
@@ -9044,10 +9145,6 @@
   padding: 0 18px;
 }
 @media (max-width: 760px) {
-  /* .main's 90px bottom padding clears the fixed tabbar; keep all of it */
-  .settings-page--fill {
-    margin-bottom: 0;
-  }
   /* five tabs don't fit a phone: scroll the strip instead of clipping the
      last ones. overflow clips at the padding box, so drop the -1px overlap
      that normally lets the active underline sit on the strip's border. */
@@ -9101,7 +9198,9 @@
   width: 100%;
   height: 100%;
   margin: 0;
-  padding: 12px 14px;
+  /* Keep the final config lines above the fixed heads; matching padding on the
+     highlight layer and textarea preserves their alignment while scrolling. */
+  padding: 12px 14px var(--page-bottom-inset);
   font-family: "JetBrains Mono", monospace;
   font-size: 12px;
   line-height: 1.6;
@@ -9606,7 +9705,7 @@
 /* Keep the page chrome stable on desktop; long agent forms scroll within
      the active tab rather than moving the title and tab strip. */
 .agents-page {
-  height: 100%;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -9620,7 +9719,14 @@
   min-height: 0;
   overflow-y: auto;
   padding-right: 3px;
+  padding-bottom: var(--page-bottom-inset);
   scrollbar-width: none;
+}
+@media (min-width: 861px) {
+  .agents-tab-content--playground {
+    /* Above its 860px flow breakpoint, the playground protects its own composer. */
+    padding-bottom: 0;
+  }
 }
 .agents-tab-content::-webkit-scrollbar {
   display: none;
@@ -9932,11 +10038,17 @@
     height: auto;
     min-height: initial;
     display: block;
+    /* Outer scroller at this width — match .work-page end clearance. */
+    padding-bottom: var(--page-bottom-inset);
   }
   .agents-tab-content {
     overflow: visible;
     min-height: initial;
     padding-right: 0;
+    padding-bottom: 0;
+  }
+  .agents-tab-content--playground {
+    padding-bottom: 0;
   }
   .agent-body {
     grid-template-columns: 1fr;
@@ -10263,11 +10375,6 @@
 }
 .detect-star-btn.on {
   color: var(--amber);
-}
-.detect-loading {
-  color: var(--txt-faint);
-  font-size: 12px;
-  padding: 14px 2px 16px;
 }
 
 /* ---------- clear design theme ---------- */
@@ -13311,8 +13418,8 @@
    (column-reverse: the toggle row is first in the DOM, so it sits lowest). */
 @media (min-width: 761px) {
   .work-page .parked-lists {
-    /* Fixed like .ibar-wrap: the scrolling .main pane has bottom padding, so
-       anchoring to the page would land above the pipeline bar's row. */
+    /* Float above the full-height column scrollports, like .ibar-wrap.
+       Their shared end inset lets the last card clear this row. */
     position: fixed;
     left: calc(210px + 26px);
     bottom: 14px;
@@ -13322,6 +13429,36 @@
     flex-direction: column-reverse;
     align-items: flex-start;
     width: min(640px, calc(100vw - 210px - 26px - 520px));
+    /* No panel of its own: the toggles float on the bottom fade below, level
+       with the sidebar version pill and the integration pill. */
+    padding: 0;
+    pointer-events: none;
+  }
+  .work-page .parked-lists > * {
+    pointer-events: auto;
+  }
+  .work-page .archived-toggle,
+  .work-page .human-toggle {
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    backdrop-filter: blur(8px);
+  }
+  /* Cards scrolling under the floating bottom controls fade out so the
+     toggles and the integration pill stay legible on top of them. */
+  .work-page::after {
+    content: "";
+    position: fixed;
+    left: 210px;
+    right: 0;
+    bottom: 0;
+    height: 84px;
+    z-index: 50;
+    background: linear-gradient(to bottom, transparent, var(--bg) 70%);
+    pointer-events: none;
+  }
+  /* The agent heads float over the board like the bottom controls, so the
+     Work page uses the full width instead of reserving a blank head lane. */
+  .main:has(> .work-page) {
+    padding-inline-end: 26px;
   }
   .work-page .archived-rows,
   .work-page .human-rows {

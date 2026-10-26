@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { resolveSettingLocation, isGeneralSchemaFieldKey } from "../src/settings-location";
+import {
+  generalSectionForKey,
+  isGeneralSchemaFieldKey,
+  resolveSettingLocation,
+} from "../src/settings-location";
 import type { ConfigField } from "../src/types";
 
 function field(over: Partial<ConfigField> & { key: string }): ConfigField {
@@ -97,6 +101,18 @@ describe("resolveSettingLocation", () => {
       ),
     ).toEqual({ tab: "general", hasUiRow: true });
     expect(isGeneralSchemaFieldKey("remoteValidation.healthCheck")).toBe(true);
+  });
+
+  it("gives Git status acceleration a rendered General row", () => {
+    expect(
+      resolveSettingLocation(
+        "git.tuneForScale",
+        field({ key: "git.tuneForScale", type: "boolean" }),
+        ctx,
+      ),
+    ).toEqual({ tab: "general", hasUiRow: true });
+    expect(isGeneralSchemaFieldKey("git.tuneForScale")).toBe(true);
+    expect(generalSectionForKey("git.tuneForScale")).toBe("performance");
   });
 
   // #0573 — the close-out budget must render as a real Settings control, not

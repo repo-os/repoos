@@ -261,6 +261,48 @@ describe("cross-process local check slots", () => {
     await Promise.all([job(), job(), job()]);
     expect(peak).toBe(2);
   });
+
+  it("runs at most heavySlots jobs for five engineers and frees a dead holder", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-heavy-slots-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const heavySlots = 2;
+    let peak = 0;
+    let running = 0;
+    const job = async () => {
+      const release = await acquireCrossProcessSlot({
+        slots: heavySlots,
+        lockRoot,
+        waitTimeoutMs: 20_000,
+        meta: { kind: "local-check" },
+      });
+      running++;
+      peak = Math.max(peak, running);
+      await new Promise((r) => setTimeout(r, 40));
+      running--;
+      release();
+    };
+    await Promise.all([job(), job(), job(), job(), job()]);
+    expect(peak).toBeLessThanOrEqual(heavySlots);
+    expect(peak).toBe(heavySlots);
+
+    const dead = spawn("sleep", ["30"], { stdio: "ignore" });
+    if (!dead.pid) throw new Error("sleep failed");
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    writeFileSync(join(slot, ".holder"), String(dead.pid));
+    writeFileSync(join(slot, ".meta.json"), JSON.stringify({ kind: "local-check" }));
+    dead.kill("SIGKILL");
+    await new Promise((r) => dead.once("exit", r));
+    const release = await acquireCrossProcessSlot({
+      slots: 1,
+      lockRoot,
+      waitTimeoutMs: 2_000,
+      meta: { kind: "local-check" },
+    });
+    release();
+    expect(inspectCrossProcessSlots(lockRoot).filter((h) => h.pid && !h.dead)).toEqual([]);
+  });
 });
 
 describe("playwright cross-process slots", () => {

@@ -416,8 +416,13 @@ cannot tell from the code alone:
   different threshold. On macOS, `vm.swapusage` "free" is unused swap-file
   capacity, not a pressure signal; the OS may retain swap during normal
   operation, so swap used or free swap alone does not prove thrashing. Swap-used
-  and compressor occupancy in the guard are advisory warnings only — blocking
-  signals are paging activity and the configured limits above. When the guard
+  ratio stays advisory. Blocking signals are paging activity, reclaimable
+  memory, compressor bytes above `pressureGuard.maxCompressorBytes` (default
+  8 GiB), load above `pressureGuard.maxLoadPerCpu` (default 3× per CPU), idle
+  CPU below `pressureGuard.minIdleCpuPercent` (default 5%), and the other
+  configured limits above. Heavy builds and tests share `heavySlots` (default
+  2) and engineer-launched Vitest/Playwright runs use the worker caps in
+  Settings. When the guard
   holds a start, report RepoOS's reason to the human and wait (or help clear
   pressure). When `pressureGuard.enabled` is off or the limits look wrong for
   this machine, ask the human to change Settings — do not invent another gate.
@@ -574,7 +579,12 @@ cannot tell from the code alone:
   `max-width` or centering margin on a view's root. Narrow/centered layouts
   are for deliberate exceptions (login/auth, modals); keeping a readable
   line length on inner prose (`max-width: NNch` on one paragraph) is fine.
-  See the `.main` comment in `src/ui-app/src/style.css` (#0602).
+  Standard page roots also fill the available `.main` height. Keep bottom
+  clearance on the actual scrollport with `--page-bottom-inset`, rather than
+  padding the pane and shortening its visible area. Narrow layouts that switch
+  to normal flow must keep their routed root scrollable and retain the shared
+  bottom inset at the component’s own flow breakpoint.
+  See the `.main` comment in `src/ui-app/src/style.css` (#0602, #0951).
 - **Table-like label/value rows use aligned columns.** Any UI that renders
   repeated rows of labeled fields (a `dl` of `dt`/`dd`, or label+value pairs
   — no literal `<table>` required) must use an aligned two-column layout:

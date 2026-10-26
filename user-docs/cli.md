@@ -769,10 +769,13 @@ the capture, pointing the reviewer at what changed — and optional ordered
 `steps` — `{ "click": "<selector>" }`, `{ "fill": "<selector>", "text":
 "..." }`, `{ "waitFor": "<selector>" }`, `{ "hover": "<selector>" }` or
 `{ "waitMs": 300 }` — using plain
-CSS selectors or test ids, no framework knowledge. Say what changed: a label
-naming the change and a highlight on the changed element are the difference
-between a reviewer reading "New-task drawer open" and squinting at a full
-page.
+CSS selectors or test ids, no framework knowledge. Optional `viewportWidth`
+and `viewportHeight` (px, same bounds as the CLI `--viewport` flag) pin the
+capture to a specific window size — use two heights on the same route when
+layout must be checked at tall and short viewports (#0951). Say what changed:
+a label naming the change and a highlight on the changed element are the
+difference between a reviewer reading "New-task drawer open" and squinting at
+a full page.
 
 `repoos shot` captures this list, and the SERVER does too: declared shots are
 captured automatically when a task moves to review, with targets resolved the

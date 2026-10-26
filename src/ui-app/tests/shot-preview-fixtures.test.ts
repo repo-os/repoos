@@ -22,6 +22,20 @@ import { shotProblems } from "../src/lib/shot-rows";
 import { isDocsShotSkip, shotVerdict } from "../src/lib/handoff-verification";
 
 describe("shot preview board fixtures (#0743)", () => {
+  it("populates repeatable Work and Stories scroll captures", () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    const config = useConfigStore();
+    config.data = {};
+    applyShotPreviewConfigFixture(config, "pages:scroll");
+    applyShotPreviewFixture(repo, "pages:scroll");
+    applyShotPreviewFixture(repo, "pages:scroll");
+    expect(repo.tasks).toHaveLength(30);
+    expect(new Set(repo.tasks.map((t) => t.story)).size).toBe(15);
+    expect(repo.tasks.every((t) => !t.branch)).toBe(true);
+    expect(config.data.stories).toEqual({ enabled: true });
+  });
+
   it("reads shotState from the location query", () => {
     expect(readShotPreviewFixtureFromLocation({ search: "?shotState=closeOut%3Aactive" })).toBe(
       "closeOut:active",
@@ -440,6 +454,43 @@ describe("shot preview board fixtures (#0743)", () => {
     const landable = repo.landableFor(SHOT_PREVIEW_FIXTURE_TASK_ID);
     expect(landable?.landable).toBe(false);
     expect(landable?.checks.find((c) => c.id === "merge-conflicts")?.status).toBe("fail");
+  });
+
+  it.each([
+    ["drawer:statusReviewFailed", "review"],
+    ["drawer:statusHandoffFailed", "active"],
+    ["drawer:statusChecksRunning", "active"],
+    ["drawer:statusConfirmingHandoff", "active"],
+    ["drawer:statusChecksFailed", "active"],
+    ["drawer:statusDetails", "review"],
+  ] as const)("seeds the %s status drawer capture", (fixture, status) => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, fixture);
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task?.status).toBe(status);
+    expect(task?.branch).toBe("feat/shot-fixture");
+    if (fixture === "drawer:statusReviewFailed" || fixture === "drawer:statusDetails") {
+      expect(repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID]?.report?.state).toBe("incomplete");
+      if (fixture === "drawer:statusDetails") {
+        expect(document.documentElement.getAttribute("data-repoos-shot-state")).toBe(
+          "drawer:statusDetails",
+        );
+      }
+    } else if (fixture === "drawer:statusHandoffFailed") {
+      expect(repo.handoffErrorFor(SHOT_PREVIEW_FIXTURE_TASK_ID)).toContain("fixture handoff");
+    } else if (fixture === "drawer:statusChecksRunning") {
+      expect(repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID]?.[0]?.running).toBe(true);
+    } else if (fixture === "drawer:statusConfirmingHandoff") {
+      expect(repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID]).toBe("check");
+    } else {
+      expect(task?.path).toBe(
+        "work/9999-task-side-panel-status-chip-two-line-header-width-verification.md",
+      );
+      expect(repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID]?.[0]?.passed).toBe(false);
+      expect(task?.extra?.check_retry_count).toBe(2);
+    }
   });
 
   it("composes the warning states needed for expanded task-tab shots (#0922)", () => {

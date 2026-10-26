@@ -1,29 +1,29 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
-needs_input: true
-needs_input_reason: dev-error
+status: done
 priority: p2
 area: web
+merged_commit: e6a916c753c930d0f79cdaffdb3e5915e13d3a73
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
-cli_override: codex
-model_override: gpt-6.1-sol
-review_cli_override: github copilot
-review_model_override: default
+cli_override: cursor
+model_override: composer-2.5
+review_model_override: grok-4.7-low
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T08:00:42Z"
-review_passes: 9
+updated_at: "2026-10-26T18:50:07Z"
+last_close_out_gate_ms: 642649
+last_close_out_gate_at: "2026-10-26T15:35:39.943Z"
+review_passes: 10
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 7
+dev_error_count: 13
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:26:05.071Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:44:23.994Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:44:35.028Z\",\"kind\":\"dev-error\"},{\"cli\":\"antigravity\",\"model\":\"gemini-3.8-flash-high\",\"at\":\"2026-10-26T14:45:37.315Z\",\"kind\":\"usage-limit\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T14:45:45.793Z\",\"kind\":\"dev-error\"}]"
+engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
 
@@ -412,4 +412,53 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T06:45:17Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-10-26T07:52:50Z · note: handoff requested (ui-review)
 - 2026-10-26T08:00:42Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
-
+- 2026-10-26T11:14:46Z · review_cli_override, review_model_override
+- 2026-10-26T11:27:14Z · cli_override, model_override
+- 2026-10-26T11:27:18Z · model_override
+- 2026-10-26T11:28:06Z · model_override
+- 2026-10-26T11:37:01Z · message_queued at 2026-10-26T11:37:01.229Z
+- 2026-10-26T11:37:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-26T11:48:54Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T12:12:59Z · body
+- 2026-10-26T12:37:26Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T13:23:11Z · message_delivered: 1 message(s)
+- 2026-10-26T14:25:55Z · cli_override, model_override
+- 2026-10-26T14:26:00Z · needs_input
+- 2026-10-26T14:26:00Z · message_queued at 2026-10-26T14:26:00.312Z
+- 2026-10-26T14:26:03Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T14:26:04Z · agent exited with an error (codex) · Reading additional input from stdin...
+- 2026-10-26T14:26:05Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-26T14:26:09Z · message_delivered: 1 message(s)
+- 2026-10-26T14:44:18Z · needs_input
+- 2026-10-26T14:44:18Z · message_queued at 2026-10-26T14:44:18.765Z
+- 2026-10-26T14:44:23Z · agent exited with an error (codex) · Reading additional input from stdin...
+- 2026-10-26T14:44:23Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-26T14:44:27Z · message_delivered: 1 message(s)
+- 2026-10-26T14:44:35Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-26T14:45:24Z · cli_override, model_override
+- 2026-10-26T14:45:29Z · needs_input
+- 2026-10-26T14:45:29Z · message_queued at 2026-10-26T14:45:29.436Z
+- 2026-10-26T14:45:36Z · agent exited with an error (antigravity) · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 164h31m2s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retryable":true,"error_id":"be1a842a-8f64-4840-bb85-bb04f5c1c7fc-1"}
+- 2026-10-26T14:45:37Z · engineer crash recovery: switched antigravity + gemini-3.8-flash-high → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 164h31m2s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retrya…
+- 2026-10-26T14:45:40Z · message_delivered: 1 message(s)
+- 2026-10-26T14:45:45Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-26T14:46:32Z · cli_override, model_override
+- 2026-10-26T14:46:36Z · needs_input
+- 2026-10-26T14:46:37Z · message_queued at 2026-10-26T14:46:37.266Z
+- 2026-10-26T14:53:13Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production... · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-26T14:53:13Z · note: handoff requested (cli)
+- 2026-10-26T14:54:35Z · message_queued at 2026-10-26T14:54:35.710Z
+- 2026-10-26T15:08:39Z · status active→review
+- 2026-10-26T15:08:39Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T15:08:52Z · note: review pass 11: failed — no usable report
+- 2026-10-26T15:08:52Z · needs_input
+- 2026-10-26T15:19:41Z · review_cli_override, review_model_override
+- 2026-10-26T15:19:42Z · review_model_override
+- 2026-10-26T15:19:45Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-10-26T15:21:43Z · note: review pass 12: needs some work
+- 2026-10-26T15:21:43Z · needs_input
+- 2026-10-26T15:28:17Z · note: ui verification passed: 4 of 4 shots captured with clean console
+- 2026-10-26T15:35:39Z · close-out gate completed in 643s
+- 2026-10-26T15:36:52Z · status done→done, release:success
+- 2026-10-26T15:57:40Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T18:50:07Z · message_overdue: still queued after 60m without being delivered

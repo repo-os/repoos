@@ -2,21 +2,21 @@
 id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
-status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
+status: done
 priority: p1
 area: core
+merged_commit: e1d22b223f08f2b43e9617ce781b8d7c78febc89
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-25T18:37:51Z"
+updated_at: "2026-10-26T18:01:07Z"
+last_close_out_gate_ms: 288635
+last_close_out_gate_at: "2026-10-26T17:59:56.236Z"
+review_passes: 1
 dev_error_count: 11
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:34.411Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:43.560Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:51.791Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -154,3 +154,35 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T18:37:34Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 2:54 AM.
 - 2026-10-25T18:37:43Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-25T18:37:51Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-26T12:14:30Z · cli_override, model_override
+- 2026-10-26T12:36:33Z · message_queued at 2026-10-26T12:36:33.644Z
+- 2026-10-26T12:36:33Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-26T12:36:40Z · body
+- 2026-10-26T12:37:27Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T12:41:04Z · engineer stopped by request
+- 2026-10-26T12:41:05Z · needs_input
+- 2026-10-26T12:41:05Z · needs_input
+- 2026-10-26T12:41:12Z · held
+- 2026-10-26T12:41:18Z · assigned_to
+- 2026-10-26T12:41:31Z · status active→ready
+- 2026-10-26T14:01:01Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:10:54Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:44:18Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:53:31Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T15:31:12Z · model_override
+- 2026-10-26T17:07:55Z · released, assigned_to
+- 2026-10-26T17:08:16Z · status ready→active
+- 2026-10-26T17:08:23Z · cli_override, model_override
+- 2026-10-26T17:08:27Z · message_delivered: 1 message(s)
+- 2026-10-26T17:08:27Z · needs_input
+- 2026-10-26T17:08:27Z · message_queued at 2026-10-26T17:08:27.699Z
+- 2026-10-26T17:14:28Z · body
+- 2026-10-26T17:21:53Z · body
+- 2026-10-26T17:24:42Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-26T17:24:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-26T17:24:43Z · message_delivered: 1 message(s)
+- 2026-10-26T17:44:25Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-10-26T17:44:26Z · status active→review
+- 2026-10-26T17:45:53Z · note: review pass 1: good to go
+- 2026-10-26T17:59:56Z · close-out gate completed in 289s
+- 2026-10-26T18:01:07Z · status done→done, release:success

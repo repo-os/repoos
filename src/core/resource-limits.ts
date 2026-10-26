@@ -4,7 +4,11 @@ import { positiveLimit } from "./remote-hosts.js";
 export const DEFAULT_LOCAL_CHECKS_MAX = 2;
 export const DEFAULT_PLAYWRIGHT_MAX = 1;
 export const DEFAULT_QUEUE_TIMEOUT_MS = 45 * 60 * 1000;
-export const DEFAULT_PRESSURE_MAX_LOAD_PER_CPU = 4;
+export const DEFAULT_HEAVY_SLOTS = 2;
+export const DEFAULT_VITEST_MAX_WORKERS = 2;
+export const DEFAULT_PLAYWRIGHT_WORKERS = 2;
+/** Block when load average per CPU exceeds this, even if memory stats exist (#0961). */
+export const DEFAULT_PRESSURE_MAX_LOAD_PER_CPU = 3;
 export const DEFAULT_PRESSURE_MIN_AVAILABLE_MEM_RATIO = 0.08;
 /**
  * Memory is the primary pressure signal (#0871): runaway swap use and a large
@@ -14,6 +18,10 @@ export const DEFAULT_PRESSURE_MIN_AVAILABLE_MEM_RATIO = 0.08;
  */
 export const DEFAULT_PRESSURE_MAX_SWAP_USED_RATIO = 0.5;
 export const DEFAULT_PRESSURE_MAX_COMPRESSOR_RATIO = 0.35;
+/** Block when the compressor pool exceeds this many bytes (8 GiB, #0961). */
+export const DEFAULT_PRESSURE_MAX_COMPRESSOR_BYTES = 8 * 1024 * 1024 * 1024;
+/** Block when sampled CPU idle falls below this percent (#0961). */
+export const DEFAULT_PRESSURE_MIN_IDLE_CPU_PERCENT = 5;
 /** Rolling window for paging-activity rates (#0918). */
 export const DEFAULT_PRESSURE_ACTIVITY_WINDOW_SEC = 30;
 /** Block when sustained swap in+out exceeds this (bytes/s). */
@@ -27,6 +35,34 @@ export const DEFAULT_PRESSURE_MAX_PSI_MEMORY_AVG10 = 25;
 
 export function localChecksMaxConcurrent(config: RepoOSConfig): number {
   return positiveLimit(config.localChecks?.maxConcurrent, DEFAULT_LOCAL_CHECKS_MAX);
+}
+
+/**
+ * Machine-wide budget for engineer builds/tests and local checks (#0961).
+ * `heavySlots` wins when set; otherwise the local-check cap is the same pool.
+ */
+export function heavySlotLimit(config: RepoOSConfig): number {
+  const raw = config.heavySlots;
+  if (typeof raw === "number" && Number.isFinite(raw) && raw >= 1) {
+    return Math.min(8, Math.floor(raw));
+  }
+  return localChecksMaxConcurrent(config);
+}
+
+export function vitestMaxWorkers(config: RepoOSConfig): number {
+  const raw = config.vitest?.maxWorkers;
+  if (typeof raw === "number" && Number.isFinite(raw) && raw >= 1) {
+    return Math.min(16, Math.floor(raw));
+  }
+  return DEFAULT_VITEST_MAX_WORKERS;
+}
+
+export function playwrightWorkerLimit(config: RepoOSConfig): number {
+  const raw = config.playwright?.workers;
+  if (typeof raw === "number" && Number.isFinite(raw) && raw >= 1) {
+    return Math.min(8, Math.floor(raw));
+  }
+  return DEFAULT_PLAYWRIGHT_WORKERS;
 }
 
 export function localChecksQueueTimeoutMs(config: RepoOSConfig): number {
@@ -61,7 +97,7 @@ export function localCheckLimitForRun(config: RepoOSConfig, env: NodeJS.ProcessE
   if (isFallback && remoteLocalFallbackMode(config) === "off") {
     return 0;
   }
-  return localChecksMaxConcurrent(config);
+  return heavySlotLimit(config);
 }
 
 export function pressureGuardEnabled(config: RepoOSConfig): boolean {
@@ -93,6 +129,18 @@ export function pressureMaxSwapUsedRatio(config: RepoOSConfig): number {
   const raw = config.pressureGuard?.maxSwapUsedRatio;
   if (typeof raw === "number" && Number.isFinite(raw) && raw > 0 && raw <= 1) return raw;
   return DEFAULT_PRESSURE_MAX_SWAP_USED_RATIO;
+}
+
+export function pressureMaxCompressorBytes(config: RepoOSConfig): number {
+  const raw = config.pressureGuard?.maxCompressorBytes;
+  if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) return raw;
+  return DEFAULT_PRESSURE_MAX_COMPRESSOR_BYTES;
+}
+
+export function pressureMinIdleCpuPercent(config: RepoOSConfig): number {
+  const raw = config.pressureGuard?.minIdleCpuPercent;
+  if (typeof raw === "number" && Number.isFinite(raw) && raw >= 0 && raw <= 100) return raw;
+  return DEFAULT_PRESSURE_MIN_IDLE_CPU_PERCENT;
 }
 
 export function pressureMaxCompressorRatio(config: RepoOSConfig): number {

@@ -56,6 +56,11 @@ import {
   pairPauseInfo,
 } from "../core/budget-allowlist.js";
 import { pressureReason } from "../core/pressure-guard.js";
+import {
+  applyEngineerResourceEnv,
+  installEngineerPathShims,
+  prependPath,
+} from "../core/engineer-resources.js";
 import type { MemoryPressureProbe } from "../core/memory-pressure.js";
 import { effectiveAgentCapacity, registeredEngineerCount } from "../core/global-engineers.js";
 import { clearQueueMarker, writeQueueMarker } from "../core/local-queue-marker.js";
@@ -7164,6 +7169,11 @@ export class AgentRunner {
       // Per-harness env (e.g. CRUSH_CLIENT_SERVER=0) applied last so it cannot
       // be clobbered by the lifecycle bookkeeping above.
       harnessChildEnv(cmd, agentEnv);
+      if (!opts.review) {
+        applyEngineerResourceEnv(agentEnv, this.config);
+        const shimDir = installEngineerPathShims(this.config.root, this.cacheDir);
+        if (shimDir) prependPath(agentEnv, shimDir);
+      }
       proc = spawn(cmd, args, {
         cwd,
         stdio: ["ignore", outFd, errFd],

@@ -7,8 +7,19 @@ import {
   needsInputDetailVisible,
   needsInputDetailUsesLineClamp,
   needsInputStatusLabel,
+  needsInputCompactChipLabel,
   needsInputSuggestionText,
 } from "../src/lib/needs-input-ui";
+
+describe("needsInputCompactChipLabel (#0952)", () => {
+  it("maps each reason to a short header chip label", () => {
+    expect(needsInputCompactChipLabel("check-failed-after-retries", false)).toBe("Checks failed");
+    expect(needsInputCompactChipLabel("watchdog-stuck", false)).toBe("No agent running");
+    expect(needsInputCompactChipLabel("underspecified", false)).toBe("Not fleshed out");
+    expect(needsInputCompactChipLabel("needs-human-step", false)).toBe("Needs human");
+    expect(needsInputCompactChipLabel(undefined, true)).toBe("Agent asked");
+  });
+});
 
 describe("needsInputPrimaryAction (#0511)", () => {
   it("offers Review again for watchdog-stuck on a review task", () => {

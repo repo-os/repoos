@@ -27,7 +27,10 @@ import ActivityIndicator from "./ActivityIndicator.vue";
 import DiffFileViewer from "./DiffFileViewer.vue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 
-const props = defineProps<{ task: Task }>();
+const props = withDefaults(
+  defineProps<{ task: Task; statusDetails?: { title: string; detail: string }[] }>(),
+  { statusDetails: () => [] },
+);
 const router = useRouter();
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -36,7 +39,7 @@ const ui = useUiStore();
  *  Debugger chat. Both stay reachable (the chat is additive, never a
  *  replacement for the logs — see task #0337). v-model'd so a Fix handoff can
  *  open the Debugger view directly. */
-const view = defineModel<"logs" | "debugger" | "conflict">("view", { default: "logs" });
+const view = defineModel<"logs" | "debugger" | "conflict" | "status">("view", { default: "logs" });
 
 /**
  * Merge conflict view: the branch's live conflict against main, rendered with
@@ -475,6 +478,15 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
       <button
         type="button"
         class="debug-tab"
+        data-test-id="debug-tab-status"
+        :class="{ active: view === 'status' }"
+        @click="view = 'status'"
+      >
+        Status details
+      </button>
+      <button
+        type="button"
+        class="debug-tab"
         :class="{ active: view === 'logs' }"
         @click="view = 'logs'"
       >
@@ -500,7 +512,23 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
       </button>
     </div>
 
-    <template v-if="view === 'logs'">
+    <template v-if="view === 'status'">
+      <section class="changes-summary" aria-label="Task status details">
+        <div class="changes-summary-title">Status details</div>
+        <article v-for="row in statusDetails" :key="row.title" class="debug-status-detail">
+          <strong>{{ row.title }}</strong>
+          <p class="debug-status-text">{{ row.detail }}</p>
+        </article>
+        <div v-if="!statusDetails.length && !repo.doneErrorFor(task.id)" class="changes-empty">
+          No additional status details. Recent checks and activity are in Logs.
+        </div>
+        <p class="debug-status-guidance">
+          Check runs and their complete output remain available in Logs. The Review tab keeps the
+          full report and retry actions.
+        </p>
+      </section>
+    </template>
+    <template v-else-if="view === 'logs'">
       <Card v-if="hasWorktree" class="debug-sync">
         <div class="debug-sync-head">
           <RefreshCw class="debug-sync-icon" :class="{ spinning: syncBusy }" />
@@ -715,6 +743,34 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   color: var(--txt-dim);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.debug-status-detail {
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.debug-status-detail > strong {
+  color: var(--txt);
+  font-size: 12px;
+}
+
+.debug-status-text {
+  margin: 6px 0 0;
+  color: var(--txt-dim);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.debug-status-guidance {
+  margin: 12px 0;
+  color: var(--txt-faint);
+  font-size: 11px;
 }
 
 .debug-panel {
