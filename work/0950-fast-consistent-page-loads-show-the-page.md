@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "2026-10-26T07:21:26.129493Z ERROR codex_core::session: failed to record rollout items: thread 01a17027-8db6-74a0-8c43-034aa0f7ac93 not found"
@@ -16,7 +16,7 @@ model_override: gpt-6.1-sol
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T07:22:01Z"
+updated_at: "2026-10-26T07:22:03Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 61f6a9e583e6a34607e604633e11927b873fca74
 review_passes: 9
@@ -415,4 +415,3 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T07:09:30Z · needs_input
 - 2026-10-26T07:14:38Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-10-26T07:22:01Z · agent exited with an error (codex) · 2026-10-26T07:21:26.129493Z ERROR codex_core::session: failed to record rollout items: thread 01a17027-8db6-74a0-8c43-034aa0f7ac93 not found
-- 2026-10-26T07:22:01Z · status active→review
