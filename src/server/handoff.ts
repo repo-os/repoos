@@ -175,6 +175,19 @@ function concise(run: RunResult): string {
   );
 }
 
+/**
+ * Hard cap on the LOCAL `repoos check` child during handoff. It was 4 minutes,
+ * which SIGKILLed the check mid-run on a loaded laptop (build + tests + UI
+ * smoke + contrast audit take longer once the runner path is skipped), so
+ * every handoff failed as a cancelled "Check plan" (2026-10-26, #0950). The
+ * whole finalization is already bounded by HANDOFF_DEADLINE_MS; give the check
+ * most of that. Override with REPOOS_LOCAL_CHECK_TIMEOUT_MS.
+ */
+const LOCAL_CHECK_TIMEOUT_MS = (() => {
+  const raw = Number(process.env.REPOOS_LOCAL_CHECK_TIMEOUT_MS);
+  return Number.isFinite(raw) && raw >= 60_000 ? raw : 20 * 60_000;
+})();
+
 async function runCheck(
   worktree: string,
   config: RepoOSConfig,
@@ -229,7 +242,14 @@ async function runCheck(
   };
   let last: RunResult = { status: null, stdout: "", stderr: "check command unavailable" };
   for (const candidate of candidates) {
-    last = await run(candidate[0], [...candidate.slice(1)], worktree, 240_000, env, onChunk);
+    last = await run(
+      candidate[0],
+      [...candidate.slice(1)],
+      worktree,
+      LOCAL_CHECK_TIMEOUT_MS,
+      env,
+      onChunk,
+    );
     if (last.status === 0) return last;
     if (!last.error || (last.error.code !== "ENOENT" && last.error.code !== "EACCES")) return last;
   }
