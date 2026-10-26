@@ -14,8 +14,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-one-task-s-activity-bookkeeping-comm
+cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-26T18:49:49Z"
+updated_at: "2026-10-26T18:49:59Z"
 handoff_signal_retry_count: 2
 dev_error_count: 12
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T12:19:20.905Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -161,3 +163,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-26T15:31:40Z · cli_override, model_override
 - 2026-10-26T18:49:28Z · released, assigned_to
 - 2026-10-26T18:49:49Z · status ready→active
+- 2026-10-26T18:49:59Z · cli_override, model_override
