@@ -3,6 +3,9 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: check-failed-after-retries
+needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p2
 area: web
 assigned_to: ai
@@ -11,13 +14,13 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T07:53:21Z"
+updated_at: "2026-10-26T07:53:22Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-26T06:15:46.061Z: repoos check failed: ◆ Check plan"
 review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
-dev_error_count: 28
+dev_error_count: 29
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T07:21:34.758Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T07:22:24.808Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T07:22:57.120Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T07:30:05.362Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T07:30:16.654Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T07:30:30.569Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -329,3 +332,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T07:43:42Z · body
 - 2026-10-26T07:51:08Z · body
 - 2026-10-26T07:53:21Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-26T07:53:22Z · agent exited with an error (cursor) · ✗ handoff deferred — read the queued message(s) first, then request review again
