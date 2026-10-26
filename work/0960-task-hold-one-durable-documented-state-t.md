@@ -8,8 +8,9 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: cursor
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-26T18:53:55Z"
+updated_at: "2026-10-26T21:39:24Z"
 ---
 ## Problem
 
@@ -43,3 +44,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 
 - 2026-10-25T14:23:48Z · created · njachowski@gmail.com
 - 2026-10-26T18:53:55Z · status inbox→ready
+- 2026-10-26T21:39:24Z · cli_override
