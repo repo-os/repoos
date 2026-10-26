@@ -14,8 +14,6 @@ review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
 updated_at: "2026-10-26T15:08:39Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
 review_passes: 9
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -449,3 +447,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T14:53:13Z · note: handoff requested (cli)
 - 2026-10-26T14:54:35Z · message_queued at 2026-10-26T14:54:35.710Z
 - 2026-10-26T15:08:39Z · status active→review
+
