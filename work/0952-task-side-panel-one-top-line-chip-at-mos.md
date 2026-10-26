@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-side-panel-one-top-line-chip-at-mos
+cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-26T15:38:00Z"
+updated_at: "2026-10-26T15:38:09Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -342,3 +344,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-26T15:31:24Z · model_override
 - 2026-10-26T15:37:39Z · released, assigned_to
 - 2026-10-26T15:38:00Z · status ready→active
+- 2026-10-26T15:38:09Z · cli_override, model_override
