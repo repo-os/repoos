@@ -103,6 +103,36 @@ describe("SecretsView (#0929)", () => {
     revisit.unmount();
   });
 
+  it.each(["empty environments", "empty keys", "pending keys"])(
+    "keeps refresh errors visible with %s",
+    async (state) => {
+      const environments = state === "empty environments" ? [] : [envs.environments[1]];
+      api.mockImplementation(async (path) => {
+        if (path === "/api/project-environments") return { environments } as never;
+        if (state === "pending keys") return new Promise(() => {});
+        return snapshots.integration as never;
+      });
+      const first = mountPage();
+      await flushPromises();
+      first.unmount();
+      api.mockImplementation(async (path) => {
+        if (path === "/api/project-environments" && state === "empty keys")
+          return { environments } as never;
+        throw new Error("refresh offline");
+      });
+      const revisit = mountPage();
+      await flushPromises();
+      expect(revisit.find(".secrets-error").text()).toContain(
+        "Could not update environment metadata",
+      );
+      if (state !== "pending keys") expect(revisit.find(".page-skeleton").exists()).toBe(false);
+      if (state === "empty environments")
+        expect(revisit.find(".secrets-empty").exists()).toBe(true);
+      if (state === "empty keys") expect(revisit.find(".secrets-ledger").exists()).toBe(true);
+      revisit.unmount();
+    },
+  );
+
   it("shows cached keys immediately while both resources revalidate", async () => {
     const first = mountPage();
     await flushPromises();

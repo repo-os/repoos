@@ -232,25 +232,27 @@ describe("Dev loading shot", () => {
     revisited.unmount();
   });
 
-  it("keeps cached targets visible and reports a failed silent refresh", async () => {
-    installFetch({ targets: [target({ label: "Cached service" })] });
-    const first = mountView();
-    await flush();
-    first.unmount();
+  it.each([{ targets: [] }, { targets: [target({ label: "Cached service" })] }])(
+    "shows refresh errors with cached targets $targets",
+    async ({ targets }) => {
+      installFetch({ targets });
+      const first = mountView();
+      await flush();
+      first.unmount();
 
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() => Promise.reject(new Error("refresh offline"))),
-    );
-    const revisited = mountView();
-    await flush();
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => Promise.reject(new Error("refresh offline"))),
+      );
+      const revisited = mountView();
+      await flush();
 
-    expect(revisited.find(".dev-card").exists()).toBe(true);
-    expect(revisited.text()).toContain("Cached service");
-    expect(revisited.text()).toContain("Refresh failed");
-    expect(revisited.find(".page-skeleton").exists()).toBe(false);
-    revisited.unmount();
-  });
+      expect(revisited.find(targets.length ? ".dev-card" : ".dev-empty").exists()).toBe(true);
+      expect(revisited.find("[role=status]").text()).toContain("Refresh failed");
+      expect(revisited.find(".page-skeleton").exists()).toBe(false);
+      revisited.unmount();
+    },
+  );
 });
 
 describe("DevView layout and state (#0748)", () => {

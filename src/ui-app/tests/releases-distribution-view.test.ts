@@ -54,9 +54,9 @@ function channel(over: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-function mockApi(channels: ReturnType<typeof channel>[]) {
+function mockApi(channels: ReturnType<typeof channel>[], release = releaseStatus()) {
   api.mockImplementation((path: string) => {
-    if (path === "/api/release") return Promise.resolve(releaseStatus());
+    if (path === "/api/release") return Promise.resolve(release);
     if (path === "/api/release/distribution")
       return Promise.resolve({ releaseVersion: "1.2.3", releaseTag: "v1.2.3", channels });
     if (path === "/api/release/run")
@@ -163,6 +163,23 @@ describe("ReleasesView Published to (#0445)", () => {
     expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.3");
     expect(wrapper.find(".page-skeleton").exists()).toBe(false);
     wrapper.unmount();
+  });
+
+  it("shows a release refresh failure after a cached unconfigured result", async () => {
+    mockApi([], { ...releaseStatus(), enabled: false });
+    const first = await mountView();
+    first.unmount();
+    const normalApi = api.getMockImplementation()!;
+    api.mockImplementation((path, ...args) =>
+      path === "/api/release"
+        ? Promise.reject(new Error("release unavailable"))
+        : normalApi(path, ...args),
+    );
+    const revisit = await mountView();
+    expect(revisit.find(".rel-empty").exists()).toBe(true);
+    expect(revisit.find('[role="status"]').text()).toContain("release unavailable");
+    expect(revisit.find(".page-skeleton").exists()).toBe(false);
+    revisit.unmount();
   });
 
   it.each([

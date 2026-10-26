@@ -39,6 +39,7 @@ const POLL_MS = 4000;
 const targets = ref<DevTargetView[]>([]);
 const configErrors = ref<string[]>([]);
 const loading = ref(true);
+const hasTargets = ref(false);
 const loadError = ref("");
 /** Feedback line after an action, e.g. "Started web". */
 const message = ref("");
@@ -209,6 +210,7 @@ async function load(silent = false): Promise<void> {
     const fixture = shotFixtureDevTargets(shotState);
     if (fixture) {
       targets.value = fixture;
+      hasTargets.value = true;
       configErrors.value = [];
       loadError.value = "";
       loading.value = false;
@@ -222,6 +224,7 @@ async function load(silent = false): Promise<void> {
       () => api<DevTargetsResponse>("/api/dev/targets"),
       (res) => {
         targets.value = res.targets ?? [];
+        hasTargets.value = true;
         loading.value = false;
         configErrors.value = res.errors ?? [];
         loadError.value = "";
@@ -379,15 +382,16 @@ watch(
     </header>
 
     <div class="page-scroll-body">
-      <PageSkeleton v-if="loading && !targets.length" kind="targets" />
-      <p v-else-if="loadError && !targets.length" class="dev-state dev-state--error" role="alert">
-        {{ loadError }}
+      <PageSkeleton v-if="loading && !hasTargets" kind="targets" />
+      <p
+        v-if="loadError"
+        class="dev-state dev-state--error"
+        :role="hasTargets ? 'status' : 'alert'"
+      >
+        <template v-if="hasTargets">Refresh failed: </template>{{ loadError }}
       </p>
 
-      <template v-else>
-        <p v-if="loadError && targets.length" class="dev-state dev-state--error" role="status">
-          Refresh failed: {{ loadError }}
-        </p>
+      <template v-if="hasTargets">
         <section v-if="configErrors.length" class="dev-config-errors" role="alert">
           <strong>Some <code>[[dev.targets]]</code> entries were ignored:</strong>
           <ul>

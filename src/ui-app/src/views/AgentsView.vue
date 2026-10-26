@@ -377,7 +377,6 @@ const detected = ref<DetectedAgent[]>([]);
 const detectPending = ref<Set<string>>(new Set());
 const detectLoading = ref(false);
 const detectHasSnapshot = ref(false);
-const detectError = ref(false);
 const detectRefreshError = ref("");
 const detectCachedAt = ref<string | null>(null);
 const detectHintCopied = ref<string>("");
@@ -496,7 +495,6 @@ const detectRows = computed<DetectRow[]>(() => {
 let activeStream: EventSource | null = null;
 
 async function checkAgents(): Promise<void> {
-  detectError.value = false;
   detectRefreshError.value = "";
   detectHintCopied.value = "";
   // Show the shared first-load skeleton while both the saved snapshot and the
@@ -517,8 +515,7 @@ async function checkAgents(): Promise<void> {
     (error) => {
       // A cache miss is non-fatal; the stream will populate the page. When a
       // cached snapshot exists, keep showing it and report the failed refresh.
-      if (detectHasSnapshot.value)
-        detectRefreshError.value = error instanceof Error ? error.message : String(error);
+      detectRefreshError.value = error instanceof Error ? error.message : String(error);
     },
   );
 
@@ -566,10 +563,8 @@ async function checkAgents(): Promise<void> {
   es.onerror = () => {
     detectPending.value = new Set();
     detectLoading.value = false;
-    if (!detected.value.length) detectError.value = true;
-    else
-      detectRefreshError.value =
-        "Could not refresh detected coding agents. Showing the last saved list.";
+    detectRefreshError.value =
+      "Could not refresh detected coding agents. Showing the last saved list.";
     es.close();
     activeStream = null;
   };
@@ -915,7 +910,6 @@ onUnmounted(() => {
 
         <div
           class="agent-tab-panel"
-          v-if="!detectError"
           v-show="activeTab === 'detected'"
           style="padding: 0 18px 6px; margin-bottom: 16px"
         >
