@@ -52,16 +52,16 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 ```json
 [
 {
-  "label": "Heavy slots and pressure limits in Settings",
-  "target": "default",
-  "route": "/settings?tab=general&section=performance",
-  "highlight": "[data-settings-section=\"performance\"]"
+"label": "Heavy slots and pressure limits in Settings",
+"target": "default",
+"route": "/settings?tab=general&section=performance",
+"highlight": "[data-settings-section=\"performance\"]"
 },
 {
-  "label": "Dashboard heavy-job line",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-heavy-jobs]"
+"label": "Dashboard heavy-job line",
+"target": "default",
+"route": "/",
+"highlight": "[data-heavy-jobs]"
 }
 ]
 ```
@@ -76,3 +76,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-26T19:02:04Z · message_queued at 2026-10-26T19:02:04.142Z
 - 2026-10-26T19:19:58Z · body: Notes for AI (added 7)
 - 2026-10-26T19:19:58Z · body
+- 2026-10-26T19:19:58Z · message_queued at 2026-10-26T19:19:58.813Z
