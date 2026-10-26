@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T08:49:23Z"
+updated_at: "2026-10-26T09:21:57Z"
 ---
 ## Problem
 The RepoOS server (single Bun main thread) repeatedly freezes or becomes unusably slow (UI never loads, accepts then resets connections) because it runs blocking git child processes per task/branch on the same thread that serves HTTP. With ~910 tasks, ~100 branches, 27 worktrees, each spawn costs 0.1-0.3 s on macOS (syspolicyd). Fixed one loop at a time so far (live-index per-file git, dir-log walk cache, async ahead-count cache, GET /api/system/worktree-gc preview cache) but others remain: worktreeStatus() callers (task-watchdog.ts, indexer.ts), per-task `git rev-list --count`, per-branch `merge-base --is-ancestor` (worktree-gc.ts, task-dependencies.ts, worktree-handoff-guard.ts, done.ts), sync `git log --name-only -- work` walks (indexer.ts:76, story-definition-files.ts).
@@ -30,9 +30,18 @@ Also cap local build/test fan-out (see #0961) and keep agents at nice 10.
 ## Notes for AI
 Read HANDOFF-2026-10-25.md in the repo root first (evidence, hypotheses, file/line suspects). Do not restart the server yourself; ask the human. Never run `just serve-noauth` or request previews while editing server git code.
 
+## Sub-item: replace the GET /api/tasks "dump everything" endpoint
+`GET /api/tasks` returns all ~910 tasks with full markdown bodies plus per-task enrichers (dependency blockers, review status, preview targets, checkpoint recovery, pending handoff). It is a synchronous handler, so it blocks the whole server for ~45 s (was 60+ s before dependency-state caching, adfa259c9). No UI code calls it (the UI uses /api/board; only POST /api/tasks is used); the route is only listed in src/cli/api-route-parity.ts, so callers are external scripts/agents. It does not scale (grows with every task ever filed) and nobody needs 900 bodies as context.
+Build, and keep CLI/API parity per AGENTS.md:
+1. `GET /api/tasks/:id/context`: the task, its dependencies and dependents, related tasks (same story/area, recent neighbours) as short summaries, latest review verdict, branch/worktree status. This is what engineer/PM agents need.
+2. `GET /api/tasks?fields=id,title,status,priority&status=...&limit=...&cursor=...`: a light, filterable, paged list without bodies; make `repoos list` and similar commands use it.
+3. Keep the full dump only behind `?full=1`, made async/chunked so it cannot block the HTTP thread; add a test that fails if the default response grows with body size.
+Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; no per-task sync git in either.
+
 ## Activity
 
 - 2026-10-26T07:54:06Z · created · njachowski@gmail.com
 - 2026-10-26T07:54:12Z · needs_input
 - 2026-10-26T07:54:21Z · body: Problem (added 1, removed 1); Desired UX (added 1, removed 1); Acceptance criteria (added 7, removed 1); Notes for AI (added 1, removed 1)
 - 2026-10-26T08:49:23Z · needs_input
+- 2026-10-26T09:21:57Z · body: Sub-item: replace the GET /api/tasks "dump everything" endpoint (added)
