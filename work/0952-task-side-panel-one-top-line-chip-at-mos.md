@@ -2,7 +2,7 @@
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -12,6 +12,7 @@ cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-24T23:16:59Z"
 updated_at: "2026-10-26T15:57:41Z"
+review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -352,3 +353,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-26T15:55:36Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-26T15:57:40Z · note: review pass 1: needs some work
 - 2026-10-26T15:57:41Z · message_queued at 2026-10-26T15:57:40.996Z
+- 2026-10-26T15:57:41Z · status review→active
