@@ -6,9 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: Reading additional input from stdin...
-debug_tldr: "Codex couldn't refresh models due to a network error—check connectivity/VPN, then resume the engineer or pick another allowlisted agent."
-debug_tldr_at: "2026-10-26T14:01:15Z"
-debug_tldr_key: "dev-error|2026-10-26T12:57:54.690636Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request"
+debug_tldr: "Codex engineer crashed on stdin (dev-error) — override to another engineer agent with repoos override, then resume the task."
+debug_tldr_at: "2026-10-26T14:11:18Z"
+debug_tldr_key: dev-error|Reading additional input from stdin...
 priority: p2
 area: web
 assigned_to: ai
@@ -19,7 +19,7 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T14:10:47Z"
+updated_at: "2026-10-26T14:11:18Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
