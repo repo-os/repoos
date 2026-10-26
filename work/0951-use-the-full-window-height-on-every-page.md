@@ -20,6 +20,7 @@ review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 23
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T07:21:34.758Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -312,3 +313,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T07:10:36Z · CTO nudge: held — remote validation is running
 - 2026-10-26T07:15:09Z · note: highlight .work-page matched nothing on /work
 - 2026-10-26T07:20:26Z · body
+- 2026-10-26T07:21:34Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · 2026-10-26T07:19:42.037831Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/use-the-full-window-height-on-every-page/work/.attachments/0951/shots/default-15.png`: No such file…
