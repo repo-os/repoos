@@ -14,7 +14,6 @@ created_at: "2026-10-26T07:54:06Z"
 updated_at: "2026-10-26T18:57:31Z"
 handoff_signal_retry_count: 1
 dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-26T11:33:32.912Z\",\"kind\":\"usage-limit\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
