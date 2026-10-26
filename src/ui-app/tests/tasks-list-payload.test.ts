@@ -17,7 +17,7 @@ function task(id: string, body: string): Task {
     absPath: `/tmp/${id}.md`,
     dependsOn: [],
     git: emptyGitInfo(),
-  } as Task;
+  } as unknown as Task;
 }
 
 function capture() {
@@ -44,7 +44,7 @@ describe("GET /api/tasks default payload", () => {
         config: { root: "/tmp" },
       } as unknown as RouteContext;
       const req = { url: "/api/tasks" } as IncomingMessage;
-      await getTasks(ctx, req, cap.res);
+      await getTasks(ctx, req, cap.res, {});
       return cap.text();
     };
     const a = await run(small);
