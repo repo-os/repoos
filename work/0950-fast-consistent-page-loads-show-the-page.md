@@ -3,6 +3,9 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 10 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p2
 area: web
 assigned_to: ai
@@ -453,3 +456,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T15:19:42Z · review_model_override
 - 2026-10-26T15:19:45Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-26T15:21:43Z · note: review pass 12: needs some work
+- 2026-10-26T15:21:43Z · needs_input
