@@ -163,3 +163,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-26T18:53:28Z · body
 - 2026-10-26T18:55:29Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-26T18:55:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-26T18:55:30Z · message_delivered: 1 message(s)
