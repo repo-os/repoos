@@ -2,14 +2,14 @@
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
-status: ready
+status: active
 priority: p1
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-26T19:01:23Z"
+updated_at: "2026-10-26T19:01:44Z"
 ---
 ## Problem
 
@@ -40,3 +40,4 @@ On 2026-10-25 a 10-core, 24 GB Mac with five engineers running reached load 40 t
 
 - 2026-10-25T15:37:17Z · created · njachowski@gmail.com
 - 2026-10-26T18:53:51Z · status inbox→ready
+- 2026-10-26T19:01:44Z · status ready→active
