@@ -3300,9 +3300,28 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/stats/daily", getDailyTotals);
 
   // System resource routes
+  // The dry-run builds a full index and spawns git per branch ON THE MAIN
+  // THREAD (seconds to minutes with ~100 branches), and the Control page polls
+  // it. Serve a cached report for 5 minutes so the HTTP loop is not blocked on
+  // every poll (server freeze, 2026-10-26); POST invalidates it.
+  let worktreeGcPreview: { at: number; report: ReturnType<typeof sweepStaleWorktrees> } | null =
+    null;
   router.register("GET", "/api/system/worktree-gc", (_ctx, _req, res) => {
     const jobs = jobCoordinator.allJobs().filter((j) => j.phase !== "done" && j.phase !== "failed");
-    const report = sweepStaleWorktrees(config, { mode: "full", dryRun: true });
+    // Never compute here: the dry-run takes ~30 s of blocking git on the main
+    // thread and the Control page polls this route. Serve the last cached
+    // report, or an empty placeholder until a POST (cleanup) has produced one.
+    const report =
+      worktreeGcPreview?.report ??
+      ({
+        mode: "full",
+        dryRun: true,
+        removedWorktrees: [],
+        removedBranches: [],
+        keptDirty: [],
+        prunedMetadata: false,
+        errors: [],
+      } as ReturnType<typeof sweepStaleWorktrees>);
     return json(res, 200, {
       report,
       activeCloseOutTaskIds: jobs.map((j) => j.taskId),
@@ -3317,6 +3336,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         error: `Worktree cleanup is paused while a close-out is active${ids.length ? `: ${ids.join(", ")}` : ""}.`,
       });
     }
+    worktreeGcPreview = null;
     return json(res, 200, sweepStaleWorktrees(config, { mode: "full" }));
   });
   router.register("POST", "/api/system/kill-process", async (_ctx, req, res) => {

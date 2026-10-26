@@ -205,20 +205,25 @@ describe("parseShotPlan", () => {
     expect(bad.errors[0]).toMatch(/"theme" expects "light" or "dark"/);
   });
 
-  it("parses viewportWidth and reducedMotion (#0787)", () => {
+  it("parses viewport dimensions and reducedMotion (#0787, #0951)", () => {
     const ok = parseShotPlan(
       bodyWithShots(
-        '[{"route":"/work","viewportWidth":390,"reducedMotion":true},{"route":"/","viewportWidth":1280}]',
+        '[{"route":"/work","viewportWidth":390,"viewportHeight":640,"reducedMotion":true},{"route":"/","viewportWidth":1280,"viewportHeight":1120}]',
       ),
     );
     expect(ok.errors).toEqual([]);
     expect(ok.shots[0]?.viewportWidth).toBe(390);
     expect(ok.shots[0]?.reducedMotion).toBe(true);
     expect(ok.shots[1]?.viewportWidth).toBe(1280);
+    expect(ok.shots.map((s) => s.viewportHeight)).toEqual([640, 1120]);
 
     const bad = parseShotPlan(bodyWithShots('[{"route":"/work","viewportWidth":100}]'));
     expect(bad.shots).toEqual([]);
     expect(bad.errors[0]).toMatch(/viewportWidth/);
+
+    const badHeight = parseShotPlan(bodyWithShots('[{"route":"/work","viewportHeight":200}]'));
+    expect(badHeight.shots).toEqual([]);
+    expect(badHeight.errors[0]).toMatch(/viewportHeight/);
   });
 });
 
@@ -421,6 +426,31 @@ describe("buildCapturePlan", () => {
     expect(
       sameDeclaredShot({ route: "/work", theme: "light" }, { route: "/work", theme: "light" }),
     ).toBe(true);
+  });
+
+  it("keeps tall and short viewport captures distinct (#0951)", () => {
+    const { entries, collapsed } = buildCapturePlan(
+      ["default"],
+      [
+        { route: "/work", label: "Work tall", viewportHeight: 1120 },
+        { route: "/work", label: "Work short", viewportHeight: 620 },
+        { route: "/stories", label: "Stories tall", viewportHeight: 1120 },
+        { route: "/stories", label: "Stories short", viewportHeight: 620 },
+        { route: "/checks", label: "Checks tall", viewportHeight: 1120 },
+        { route: "/checks", label: "Checks short", viewportHeight: 620 },
+      ],
+    );
+
+    expect(entries).toHaveLength(6);
+    expect(collapsed).toEqual([]);
+    expect(entries.map((entry) => entry.viewportHeight)).toEqual([1120, 620, 1120, 620, 1120, 620]);
+    for (const [tall, short] of [
+      [entries[0]!, entries[1]!],
+      [entries[2]!, entries[3]!],
+      [entries[4]!, entries[5]!],
+    ]) {
+      expect(shotPlanFingerprint([tall])).not.toBe(shotPlanFingerprint([short]));
+    }
   });
 
   it("rejects a declared target the resolution missed, with an actionable error", () => {

@@ -12,7 +12,7 @@ branch: feat/close-out-and-layout-reminders-and-sched
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T04:20:16Z"
-updated_at: "2026-10-25T11:43:45Z"
+updated_at: "2026-10-26T14:53:29Z"
 last_close_out_gate_ms: 108890
 last_close_out_gate_at: "2026-10-20T11:57:00.685Z"
 review_passes: 9
@@ -214,3 +214,17 @@ Extend bookkeepingDirs and its callers rather than adding a parallel list, and c
 - 2026-10-25T11:13:18Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T11:28:05Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T11:43:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T14:02:00Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T15:32:41Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:16:26Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:50:43Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T18:03:14Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T05:32:30Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T06:59:37Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T07:53:28Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T09:03:34Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T11:14:36Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:00:59Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:10:52Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:44:16Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:53:29Z · message_overdue: still queued after 60m without being delivered

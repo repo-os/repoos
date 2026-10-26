@@ -12,7 +12,7 @@ branch: feat/hub-add-server-never-lists-locally-runni
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-19T05:15:39Z"
-updated_at: "2026-10-25T11:43:43Z"
+updated_at: "2026-10-26T14:53:28Z"
 last_close_out_gate_ms: 94623
 last_close_out_gate_at: "2026-10-19T06:11:03.958Z"
 review_passes: 3
@@ -134,3 +134,17 @@ With a local `repoos serve` on a non-default port (e.g. **7559**), open Hub → 
 - 2026-10-25T11:13:17Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T11:28:05Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T11:43:43Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T14:01:56Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T15:32:31Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:16:25Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:50:40Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T18:03:13Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T05:32:29Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T06:59:36Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T07:53:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T09:03:33Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T11:14:35Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:00:58Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:10:51Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:44:15Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:53:28Z · message_overdue: still queued after 60m without being delivered

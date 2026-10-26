@@ -512,18 +512,33 @@ export class LiveIndex {
       git: emptyGitInfo(),
     });
     if (this.useGit) {
-      const { subject, date } = lastCommitForFile(this.config.root, task.path);
-      const wt = task.branch
-        ? worktreeStatus(this.config.root, task.branch)
-        : { path: null, dirty: false };
-      task.git = {
-        branchExists: task.branch ? this.branchCache.has(task.branch) : false,
-        worktreeExists: task.branch ? worktreePaths(this.config.root).has(task.branch) : false,
-        lastCommit: subject,
-        lastCommitAt: date,
-        worktreePath: wt.path,
-        dirty: wt.dirty,
-      };
+      const prior = this.byId.get(task.id);
+      if (prior && prior.branch === task.branch) {
+        // Hot path (2026-10-25 server freezes): every bookkeeping commit rewrites
+        // task files, and each change used to run 3-4 SYNCHRONOUS git spawns on the
+        // main thread (git log, git status, git rev-list, git worktree list). With
+        // ~30 worktrees and slow process spawns under macOS syspolicyd that blocked
+        // the event loop for minutes and the server stopped answering. The branch is
+        // unchanged, so reuse the last known git info; the batched async
+        // reconcile/sweep keeps it fresh.
+        task.git = {
+          ...prior.git,
+          branchExists: task.branch ? this.branchCache.has(task.branch) : false,
+        };
+      } else {
+        const { subject, date } = lastCommitForFile(this.config.root, task.path);
+        const wt = task.branch
+          ? worktreeStatus(this.config.root, task.branch)
+          : { path: null, dirty: false };
+        task.git = {
+          branchExists: task.branch ? this.branchCache.has(task.branch) : false,
+          worktreeExists: task.branch ? worktreePaths(this.config.root).has(task.branch) : false,
+          lastCommit: subject,
+          lastCommitAt: date,
+          worktreePath: wt.path,
+          dirty: wt.dirty,
+        };
+      }
     }
 
     const existing = this.byId.get(task.id);

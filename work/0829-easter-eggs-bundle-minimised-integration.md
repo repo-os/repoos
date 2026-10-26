@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-integration-pill-tool
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-25T11:43:43Z"
+updated_at: "2026-10-26T14:53:28Z"
 last_close_out_gate_ms: 350052
 last_close_out_gate_at: "2026-10-18T13:08:19.214Z"
 review_passes: 7
@@ -366,3 +366,17 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-25T11:13:16Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T11:28:04Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T11:43:43Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T14:01:55Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T15:32:26Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:16:24Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:50:39Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T18:03:12Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T05:32:29Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T06:59:35Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T07:53:26Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T09:03:33Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T11:14:35Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:00:57Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:10:51Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:44:14Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:53:28Z · message_overdue: still queued after 60m without being delivered

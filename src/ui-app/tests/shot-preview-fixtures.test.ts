@@ -22,6 +22,20 @@ import { shotProblems } from "../src/lib/shot-rows";
 import { isDocsShotSkip, shotVerdict } from "../src/lib/handoff-verification";
 
 describe("shot preview board fixtures (#0743)", () => {
+  it("populates repeatable Work and Stories scroll captures", () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    const config = useConfigStore();
+    config.data = {};
+    applyShotPreviewConfigFixture(config, "pages:scroll");
+    applyShotPreviewFixture(repo, "pages:scroll");
+    applyShotPreviewFixture(repo, "pages:scroll");
+    expect(repo.tasks).toHaveLength(30);
+    expect(new Set(repo.tasks.map((t) => t.story)).size).toBe(15);
+    expect(repo.tasks.every((t) => !t.branch)).toBe(true);
+    expect(config.data.stories).toEqual({ enabled: true });
+  });
+
   it("reads shotState from the location query", () => {
     expect(readShotPreviewFixtureFromLocation({ search: "?shotState=closeOut%3Aactive" })).toBe(
       "closeOut:active",

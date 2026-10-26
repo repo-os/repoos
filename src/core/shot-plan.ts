@@ -106,11 +106,12 @@ export interface DeclaredShot {
    */
   theme?: "light" | "dark";
   /**
-   * Viewport width in px for this capture (#0787). Height stays the default
-   * handoff height (800). Use a narrow width (e.g. 390) to show constrained
-   * board layouts.
+   * Viewport width in px for this capture (#0787). Use a narrow width (e.g.
+   * 390) to show constrained board layouts.
    */
   viewportWidth?: number;
+  /** Viewport height in px for this capture (#0951). */
+  viewportHeight?: number;
   /**
    * When true, emulate `prefers-reduced-motion: reduce` before capture (#0787).
    */
@@ -176,6 +177,8 @@ export interface CaptureEntry {
   theme?: "light" | "dark";
   /** Viewport width in px (#0787), threaded from the declared shot. */
   viewportWidth?: number;
+  /** Viewport height in px, threaded from the declared shot (#0951). */
+  viewportHeight?: number;
   /** Emulate reduced motion (#0787), threaded from the declared shot. */
   reducedMotion?: boolean;
   /**
@@ -432,6 +435,13 @@ function parseShot(
       return { error: `${where}: "viewportWidth" expects a number between 280 and 3840` };
     }
     shot.viewportWidth = Math.floor(w);
+  }
+  if (r.viewportHeight !== undefined) {
+    const h = Number(r.viewportHeight);
+    if (!Number.isFinite(h) || h < 320 || h > 2160) {
+      return { error: `${where}: "viewportHeight" expects a number between 320 and 2160` };
+    }
+    shot.viewportHeight = Math.floor(h);
   }
   if (r.reducedMotion !== undefined) {
     if (typeof r.reducedMotion !== "boolean") {
@@ -938,6 +948,9 @@ export function buildCapturePlan(
       ...(!isCommand(resolved.target) && shot.viewportWidth
         ? { viewportWidth: shot.viewportWidth }
         : {}),
+      ...(!isCommand(resolved.target) && shot.viewportHeight
+        ? { viewportHeight: shot.viewportHeight }
+        : {}),
       ...(!isCommand(resolved.target) && shot.reducedMotion ? { reducedMotion: true } : {}),
       // #0769: command-only selection — env/args passed to the command and a
       // per-entry output glob that narrows which produced files become THIS
@@ -975,7 +988,7 @@ export function buildCapturePlan(
   // light and a dark capture of one route are two pieces of evidence, not a
   // near-duplicate pair.
   const collapseKey = (e: CaptureEntry): string =>
-    `${e.target}\0${e.route}\0${e.selector ?? ""}\0${e.state ?? ""}\0${e.theme ?? ""}\0${e.viewportWidth ?? ""}\0${e.reducedMotion ? "1" : ""}\0${JSON.stringify(e.steps ?? [])}\0${JSON.stringify(e.assert ?? [])}\0${JSON.stringify(e.env ?? {})}\0${JSON.stringify(e.args ?? [])}\0${e.glob ?? ""}`;
+    `${e.target}\0${e.route}\0${e.selector ?? ""}\0${e.state ?? ""}\0${e.theme ?? ""}\0${e.viewportWidth ?? ""}\0${e.viewportHeight ?? ""}\0${e.reducedMotion ? "1" : ""}\0${JSON.stringify(e.steps ?? [])}\0${JSON.stringify(e.assert ?? [])}\0${JSON.stringify(e.env ?? {})}\0${JSON.stringify(e.args ?? [])}\0${e.glob ?? ""}`;
   const collapsed: string[] = [];
   const deduped: CaptureEntry[] = [];
   for (const entry of entries) {
@@ -1101,6 +1114,7 @@ export function sameDeclaredShot(a: DeclaredShot, b: DeclaredShot): boolean {
   // dark capture of the same route are different shots.
   if ((a.theme ?? undefined) !== (b.theme ?? undefined)) return false;
   if ((a.viewportWidth ?? undefined) !== (b.viewportWidth ?? undefined)) return false;
+  if ((a.viewportHeight ?? undefined) !== (b.viewportHeight ?? undefined)) return false;
   if ((a.reducedMotion ?? undefined) !== (b.reducedMotion ?? undefined)) return false;
   if (JSON.stringify(a.steps ?? []) !== JSON.stringify(b.steps ?? [])) return false;
   // #0769: the command-selection fields are part of a declaration's identity —
@@ -1135,6 +1149,7 @@ export function shotPlanFingerprint(entries: CaptureEntry[]): string {
       // binds the plan identity like route/steps do.
       theme: e.theme ?? null,
       viewportWidth: e.viewportWidth ?? null,
+      viewportHeight: e.viewportHeight ?? null,
       reducedMotion: e.reducedMotion ?? null,
       // #0769: a declared entry's env/args/glob change what the command renders
       // and which files become the shot, so they bind the plan identity too.
@@ -1293,6 +1308,7 @@ function declarationClosenessScore(raw: unknown, declared: DeclaredShot): number
     if ((entry[field] ?? undefined) === (declared[field] ?? undefined)) score++;
   }
   if ((entry.viewportWidth ?? undefined) === (declared.viewportWidth ?? undefined)) score++;
+  if ((entry.viewportHeight ?? undefined) === (declared.viewportHeight ?? undefined)) score++;
   if ((entry.reducedMotion ?? undefined) === (declared.reducedMotion ?? undefined)) score++;
   if (JSON.stringify(entry.steps ?? []) === JSON.stringify(declared.steps ?? [])) score++;
   if (JSON.stringify(entry.env ?? {}) === JSON.stringify(declared.env ?? {})) score++;
@@ -1420,6 +1436,7 @@ export function sameDeclaredShotRaw(raw: unknown, declared: DeclaredShot): boole
     if ((entry[field] ?? undefined) !== (declared[field] ?? undefined)) return false;
   }
   if ((entry.viewportWidth ?? undefined) !== (declared.viewportWidth ?? undefined)) return false;
+  if ((entry.viewportHeight ?? undefined) !== (declared.viewportHeight ?? undefined)) return false;
   if ((entry.reducedMotion ?? undefined) !== (declared.reducedMotion ?? undefined)) return false;
   if (JSON.stringify(entry.steps ?? []) !== JSON.stringify(declared.steps ?? [])) return false;
   if (JSON.stringify(entry.env ?? {}) !== JSON.stringify(declared.env ?? {})) return false;
