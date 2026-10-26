@@ -2,7 +2,10 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-10-26T07:21:26.129493Z ERROR codex_core::session: failed to record rollout items: thread 01a17027-8db6-74a0-8c43-034aa0f7ac93 not found"
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +16,7 @@ model_override: gpt-6.1-sol
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T07:14:38Z"
+updated_at: "2026-10-26T07:22:01Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 61f6a9e583e6a34607e604633e11927b873fca74
 review_passes: 9
@@ -21,7 +24,7 @@ last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check fail
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 7
+dev_error_count: 8
 ---
 ## Problem
 
@@ -411,3 +414,5 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T07:09:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-26T07:09:30Z · needs_input
 - 2026-10-26T07:14:38Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
+- 2026-10-26T07:22:01Z · agent exited with an error (codex) · 2026-10-26T07:21:26.129493Z ERROR codex_core::session: failed to record rollout items: thread 01a17027-8db6-74a0-8c43-034aa0f7ac93 not found
+- 2026-10-26T07:22:01Z · status active→review
