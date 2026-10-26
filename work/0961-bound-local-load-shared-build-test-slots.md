@@ -3,6 +3,9 @@ id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: watchdog-stuck
+needs_input_detail: "3 automatic resume(s) in the last 30 did not produce a handoff — the engineer keeps ending its turn without one. Review the transcript and resume it manually, or fix why it stops before handing off."
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/bound-local-load-shared-build-test-slots
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-26T20:49:57Z"
+updated_at: "2026-10-26T20:55:47Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-26T20:30:15.157Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:38:45.831Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:47:01.501Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -97,3 +100,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-26T20:41:36Z · body
 - 2026-10-26T20:47:01Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 3/3 in 30m
 - 2026-10-26T20:49:57Z · body
+- 2026-10-26T20:55:47Z · watchdog: escalated to needs_input · 3 automatic resume(s) in 30m produced no handoff
