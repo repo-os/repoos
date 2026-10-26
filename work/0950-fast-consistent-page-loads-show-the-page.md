@@ -11,12 +11,12 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
-cli_override: codex
-model_override: gpt-6.1-sol
+cli_override: antigravity
+model_override: gemini-3.8-flash-high
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T14:44:35Z"
+updated_at: "2026-10-26T14:45:24Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
 review_passes: 9
@@ -437,3 +437,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T14:44:23Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-26T14:44:27Z · message_delivered: 1 message(s)
 - 2026-10-26T14:44:35Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-26T14:45:24Z · cli_override, model_override
