@@ -15,7 +15,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: opencode
 model_override: opencode-go/kimi-k2.7-code
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-25T18:03:16Z"
+updated_at: "2026-10-26T05:32:32Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -328,3 +328,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-25T16:16:27Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T16:50:46Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-25T18:03:16Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T05:32:32Z · message_overdue: still queued after 60m without being delivered
