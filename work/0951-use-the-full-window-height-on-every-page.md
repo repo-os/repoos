@@ -13,7 +13,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: grok-4.7-low
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T17:07:04Z"
+updated_at: "2026-10-26T17:08:02Z"
 last_close_out_gate_ms: 316648
 last_close_out_gate_at: "2026-10-26T17:07:04.950Z"
 review_passes: 4
@@ -427,4 +427,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T16:13:06Z · note: review pass 6: needs some work
 - 2026-10-26T16:17:00Z · note: ui verification passed: 3 of 6 shots captured with clean console (1 shot warning)
 - 2026-10-26T17:07:04Z · close-out gate completed in 317s
-
+- 2026-10-26T17:08:02Z · status done→done, release:success
