@@ -2,17 +2,16 @@
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
-status: ready
-hold: true
+status: active
 priority: p2
 area: web
-assigned_to: human
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-side-panel-one-top-line-chip-at-mos
-cli_override: antigravity
-model_override: gemini-3.8-flash-high
+cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-26T14:25:04Z"
+updated_at: "2026-10-26T15:44:50Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -341,3 +340,11 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-26T14:24:45Z · held
 - 2026-10-26T14:24:52Z · assigned_to
 - 2026-10-26T14:25:04Z · status active→ready
+- 2026-10-26T15:31:22Z · cli_override, model_override
+- 2026-10-26T15:31:24Z · model_override
+- 2026-10-26T15:37:39Z · released, assigned_to
+- 2026-10-26T15:38:00Z · status ready→active
+- 2026-10-26T15:38:09Z · cli_override, model_override
+- 2026-10-26T15:38:14Z · message_queued at 2026-10-26T15:38:14.459Z
+- 2026-10-26T15:43:15Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/done-error-placement.test.ts > move-to-done inline error placement > renders in the task panel below the Move to done button, tests/reviewer-thinking-state.test.ts > reviewer thinking state in the task panel (#0209) > labels a previous-round report and withholds sign-off while a new review is pending, tests/task-drawer-check-chip.test.ts > task drawer check chip (#0564) > starts with the local machine from the SSE event, then upgrades to the remote host when its durable row lands mid-gate on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-26T15:43:15Z · note: handoff requested (cli)

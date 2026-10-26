@@ -10389,11 +10389,6 @@
 .detect-star-btn.on {
   color: var(--amber);
 }
-.detect-loading {
-  color: var(--txt-faint);
-  font-size: 12px;
-  padding: 14px 2px 16px;
-}
 
 /* ---------- clear design theme ---------- */
 :root[data-ui-theme="clear"] {

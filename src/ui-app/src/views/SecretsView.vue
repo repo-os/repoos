@@ -17,6 +17,8 @@ import DialogClose from "../components/ui/dialog/close.vue";
 import { ApiError, api, JSON_OPTS } from "../api";
 import { useAuthStore } from "../stores/auth";
 import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
+import PageSkeleton from "../components/PageSkeleton.vue";
+import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
 
 type Environment = { id: string; sources: { id: string; path: string; examplePath?: string }[] };
 type KeyRow = {
@@ -35,6 +37,7 @@ const selected = ref("");
 const snapshot = ref<Snapshot | null>(null);
 const loading = ref(true);
 const error = ref("");
+const snapshotRefreshError = ref("");
 const query = ref("");
 const createOpen = ref(false);
 const newName = ref("");
@@ -78,11 +81,24 @@ async function loadEnvironments(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    const data = await api<{ environments: Environment[] }>("/api/project-environments");
-    environments.value = data.environments;
-    if (!selected.value || !data.environments.some((env) => env.id === selected.value))
-      selected.value = data.environments[0]?.id ?? "";
-    await loadSnapshot();
+    await refreshPageData(
+      "project-environments",
+      () => api<{ environments: Environment[] }>("/api/project-environments"),
+      (data) => {
+        environments.value = data.environments;
+        loading.value = false;
+        if (!selected.value || !data.environments.some((env) => env.id === selected.value))
+          selected.value = data.environments[0]?.id ?? "";
+        // Load keys as soon as the environment list is known (including a
+        // cache hit delivered before the network refresh settles). loadSnapshot
+        // ignores responses that no longer match the selected environment.
+        void loadSnapshot();
+      },
+      (e) => {
+        if (environments.value.length) snapshotRefreshError.value = safeError(e);
+        else error.value = safeError(e);
+      },
+    );
   } catch (e) {
     error.value = safeError(e);
   } finally {
@@ -130,14 +146,38 @@ async function loadSnapshot(): Promise<void> {
     snapshot.value = null;
     return;
   }
-  try {
-    snapshot.value = await api<Snapshot>(
-      `/api/project-environments/${encodeURIComponent(selected.value)}/secrets`,
-    );
-    error.value = "";
-  } catch (e) {
+  // Remember which environment this request belongs to: if the selection changes
+  // before it answers (cached list vs fresh list), the late response must not
+  // show one environment's keys under another's selection.
+  const requestedEnv = selected.value;
+  if (snapshot.value?.environment !== requestedEnv) {
     snapshot.value = null;
-    error.value = safeError(e);
+    error.value = "";
+    snapshotRefreshError.value = "";
+  }
+  try {
+    await refreshPageData(
+      `secrets:${requestedEnv}`,
+      () => api<Snapshot>(`/api/project-environments/${encodeURIComponent(requestedEnv)}/secrets`),
+      (value) => {
+        if (selected.value !== requestedEnv) return;
+        snapshot.value = value;
+        error.value = "";
+        snapshotRefreshError.value = "";
+      },
+      (e) => {
+        if (selected.value !== requestedEnv) return;
+        if (snapshot.value) {
+          snapshotRefreshError.value = safeError(e);
+          return;
+        }
+        error.value = safeError(e);
+      },
+    );
+  } catch (e) {
+    if (selected.value !== requestedEnv) return;
+    if (snapshot.value) snapshotRefreshError.value = safeError(e);
+    else error.value = safeError(e);
   }
 }
 function safeError(e: unknown): string {
@@ -157,6 +197,7 @@ async function createEnvironment(): Promise<void> {
       "/api/project-environments",
       JSON_OPTS("POST", { name }),
     );
+    invalidatePageData("project-environments");
     environments.value.push(result.environment);
     selected.value = result.environment.id;
     newName.value = "";
@@ -191,6 +232,7 @@ async function saveKey(row?: KeyRow): Promise<void> {
         version: snapshot.value.version,
       }),
     );
+    invalidatePageData(`secrets:${selected.value}`);
     valueDraft.value = "";
     keyDraft.value = "";
     addOpen.value = false;
@@ -213,6 +255,7 @@ async function removeKey(): Promise<void> {
       `/api/project-environments/${encodeURIComponent(selected.value)}/secrets`,
       JSON_OPTS("PUT", { action: "delete", key: row.name, version: snapshot.value.version }),
     );
+    invalidatePageData(`secrets:${selected.value}`);
     confirmKey.value = null;
     restartKeys.value = new Set(restartKeys.value).add(row.name);
     message.value = `${row.name} removed.`;
@@ -285,6 +328,9 @@ onMounted(() => {
           >Reload</Button
         >
       </div>
+      <p v-if="snapshotRefreshError" class="secrets-error" role="status">
+        Refresh failed: {{ snapshotRefreshError }}
+      </p>
       <p v-if="message" class="secrets-message" role="status">{{ message }}</p>
       <section
         v-if="!loading && !environments.length"
@@ -299,9 +345,7 @@ onMounted(() => {
         </p>
         <Button variant="accent" @click="createOpen = true">Create environment</Button>
       </section>
-      <section v-else-if="loading" class="secrets-empty" aria-live="polite">
-        Loading environment metadata…
-      </section>
+      <PageSkeleton v-else-if="(loading || selected) && !snapshot && !error" kind="table" />
       <section v-else-if="snapshot" class="secrets-ledger" aria-label="Environment keys">
         <p v-if="environmentFile" class="secrets-file">
           <code>{{ environmentFile }}</code>

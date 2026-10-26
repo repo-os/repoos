@@ -95,6 +95,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0775 — a failed dev target on the Dev page, so a capture can show the
   // plain-language failure summary, its port holder and the Stop action.
   "dev:failed",
+  // #0950 — pin the shared loading skeleton for first-load captures.
+  "dev:loading",
   // #0801 — a started dev target beside a stopped one, so a capture can show
   // the running highlight (the same cyan glow an active remote runner uses).
   "dev:running",
@@ -105,6 +107,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0931 — fake deployment target and environment metadata for a fresh
   // Deployments-page capture; never fetches project secrets or provider data.
   "deployments:environmentBinding",
+  // #0950 — pin the Deployments first-load skeleton for deterministic shots.
+  "deployments:loading",
   // #0805 — clears the configured editor so the fallback "Set editor in
   // Settings → General" hint renders instead of the "Open in editor" button.
   "editor:unconfigured",

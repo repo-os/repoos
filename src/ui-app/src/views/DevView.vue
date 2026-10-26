@@ -27,6 +27,8 @@ import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { fmtDate, fmtTime, relTime } from "../lib/time";
 import type { DevTargetStatus, DevTargetView, DevTargetsResponse } from "../types";
+import PageSkeleton from "../components/PageSkeleton.vue";
+import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
 
 const repo = useRepoStore();
 const config = useConfigStore();
@@ -37,6 +39,7 @@ const POLL_MS = 4000;
 const targets = ref<DevTargetView[]>([]);
 const configErrors = ref<string[]>([]);
 const loading = ref(true);
+const hasTargets = ref(false);
 const loadError = ref("");
 /** Feedback line after an action, e.g. "Started web". */
 const message = ref("");
@@ -202,9 +205,12 @@ async function load(silent = false): Promise<void> {
   // builds only, #0775), so its shot shows the failure summary and port holder
   // without needing a genuinely stuck port. Real data is used everywhere else.
   if (repo.health?.isPreviewBuild) {
-    const fixture = shotFixtureDevTargets(readShotPreviewFixtureFromLocation(window.location));
+    const shotState = readShotPreviewFixtureFromLocation(window.location);
+    if (shotState === "dev:loading") return;
+    const fixture = shotFixtureDevTargets(shotState);
     if (fixture) {
       targets.value = fixture;
+      hasTargets.value = true;
       configErrors.value = [];
       loadError.value = "";
       loading.value = false;
@@ -213,14 +219,24 @@ async function load(silent = false): Promise<void> {
   }
   if (!silent) loading.value = true;
   try {
-    const res = await api<DevTargetsResponse>("/api/dev/targets");
-    targets.value = res.targets ?? [];
-    configErrors.value = res.errors ?? [];
-    loadError.value = "";
+    await refreshPageData(
+      "dev-targets",
+      () => api<DevTargetsResponse>("/api/dev/targets"),
+      (res) => {
+        targets.value = res.targets ?? [];
+        hasTargets.value = true;
+        loading.value = false;
+        configErrors.value = res.errors ?? [];
+        loadError.value = "";
+      },
+      (err) => {
+        loadError.value = err instanceof Error ? err.message : String(err);
+      },
+    );
   } catch (err) {
-    // A failed poll must not thrash the page: keep the last good list and only
-    // surface the reason on a non-silent load.
-    if (!silent) loadError.value = err instanceof Error ? err.message : String(err);
+    // A failed poll keeps the last good list in place and surfaces a small
+    // status message; it never replaces cached content with the error state.
+    loadError.value = err instanceof Error ? err.message : String(err);
   } finally {
     if (!silent) loading.value = false;
   }
@@ -248,6 +264,7 @@ async function act(name: string, action: "start" | "stop" | "restart"): Promise<
     message.value = err instanceof Error ? err.message : String(err);
   } finally {
     busy.value = null;
+    invalidatePageData("dev-targets");
     await load(true);
   }
 }
@@ -306,6 +323,7 @@ async function stopHolder(t: DevTargetView): Promise<void> {
     message.value = err instanceof Error ? err.message : String(err);
   } finally {
     busy.value = null;
+    invalidatePageData("dev-targets");
     await load(true);
   }
 }
@@ -364,14 +382,16 @@ watch(
     </header>
 
     <div class="page-scroll-body">
-      <p v-if="loading && !targets.length" class="dev-state dev-state--muted">
-        Loading dev targets…
-      </p>
-      <p v-else-if="loadError && !targets.length" class="dev-state dev-state--error" role="alert">
-        {{ loadError }}
+      <PageSkeleton v-if="loading && !hasTargets" kind="targets" />
+      <p
+        v-if="loadError"
+        class="dev-state dev-state--error"
+        :role="hasTargets ? 'status' : 'alert'"
+      >
+        <template v-if="hasTargets">Refresh failed: </template>{{ loadError }}
       </p>
 
-      <template v-else>
+      <template v-if="hasTargets">
         <section v-if="configErrors.length" class="dev-config-errors" role="alert">
           <strong>Some <code>[[dev.targets]]</code> entries were ignored:</strong>
           <ul>
