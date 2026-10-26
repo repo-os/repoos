@@ -5,7 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: Reading additional input from stdin...
+needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p2
 area: web
 assigned_to: ai
@@ -16,7 +16,7 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T14:44:34Z"
+updated_at: "2026-10-26T14:44:35Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
 review_passes: 9
@@ -25,7 +25,7 @@ handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 11
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:26:05.071Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:44:23.994Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:26:05.071Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:44:23.994Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:44:35.028Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -436,3 +436,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T14:44:23Z · agent exited with an error (codex) · Reading additional input from stdin...
 - 2026-10-26T14:44:23Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-26T14:44:27Z · message_delivered: 1 message(s)
+- 2026-10-26T14:44:35Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
