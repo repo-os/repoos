@@ -11,6 +11,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
+import { nextTick } from "vue";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { createPinia, setActivePinia } from "pinia";
@@ -19,6 +20,7 @@ import { useRepoStore } from "../src/stores/repo";
 import { useConfigStore } from "../src/stores/config";
 import { fmtDate, fmtTime } from "../src/lib/time";
 import { DEV_NAV, NAV, navFor, navFromConfig } from "../src/nav";
+import { invalidatePageData } from "../src/composables/page-data-cache";
 import { flush, json } from "./component-test-helpers";
 import type { DevFailureView, DevTargetView, Health } from "../src/types";
 
@@ -112,6 +114,7 @@ function actionButton(wrapper: ReturnType<typeof mount>, label: string, index = 
 }
 
 beforeEach(() => {
+  invalidatePageData("dev-targets");
   localStorage.clear();
   setActivePinia(createPinia());
   useRepoStore().health = makeHealth();
@@ -166,6 +169,90 @@ describe("Dev nav gating (#0748)", () => {
     ]);
     expect(DEV_NAV.path).toBe("/dev");
   });
+});
+
+describe("Dev loading shot", () => {
+  it("pins the shared skeleton without fetching targets", async () => {
+    useRepoStore().health = makeHealth({ isPreviewBuild: true });
+    window.history.replaceState({}, "", "/dev?shotState=dev%3Aloading");
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const wrapper = mountView();
+    await flush();
+    expect(wrapper.find(".page-skeleton").exists()).toBe(true);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it.each([{ targets: [] }, { targets: [target()] }])(
+    "renders cached targets with $targets while revalidating",
+    async ({ targets }) => {
+      installFetch({ targets });
+      const first = mountView();
+      await flush();
+      first.unmount();
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => new Promise(() => {})),
+      );
+      const revisit = mountView();
+      await nextTick();
+      expect(revisit.find(".page-skeleton").exists()).toBe(false);
+      expect(revisit.find(targets.length ? ".dev-card" : ".dev-empty").exists()).toBe(true);
+      revisit.unmount();
+    },
+  );
+
+  it("shows cached targets immediately on revisit and applies the refresh in place", async () => {
+    installFetch({ targets: [target({ label: "Cached service" })] });
+    const first = mountView();
+    await flush();
+    first.unmount();
+
+    let finish!: (response: Response) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>((resolve) => (finish = resolve))),
+    );
+    const revisited = mountView();
+    await nextTick();
+    expect(revisited.find(".page-skeleton").exists()).toBe(false);
+    expect(revisited.text()).toContain("Cached service");
+
+    finish(
+      (await json({
+        ok: true,
+        targets: [target({ label: "Updated service" })],
+        errors: [],
+      })) as unknown as Response,
+    );
+    await flush();
+    expect(revisited.text()).toContain("Updated service");
+    expect(revisited.find(".page-skeleton").exists()).toBe(false);
+    revisited.unmount();
+  });
+
+  it.each([{ targets: [] }, { targets: [target({ label: "Cached service" })] }])(
+    "shows refresh errors with cached targets $targets",
+    async ({ targets }) => {
+      installFetch({ targets });
+      const first = mountView();
+      await flush();
+      first.unmount();
+
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => Promise.reject(new Error("refresh offline"))),
+      );
+      const revisited = mountView();
+      await flush();
+
+      expect(revisited.find(targets.length ? ".dev-card" : ".dev-empty").exists()).toBe(true);
+      expect(revisited.find("[role=status]").text()).toContain("Refresh failed");
+      expect(revisited.find(".page-skeleton").exists()).toBe(false);
+      revisited.unmount();
+    },
+  );
 });
 
 describe("DevView layout and state (#0748)", () => {

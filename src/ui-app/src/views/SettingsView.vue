@@ -21,6 +21,7 @@ import {
 } from "../lib/storage-status";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
+import PageSkeleton from "../components/PageSkeleton.vue";
 import Input from "../components/ui/input.vue";
 import Switch from "../components/ui/switch.vue";
 import ScreenshotViewer from "../components/ScreenshotViewer.vue";
@@ -1166,7 +1167,9 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <div v-if="!config.loaded" class="spin"></div>
+    <!-- The tab strip above is real chrome and renders immediately; only the
+         panel body waits for the config, and it waits as a skeleton (#0950). -->
+    <PageSkeleton v-if="!config.loaded" kind="rows" />
 
     <div v-else class="page-scroll-body">
       <div class="settings-panels">

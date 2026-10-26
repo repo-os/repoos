@@ -12,7 +12,7 @@ branch: feat/task-drawer-expanding-a-tab-hides-the-ca
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T05:45:27Z"
-updated_at: "2026-10-24T16:55:13Z"
+updated_at: "2026-10-26T14:53:30Z"
 last_close_out_gate_ms: 151500
 last_close_out_gate_at: "2026-10-22T13:17:38.727Z"
 review_passes: 1
@@ -113,3 +113,20 @@ Start from the `fullscreen` ref, `toggleFullscreen`, `onEscapeKeyDown` and the `
 - 2026-10-24T14:01:24Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-24T16:06:13Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-24T16:55:13Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T11:13:20Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T11:28:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T11:43:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T14:02:03Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T15:32:52Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:16:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T16:50:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-25T18:03:15Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T05:32:31Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T06:59:38Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T07:53:29Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T09:03:35Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T11:14:37Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:01:00Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:10:53Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:44:17Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:53:30Z · message_overdue: still queued after 60m without being delivered

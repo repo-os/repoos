@@ -335,6 +335,8 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     // before it is called hung, its container killed, and the run retried on
     // another host. 0 / unset falls back to DEFAULT_HANG_IDLE_MINUTES (5).
     hangIdleMinutes: 5,
+    linkThroughputFloorBps: 200 * 1024,
+    linkProbeBytes: 1024 * 1024,
   },
   // Close-out (Move to done) pipeline budget (#0573): a 6-minute wall clock
   // from `queued → syncing` (`startedAt`) to a terminal job state. `0`
@@ -2114,6 +2116,18 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     ) {
       cfg.remoteValidation = { ...cfg.remoteValidation, bundleUploadStallSecs: rvUploadStall };
     }
+    const rvLinkFloor = parsed["remoteValidation.linkThroughputFloorBps"];
+    if (typeof rvLinkFloor === "number" && Number.isInteger(rvLinkFloor) && rvLinkFloor >= 1) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, linkThroughputFloorBps: rvLinkFloor };
+    }
+    const rvProbeBytes = parsed["remoteValidation.linkProbeBytes"];
+    if (
+      typeof rvProbeBytes === "number" &&
+      Number.isInteger(rvProbeBytes) &&
+      rvProbeBytes >= 65536
+    ) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, linkProbeBytes: rvProbeBytes };
+    }
     const rvMetered = parsed["remoteValidation.forceLocalOnMeteredLink"];
     if (typeof rvMetered === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, forceLocalOnMeteredLink: rvMetered };
@@ -3683,6 +3697,26 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Abort an upload when no bytes have been written for this long. Catches wedged hosts before a multi-minute broken pipe. Default 90.",
     },
     {
+      key: "remoteValidation.linkThroughputFloorBps",
+      label: "Remote validation: minimum link throughput (bytes/second)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 204800,
+      description:
+        "Skip a runner only when measured payload throughput is below this floor; RTT is measured separately. Default 204800 (200 KiB/s).",
+    },
+    {
+      key: "remoteValidation.linkProbeBytes",
+      label: "Remote validation: link probe payload (bytes)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 1048576,
+      description:
+        "Payload size used to measure runner link throughput. Minimum 65536; default 1048576 (1 MiB).",
+    },
+    {
       key: "remoteValidation.forceLocalOnMeteredLink",
       label: "Remote validation: force local gate on slow or metered link",
       type: "boolean",
@@ -4287,6 +4321,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "remoteValidation.healthCheck",
   "remoteValidation.bundleUploadBudgetSecs",
   "remoteValidation.bundleUploadStallSecs",
+  "remoteValidation.linkThroughputFloorBps",
+  "remoteValidation.linkProbeBytes",
   "remoteValidation.forceLocalOnMeteredLink",
   "remoteValidation.engineerSelfCheckRemote",
   "remoteValidation.useForReleases",
