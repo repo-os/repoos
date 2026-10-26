@@ -3,9 +3,6 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: check-failed-after-retries
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T05:32:43Z"
+updated_at: "2026-10-26T05:32:44Z"
 review_rounds: 1
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
@@ -288,3 +285,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T05:32:25Z · cli_override, model_override
 - 2026-10-26T05:32:39Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (1/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-26T05:32:43Z · cli_override, model_override
+- 2026-10-26T05:32:44Z · needs_input
