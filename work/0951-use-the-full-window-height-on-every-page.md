@@ -14,7 +14,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T08:03:28Z"
+updated_at: "2026-10-26T08:04:50Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-26T06:15:46.061Z: repoos check failed: ◆ Check plan"
 review_rounds: 1
@@ -338,3 +338,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T07:57:20Z · body
 - 2026-10-26T08:02:05Z · note: route /work is not served by target "Docs site" — the target returned its HTML shell for an app module (TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:62536/work/index.md?import&t=1793001722401'.)
 - 2026-10-26T08:03:28Z · note: route /work is not served by target "Docs site" — the target returned its HTML shell for an app module (TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:62836/work/index.md?import&t=1793001805522'.)
+- 2026-10-26T08:04:50Z · note: route /stories is not served by target "Docs site" — the target returned its HTML shell for an app module (TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:63123/stories/index.md?import&t=1793001887586'.)
