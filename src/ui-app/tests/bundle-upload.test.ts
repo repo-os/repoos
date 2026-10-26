@@ -64,7 +64,7 @@ describe("shouldPreferLocalGate (#0917)", () => {
   it("skips remote upload when RTT is high and the laptop is healthy", () => {
     const r = shouldPreferLocalGate({
       forceMeteredLocal: false,
-      probe: { ok: true, rttMs: 1500, throughputBps: 500_000 },
+      probe: { ok: true, rttMs: 6000, throughputBps: 500_000 },
       bundleBytes: 10 * 1024 * 1024,
       localGateMs: 120_000,
       remoteGateMs: 120_000,

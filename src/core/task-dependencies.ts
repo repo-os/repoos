@@ -67,9 +67,15 @@ export function validateTaskDependencies(taskId: string, dependsOn: string[], ta
   }
 }
 
+const mainBranchCache = new Map<string, { at: number; branch: string | null }>();
+
 function mainBranch(root: string): string | null {
+  const hit = mainBranchCache.get(root);
+  if (hit && Date.now() - hit.at < 30_000) return hit.branch;
   const branches = localBranches(root);
-  return branches.has("main") ? "main" : branches.has("master") ? "master" : null;
+  const branch = branches.has("main") ? "main" : branches.has("master") ? "master" : null;
+  mainBranchCache.set(root, { at: Date.now(), branch });
+  return branch;
 }
 
 function wasExplicitlyAbandoned(task: Task): boolean {
@@ -96,6 +102,31 @@ function dependencyMergeState(
   // WHY it is blocked rather than a bare "Blocked by #x".
   if (upstream.isArchived) return "archived";
   if (upstream.status !== "done") return "waiting";
+  // This runs per dependent task from GET /api/tasks and spawns up to four
+  // synchronous git children each; with hundreds of tasks that blocked the
+  // server for a minute (2026-10-26). A merged upstream stays merged, so cache
+  // it for good; other outcomes for a short while.
+  const key = `${root}\0${upstream.id}\0${upstream.mergedCommit ?? upstream.branch ?? ""}\0${base ?? ""}`;
+  const hit = dependencyStateCache.get(key);
+  if (hit && (hit.state === "merged" || Date.now() - hit.at < DEPENDENCY_STATE_TTL_MS)) {
+    return hit.state;
+  }
+  const state = computeDependencyMergeState(root, upstream, base);
+  dependencyStateCache.set(key, { at: Date.now(), state });
+  return state;
+}
+
+const dependencyStateCache = new Map<
+  string,
+  { at: number; state: "merged" | "waiting" | "archived" | "cancelled" }
+>();
+const DEPENDENCY_STATE_TTL_MS = 60_000;
+
+function computeDependencyMergeState(
+  root: string,
+  upstream: Task,
+  base: string | null,
+): "merged" | "waiting" | "archived" | "cancelled" {
   const commit =
     upstream.mergedCommit ?? (upstream.branch ? branchCommit(root, upstream.branch) : null);
   if (!commit || !base || !commitExists(root, commit)) return "cancelled";

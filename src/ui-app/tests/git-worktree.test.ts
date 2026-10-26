@@ -499,6 +499,7 @@ describe("shouldTuneRepoForScaleAtStartup", () => {
         }),
       ).toBe(false);
       expect(shouldTuneRepoForScaleAtStartup({ root, tuneForScale: false })).toBe(false);
+      expect(shouldTuneRepoForScaleAtStartup({ root })).toBe(false);
     } finally {
       clean();
     }

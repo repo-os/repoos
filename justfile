@@ -748,3 +748,20 @@ release version:
 
     echo "==> done: $tag released"
     echo "    GitHub Actions will build dist and attach it to the GitHub Release: https://github.com/repo-os/repoos/actions/workflows/release.yml"
+
+# Hard-restart the launchd-managed server and wait for it to answer (2026-10-26).
+# `kill -9` alone can leave the launchd job "exited / not running" for minutes,
+# so kickstart straight away. Needs the job label from `launchctl list | grep repoos.serve`.
+revive label="com.repoos.serve.repoos-c4114ede":
+    #!/usr/bin/env bash
+    set -u
+    pid=$(lsof -nP -tiTCP:7171 -sTCP:LISTEN || true)
+    [ -n "$pid" ] && kill -9 $pid
+    sleep 2
+    launchctl kickstart "gui/$(id -u)/{{label}}" || true
+    for i in $(seq 1 60); do
+      code=$(curl -s -m 4 -o /dev/null -w '%{http_code}' http://127.0.0.1:7171/api/health || true)
+      if [ "$code" = 200 ]; then echo "healthy after $((i*5))s"; exit 0; fi
+      sleep 5
+    done
+    echo "server did not answer within 5 minutes"; exit 1

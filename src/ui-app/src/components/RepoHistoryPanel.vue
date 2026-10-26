@@ -475,7 +475,7 @@ function openDiff(sha: string, file?: string): void {
 .hist-rail {
   flex: 1;
   overflow: auto;
-  padding: 0 8px 24px 0;
+  padding: 0 8px var(--page-bottom-inset) 0;
 }
 .hist-day {
   position: relative;

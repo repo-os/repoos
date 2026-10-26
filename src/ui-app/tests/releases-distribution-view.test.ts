@@ -1,13 +1,15 @@
 /**
  * Component coverage for the Releases page's "Published to" section (#0445):
- * it renders only when destinations are configured, shows each channel's
+ * it renders configured destinations or lookup failures, shows each channel's
  * version/state, and copies every install command independently.
  */
 import { createPinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
+import { nextTick } from "vue";
 import * as apiMod from "../src/api";
 import ReleasesView from "../src/views/ReleasesView.vue";
+import { invalidatePageData } from "../src/composables/page-data-cache";
 
 const api = vi.spyOn(apiMod, "api");
 
@@ -52,9 +54,9 @@ function channel(over: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-function mockApi(channels: ReturnType<typeof channel>[]) {
+function mockApi(channels: ReturnType<typeof channel>[], release = releaseStatus()) {
   api.mockImplementation((path: string) => {
-    if (path === "/api/release") return Promise.resolve(releaseStatus());
+    if (path === "/api/release") return Promise.resolve(release);
     if (path === "/api/release/distribution")
       return Promise.resolve({ releaseVersion: "1.2.3", releaseTag: "v1.2.3", channels });
     if (path === "/api/release/run")
@@ -79,6 +81,10 @@ async function mountView(): Promise<VueWrapper> {
 }
 
 beforeEach(() => {
+  invalidatePageData("release-status");
+  // The Published-to list is cached too (#0950); without clearing it every
+  // test below would inherit the channels a previous test captured.
+  invalidatePageData("release-distribution");
   vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
 });
 
@@ -90,6 +96,140 @@ afterEach(() => {
 });
 
 describe("ReleasesView Published to (#0445)", () => {
+  it("shows cached release data immediately on revisit and applies the refresh in place", async () => {
+    mockApi([channel()]);
+    const first = await mountView();
+    first.unmount();
+
+    let finish!: (value: unknown) => void;
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return new Promise((resolve) => (finish = resolve));
+      if (path === "/api/release/distribution")
+        return Promise.resolve({ releaseVersion: "1.2.3", releaseTag: "v1.2.3", channels: [] });
+      if (path === "/api/release/run")
+        return Promise.resolve({
+          state: "idle",
+          phase: null,
+          message: "",
+          startedAt: null,
+          updatedAt: null,
+        });
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await nextTick();
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.3");
+
+    finish?.({ ...releaseStatus(), version: "1.2.4", tag: "v1.2.4", latestTag: "v1.2.4" });
+    await flushPromises();
+    expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.4");
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("keeps cached release data visible and shows a refresh-failed notice when the background refresh fails", async () => {
+    mockApi([channel()]);
+    const first = await mountView();
+    first.unmount();
+
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.reject(new Error("refresh boom"));
+      if (path === "/api/release/distribution")
+        return Promise.resolve({ releaseVersion: "1.2.3", releaseTag: "v1.2.3", channels: [] });
+      if (path === "/api/release/run")
+        return Promise.resolve({
+          state: "idle",
+          phase: null,
+          message: "",
+          startedAt: null,
+          updatedAt: null,
+        });
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await nextTick();
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.3");
+
+    await flushPromises();
+    expect(wrapper.text()).toContain("Refresh failed");
+    expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.3");
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("shows a release refresh failure after a cached unconfigured result", async () => {
+    mockApi([], { ...releaseStatus(), enabled: false });
+    const first = await mountView();
+    first.unmount();
+    const normalApi = api.getMockImplementation()!;
+    api.mockImplementation((path, ...args) =>
+      path === "/api/release"
+        ? Promise.reject(new Error("release unavailable"))
+        : normalApi(path, ...args),
+    );
+    const revisit = await mountView();
+    expect(revisit.find(".rel-empty").exists()).toBe(true);
+    expect(revisit.find('[role="status"]').text()).toContain("release unavailable");
+    expect(revisit.find(".page-skeleton").exists()).toBe(false);
+    revisit.unmount();
+  });
+
+  it.each([
+    { label: "empty", channels: [] },
+    { label: "populated", channels: [channel()] },
+  ])(
+    "shows distribution refresh failures for a $label cached result and allows retry",
+    async ({ channels }) => {
+      mockApi(channels);
+      const first = await mountView();
+      first.unmount();
+
+      const normalApi = api.getMockImplementation()!;
+      let fail!: (error: Error) => void;
+      api.mockImplementation((path: string, ...args) => {
+        if (path === "/api/release/distribution")
+          return new Promise((_resolve, reject) => (fail = reject));
+        return normalApi(path, ...args);
+      });
+      const wrapper = mount(ReleasesView, {
+        attachTo: document.body,
+        global: { plugins: [createPinia()] },
+      });
+      await nextTick();
+      expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+      expect(wrapper.findAll(".rel-channel")).toHaveLength(channels.length);
+
+      fail(new Error("distribution unavailable"));
+      await flushPromises();
+      expect(wrapper.find('.rel-dist [role="status"]').text()).toBe(
+        "Refresh failed: distribution unavailable",
+      );
+      expect(wrapper.findAll(".rel-channel")).toHaveLength(channels.length);
+      expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.3");
+      expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+
+      mockApi(channels);
+      const retry = wrapper
+        .findAll(".rel-dist button")
+        .find((button) => button.text() === "Check again");
+      expect(retry).toBeDefined();
+      await retry!.trigger("click");
+      await flushPromises();
+      expect(wrapper.find('.rel-dist [role="status"]').exists()).toBe(false);
+      expect(wrapper.findAll(".rel-channel")).toHaveLength(channels.length);
+      expect(wrapper.find(".rel-dist").exists()).toBe(channels.length > 0);
+      wrapper.unmount();
+    },
+  );
+
   it("makes the current release and its distribution sync state the primary summary", async () => {
     mockApi([channel()]);
     const wrapper = await mountView();
@@ -200,7 +340,7 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     vi.useRealTimers();
   });
 
-  it("shows a loading indicator in Published to while the first lookup is in flight", async () => {
+  it("shows a skeleton in Published to while the first lookup is in flight (#0950)", async () => {
     // Never resolves: keeps distributionLoading true through the mount flush.
     api.mockImplementation((path: string) => {
       if (path === "/api/release") return Promise.resolve(releaseStatus());
@@ -218,18 +358,18 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     const wrapper = await mountView();
 
     expect(wrapper.find(".rel-dist").exists()).toBe(true);
-    expect(wrapper.find(".rel-dist-loading").exists()).toBe(true);
-    expect(wrapper.find(".rel-dist-loading-spin").exists()).toBe(true);
-    expect(wrapper.text()).toContain("Checking distribution channels");
+    // Card-shaped skeleton, not a lone spinner or a text line.
+    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(true);
+    expect(wrapper.find(".rel-dist-refreshing").exists()).toBe(false);
     expect(wrapper.find(".rel-dist-channels").exists()).toBe(false);
     wrapper.unmount();
   });
 
-  it("replaces the loading indicator with channels once they load", async () => {
+  it("replaces the first-load skeleton with channels once they load", async () => {
     mockApi([channel()]);
     const wrapper = await mountView();
 
-    expect(wrapper.find(".rel-dist-loading").exists()).toBe(false);
+    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(false);
     expect(wrapper.find(".rel-dist-channels").exists()).toBe(true);
     expect(wrapper.text()).toContain("npm");
     wrapper.unmount();
@@ -257,7 +397,7 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     wrapper.unmount();
   });
 
-  it("shows the spinner alongside channels during a Check again recheck", async () => {
+  it("shows a small busy state alongside channels during a forced Check again recheck", async () => {
     let distributionCalls = 0;
     api.mockImplementation((path: string) => {
       if (path === "/api/release") return Promise.resolve(releaseStatus());
@@ -283,7 +423,7 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
       return Promise.reject(new Error(`unexpected ${path}`));
     });
     const wrapper = await mountView();
-    expect(wrapper.find(".rel-dist-loading").exists()).toBe(false);
+    expect(wrapper.find(".rel-dist-refreshing").exists()).toBe(false);
 
     const checkAgain = wrapper
       .findAll("button")
@@ -292,9 +432,50 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     await checkAgain;
     await flushPromises();
 
-    expect(wrapper.find(".rel-dist-loading").exists()).toBe(true);
+    expect(wrapper.find(".rel-dist-refreshing").exists()).toBe(true);
     expect(wrapper.find(".rel-dist-channels").exists()).toBe(true);
+    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(false);
     expect(wrapper.text()).toContain("npm");
+    wrapper.unmount();
+  });
+
+  it("shows cached channels without a skeleton on revisit and refreshes them quietly", async () => {
+    mockApi([channel()]);
+    const first = await mountView();
+    first.unmount();
+
+    let finish!: (value: unknown) => void;
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution") return new Promise((resolve) => (finish = resolve));
+      if (path === "/api/release/run")
+        return Promise.resolve({
+          state: "idle",
+          phase: null,
+          message: "",
+          startedAt: null,
+          updatedAt: null,
+        });
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+
+    const wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await nextTick();
+    expect(wrapper.find(".rel-dist-channels").exists()).toBe(true);
+    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(false);
+    expect(wrapper.find(".rel-dist-refreshing").exists()).toBe(false);
+
+    finish({
+      releaseVersion: "1.2.4",
+      releaseTag: "v1.2.4",
+      channels: [channel({ version: "1.2.4" })],
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain("1.2.4");
+    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(false);
     wrapper.unmount();
   });
 
@@ -718,13 +899,13 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     lookups[0]!(summary("1.2.3"));
     await flushPromises();
 
-    expect(wrapper.find(".rel-dist-loading").exists()).toBe(false);
+    expect(wrapper.find(".rel-dist-refreshing").exists()).toBe(false);
     expect(wrapper.find(".rel-dist").text()).toContain("1.2.4");
     expect(wrapper.find(".rel-dist").text()).not.toContain("1.2.3");
     wrapper.unmount();
   });
 
-  it("keeps the loading indicator until the latest distribution lookup settles (#0622 review)", async () => {
+  it("keeps the first-load skeleton until the latest distribution lookup settles (#0622 review)", async () => {
     const lookups: Array<(v: Record<string, unknown>) => void> = [];
     let run: Record<string, unknown> = {
       state: "running",
@@ -746,10 +927,107 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     await flushPromises();
     expect(lookups).toHaveLength(2);
 
-    // The OLDER lookup settles first: the newer one is still pending.
+    // The OLDER lookup settles first: the newer one is still pending, so the
+    // card stays in its loading shape. No channels yet → the skeleton shows
+    // (the compact recheck indicator only appears beside existing channels).
     lookups[0]!({ releaseVersion: "1.2.3", releaseTag: "v1.2.3", channels: [channel()] });
     await flushPromises();
-    expect(wrapper.find(".rel-dist-loading").exists()).toBe(true);
+    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it.each([{ channels: [] }, { channels: [channel()] }])(
+    "does not flash a skeleton for cached distribution $channels",
+    async ({ channels }) => {
+      api.mockImplementation((path: string) => {
+        if (path === "/api/release") return Promise.resolve(releaseStatus());
+        if (path === "/api/release/distribution") return Promise.resolve({ channels });
+        if (path === "/api/release/run") return Promise.resolve({ run: null });
+        return Promise.resolve({});
+      });
+      const first = await mountView();
+      first.unmount();
+      api.mockImplementation(() => new Promise(() => {}));
+      const revisit = await mountView();
+      expect(revisit.find(".page-skeleton").exists()).toBe(false);
+      revisit.unmount();
+    },
+  );
+
+  it("shows cached distribution channels on revisit with no skeleton, then applies the refresh in place (#0950)", async () => {
+    mockApi([channel()]);
+    const first = await mountView();
+    expect(first.find(".rel-dist-channels").exists()).toBe(true);
+    first.unmount();
+
+    let finish!: (value: unknown) => void;
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return new Promise((resolve) => {
+          finish = resolve;
+        });
+      if (path === "/api/release/run")
+        return Promise.resolve({
+          state: "idle",
+          phase: null,
+          message: "",
+          startedAt: null,
+          updatedAt: null,
+        });
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await nextTick();
+
+    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(false);
+    expect(wrapper.find(".rel-dist-channels").exists()).toBe(true);
+    expect(wrapper.find(".rel-dist").text()).toContain("npm");
+
+    finish({
+      releaseVersion: "1.2.4",
+      releaseTag: "v1.2.4",
+      channels: [channel({ version: "1.2.4" })],
+    });
+    await flushPromises();
+    expect(wrapper.find(".rel-dist").text()).toContain("1.2.4");
+    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("keeps cached channels visible when the background distribution refresh fails (#0950)", async () => {
+    mockApi([channel()]);
+    const first = await mountView();
+    first.unmount();
+
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution") return Promise.reject(new Error("boom"));
+      if (path === "/api/release/run")
+        return Promise.resolve({
+          state: "idle",
+          phase: null,
+          message: "",
+          startedAt: null,
+          updatedAt: null,
+        });
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await nextTick();
+    expect(wrapper.find(".rel-dist-channels").exists()).toBe(true);
+
+    await flushPromises();
+    expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.3");
+    expect(wrapper.find(".rel-dist-channels").exists()).toBe(true);
+    expect(wrapper.text()).toContain("Refresh failed");
+    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(false);
     wrapper.unmount();
   });
 });

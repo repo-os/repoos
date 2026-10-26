@@ -271,14 +271,21 @@ describe("evaluatePressure", () => {
     expect(snapshot.reason).toMatch(/available memory is low/i);
   });
 
-  it("holds on macOS memory_pressure warn and critical", () => {
-    for (const level of ["warn", "critical"] as const) {
-      const snapshot = evaluatePressure(
-        readings({ memoryPressureLevel: level }),
-        pressureThresholds(config()),
-      );
-      expect(snapshot.reason).toMatch(/memory_pressure reports/);
-    }
+  it("holds on macOS memory_pressure critical", () => {
+    const snapshot = evaluatePressure(
+      readings({ memoryPressureLevel: "critical" }),
+      pressureThresholds(config()),
+    );
+    expect(snapshot.reason).toMatch(/memory_pressure reports critical/);
+  });
+
+  it("treats macOS memory_pressure warn as advisory, not a hold", () => {
+    const snapshot = evaluatePressure(
+      readings({ memoryPressureLevel: "warn" }),
+      pressureThresholds(config()),
+    );
+    expect(snapshot.level).not.toBe("critical");
+    expect(snapshot.warnings.join(" ")).toMatch(/memory_pressure reports warn/);
   });
 
   it("holds on thrashing activity then clears when rates recover", () => {

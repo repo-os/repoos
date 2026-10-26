@@ -24,6 +24,17 @@ landing gate and must be handled from the named check.
 one of the most common time sinks in this repo. This is the triage order, and
 the incidents that taught it.
 
+## A scoped check selected the entire suite
+
+Vitest treats changes to `package.json` or its Vite/Vitest configuration as
+full-suite triggers, even with `--changed`. Check the branch diff for these
+paths when a scoped check unexpectedly selects every test file. For #0950,
+adding only a convenience benchmark script alias to `package.json` selected
+602 files and hit the 420-second tests-step timeout; the benchmark already
+ran directly with `bun scripts/bench-page-loads.mjs`, so removing that redundant
+alias restored scoped selection. Keep real package/config changes and their
+full validation; do not weaken Vitest's triggers to bypass them.
+
 ## The decision rule
 
 **If it reproduces in isolation on an idle machine, it is a real bug. Debug it

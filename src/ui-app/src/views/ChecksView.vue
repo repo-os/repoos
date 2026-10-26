@@ -31,6 +31,8 @@ import {
 } from "../lib/checks-page";
 import { useRepoStore } from "../stores/repo";
 import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
+import PageSkeleton from "../components/PageSkeleton.vue";
+import { invalidatePageDataPrefix, refreshPageData } from "../composables/page-data-cache";
 
 const route = useRoute();
 const router = useRouter();
@@ -81,6 +83,18 @@ watch(
 );
 
 onMounted(load);
+
+watch(
+  () => testRun.value.finishedAt,
+  (finishedAt, previous) => {
+    if (!finishedAt || finishedAt === previous) return;
+    // A finished run also lands in the Runs tab's history, so that cache has
+    // to go too: otherwise the default tab shows a history missing this run.
+    invalidatePageDataPrefix("check-plan:");
+    invalidatePageDataPrefix("check-runs:");
+    if (activeTab.value === "plan") void load();
+  },
+);
 
 const plan = ref<CheckPlanView | null>(null);
 const loading = ref(true);
@@ -164,11 +178,18 @@ async function load(): Promise<void> {
   if (changedRef.value) params.set("changed", changedRef.value);
   const qs = params.toString();
   try {
-    const res = await api<{ ok: boolean; checkPlan: CheckPlanView }>(
-      `/api/check-plan${qs ? `?${qs}` : ""}`,
+    const key = `check-plan:${profile.value}:${changedRef.value}`;
+    await refreshPageData(
+      key,
+      () => api<{ ok: boolean; checkPlan: CheckPlanView }>(`/api/check-plan${qs ? `?${qs}` : ""}`),
+      (res) => {
+        plan.value = res.checkPlan;
+        if (!profile.value) profile.value = res.checkPlan.profile;
+      },
+      (e) => {
+        error.value = e instanceof Error ? e.message : "Could not load the check plan.";
+      },
     );
-    plan.value = res.checkPlan;
-    if (!profile.value) profile.value = res.checkPlan.profile;
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Could not load the check plan.";
   } finally {
@@ -397,10 +418,11 @@ const RESULT_ICON: Record<string, string> = {
       </div>
 
       <template v-else-if="activeTab === 'plan'">
-        <div v-if="loading" class="ck-loading">Loading the check plan…</div>
+        <PageSkeleton v-if="loading && !plan" kind="table" />
+        <p v-if="error && plan" class="ck-err" role="status">Refresh failed: {{ error }}</p>
         <p v-else-if="error" class="ck-err">{{ error }}</p>
 
-        <template v-else-if="plan">
+        <template v-if="plan">
           <!-- Controls: which profile, and the changed-path fast mode. -->
           <section class="ck-controls">
             <label class="ck-control">
