@@ -79,3 +79,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-26T19:19:58Z · message_queued at 2026-10-26T19:19:58.813Z
 - 2026-10-26T19:23:29Z · body
 - 2026-10-26T19:26:22Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-10-26T19:26:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
