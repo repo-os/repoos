@@ -136,30 +136,30 @@ describe("task drawer landing pre-checks (#0867)", () => {
     const pinia = setup();
     const wrapper = await mountDrawer(pinia, reviewTask(), FAILING);
 
-    const checks = wrapper.find(".landable-checks");
-    expect(checks.exists()).toBe(true);
-    expect(checks.text()).toContain("Not landable yet");
-    expect(checks.text()).toContain("src/core/types.ts conflicts with main");
-    expect(checks.text()).toContain("5 passed");
-    expect(checks.text()).toContain("1 failing");
-    expect(checks.text()).not.toContain("Review verdict");
-    expect(checks.text()).not.toContain("worktree is clean");
-
-    const toggle = wrapper.find(".landable-toggle");
-    expect(toggle.text()).toBe("Show all 6 checks");
-    await toggle.trigger("click");
-    expect(toggle.attributes("aria-expanded")).toBe("true");
-    expect(checks.text()).toContain('latest review pass is "good to go"');
-    expect(checks.text()).toContain("worktree is clean");
-    await toggle.trigger("click");
-    expect(toggle.attributes("aria-expanded")).toBe("false");
-    expect(checks.text()).not.toContain("worktree is clean");
+    const summary = wrapper.find(".drawer-status-summary");
+    expect(summary.exists()).toBe(true);
+    expect(summary.find(".drawer-status-summary-copy").text()).toContain("Not landable");
+    expect(summary.find(".drawer-status-summary-copy").text()).toContain("1 landing check failing");
+    expect(wrapper.findAll(".drawer-status-summary")).toHaveLength(1);
+    expect(wrapper.find(".landable-checks").exists()).toBe(false);
 
     const button = moveToDone(wrapper);
     expect(button, "Move to done is rendered").toBeTruthy();
     const title = button!.attributes("title") ?? "";
     expect(title).toContain("Merge with main");
     expect(title).toContain("src/core/types.ts conflicts with main");
+
+    await wrapper
+      .findAll("button.tab-btn")
+      .find((tab) => tab.text().includes("Debug"))!
+      .trigger("click");
+    await wrapper
+      .findAll("button.debug-tab")
+      .find((tab) => tab.text().includes("Status details"))!
+      .trigger("click");
+    expect(wrapper.find('[aria-label="Task status details"]').text()).toContain(
+      "src/core/types.ts conflicts with main",
+    );
   });
 
   it("ignores a 200 response without the checklist shape instead of crashing the drawer", async () => {
@@ -204,7 +204,10 @@ describe("task drawer landing pre-checks (#0867)", () => {
     await flush();
 
     const checks = wrapper.find(".landable-checks");
-    expect(checks.exists(), "the shot's waitFor selector renders").toBe(true);
-    expect(checks.text()).toContain("src/core/types.ts conflicts with main");
+    expect(wrapper.find(".drawer-status-summary").exists(), "the status card renders").toBe(true);
+    expect(
+      wrapper.find(".drawer-status-summary-copy").text(),
+      "the status card copy is short",
+    ).toContain("Not landable");
   });
 });
