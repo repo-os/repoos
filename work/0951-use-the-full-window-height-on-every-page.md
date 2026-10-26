@@ -14,7 +14,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: antigravity
 model_override: gemini-3.8-flash-medium
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T09:36:37Z"
+updated_at: "2026-10-26T09:36:53Z"
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 review_rounds: 1
 review_passes: 2
@@ -360,3 +360,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T09:33:28Z · cli_override, model_override
 - 2026-10-26T09:36:37Z · status active→review
 - 2026-10-26T09:36:37Z · note: shots: skipped — 47 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T09:36:53Z · note: review pass 3: failed — no usable report
