@@ -20,7 +20,6 @@ review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 22
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-26T06:59:32.338Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-26T07:01:44.621Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
