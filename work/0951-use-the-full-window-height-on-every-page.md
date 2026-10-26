@@ -16,10 +16,8 @@ created_by: njachowski@gmail.com
 branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
-review_cli_override: codex
-review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T15:21:29Z"
+updated_at: "2026-10-26T15:21:35Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
@@ -421,3 +419,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T15:21:10Z · agent exited with an error (cursor) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-10-26T15:21:10Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-10-26T15:21:13Z · message_delivered: 1 message(s)
+- 2026-10-26T15:21:35Z · review_cli_override, review_model_override
