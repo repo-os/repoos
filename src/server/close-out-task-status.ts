@@ -32,7 +32,7 @@ export async function preserveClosingTaskReviewStatusOnMain(
   config: RepoOSConfig,
   taskId: string,
   getTask?: (id: string) => Task | null,
-): void {
+): Promise<void> {
   const workDir = config.workDir ?? "work";
   const absPath = getTask?.(taskId)?.absPath ?? findTaskFileById(config.root, workDir, taskId);
   if (!absPath || !existsSync(absPath)) return;

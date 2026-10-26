@@ -79,7 +79,7 @@ export async function gatherReviewVerification(
   task: Task,
   worktree: string,
   baseBranch: string,
-): ReviewVerificationResult {
+): Promise<ReviewVerificationResult> {
   // #0765: only BROWSER verification has a console-error record to check.
   const uiVerificationRequired = taskNeedsBrowserUiVerification(config, task);
   const evidence = readUiHandoffGateEvidence(config, task.id);

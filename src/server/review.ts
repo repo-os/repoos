@@ -1443,14 +1443,14 @@ export class ReviewManager {
     const lines = session?.lines ?? [];
 
     if (mode === "run") {
-      this.finalizeRun(task, agent, lines, session, timedOut, checkpointDelta);
+      await this.finalizeRun(task, agent, lines, session, timedOut, checkpointDelta);
     } else {
       this.finalizeChat(task, agent, lines, session, timedOut);
     }
   }
 
   /** Finalize a fresh review run from its durable session transcript. */
-  private finalizeRun(
+  private async finalizeRun(
     task: Task,
     agent: Agent,
     lines: AgentOutputEntry[],
@@ -1464,7 +1464,7 @@ export class ReviewManager {
     } | null,
     timedOut: boolean,
     checkpointDelta = false,
-  ): void {
+  ): Promise<void> {
     const hasOutput = sessionHasUsableOutput(agent.cli, lines);
     const ok = !timedOut && hasOutput;
     const error = timedOut
