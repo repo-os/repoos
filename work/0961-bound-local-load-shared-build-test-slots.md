@@ -3,12 +3,6 @@ id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: watchdog-stuck
-needs_input_detail: "3 automatic resume(s) in the last 30 did not produce a handoff — the engineer keeps ending its turn without one. Review the transcript and resume it manually, or fix why it stops before handing off."
-debug_tldr: "The engineer keeps ending its turn after passing remote validation without requesting a handoff, so open the transcript, resume it manually, and tell it to run `repoos mv 0961 review`."
-debug_tldr_at: "2026-10-26T20:56:07Z"
-debug_tldr_key: "watchdog-stuck|3 automatic resume(s) in the last 30 did not produce a handoff — the engineer keeps ending its turn without one. Review the transcript and resume it manually, or fix why it stops before handing off."
 priority: p1
 area: core
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/bound-local-load-shared-build-test-slots
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-26T21:15:14Z"
+updated_at: "2026-10-26T21:27:51Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-26T20:30:15.157Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:38:45.831Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:47:01.501Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -106,3 +100,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-26T20:55:47Z · watchdog: escalated to needs_input · 3 automatic resume(s) in 30m produced no handoff
 - 2026-10-26T21:15:10Z · cli_override, model_override
 - 2026-10-26T21:15:14Z · model_override
+- 2026-10-26T21:27:51Z · needs_input (watchdog-stuck) dismissed by hello@repoos.org
