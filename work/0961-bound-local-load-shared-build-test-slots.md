@@ -14,10 +14,9 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bound-local-load-shared-build-test-slots
-cli_override: cursor
-model_override: grok-4.7-low
+cli_override: pi
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-26T20:56:07Z"
+updated_at: "2026-10-26T21:15:10Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-26T20:30:15.157Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:38:45.831Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:47:01.501Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -104,3 +103,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-26T20:47:01Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 3/3 in 30m
 - 2026-10-26T20:49:57Z · body
 - 2026-10-26T20:55:47Z · watchdog: escalated to needs_input · 3 automatic resume(s) in 30m produced no handoff
+- 2026-10-26T21:15:10Z · cli_override, model_override
