@@ -11,7 +11,7 @@ branch: feat/server-freezes-move-all-git-reads-off-th
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T11:25:31Z"
+updated_at: "2026-10-26T11:14:38Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T09:28:41.616Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T09:28:59.217Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T09:29:08.847Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -65,5 +65,3 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T10:56:54Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-26T11:14:37Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T11:14:38Z · message_queued at 2026-10-26T11:14:38.107Z
-- 2026-10-26T11:25:30Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
-- 2026-10-26T11:25:30Z · note: handoff requested (cli)
