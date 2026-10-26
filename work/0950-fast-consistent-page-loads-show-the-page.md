@@ -3,6 +3,9 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: Reading additional input from stdin...
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +16,7 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T14:26:03Z"
+updated_at: "2026-10-26T14:26:04Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
 review_passes: 9
@@ -21,7 +24,7 @@ last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check fail
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 8
+dev_error_count: 9
 ---
 ## Problem
 
@@ -424,3 +427,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T14:26:00Z · needs_input
 - 2026-10-26T14:26:00Z · message_queued at 2026-10-26T14:26:00.312Z
 - 2026-10-26T14:26:03Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T14:26:04Z · agent exited with an error (codex) · Reading additional input from stdin...
