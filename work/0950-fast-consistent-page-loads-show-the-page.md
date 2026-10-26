@@ -16,10 +16,8 @@ created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: cursor
 model_override: composer-2.5
-review_cli_override: codex
-review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T15:09:18Z"
+updated_at: "2026-10-26T15:19:41Z"
 review_passes: 9
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -456,3 +454,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T15:08:39Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-26T15:08:52Z · note: review pass 11: failed — no usable report
 - 2026-10-26T15:08:52Z · needs_input
+- 2026-10-26T15:19:41Z · review_cli_override, review_model_override
