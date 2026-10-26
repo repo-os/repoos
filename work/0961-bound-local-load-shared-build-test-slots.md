@@ -7,7 +7,7 @@ priority: p1
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/bound-local-load-shared-build-test-slots
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-25T15:37:17Z"
@@ -44,3 +44,4 @@ On 2026-10-25 a 10-core, 24 GB Mac with five engineers running reached load 40 t
 - 2026-10-26T18:53:51Z · status inbox→ready
 - 2026-10-26T19:01:44Z · status ready→active
 - 2026-10-26T19:01:51Z · cli_override, model_override
+- 2026-10-26T19:01:51Z · branch
