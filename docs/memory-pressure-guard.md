@@ -13,7 +13,7 @@ what is wrong. Engineers simply stalled: gates, reviews and handoffs slowed
 until timeouts and retries piled up.
 
 The guard blocks on the machine paying a memory cost: sustained swap-in/swap-out
-or pageout activity, macOS `memory_pressure` reporting `warn`/`critical`, low
+or pageout activity, macOS `memory_pressure` reporting `critical`, low
 reclaimable memory, or Linux PSI memory pressure. Swap and compressor occupancy
 can stay high while the machine is idle, so occupancy alone is advisory.
 
@@ -39,7 +39,8 @@ can stay high while the machine is idle, so occupancy alone is advisory.
 - `pressureGuard.minMemoryFreePercent` (default 10, macOS)
 - `pressureGuard.maxSwapIoBytesPerSec` and `pressureGuard.maxPageoutBytesPerSec`
 - `pressureGuard.maxPsiMemoryAvg10` (Linux)
-- macOS memory-pressure level `warn` or `critical`
+- macOS memory-pressure level `critical` (`warn` is advisory: macOS stays there
+  for hours when the compressor is busy, even with no paging and plenty free)
 
 `pressureGuard.maxSwapUsedRatio` (default 0.5) and
 `pressureGuard.maxCompressorRatio` (default 0.35, macOS) only control advisory

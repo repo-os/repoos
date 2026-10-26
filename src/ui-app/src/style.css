@@ -10051,11 +10051,17 @@
     height: auto;
     min-height: initial;
     display: block;
+    /* Outer scroller at this width — match .work-page end clearance. */
+    padding-bottom: var(--page-bottom-inset);
   }
   .agents-tab-content {
     overflow: visible;
     min-height: initial;
     padding-right: 0;
+    padding-bottom: 0;
+  }
+  .agents-tab-content--playground {
+    padding-bottom: 0;
   }
   .agent-body {
     grid-template-columns: 1fr;
