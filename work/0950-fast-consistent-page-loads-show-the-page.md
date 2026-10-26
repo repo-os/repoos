@@ -3,8 +3,6 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
 priority: p2
 area: web
 assigned_to: ai
@@ -411,3 +409,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T06:40:13Z · note: handoff requested (ui-review)
 - 2026-10-26T06:45:17Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-10-26T07:09:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-26T07:09:30Z · needs_input
