@@ -43,6 +43,7 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "drawer:statusConfirmingHandoffNarrow",
   "drawer:statusChecksFailed",
   "drawer:statusChecksFailedNarrow",
+  "drawer:statusDetails",
   "drawer:landableNarrow",
   // #0922 — task drawer with a failed handoff, blocked landing checklist and
   // needs-input card for expanded-tab screenshots.

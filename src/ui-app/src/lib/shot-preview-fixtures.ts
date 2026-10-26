@@ -1127,6 +1127,10 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       setShotPreviewAppliedAttr("drawer:statusChecksFailedNarrow");
       setNarrowDrawerWidth();
       break;
+    case "drawer:statusDetails":
+      applyShotPreviewFixture(repo, "drawer:statusReviewFailed");
+      setShotPreviewAppliedAttr("drawer:statusDetails");
+      break;
     case "drawer:landableNarrow":
       applyShotPreviewFixture(repo, "drawer:landable");
       setShotPreviewAppliedAttr("drawer:landableNarrow");
