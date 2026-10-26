@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
-last_handoff_failure_sha: d67f37d97ea4a41e593594dc457494f6c9c44e6b
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
@@ -16,10 +14,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-freezes-move-all-git-reads-off-th
-cli_override: cursor
-model_override: grok-4.7-high
+cli_override: codex
+model_override: gpt-6.1-sol
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T12:30:55Z"
+updated_at: "2026-10-26T12:41:09Z"
 handoff_signal_retry_count: 1
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-26T11:33:32.912Z\",\"kind\":\"usage-limit\"}]"
@@ -83,5 +81,7 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T11:38:51Z · cli_override
 - 2026-10-26T11:38:55Z · cli_override
 - 2026-10-26T11:38:57Z · model_override
-- 2026-10-26T12:30:55Z · handoff failed · task-file handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
-
+- 2026-10-26T12:32:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T12:35:13Z · cli_override, model_override
+- 2026-10-26T12:36:33Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T12:41:09Z · body
