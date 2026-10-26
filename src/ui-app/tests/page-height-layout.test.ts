@@ -78,9 +78,7 @@ describe("standard page height and floating controls", () => {
   });
 
   it("keeps the internally scrolling Work columns clear of fixed bottom controls", () => {
-    expect(css).toMatch(
-      /\.col-body\s*\{[^}]*overflow-y:\s*auto;[\s\S]*padding:\s*4px 8px var\(--page-bottom-inset\)/s,
-    );
+    expect(css).toMatch(/\.col-body::after\s*\{[^}]*flex:\s*0 0 var\(--page-bottom-inset\)/s);
   });
 
   it("clears floating heads in page-scroll views (Checks, Releases, Deployments)", () => {

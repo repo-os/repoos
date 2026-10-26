@@ -574,7 +574,11 @@ cannot tell from the code alone:
   `max-width` or centering margin on a view's root. Narrow/centered layouts
   are for deliberate exceptions (login/auth, modals); keeping a readable
   line length on inner prose (`max-width: NNch` on one paragraph) is fine.
-  See the `.main` comment in `src/ui-app/src/style.css` (#0602).
+  Standard page roots also fill the available `.main` height. Keep bottom
+  clearance on the actual scrollport with `--page-bottom-inset`, rather than
+  padding the pane and shortening its visible area. Narrow layouts that switch
+  to normal flow must keep their routed root scrollable.
+  See the `.main` comment in `src/ui-app/src/style.css` (#0602, #0951).
 - **Table-like label/value rows use aligned columns.** Any UI that renders
   repeated rows of labeled fields (a `dl` of `dt`/`dd`, or label+value pairs
   — no literal `<table>` required) must use an aligned two-column layout:
