@@ -436,3 +436,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T14:44:35Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-26T14:45:24Z · cli_override, model_override
 - 2026-10-26T14:45:29Z · needs_input
+- 2026-10-26T14:45:29Z · message_queued at 2026-10-26T14:45:29.436Z
