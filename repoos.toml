@@ -748,7 +748,7 @@ cli = "github copilot"
 models = ["default"]
 [[budget.allowlist]]
 cli = "cursor"
-models = ["composer-2.5"]
+models = ["composer-2.5", "grok-4.7-low"]
 [[budget.allowlist]]
 cli = "codex"
-models = ["gpt-6-luna"]
+models = ["gpt-6-luna", "gpt-6.1-sol"]
