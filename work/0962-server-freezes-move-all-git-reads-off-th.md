@@ -2,7 +2,7 @@
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
-status: active
+status: review
 priority: p0
 area: core
 assigned_to: ai
@@ -101,4 +101,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T18:57:31Z · message_delivered: 1 message(s)
 - 2026-10-26T18:58:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-26T19:02:23Z · note: handoff requested (ui-review)
-- 2026-10-26T19:14:27Z · note: shots: skipped — the diff (16 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-26T19:14:27Z · status active→review
