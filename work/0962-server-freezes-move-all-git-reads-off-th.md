@@ -95,3 +95,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T18:50:38Z · status ready→active
 - 2026-10-26T18:50:45Z · cli_override, model_override
 - 2026-10-26T18:50:50Z · message_delivered: 1 message(s)
+- 2026-10-26T18:50:50Z · message_queued at 2026-10-26T18:50:50.681Z
