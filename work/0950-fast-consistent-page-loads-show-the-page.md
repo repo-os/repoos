@@ -6,6 +6,9 @@ status: review
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: "the codex agent exited without output: Reading additional input from stdin... error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:14 PM."
+debug_tldr: "Codex reviewer hit ChatGPT usage limit — switch to another reviewer agent or retry review after 11:14 PM."
+debug_tldr_at: "2026-10-26T15:09:18Z"
+debug_tldr_key: "review-failed|the codex agent exited without output: Reading additional input from stdin... error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:14 PM."
 priority: p2
 area: web
 assigned_to: ai
@@ -16,7 +19,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T15:08:52Z"
+updated_at: "2026-10-26T15:09:18Z"
 review_passes: 9
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
