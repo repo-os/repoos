@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T15:08:39Z"
+updated_at: "2026-10-26T15:08:52Z"
 review_passes: 9
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -448,3 +448,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T14:54:35Z · message_queued at 2026-10-26T14:54:35.710Z
 - 2026-10-26T15:08:39Z · status active→review
 - 2026-10-26T15:08:39Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T15:08:52Z · note: review pass 11: failed — no usable report
