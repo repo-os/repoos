@@ -174,3 +174,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-26T21:14:24Z · cli_override, model_override
 - 2026-10-26T21:14:26Z · model_override
 - 2026-10-26T21:16:07Z · status active→review
+- 2026-10-26T21:16:07Z · note: shots: skipped — the diff (17 changed paths) touches no capture target's globs — no UI change to capture
