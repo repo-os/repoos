@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "RetriableError: Connection stalled"
+debug_tldr: "The engineer harness lost its connection (stalled link), not the build — wait for Playwright slots to clear, then retry Start or handoff."
+debug_tldr_at: "2026-10-26T12:27:58Z"
+debug_tldr_key: "dev-error|RetriableError: Connection stalled"
 priority: p2
 area: web
 assigned_to: ai
@@ -16,7 +19,7 @@ model_override: grok-4.7-high
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T12:27:24Z"
+updated_at: "2026-10-26T12:27:58Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
 review_passes: 9
