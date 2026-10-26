@@ -17,7 +17,8 @@ import {
 import { dirname, isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
 import { worktreesDir, worktreesInheritEnv } from "./config.js";
-import { notifyGitMutation } from "./git-activity.js";
+import { notifyGitMutation, onGitMutation } from "./git-activity.js";
+import { trackGitCall } from "./git-inflight.js";
 import {
   isLockfileOnlyConflicts,
   tryCompleteMergeByRegeneratingLockfile,
@@ -83,11 +84,13 @@ function worktreeAddFailure(run: GitRun): string {
  */
 function gitAsync(root: string, args: string[], timeoutMs = 4000): Promise<string | null> {
   return new Promise((resolve) => {
+    const untrack = trackGitCall(root, args);
     execFile(
       "git",
       observationalGitArgs(args),
       { cwd: root, encoding: "utf8", timeout: timeoutMs },
       (error, stdout) => {
+        untrack();
         resolve(error ? null : stdout.trim());
       },
     );
@@ -110,6 +113,7 @@ export interface GitRun {
  */
 export function runGit(root: string, args: string[], timeout: number): Promise<GitRun> {
   return new Promise((resolve) => {
+    const untrack = trackGitCall(root, args);
     const child = spawn("git", observationalGitArgs(args), { cwd: root });
     let stdout = "";
     let stderr = "";
@@ -119,6 +123,7 @@ export function runGit(root: string, args: string[], timeout: number): Promise<G
     const finish = (status: number | null): void => {
       if (settled) return;
       settled = true;
+      untrack();
       if (timer) clearTimeout(timer);
       resolve({ status, stdout, stderr, timedOut });
     };
@@ -209,95 +214,125 @@ export function headCommitISO(root: string): string | null {
   return git(root, ["log", "-1", "--format=%cI"]) || null;
 }
 
+/** All local branch facts needed by the board, from one `for-each-ref` pass. */
+export interface BranchRefSnapshot {
+  branches: Set<string>;
+  heads: Map<string, string>;
+  aheadCounts: Map<string, number>;
+}
+
+function branchRefArgs(base: string | null): string[] {
+  return [
+    "for-each-ref",
+    `--format=%(refname:short) %(objectname)${base ? ` %(ahead-behind:${base})` : ""}`,
+    "refs/heads/",
+  ];
+}
+
+function parseBranchRefs(out: string | null): BranchRefSnapshot {
+  const branches = new Set<string>();
+  const heads = new Map<string, string>();
+  const aheadCounts = new Map<string, number>();
+  if (!out) return { branches, heads, aheadCounts };
+  for (const line of out.split("\n")) {
+    const parts = line.trim().split(/\s+/);
+    const branch = parts[0];
+    if (!branch) continue;
+    branches.add(branch);
+    if (parts[1]) heads.set(branch, parts[1]);
+    const ahead = Number(parts[2]);
+    if (parts[2] !== undefined && Number.isFinite(ahead)) aheadCounts.set(branch, ahead);
+  }
+  return { branches, heads, aheadCounts };
+}
+
+function cloneBranchRefs(snapshot: BranchRefSnapshot): BranchRefSnapshot {
+  return {
+    branches: new Set(snapshot.branches),
+    heads: new Map(snapshot.heads),
+    aheadCounts: new Map(snapshot.aheadCounts),
+  };
+}
+
 /** Set of local branch names, fetched once and reused across tasks. */
 export function localBranches(root: string): Set<string> {
-  const out = git(root, ["branch", "--format=%(refname:short)"]);
-  if (!out) return new Set();
-  return new Set(
-    out
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean),
-  );
+  return branchRefSnapshot(root, null).branches;
 }
 
+/** Synchronous CLI counterpart of `branchRefSnapshotAsync`. */
+export function branchRefSnapshot(root: string, base: string | null): BranchRefSnapshot {
+  return parseBranchRefs(git(root, branchRefArgs(base), base ? 60_000 : 4000));
+}
+
+const branchRefsCache = new Map<string, { fingerprint: string; snapshot: BranchRefSnapshot }>();
+const mergedBranchesCache = new Map<string, Set<string>>();
+
+/** Invalidate ref-derived reads after a ref/HEAD write. There is deliberately no TTL. */
+export function invalidateGitReadCaches(root: string): void {
+  const prefix = `${root}\0`;
+  for (const key of branchRefsCache.keys()) if (key.startsWith(prefix)) branchRefsCache.delete(key);
+  for (const key of mergedBranchesCache.keys())
+    if (key.startsWith(prefix)) mergedBranchesCache.delete(key);
+}
+
+onGitMutation((root) => invalidateGitReadCaches(root));
+
 /**
- * Commits-ahead count for EVERY local branch relative to `base`, in a single
- * `git for-each-ref` call. The indexer needs "does this task's branch have
- * unmerged commits" for every task; the per-branch alternative
- * (`git rev-list --count base..branch` once per task) was ~2.5s of the index
- * build on a repo with ~40 task branches.
- *
- * `%(ahead-behind:<base>)` needs git ≥ 2.41 (2023-06); on older git the field
- * renders empty and this returns an empty map, so callers fall back to
- * `rev-list` per branch. Fail-soft: empty map when git is missing.
+ * Non-blocking branch names, object ids and ahead counts in ONE git query.
+ * The cache is invalidated by `invalidateGitReadCaches` on ref/HEAD changes;
+ * `fingerprint` is an additional caller-supplied worktree-HEAD guard.
  */
+export async function branchRefSnapshotAsync(
+  root: string,
+  base: string | null,
+  fingerprint = "",
+): Promise<BranchRefSnapshot> {
+  const key = `${root}\0${base ?? ""}`;
+  const hit = branchRefsCache.get(key);
+  if (hit && hit.fingerprint === fingerprint) return cloneBranchRefs(hit.snapshot);
+  const snapshot = parseBranchRefs(await gitAsync(root, branchRefArgs(base), base ? 60_000 : 4000));
+  branchRefsCache.set(key, { fingerprint, snapshot });
+  return cloneBranchRefs(snapshot);
+}
+
+/** Commits-ahead count for every local branch relative to `base`, in one query. */
 export function branchAheadCounts(root: string, base: string | null): Map<string, number> {
-  const map = new Map<string, number>();
-  if (!base) return map;
-  // refs never contain spaces, so a space separator parses unambiguously:
-  // "<branch> <ahead> <behind>". The ahead/behind pair is empty on git < 2.41.
-  const out = git(root, [
-    "for-each-ref",
-    `--format=%(refname:short) %(ahead-behind:${base})`,
-    "refs/heads/",
-  ]);
-  if (!out) return map;
-  for (const line of out.split("\n")) {
-    const parts = line.trim().split(/\s+/);
-    if (parts.length < 2) continue; // no ahead/behind -> old git, or the base ref
-    const ahead = Number(parts[1]);
-    if (parts[0] && Number.isFinite(ahead)) map.set(parts[0], ahead);
-  }
-  return map;
+  return branchRefSnapshot(root, base).aheadCounts;
 }
 
-function parseAheadCounts(out: string | null): Map<string, number> {
-  const map = new Map<string, number>();
-  if (!out) return map;
-  for (const line of out.split("\n")) {
-    const parts = line.trim().split(/\s+/);
-    if (parts.length < 2) continue;
-    const ahead = Number(parts[1]);
-    if (parts[0] && Number.isFinite(ahead)) map.set(parts[0], ahead);
-  }
-  return map;
-}
-
-const aheadCountsCache = new Map<
-  string,
-  { at: number; fingerprint: string; map: Map<string, number> }
->();
-const AHEAD_COUNTS_TTL_MS = 20_000;
-
-/**
- * Non-blocking, briefly cached `branchAheadCounts`. The synchronous version ran
- * `git for-each-ref %(ahead-behind:main)` through execFileSync on the server's
- * main thread on every worktree-status reconcile; over ~100 branches and 20k+
- * commits that child burned 60%+ CPU for seconds while the event loop sat
- * blocked, so the server stopped answering (2026-10-25). Async + a 20 s cache,
- * valid only while `fingerprint` (every worktree's HEAD, main's included) is
- * unchanged, so a commit is never hidden behind a stale count.
- */
 export async function branchAheadCountsAsync(
   root: string,
   base: string | null,
   fingerprint = "",
 ): Promise<Map<string, number>> {
   if (!base) return new Map();
-  const key = `${root}\0${base}`;
-  const hit = aheadCountsCache.get(key);
-  if (hit && hit.fingerprint === fingerprint && Date.now() - hit.at < AHEAD_COUNTS_TTL_MS) {
-    return new Map(hit.map);
-  }
-  const out = await gitAsync(
-    root,
-    ["for-each-ref", `--format=%(refname:short) %(ahead-behind:${base})`, "refs/heads/"],
-    60_000,
+  return (await branchRefSnapshotAsync(root, base, fingerprint)).aheadCounts;
+}
+
+/** Branch tips already merged into `base`, from one `git branch --merged` call. */
+export function mergedBranches(root: string, base: string): Set<string> {
+  const out = git(root, ["branch", "--merged", base, "--format=%(refname:short)"]);
+  return new Set(
+    (out ?? "")
+      .split("\n")
+      .map((branch) => branch.trim())
+      .filter(Boolean),
   );
-  const map = parseAheadCounts(out);
-  aheadCountsCache.set(key, { at: Date.now(), fingerprint, map });
-  return new Map(map);
+}
+
+export async function mergedBranchesAsync(root: string, base: string): Promise<Set<string>> {
+  const key = `${root}\0${base}`;
+  const hit = mergedBranchesCache.get(key);
+  if (hit) return new Set(hit);
+  const out = await gitAsync(root, ["branch", "--merged", base, "--format=%(refname:short)"]);
+  const merged = new Set(
+    (out ?? "")
+      .split("\n")
+      .map((branch) => branch.trim())
+      .filter(Boolean),
+  );
+  mergedBranchesCache.set(key, merged);
+  return new Set(merged);
 }
 
 /** Last commit subject + ISO date touching a specific file. */
@@ -552,8 +587,7 @@ export interface WorktreeEntry {
  * worktree has not moved since a cached check (see the indexer's worktree
  * dirty-status cache).
  */
-export function worktreeList(root: string): Map<string, WorktreeEntry> {
-  const out = git(root, ["worktree", "list", "--porcelain"]);
+function parseWorktreeList(out: string | null): Map<string, WorktreeEntry> {
   const map = new Map<string, WorktreeEntry>();
   if (!out) return map;
   let path: string | null = null;
@@ -571,6 +605,14 @@ export function worktreeList(root: string): Map<string, WorktreeEntry> {
     }
   }
   return map;
+}
+
+export function worktreeList(root: string): Map<string, WorktreeEntry> {
+  return parseWorktreeList(git(root, ["worktree", "list", "--porcelain"]));
+}
+
+export async function worktreeListAsync(root: string): Promise<Map<string, WorktreeEntry>> {
+  return parseWorktreeList(await gitAsync(root, ["worktree", "list", "--porcelain"]));
 }
 
 export interface WorktreeInfo {
@@ -592,8 +634,7 @@ export interface WorktreeInfo {
  * collector needs the full picture so it can also prune worktrees that lost
  * their branch ref. Empty when git is missing.
  */
-export function listWorktrees(root: string): WorktreeInfo[] {
-  const out = git(root, ["worktree", "list", "--porcelain"]);
+function parseWorktreeInfos(out: string | null): WorktreeInfo[] {
   const infos: WorktreeInfo[] = [];
   if (!out) return infos;
   let cur: Partial<WorktreeInfo> | null = null;
@@ -627,6 +668,14 @@ export function listWorktrees(root: string): WorktreeInfo[] {
   return infos;
 }
 
+export function listWorktrees(root: string): WorktreeInfo[] {
+  return parseWorktreeInfos(git(root, ["worktree", "list", "--porcelain"]));
+}
+
+export async function listWorktreesAsync(root: string): Promise<WorktreeInfo[]> {
+  return parseWorktreeInfos(await gitAsync(root, ["worktree", "list", "--porcelain"]));
+}
+
 /**
  * Branch -> worktree path for every registered linked worktree. Thin
  * projection of `worktreeList` kept for the many callers that only need the
@@ -647,6 +696,54 @@ export function worktreePaths(root: string): Map<string, string> {
  */
 export function worktreePathForBranch(root: string, branch: string): string | null {
   return worktreePaths(root).get(branch) ?? null;
+}
+
+export async function worktreePathForBranchAsync(
+  root: string,
+  branch: string,
+): Promise<string | null> {
+  return (await worktreeListAsync(root)).get(branch)?.path ?? null;
+}
+
+export async function currentBranchAsync(root: string): Promise<string | null> {
+  return (await listWorktreesAsync(root)).find((worktree) => worktree.isMain)?.branch ?? null;
+}
+
+export interface RepoGitOverview {
+  useGit: boolean;
+  baseBranch: string | null;
+  branches: Set<string>;
+  heads: Map<string, string>;
+  aheadCounts: Map<string, number>;
+  worktrees: Map<string, WorktreeEntry>;
+  fingerprint: string;
+}
+
+/** One worktree-list plus one for-each-ref, shared by every board consumer. */
+export async function repoGitOverviewAsync(root: string): Promise<RepoGitOverview> {
+  const infos = await listWorktreesAsync(root);
+  if (infos.length === 0) {
+    return {
+      useGit: false,
+      baseBranch: null,
+      branches: new Set(),
+      heads: new Map(),
+      aheadCounts: new Map(),
+      worktrees: new Map(),
+      fingerprint: "",
+    };
+  }
+  const worktrees = new Map<string, WorktreeEntry>();
+  for (const info of infos) {
+    if (info.branch) worktrees.set(info.branch, { path: info.path, head: info.head });
+  }
+  const baseBranch = infos.find((info) => info.isMain)?.branch ?? null;
+  const fingerprint = infos
+    .map((info) => `${info.branch ?? ""}:${info.head}`)
+    .sort()
+    .join(",");
+  const refs = await branchRefSnapshotAsync(root, baseBranch, fingerprint);
+  return { useGit: true, baseBranch, worktrees, fingerprint, ...refs };
 }
 
 /**
@@ -996,7 +1093,10 @@ export async function worktreeStatusAsync(
   branch: string,
   opts: { worktrees?: Map<string, string>; baseBranch?: string | null } = {},
 ): Promise<WorktreeStatus> {
-  const worktrees = opts.worktrees ?? worktreePaths(root);
+  const overview = opts.worktrees ? null : await repoGitOverviewAsync(root);
+  const worktrees =
+    opts.worktrees ??
+    new Map([...overview!.worktrees].map(([name, entry]) => [name, entry.path] as const));
   const path = worktrees.get(branch) ?? null;
   if (!path) return { path: null, dirty: false };
   let realRoot = root;
@@ -1013,15 +1113,12 @@ export async function worktreeStatusAsync(
   }
   if (realPath === realRoot) return { path: null, dirty: false };
 
-  const base = opts.baseBranch !== undefined ? opts.baseBranch : currentBranch(root);
-  const [status, count] = await Promise.all([
-    gitAsync(path, ["status", "--porcelain"]),
-    base && base !== branch
-      ? gitAsync(root, ["rev-list", "--count", `${base}..${branch}`])
-      : Promise.resolve(null),
-  ]);
+  const base = opts.baseBranch !== undefined ? opts.baseBranch : (overview?.baseBranch ?? null);
+  const aheadCounts =
+    overview?.aheadCounts ?? (base ? await branchAheadCountsAsync(root, base) : new Map());
+  const status = await gitAsync(path, ["status", "--porcelain"]);
   const uncommitted = status !== null && status !== "";
-  const ahead = count !== null && Number(count) > 0;
+  const ahead = base !== branch && (aheadCounts.get(branch) ?? 0) > 0;
   return { path, dirty: uncommitted || ahead };
 }
 
@@ -1058,6 +1155,9 @@ export async function resolveWorktreeStatuses(
     baseBranch: string | null;
     cache?: WorktreeDirtyCache;
     skipStatus?: boolean;
+    /** Batched facts from `repoGitOverviewAsync`; avoids repeating either query. */
+    worktrees?: Map<string, WorktreeEntry>;
+    aheadCounts?: Map<string, number>;
   },
 ): Promise<{
   statuses: Map<string, WorktreeStatus>;
@@ -1069,12 +1169,13 @@ export async function resolveWorktreeStatuses(
   const wanted = new Set(branches);
   if (wanted.size === 0) return { statuses, cache, changed: false };
 
-  const worktrees = worktreeList(root);
+  const worktrees = opts.worktrees ?? (await worktreeListAsync(root));
   const fingerprint = [...worktrees]
     .map(([branch, entry]) => `${branch}:${entry.head}`)
     .sort()
     .join(",");
-  const aheadCounts = await branchAheadCountsAsync(root, opts.baseBranch, fingerprint);
+  const aheadCounts =
+    opts.aheadCounts ?? (await branchAheadCountsAsync(root, opts.baseBranch, fingerprint));
 
   let realRoot = root;
   try {
@@ -1130,24 +1231,14 @@ export async function resolveWorktreeStatuses(
     changed = true;
   }
 
-  // Fall back to per-branch rev-list when for-each-ref gave nothing (old git).
-  const needAheadFallback = aheadCounts.size === 0 && toCheck.length > 0 && !!opts.baseBranch;
-
   const queue = [...toCheck];
   const workers = Array.from(
     { length: Math.min(WORKTREE_STATUS_CONCURRENCY, queue.length) },
     async () => {
       for (let job = queue.shift(); job; job = queue.shift()) {
-        const [status, count] = await Promise.all([
-          gitAsync(job.path, ["status", "--porcelain"]),
-          needAheadFallback && opts.baseBranch !== job.branch
-            ? gitAsync(root, ["rev-list", "--count", `${opts.baseBranch}..${job.branch}`])
-            : Promise.resolve(null),
-        ]);
+        const status = await gitAsync(job.path, ["status", "--porcelain"]);
         const uncommitted = status !== null && status !== "";
-        const ahead = needAheadFallback
-          ? count !== null && Number(count) > 0
-          : (aheadCounts.get(job.branch) ?? 0) > 0;
+        const ahead = (aheadCounts.get(job.branch) ?? 0) > 0;
         statuses.set(job.branch, {
           path: job.path,
           dirty: uncommitted || ahead,
@@ -1592,6 +1683,18 @@ export function isAncestor(root: string, ancestor: string, descendant: string): 
     cwd: root,
     timeout: 4000,
   });
+  if (run.status === 0) return true;
+  if (run.status === 1) return false;
+  return null;
+}
+
+/** Non-blocking ancestry check for arbitrary commits (handoff/close-out guards). */
+export async function isAncestorAsync(
+  root: string,
+  ancestor: string,
+  descendant: string,
+): Promise<boolean | null> {
+  const run = await runGit(root, ["merge-base", "--is-ancestor", ancestor, descendant], 4000);
   if (run.status === 0) return true;
   if (run.status === 1) return false;
   return null;
