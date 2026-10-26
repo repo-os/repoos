@@ -3,6 +3,8 @@ id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
 priority: p1
 area: core
 assigned_to: ai
@@ -156,4 +158,5 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-26T12:36:40Z · body
 - 2026-10-26T12:37:27Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-26T12:41:04Z · engineer stopped by request
+- 2026-10-26T12:41:05Z · needs_input
 - 2026-10-26T12:41:05Z · needs_input
