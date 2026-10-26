@@ -101,8 +101,101 @@ function truncatePad(s: string, n: number): string {
   return cut + " ".repeat(Math.max(0, n - cut.length));
 }
 
+interface ApiListTask {
+  id: string;
+  title: string;
+  status: Status;
+  priority: Task["priority"];
+  area?: string;
+  assignedTo?: string;
+  isArchived?: boolean;
+  archiveDetail?: string;
+  assignee?: Task["assignee"];
+}
+
+async function listTasksViaApi(
+  statusArg?: string,
+): Promise<{ rootName: string; tasks: ApiListTask[] } | null> {
+  try {
+    const { RepoOsApi } = await import("../cli/repoos-api.js");
+    const api = new RepoOsApi();
+    const tasks: ApiListTask[] = [];
+    let cursor: string | null = null;
+    const fields = "id,title,status,priority,area,assignedTo,isArchived,archiveDetail";
+    for (let page = 0; page < 40; page++) {
+      const params = new URLSearchParams({ fields, limit: "500" });
+      if (statusArg && statusArg !== "archived" && (STATUSES as readonly string[]).includes(statusArg)) {
+        params.set("status", statusArg);
+      }
+      if (cursor) params.set("cursor", cursor);
+      const res = await api.request("GET", `/api/tasks?${params}`);
+      const body = res.body as { tasks?: ApiListTask[]; nextCursor?: string | null };
+      if (res.status !== 200 || !Array.isArray(body.tasks)) return null;
+      tasks.push(...body.tasks);
+      cursor = body.nextCursor ?? null;
+      if (!cursor) break;
+    }
+    const { root } = boardRoot();
+    return { rootName: root.split("/").pop() ?? "repo", tasks };
+  } catch {
+    return null;
+  }
+}
+
+function printTaskList(rootName: string, tasks: ApiListTask[], statusArg?: string): void {
+  const archived = tasks.filter((t) => t.isArchived);
+  if (tasks.length === 0) {
+    console.log(
+      c.dim("\n  No tasks yet. Create one with ") + c.cyan('repoos new "Title"') + c.dim(".\n"),
+    );
+    return;
+  }
+  if (statusArg === "archived") {
+    console.log(c.bold("\n  " + rootName) + c.dim(`  ·  ${archived.length} archived\n`));
+    for (const t of archived) {
+      console.log(
+        "    " +
+          c.dim("#" + pad(t.id, 5)) +
+          priorityColor(t.priority)(pad(t.priority, 4)) +
+          truncatePad(t.title, 44) +
+          c.dim(`${t.status} · `) +
+          (t.archiveDetail ? c.dim(t.archiveDetail) : ""),
+      );
+    }
+    console.log("");
+    return;
+  }
+  const cols =
+    statusArg && (STATUSES as readonly string[]).includes(statusArg)
+      ? [statusArg as Status]
+      : STATUSES.filter((s) => s !== "draft");
+  console.log(c.bold("\n  " + rootName) + c.dim(`  ·  ${tasks.length - archived.length} tasks\n`));
+  for (const status of cols) {
+    const rows = tasks.filter((t) => t.status === status && !t.isArchived);
+    if (rows.length === 0 && statusArg === undefined) continue;
+    const sc = statusColor(status);
+    console.log("  " + sc("● ") + c.bold(status.toUpperCase()) + c.dim(`  (${rows.length})`));
+    for (const t of rows) {
+      console.log(
+        "    " +
+          c.dim("#" + pad(t.id, 5)) +
+          priorityColor(t.priority)(pad(t.priority, 4)) +
+          truncatePad(t.title, 44) +
+          pad(c.dim(t.area ?? ""), 12) +
+          assigneeLabel({ ...t, assignee: t.assignee ?? "unassigned", assignedTo: t.assignedTo ?? "" } as Task),
+      );
+    }
+    console.log("");
+  }
+}
+
 /** `repoos list [status]` — board overview or a single column. */
-export function cmdList(statusArg?: string): void {
+export async function cmdList(statusArg?: string): Promise<void> {
+  const remote = await listTasksViaApi(statusArg);
+  if (remote) {
+    printTaskList(remote.rootName, remote.tasks, statusArg);
+    return;
+  }
   const repoos = boardRepoOS();
   const idx = repoos.reindex();
   const cfg = loadConfig(idx.root);
@@ -1186,7 +1279,7 @@ export async function cmdSplit(args: string[]): Promise<void> {
 export const RM_USAGE = "  Usage: repoos rm <id> --yes";
 
 /** `repoos rm <id> --yes` — delete a task file (same path as DELETE /api/tasks/:id). */
-export function cmdRm(args: string[]): void {
+export async function cmdRm(args: string[]): Promise<void> {
   let id: string | undefined;
   let confirmed = false;
   for (let i = 0; i < args.length; i++) {
@@ -1220,7 +1313,7 @@ export function cmdRm(args: string[]): void {
     return;
   }
   try {
-    deleteTaskFile(repoos.config, task.absPath);
+    await deleteTaskFile(repoos.config, task.absPath);
     console.log("  " + c.green("deleted ") + c.dim("#" + task.id) + "  " + task.title);
   } catch (err) {
     if (err instanceof PathGuardError || err instanceof WriteError) {

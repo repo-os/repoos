@@ -1308,7 +1308,7 @@ export class CloseOutOrchestrator {
    * is always checked first everywhere below, so a stopped job never gets a
    * failure badge.
    */
-  private timeoutJob(job: IntegrationJob): { ok: boolean; reason?: string } {
+  private async timeoutJob(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
     const timeoutMs = closeOutTimeoutMs(this.config);
     const reason = closeOutTimeoutReason(timeoutMs);
     this.logger?.integration(job.taskId, "error", "close-out hit its pipeline timeout", {
@@ -1317,7 +1317,7 @@ export class CloseOutOrchestrator {
       startedAt: job.startedAt,
       timeoutMs,
     });
-    return this.failOrReconcile(job, job.phase, reason);
+    return await this.failOrReconcile(job, job.phase, reason);
   }
 
   /** The `{ ok: false, timedOut: true }` phase result for an expired budget (#0573). */
@@ -1365,7 +1365,7 @@ export class CloseOutOrchestrator {
     return { ok: false, reason: CANCEL_REASON };
   }
 
-  private failOrReconcile(
+  private async failOrReconcile(
     job: IntegrationJob,
     failedPhase: JobPhase,
     reason: string | undefined,
@@ -1417,7 +1417,7 @@ export class CloseOutOrchestrator {
       this.config.cacheDir ?? ".repoos",
       job.taskId,
     );
-    preserveClosingTaskReviewStatusOnMain(this.config, job.taskId, this.getTask);
+    await preserveClosingTaskReviewStatusOnMain(this.config, job.taskId, this.getTask);
     // A budget-exhausted close-out is recorded as a `failed` job (so it stays
     // retryable) but reported as a distinct `timedOut` outcome (#0640): the
     // bell's advice differs from a real gate failure.

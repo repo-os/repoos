@@ -11,21 +11,34 @@ export interface InFlightGitCall {
 const calls = new Map<number, Omit<InFlightGitCall, "ageMs">>();
 let nextId = 1;
 
+export interface GitCallEvent {
+  id: number;
+  label: string;
+  root: string;
+  startedAt: number;
+  end: boolean;
+}
+
+let sink: ((event: GitCallEvent) => void) | null = null;
+
+/** Worker children report calls to the HTTP process; the parent has no other view. */
+export function setGitCallSink(next: ((event: GitCallEvent) => void) | null): void {
+  sink = next;
+}
+
 /** Register one actual git child. The returned cleanup is idempotent. */
 export function trackGitCall(root: string, args: string[]): () => void {
   const id = nextId++;
-  calls.set(id, {
-    id,
-    root,
-    label: `git ${args.join(" ")}`.slice(0, 240),
-    startedAt: Date.now(),
-    state: "running",
-  });
+  const startedAt = Date.now();
+  const label = `git ${args.join(" ")}`.slice(0, 240);
+  calls.set(id, { id, root, label, startedAt, state: "running" });
+  sink?.({ id, label, root, startedAt, end: false });
   let done = false;
   return () => {
     if (done) return;
     done = true;
     calls.delete(id);
+    sink?.({ id, label, root, startedAt, end: true });
   };
 }
 

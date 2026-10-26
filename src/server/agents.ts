@@ -75,7 +75,7 @@ import { sanitizeSpawnArgs, stripNulBytes } from "../core/spawn-args.js";
 import { notifyAttentionAfterSession, notifyAttentionAgentStalled } from "./attention-notify.js";
 import { taskWorkLink } from "./board-events.js";
 import { parseTaskAreas } from "../core/areas.js";
-import { commitTaskFile, fileCommittedClean, currentBranch } from "../core/git.js";
+import { commitTaskFile, fileCommittedClean, currentBranch, gitOutputAsync } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { SHOT_PREVIEW_FIXTURE_IDS } from "../core/shot-fixtures.js";
@@ -5011,20 +5011,16 @@ interface BoardRunSnapshot {
  * null when the dir is not a git work tree or git is unavailable — in that case
  * quarantine is skipped rather than guessing, and the run proceeds unchanged.
  */
-function snapshotDirty(cwd: string): BoardRunSnapshot | null {
+async function snapshotDirty(cwd: string): Promise<BoardRunSnapshot | null> {
   try {
     // `-z` (NUL-separated, never quoted) so a path with spaces — the CTO's
     // `Nothing to report` junk file — round-trips exactly. Porcelain v1's
     // quoted line format would hand back `"Nothing to report"` with quotes.
-    const res = spawnSync("git", ["status", "--porcelain", "-z"], {
-      cwd,
-      encoding: "utf8",
-      timeout: 4000,
-    });
-    if (res.error || res.status !== 0 || typeof res.stdout !== "string") return null;
+    const stdout = await gitOutputAsync(cwd, ["status", "--porcelain", "-z"]);
+    if (stdout === null) return null;
     const untracked = new Set<string>();
     const all = new Set<string>();
-    const records = res.stdout.split("\0");
+    const records = stdout.split("\0");
     for (let i = 0; i < records.length; i++) {
       const record = records[i];
       if (!record || record.length < 4) continue;
@@ -5056,13 +5052,13 @@ function snapshotDirty(cwd: string): BoardRunSnapshot | null {
  * preserving the repo-relative path, and returns the moved paths (empty when
  * nothing stray appeared).
  */
-export function quarantineStrayFiles(
+export async function quarantineStrayFiles(
   cwd: string,
   cacheDir: string,
   before: BoardRunSnapshot | null,
 ): string[] {
   if (!before) return [];
-  const after = snapshotDirty(cwd);
+  const after = await snapshotDirty(cwd);
   if (!after) return [];
   const stray = [...after.untracked].filter((p) => !before.all.has(p));
   if (stray.length === 0) return [];
@@ -5129,7 +5125,7 @@ export async function runBoardAgent(
   prompt: string,
   opts: BoardAgentRunOptions,
 ): Promise<BoardAgentRunResult> {
-  const before = snapshotDirty(opts.cwd);
+  const before = await snapshotDirty(opts.cwd);
   const command =
     opts.command ??
     readOnlyCommand(agent, prompt, opts.cwd, {
@@ -5143,7 +5139,7 @@ export async function runBoardAgent(
     command,
     onSpawn: opts.onSpawn,
   });
-  const quarantined = quarantineStrayFiles(opts.cwd, opts.cacheDir, before);
+  const quarantined = await quarantineStrayFiles(opts.cwd, opts.cacheDir, before);
   if (quarantined.length && opts.onQuarantine) opts.onQuarantine(quarantined);
   return { result, quarantined };
 }

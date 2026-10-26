@@ -13,7 +13,7 @@
  * conflict surface is concurrent writes to the SAME task — which this handles.
  */
 import { readFileSync, writeFileSync, existsSync, unlinkSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { gitOutputAsync } from "../core/git.js";
 import { join, resolve, sep, relative, basename } from "node:path";
 import type { RepoOSConfig, Task, Status } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
@@ -819,7 +819,7 @@ export function markTaskReleased(
  * work dir, and WriteError when the file is already gone (callers treat the
  * latter as an idempotent 404).
  */
-export function deleteTaskFile(config: RepoOSConfig, absPath: string): string {
+export async function deleteTaskFile(config: RepoOSConfig, absPath: string): Promise<string> {
   const workDir = resolve(join(config.root, config.workDir));
   const abs = resolve(absPath);
   if (!(abs.startsWith(workDir + sep) || abs === workDir)) {
@@ -832,24 +832,16 @@ export function deleteTaskFile(config: RepoOSConfig, absPath: string): string {
   // Tracked task files must not linger as staged deletions — commit the
   // removal (fail-soft) so main stays mergeable. Untracked files need nothing.
   const rel = relative(config.root, abs);
-  if (gitTracked(config.root, rel)) {
+  if (await gitTracked(config.root, rel)) {
     commitTaskFile(config.root, abs, `docs(${basename(abs).split("-")[0]}): delete task`);
   }
   return abs;
 }
 
 /** Whether git tracks a (relative) path in the given checkout. */
-function gitTracked(root: string, rel: string): boolean {
-  try {
-    execFileSync("git", ["ls-files", "--error-unmatch", "--", rel], {
-      cwd: root,
-      stdio: "ignore",
-      timeout: 4000,
-    });
-    return true;
-  } catch {
-    return false;
-  }
+async function gitTracked(root: string, rel: string): Promise<boolean> {
+  const out = await gitOutputAsync(root, ["ls-files", "--error-unmatch", "--", rel]);
+  return out !== null;
 }
 
 /**
@@ -872,11 +864,15 @@ function guardDataDir(config: RepoOSConfig, absPath: string, relDir: string): st
  * so main stays mergeable — the same contract as `deleteTaskFile`. Throws
  * WriteError when the file is already gone (callers treat that as 404).
  */
-function deleteDataFile(config: RepoOSConfig, abs: string, commitMessage: string): string {
+async function deleteDataFile(
+  config: RepoOSConfig,
+  abs: string,
+  commitMessage: string,
+): Promise<string> {
   if (!existsSync(abs)) throw new WriteError(`File not found: ${abs}`);
   unlinkSync(abs);
   const rel = relative(config.root, abs);
-  if (gitTracked(config.root, rel)) commitTaskFile(config.root, abs, commitMessage);
+  if (await gitTracked(config.root, rel)) commitTaskFile(config.root, abs, commitMessage);
   return abs;
 }
 

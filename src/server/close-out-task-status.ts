@@ -5,8 +5,8 @@
  * `status:`), which surfaces as `inbox` via the parser default and blocks the
  * next handoff ("task must be active or review, but is inbox").
  */
-import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { gitOutputAsync } from "../core/git.js";
 import { join, relative } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { parseTask } from "../core/task.js";
@@ -28,7 +28,7 @@ function findTaskFileById(root: string, workDir: string, taskId: string): string
  * After a failed close-out, restore the board copy so Move to done / handoff can
  * retry without manual `repoos mv … active`. Never writes `inbox`.
  */
-export function preserveClosingTaskReviewStatusOnMain(
+export async function preserveClosingTaskReviewStatusOnMain(
   config: RepoOSConfig,
   taskId: string,
   getTask?: (id: string) => Task | null,
@@ -39,11 +39,7 @@ export function preserveClosingTaskReviewStatusOnMain(
 
   const rel = relative(config.root, absPath).split("\\").join("/");
   // Drop half-applied merge resolution debris on the live main checkout.
-  try {
-    execFileSync("git", ["checkout", "HEAD", "--", rel], { cwd: config.root });
-  } catch {
-    /* best-effort — patch below still restores review when needed */
-  }
+  await gitOutputAsync(config.root, ["checkout", "HEAD", "--", rel], 15_000);
 
   let task: Task;
   try {

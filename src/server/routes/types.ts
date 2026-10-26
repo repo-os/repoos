@@ -127,7 +127,7 @@ export interface RouteContext {
   startUnifiedHandoff: (
     task: Task,
     opts?: { origin?: HandoffOrigin; skipChecks?: boolean; actor?: string },
-  ) => { started: boolean; reason?: string };
+  ) => Promise<{ started: boolean; reason?: string }>;
 }
 
 export type RouteHandler = (

@@ -338,7 +338,7 @@ export function cmdScheduleEnable(args: string[], enabled: boolean): void {
   }
 }
 
-export function cmdScheduleDelete(args: string[]): void {
+export async function cmdScheduleDelete(args: string[]): Promise<void> {
   const { positional, error } = parseScheduleFlags(args, { requireYes: true });
   if (error) {
     console.error(c.red(`  ${error}\n${SCHEDULE_DELETE_USAGE}`));
@@ -359,7 +359,7 @@ export function cmdScheduleDelete(args: string[]): void {
     return;
   }
   try {
-    deleteScheduleDataFile(
+    await deleteScheduleDataFile(
       config,
       join(config.root, existing.path),
       `schedules(${existing.id}): delete`,

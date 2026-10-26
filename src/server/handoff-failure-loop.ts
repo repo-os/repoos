@@ -7,7 +7,7 @@
  * and offers one bounded engineer restart with the failure text.
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { gitOutputAsync, worktreeListAsync } from "../core/git.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { commitTaskFile, worktreePathForBranch } from "../core/git.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
@@ -113,19 +113,12 @@ export function countTrailingIdenticalHandoffFailures(body: string): number {
   return count;
 }
 
-export function readTaskBranchHead(config: RepoOSConfig, task: Task): string | null {
+export async function readTaskBranchHead(config: RepoOSConfig, task: Task): Promise<string | null> {
   if (!task.branch) return null;
-  const workdir = worktreePathForBranch(config.root, task.branch);
+  const worktrees = await worktreeListAsync(config.root);
+  const workdir = worktrees.get(task.branch)?.path;
   if (!workdir) return null;
-  try {
-    return execFileSync("git", ["rev-parse", "HEAD"], {
-      cwd: workdir,
-      encoding: "utf8",
-      timeout: 10_000,
-    }).trim();
-  } catch {
-    return null;
-  }
+  return gitOutputAsync(workdir, ["rev-parse", "HEAD"], 10_000);
 }
 
 export function storedHandoffFailureSha(task: Task): string | null {

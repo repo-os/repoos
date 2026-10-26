@@ -32,9 +32,6 @@ import { parseTask } from "../core/task.js";
 import {
   isGitRepo,
   localBranches,
-  lastCommitForFile,
-  worktreeStatus,
-  worktreePaths,
   worktreeList,
   currentBranch,
   emptyGitInfo,
@@ -354,6 +351,8 @@ export class LiveIndex {
     null;
   /** Last #0817 notice result per task, for PATCH responses (consumed once). */
   private pendingRequirementsNotice = new Map<string, RequirementsNoticeResult>();
+  /** Drops a stale taskFacts result when a newer file change won. */
+  private gitFactsGen = new Map<string, number>();
 
   /** Wire the #0210 review-transition guard. The server owns the logic. */
   setReviewGuard(fn: (task: Task, prev: Task) => Promise<boolean>): void {
@@ -528,18 +527,50 @@ export class LiveIndex {
           branchExists: task.branch ? this.branchCache.has(task.branch) : false,
         };
       } else {
-        const { subject, date } = lastCommitForFile(this.config.root, task.path);
-        const wt = task.branch
-          ? worktreeStatus(this.config.root, task.branch)
-          : { path: null, dirty: false };
+        // Branch changed (or this is a new task). Keep the index update on the
+        // HTTP thread and fill git facts from the worker afterwards.
+        const cached = prior?.git ?? emptyGitInfo();
         task.git = {
+          ...cached,
           branchExists: task.branch ? this.branchCache.has(task.branch) : false,
-          worktreeExists: task.branch ? worktreePaths(this.config.root).has(task.branch) : false,
-          lastCommit: subject,
-          lastCommitAt: date,
-          worktreePath: wt.path,
-          dirty: wt.dirty,
         };
+        const gen = (this.gitFactsGen.get(task.id) ?? 0) + 1;
+        this.gitFactsGen.set(task.id, gen);
+        const id = task.id;
+        const branch = task.branch;
+        const relPath = task.path;
+        void getGitWorker(this.config.root)
+          .taskFacts(this.config, relPath, branch || null)
+          .then((facts) => {
+            if (this.gitFactsGen.get(id) !== gen) return;
+            const current = this.byId.get(id);
+            if (!current || current.branch !== branch) return;
+            const git = {
+              branchExists: facts.branchExists,
+              worktreeExists: facts.worktreeExists,
+              lastCommit: facts.lastCommit,
+              lastCommitAt: facts.lastCommitAt,
+              worktreePath: facts.status.path,
+              dirty: facts.status.dirty,
+            };
+            const prev = current.git;
+            if (
+              prev.branchExists === git.branchExists &&
+              prev.worktreeExists === git.worktreeExists &&
+              prev.lastCommit === git.lastCommit &&
+              prev.lastCommitAt === git.lastCommitAt &&
+              prev.worktreePath === git.worktreePath &&
+              prev.dirty === git.dirty
+            ) {
+              return;
+            }
+            const next = { ...current, git };
+            this.byId.set(id, next);
+            this.emit({ type: "task.updated", task: next, prev: { git: prev }, at: now() });
+          })
+          .catch(() => {
+            // The next reconcile sweep repairs a missed read.
+          });
       }
     }
 

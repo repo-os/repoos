@@ -114,6 +114,7 @@ import { join, relative } from "node:path";
 import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-release.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
+import { listReviewPasses } from "../../core/review-passes.js";
 import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
 import { taskAttachmentCloudStates } from "../../core/attachment-resilience.js";
 import {
@@ -255,7 +256,16 @@ export const getTasks: RouteHandler = async (ctx, req, res) => {
   const url = new URL(req.url ?? "/", "http://localhost");
   const status = url.searchParams.get("status") as Status | null;
   const full = url.searchParams.get("full") === "1";
-  const allowedFields = new Set(["id", "title", "status", "priority"]);
+  const allowedFields = new Set([
+    "id",
+    "title",
+    "status",
+    "priority",
+    "area",
+    "assignedTo",
+    "isArchived",
+    "archiveDetail",
+  ]);
   const requestedFields = (url.searchParams.get("fields") ?? "id,title,status,priority")
     .split(",")
     .map((field) => field.trim())
@@ -933,8 +943,11 @@ export const getTaskContext: RouteHandler = async (ctx, _req, res, params) => {
     .map(summary);
   const enriched = withReviewStatus(withPreviewTargets(task, ctx.config), ctx.reviews);
   const blockers = await getGitWorker(ctx.config.root).dependencyBlockers(ctx.config.root, tasks);
+  const passes = listReviewPasses(ctx.config, task.id);
+  const latest = passes.length > 0 ? passes[passes.length - 1] : null;
   return json(res, 200, {
     task: enriched,
+    latestReviewVerdict: latest?.verdict ?? null,
     dependencies: (task.dependsOn ?? []).flatMap((id): Record<string, unknown>[] => {
       const dependency = byId.get(id);
       return dependency ? [summary(dependency)] : [{ id, missing: true }];
@@ -1111,7 +1124,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
         if (flagged) index.applyFileChange(flagged.absPath, { guarded: true });
       }
     }
-    const result = ctx.startUnifiedHandoff(index.getTask(updated.id) ?? updated, {
+    const result = await ctx.startUnifiedHandoff(index.getTask(updated.id) ?? updated, {
       origin: body.origin === "board-drag" ? "board-drag" : "ui-review",
       skipChecks,
       actor: getCurrentUser(req, config)?.email ?? "human",
@@ -1218,7 +1231,7 @@ export const deleteTask: RouteHandler = async (ctx, _req, res, params) => {
   }
   await previews.stop(id, "task deleted");
   try {
-    deleteTaskFile(config, existing.absPath);
+    await deleteTaskFile(config, existing.absPath);
   } catch (err) {
     if (err instanceof PathGuardError) {
       return json(res, 400, { error: err.message });

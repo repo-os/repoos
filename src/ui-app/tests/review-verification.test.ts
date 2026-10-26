@@ -29,7 +29,7 @@ describe("gatherReviewVerification (#0714)", () => {
     roots.length = 0;
   });
 
-  it("reads console errors from stored handoff evidence on the task branch", () => {
+  it("reads console errors from stored handoff evidence on the task branch", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-rv-"));
     roots.push(root);
     const worktree = `${root}-wt`;
@@ -94,7 +94,7 @@ area: web
       defaultAssignee: config.defaultAssignee,
     });
 
-    const verification = gatherReviewVerification(config, task, worktree, "main");
+    const verification = await gatherReviewVerification(config, task, worktree, "main");
     expect(verification.consoleErrors.status).toBe("failed");
     expect(verification.blocksApproval).toBe(true);
 
@@ -103,7 +103,7 @@ area: web
     expect(applied.verdictOverride).toBe("needs some work");
   });
 
-  it("skips the browser console check for a command-only task (#0765)", () => {
+  it("skips the browser console check for a command-only task (#0765)", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-rv-cmd-"));
     roots.push(root);
     const worktree = `${root}-wt`;
@@ -188,7 +188,7 @@ area: mac
       defaultAssignee: config.defaultAssignee,
     });
 
-    const verification = gatherReviewVerification(config, task, worktree, "main");
+    const verification = await gatherReviewVerification(config, task, worktree, "main");
     // #0765: browser verification does not apply, so the console check is
     // `skipped` — never `not_run`, which would falsely block approval.
     expect(verification.consoleErrors.status).toBe("skipped");
@@ -206,7 +206,7 @@ area: mac
     // blocked on the "ui-verification JSON absent" gap — that file is a browser
     // artifact this task type cannot produce.
     rmSync(join(cache, "0765.json"), { force: true });
-    const noEvidence = gatherReviewVerification(config, task, worktree, "main");
+    const noEvidence = await gatherReviewVerification(config, task, worktree, "main");
     expect(noEvidence.consoleErrors.status).toBe("skipped");
     expect(noEvidence.blocksApproval).toBe(false);
     expect(
@@ -214,7 +214,7 @@ area: mac
     ).toBeUndefined();
   });
 
-  it("records not_run when the branch worktree is missing", () => {
+  it("records not_run when the branch worktree is missing", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-rv-nowt-"));
     roots.push(root);
     mkdirSync(join(root, "work"), { recursive: true });
@@ -238,7 +238,7 @@ branch: feat/missing-wt
       defaultStatus: config.defaultStatus,
       defaultAssignee: config.defaultAssignee,
     });
-    const verification = gatherReviewVerificationWithoutWorktree(config, task);
+    const verification = await gatherReviewVerificationWithoutWorktree(config, task);
     expect(verification.guardTests[0]?.status).toBe("not_run");
     const applied = applyMechanicalReviewVerification("## Verdict\n`good to go`\n", verification);
     expect(applied.markdown).toContain("no local worktree");
@@ -296,7 +296,7 @@ branch: feat/rv-globs
     return { config, task };
   }
 
-  it("ignores an unrelated repoos.toml addition (#0762)", () => {
+  it("ignores an unrelated repoos.toml addition (#0762)", async () => {
     const base =
       'workDir = "work"\n\n[check]\nversion = 1\n\n[[check.steps]]\nname = "build"\nkind = "build"\n';
     const { worktree, taskPath, root } = setupBranchRepo({
@@ -304,12 +304,12 @@ branch: feat/rv-globs
       branchToml: `${base}\n[release]\nversion = "1.0.0"\n\n[[distribution]]\nname = "dist"\nkind = "npm"\ncommand = "npm publish"\n`,
     });
     const { config, task } = loadTask(root, taskPath);
-    const verification = gatherReviewVerification(config, task, worktree, "main");
+    const verification = await gatherReviewVerification(config, task, worktree, "main");
     expect(verification.guardTests).toEqual([]);
     expect(verification.blocksApproval).toBe(false);
   });
 
-  it("accepts a Swift test path as negative evidence when configured (#0762)", () => {
+  it("accepts a Swift test path as negative evidence when configured (#0762)", async () => {
     const base = [
       'workDir = "work"',
       "",
@@ -342,7 +342,7 @@ branch: feat/rv-globs
       },
     });
     const { config, task } = loadTask(root, taskPath);
-    const verification = gatherReviewVerification(config, task, worktree, "main");
+    const verification = await gatherReviewVerification(config, task, worktree, "main");
     expect(verification.guardTests).toHaveLength(1);
     expect(verification.guardTests[0]?.guardId).toBe("theme-contrast");
     expect(verification.guardTests[0]?.status).toBe("passed");

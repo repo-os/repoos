@@ -257,7 +257,7 @@ export const deleteInput: RouteHandler = async (ctx, _req, res, p) => {
   const input = listInputs(ctx.config).find((i) => i.id === p.param1);
   if (!input) return json(res, 404, { error: `input not found: ${p.param1}` });
   try {
-    deleteInputFile(ctx.config, join(ctx.config.root, input.path), `inputs(${input.id}): delete`);
+    await deleteInputFile(ctx.config, join(ctx.config.root, input.path), `inputs(${input.id}): delete`);
   } catch (err) {
     if (err instanceof PathGuardError) return json(res, 400, { error: err.message });
     if (err instanceof WriteError) return json(res, 404, { error: err.message });
