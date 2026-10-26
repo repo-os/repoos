@@ -3,6 +3,8 @@ id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
 priority: p2
 area: web
 assigned_to: ai
@@ -386,4 +388,5 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-26T17:02:42Z · body
 - 2026-10-26T17:08:16Z · body
 - 2026-10-26T17:10:41Z · body
+- 2026-10-26T17:12:59Z · needs_input
 - 2026-10-26T17:12:59Z · needs_input
