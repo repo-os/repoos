@@ -2134,9 +2134,15 @@
   margin-bottom: 9px;
 }
 .tc-id {
+  display: -webkit-box;
+  max-width: min(180px, 38vw);
+  overflow: hidden;
+  overflow-wrap: anywhere;
   font-size: 10px;
   color: var(--txt-faint);
   font-family: "JetBrains Mono", monospace;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 /* Pink diagonal "Preview" corner banner, shown only on tasks with a live
      preview. Pure CSS: rotated band that folds around the card's top-left

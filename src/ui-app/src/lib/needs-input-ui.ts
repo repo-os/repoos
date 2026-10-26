@@ -19,6 +19,23 @@ export function needsInputSurfaces(
 export const STALE_REVIEW_DEV_ERROR_BANNER =
   "This task is already in review — the dev-error flag is stale from handoff and can be dismissed if the reviewer report looks fine.";
 
+/** Short top-line chip copy for the task drawer header (#0952). */
+export const NEEDS_INPUT_COMPACT_CHIP_LABELS: Record<string, string> = {
+  "review-failed": "Review failed",
+  "review-rounds-exhausted": "Review issues",
+  "review-human-attention": "Review issues",
+  "evidence-gap-exhausted": "Evidence missing",
+  "dev-error": "Agent failed",
+  "provider-failure": "Provider error",
+  "degenerate-output": "Agent failed",
+  "check-failed-after-retries": "Checks failed",
+  "cto-escalation": "Agent asked",
+  "watchdog-stuck": "No agent running",
+  underspecified: "Not fleshed out",
+  "needs-human-step": "Needs human",
+  questions: "Agent asked",
+};
+
 export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
   "review-failed": "Reviewer failed — no report",
   "review-rounds-exhausted": "Review still finding issues",
@@ -169,6 +186,16 @@ export function resolveNeedsInputReasonKey(
 export function needsInputStatusLabel(reason: string | undefined, hasQuestions = false): string {
   const key = resolveNeedsInputReasonKey(reason, hasQuestions);
   return (key && NEEDS_INPUT_STATUS_LABELS[key]) || "Needs your input";
+}
+
+/** A few words for the drawer's single header chip; full text lives in the waiting card and Debug tab. */
+export function needsInputCompactChipLabel(
+  reason: string | undefined,
+  hasQuestions = false,
+): string {
+  const key = resolveNeedsInputReasonKey(reason, hasQuestions);
+  if (!key) return "Needs input";
+  return NEEDS_INPUT_COMPACT_CHIP_LABELS[key] ?? "Needs input";
 }
 
 export function needsInputBannerText(

@@ -133,25 +133,22 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
 
     const wrapper = await mountDrawer(pinia, makeTask());
 
-    // Quickbar: the single prominent animated status, above the tab strip.
-    const working = wrapper.find(".drawer-run.reviewing");
+    // One short status card and one live status line sit above the tabs.
+    const working = wrapper.find(".drawer-status-summary");
     expect(working.exists()).toBe(true);
-    expect(working.text()).toContain("Reviewer is reviewing this task…");
-    expect(working.find(".ai").exists()).toBe(true);
-    // ...and it is the ONLY place that status appears (#0456).
-    expect(wrapper.findAll(".drawer-run.reviewing")).toHaveLength(1);
-    expect(wrapper.findAll(".ai-reviewing")).toHaveLength(1);
+    expect(working.text()).toContain("Reviewer running");
+    expect(wrapper.find(".drawer-status-line").text()).toContain("Reviewer is working…");
+    expect(wrapper.findAll(".drawer-status-summary")).toHaveLength(1);
     expect(wrapper.findAll(".tab-btn .ai")).toHaveLength(0);
-    expect(wrapper.text().match(/Reviewer is reviewing this task…/g)).toHaveLength(1);
+    expect(wrapper.text().match(/Reviewer is working…/g)).toHaveLength(1);
 
     // Switching to another tab must not surface a second reviewer indicator —
     // historically the Review tab carried its own animated badge here.
     const ui = useUiStore();
     ui.activeTab = "details";
     await flush();
-    expect(wrapper.findAll(".ai-reviewing")).toHaveLength(1);
     expect(wrapper.findAll(".tab-btn .ai")).toHaveLength(0);
-    expect(wrapper.text().match(/Reviewer is reviewing this task…/g)).toHaveLength(1);
+    expect(wrapper.text().match(/Reviewer is working…/g)).toHaveLength(1);
 
     // The Review tab no longer repeats the working status as its own banner or
     // an animated "thinking" placeholder.
@@ -195,7 +192,7 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
     await repo.init();
 
     const wrapper = await mountDrawer(pinia, task);
-    expect(wrapper.find(".drawer-run.reviewing").exists()).toBe(true);
+    expect(wrapper.find(".drawer-status-line").exists()).toBe(true);
 
     // The review finishes: SSE marks it ready and the report is loaded.
     FakeEventSource.instances[0].emit("review", {
@@ -208,7 +205,7 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
     await flush();
 
     expect(repo.reviewFor("0001")?.running).toBe(false);
-    expect(wrapper.find(".drawer-run.reviewing").exists()).toBe(false);
+    expect(wrapper.find(".drawer-status-line").exists()).toBe(false);
     expect(wrapper.find(".review-running").exists()).toBe(false);
     expect(wrapper.find(".review-thinking").exists()).toBe(false);
     // The report now appears as usual.
@@ -246,7 +243,7 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
     ui.activeTab = "review";
     await flush();
 
-    expect(wrapper.text()).toContain("Awaiting a new review");
+    expect(wrapper.text()).toContain("awaiting a new review");
     expect(wrapper.find(".review-stale").text()).toContain("Previous review");
     const button = (label: string) =>
       wrapper.findAll("button").find((b) => b.text().includes(label));
