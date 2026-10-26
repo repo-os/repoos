@@ -12,7 +12,7 @@ branch: feat/bug-one-task-s-activity-bookkeeping-comm
 cli_override: opencode
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-26T21:30:38Z"
+updated_at: "2026-10-26T21:34:05Z"
 last_close_out_gate_ms: 718123
 last_close_out_gate_at: "2026-10-26T21:30:38.786Z"
 review_passes: 1
@@ -181,4 +181,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-26T21:16:07Z · note: shots: skipped — the diff (17 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-26T21:17:21Z · note: review pass 1: good to go
 - 2026-10-26T21:30:38Z · close-out gate completed in 718s
-
+- 2026-10-26T21:34:05Z · status done→done, release:success
