@@ -1185,6 +1185,7 @@
     .inputs-board-page
   ) {
   overflow-y: auto;
+  padding-bottom: var(--page-bottom-inset);
 }
 /* Standard nav views span this pane's full width: do NOT add a page-level
    max-width (or centering margin) to a page shell — wide tables, step output
@@ -1654,8 +1655,17 @@
   min-height: 0;
   /* Work columns own their scrollbars inside .main, so the page pane's
      bottom padding cannot protect their final cards from the fixed controls. */
-  padding: 4px 8px var(--page-bottom-inset);
+  padding: 4px 8px 0;
   scrollbar-width: none;
+}
+/* A flex spacer adds scrollable clearance without imposing the inset as the
+   scrollport's minimum physical height (important for wrapped tablet rows). */
+.col-body::after {
+  content: "";
+  flex: 0 0 var(--page-bottom-inset);
+  /* Leave content visible even in a short wrapped row. The inline safe inset
+     already keeps the head stack outside the columns. */
+  max-height: 50%;
 }
 .col-body::-webkit-scrollbar {
   display: none;
@@ -1822,7 +1832,11 @@
 
 @media (max-width: 1250px) {
   .board {
-    flex-wrap: wrap;
+    /* Bound wrapped rows to the available board height, rather than their
+       cards' intrinsic height. Each column keeps its own scrollport. */
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: minmax(0, 1fr);
   }
   /* No column-gap to subtract here anymore (see .board) — the columns'
        own padding provides the horizontal spacing, so three fit exactly. */
@@ -1835,6 +1849,10 @@
   }
 }
 @media (max-width: 760px) {
+  .board {
+    display: flex;
+    flex-wrap: wrap;
+  }
   .body::after {
     width: calc(var(--floating-head-size) + var(--floating-head-inline-offset) + 12px);
   }
@@ -1870,6 +1888,7 @@
     min-height: 40px;
     padding-bottom: 10px;
   }
+  .col-body::after,
   .board-col.scrollable::after {
     display: none;
   }
@@ -4668,8 +4687,10 @@
   min-height: 0;
 }
 @media (max-width: 860px) {
-  .ctx-page {
+  .main > .ctx-page {
     height: auto;
+    overflow-y: auto;
+    padding-bottom: var(--page-bottom-inset);
   }
   .repo-grid {
     grid-template-columns: 1fr;
@@ -9082,6 +9103,14 @@
   display: none;
 }
 @media (max-width: 760px) {
+  /* At narrow widths these shells return their contents to normal flow.
+     Keep scrolling on the full-height routed root rather than clipping it. */
+  .main > .work-page,
+  .main > .agents-page,
+  .main > .inputs-board-page,
+  .main > .page-scroll:not(.settings-page--fill) {
+    overflow-y: auto;
+  }
   .page-scroll:not(.settings-page--fill) {
     height: auto;
     min-height: initial;
@@ -13392,8 +13421,8 @@
    (column-reverse: the toggle row is first in the DOM, so it sits lowest). */
 @media (min-width: 761px) {
   .work-page .parked-lists {
-    /* Fixed like .ibar-wrap: the scrolling .main pane has bottom padding, so
-       anchoring to the page would land above the pipeline bar's row. */
+    /* Float above the full-height column scrollports, like .ibar-wrap.
+       Their shared end inset lets the last card clear this row. */
     position: fixed;
     left: calc(210px + 26px);
     bottom: 14px;
