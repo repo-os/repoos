@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
@@ -15,8 +17,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
 updated_at: "2026-10-26T08:13:19Z"
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-26T06:15:46.061Z: repoos check failed: ◆ Check plan"
 review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
@@ -340,3 +340,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T08:04:50Z · note: route /stories is not served by target "Docs site" — the target returned its HTML shell for an app module (TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:63123/stories/index.md?import&t=1793001887586'.)
 - 2026-10-26T08:06:16Z · note: route /stories is not served by target "Docs site" — the target returned its HTML shell for an app module (TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:63398/stories/index.md?import&t=1793001973339'.)
 - 2026-10-26T08:07:49Z · note: route /checks is not served by target "Docs site" — the target returned its HTML shell for an app module (TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:63712/checks/index.md?import&t=1793002065920'.)
+
