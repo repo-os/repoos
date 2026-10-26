@@ -79,6 +79,145 @@ afterEach(async () => {
 });
 
 describe("startServer running-server registry", () => {
+  it("does not tune git config from a preview child server", async () => {
+    const root = minimalRepo();
+    process.env.REPOOS_PREVIEW_CHILD = "1";
+    const handle = await startServer({
+      root,
+      host: "127.0.0.1",
+      port: 0,
+      disableAuth: true,
+    });
+    try {
+      expect(() =>
+        execFileSync("git", ["config", "--get", "core.fsmonitor"], {
+          cwd: root,
+          encoding: "utf8",
+        }),
+      ).toThrow();
+    } finally {
+      await handle.close();
+      delete process.env.REPOOS_PREVIEW_CHILD;
+    }
+  }, 30_000);
+
+  it("does not tune git config when --preview-overrides is active", async () => {
+    const root = minimalRepo();
+    const handle = await startServer({
+      root,
+      host: "127.0.0.1",
+      port: 0,
+      disableAuth: true,
+      previewOverrides: true,
+    });
+    try {
+      expect(() =>
+        execFileSync("git", ["config", "--get", "core.fsmonitor"], {
+          cwd: root,
+          encoding: "utf8",
+        }),
+      ).toThrow();
+    } finally {
+      await handle.close();
+    }
+  }, 30_000);
+
+  it("does not tune git config when serving from a linked worktree", async () => {
+    const main = minimalRepo();
+    const wt = join(main, "task-wt");
+    git(main, ["worktree", "add", "-q", wt, "-b", "feat/task"]);
+    const handle = await startServer({
+      root: wt,
+      host: "127.0.0.1",
+      port: 0,
+      disableAuth: true,
+    });
+    try {
+      expect(() =>
+        execFileSync("git", ["config", "--get", "core.fsmonitor"], {
+          cwd: main,
+          encoding: "utf8",
+        }),
+      ).toThrow();
+    } finally {
+      await handle.close();
+    }
+  }, 30_000);
+
+  it("keeps human-disabled fsmonitor when a preview child serves from a linked worktree (#0958)", async () => {
+    const main = minimalRepo();
+    git(main, ["config", "core.fsmonitor", "false"]);
+    git(main, ["config", "core.untrackedCache", "false"]);
+    const wt = join(main, "task-wt");
+    git(main, ["worktree", "add", "-q", wt, "-b", "feat/preview-shot"]);
+    process.env.REPOOS_PREVIEW_CHILD = "1";
+    const handle = await startServer({
+      root: wt,
+      host: "127.0.0.1",
+      port: 0,
+      disableAuth: true,
+    });
+    try {
+      expect(
+        execFileSync("git", ["config", "--get", "core.fsmonitor"], {
+          cwd: main,
+          encoding: "utf8",
+        }).trim(),
+      ).toBe("false");
+      expect(
+        execFileSync("git", ["config", "--get", "core.untrackedCache"], {
+          cwd: main,
+          encoding: "utf8",
+        }).trim(),
+      ).toBe("false");
+    } finally {
+      await handle.close();
+      delete process.env.REPOOS_PREVIEW_CHILD;
+    }
+  }, 30_000);
+
+  it("honors git.tuneForScale = false during startup", async () => {
+    const root = minimalRepo();
+    writeFileSync(join(root, "repoos.toml"), "servePort = 0\ngit.tuneForScale = false\n");
+    const handle = await startServer({
+      root,
+      host: "127.0.0.1",
+      port: 0,
+      disableAuth: true,
+    });
+    try {
+      expect(() =>
+        execFileSync("git", ["config", "--get", "core.fsmonitor"], {
+          cwd: root,
+          encoding: "utf8",
+        }),
+      ).toThrow();
+      expect(() =>
+        execFileSync("git", ["config", "--get", "core.untrackedCache"], {
+          cwd: root,
+          encoding: "utf8",
+        }),
+      ).toThrow();
+    } finally {
+      await handle.close();
+    }
+  }, 30_000);
+
+  it("leaves git acceleration off by default on a main checkout", async () => {
+    const root = minimalRepo();
+    const handle = await startServer({ root, host: "127.0.0.1", port: 0, disableAuth: true });
+    try {
+      expect(() =>
+        execFileSync("git", ["config", "--get", "core.fsmonitor"], {
+          cwd: root,
+          encoding: "utf8",
+        }),
+      ).toThrow();
+    } finally {
+      await handle.close();
+    }
+  }, 30_000);
+
   it("writes registry file once listening and removes it on close", async () => {
     const root = minimalRepo();
     const port = await reservePort();

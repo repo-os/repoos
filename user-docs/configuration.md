@@ -892,6 +892,32 @@ inheritEnv = false
 | `worktrees.inheritEnv` | boolean | `false` | yes | When true, RepoOS symlinks the main checkout's `.env` into each task worktree so worktree-local build or preview commands can read project secrets. |
 | `worktrees.candidate` | string | *(see `closeOut.candidate`)* | yes | Same as `closeOut.candidate` when the close-out section does not set it. |
 | `worktrees.installCommand` | string | *(empty)* | yes | Same as `closeOut.installCommand` when the close-out section does not set it. |
+| `git.tuneForScale` | boolean | `false` | yes | Enables Git fsmonitor and the untracked cache to speed the `git status` scans the index build runs in every checkout. Existing explicitly configured `core.fsmonitor` / `core.untrackedCache` values, including `false`, are never overwritten. See [Git status acceleration](#git-status-acceleration). |
+
+### Git status acceleration
+
+When enabled, startup from the main checkout tunes two Git settings that make repeated
+`git status` scans cheaper: `core.fsmonitor` (Git's built-in filesystem monitor
+daemon) and `core.untrackedCache`. Both are best-effort; Git falls back to a
+full scan when a daemon is unavailable.
+
+`git.tuneForScale` defaults to `false` because every active worktree can start
+its own daemon, even when finished worktrees are cleaned up. Turn it on in
+Settings → General → Performance when faster status scans justify that cost.
+Only an **unset** key is written: if you have
+set `core.fsmonitor` or `core.untrackedCache` yourself, in `.git/config` or
+globally, RepoOS leaves your value alone even when the setting is on.
+
+Preview and shot servers (`REPOOS_PREVIEW_CHILD=1` or `--preview-overrides`) and
+any server rooted in a linked worktree skip the tune, because worktrees share
+the repository's `.git/config` and a preview start must not rewrite it. When a
+worktree is removed — review close-out, Move to done, or worktree GC — RepoOS
+runs `git fsmonitor--daemon stop` in that checkout first, so daemons do not
+accumulate for finished tasks. `repoos doctor` warns when more than eight
+fsmonitor daemons are running, names the CPU/memory cost, and prints the fix.
+Turning the RepoOS setting off does not unset a Git value it previously wrote;
+run `git config core.fsmonitor false` in the main checkout to prevent new
+daemons, then `git fsmonitor--daemon stop` in affected checkouts to stop existing ones.
 
 **`inheritEnv` is off by default and must be opted into deliberately.** Every
 worktree is another place RepoOS's root `.env` configuration is reachable.

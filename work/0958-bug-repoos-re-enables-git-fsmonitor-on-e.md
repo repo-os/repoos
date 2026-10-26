@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 288635
-last_close_out_gate_at: "2026-10-26T17:59:56.236Z"
 id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
-status: review
+status: done
 priority: p1
 area: core
+merged_commit: e1d22b223f08f2b43e9617ce781b8d7c78febc89
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-25T11:34:02Z"
 updated_at: "2026-10-26T17:59:56Z"
+last_close_out_gate_ms: 288635
+last_close_out_gate_at: "2026-10-26T17:59:56.236Z"
 review_passes: 1
 dev_error_count: 11
 ---

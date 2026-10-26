@@ -27,6 +27,18 @@ describe("repoos.toml and environment docs", () => {
     expect(missing).toEqual([]);
   });
 
+  it("exposes git.tuneForScale as a documented Settings toggle", () => {
+    const field = getConfigSchema().find((f) => f.key === "git.tuneForScale");
+    expect(field).toMatchObject({
+      type: "boolean",
+      tier: "restart",
+      restartRequired: true,
+      default: false,
+    });
+    expect(field?.description).toMatch(/daemon/i);
+    expect(SUPPORTED_TOML_KEYS).toContain("git.tuneForScale");
+  });
+
   it("exposes remindersDir as a guarded layout setting (#0860)", () => {
     const field = getConfigSchema().find((f) => f.key === "remindersDir");
     expect(field).toMatchObject({
