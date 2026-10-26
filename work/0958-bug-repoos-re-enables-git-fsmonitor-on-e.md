@@ -8,12 +8,12 @@ needs_input_reason: dev-error
 hold: true
 priority: p1
 area: core
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 model_override: gpt-6-sol
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-26T12:41:12Z"
+updated_at: "2026-10-26T12:41:18Z"
 dev_error_count: 11
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:34.411Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:43.560Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:51.791Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -162,3 +162,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-26T12:41:05Z · needs_input
 - 2026-10-26T12:41:05Z · needs_input
 - 2026-10-26T12:41:12Z · held
+- 2026-10-26T12:41:18Z · assigned_to
