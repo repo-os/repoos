@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-26T21:17:22Z"
+review_passes: 1
 id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
@@ -11,7 +13,6 @@ branch: feat/bug-one-task-s-activity-bookkeeping-comm
 cli_override: opencode
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-26T21:17:21Z"
 last_check_failure: "repoos check at 2026-10-26T20:09:18.481Z: repoos check failed: check-fmt:check — timed out — timed out after 120s"
 handoff_signal_retry_count: 2
 dev_error_count: 12
@@ -176,3 +177,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-26T21:16:07Z · status active→review
 - 2026-10-26T21:16:07Z · note: shots: skipped — the diff (17 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-26T21:17:21Z · note: review pass 1: good to go
+
