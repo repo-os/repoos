@@ -3,12 +3,6 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: handoff finalization was interrupted (server reload) — restart work to hand off again
-debug_tldr: "Handoff finalization was cut off by a RepoOS server reload—resume the engineer on #0950 and request review again."
-debug_tldr_at: "2026-10-25T18:37:48Z"
-debug_tldr_key: dev-error|handoff finalization was interrupted (server reload) — restart work to hand off again
 priority: p2
 area: web
 assigned_to: ai
@@ -19,7 +13,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-25T19:14:46Z"
+updated_at: "2026-10-26T05:32:23Z"
 review_passes: 8
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -384,4 +378,4 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-25T19:03:14Z · note: handoff requested (ui-review)
 - 2026-10-25T19:14:46Z · status active→review
 - 2026-10-25T19:14:46Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
-
+- 2026-10-26T05:32:23Z · needs_input (dev-error) cleared for review again by human
