@@ -3,12 +3,6 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h30m16s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryable\":true,\"error_id\":\"3017aa31-9ac0-4ccc-8edb-66e8390da87a-1\"}"
-debug_tldr: "Antigravity individual quota hit (429) — switch engineer/reviewer in Agents or wait ~7 days for reset, then resume #0951."
-debug_tldr_at: "2026-10-26T12:30:36Z"
-debug_tldr_key: "dev-error|AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryable\":true,\"error_id\":\"7465488f-966a-4889-ba7d-0fe40a6c6fdd-294\"}"
 priority: p2
 area: web
 assigned_to: ai
@@ -431,3 +425,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T12:46:15Z · engineer crash recovery: switched antigravity + gemini-3.8-flash-high → opencode + opencode-go/deepseek-v4.1-flash after 32/3 crashes in 30m · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h30m25s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retry…
 - 2026-10-26T12:46:22Z · engineer crash recovery: switched antigravity + gemini-3.8-flash-high → opencode + opencode-go/deepseek-v4.1-flash after 33/3 crashes in 30m · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h30m16s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retry…
 - 2026-10-26T12:46:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-26T12:46:29Z · needs_input
