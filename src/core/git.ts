@@ -16,7 +16,7 @@ import {
 } from "node:fs";
 import { dirname, isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
-import { worktreesDir, worktreesInheritEnv } from "./config.js";
+import { isLinkedWorktreeRoot, worktreesDir, worktreesInheritEnv } from "./config.js";
 import { notifyGitMutation } from "./git-activity.js";
 import {
   isLockfileOnlyConflicts,
@@ -475,30 +475,59 @@ async function lastCommitsForDirAsyncUncoalesced(
  * per-directory untracked-file scan. Both are opt-in per repo and safe:
  * git falls back to a full scan if the daemon is unavailable.
  *
- * OFF by default (hotfix, #0958): each server start, including preview and
- * shot servers rooted in task worktrees, used to flip these on in the shared
- * `.git/config`, spawning one watcher daemon per worktree and loading fseventsd
- * on repos with many worktrees. Measured `git status` is already ~20 ms
- * without it. Set `REPOOS_GIT_FSMONITOR=1` to opt in; a human's `false` is
- * never overwritten.
+ * Idempotent and best-effort. Existing values, including an explicit false,
+ * belong to the repository owner and are never overwritten.
  *
- * Idempotent, best-effort, and cheap — call it once at startup. Skips any key
- * already set to the desired value, so a repo that has been tuned once pays
- * only two `git config --get` reads on subsequent boots.
+ * Off unless `git.tuneForScale` is true. The 2026-10-25 incident (#0958)
+ * showed one fsmonitor daemon per worktree driving `fseventsd` to a full CPU
+ * and more than 1 GB of memory; `git status` is already fast enough without
+ * the daemon on a typical RepoOS checkout. Callers gate with
+ * `shouldTuneRepoForScaleAtStartup` so preview servers and linked worktrees
+ * do not rewrite shared `.git/config` or spawn another daemon per checkout.
  */
-export function tuneRepoForScale(root: string): void {
-  if (process.env.REPOOS_GIT_FSMONITOR !== "1") return;
-  if (!isGitRepo(root)) return;
+export interface TuneRepoForScaleStartupOptions {
+  root: string;
+  tuneForScale?: boolean;
+  /** `REPOOS_PREVIEW_CHILD=1` — a managed preview/shot child server. */
+  previewChild?: boolean;
+  /** `--preview-overrides` (or an applied `[preview.*]` overlay) is active. */
+  previewOverrides?: boolean;
+}
+
+export function shouldTuneRepoForScaleAtStartup(opts: TuneRepoForScaleStartupOptions): boolean {
+  if (opts.tuneForScale !== true) return false;
+  if (opts.previewChild) return false;
+  if (opts.previewOverrides) return false;
+  if (isLinkedWorktreeRoot(opts.root)) return false;
+  return true;
+}
+
+export function tuneRepoForScale(root: string, enabled = true): void {
+  if (!enabled || !isGitRepo(root)) return;
   for (const [key, value] of [
     ["core.fsmonitor", "true"],
     ["core.untrackedCache", "true"],
   ]) {
     try {
-      if (git(root, ["config", "--get", key]) === value) continue;
+      if (git(root, ["config", "--get", key]) !== null) continue;
       git(root, ["config", key, value]);
     } catch {
       /* best-effort: an old git or a read-only .git/config just means no speedup */
     }
+  }
+}
+
+/** Stop the fsmonitor daemon attached to a checkout before removing it. */
+export function stopFsmonitorDaemon(worktree: string, run: typeof spawnSync = spawnSync): void {
+  try {
+    run("git", ["fsmonitor--daemon", "stop"], {
+      cwd: worktree,
+      encoding: "utf8",
+      stdio: "ignore",
+      timeout: 4000,
+    });
+  } catch {
+    /* daemon may be unsupported or already stopped */
   }
 }
 
@@ -920,6 +949,7 @@ export async function removeDetachedWorktree(
   path: string,
   timeout = 60_000,
 ): Promise<void> {
+  if (existsSync(path)) stopFsmonitorDaemon(path);
   const run = await runGit(root, ["worktree", "remove", "--force", path], timeout);
   if (run.status !== 0) {
     if (existsSync(path)) {
@@ -2554,6 +2584,8 @@ export interface RemoveWorktreeOptions {
    * candidate, or GC of a tree it has already established is merged and clean.
    */
   force?: boolean;
+  /** Test seam for verifying daemon teardown without starting Git daemons. */
+  stopFsmonitor?: (worktree: string) => void;
 }
 
 /**
@@ -2594,6 +2626,12 @@ export function removeWorktree(
   const removeArgs = (): string[] =>
     force ? ["worktree", "remove", "--force", path] : ["worktree", "remove", path];
 
+  // Stop only after confirming removal is permitted. The daemon may have been
+  // started before a human disabled fsmonitor in the shared config, so always
+  // ask Git to stop it. A failed dirty-worktree removal must leave its active
+  // checkout and daemon alone.
+  if (existsSync(path) && (force || worktreeHasNoUncommittedWork(path)))
+    (opts.stopFsmonitor ?? stopFsmonitorDaemon)(path);
   const first = gitCapture(root, removeArgs());
   if (first.status === 0) return true;
   if (/is a main working tree|checked out at/i.test(first.stderr)) return false;
