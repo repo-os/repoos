@@ -5,6 +5,10 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Connection stalled"
+debug_tldr: "The engineer harness lost its connection (stalled link), not the build — wait for Playwright slots to clear, then retry Start or handoff."
+debug_tldr_at: "2026-10-26T12:27:58Z"
+debug_tldr_key: "dev-error|RetriableError: Connection stalled"
 priority: p2
 area: web
 assigned_to: ai
@@ -15,7 +19,7 @@ model_override: grok-4.7-high
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T12:12:59Z"
+updated_at: "2026-10-26T12:37:26Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
 review_passes: 9
@@ -23,7 +27,7 @@ last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check fail
 handoff_signal_retry_count: 2
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-24T23:36:25.887Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-24T23:57:03.760Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 7
+dev_error_count: 8
 ---
 ## Problem
 
@@ -420,3 +424,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T11:37:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-26T11:48:54Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-26T12:12:59Z · body
+- 2026-10-26T12:37:26Z · message_overdue: still queued after 60m without being delivered
