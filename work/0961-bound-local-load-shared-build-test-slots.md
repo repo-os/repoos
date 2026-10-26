@@ -11,7 +11,7 @@ branch: feat/bound-local-load-shared-build-test-slots
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-26T19:23:29Z"
+updated_at: "2026-10-26T19:26:22Z"
 ---
 ## Problem
 
@@ -78,3 +78,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-26T19:19:58Z · body
 - 2026-10-26T19:19:58Z · message_queued at 2026-10-26T19:19:58.813Z
 - 2026-10-26T19:23:29Z · body
+- 2026-10-26T19:26:22Z · handoff_deferred: 2 queued message(s) must be read before review
