@@ -286,3 +286,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T05:32:39Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (1/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-26T05:32:43Z · cli_override, model_override
 - 2026-10-26T05:32:44Z · needs_input
+- 2026-10-26T05:32:44Z · message_queued at 2026-10-26T05:32:44.853Z
