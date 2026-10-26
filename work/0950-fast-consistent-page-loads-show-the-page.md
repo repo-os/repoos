@@ -11,12 +11,12 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
-cli_override: antigravity
-model_override: gemini-3.8-flash-high
+cli_override: cursor
+model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T14:45:45Z"
+updated_at: "2026-10-26T14:46:32Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
 review_passes: 9
@@ -445,3 +445,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T14:45:37Z · engineer crash recovery: switched antigravity + gemini-3.8-flash-high → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 164h31m2s.","status":"RESOURCE_EXHAUSTED","error_code":429,"code_kind":"http","retrya…
 - 2026-10-26T14:45:40Z · message_delivered: 1 message(s)
 - 2026-10-26T14:45:45Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-26T14:46:32Z · cli_override, model_override
