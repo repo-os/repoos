@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 463f31b9e4c54d8db37cc30ad6ded6c3ee530db2
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
@@ -66,3 +68,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T11:14:37Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T11:14:38Z · message_queued at 2026-10-26T11:14:38.107Z
 - 2026-10-26T12:06:18Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
