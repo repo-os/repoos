@@ -16,13 +16,13 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T14:00:52Z"
+updated_at: "2026-10-26T14:00:53Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
 dev_error_count: 32
-engineer_crash_log: "[{\"cli\":\"antigravity\",\"model\":\"gemini-3.8-flash-medium\",\"at\":\"2026-10-26T12:27:45.440Z\",\"kind\":\"usage-limit\"}]"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T14:00:53.205Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
@@ -387,3 +387,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T13:57:54Z · body
 - 2026-10-26T14:00:51Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-26T14:00:52Z · agent exited with an error (codex) · 2026-10-26T12:57:54.690636Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
+- 2026-10-26T14:00:53Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-26T12:57:54.690636Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
