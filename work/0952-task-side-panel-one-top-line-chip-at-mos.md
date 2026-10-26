@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-26T16:20:20Z"
+updated_at: "2026-10-26T16:23:40Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -62,74 +62,25 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-"label": "Review failed: short header chip and status card with guidance",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusReviewFailed"
+  "label": "Review failed: short header chip and status card",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusReviewFailed"
 },
 {
-"label": "Review failed at narrow width: chip wraps to one line, card stays readable",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusReviewFailedNarrow"
+  "label": "Not landable: single card shows the failing checklist",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:landable"
 },
 {
-"label": "Not landable: single card shows the failing checklist",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:landable"
-},
-{
-"label": "Not landable at narrow width: checklist stays within the drawer",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:landableNarrow"
-},
-{
-"label": "Checks running: one status line with progress, no long card copy",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksRunning"
-},
-{
-"label": "Checks running at narrow width: status line and progress wrap cleanly",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksRunningNarrow"
-},
-{
-"label": "Confirming handoff: single status line above the tabs",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusConfirmingHandoff"
-},
-{
-"label": "Confirming handoff at narrow width: status line remains one row",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusConfirmingHandoffNarrow"
-},
-{
-"label": "Checks failed after retries: concise error card with info popover",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksFailed"
-},
-{
-"label": "Checks failed after retries at narrow width: card and actions stay aligned",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksFailedNarrow"
+  "label": "Debug status details lists the full removed copy",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": "[aria-label=\"Task status details\"]",
+  "state": "drawer:statusDetails"
 }
 ]
 ```
@@ -371,3 +322,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-26T16:20:19Z · message_queued at 2026-10-26T16:20:19.463Z
 - 2026-10-26T16:20:19Z · status review→active
 - 2026-10-26T16:20:20Z · message_delivered: 1 message(s)
+- 2026-10-26T16:23:40Z · body
