@@ -19,7 +19,7 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T14:13:43Z"
+updated_at: "2026-10-26T14:14:20Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
@@ -56,58 +56,58 @@ Every standard nav page uses the full window height: the scrollable content area
 ```json
 [
 {
-  "label": "Work page at tall viewport",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".work-page",
-  "state": "pages:scroll",
-  "viewportWidth": 1280,
-  "viewportHeight": 1120
+"label": "Work page at tall viewport",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page",
+"state": "pages:scroll",
+"viewportWidth": 1280,
+"viewportHeight": 1120
 },
 {
-  "label": "Work page at short viewport",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".work-page",
-  "state": "pages:scroll",
-  "viewportWidth": 1280,
-  "viewportHeight": 620
+"label": "Work page at short viewport",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page",
+"state": "pages:scroll",
+"viewportWidth": 1280,
+"viewportHeight": 620
 },
 {
-  "label": "Stories page at tall viewport",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".stories-page",
-  "state": "pages:scroll",
-  "viewportWidth": 1280,
-  "viewportHeight": 1120
+"label": "Stories page at tall viewport",
+"target": "default",
+"route": "/stories",
+"highlight": ".stories-page",
+"state": "pages:scroll",
+"viewportWidth": 1280,
+"viewportHeight": 1120
 },
 {
-  "label": "Stories page at short viewport",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".stories-page",
-  "state": "pages:scroll",
-  "viewportWidth": 1280,
-  "viewportHeight": 620
+"label": "Stories page at short viewport",
+"target": "default",
+"route": "/stories",
+"highlight": ".stories-page",
+"state": "pages:scroll",
+"viewportWidth": 1280,
+"viewportHeight": 620
 },
 {
-  "label": "Checks page at tall viewport",
-  "target": "default",
-  "route": "/checks",
-  "highlight": ".ck-page",
-  "state": "pages:scroll",
-  "viewportWidth": 1280,
-  "viewportHeight": 1120
+"label": "Checks page at tall viewport",
+"target": "default",
+"route": "/checks",
+"highlight": ".ck-page",
+"state": "pages:scroll",
+"viewportWidth": 1280,
+"viewportHeight": 1120
 },
 {
-  "label": "Checks page at short viewport",
-  "target": "default",
-  "route": "/checks",
-  "highlight": ".ck-page",
-  "state": "pages:scroll",
-  "viewportWidth": 1280,
-  "viewportHeight": 620
+"label": "Checks page at short viewport",
+"target": "default",
+"route": "/checks",
+"highlight": ".ck-page",
+"state": "pages:scroll",
+"viewportWidth": 1280,
+"viewportHeight": 620
 }
 ]
 ```
@@ -405,3 +405,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T14:10:47Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-26T14:12:46Z · body
 - 2026-10-26T14:13:43Z · body
+- 2026-10-26T14:14:20Z · body
