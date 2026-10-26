@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
@@ -83,3 +84,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-26T19:26:22Z · message_delivered: 2 message(s)
 - 2026-10-26T19:32:47Z · body
 - 2026-10-26T19:35:27Z · body
+
