@@ -1,6 +1,6 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import type { DependencyBlocker, RepoIndex, RepoOSConfig, Task } from "../core/types.js";
 import type {
   RepoGitOverview,
@@ -73,10 +73,10 @@ function overviewFromWire(wire: OverviewWire): RepoGitOverview {
 }
 
 function workerEntry(): string {
-  const compiled = fileURLToPath(new URL("./git-worker-entry.js", import.meta.url));
+  const compiled = join(import.meta.dirname, "git-worker-entry.js");
   if (existsSync(compiled)) return compiled;
   // Bun runs the TypeScript entry directly in source/test checkouts.
-  return fileURLToPath(new URL("./git-worker-entry.ts", import.meta.url));
+  return join(import.meta.dirname, "git-worker-entry.ts");
 }
 
 /**
@@ -248,7 +248,9 @@ export class GitWorker {
 
   private ensureChild(): ChildProcessWithoutNullStreams {
     if (this.child) return this.child;
-    const child = spawn(process.execPath, [workerEntry()], {
+    const entry = workerEntry();
+    const command = entry.endsWith(".ts") && !process.versions.bun ? "bun" : process.execPath;
+    const child = spawn(command, [entry], {
       cwd: this.root,
       env: { ...process.env, REPOOS_GIT_WORKER: "1" },
       detached: process.platform !== "win32",

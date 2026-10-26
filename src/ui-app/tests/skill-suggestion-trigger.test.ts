@@ -197,8 +197,8 @@ async function findSuggestion(
 ): Promise<Record<string, unknown> | undefined> {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
-    const list = await api(server, "GET", "/api/tasks");
-    const suggestion = (list.body as { tasks: Array<Record<string, unknown>> }).tasks.find((t) =>
+    const list = await api(server, "GET", "/api/tasks?full=1");
+    const suggestion = (list.body as unknown as Array<Record<string, unknown>>).find((t) =>
       String(t.title).startsWith("New Skill Suggestion:"),
     );
     if (suggestion) return suggestion;
