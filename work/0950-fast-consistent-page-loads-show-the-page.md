@@ -15,7 +15,7 @@ model_override: gpt-6.1-sol
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T05:54:53Z"
+updated_at: "2026-10-26T05:56:18Z"
 review_passes: 9
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -133,6 +133,9 @@ Cached empty lists now render without skeletons on Checks, Dev, Secrets, detecte
 
 ## Implementation follow-up
 The current branch already migrated Check Runs, detected Agents and release distribution to the shared skeleton/cache. This continuation fixes cached empty lists on Checks, Dev and Secrets, clears the previous environment snapshot immediately when selection changes, and guards late snapshot failures as well as successes. Table-driven race tests cover both late outcomes; empty and populated list cases cover cached revisits. The page benchmark now uses a separately built baseline UI from Git against the same authenticated fixture backend, measures DOM content readiness without waiting for an absent skeleton, and ignores skeletons in hidden tabs. Existing loading/loaded shots for Deployments and Dev remain declared; current captures are being verified before handoff.
+
+## Review pass 10 follow-up
+Retained the committed distribution empty-result fix and its empty/populated retry tests. Audited Releases status/distribution, Checks plan/Runs, Deployments, Dev, detected Agents and Secrets. Fixed Agents hiding its entire detected panel when an empty cached list is followed by an SSE failure; both fetch and stream failures now remain visible. Moved Secrets metadata refresh errors outside the snapshot-dependent ledger so a pending snapshot cannot hide them. Dev now distinguishes a loaded empty target list from an initial failure and preserves the empty state beside a non-blocking refresh notice. Empty/populated failure tests now cover each migrated view; Secrets additionally covers a pending snapshot. The pre-existing empty check-plan test explicitly covers failure with no steps. All 141 affected tests passed in three small groups. The loading-placeholder grep found only intentional in-place activity indicators: Check Runs refresh-button icon, Releases Check again spinner, Agents per-agent probe icon and model/update-check button text. These do not replace page content; shared skeletons cover first loads. No further measurement or cache-eviction/Secrets-selection-race changes were made.
 
 ## Activity
 
@@ -394,3 +397,4 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-26T05:52:09Z · message_delivered: 1 message(s)
 - 2026-10-26T05:52:10Z · note: handoff requested (cli)
 - 2026-10-26T05:54:53Z · CTO nudge: held — handoff gate is running
+- 2026-10-26T05:56:18Z · body: Review pass 10 follow-up (added)
