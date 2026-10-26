@@ -3,6 +3,7 @@ id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
 status: active
+hold: true
 priority: p0
 area: core
 assigned_to: ai
@@ -11,7 +12,7 @@ branch: feat/server-freezes-move-all-git-reads-off-th
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T14:25:12Z"
+updated_at: "2026-10-26T14:25:20Z"
 handoff_signal_retry_count: 1
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-26T11:33:32.912Z\",\"kind\":\"usage-limit\"}]"
@@ -84,3 +85,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T14:01:00Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T14:10:54Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T14:25:12Z · needs_input
+- 2026-10-26T14:25:20Z · held
