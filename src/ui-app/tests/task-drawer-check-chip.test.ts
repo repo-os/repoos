@@ -1,6 +1,5 @@
 /**
- * The task drawer's live check chip (#0564): "Checks running on <machine> ·
- * elapsed" while a gate runs, the result inline afterwards. The machine of the
+ * Check details live in the Debug status view, not the header chip (#0564). The machine of the
  * REMOTE half only lands in the durable history mid-gate, so the chip must
  * re-fetch the rows on a short interval while running — not just once when the
  * run identity changes. The done state also reads the durable history, so a
@@ -61,6 +60,13 @@ const json = async (data: unknown) => ({ ok: true, status: 200, json: async () =
 
 async function flush(): Promise<void> {
   for (let i = 0; i < 5; i++) await nextTick();
+}
+
+async function openStatusDetails(): Promise<void> {
+  const ui = useUiStore();
+  ui.activeTab = "debug";
+  ui.debugView = "status";
+  await flush();
 }
 
 /** Mutable payload the `/api/check-runs` stub serves. */
@@ -166,11 +172,11 @@ describe("task drawer check chip (#0564)", () => {
     ];
 
     const wrapper = await mountDrawer(pinia, makeTask());
-    const chip = () => wrapper.find(".ck-chip");
-    expect(chip().exists()).toBe(true);
-    expect(chip().classes()).toContain("ck-chip-running");
-    expect(chip().text()).toContain("Checks running on macbook");
-    expect(chip().text()).toContain("step 5 of 12 · tests 140/289 files");
+    expect(wrapper.find(".drawer-status-summary").text()).toContain("Checks running");
+    expect(wrapper.find(".drawer-status-line").text()).toContain("on macbook");
+    expect(wrapper.find(".drawer-status-line").text()).toContain(
+      "step 5 of 12 · tests 140/289 files",
+    );
 
     // The remote half completes mid-gate and lands in the durable history.
     checkRunsPayload = [
@@ -186,10 +192,10 @@ describe("task drawer check chip (#0564)", () => {
     // Advance past the 5s rows poll; the chip must pick the host up.
     await vi.advanceTimersByTimeAsync(5_100);
     await flush();
-    expect(chip().text()).toContain("Checks running on mini");
+    expect(wrapper.find(".drawer-status-line").text()).toContain("on mini");
 
-    // Clicking opens the Debug tab.
-    await chip().trigger("click");
+    // The status card opens the Debug status view.
+    await wrapper.find(".drawer-status-summary button").trigger("click");
     await flush();
     expect(useUiStore().activeTab).toBe("debug");
   });
@@ -242,10 +248,8 @@ describe("task drawer check chip (#0564)", () => {
     );
 
     const wrapper = await mountDrawer(pinia, makeTask());
-    const chip = wrapper.find(".ck-chip");
-    expect(chip.exists()).toBe(true);
-    expect(chip.classes()).toContain("ck-chip-running");
-    expect(chip.text()).toContain("Checks running on macbook");
+    expect(wrapper.find(".drawer-status-summary").text()).toContain("Checks running");
+    expect(wrapper.find(".drawer-status-line").text()).toContain("on macbook");
   });
 
   it("shows the durable result inline when the in-memory run is gone (server restart)", async () => {
@@ -288,18 +292,17 @@ describe("task drawer check chip (#0564)", () => {
     );
 
     const wrapper = await mountDrawer(pinia, makeTask());
-    const chip = wrapper.find(".ck-chip");
-    expect(chip.exists()).toBe(true);
-    expect(chip.classes()).toContain("ck-chip-pass");
-    expect(chip.text()).toContain("Checks passed · 2m");
-    expect(chip.attributes("title")).toContain("Last recorded check run");
+    expect(wrapper.find(".drawer-status-chip").exists()).toBe(false);
+    await openStatusDetails();
+    expect(wrapper.find(".debug-status-detail").text()).toContain("Checks passed · 2m");
+    expect(wrapper.find(".debug-status-detail").text()).toContain("Last recorded check run");
 
     // A week-old row is stale — the tree it tested is long gone; no chip.
     checkRunsPayload = [row({ startedAt: new Date(T0 - 8 * 86_400_000).toISOString() })];
     const pinia2 = createPinia();
     setActivePinia(pinia2);
     const wrapper2 = await mountDrawer(pinia2, makeTask());
-    expect(wrapper2.find(".ck-chip").exists()).toBe(false);
+    expect(wrapper2.find(".drawer-status-chip").exists()).toBe(false);
   });
 
   it("prefers the local row for the inline result (a remote row is one half of a gate)", async () => {
@@ -349,9 +352,9 @@ describe("task drawer check chip (#0564)", () => {
     );
 
     const wrapper = await mountDrawer(pinia, makeTask());
-    const chip = wrapper.find(".ck-chip");
-    expect(chip.classes()).toContain("ck-chip-fail");
-    expect(chip.text()).toContain("Checks failed · 15s");
+    expect(wrapper.find(".drawer-status-chip").exists()).toBe(false);
+    await openStatusDetails();
+    expect(wrapper.find(".debug-status-detail").text()).toContain("Checks failed · 15s");
   });
 
   it("shows the durable skipped gate as 'No checks configured', never as passed (#0592)", async () => {
@@ -393,11 +396,9 @@ describe("task drawer check chip (#0564)", () => {
     );
 
     const wrapper = await mountDrawer(pinia, makeTask());
-    const chip = wrapper.find(".ck-chip");
-    expect(chip.exists()).toBe(true);
-    expect(chip.classes()).toContain("ck-chip-skip");
-    expect(chip.classes()).not.toContain("ck-chip-pass");
-    expect(chip.text()).toContain("No checks configured");
+    expect(wrapper.find(".drawer-status-chip").exists()).toBe(false);
+    await openStatusDetails();
+    expect(wrapper.find(".debug-status-detail").text()).toContain("skipped");
   });
 
   it("reads the skip from the in-memory run's output when the durable row has not landed yet (#0592)", async () => {
@@ -451,9 +452,9 @@ describe("task drawer check chip (#0564)", () => {
     );
 
     const wrapper = await mountDrawer(pinia, makeTask());
-    const chip = wrapper.find(".ck-chip");
-    expect(chip.classes()).toContain("ck-chip-skip");
-    expect(chip.text()).toContain("No checks configured");
+    expect(wrapper.find(".drawer-status-chip").exists()).toBe(false);
+    await openStatusDetails();
+    expect(wrapper.find(".debug-status-detail").text()).toContain("skipped");
   });
 
   it("does NOT read a FAILED run as skipped just because its output echoes the notice (#0592)", async () => {
@@ -511,10 +512,9 @@ describe("task drawer check chip (#0564)", () => {
     );
 
     const wrapper = await mountDrawer(pinia, makeTask());
-    const chip = wrapper.find(".ck-chip");
-    expect(chip.classes()).toContain("ck-chip-fail");
-    expect(chip.classes()).not.toContain("ck-chip-skip");
-    expect(chip.text()).toContain("Checks failed");
+    expect(wrapper.find(".drawer-status-chip").exists()).toBe(false);
+    await openStatusDetails();
+    expect(wrapper.find(".debug-status-detail").text()).toContain("Checks failed");
   });
 
   it("reads the server's explicit `skipped` flag without needing the output marker (#0592)", async () => {
@@ -568,8 +568,8 @@ describe("task drawer check chip (#0564)", () => {
     );
 
     const wrapper = await mountDrawer(pinia, makeTask());
-    const chip = wrapper.find(".ck-chip");
-    expect(chip.classes()).toContain("ck-chip-skip");
-    expect(chip.text()).toContain("No checks configured");
+    expect(wrapper.find(".drawer-status-chip").exists()).toBe(false);
+    await openStatusDetails();
+    expect(wrapper.find(".debug-status-detail").text()).toContain("skipped");
   });
 });

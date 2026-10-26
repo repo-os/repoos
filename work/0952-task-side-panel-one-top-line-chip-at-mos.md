@@ -1,12 +1,14 @@
 ---
-updated_at: "2026-10-26T17:56:21Z"
-review_passes: 3
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
 status: review
 needs_input: true
 needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
+debug_tldr: "Engineer agent stalled while awaiting a backgrounded `repoos check` that produced no output, so resume attempts made no progress — open the task, rerun `repoos check --changed main` directly, then hand off again."
+debug_tldr_at: "2026-10-26T16:58:06Z"
+debug_tldr_key: "dev-error|RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p2
 area: web
 assigned_to: ai
@@ -15,11 +17,14 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-24T23:16:59Z"
-review_rounds: 2
+updated_at: "2026-10-26T17:24:13Z"
+review_rounds: 1
+review_passes: 1
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T02:27:40.464Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 14
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-26T16:57:48.608Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -384,18 +389,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-26T16:57:48Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-10-26T16:57:48Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-10-26T16:59:54Z · body
-- 2026-10-26T17:02:42Z · body
-- 2026-10-26T17:08:16Z · body
-- 2026-10-26T17:10:41Z · body
-- 2026-10-26T17:12:59Z · needs_input
-- 2026-10-26T17:12:59Z · needs_input
 - 2026-10-26T17:24:13Z · status active→review
-- 2026-10-26T17:24:14Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-10-26T17:26:05Z · note: review pass 2: needs some work
-- 2026-10-26T17:26:06Z · status review→active
-- 2026-10-26T17:31:53Z · body
-- 2026-10-26T17:37:45Z · body
-- 2026-10-26T17:54:03Z · status active→review
-- 2026-10-26T17:54:04Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-10-26T17:56:21Z · note: review pass 3: needs some work
-
