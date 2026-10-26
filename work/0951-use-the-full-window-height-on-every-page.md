@@ -56,52 +56,52 @@ Every standard nav page uses the full window height: the scrollable content area
 ```json
 [
 {
-  "label": "Work full-height tall populated board",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".work-page",
-  "state": "pages:scroll",
-  "viewportWidth": 1280
+"label": "Work full-height tall populated board",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page",
+"state": "pages:scroll",
+"viewportWidth": 1280
 },
 {
-  "label": "Work full-height short populated board",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".work-page",
-  "state": "pages:scroll",
-  "viewportWidth": 1280
+"label": "Work full-height short populated board",
+"target": "default",
+"route": "/work",
+"highlight": ".work-page",
+"state": "pages:scroll",
+"viewportWidth": 1280
 },
 {
-  "label": "Stories full-height tall populated list",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".stories-page",
-  "state": "pages:scroll",
-  "viewportWidth": 1280
+"label": "Stories full-height tall populated list",
+"target": "default",
+"route": "/stories",
+"highlight": ".stories-page",
+"state": "pages:scroll",
+"viewportWidth": 1280
 },
 {
-  "label": "Stories full-height short populated list",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".stories-page",
-  "state": "pages:scroll",
-  "viewportWidth": 1280
+"label": "Stories full-height short populated list",
+"target": "default",
+"route": "/stories",
+"highlight": ".stories-page",
+"state": "pages:scroll",
+"viewportWidth": 1280
 },
 {
-  "label": "Checks full-height tall progress",
-  "target": "default",
-  "route": "/checks",
-  "highlight": ".ck-page",
-  "state": "checks:progress",
-  "viewportWidth": 1280
+"label": "Checks full-height tall progress",
+"target": "default",
+"route": "/checks",
+"highlight": ".ck-page",
+"state": "checks:progress",
+"viewportWidth": 1280
 },
 {
-  "label": "Checks full-height short progress",
-  "target": "default",
-  "route": "/checks",
-  "highlight": ".ck-page",
-  "state": "checks:progress",
-  "viewportWidth": 1280
+"label": "Checks full-height short progress",
+"target": "default",
+"route": "/checks",
+"highlight": ".ck-page",
+"state": "checks:progress",
+"viewportWidth": 1280
 }
 ]
 ```
