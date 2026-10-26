@@ -296,6 +296,9 @@ export function patchTaskFile(
   patch: TaskPatch,
   opts: PatchTaskOptions = {},
 ): Task {
+  if (process.env.REPOOS_PREVIEW_CHILD === "1") {
+    throw new WriteError("preview servers are read-only");
+  }
   if (!existsSync(absPath)) {
     throw new WriteError(`Task file not found: ${absPath}`);
   }

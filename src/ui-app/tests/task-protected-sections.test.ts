@@ -6,7 +6,7 @@
  * in the body but are carried over from the on-disk copy on every body write.
  */
 import { describe, expect, it } from "vitest";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
@@ -78,6 +78,23 @@ const PM_REWRITE = `The stop work confirmation dialog should be a proper modal c
 `;
 
 describe("patchTaskFile protected body sections", () => {
+  it("refuses task-file writes from a preview child", () => {
+    const { root, absPath, clean } = setupFile(WITH_SECTIONS);
+    const original = readFileSync(absPath, "utf8");
+    const oldPreview = process.env.REPOOS_PREVIEW_CHILD;
+    process.env.REPOOS_PREVIEW_CHILD = "1";
+    try {
+      expect(() => patchTaskFile(config(root), absPath, { note: "preview mutation" })).toThrow(
+        new WriteError("preview servers are read-only"),
+      );
+      expect(readFileSync(absPath, "utf8")).toBe(original);
+    } finally {
+      if (oldPreview === undefined) delete process.env.REPOOS_PREVIEW_CHILD;
+      else process.env.REPOOS_PREVIEW_CHILD = oldPreview;
+      clean();
+    }
+  });
+
   it("keeps screenshots, the original prompt, and activity history on a full body rewrite", () => {
     const { root, absPath, clean } = setupFile(WITH_SECTIONS);
     try {
