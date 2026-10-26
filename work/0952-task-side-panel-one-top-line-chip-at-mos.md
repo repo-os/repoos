@@ -17,7 +17,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-26T16:59:54Z"
+updated_at: "2026-10-26T17:02:42Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-25T03:49:15.287Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -69,81 +69,81 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 ```json
 [
 {
-  "label": "Review failed: short header chip and status card",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusReviewFailed"
+"label": "Review failed: short header chip and status card",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailed"
 },
 {
-  "label": "Review failed at a narrow panel width",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusReviewFailedNarrow"
+"label": "Review failed at a narrow panel width",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusReviewFailedNarrow"
 },
 {
-  "label": "Not landable: single card shows the failing checklist",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landable"
+"label": "Not landable: single card shows the failing checklist",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landable"
 },
 {
-  "label": "Not landable at a narrow panel width",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landableNarrow"
+"label": "Not landable at a narrow panel width",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landableNarrow"
 },
 {
-  "label": "Checks running: one status line above the tabs",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunning"
+"label": "Checks running: one status line above the tabs",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning"
 },
 {
-  "label": "Checks running at a narrow panel width",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunningNarrow"
+"label": "Checks running at a narrow panel width",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunningNarrow"
 },
 {
-  "label": "Confirming handoff: one status line",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusConfirmingHandoff"
+"label": "Confirming handoff: one status line",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusConfirmingHandoff"
 },
 {
-  "label": "Confirming handoff at a narrow panel width",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusConfirmingHandoffNarrow"
+"label": "Confirming handoff at a narrow panel width",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusConfirmingHandoffNarrow"
 },
 {
-  "label": "Checks failed after retries: short chip and one card",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksFailed"
+"label": "Checks failed after retries: short chip and one card",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailed"
 },
 {
-  "label": "Checks failed at a narrow panel width",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksFailedNarrow"
+"label": "Checks failed at a narrow panel width",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksFailedNarrow"
 },
 {
-  "label": "Debug status details lists the full removed copy",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": "[aria-label=\"Task status details\"]",
-  "state": "drawer:statusDetails"
+"label": "Debug status details lists the full removed copy",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": "[aria-label=\"Task status details\"]",
+"state": "drawer:statusDetails"
 }
 ]
 ```
@@ -389,3 +389,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-26T16:57:48Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-10-26T16:57:48Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-10-26T16:59:54Z · body
+- 2026-10-26T17:02:42Z · body
