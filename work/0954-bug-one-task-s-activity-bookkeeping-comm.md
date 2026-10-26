@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 718123
-last_close_out_gate_at: "2026-10-26T21:30:38.786Z"
 id: "0954"
 title: "Bug: one task's activity/bookkeeping commits land on another task's branch and move its HEAD during its handoff check"
 type: bug
-status: review
+status: done
 priority: p1
 area: core
+merged_commit: 58c69a3181bd95b7b341940480909a4c5117051f
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-one-task-s-activity-bookkeeping-comm
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-24T23:57:03Z"
 updated_at: "2026-10-26T21:30:38Z"
+last_close_out_gate_ms: 718123
+last_close_out_gate_at: "2026-10-26T21:30:38.786Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-26T20:09:18.481Z: repoos check failed: check-fmt:check — timed out — timed out after 120s"
 handoff_signal_retry_count: 2

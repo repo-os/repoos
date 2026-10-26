@@ -1793,6 +1793,10 @@ export function commitTaskFile(root: string, absPath: string, message: string): 
  * removal. Same fail-soft contract and `--only` scoping as `commitTaskFile`.
  */
 export function commitFiles(root: string, absPaths: string[], message: string): boolean {
+  // A preview child is rooted in a task worktree. It serves a read-only UI
+  // snapshot and must never create commits there, even if a caller forgets
+  // its own preview-mode guard.
+  if (process.env.REPOOS_PREVIEW_CHILD === "1") return false;
   const rels = absPaths.map((p) => relative(root, p));
   if (rels.length === 0 || rels.some((rel) => rel.startsWith("..") || isAbsolute(rel))) {
     return false;
