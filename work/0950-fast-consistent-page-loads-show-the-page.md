@@ -2,21 +2,21 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: active
+status: done
 priority: p2
 area: web
+merged_commit: e6a916c753c930d0f79cdaffdb3e5915e13d3a73
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: cursor
 model_override: composer-2.5
-review_cli_override: codex
-review_model_override: gpt-6.1-sol
+review_model_override: grok-4.7-low
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T14:52:05Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
-review_passes: 9
+updated_at: "2026-10-26T15:36:52Z"
+last_close_out_gate_ms: 642649
+last_close_out_gate_at: "2026-10-26T15:35:39.943Z"
+review_passes: 10
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 review_rounds: 2
@@ -445,3 +445,18 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T14:46:32Z · cli_override, model_override
 - 2026-10-26T14:46:36Z · needs_input
 - 2026-10-26T14:46:37Z · message_queued at 2026-10-26T14:46:37.266Z
+- 2026-10-26T14:53:13Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production... · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-26T14:53:13Z · note: handoff requested (cli)
+- 2026-10-26T14:54:35Z · message_queued at 2026-10-26T14:54:35.710Z
+- 2026-10-26T15:08:39Z · status active→review
+- 2026-10-26T15:08:39Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-26T15:08:52Z · note: review pass 11: failed — no usable report
+- 2026-10-26T15:08:52Z · needs_input
+- 2026-10-26T15:19:41Z · review_cli_override, review_model_override
+- 2026-10-26T15:19:42Z · review_model_override
+- 2026-10-26T15:19:45Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-10-26T15:21:43Z · note: review pass 12: needs some work
+- 2026-10-26T15:21:43Z · needs_input
+- 2026-10-26T15:28:17Z · note: ui verification passed: 4 of 4 shots captured with clean console
+- 2026-10-26T15:35:39Z · close-out gate completed in 643s
+- 2026-10-26T15:36:52Z · status done→done, release:success

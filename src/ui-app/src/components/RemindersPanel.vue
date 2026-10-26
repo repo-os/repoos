@@ -20,6 +20,7 @@ import DialogDescription from "./ui/dialog/description.vue";
 import DialogOverlay from "./ui/dialog/overlay.vue";
 import DialogTitle from "./ui/dialog/title.vue";
 import DeleteConfirmDialog from "./DeleteConfirmDialog.vue";
+import PageSkeleton from "./PageSkeleton.vue";
 
 const store = useRemindersStore();
 const ui = useUiStore();
@@ -149,7 +150,7 @@ onMounted(() => {
       >
     </div>
     <p v-if="error || store.error" class="ff-error" role="alert">{{ error || store.error }}</p>
-    <p v-if="store.loading && !store.reminders.length" class="agent-desc">Loading reminders…</p>
+    <PageSkeleton v-if="store.loading && !store.reminders.length" kind="rows" />
     <p v-else-if="!store.reminders.length" class="ff-notice">
       No reminders yet. Add a date to check back on an agent, credit reset, or provider outage.
     </p>
