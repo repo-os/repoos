@@ -124,7 +124,11 @@ async function listTasksViaApi(
     const fields = "id,title,status,priority,area,assignedTo,isArchived,archiveDetail";
     for (let page = 0; page < 40; page++) {
       const params = new URLSearchParams({ fields, limit: "500" });
-      if (statusArg && statusArg !== "archived" && (STATUSES as readonly string[]).includes(statusArg)) {
+      if (
+        statusArg &&
+        statusArg !== "archived" &&
+        (STATUSES as readonly string[]).includes(statusArg)
+      ) {
         params.set("status", statusArg);
       }
       if (cursor) params.set("cursor", cursor);
@@ -182,7 +186,11 @@ function printTaskList(rootName: string, tasks: ApiListTask[], statusArg?: strin
           priorityColor(t.priority)(pad(t.priority, 4)) +
           truncatePad(t.title, 44) +
           pad(c.dim(t.area ?? ""), 12) +
-          assigneeLabel({ ...t, assignee: t.assignee ?? "unassigned", assignedTo: t.assignedTo ?? "" } as Task),
+          assigneeLabel({
+            ...t,
+            assignee: t.assignee ?? "unassigned",
+            assignedTo: t.assignedTo ?? "",
+          } as Task),
       );
     }
     console.log("");
