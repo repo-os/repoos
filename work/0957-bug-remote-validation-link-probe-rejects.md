@@ -11,7 +11,7 @@ branch: feat/bug-remote-validation-link-probe-rejects
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-25T09:39:56Z"
-updated_at: "2026-10-26T14:44:17Z"
+updated_at: "2026-10-26T14:53:31Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 78db36984edf375ea554aacdafedf74bcbf50a1d
 handoff_signal_retry_count: 2
@@ -109,3 +109,4 @@ The probe judges bandwidth separately from connection setup, so a high-latency b
 - 2026-10-26T14:01:00Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T14:10:54Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T14:44:17Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:53:31Z · message_overdue: still queued after 60m without being delivered
