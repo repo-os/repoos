@@ -330,8 +330,8 @@ describe("SecretsView (#0929)", () => {
       .findAll(".secrets-row")
       .find((item) => item.text().includes("DATABASE_URL"))!;
     await row.get(".secrets-menu-trigger").trigger("click");
-    const editItem = [...document.querySelectorAll<HTMLElement>(".secrets-menu button")].find((button) =>
-      button.textContent?.includes("Replace value"),
+    const editItem = [...document.querySelectorAll<HTMLElement>(".secrets-menu button")].find(
+      (button) => button.textContent?.includes("Replace value"),
     );
     editItem!.click();
     await flushPromises();
@@ -412,8 +412,8 @@ describe("SecretsView (#0929)", () => {
       .findAll(".secrets-row")
       .find((item) => item.text().includes("DATABASE_URL"))!;
     await row.get(".secrets-menu-trigger").trigger("click");
-    const removeItem = [...document.querySelectorAll<HTMLElement>(".secrets-menu button")].find((button) =>
-      button.textContent?.includes("Remove key"),
+    const removeItem = [...document.querySelectorAll<HTMLElement>(".secrets-menu button")].find(
+      (button) => button.textContent?.includes("Remove key"),
     );
     removeItem!.click();
     await flushPromises();
@@ -455,8 +455,8 @@ describe("SecretsView (#0929)", () => {
       .findAll(".secrets-row")
       .find((item) => item.text().includes("DATABASE_URL"))!;
     await row.get(".secrets-menu-trigger").trigger("click");
-    const editItem = [...document.querySelectorAll<HTMLElement>(".secrets-menu button")].find((button) =>
-      button.textContent?.includes("Replace value"),
+    const editItem = [...document.querySelectorAll<HTMLElement>(".secrets-menu button")].find(
+      (button) => button.textContent?.includes("Replace value"),
     );
     editItem!.click();
     await flushPromises();
