@@ -98,3 +98,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T18:50:50Z · message_queued at 2026-10-26T18:50:50.681Z
 - 2026-10-26T18:55:01Z · body
 - 2026-10-26T18:57:30Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-26T18:57:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
