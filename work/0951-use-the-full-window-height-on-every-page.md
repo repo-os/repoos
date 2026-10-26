@@ -324,3 +324,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T07:30:30Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-26T07:38:58Z · cli_override, model_override
 - 2026-10-26T07:39:03Z · needs_input
+- 2026-10-26T07:39:03Z · message_queued at 2026-10-26T07:39:03.720Z
