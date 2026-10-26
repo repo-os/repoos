@@ -448,6 +448,7 @@ describe("shot preview board fixtures (#0743)", () => {
     ["drawer:statusChecksRunning", "active"],
     ["drawer:statusConfirmingHandoff", "active"],
     ["drawer:statusChecksFailed", "active"],
+    ["drawer:statusDetails", "review"],
   ] as const)("seeds the %s status drawer capture", (fixture, status) => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -456,8 +457,13 @@ describe("shot preview board fixtures (#0743)", () => {
     const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
     expect(task?.status).toBe(status);
     expect(task?.branch).toBe("feat/shot-fixture");
-    if (fixture === "drawer:statusReviewFailed") {
+    if (fixture === "drawer:statusReviewFailed" || fixture === "drawer:statusDetails") {
       expect(repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID]?.report?.state).toBe("incomplete");
+      if (fixture === "drawer:statusDetails") {
+        expect(document.documentElement.getAttribute("data-repoos-shot-state")).toBe(
+          "drawer:statusDetails",
+        );
+      }
     } else if (fixture === "drawer:statusHandoffFailed") {
       expect(repo.handoffErrorFor(SHOT_PREVIEW_FIXTURE_TASK_ID)).toContain("fixture handoff");
     } else if (fixture === "drawer:statusChecksRunning") {
