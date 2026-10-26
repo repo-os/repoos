@@ -12,10 +12,15 @@ renderer, WindowServer, a second RepoOS project). Load average counts threads
 what is wrong. Engineers simply stalled: gates, reviews and handoffs slowed
 until timeouts and retries piled up.
 
-The guard blocks on the machine paying a memory cost: sustained swap-in/swap-out
-or pageout activity, macOS `memory_pressure` reporting `critical`, low
-reclaimable memory, or Linux PSI memory pressure. Swap and compressor occupancy
-can stay high while the machine is idle, so occupancy alone is advisory.
+The guard blocks on the machine paying a memory or CPU cost: sustained
+swap-in/swap-out or pageout activity, macOS `memory_pressure` reporting
+`critical`, low reclaimable memory, Linux PSI, a compressor pool at or above
+`pressureGuard.maxCompressorBytes` (default 8 GiB), load above
+`pressureGuard.maxLoadPerCpu` (default 3× per CPU), or CPU idle below
+`pressureGuard.minIdleCpuPercent` (default 5%). Swap-used ratio and compressor
+*ratio* stay advisory: a quiet pool under the byte cap must not block. The
+2026-10-25 incident (compressor 10–12 GB, idle CPU near 0, load far above core
+count, guard still "normal") is what the byte, idle and load holds are for.
 
 ## Signals and thresholds
 
@@ -25,12 +30,13 @@ can stay high while the machine is idle, so occupancy alone is advisory.
 | --- | --- | --- |
 | macOS | `vm_stat` counter deltas over the activity window | swap-ins, swap-outs and pageouts per second |
 | macOS | `memory_pressure -Q`; `sysctl kern.memorystatus_vm_pressure_level` | free percentage and normal/warn/critical pressure level |
-| macOS | `vm.swapusage`; `vm_stat` (`Pages occupied by compressor`) | swap used / total and compressor bytes / RAM (advisory only) |
+| macOS | `vm.swapusage`; `vm_stat` (`Pages occupied by compressor`) | swap used / total (advisory) and compressor bytes (block at the byte cap) |
 | Linux | `/proc/vmstat` (`pswpin`/`pswpout` deltas) | swap I/O bytes per second |
 | Linux | `/proc/pressure/memory` | PSI `some avg10` pressure |
 | Linux | `/proc/meminfo` (`SwapTotal`/`SwapFree`) | swap used / total (advisory only) |
 | any | `sysmem.availableMemBytes()` | reclaimable memory / RAM |
-| fallback | `os.loadavg()` | load per CPU when the memory probe is unavailable |
+| any | `os.cpus()` delta | CPU idle percent (block below the idle floor) |
+| any | `os.loadavg()` | load per CPU (block above the per-CPU limit) |
 
 `evaluatePressure()` in `src/core/pressure-guard.ts` is pure. A reading set is
 `critical` when a blocking signal crosses its threshold:
@@ -44,11 +50,14 @@ can stay high while the machine is idle, so occupancy alone is advisory.
 
 `pressureGuard.maxSwapUsedRatio` (default 0.5) and
 `pressureGuard.maxCompressorRatio` (default 0.35, macOS) only control advisory
-warnings. They never block work by themselves.
+warnings. They never block work by themselves. `pressureGuard.maxCompressorBytes`
+(default 8 GiB) does.
 
-`pressureGuard.maxLoadPerCpu` (default 4) holds work **only** when no memory
-signal is available; with memory stats it is surfaced as a warning. A warning
-does not hold starts; it is visible in the panel and `repoos stats`.
+`pressureGuard.maxLoadPerCpu` (default 3) holds work whenever load per CPU is
+above it. `pressureGuard.minIdleCpuPercent` (default 5) holds when a CPU-time
+sample shows less idle than that. A warning does not hold starts; it is visible
+in the panel and `repoos stats`. `repoos stats` and the dashboard also show
+`N heavy jobs running, M queued` for the shared build/test slots.
 
 ## What is held
 

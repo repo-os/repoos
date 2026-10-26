@@ -95,7 +95,7 @@ export interface AcquireLocalCheckSlotOpts {
  * Wait for pressure relief, then take a cross-process local-check slot (#0836).
  */
 export async function acquireLocalCheckSlot(opts: AcquireLocalCheckSlotOpts): Promise<() => void> {
-  if (opts.env.REPOOS_LOCAL_CHECK_SLOT_HELD === "1") {
+  if (opts.env.REPOOS_LOCAL_CHECK_SLOT_HELD === "1" || opts.env.REPOOS_HEAVY_SLOT_HELD === "1") {
     return () => {};
   }
   const limit = isSerializeFallbackRun(opts.config, opts.env)

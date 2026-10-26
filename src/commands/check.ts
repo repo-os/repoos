@@ -91,6 +91,7 @@ import {
   REPOOS_CHECK_GATE_NOTE,
 } from "../server/pre-review-remote-gate.js";
 import { acquireLocalCheckSlot, SlotQueueTimeoutError } from "../core/local-gates.js";
+import { applyEngineerResourceEnv } from "../core/engineer-resources.js";
 import { inspectCrossProcessSlots, localCheckLockRoot } from "../core/cross-process-slots.js";
 import { remoteLocalFallbackMode } from "../core/resource-limits.js";
 import {
@@ -2419,6 +2420,11 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   let results: StepRunResult[];
   let finalProgress: { stepsDone: number; stepsTotal: number } | undefined;
   try {
+    if (process.env.REPOOS_AGENT === "1") {
+      applyEngineerResourceEnv(checkEnv, cfg);
+      checkEnv.REPOOS_LOCAL_CHECK_SLOT_HELD = "1";
+      process.env.REPOOS_LOCAL_CHECK_SLOT_HELD = "1";
+    }
     results = await runCheckPlan(plan, {
       repoRoot,
       env: checkEnv,
@@ -2473,6 +2479,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     });
     throw e;
   } finally {
+    if (process.env.REPOOS_AGENT === "1") delete process.env.REPOOS_LOCAL_CHECK_SLOT_HELD;
     releaseLocalCheck?.();
   }
 
