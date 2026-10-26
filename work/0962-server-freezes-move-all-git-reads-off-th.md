@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
@@ -7,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: Go usage limit exceeded"
+debug_tldr: Go agent usage limit stopped the engineer run—wait for quota to reset or pick another agent/model in override and start the task again.
+debug_tldr_at: "2026-10-26T11:33:50Z"
+debug_tldr_key: "dev-error|error: Go usage limit exceeded"
 priority: p0
 area: core
 assigned_to: ai
@@ -15,7 +17,8 @@ branch: feat/server-freezes-move-all-git-reads-off-th
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T11:33:36Z"
+updated_at: "2026-10-26T11:33:50Z"
+handoff_signal_retry_count: 1
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-26T11:33:32.912Z\",\"kind\":\"usage-limit\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
