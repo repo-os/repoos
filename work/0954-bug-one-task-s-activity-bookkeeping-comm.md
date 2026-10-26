@@ -8,10 +8,9 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-one-task-s-activity-bookkeeping-comm
-cli_override: cursor
-model_override: grok-4.7-low
+cli_override: opencode
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-26T21:13:59Z"
+updated_at: "2026-10-26T21:14:24Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-26T20:09:18.481Z: repoos check failed: check-fmt:check — timed out — timed out after 120s"
 handoff_signal_retry_count: 2
@@ -172,3 +171,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-26T21:06:32Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-26T21:09:23Z · body
 - 2026-10-26T21:13:59Z · body
+- 2026-10-26T21:14:24Z · cli_override, model_override
