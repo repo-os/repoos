@@ -526,6 +526,7 @@ const checkChip = computed(() => {
       state: "running" as const,
       slow: !!slow,
       slowDetail: slow?.detail ?? null,
+      elapsed,
       label: localQueue ? localQueue.label : poolQueue ? poolQueue.label : "Checks running",
       title: localQueue
         ? localQueue.title
@@ -590,12 +591,28 @@ const checkChip = computed(() => {
 
 const drawerHeaderChip = computed(() => {
   const status = drawerStatusSummary.value;
+  const running = checkChip.value?.state === "running" ? checkChip.value : null;
+  const slowRun = running?.slow ? running : null;
   if (
     !status ||
     (status.key === "waitingForYou" && showAgentQuestionsBanner.value) ||
-    ["checksRunning", "confirmingHandoff", "reviewerRunning", "workRunning"].includes(status.key)
+    (["checksRunning", "confirmingHandoff", "reviewerRunning", "workRunning"].includes(
+      status.key,
+    ) &&
+      !(slowRun && status.key === "checksRunning"))
   )
     return null;
+  // A run past its expected duration is the one case a live check is a header
+  // chip: a few words, with the elapsed time in a warning treatment (#0952).
+  if (slowRun && status.key === "checksRunning") {
+    return {
+      ...status,
+      label: "Slow",
+      duration: slowRun.elapsed,
+      slow: true as const,
+      slowDetail: slowRun.slowDetail,
+    };
+  }
   // A task already in Review has its lifecycle status in the row; avoid
   // repeating review failures and landability there as a second status label.
   if (ui.active?.status === "review" && ["reviewFailed", "notLandable"].includes(status.key))
@@ -609,7 +626,13 @@ const drawerHeaderChip = computed(() => {
     handoffFailed: "Handoff failed",
     checksFailedAfterRetries: "Checks failed",
   };
-  return { ...status, label: shortLabels[status.key] ?? status.label };
+  return {
+    ...status,
+    label: shortLabels[status.key] ?? status.label,
+    duration: null as string | null,
+    slow: false as const,
+    slowDetail: null as string | null,
+  };
 });
 
 /** One compact, priority-ordered status model for the drawer header and status region. */
@@ -759,6 +782,8 @@ const drawerStatusDetails = computed(() => {
     });
   if (checkChip.value && !activeCheckRun.value)
     rows.push({ title: "Latest check result", detail: checkChip.value.title });
+  if (checkChip.value?.state === "running" && checkChip.value.slow && checkChip.value.slowDetail)
+    rows.push({ title: "Longer than expected", detail: checkChip.value.slowDetail });
   if (activeTldrSentence.value)
     rows.push({ title: "What happened", detail: activeTldrSentence.value });
   if (task.status === "active" && task.needsInput)
@@ -4611,9 +4636,14 @@ watch(
                   'ck-chip-fail':
                     drawerHeaderChip.label.toLowerCase().includes('fail') ||
                     drawerHeaderChip.key === 'notLandable',
+                  'ck-chip-slow': drawerHeaderChip.slow,
                   'rs-needs-input': drawerHeaderChip.key === 'waitingForYou',
                 }"
-                :aria-label="`${drawerHeaderChip.label}. Open Debug status details`"
+                :aria-label="
+                  drawerHeaderChip.slow
+                    ? `Slow check, ${drawerHeaderChip.duration}. ${drawerHeaderChip.slowDetail ?? ''} Open Debug status details`
+                    : `${drawerHeaderChip.label}. Open Debug status details`
+                "
                 @click="
                   ui.activeTab = 'debug';
                   ui.debugView = 'status';
@@ -4624,6 +4654,9 @@ watch(
                   class="ck-chip-spin"
                 />
                 {{ drawerHeaderChip.label }}
+                <span v-if="drawerHeaderChip.duration" class="drawer-chip-overlong">{{
+                  drawerHeaderChip.duration
+                }}</span>
               </button>
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}
@@ -7258,6 +7291,18 @@ watch(
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.drawer-status-chip.ck-chip-slow {
+  max-width: 148px;
+  color: var(--red);
+  border-color: var(--red-border-tint);
+  background: var(--red-tint);
+}
+
+.drawer-chip-overlong {
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
 .tc-id {
