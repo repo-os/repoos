@@ -5,7 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: Reading additional input from stdin...
+needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 debug_tldr: "Codex engineer crashed on stdin (dev-error) — override to another engineer agent with repoos override, then resume the task."
 debug_tldr_at: "2026-10-26T14:11:18Z"
 debug_tldr_key: dev-error|Reading additional input from stdin...
@@ -25,7 +25,7 @@ review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
 dev_error_count: 35
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T14:00:53.205Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:10:47.338Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:25:17.884Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T14:00:53.205Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:10:47.338Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:25:17.884Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:25:26.693Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
@@ -409,3 +409,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T14:16:03Z · CTO nudge: held — remote validation is running
 - 2026-10-26T14:23:22Z · body
 - 2026-10-26T14:25:17Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · 2026-10-26T14:17:07.350737Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/nick/code/nick/repoos-worktrees/feat/use-the-full-window-height-on-every-page/work/.attachments/0951/shots/default-32.png`: No such file…
+- 2026-10-26T14:25:26Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
