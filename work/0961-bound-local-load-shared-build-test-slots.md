@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
@@ -12,7 +11,9 @@ branch: feat/bound-local-load-shared-build-test-slots
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-26T19:35:27Z"
+updated_at: "2026-10-26T19:43:44Z"
+handoff_signal_retry_count: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-10-26T19:43:44.978Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -84,5 +85,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-26T19:26:22Z · message_delivered: 2 message(s)
 - 2026-10-26T19:32:47Z · body
 - 2026-10-26T19:35:27Z · body
-
-
+- 2026-10-26T19:43:44Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
