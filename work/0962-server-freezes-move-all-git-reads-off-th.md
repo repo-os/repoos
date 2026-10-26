@@ -2,7 +2,7 @@
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
-status: review
+status: active
 priority: p0
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/server-freezes-move-all-git-reads-off-th
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T12:13:50Z"
+updated_at: "2026-10-26T12:13:51Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 463f31b9e4c54d8db37cc30ad6ded6c3ee530db2
 dev_error_count: 3
