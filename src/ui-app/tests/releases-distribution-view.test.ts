@@ -1,6 +1,6 @@
 /**
  * Component coverage for the Releases page's "Published to" section (#0445):
- * it renders only when destinations are configured, shows each channel's
+ * it renders configured destinations or lookup failures, shows each channel's
  * version/state, and copies every install command independently.
  */
 import { createPinia } from "pinia";
@@ -164,6 +164,54 @@ describe("ReleasesView Published to (#0445)", () => {
     expect(wrapper.find(".page-skeleton").exists()).toBe(false);
     wrapper.unmount();
   });
+
+  it.each([
+    { label: "empty", channels: [] },
+    { label: "populated", channels: [channel()] },
+  ])(
+    "shows distribution refresh failures for a $label cached result and allows retry",
+    async ({ channels }) => {
+      mockApi(channels);
+      const first = await mountView();
+      first.unmount();
+
+      const normalApi = api.getMockImplementation()!;
+      let fail!: (error: Error) => void;
+      api.mockImplementation((path: string, ...args) => {
+        if (path === "/api/release/distribution")
+          return new Promise((_resolve, reject) => (fail = reject));
+        return normalApi(path, ...args);
+      });
+      const wrapper = mount(ReleasesView, {
+        attachTo: document.body,
+        global: { plugins: [createPinia()] },
+      });
+      await nextTick();
+      expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+      expect(wrapper.findAll(".rel-channel")).toHaveLength(channels.length);
+
+      fail(new Error("distribution unavailable"));
+      await flushPromises();
+      expect(wrapper.find('.rel-dist [role="status"]').text()).toBe(
+        "Refresh failed: distribution unavailable",
+      );
+      expect(wrapper.findAll(".rel-channel")).toHaveLength(channels.length);
+      expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.3");
+      expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+
+      mockApi(channels);
+      const retry = wrapper
+        .findAll(".rel-dist button")
+        .find((button) => button.text() === "Check again");
+      expect(retry).toBeDefined();
+      await retry!.trigger("click");
+      await flushPromises();
+      expect(wrapper.find('.rel-dist [role="status"]').exists()).toBe(false);
+      expect(wrapper.findAll(".rel-channel")).toHaveLength(channels.length);
+      expect(wrapper.find(".rel-dist").exists()).toBe(channels.length > 0);
+      wrapper.unmount();
+    },
+  );
 
   it("makes the current release and its distribution sync state the primary summary", async () => {
     mockApi([channel()]);

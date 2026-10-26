@@ -426,7 +426,7 @@ async function load(): Promise<void> {
 /**
  * Load the distribution summary separately from the release status. Its
  * lookups can be slow or fail, and neither must affect the page, so a failure
- * simply hides the section.
+ * keeps cached channels visible with a non-blocking retry notice.
  */
 async function loadDistribution(manual = false): Promise<void> {
   // A release landing while the mount-time lookup is still in flight starts a
@@ -1211,10 +1211,12 @@ onBeforeUnmount(() => {
             </div>
           </section>
 
-          <!-- Where users install this release. Rendered only when the project
-             declares [[distribution]] destinations; stays up (with a loading
-             indicator) while the first lookup is in flight. -->
-          <section v-if="distribution.length || distributionLoading" class="rel-card rel-dist">
+          <!-- Keep lookup failures visible even when the cached channel list is
+               empty, so the user can retry. Successful empty results hide this panel. -->
+          <section
+            v-if="distribution.length || distributionLoading || distributionRefreshError"
+            class="rel-card rel-dist"
+          >
             <div class="rel-dist-head">
               <div class="rel-dist-title-row">
                 <h2 class="rel-dist-title">Published to</h2>
@@ -1254,11 +1256,7 @@ onBeforeUnmount(() => {
                 >View the failed run ↗</a
               >
             </p>
-            <p
-              v-if="distributionRefreshError && distribution.length"
-              class="rel-error"
-              role="status"
-            >
+            <p v-if="distributionRefreshError" class="rel-error" role="status">
               Refresh failed: {{ distributionRefreshError }}
             </p>
             <div v-if="distribution.length" class="rel-dist-channels">
