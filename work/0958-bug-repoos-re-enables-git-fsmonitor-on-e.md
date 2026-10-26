@@ -2,18 +2,18 @@
 id: "0958"
 title: "Bug: RepoOS re-enables git fsmonitor on every server start (one daemon per worktree, load spikes); respect a human's false and add an off switch"
 type: bug
-status: active
+status: ready
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
+hold: true
 priority: p1
 area: core
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/bug-repoos-re-enables-git-fsmonitor-on-e
 model_override: gpt-6-sol
 created_at: "2026-10-25T11:34:02Z"
-updated_at: "2026-10-26T12:14:33Z"
+updated_at: "2026-10-26T12:41:31Z"
 dev_error_count: 11
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:34.411Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:43.560Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-25T18:37:51.791Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -154,3 +154,13 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T18:37:43Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-25T18:37:51Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-26T12:14:30Z · cli_override, model_override
+- 2026-10-26T12:36:33Z · message_queued at 2026-10-26T12:36:33.644Z
+- 2026-10-26T12:36:33Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-26T12:36:40Z · body
+- 2026-10-26T12:37:27Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T12:41:04Z · engineer stopped by request
+- 2026-10-26T12:41:05Z · needs_input
+- 2026-10-26T12:41:05Z · needs_input
+- 2026-10-26T12:41:12Z · held
+- 2026-10-26T12:41:18Z · assigned_to
+- 2026-10-26T12:41:31Z · status active→ready
