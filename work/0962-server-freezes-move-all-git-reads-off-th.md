@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
@@ -73,3 +74,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T11:33:32Z · engineer crash recovery: switched opencode + opencode-go/kimi-k3.1-pro → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · error: Go usage limit exceeded
 - 2026-10-26T11:33:35Z · message_delivered: 2 message(s)
 - 2026-10-26T11:33:36Z · message_queued at 2026-10-26T11:33:36.352Z
+
