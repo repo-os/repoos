@@ -9111,6 +9111,9 @@
   .main > .page-scroll:not(.settings-page--fill) {
     overflow-y: auto;
   }
+  .inputs-board-page {
+    padding-bottom: var(--page-bottom-inset);
+  }
   .page-scroll:not(.settings-page--fill) {
     height: auto;
     min-height: initial;
@@ -9729,9 +9732,11 @@
   padding-bottom: var(--page-bottom-inset);
   scrollbar-width: none;
 }
-.agents-tab-content--playground {
-  /* The playground fills this pane and protects its own log and composer. */
-  padding-bottom: 0;
+@media (min-width: 761px) {
+  .agents-tab-content--playground {
+    /* The playground fills this pane and protects its own log and composer. */
+    padding-bottom: 0;
+  }
 }
 .agents-tab-content::-webkit-scrollbar {
   display: none;
@@ -10048,6 +10053,9 @@
     overflow: visible;
     min-height: initial;
     padding-right: 0;
+  }
+  .agents-tab-content--playground {
+    padding-bottom: var(--page-bottom-inset);
   }
   .agent-body {
     grid-template-columns: 1fr;

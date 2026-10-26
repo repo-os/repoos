@@ -928,7 +928,7 @@ function tryOpenInput(ref: string, attempt: number): void {
 .detail-select {
   align-self: stretch;
 }
-@media (max-width: 650px) {
+@media (max-width: 760px) {
   .inputs-page {
     width: 100%;
     padding: 20px 14px var(--page-bottom-inset);
@@ -938,6 +938,7 @@ function tryOpenInput(ref: string, attempt: number): void {
     height: auto;
     min-height: initial;
     display: block;
+    padding-bottom: var(--page-bottom-inset);
   }
   .inputs-board-page .inputs-board {
     min-height: initial;
