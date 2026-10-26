@@ -69,6 +69,39 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       await browser?.close();
     });
 
+    it.each([480, 620, 1120])(
+      "keeps a populated sidebar inside the viewport at %spx height",
+      async (height) => {
+        const page = await browser.newPage({ viewport: { width: 1280, height } });
+        try {
+          // Vue mounts its app shell inside the host element. Long sidebar
+          // navigation must not spill into the document and let focus/capture
+          // scroll the entire shell above the viewport on short displays.
+          await page.setContent(
+            `<style>${css}</style><div id="app"><div id="app"><div class="topbar">Top bar</div><div class="body"><aside class="sidebar"><div style="height:1600px;flex-shrink:0">Navigation and footer</div></aside><main class="main"><section class="page-scroll">${header}<div class="page-scroll-body">${content}</div></section></main></div></div></div>`,
+          );
+          const geometry = await page.evaluate(() => {
+            const sidebar = document.querySelector<HTMLElement>(".sidebar")!;
+            sidebar.scrollTop = sidebar.scrollHeight;
+            document.querySelector(".page-scroll")!.scrollIntoView();
+            return {
+              documentHeight: document.documentElement.scrollHeight,
+              viewportHeight: window.innerHeight,
+              top: document.querySelector(".topbar")!.getBoundingClientRect().top,
+              bottom: document.querySelector(".page-scroll")!.getBoundingClientRect().bottom,
+              sidebarScroll: sidebar.scrollTop,
+            };
+          });
+          expect(geometry.documentHeight).toBe(geometry.viewportHeight);
+          expect(geometry.top).toBe(0);
+          expect(geometry.bottom).toBeCloseTo(height, 0);
+          expect(geometry.sidebarScroll).toBeGreaterThan(0);
+        } finally {
+          await page.close();
+        }
+      },
+    );
+
     it.each([320, 390, 760])(
       "keeps pipeline controls outside the head stack at %spx",
       async (width) => {
