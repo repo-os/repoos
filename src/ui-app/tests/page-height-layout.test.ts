@@ -7,6 +7,8 @@ const floatingHeads = readFileSync(
   resolve(__dirname, "../src/components/FloatingHeads.vue"),
   "utf8",
 );
+const appVue = readFileSync(resolve(__dirname, "../src/App.vue"), "utf8");
+const inputsVue = readFileSync(resolve(__dirname, "../src/views/InputsView.vue"), "utf8");
 
 describe("standard page height and floating controls", () => {
   it("lets the shared page pane fill and scroll through the full app body", () => {
@@ -17,6 +19,12 @@ describe("standard page height and floating controls", () => {
     );
     expect(css).toMatch(/\.main > :not\(\.spin\)\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;/s);
     expect(css).not.toMatch(/\.board-col\s*\{[^}]*height:\s*calc\(100vh/);
+    expect(css).toMatch(/\.work-page\s*\{[^}]*flex:\s*1 1 auto;/s);
+    expect(css).toMatch(/\.page-scroll\s*\{[^}]*flex:\s*1 1 auto;/s);
+    expect(css).toMatch(/\.agents-page\s*\{[^}]*flex:\s*1 1 auto;/s);
+    expect(css).toMatch(/\.ctx-page\s*\{[^}]*flex:\s*1 1 auto;/s);
+    expect(appVue).toMatch(/<RouterView v-else class="main-route"\s*\/>/);
+    expect(inputsVue).toMatch(/\.inputs-board-page\s*\{[^}]*flex:\s*1 1 auto;/s);
   });
 
   it("uses a theme-token fade and shared end inset below fixed controls", () => {
