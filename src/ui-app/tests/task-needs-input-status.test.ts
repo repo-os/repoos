@@ -13,7 +13,10 @@ import { useRepoStore } from "../src/stores/repo";
 import { useConfigStore } from "../src/stores/config";
 import { useUiStore } from "../src/stores/ui";
 import type { Task } from "../src/types";
-import { NEEDS_INPUT_STATUS_LABELS } from "../src/lib/needs-input-ui";
+import {
+  NEEDS_INPUT_COMPACT_CHIP_LABELS,
+  NEEDS_INPUT_STATUS_LABELS,
+} from "../src/lib/needs-input-ui";
 
 const EMPTY_COUNTS = { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 };
 
@@ -215,9 +218,9 @@ describe("needs_input status labels on the board card (#0511)", () => {
   });
 });
 
-describe("needs_input status labels in the task drawer (#0511)", () => {
-  for (const [reason, label] of Object.entries(NEEDS_INPUT_STATUS_LABELS)) {
-    it(`header chip shows "${label}" for ${reason}`, async () => {
+describe("needs_input status surfaces in the task drawer (#0511)", () => {
+  for (const [reason] of Object.entries(NEEDS_INPUT_STATUS_LABELS)) {
+    it(`shows a short header chip and the full reason in the waiting card for ${reason}`, async () => {
       const pinia = createPinia();
       setActivePinia(pinia);
       FakeEventSource.instances = [];
@@ -232,11 +235,12 @@ describe("needs_input status labels in the task drawer (#0511)", () => {
       const wrapper = await mountDrawer(pinia, task);
       if (reason === "questions") {
         expect(wrapper.find(".questions-for-you-banner").exists()).toBe(true);
-        expect(wrapper.find(".rs-chip.rs-needs-input").exists()).toBe(false);
+        expect(wrapper.find(".drawer-head .rs-needs-input").exists()).toBe(false);
       } else {
-        const chip = wrapper.find(".rs-chip.rs-needs-input");
+        expect(wrapper.find(".agent-waiting").exists()).toBe(true);
+        const chip = wrapper.find(".drawer-head .rs-chip.rs-needs-input");
         expect(chip.exists()).toBe(true);
-        expect(chip.text()).toContain(label);
+        expect(chip.text()).toContain(NEEDS_INPUT_COMPACT_CHIP_LABELS[reason]);
       }
       expect(wrapper.find(".rs-reviewing").exists()).toBe(false);
     });
@@ -266,9 +270,10 @@ describe("needs_input status labels in the task drawer (#0511)", () => {
       "0506": { running: true, enabled: true, lines: [], report: null },
     };
     const wrapper = await mountDrawer(pinia, task);
-    const chip = wrapper.find(".rs-chip");
-    expect(chip.classes()).toContain("rs-reviewing");
-    expect(chip.text()).toContain("reviewing");
+    const status = wrapper.find(".drawer-status-summary");
+    expect(status.exists()).toBe(true);
+    expect(status.text()).toContain("Reviewer running");
+    expect(wrapper.find(".drawer-status-line").exists()).toBe(true);
     expect(wrapper.find(".rs-needs-input").exists()).toBe(false);
   });
 });
@@ -392,6 +397,7 @@ describe("agent questions needs_input (#0566)", () => {
     expect(wrapper.findAll(".questions-for-you-banner")).toHaveLength(1);
     expect(wrapper.find(".agent-waiting").exists()).toBe(false);
     expect(wrapper.find(".drawer-head .rs-needs-input").exists()).toBe(false);
+    expect(wrapper.find(".drawer-status-summary").exists()).toBe(false);
   });
 
   it("routes to PM without prefilling the compose box and sends question context", async () => {

@@ -627,6 +627,24 @@ const SHOT_EVIDENCE_VERIFICATION: UiHandoffVerificationEvidence = {
   warnings: [],
 };
 
+/** Record that a fixture was applied, fail-soft for non-DOM tests. */
+function setShotPreviewAppliedAttr(fixture: string): void {
+  try {
+    document.documentElement.setAttribute(SHOT_PREVIEW_APPLIED_ATTR, fixture);
+  } catch {
+    /* non-DOM test environments */
+  }
+}
+
+/** Shrink the task drawer so narrow-width shots verify header wrapping. */
+function setNarrowDrawerWidth(): void {
+  try {
+    useUiStore().drawerWidth = 360;
+  } catch {
+    /* store may not exist in some test setups */
+  }
+}
+
 /** Apply a named fixture to the live board (preview builds only). */
 export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFixtureId): void {
   // #0866: record that the app actually applied the fixture, so a capture can
@@ -1021,6 +1039,115 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         additions: 42,
         deletions: 8,
       });
+      break;
+    case "drawer:statusReviewFailed":
+      ensureFixtureTask(repo, "review", { branch: "feat/shot-fixture" });
+      repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        running: false,
+        enabled: true,
+        lines: [],
+        report: {
+          id: "shot-review-failed",
+          at: new Date().toISOString(),
+          agent: "Fixture reviewer",
+          cli: "fixture",
+          model: "fixture",
+          branch: "feat/shot-fixture",
+          state: "incomplete",
+          markdown: "",
+        },
+      };
+      repo.seedDiffStats(SHOT_PREVIEW_FIXTURE_TASK_ID, {
+        filesChanged: 2,
+        additions: 18,
+        deletions: 4,
+      });
+      break;
+    case "drawer:statusChecksRunning": {
+      ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
+        {
+          id: "shot-drawer-check-running",
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "merge-gate",
+          startedAt: new Date(Date.now() - 70_000).toISOString(),
+          finishedAt: null,
+          durationMs: null,
+          running: true,
+          passed: null,
+          code: null,
+          output: "",
+          scope: "changed:main",
+          machine: "fixture host",
+          stepsDone: 3,
+          stepsTotal: 8,
+          currentStep: 4,
+          stepName: "tests",
+          testsDone: 24,
+          testsTotal: 72,
+        },
+      ];
+      break;
+    }
+    case "drawer:statusConfirmingHandoff":
+      ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
+      repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID] = "check";
+      break;
+    case "drawer:statusHandoffFailed":
+      ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
+      repo.setHandoffError(SHOT_PREVIEW_FIXTURE_TASK_ID, "The fixture handoff check failed.");
+      break;
+    case "drawer:statusChecksFailed":
+      ensureFixtureTask(repo, "active", {
+        branch: "feat/shot-fixture",
+        path: "work/9999-task-side-panel-status-chip-two-line-header-width-verification.md",
+        extra: { check_retry_count: 2 },
+      });
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
+        {
+          id: "shot-drawer-check-failed",
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "merge-gate",
+          startedAt: new Date(Date.now() - 240_000).toISOString(),
+          finishedAt: new Date(Date.now() - 10_000).toISOString(),
+          durationMs: 230_000,
+          running: false,
+          passed: false,
+          code: 1,
+          output: "The test step failed after retries.",
+          scope: "changed:main",
+          machine: "fixture host",
+        },
+      ];
+      break;
+    case "drawer:statusReviewFailedNarrow":
+      applyShotPreviewFixture(repo, "drawer:statusReviewFailed");
+      setShotPreviewAppliedAttr("drawer:statusReviewFailedNarrow");
+      setNarrowDrawerWidth();
+      break;
+    case "drawer:statusChecksRunningNarrow":
+      applyShotPreviewFixture(repo, "drawer:statusChecksRunning");
+      setShotPreviewAppliedAttr("drawer:statusChecksRunningNarrow");
+      setNarrowDrawerWidth();
+      break;
+    case "drawer:statusConfirmingHandoffNarrow":
+      applyShotPreviewFixture(repo, "drawer:statusConfirmingHandoff");
+      setShotPreviewAppliedAttr("drawer:statusConfirmingHandoffNarrow");
+      setNarrowDrawerWidth();
+      break;
+    case "drawer:statusChecksFailedNarrow":
+      applyShotPreviewFixture(repo, "drawer:statusChecksFailed");
+      setShotPreviewAppliedAttr("drawer:statusChecksFailedNarrow");
+      setNarrowDrawerWidth();
+      break;
+    case "drawer:statusDetails":
+      applyShotPreviewFixture(repo, "drawer:statusReviewFailed");
+      setShotPreviewAppliedAttr("drawer:statusDetails");
+      break;
+    case "drawer:landableNarrow":
+      applyShotPreviewFixture(repo, "drawer:landable");
+      setShotPreviewAppliedAttr("drawer:landableNarrow");
+      setNarrowDrawerWidth();
       break;
     case "drawer:landable":
       // #0867 — a review task whose landing checklist has one real failing

@@ -199,7 +199,7 @@ describe("move-to-done inline error placement", () => {
     expect(ui.debugView).toBe("debugger");
   });
 
-  it("renders in the task panel below the Move to done button", async () => {
+  it("renders below the preview line and keeps the drawer retry action reachable", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const router = createRouter({ history: createMemoryHistory(), routes: [] });
@@ -223,8 +223,9 @@ describe("move-to-done inline error placement", () => {
     expect(err.exists()).toBe(true);
     expect(err.element.classList.contains("done-error")).toBe(true);
     expect(err.text()).toContain("merge conflict: src/a.ts, src/b.ts");
-    // Sits inside the quickbar, which is where the Move to done button lives.
-    expect(wrapper.find(".drawer-quickbar").element.contains(err.element)).toBe(true);
+    // Status content belongs in the single region below the preview and above tabs.
+    expect(wrapper.find(".drawer-pre-tabs").element.contains(err.element)).toBe(true);
+    expect(wrapper.find(".drawer-quickbar").element.contains(err.element)).toBe(false);
     // Unlike the card (which hides its Move to done button on error, above),
     // the drawer keeps its own — a failed attempt is still one click from
     // retrying once the human has looked at (or fixed) the cause.
