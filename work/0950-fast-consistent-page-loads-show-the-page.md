@@ -447,4 +447,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T14:53:13Z · note: handoff requested (cli)
 - 2026-10-26T14:54:35Z · message_queued at 2026-10-26T14:54:35.710Z
 - 2026-10-26T15:08:39Z · status active→review
-
+- 2026-10-26T15:08:39Z · note: shots: skipped — 5 shots already captured — an engineer-made capture pre-empts the automatic one
