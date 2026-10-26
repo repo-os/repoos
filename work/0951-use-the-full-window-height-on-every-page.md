@@ -3,6 +3,9 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "error: invalid model selection (--model \"gemini-3.8-flash-high\" --effort \"\"): model gemini-3.8-flash-high is not recognized as a known model or custom model in settings"
 priority: p2
 area: web
 assigned_to: ai
@@ -13,13 +16,14 @@ model_override: gemini-3.8-flash-high
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T12:57:32Z"
+updated_at: "2026-10-26T12:57:39Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
-dev_error_count: 65
+dev_error_count: 66
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
+engineer_crash_log: "[{\"cli\":\"antigravity\",\"model\":\"gemini-3.8-flash-high\",\"at\":\"2026-10-26T12:57:39.536Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -426,3 +430,5 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T12:46:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-26T12:46:29Z · needs_input
 - 2026-10-26T12:57:32Z · CTO action: restart-stalled-agent (resume) · check-failed-after-retries · check failed after 2 automatic retries · the worktree changed while the gate was running (HEAD moved from 671525a3 to 4a029553) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-26T12:57:39Z · agent exited with an error (antigravity) · error: invalid model selection (--model "gemini-3.8-flash-high" --effort ""): model gemini-3.8-flash-high is not recognized as a known model or custom model in settings
+- 2026-10-26T12:57:39Z · engineer crash recovery: resuming antigravity + gemini-3.8-flash-high (1/3 crashes in 30m) · error: invalid model selection (--model "gemini-3.8-flash-high" --effort ""): model gemini-3.8-flash-high is not recognized as a known model or custom model in settings
