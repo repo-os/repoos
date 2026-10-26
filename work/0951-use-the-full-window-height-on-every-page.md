@@ -5,7 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "2026-10-26T12:57:54.690636Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request"
+needs_input_detail: Reading additional input from stdin...
 debug_tldr: "Codex couldn't refresh models due to a network error—check connectivity/VPN, then resume the engineer or pick another allowlisted agent."
 debug_tldr_at: "2026-10-26T14:01:15Z"
 debug_tldr_key: "dev-error|2026-10-26T12:57:54.690636Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request"
@@ -19,12 +19,12 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T14:08:03Z"
+updated_at: "2026-10-26T14:10:47Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
-dev_error_count: 32
+dev_error_count: 33
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T14:00:53.205Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
