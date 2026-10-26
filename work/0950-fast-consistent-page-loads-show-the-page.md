@@ -3,9 +3,6 @@ id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: Reading additional input from stdin...
 priority: p2
 area: web
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T14:44:10Z"
+updated_at: "2026-10-26T14:44:18Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
 review_passes: 9
@@ -431,3 +428,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T14:26:04Z · agent exited with an error (codex) · Reading additional input from stdin...
 - 2026-10-26T14:26:05Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-26T14:26:09Z · message_delivered: 1 message(s)
+- 2026-10-26T14:44:18Z · needs_input
