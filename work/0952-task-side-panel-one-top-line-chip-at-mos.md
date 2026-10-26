@@ -2,7 +2,7 @@
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/task-side-panel-one-top-line-chip-at-mos
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-24T23:16:59Z"
-updated_at: "2026-10-24T23:18:02Z"
+updated_at: "2026-10-26T15:55:35Z"
 ---
 ## Problem
 
@@ -52,76 +52,76 @@ The task side panel gets cluttered when a task reaches review or hits issues. Ex
 ## Shots
 ```json
 [
-  {
-    "label": "Review failed: short header chip and status card with guidance",
-    "target": "default",
-    "route": "/work?task=9999",
-    "state": "drawer:statusReviewFailed",
-    "highlight": ".drawer-status-summary"
-  },
-  {
-    "label": "Review failed at narrow width: chip wraps to one line, card stays readable",
-    "target": "default",
-    "route": "/work?task=9999",
-    "state": "drawer:statusReviewFailedNarrow",
-    "highlight": ".drawer-status-summary"
-  },
-  {
-    "label": "Not landable: single card shows the failing checklist",
-    "target": "default",
-    "route": "/work?task=9999",
-    "state": "drawer:landable",
-    "highlight": ".drawer-status-summary"
-  },
-  {
-    "label": "Not landable at narrow width: checklist stays within the drawer",
-    "target": "default",
-    "route": "/work?task=9999",
-    "state": "drawer:landableNarrow",
-    "highlight": ".drawer-status-summary"
-  },
-  {
-    "label": "Checks running: one status line with progress, no long card copy",
-    "target": "default",
-    "route": "/work?task=9999",
-    "state": "drawer:statusChecksRunning",
-    "highlight": ".drawer-status-summary"
-  },
-  {
-    "label": "Checks running at narrow width: status line and progress wrap cleanly",
-    "target": "default",
-    "route": "/work?task=9999",
-    "state": "drawer:statusChecksRunningNarrow",
-    "highlight": ".drawer-status-summary"
-  },
-  {
-    "label": "Confirming handoff: single status line above the tabs",
-    "target": "default",
-    "route": "/work?task=9999",
-    "state": "drawer:statusConfirmingHandoff",
-    "highlight": ".drawer-status-summary"
-  },
-  {
-    "label": "Confirming handoff at narrow width: status line remains one row",
-    "target": "default",
-    "route": "/work?task=9999",
-    "state": "drawer:statusConfirmingHandoffNarrow",
-    "highlight": ".drawer-status-summary"
-  },
-  {
-    "label": "Checks failed after retries: concise error card with info popover",
-    "target": "default",
-    "route": "/work?task=9999",
-    "state": "drawer:statusChecksFailed",
-    "highlight": ".drawer-status-summary"
-  },
-  {
-    "label": "Checks failed after retries at narrow width: card and actions stay aligned",
-    "target": "default",
-    "route": "/work?task=9999",
-    "state": "drawer:statusChecksFailedNarrow",
-    "highlight": ".drawer-status-summary"
-  }
+{
+  "label": "Review failed: short header chip and status card with guidance",
+  "target": "default",
+  "route": "/work?task=9999",
+  "state": "drawer:statusReviewFailed",
+  "highlight": ".drawer-status-summary"
+},
+{
+  "label": "Review failed at narrow width: chip wraps to one line, card stays readable",
+  "target": "default",
+  "route": "/work?task=9999",
+  "state": "drawer:statusReviewFailedNarrow",
+  "highlight": ".drawer-status-summary"
+},
+{
+  "label": "Not landable: single card shows the failing checklist",
+  "target": "default",
+  "route": "/work?task=9999",
+  "state": "drawer:landable",
+  "highlight": ".drawer-status-summary"
+},
+{
+  "label": "Not landable at narrow width: checklist stays within the drawer",
+  "target": "default",
+  "route": "/work?task=9999",
+  "state": "drawer:landableNarrow",
+  "highlight": ".drawer-status-summary"
+},
+{
+  "label": "Checks running: one status line with progress, no long card copy",
+  "target": "default",
+  "route": "/work?task=9999",
+  "state": "drawer:statusChecksRunning",
+  "highlight": ".drawer-status-summary"
+},
+{
+  "label": "Checks running at narrow width: status line and progress wrap cleanly",
+  "target": "default",
+  "route": "/work?task=9999",
+  "state": "drawer:statusChecksRunningNarrow",
+  "highlight": ".drawer-status-summary"
+},
+{
+  "label": "Confirming handoff: single status line above the tabs",
+  "target": "default",
+  "route": "/work?task=9999",
+  "state": "drawer:statusConfirmingHandoff",
+  "highlight": ".drawer-status-summary"
+},
+{
+  "label": "Confirming handoff at narrow width: status line remains one row",
+  "target": "default",
+  "route": "/work?task=9999",
+  "state": "drawer:statusConfirmingHandoffNarrow",
+  "highlight": ".drawer-status-summary"
+},
+{
+  "label": "Checks failed after retries: concise error card with info popover",
+  "target": "default",
+  "route": "/work?task=9999",
+  "state": "drawer:statusChecksFailed",
+  "highlight": ".drawer-status-summary"
+},
+{
+  "label": "Checks failed after retries at narrow width: card and actions stay aligned",
+  "target": "default",
+  "route": "/work?task=9999",
+  "state": "drawer:statusChecksFailedNarrow",
+  "highlight": ".drawer-status-summary"
+}
 ]
 ```
 
@@ -146,3 +146,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-24T23:17:55Z · status inbox→ready
 - 2026-10-24T23:18:01Z · cli_override, model_override
 - 2026-10-24T23:18:02Z · status ready→active, branch
+- 2026-10-26T15:55:35Z · status active→review
