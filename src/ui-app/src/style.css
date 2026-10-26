@@ -756,6 +756,9 @@
 .sidebar {
   width: 210px;
   flex-shrink: 0;
+  /* Long navigation stays in the shell instead of scrolling the document. */
+  min-height: 0;
+  overflow-y: auto;
   padding: 14px 11px;
   display: flex;
   flex-direction: column;
