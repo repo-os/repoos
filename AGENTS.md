@@ -577,7 +577,8 @@ cannot tell from the code alone:
   Standard page roots also fill the available `.main` height. Keep bottom
   clearance on the actual scrollport with `--page-bottom-inset`, rather than
   padding the pane and shortening its visible area. Narrow layouts that switch
-  to normal flow must keep their routed root scrollable.
+  to normal flow must keep their routed root scrollable and retain the shared
+  bottom inset at the component’s own flow breakpoint.
   See the `.main` comment in `src/ui-app/src/style.css` (#0602, #0951).
 - **Table-like label/value rows use aligned columns.** Any UI that renders
   repeated rows of labeled fields (a `dl` of `dt`/`dd`, or label+value pairs
