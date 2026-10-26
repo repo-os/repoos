@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
@@ -14,10 +12,12 @@ created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
 cli_override: codex
 model_override: gpt-6.1-sol
-review_cli_override: github copilot
-review_model_override: default
+review_cli_override: codex
+review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T08:00:42Z"
+updated_at: "2026-10-26T11:14:46Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
 review_passes: 9
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -412,4 +412,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T06:45:17Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-10-26T07:52:50Z · note: handoff requested (ui-review)
 - 2026-10-26T08:00:42Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
-
+- 2026-10-26T11:14:46Z · review_cli_override, review_model_override
