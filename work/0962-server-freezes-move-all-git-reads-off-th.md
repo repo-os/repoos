@@ -15,8 +15,6 @@ cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-26T07:54:06Z"
 updated_at: "2026-10-26T20:30:41Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — timed out — timed out after 420s"
-last_handoff_failure_sha: d6f169681129427227d208b1bcb0917a49d309bb
 handoff_signal_retry_count: 1
 dev_error_count: 5
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
@@ -122,3 +120,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T20:21:31Z · needs_input
 - 2026-10-26T20:30:41Z · status active→review
 - 2026-10-26T20:30:41Z · note: shots: skipped — the diff (16 changed paths) touches no capture target's globs — no UI change to capture
+
