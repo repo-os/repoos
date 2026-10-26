@@ -3,6 +3,9 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p2
 area: web
 assigned_to: ai
@@ -18,8 +21,8 @@ review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
-dev_error_count: 35
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-26T14:00:53.205Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:10:47.338Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:25:17.884Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T14:25:26.693Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 36
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-26T15:21:10.445Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
@@ -412,3 +415,5 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T15:15:05Z · body
 - 2026-10-26T15:18:41Z · body
 - 2026-10-26T15:21:10Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-26T15:21:10Z · agent exited with an error (cursor) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-10-26T15:21:10Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
