@@ -3,6 +3,9 @@ id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 needs_merge: true
 priority: p0
 area: core
@@ -12,12 +15,13 @@ branch: feat/server-freezes-move-all-git-reads-off-th
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T19:57:02Z"
+updated_at: "2026-10-26T20:10:33Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — timed out — timed out after 420s"
 last_handoff_failure_sha: d6f169681129427227d208b1bcb0917a49d309bb
 handoff_signal_retry_count: 1
-dev_error_count: 4
+dev_error_count: 5
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-26T20:10:33.970Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The RepoOS server (single Bun main thread) repeatedly freezes or becomes unusably slow (UI never loads, accepts then resets connections) because it runs blocking git child processes per task/branch on the same thread that serves HTTP. With ~910 tasks, ~100 branches, 27 worktrees, each spawn costs 0.1-0.3 s on macOS (syspolicyd). Fixed one loop at a time so far (live-index per-file git, dir-log walk cache, async ahead-count cache, GET /api/system/worktree-gc preview cache) but others remain: worktreeStatus() callers (task-watchdog.ts, indexer.ts), per-task `git rev-list --count`, per-branch `merge-base --is-ancestor` (worktree-gc.ts, task-dependencies.ts, worktree-handoff-guard.ts, done.ts), sync `git log --name-only -- work` walks (indexer.ts:76, story-definition-files.ts).
@@ -113,3 +117,5 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T19:51:29Z · message_queued at 2026-10-26T19:51:29.675Z
 - 2026-10-26T19:57:02Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — timed out — timed out after 420s
 - 2026-10-26T19:57:02Z · message_delivered: 1 message(s)
+- 2026-10-26T20:10:33Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-26T20:10:33Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
