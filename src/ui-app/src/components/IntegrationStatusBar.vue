@@ -1182,6 +1182,9 @@ async function fileSetupTask(): Promise<void> {
    the dock's top-border/upward-shadow treatment. */
 @media (max-width: 760px) {
   .ibar-wrap {
+    /* The head stack shares this bottom offset; reserve its inline lane so
+       the expand toggle and pipeline actions remain clickable. */
+    right: var(--page-inline-end-inset);
     bottom: calc(74px + var(--safe-bot));
     z-index: 60;
   }

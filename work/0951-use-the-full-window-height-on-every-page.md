@@ -1,14 +1,11 @@
 ---
-last_close_out_gate_ms: 316648
-last_close_out_gate_at: "2026-10-26T17:07:04.950Z"
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
-status: review
-needs_input: true
-needs_input_reason: dev-error
+status: done
 priority: p2
 area: web
+merged_commit: 41225126a56253c64f1c2651c6ddb22b11c8e1b5
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/use-the-full-window-height-on-every-page
@@ -17,6 +14,8 @@ model_override: composer-2.5
 review_model_override: grok-4.7-low
 created_at: "2026-10-24T22:51:41Z"
 updated_at: "2026-10-26T17:07:04Z"
+last_close_out_gate_ms: 316648
+last_close_out_gate_at: "2026-10-26T17:07:04.950Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
