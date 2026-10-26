@@ -11,10 +11,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/use-the-full-window-height-on-every-page
-cli_override: cursor
-model_override: composer-2.5
+cli_override: codex
+model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T07:01:44Z"
+updated_at: "2026-10-26T07:02:59Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-26T06:15:46.061Z: repoos check failed: ◆ Check plan"
 review_rounds: 1
@@ -302,3 +302,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T06:38:15Z · body
 - 2026-10-26T06:59:32Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection stalled repeatedly
 - 2026-10-26T07:01:44Z · engineer crash recovery: resuming cursor + composer-2.5 (2/3 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-10-26T07:02:59Z · cli_override, model_override
