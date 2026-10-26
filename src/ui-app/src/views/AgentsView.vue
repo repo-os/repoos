@@ -739,7 +739,10 @@ onUnmounted(() => {
     <PageSkeleton v-if="!config.loaded" kind="cards" />
 
     <template v-else>
-      <div class="agents-tab-content">
+      <div
+        class="agents-tab-content"
+        :class="{ 'agents-tab-content--playground': activeTab === 'playground' }"
+      >
         <div
           class="agent-tab-panel"
           v-show="activeTab === 'default'"

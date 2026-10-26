@@ -866,6 +866,19 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         },
       };
       break;
+    case "pages:scroll":
+      for (let i = 0; i < 30; i++) {
+        ensureFixtureTask(
+          repo,
+          i % 2 ? "ready" : "review",
+          {
+            title: `Delivery item ${i + 1}: verify the complete page remains reachable`,
+            story: `Delivery slice ${Math.floor(i / 2) + 1}`,
+          },
+          `scroll-${i}`,
+        );
+      }
+      break;
     case "board:withReviewTask":
       ensureFixtureTask(repo, "review");
       break;
@@ -1282,6 +1295,7 @@ const SETTINGS_FIXTURE_STYLE: Partial<Record<ShotPreviewFixtureId, ActivityAnima
 /** Config-only shot fixtures (applied after `/api/config` loads, #0805). */
 export function isShotPreviewConfigFixture(fixture: ShotPreviewFixtureId): boolean {
   return (
+    fixture === "pages:scroll" ||
     fixture === "editor:unconfigured" ||
     fixture === "budget:paused" ||
     fixture in SETTINGS_FIXTURE_STYLE
@@ -1292,6 +1306,10 @@ export function applyShotPreviewConfigFixture(
   config: ConfigStore,
   fixture: ShotPreviewFixtureId,
 ): void {
+  if (fixture === "pages:scroll") {
+    if (config.data) config.data.stories = { enabled: true };
+    return;
+  }
   if (fixture === "editor:unconfigured") {
     const data = config.data;
     if (!data) return;
