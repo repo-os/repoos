@@ -3,6 +3,9 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: check-failed-after-retries
+needs_input_detail: Reading additional input from stdin...
 priority: p2
 area: web
 assigned_to: ai
@@ -11,12 +14,12 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T05:32:44Z"
+updated_at: "2026-10-26T05:32:45Z"
 review_rounds: 1
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
-dev_error_count: 19
+dev_error_count: 20
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-26T05:32:39.459Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -287,3 +290,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T05:32:43Z · cli_override, model_override
 - 2026-10-26T05:32:44Z · needs_input
 - 2026-10-26T05:32:44Z · message_queued at 2026-10-26T05:32:44.853Z
+- 2026-10-26T05:32:45Z · agent exited with an error (opencode) · Reading additional input from stdin...
