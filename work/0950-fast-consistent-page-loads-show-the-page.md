@@ -385,3 +385,4 @@ The current branch already migrated Check Runs, detected Agents and release dist
 - 2026-10-26T05:38:50Z · status review→active
 - 2026-10-26T05:38:50Z · note: send-back — returned to active for engineer follow-up
 - 2026-10-26T05:38:54Z · needs_input
+- 2026-10-26T05:38:54Z · message_queued at 2026-10-26T05:38:54.572Z
