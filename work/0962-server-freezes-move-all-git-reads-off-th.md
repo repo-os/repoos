@@ -11,10 +11,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-freezes-move-all-git-reads-off-th
-cli_override: codex
-model_override: gpt-6.1-sol
+cli_override: opencode
+model_override: opencode-go/kimi-k3.1-pro
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T09:29:08Z"
+updated_at: "2026-10-26T10:04:52Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T09:28:41.616Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T09:28:59.217Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-26T09:29:08.847Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -61,3 +61,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T09:28:44Z · message_delivered: 1 message(s)
 - 2026-10-26T09:28:59Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · 2026-10-26T09:28:49.831801Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
 - 2026-10-26T09:29:08Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-26T10:04:52Z · cli_override, model_override
