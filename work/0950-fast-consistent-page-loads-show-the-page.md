@@ -2,7 +2,7 @@
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "RetriableError: Connection stalled"
@@ -16,7 +16,7 @@ model_override: grok-4.7-high
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-10-26T12:27:23Z"
+updated_at: "2026-10-26T12:27:24Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 6dd3f50aa8f4fe39e56b2d203ee2d8273eef5434
 review_passes: 9
@@ -421,4 +421,3 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-26T11:37:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-26T11:48:54Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-26T12:12:59Z · body
-- 2026-10-26T12:27:23Z · status active→review
