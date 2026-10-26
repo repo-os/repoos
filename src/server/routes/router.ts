@@ -29,6 +29,14 @@ export class Router {
     req: IncomingMessage,
     res: ServerResponse,
   ): Promise<boolean> {
+    // Preview children serve a snapshot of a task worktree. Keep the entire
+    // API read-only there so a browser capture cannot mutate or commit it.
+    if (process.env.REPOOS_PREVIEW_CHILD === "1" && method !== "GET" && method !== "HEAD") {
+      res.statusCode = 405;
+      res.setHeader("content-type", "application/json; charset=utf-8");
+      res.end(JSON.stringify({ error: "preview servers are read-only" }));
+      return true;
+    }
     for (const route of this.routes) {
       if (route.method !== method) continue;
 
