@@ -389,3 +389,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T14:00:52Z · agent exited with an error (codex) · 2026-10-26T12:57:54.690636Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
 - 2026-10-26T14:00:53Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-26T12:57:54.690636Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
 - 2026-10-26T14:01:01Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:01:01Z · message_delivered: 1 message(s)
