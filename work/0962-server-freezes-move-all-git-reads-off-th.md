@@ -2,22 +2,17 @@
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
-status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: Go usage limit exceeded"
-debug_tldr: Go agent usage limit stopped the engineer run—wait for quota to reset or pick another agent/model in override and start the task again.
-debug_tldr_at: "2026-10-26T11:33:50Z"
-debug_tldr_key: "dev-error|error: Go usage limit exceeded"
+status: ready
+hold: true
 priority: p0
 area: core
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: feat/server-freezes-move-all-git-reads-off-th
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T12:41:09Z"
+updated_at: "2026-10-26T14:44:17Z"
 handoff_signal_retry_count: 1
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-26T11:33:32.912Z\",\"kind\":\"usage-limit\"}]"
@@ -85,3 +80,12 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T12:35:13Z · cli_override, model_override
 - 2026-10-26T12:36:33Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-26T12:41:09Z · body
+- 2026-10-26T12:47:27Z · body
+- 2026-10-26T14:00:52Z · CTO nudge: held — an undelivered message is already queued
+- 2026-10-26T14:01:00Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:10:54Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-26T14:25:12Z · needs_input
+- 2026-10-26T14:25:20Z · held
+- 2026-10-26T14:25:26Z · assigned_to
+- 2026-10-26T14:25:39Z · status active→ready
+- 2026-10-26T14:44:17Z · message_overdue: still queued after 60m without being delivered

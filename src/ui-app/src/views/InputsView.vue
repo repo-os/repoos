@@ -595,7 +595,12 @@ function tryOpenInput(ref: string, attempt: number): void {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding-bottom: 0;
+}
+@media (min-width: 761px) {
+  /* Desktop/tablet columns scroll inside the board; outer shell stays flush. */
+  .inputs-board-page {
+    padding-bottom: 0;
+  }
 }
 .inputs-board-page .input-filters {
   flex-shrink: 0;

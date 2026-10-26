@@ -105,5 +105,11 @@ describe("standard page height and floating controls", () => {
     expect(inputsVue).toMatch(
       /@media \(max-width: 760px\)[\s\S]*?\.inputs-board-page\s*\{[^}]*padding-bottom:\s*var\(--page-bottom-inset\);/s,
     );
+    expect(inputsVue).toMatch(
+      /@media \(min-width: 761px\)[\s\S]*?\.inputs-board-page\s*\{[^}]*padding-bottom:\s*0;/s,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 760px\)[\s\S]*?\.agents-page\s*\{[^}]*padding-bottom:\s*var\(--page-bottom-inset\);/s,
+    );
   });
 });
