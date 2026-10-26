@@ -3,9 +3,6 @@ id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: check-failed-after-retries
-needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/use-the-full-window-height-on-every-page
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T08:44:35Z"
+updated_at: "2026-10-26T08:44:36Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
 review_rounds: 1
@@ -345,3 +342,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T08:26:50Z · CTO nudge: held — an undelivered message is already queued
 - 2026-10-26T08:32:57Z · body
 - 2026-10-26T08:44:35Z · cli_override, model_override
+- 2026-10-26T08:44:36Z · needs_input
