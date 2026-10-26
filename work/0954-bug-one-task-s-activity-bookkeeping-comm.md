@@ -9,14 +9,13 @@ needs_input_detail: "RetriableError: Agent turn stopped after repeated resume at
 debug_tldr: "Engineer died waiting on serialized local fallback behind other repoos checks — end duplicate checks, then resume."
 debug_tldr_at: "2026-10-25T14:34:23Z"
 debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
-hold: true
 priority: p1
 area: core
-assigned_to: human
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bug-one-task-s-activity-bookkeeping-comm
 created_at: "2026-10-24T23:57:03Z"
-updated_at: "2026-10-26T15:31:40Z"
+updated_at: "2026-10-26T18:49:28Z"
 handoff_signal_retry_count: 2
 dev_error_count: 12
 engineer_stall_resume_log: "[{\"at\":\"2026-10-25T12:19:20.905Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -160,3 +159,4 @@ Stopping #0951's preview did not end it: a NEW preview server for #0951 (pid 199
 - 2026-10-25T15:23:17Z · assigned_to
 - 2026-10-25T15:23:59Z · status active→ready
 - 2026-10-26T15:31:40Z · cli_override, model_override
+- 2026-10-26T18:49:28Z · released, assigned_to
