@@ -2,7 +2,7 @@
 id: "0952"
 title: "Task side panel: one top-line chip, at most one card and one status line above the tabs, help text in info popovers"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -364,3 +364,4 @@ Nothing that is removed from the top line or from the cards above the tabs may b
 - 2026-10-26T16:19:15Z · status active→review
 - 2026-10-26T16:19:15Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-26T16:19:15Z · message_delivered: 3 message(s)
+- 2026-10-26T16:19:15Z · status review→active
