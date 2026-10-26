@@ -155,3 +155,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-25T18:37:51Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-26T12:14:30Z · cli_override, model_override
 - 2026-10-26T12:36:33Z · message_queued at 2026-10-26T12:36:33.644Z
+- 2026-10-26T12:36:33Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
