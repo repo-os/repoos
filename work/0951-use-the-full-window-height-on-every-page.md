@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryable\":true,\"error_id\":\"7465488f-966a-4889-ba7d-0fe40a6c6fdd-294\"}"
+debug_tldr: "Antigravity individual quota hit (429) — switch engineer/reviewer in Agents or wait ~7 days for reset, then resume #0951."
+debug_tldr_at: "2026-10-26T12:30:36Z"
+debug_tldr_key: "dev-error|AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryable\":true,\"error_id\":\"7465488f-966a-4889-ba7d-0fe40a6c6fdd-294\"}"
 priority: p2
 area: web
 assigned_to: ai
@@ -16,7 +19,7 @@ model_override: gemini-3.8-flash-medium
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-24T22:51:41Z"
-updated_at: "2026-10-26T12:27:56Z"
+updated_at: "2026-10-26T12:30:36Z"
 review_rounds: 2
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-26T08:20:23.323Z: repoos check failed: ◆ Check plan"
