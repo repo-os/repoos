@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-26T06:15:46.061Z: repoos check failed: ◆ Check plan"
 id: "0951"
 title: "Use the full window height on every page: content scrolls down to the bottom edge, with a fade-out where floating controls need to stay visible"
 type: feature
@@ -17,7 +19,6 @@ created_at: "2026-10-24T22:51:41Z"
 updated_at: "2026-10-26T06:11:11Z"
 review_rounds: 1
 review_passes: 2
-last_check_failure: "repoos check at 2026-10-25T02:49:43.139Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 1
 dev_error_count: 20
 ---
@@ -296,3 +297,4 @@ Every standard nav page uses the full window height: the scrollable content area
 - 2026-10-26T05:39:19Z · body
 - 2026-10-26T05:45:19Z · body
 - 2026-10-26T06:05:01Z · body
+
