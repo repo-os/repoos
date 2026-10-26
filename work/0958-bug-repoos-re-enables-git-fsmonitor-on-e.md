@@ -172,3 +172,4 @@ Not only the launchd server: ANY RepoOS server process calls tuneRepoForScale(co
 - 2026-10-26T17:08:23Z · cli_override, model_override
 - 2026-10-26T17:08:27Z · message_delivered: 1 message(s)
 - 2026-10-26T17:08:27Z · needs_input
+- 2026-10-26T17:08:27Z · message_queued at 2026-10-26T17:08:27.699Z
