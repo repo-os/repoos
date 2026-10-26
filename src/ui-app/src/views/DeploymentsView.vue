@@ -15,6 +15,8 @@ import DialogDescription from "../components/ui/dialog/description.vue";
 import { api, JSON_OPTS } from "../api";
 import { useAuthStore } from "../stores/auth";
 import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
+import PageSkeleton from "../components/PageSkeleton.vue";
+import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
 
 interface DeploymentRow {
   name: string;
@@ -185,8 +187,10 @@ function serviceSyncLabel(row: DeploymentRow, b: DeploymentBranch): string {
 async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
+  if (readShotPreviewFixtureFromLocation(window.location) === "deployments:loading") return;
   try {
-    if (readShotPreviewFixtureFromLocation(window.location) === "deployments:environmentBinding") {
+    const shotState = readShotPreviewFixtureFromLocation(window.location);
+    if (shotState === "deployments:environmentBinding") {
       // Screenshot-only state: the preview fixture represents an admin
       // reviewing the binding controls. Production auth still gates every
       // write, and this branch makes no API calls.
@@ -228,11 +232,25 @@ async function load(): Promise<void> {
       };
       return;
     }
-    const deployments = await api<Omit<DeploymentsStatus, "environments">>("/api/deployments");
-    const environments = canBindEnvironment.value
-      ? await api<{ environments: { id: string }[] }>("/api/project-environments")
-      : { environments: [] };
-    status.value = { ...deployments, environments: environments.environments ?? [] };
+    await refreshPageData(
+      "deployments",
+      async () => {
+        const [deployments, environments] = await Promise.all([
+          api<Omit<DeploymentsStatus, "environments">>("/api/deployments"),
+          canBindEnvironment.value
+            ? api<{ environments: { id: string }[] }>("/api/project-environments")
+            : Promise.resolve({ environments: [] as { id: string }[] }),
+        ]);
+        return { ...deployments, environments: environments.environments ?? [] };
+      },
+      (data) => {
+        status.value = data;
+        error.value = "";
+      },
+      (err) => {
+        error.value = err instanceof Error ? err.message : String(err);
+      },
+    );
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -250,6 +268,7 @@ async function bindEnvironment(row: DeploymentRow, environment: string | null): 
         keys: [],
       }),
     );
+    invalidatePageData("deployments");
     await load();
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
@@ -280,6 +299,7 @@ async function deploy(): Promise<void> {
       "/api/deployments/deploy",
       JSON_OPTS("POST", { branch }),
     );
+    invalidatePageData("deployments");
     message.value = result.output;
     confirmBranch.value = null;
     await load();
@@ -339,10 +359,11 @@ onBeforeUnmount(() => {
     </header>
 
     <div class="page-scroll-body">
-      <div v-if="loading" class="spin"></div>
+      <PageSkeleton v-if="loading && !status" kind="deployments" />
       <p v-else-if="error && !status" class="dep-err">{{ error }}</p>
+      <p v-if="error && status" class="dep-err" role="status">Refresh failed: {{ error }}</p>
 
-      <template v-else-if="status">
+      <template v-if="status">
         <div v-if="!status.enabled" class="dep-panel dep-empty">
           Deployments aren't configured for this repository. Add a
           <code>[[deployments]]</code> block to <a href="/settings?tab=toml">repoos.toml</a> — one

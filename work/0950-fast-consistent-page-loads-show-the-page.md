@@ -1,15 +1,11 @@
 ---
-last_close_out_gate_ms: 642649
-last_close_out_gate_at: "2026-10-26T15:35:39.943Z"
 id: "0950"
 title: "Fast, consistent page loads: show the page shell and a skeleton loader instead of a blank wait on Releases, Checks, Deployments, Dev and similar pages"
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 10 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+status: done
 priority: p2
 area: web
+merged_commit: e6a916c753c930d0f79cdaffdb3e5915e13d3a73
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fast-consistent-page-loads-show-the-page
@@ -18,6 +14,8 @@ model_override: composer-2.5
 review_model_override: grok-4.7-low
 created_at: "2026-10-24T16:13:34Z"
 updated_at: "2026-10-26T15:35:39Z"
+last_close_out_gate_ms: 642649
+last_close_out_gate_at: "2026-10-26T15:35:39.943Z"
 review_passes: 10
 last_check_failure: "repoos check at 2026-10-25T00:16:41.769Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
