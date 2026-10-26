@@ -247,6 +247,41 @@ describe("AutoEngineeringOrchestrator", () => {
     });
   });
 
+  describe("hold inertness (#0960)", () => {
+    it("excludes a held active task from the active count", async () => {
+      const config = mockConfig(true, 2);
+      const activeHeld = mockTask("001", "active");
+      activeHeld.isHeld = true;
+      activeHeld.holdReason = "waiting on design";
+      const activeFree = mockTask("002", "active");
+      const ready = mockTask("003", "ready");
+
+      await orchestrator.reconcile(config, [activeHeld, activeFree, ready], "active-to-review");
+
+      const decision = orchestrator.getLastDecision();
+      // The held active task holds no slot, so only 002 counts.
+      expect(decision?.activeCount).toBe(1);
+      expect(decision?.maxActiveTasks).toBe(2);
+      expect(decision?.availableSlots).toBe(1);
+      // The free slot is handed to the ready task.
+      expect(decision?.selectedIds).toEqual(["003"]);
+    });
+
+    it("never auto-dispatches a held ready task", async () => {
+      const config = mockConfig(true, 3);
+      const readyFree = mockTask("001", "ready");
+      const readyHeld = mockTask("002", "ready");
+      readyHeld.isHeld = true;
+      readyHeld.holdReason = "blocked on human";
+
+      await orchestrator.reconcile(config, [readyFree, readyHeld], "active-to-review");
+
+      const decision = orchestrator.getLastDecision();
+      expect(decision?.selectedIds).toEqual(["001"]);
+      expect(decision?.selectedIds).not.toContain("002");
+    });
+  });
+
   describe("trigger types", () => {
     it("records trigger as active-to-review", async () => {
       const config = mockConfig(true, 3);

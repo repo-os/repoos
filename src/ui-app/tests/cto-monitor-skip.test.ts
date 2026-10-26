@@ -278,6 +278,44 @@ describe("CTO monitor skip-when-healthy (#0649)", () => {
     expect(recordNudge).not.toHaveBeenCalled();
   });
 
+  it("does not nudge a held task (#0960)", async () => {
+    const root = tempRoot();
+    // A held task that is otherwise a genuine idle-nudge candidate (running, not
+    // paused, stale): without the hold guard it WOULD be nudged.
+    const held = task({
+      id: "0001",
+      status: "active",
+      branch: "feat/x",
+      isHeld: true,
+      holdReason: "waiting on design",
+      updated_at: new Date(Date.now() - 6 * 60_000).toISOString(),
+    });
+    const recordNudge = vi.fn(() => true);
+    const sendMessage = vi.fn(() => true);
+    const cto: FakeCTO = {
+      run: vi.fn(),
+      enabled: () => true,
+      isRunning: () => false,
+      sendTaskMessage: sendMessage,
+      recordAutomaticNudge: recordNudge,
+    };
+    const runner = {
+      isRunning: () => true,
+      isPaused: () => false,
+      isHandoffInFlight: () => false,
+      hasPendingHandoff: () => false,
+    };
+    const monitor = new CTOMonitor(
+      configFor(root),
+      indexWith([held]),
+      cto as unknown as CTOManager,
+      runner as never,
+    );
+    await monitor.checkNow("timer");
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(recordNudge).not.toHaveBeenCalled();
+  });
+
   it("records the event reason on an event-triggered run", async () => {
     vi.useFakeTimers();
     const { cto, runs } = fakeCto();

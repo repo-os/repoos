@@ -366,6 +366,11 @@ export async function assembleDriverBrief(deps: DriverBriefDeps): Promise<Driver
     assignee: t.assignee,
     isArchived: t.isArchived === true,
     updatedAt: t.updated_at ?? null,
+    isHeld: t.isHeld,
+    holdReason: t.holdReason,
+    holdUntil: t.holdUntil,
+    holdBy: t.holdBy,
+    holdAt: t.holdAt,
   }));
 
   const tasksById = new Map(tasks.map((t) => [t.id, t]));

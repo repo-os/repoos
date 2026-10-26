@@ -118,6 +118,8 @@ interface BriefView {
   };
   rules: { heading: string; text: string }[];
   recommendations: { owner: string; title: string; detail: string; taskId: string | null }[];
+  /** #0960: tasks held out of ALL automation, with their hold reason. */
+  heldTasks: { id: string; title: string; status: string; reason: string | null; by: string | null; until: string | null }[];
 }
 
 function renderBrief(brief: BriefView): void {
@@ -160,6 +162,18 @@ function renderBrief(brief: BriefView): void {
       line(`      #${t.id} [${t.priority}] ${t.title}${cause}`);
     }
     if (g.tasks.length > 8) line(c.dim(`      … ${g.tasks.length - 8} more`));
+  }
+  line();
+
+  // Held tasks (#0960): parked out of ALL automation — list them with reason so
+  // a driver sees at a glance what was deliberately silenced.
+  line(c.bold("  Held"));
+  if (!brief.heldTasks.length) line(c.dim("    (none)"));
+  for (const t of brief.heldTasks) {
+    const reason = t.reason ? c.dim(` — ${t.reason}`) : "";
+    const by = t.by ? c.dim(`  by ${t.by}`) : "";
+    const until = t.until ? c.dim(`  auto-releases ${t.until}`) : "";
+    line(`    #${t.id} [${t.status}] ${t.title}${reason}${by}${until}`);
   }
   line();
 

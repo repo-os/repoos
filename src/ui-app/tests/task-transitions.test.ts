@@ -200,6 +200,7 @@ function makeCtx(
     runner: {
       isRunning: () => opts.runnerRunning ?? false,
       stop: opts.stop ?? vi.fn(() => ({ stopped: true })),
+      markPaused: vi.fn(),
     } as any,
     previews: { stop: vi.fn(async () => {}) } as any,
     cto: {} as any,
@@ -376,6 +377,68 @@ describe("POST /api/tasks/:id/start — dependency gate", () => {
       expect(fake.status).toBe(400);
       expect((fake.payload as { error: string }).error).toMatch(/already running/);
       expect(readTaskFile(fx).status).toBe("ready");
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
+describe("POST /api/tasks/:id — hold / unhold / start gate (#0960)", () => {
+  it("refuses to start a held task without --force", async () => {
+    const fx = makeFixture(
+      "ready",
+      "hold: true\nhold_reason: waiting on design\nhold_until: 2030-01-01T00:00:00Z\n",
+    );
+    try {
+      const { res, fake } = makeRes();
+      await taskAction(makeCtx(fx), makeReq(), res, { param1: "0296", param2: "start" });
+      expect(fake.status).toBe(409);
+      const payload = fake.payload as { held: boolean; error: string; reason: string | null };
+      expect(payload.held).toBe(true);
+      expect(payload.reason).toBe("waiting on design");
+      expect(payload.error).toMatch(/unhold/i);
+      // The held task is never activated.
+      expect(readTaskFile(fx).status).toBe("ready");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("holds a task (stops any engineer) and records the reason/until", async () => {
+    const fx = makeFixture("active");
+    try {
+      const { res, fake } = makeRes();
+      await taskAction(
+        makeCtx(fx, { runnerRunning: true }),
+        makeReq({ reason: "waiting on design", until: "2030-01-01T00:00:00Z" }),
+        res,
+        { param1: "0296", param2: "hold" },
+      );
+      expect(fake.status).toBe(200);
+      expect((fake.payload as { ok: boolean }).ok).toBe(true);
+      const held = readTaskFile(fx);
+      expect(held.isHeld).toBe(true);
+      expect(held.holdReason).toBe("waiting on design");
+      expect(held.holdUntil).toBe("2030-01-01T00:00:00Z");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("releases a held task on unhold", async () => {
+    const fx = makeFixture(
+      "active",
+      "hold: true\nhold_reason: waiting on design\nhold_until: 2030-01-01T00:00:00Z\n",
+    );
+    try {
+      const { res, fake } = makeRes();
+      await taskAction(makeCtx(fx), makeReq(), res, { param1: "0296", param2: "unhold" });
+      expect(fake.status).toBe(200);
+      expect((fake.payload as { ok: boolean }).ok).toBe(true);
+      const released = readTaskFile(fx);
+      expect(released.isHeld).toBe(false);
+      expect(released.holdReason).toBeUndefined();
+      expect(released.holdUntil).toBeUndefined();
     } finally {
       fx.clean();
     }

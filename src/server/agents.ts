@@ -78,6 +78,7 @@ import { parseTaskAreas } from "../core/areas.js";
 import { commitTaskFile, fileCommittedClean, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
+import { isHoldActive } from "../core/task-selection.js";
 import { SHOT_PREVIEW_FIXTURE_IDS } from "../core/shot-fixtures.js";
 import { buildStoryContext, storyContextSummary } from "../core/story-context.js";
 import { unresolvedReviewFindingsBlock } from "../core/review-findings.js";
@@ -6565,6 +6566,19 @@ export class AgentRunner {
       }
     }
     const fullText = (fullPreamble ? `${fullPreamble}\n\n${text}` : text).trim();
+    // #0960: a held task is inert for ALL automation — including queued-message
+    // delivery and a human send that would start a fresh turn here. Only
+    // `repoos unhold` (which clears the hold) or `repoos start --force` may
+    // start it; this resume path is reached when nothing is currently running,
+    // which is exactly the case the hold is meant to prevent.
+    const holdTask = this.getTask?.(id);
+    if (holdTask && isHoldActive(holdTask)) {
+      const reason = holdTask.holdReason ? `: ${holdTask.holdReason}` : "";
+      return {
+        ok: false,
+        reason: `Task #${id} is held${reason} — use "repoos unhold ${id}" to release it`,
+      };
+    }
     // session.sessionId is only meaningful to the CLI that produced it — if
     // agent.cli has since changed (override edited/cleared between turns),
     // reusing it would hand one CLI's session id to a different CLI's

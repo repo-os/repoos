@@ -415,3 +415,23 @@ describe("pressured runner hosts (#0901)", () => {
     expect(action!.detail).toContain("repoos runners --probe");
   });
 });
+
+describe("buildDriverBrief — held tasks (#0960)", () => {
+  it("surfaces held (non-archived, unexpired) tasks with their reason", () => {
+    const brief = buildDriverBrief(
+      baseInput({
+        tasks: [
+          taskInput({ id: "0001", status: "active", isHeld: true, holdReason: "design sign-off" }),
+          taskInput({ id: "0002", status: "ready", isHeld: true, holdUntil: "2000-01-01T00:00:00Z" }),
+          taskInput({ id: "0003", status: "active", isHeld: true, isArchived: true }),
+          taskInput({ id: "0004", status: "active" }),
+        ],
+      }),
+    );
+    expect(brief.heldTasks.map((t) => t.id)).toEqual(["0001"]);
+    expect(brief.heldTasks[0]).toMatchObject({
+      id: "0001",
+      reason: "design sign-off",
+    });
+  });
+});

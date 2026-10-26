@@ -103,6 +103,7 @@ import {
 } from "../core/cross-process-slots.js";
 import { readQueueMarkers } from "../core/local-queue-marker.js";
 import { STATUSES } from "../core/types.js";
+import { isHoldActive } from "../core/task-selection.js";
 import { shouldRunAutomaticTaskLifecycle } from "./task-transitions.js";
 import { readBuildMeta } from "../core/build.js";
 import { injectBuildHashIntoUiIndex } from "../core/ui-index.js";
@@ -1749,7 +1750,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             "dependency-merged",
           );
           if (result.triggered) {
-            const activeCount = index.getTasks().filter((task) => task.status === "active").length;
+            const activeCount = index
+              .getTasks()
+              .filter((task) => task.status === "active" && !isHoldActive(task)).length;
             const maxActiveTasks = config.maxActiveTasks ?? 3;
             emitEvent({
               type: "auto-engineering.state",

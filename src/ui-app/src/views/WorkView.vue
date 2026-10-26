@@ -259,6 +259,31 @@ function toggleHuman(): void {
 function openHuman(task: Task): void {
   void ui.openTask(task);
 }
+
+// ── #0960 Held list ───────────────────────────────────────────────────
+// Tasks parked out of ALL automation live in a collapsible list beside the
+// Archived/Human lists, so a hold is visible from the board at a glance. The
+// count and rows reuse the violet "Held" cue from the card badge.
+const HELD_EXPANDED_KEY = "repoos.work.heldExpanded";
+function readHeldExpanded(): boolean {
+  try {
+    return localStorage.getItem(HELD_EXPANDED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+const heldExpanded = ref(readHeldExpanded());
+function toggleHeld(): void {
+  heldExpanded.value = !heldExpanded.value;
+  try {
+    localStorage.setItem(HELD_EXPANDED_KEY, heldExpanded.value ? "1" : "0");
+  } catch {
+    /* ignore quota / privacy-mode failures */
+  }
+}
+function openHeld(task: Task): void {
+  void ui.openTask(task);
+}
 </script>
 
 <template>
@@ -376,7 +401,7 @@ function openHuman(task: Task): void {
     </div>
 
     <section
-      v-if="!statusFilter && (repo.humanTasks.length || repo.archivedTasks.length)"
+      v-if="!statusFilter && (repo.humanTasks.length || repo.archivedTasks.length || repo.heldTasks.length)"
       class="parked-lists"
     >
       <div class="parked-toggles">
@@ -428,6 +453,30 @@ function openHuman(task: Task): void {
           </svg>
           Archived ({{ repo.archivedTasks.length }})
         </button>
+        <button
+          v-if="repo.heldTasks.length"
+          type="button"
+          class="held-toggle"
+          :aria-expanded="heldExpanded"
+          data-tip="Tasks parked out of ALL automation (repoos hold)"
+          @click="toggleHeld"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            class="held-chevron"
+            :class="{ open: heldExpanded }"
+          >
+            <path
+              d="m9 6 6 6-6 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Held ({{ repo.heldTasks.length }})
+        </button>
       </div>
       <ul v-if="humanExpanded && repo.humanTasks.length" class="human-rows">
         <li v-for="t in repo.humanTasks" :key="t.id">
@@ -445,6 +494,16 @@ function openHuman(task: Task): void {
             <span class="mono archived-id">#{{ t.id }}</span>
             <span class="archived-title">{{ t.title }}</span>
             <span class="archived-status">{{ t.status }}</span>
+          </button>
+        </li>
+      </ul>
+      <ul v-if="heldExpanded && repo.heldTasks.length" class="held-rows">
+        <li v-for="t in repo.heldTasks" :key="t.id">
+          <button type="button" class="held-row" @click="openHeld(t)">
+            <span class="mono held-id">#{{ t.id }}</span>
+            <span class="held-title">{{ t.title }}</span>
+            <span v-if="t.holdReason" class="held-reason">{{ t.holdReason }}</span>
+            <span class="held-status">{{ t.status }}</span>
           </button>
         </li>
       </ul>

@@ -64,6 +64,7 @@ import type { ReviewReport, ReviewRunResult } from "./review.js";
 import { REVIEW_RUN_TRIGGERS } from "./review-automation.js";
 import { effectiveStalenessNow } from "../core/agent-run-health.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
+import { isHoldActive } from "../core/task-selection.js";
 import { commitTaskFile, worktreeStatus, worktreePathForBranch } from "../core/git.js";
 import { scheduleHandoffSignalRetry } from "./handoff.js";
 import { isTaskClosingOut } from "./close-out-lock.js";
@@ -537,6 +538,9 @@ export class TaskWatchdog {
       // on the review side where the watchdog never looked before.
       for (const status of ["active", "review"] as const) {
         for (const task of this.index.getTasks(status)) {
+          // #0960: a held task is inert for all automation, including the
+          // watchdog's stuck detection, auto-resume and auto-escalation.
+          if (isHoldActive(task)) continue;
           if (this.isStuck(task, stalenessNow)) {
             this.handleStuck(task);
           }

@@ -730,6 +730,19 @@ const drawerStatusDetails = computed(() => {
   const task = ui.active;
   if (!task) return [];
   const rows: { title: string; detail: string }[] = [];
+  // #0960: a held task is inert for ALL automation — surface the hold (and its
+  // reason/by/until) in the drawer's single status area so it is visible here
+  // too, not just on the board card. A passed auto-release time makes the hold
+  // inactive, so it is not shown once expired.
+  if (task.isHeld) {
+    const until = task.holdUntil ? Date.parse(task.holdUntil) : NaN;
+    const expired = Number.isFinite(until) && until <= Date.now();
+    if (!expired)
+      rows.push({
+        title: "Held",
+        detail: `This task is held — automation will not start it.${task.holdReason ? `\nReason: ${task.holdReason}` : ""}${task.holdBy ? `\nBy: ${task.holdBy}` : ""}${task.holdUntil ? `\nAuto-releases: ${task.holdUntil}` : ""}\nRelease with "repoos unhold ${task.id}".`,
+      });
+  }
   if (task.needsInput)
     rows.push({
       title: "Waiting for you",

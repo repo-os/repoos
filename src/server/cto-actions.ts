@@ -14,6 +14,7 @@ import {
 } from "../core/cto-actions.js";
 import { refreshMainDependencyInstall } from "../core/dependency-install.js";
 import { parseTask, recordChange, serializeTask } from "../core/task.js";
+import { isHoldActive } from "../core/task-selection.js";
 import { commitTaskFile } from "../core/git.js";
 import type { AttentionEventStore } from "./attention-events.js";
 import type { CtoActionRateStore } from "./cto-action-rates.js";
@@ -279,6 +280,8 @@ export async function runCtoMonitorSafeActions(deps: CtoActionDeps): Promise<voi
   if (allowed.has("restart-stalled-agent")) {
     for (const task of deps.index.getTasks("active")) {
       if (task.isArchived || task.needsInput) continue;
+      // #0960: a held task is inert for all automation — never restart it.
+      if (isHoldActive(task)) continue;
       if (isRestartCandidate(deps, task) !== null) continue;
       const gate = checkAllowlistAndRate(deps, "restart-stalled-agent", task.id);
       if (gate) continue;

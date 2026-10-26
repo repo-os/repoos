@@ -213,8 +213,10 @@ done wait by default in human mode).
 
 | Command | API |
 | --- | --- |
-| `repoos start <id> [--fresh]` | `POST /api/tasks/:id/start` |
-| `repoos pause <id>` | `POST /api/tasks/:id/pause` |
+| `repoos start <id> [--fresh] [--force]` | `POST /api/tasks/:id/start` — `--force` starts a held task (see hold below) |
+| `repoos pause <id>` | `POST /api/tasks/:id/pause` — stop the current run and keep the task paused (a hold does more; see below) |
+| `repoos hold <id> --reason "…" [--until <date>]` | `POST /api/tasks/:id/action` (`hold`) — stop any running engineer and make the task inert for ALL automation |
+| `repoos unhold <id> [--start]` | `POST /api/tasks/:id/action` (`unhold`) — release the hold; `--start` re-launches the engineer on the now-released task |
 | `repoos sync <id>` | `POST /api/tasks/:id/sync` — merge main into the task branch (lists conflicting paths and exits non-zero on conflict) |
 | `repoos message <id> "…" [--now]` | `POST /api/tasks/:id/message` (`now: true` interrupts a busy agent) |
 | `repoos send-back <id> --message "…"` or `--message-file <file|->` | `POST /api/tasks/:id/send-back` — move to active, start the engineer, then queue the message; `-` reads stdin |
@@ -246,6 +248,41 @@ down, the CLI exits with a clear message instead of a generic fetch error.
 CLI command yet. Prefer the named command when one exists. API parity is
 enforced by `src/cli/api-route-parity.ts`; routes intentionally unavailable to
 drivers must have a documented exemption there.
+
+### Hold / unhold a task out of ALL automation (#0960)
+
+A **hold** is a single, durable, documented state that makes a task inert for
+every automation RepoOS runs — auto-dispatch, the CTO monitor (idle nudges and
+stalled-agent restarts), the watchdog's auto-resume, crash recovery, and
+queued-message delivery that would otherwise start an engineer. A held task
+keeps its `status` (a held `active` task stops its engineer but stays `active`; a
+held `ready` one simply never auto-dispatches); it is never started by anything
+but an explicit human or driver command that clears the hold. This is broader
+than `pause`, which only stops the current run — the CTO monitor could still
+restart a paused task. Use hold when you want a task to sit completely still.
+
+```bash
+repoos hold 0960 --reason "waiting on design sign-off" --until 2026-12-01T00:00:00Z
+repoos unhold 0960            # release it
+repoos unhold 0960 --start     # release it and re-launch the engineer
+```
+
+`--reason` is free text recorded on the task; `--until` is an optional ISO-8601
+UTC auto-release time — past that moment the hold is inert and the task behaves
+as if never held (so a calendar date works as a "resume after…"). The hold is
+written into the task's frontmatter (`hold`, `hold_reason`, `hold_until`,
+`hold_by`, `hold_at`) alongside its `status`, so it survives a server restart and
+is visible on the board card and in the driver brief (`repoos driver brief`
+gains a **Held** section). A held task also does not count toward
+`maxActiveTasks`.
+
+`repoos start <id> --force` starts a held task by overriding the hold; this is
+the explicit escape hatch for a human or driver who has decided to proceed. A
+normal `repoos start` on a held task is refused with a clear message naming the
+reason, and tells you to `repoos unhold` (or `--force`) first. Held tasks do not
+appear in the auto-engineering picker, and a held `ready` task is never
+selected. A `hold` tag on a task is treated the same as the `hold` flag, so you
+can park work without editing frontmatter directly.
 
 ### `repoos bundle` (easter-eggs bundles)
 

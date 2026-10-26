@@ -25,6 +25,7 @@ import type { RepoOSConfig, Task } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";
 import type { CTOManager } from "./cto.js";
 import { resolveAgentForTask, type AgentRunner } from "./agents.js";
+import { isHoldActive } from "../core/task-selection.js";
 import { hasRecentWorktreeActivity } from "./task-watchdog.js";
 import { pressureReason } from "../core/pressure-guard.js";
 import {
@@ -240,6 +241,8 @@ export class CTOMonitor {
       // Archived tasks are parked (#0657): never nudge them, even if their
       // underlying status is active.
       if (task.isArchived) continue;
+      // #0960: a held task is inert for all automation, including idle nudges.
+      if (isHoldActive(task)) continue;
       if (task.assignee === "human") continue;
       activeIds.add(task.id);
       if (this.runner?.isPaused(task.id)) {
