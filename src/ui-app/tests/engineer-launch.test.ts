@@ -50,7 +50,6 @@ function activeTask(over: Partial<Task> & { id: string; absPath: string }): Task
     holdBy: undefined,
     holdAt: undefined,
     path: over.absPath,
-    absPath: over.absPath,
     extra: {},
     agentOverride: null,
     cliOverride: null,
@@ -86,7 +85,7 @@ function deps(config: RepoOSConfig): EngineerLaunchDeps {
 describe("relaunchEngineerOnActiveTask hold guard (#0960)", () => {
   it("refuses a held task without --force", async () => {
     const result = await relaunchEngineerOnActiveTask(
-      deps(DEFAULT_CONFIG),
+      deps({ ...DEFAULT_CONFIG, root: "/tmp" }),
       activeTask({
         id: "0001",
         absPath: "/tmp/held-0001.md",
