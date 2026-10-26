@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
+debug_tldr: "Engineer agent stalled in repeated resumes with no progress after an earlier provider usage-limit failover — open the task, pick a different engineer agent or model, and restart it."
+debug_tldr_at: "2026-10-26T20:11:02Z"
+debug_tldr_key: "dev-error|RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 needs_merge: true
 priority: p0
 area: core
@@ -15,7 +18,7 @@ branch: feat/server-freezes-move-all-git-reads-off-th
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T20:10:33Z"
+updated_at: "2026-10-26T20:11:02Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — timed out — timed out after 420s"
 last_handoff_failure_sha: d6f169681129427227d208b1bcb0917a49d309bb
 handoff_signal_retry_count: 1
