@@ -7,6 +7,7 @@ import {
 } from "../core/cross-process-slots.js";
 import { readQueueMarkers } from "../core/local-queue-marker.js";
 import { mainCheckoutRoot } from "../core/git.js";
+import { heavySlotLimit } from "../core/resource-limits.js";
 
 export function cmdChecks(args: string[]): void {
   if (args[0] !== "slots") {
@@ -38,7 +39,7 @@ export function cmdChecks(args: string[]): void {
     try {
       const holder = inspectCrossProcessSlots(
         root,
-        config.localChecks?.maxConcurrent ?? 2,
+        heavySlotLimit(config),
         config.localChecks?.staleAfterMs,
       ).find((item) => item.slot === slot);
       if (!holder?.pid) throw new Error(`slot ${slot} is free`);
@@ -55,7 +56,7 @@ export function cmdChecks(args: string[]): void {
   }
   const holders = inspectCrossProcessSlots(
     root,
-    config.localChecks?.maxConcurrent ?? 2,
+    heavySlotLimit(config),
     config.localChecks?.staleAfterMs,
   );
   for (const holder of holders) {

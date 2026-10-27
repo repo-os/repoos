@@ -77,7 +77,7 @@ describe("Settings — performance controls (#0836)", () => {
   });
 });
 
-describe("Settings — remote validation offload rows (#0836)", () => {
+describe("Settings — resource-control rows (#0836, #0961)", () => {
   let pinia: ReturnType<typeof createPinia>;
 
   beforeEach(() => {
@@ -120,6 +120,30 @@ describe("Settings — remote validation offload rows (#0836)", () => {
     expect(
       section.find('[id="setting-remoteValidation.localFallback"] [role="combobox"]').text(),
     ).toContain("Serialize");
+    wrapper.unmount();
+  });
+
+  it("renders heavy-slot, worker and incident-pressure controls in Performance", async () => {
+    routeState.query = { tab: "general", section: "performance" };
+    const config = useConfigStore();
+    await config.load();
+    const wrapper = mount(SettingsView, {
+      attachTo: document.body,
+      global: { plugins: [pinia] },
+    });
+    await flushPromises();
+
+    const section = wrapper.get('[data-settings-section="performance"]');
+    for (const key of [
+      "heavySlots",
+      "vitest.maxWorkers",
+      "playwright.workers",
+      "pressureGuard.maxCompressorBytes",
+      "pressureGuard.maxLoadPerCpu",
+      "pressureGuard.minIdleCpuPercent",
+    ]) {
+      expect(section.find(`[id="setting-${key}"]`).exists(), key).toBe(true);
+    }
     wrapper.unmount();
   });
 
