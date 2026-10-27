@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
-last_handoff_failure_sha: 77839669fb6a44683177bf22b7321ae49a957369
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
@@ -15,7 +13,9 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T07:26:28Z"
+updated_at: "2026-10-27T07:31:40Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
+last_handoff_failure_sha: 77839669fb6a44683177bf22b7321ae49a957369
 review_passes: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -155,4 +155,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T07:02:35Z · status review→active
 - 2026-10-27T07:02:47Z · note: handoff requested (ui-review)
 - 2026-10-27T07:26:28Z · handoff failed · ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
-
+- 2026-10-27T07:31:40Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
