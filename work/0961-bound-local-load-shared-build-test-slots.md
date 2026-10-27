@@ -2,7 +2,7 @@
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id."
@@ -174,4 +174,3 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T08:58:07Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-10-27T08:58:10Z · agent exited with an error (opencode) · Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id.
 - 2026-10-27T08:58:10Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (1/3 crashes in 30m) · Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id.
-- 2026-10-27T09:07:58Z · status active→review
