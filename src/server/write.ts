@@ -463,6 +463,13 @@ export function patchTaskFile(
       current.holdUntil = undefined;
       current.holdBy = undefined;
       current.holdAt = undefined;
+      // A `hold` tag is an equivalent spelling of the hold flag (parking
+      // without editing frontmatter). Releasing must clear the tag too, or a
+      // task held only by a tag would stay held forever. Case-insensitive
+      // compare; only exact `hold` tags are dropped so unrelated tags survive.
+      const before = current.tags.length;
+      current.tags = current.tags.filter((tag) => tag.trim().toLowerCase() !== "hold");
+      if (current.tags.length !== before) changes.push("released-tag");
     }
   }
   if (patch.holdReason !== undefined) {

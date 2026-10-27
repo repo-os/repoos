@@ -3345,9 +3345,31 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       [key: string]: unknown;
     };
     const reason = typeof body?.reason === "string" ? body.reason.trim() || undefined : undefined;
-    const until = typeof body?.until === "string" ? body.until.trim() || undefined : undefined;
+    const untilRaw = typeof body?.until === "string" ? body.until.trim() || undefined : undefined;
     const by = typeof body?.by === "string" ? body.by.trim() || undefined : undefined;
     const at = new Date().toISOString();
+    // #0960 input validation: the reason documents why the task was parked, and
+    // `--until` is an optional auto-release. An empty reason is refused (a hold
+    // with no reason is invisible on the board); an unparseable `--until` is
+    // refused because it would never expire and silently create a PERMANENT
+    // hold — a typo must not be able to do that.
+    if (!reason) {
+      return json(res, 400, {
+        ok: false,
+        error: `hold requires a reason — pass --reason "…" (or a "reason" body field)`,
+      });
+    }
+    let until: string | null = null;
+    if (untilRaw !== undefined) {
+      const parsed = Date.parse(untilRaw);
+      if (!Number.isFinite(parsed)) {
+        return json(res, 400, {
+          ok: false,
+          error: `invalid --until "${untilRaw}": must be an ISO-8601 date (e.g. 2026-12-01T00:00:00Z); an unparseable date would never auto-release`,
+        });
+      }
+      until = untilRaw;
+    }
     // Stop any live engineer run — a held task must not have automation in
     // flight. (Review runs and close-out are human/driver-invoked machinery, so
     // they are left to their own guards.)

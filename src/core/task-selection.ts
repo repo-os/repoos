@@ -79,13 +79,25 @@ export function isHoldExpired(holdUntil: string | undefined, now: number = Date.
 }
 
 /**
+ * The minimal shape the hold predicates need. Declared separately from the full
+ * `Task` so both the server-side core `Task` and the UI store's client-side
+ * `Task` mirror (which omits some server-only fields like `noSourceChange`) are
+ * assignable without casting — the hold logic is intentionally field-light.
+ */
+export interface HoldableTask {
+  isHeld?: boolean;
+  holdUntil?: string;
+  tags?: string[];
+}
+
+/**
  * A task is parked out of auto-start by a `hold` flag OR a `hold` tag — the
  * "flag/label" spelling lets a human hold work without editing frontmatter
  * directly. Held tasks keep their status; they are only skipped by the picker.
  */
-export function taskIsHeld(task: Task): boolean {
+export function taskIsHeld(task: HoldableTask): boolean {
   if (task.isHeld === true) return true;
-  return task.tags.some((tag) => tag.trim().toLowerCase() === "hold");
+  return (task.tags ?? []).some((tag) => tag.trim().toLowerCase() === "hold");
 }
 
 /**
@@ -95,19 +107,21 @@ export function taskIsHeld(task: Task): boolean {
  * automation; only an explicit human/driver command that clears the hold starts
  * it.
  */
-export function isHoldActive(task: Task, now: number = Date.now()): boolean {
+export function isHoldActive(task: HoldableTask, now: number = Date.now()): boolean {
   if (isHoldExpired(task.holdUntil, now)) return false;
   return taskIsHeld(task);
 }
 
 /** Ready candidates eligible for auto-start, before slot/conflict ordering. */
-export function isSelectableReady(task: Task): boolean {
+export function isSelectableReady(task: Task, now: number = Date.now()): boolean {
   return (
     task.status === "ready" &&
     task.assignee !== "human" &&
     !task.isArchived &&
     !task.needsInput &&
-    !taskIsHeld(task)
+    // #0960: expiry-aware — a hold whose auto-release time has passed behaves as
+    // if never held, so the picker re-selects the task like every other path.
+    !isHoldActive(task, now)
   );
 }
 
@@ -205,7 +219,7 @@ export function selectReadyTasks(
   options: SelectionOptions,
 ): SelectionResult {
   const blocked = options.blockedIds ?? new Set<string>();
-  const eligible = tasks.filter((task) => isSelectableReady(task) && !blocked.has(task.id));
+  const eligible = tasks.filter((task) => isSelectableReady(task, Date.now()) && !blocked.has(task.id));
   const eligibleTasks = orderReadyTasks(eligible, tasks);
   const slots = Math.max(0, options.availableSlots);
   return {

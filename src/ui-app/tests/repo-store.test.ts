@@ -1869,7 +1869,18 @@ describe("heldTasks computed (#0960)", () => {
       type: "task.created",
       task: makeTask({ id: "0004", isHeld: false, updated_at: "2026-10-04T00:00:00Z" }),
     });
+    es.emit("task.created", {
+      type: "task.created",
+      // Held only by a `hold` tag (no flag) — must still appear (#0960: a tag
+      // is an equivalent spelling of the hold flag, so the Held list shows it).
+      task: makeTask({
+        id: "0005",
+        isHeld: false,
+        tags: ["hold"],
+        updated_at: "2026-10-05T00:00:00Z",
+      }),
+    });
 
-    expect(repo.heldTasks.map((t) => t.id)).toEqual(["0001"]);
+    expect(repo.heldTasks.map((t) => t.id)).toEqual(["0005", "0001"]);
   });
 });

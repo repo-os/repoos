@@ -1966,6 +1966,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       onHandoff: async (request) => {
         let reachedFinalization = false;
         try {
+          // #0960: a held task is inert for ALL automation, including engineer
+          // handoff finalization. Refuse to move a held task to review even when
+          // a handoff capability was minted (e.g. a crash-recovery replay, or an
+          // auto-handoff requested before the hold landed) — the human/driver who
+          // placed the hold must release it first with `repoos unhold`.
+          const preCheck = index.getTask(request.taskId);
+          if (preCheck && isHoldActive(preCheck)) {
+            runner.system(
+              request.taskId,
+              "✗ server-side handoff rejected: task is held — release it with \"repoos unhold " +
+                request.taskId +
+                "\" before it can move to review",
+            );
+            return;
+          }
           if (!runner.consumeHandoff(request)) {
             runner.system(
               request.taskId,
@@ -3736,7 +3751,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   );
   router.register(
     "POST",
-    /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen|archive|unarchive|split)$/,
+    /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen|archive|unarchive|split|hold|unhold)$/,
     taskAction,
   );
   router.register("POST", /^\/api\/tasks\/([^/]+)\/(send-back)$/, taskAction);

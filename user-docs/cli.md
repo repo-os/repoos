@@ -215,8 +215,8 @@ done wait by default in human mode).
 | --- | --- |
 | `repoos start <id> [--fresh] [--force]` | `POST /api/tasks/:id/start` — `--force` starts a held task (see hold below) |
 | `repoos pause <id>` | `POST /api/tasks/:id/pause` — stop the current run and keep the task paused (a hold does more; see below) |
-| `repoos hold <id> --reason "…" [--until <date>]` | `POST /api/tasks/:id/action` (`hold`) — stop any running engineer and make the task inert for ALL automation |
-| `repoos unhold <id> [--start]` | `POST /api/tasks/:id/action` (`unhold`) — release the hold; `--start` re-launches the engineer on the now-released task |
+| `repoos hold <id> --reason "…" [--until <date>]` | `POST /api/tasks/:id/hold` — stop any running engineer and make the task inert for ALL automation |
+| `repoos unhold <id> [--start]` | `POST /api/tasks/:id/unhold` — release the hold; `--start` re-launches the engineer on the now-released task |
 | `repoos sync <id>` | `POST /api/tasks/:id/sync` — merge main into the task branch (lists conflicting paths and exits non-zero on conflict) |
 | `repoos message <id> "…" [--now]` | `POST /api/tasks/:id/message` (`now: true` interrupts a busy agent) |
 | `repoos send-back <id> --message "…"` or `--message-file <file|->` | `POST /api/tasks/:id/send-back` — move to active, start the engineer, then queue the message; `-` reads stdin |

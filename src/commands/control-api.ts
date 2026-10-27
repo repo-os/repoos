@@ -210,11 +210,24 @@ export async function cmdHold(args: string[]): Promise<number> {
     return 1;
   }
   const api = new RepoOsApi({ port: opts.port });
+  // #0960 input validation (mirrors the API guard): a hold needs a reason so it
+  // is visible on the board, and `--until` must be a real date or it would
+  // never auto-release and become a permanent hold.
+  if (!opts.reason || !opts.reason.trim()) {
+    printErr("hold requires a --reason (free text documenting why the task is parked)");
+    return 1;
+  }
+  if (opts.until !== undefined && !Number.isFinite(Date.parse(opts.until))) {
+    printErr(
+      `invalid --until "${opts.until}": must be an ISO-8601 date (e.g. 2026-12-01T00:00:00Z)`,
+    );
+    return 1;
+  }
   try {
     await ensureServer(api);
     const body: Record<string, unknown> = {};
     // #0960: `--reason` documents why the task was parked — shown on the board.
-    if (opts.reason !== undefined) body.reason = opts.reason;
+    body.reason = opts.reason;
     if (opts.until !== undefined) body.until = opts.until;
     if (opts.by !== undefined) body.by = opts.by;
     const data = await api.requestOk("POST", `/api/tasks/${id}/hold`, body);
