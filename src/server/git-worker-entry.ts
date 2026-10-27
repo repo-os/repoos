@@ -10,6 +10,9 @@ import {
   type WorktreeDirtyEntry,
   type WorktreeStatus,
   runGit,
+  preflightMerge,
+  removeWorktree,
+  commitTaskFile,
 } from "../core/git.js";
 import { buildIndexDetailedAsync } from "../core/indexer.js";
 import { taskDependencyBlockersForAll } from "../core/task-dependencies.js";
@@ -27,6 +30,7 @@ setGitCallSink((event) => {
 
 interface RequestMessage {
   id: number;
+  generation: number;
   kind: string;
   payload: Record<string, unknown>;
 }
@@ -56,6 +60,20 @@ function overviewToWire(overview: RepoGitOverview): Record<string, unknown> {
 async function respond(message: RequestMessage): Promise<unknown> {
   const payload = message.payload;
   switch (message.kind) {
+    case "preflight-merge":
+      return preflightMerge(
+        payload.root as string,
+        payload.branch as string,
+        payload.opts as { autoResolve?: string[] },
+      );
+    case "remove-worktree":
+      return removeWorktree(payload.root as string, payload.branch as string);
+    case "commit-task-file":
+      return commitTaskFile(
+        payload.root as string,
+        payload.path as string,
+        payload.message as string,
+      );
     case "branch-changes":
       return branchChangesSinceBase(payload.cwd as string, payload.baseBranch as string);
     case "changed-paths":
@@ -207,6 +225,7 @@ async function respond(message: RequestMessage): Promise<unknown> {
 
 let buffer = "";
 let chain = Promise.resolve();
+let generation = -1;
 process.stdin.setEncoding("utf8");
 process.stdin.on("data", (chunk: string) => {
   buffer += chunk;
@@ -219,6 +238,13 @@ process.stdin.on("data", (chunk: string) => {
     const message = JSON.parse(line) as RequestMessage;
     chain = chain.then(async () => {
       try {
+        if (generation !== message.generation) {
+          generation = message.generation;
+          // Invalidation travels with the next queued request: it cannot expire
+          // behind a slow history walk and leave the child serving stale facts.
+          overviewCache.clear();
+          invalidateGitReadCaches(process.cwd());
+        }
         const value = await respond(message);
         process.stdout.write(`${JSON.stringify({ id: message.id, ok: true, value })}\n`);
       } catch (error) {

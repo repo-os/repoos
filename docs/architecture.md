@@ -54,10 +54,11 @@ Pure logic, no transport. Everything else calls into this.
 - `task.ts` — turns a file's content+path into a normalized Task, and back.
 - `indexer.ts` — walks `work/`, builds the sorted RepoIndex, manages the
   derived `.repoos/index.json` cache. `buildIndex` is synchronous (the CLI's
-  one-shot commands use it); `buildIndexAsync` runs the same per-task git
-  enrichment concurrently instead of one spawn at a time — the server uses it
-  at boot (via `live-index.ts`'s `refreshAllAsync`) so `listen()` doesn't wait
-  behind hundreds of serial git spawns (#0271: this was 20-30s at 260 tasks).
+  one-shot commands use it). The server queues `buildIndexDetailedAsync` in
+  the dedicated Git child through `live-index.ts`'s `refreshAllAsync`; batched
+  ref/worktree facts replace per-task Git queries. The listener does not wait
+  for the cold index. See [Server Git worker](server-git-worker.md) for cache
+  invalidation, the paged tasks API, and remaining migration/measurement work.
 - `repoos.ts` — the createRepoOS() facade: getTasks, getTask, counts,
   updateStatus, updateTask, createTask, reindex. The CLI and server both go
   through this; no business logic lives outside it.

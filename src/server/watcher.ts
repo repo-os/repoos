@@ -42,6 +42,7 @@ export class WorkWatcher {
   private gitSignal: (() => void) | null = null;
   private gitSignalTimer: ReturnType<typeof setTimeout> | null = null;
   private gitStateWatched = new Set<string>();
+  private gitRefDirs = new Set<string>();
 
   constructor(config: RepoOSConfig, index: LiveIndex) {
     this.config = config;
@@ -100,6 +101,7 @@ export class WorkWatcher {
       this.gitSignalTimer = null;
     }
     this.gitStateWatched.clear();
+    this.gitRefDirs.clear();
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
       this.pollTimer = null;
@@ -150,8 +152,34 @@ export class WorkWatcher {
     this.watchGitPath(join(gitDir, "logs", "HEAD"));
     this.watchGitPath(join(gitDir, "refs"));
     this.watchGitPath(join(gitDir, "refs", "heads"));
+    // Linked worktrees keep refs and packed-refs in the shared directory.
+    let commonDir = gitDir;
+    try {
+      const pointer = readFileSync(join(gitDir, "commondir"), "utf8").trim();
+      commonDir = resolve(gitDir, pointer);
+    } catch {
+      // Ordinary checkout: gitDir is already the common directory.
+    }
+    this.watchGitPath(commonDir);
+    this.watchGitPath(join(commonDir, "packed-refs"));
+    this.watchGitRefTree(join(commonDir, "refs"));
+    this.watchGitRefTree(join(commonDir, "worktrees"));
     // The `.git` directory itself: catches creates/removes not listed above.
     this.watchGitPath(gitDir);
+  }
+
+  /** Watch nested branch refs and linked-worktree HEADs, including new dirs. */
+  private watchGitRefTree(path: string): void {
+    if (!existsSync(path)) return;
+    this.gitRefDirs.add(path);
+    this.watchGitPath(path);
+    try {
+      for (const entry of readdirSync(path, { withFileTypes: true })) {
+        if (entry.isDirectory()) this.watchGitRefTree(join(path, entry.name));
+      }
+    } catch {
+      // A concurrent git operation may remove a worktree directory.
+    }
   }
 
   private watchGitPath(path: string): void {
@@ -159,7 +187,17 @@ export class WorkWatcher {
     if (!existsSync(path)) return;
     this.gitStateWatched.add(path);
     try {
-      const w = watch(path, () => this.scheduleGitSignal());
+      const w = watch(path, () => {
+        this.scheduleGitSignal();
+        // A newly created branch namespace needs its own non-recursive watch.
+        try {
+          if (this.gitRefDirs.has(path) && statSync(path).isDirectory()) {
+            this.watchGitRefTree(path);
+          }
+        } catch {
+          // Atomic replacement/removal is already covered by the parent watch.
+        }
+      });
       this.watchers.push(w);
     } catch {
       /* not watchable on this platform — the poll/interval backstops cover it */

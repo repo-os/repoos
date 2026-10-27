@@ -1504,7 +1504,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     root: config.root,
     emit: (status) => emitEvent({ type: "repo.status", status, at: status.computedAt }),
   });
-  watcher.setGitSignal(() => repoStatusNotifier.notify());
+  watcher.setGitSignal(() => {
+    getGitWorker(config.root).invalidate();
+    repoStatusNotifier.notify();
+  });
   const offGitMutation = onGitMutation((mutatedRoot) => {
     // A worktree commit shares `.git` with the root checkout but must not be
     // read as "the main checkout changed" — only a mutation of this checkout.

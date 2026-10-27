@@ -45,7 +45,10 @@ describe("GET /api/tasks default payload", () => {
     const run = async (body: string) => {
       const cap = capture();
       const ctx = {
-        index: { getTasks: () => [task("0001", body), task("0002", body)] },
+        index: {
+          getTasks: () =>
+            Array.from({ length: 900 }, (_, i) => task(String(i + 1).padStart(4, "0"), body)),
+        },
         reviews: { isRunning: () => false, enabled: () => false },
         runner: { hasPendingHandoff: () => false },
         config: { root: "/tmp" },
@@ -58,10 +61,14 @@ describe("GET /api/tasks default payload", () => {
     const b = await run(large);
     expect(a).not.toContain(large.slice(0, 40));
     expect(b.length).toBe(a.length);
-    expect(JSON.parse(a).tasks).toEqual([
-      { id: "0001", title: "Task 0001", status: "ready", priority: "p2" },
-      { id: "0002", title: "Task 0002", status: "ready", priority: "p2" },
-    ]);
+    expect(JSON.parse(a).tasks).toHaveLength(100);
+    expect(JSON.parse(a).tasks[0]).toEqual({
+      id: "0001",
+      title: "Task 0001",
+      status: "ready",
+      priority: "p2",
+    });
+    expect(JSON.parse(a).nextCursor).toBe("0100");
   });
 
   it("streams the full response as a JSON array in bounded chunks", async () => {
