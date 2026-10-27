@@ -3,6 +3,8 @@ id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
 needs_merge: true
 priority: p0
 area: core
@@ -183,3 +185,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T20:23:30Z · needs_input
 - 2026-10-27T20:23:30Z · message_queued at 2026-10-27T20:23:30.643Z
 - 2026-10-27T20:43:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T20:43:04Z · needs_input
