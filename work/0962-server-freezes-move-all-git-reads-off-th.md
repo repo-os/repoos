@@ -3,9 +3,6 @@ id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "2026-10-27T09:07:28.467328Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out"
 needs_merge: true
 priority: p0
 area: core
@@ -167,3 +164,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T09:09:04Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/12 crashes in 30m) · 2026-10-27T09:07:28.467328Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
 - 2026-10-27T09:09:08Z · message_delivered: 1 message(s)
 - 2026-10-27T10:27:29Z · engineer stopped by request
+- 2026-10-27T10:27:29Z · needs_input
