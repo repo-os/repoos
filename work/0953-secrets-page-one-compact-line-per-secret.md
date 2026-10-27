@@ -12,7 +12,7 @@ branch: feat/secrets-page-one-compact-line-per-secret
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-27T05:12:31Z"
+updated_at: "2026-10-27T05:22:58Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T03:59:59.344Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
@@ -140,3 +140,4 @@ Done in this task:
 - 2026-10-27T05:10:34Z · message_queued at 2026-10-27T05:10:34.951Z
 - 2026-10-27T05:12:31Z · status active→review
 - 2026-10-27T05:12:31Z · note: handoff requested (cli)
+- 2026-10-27T05:22:58Z · handoff failed · task-file handoff failed at check · repoos check failed: user-docs-build — timed out — timed out after 600s
