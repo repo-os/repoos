@@ -103,6 +103,7 @@ function newPinia(): Pinia {
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -148,4 +149,23 @@ describe("TaskCard Held badge (#0960)", () => {
 
     expect(wrapper.find(".tc-held").exists()).toBe(false);
   });
+});
+
+it.each([true, false])("expires the mounted card and Held group with flag=%s", async (flag) => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-27T00:00:00Z"));
+  const pinia = newPinia();
+  const task = makeTask({ isHeld: flag, tags: flag ? [] : ["hold"], holdUntil: "2026-10-27T00:00:01Z" });
+  const wrapper = await mountCard(pinia, task);
+  const repo = useRepoStore();
+  expect(wrapper.find(".tc-held").exists()).toBe(true);
+  // The real store derives the group from its board tasks.
+  repo.tasks = [task];
+  expect(repo.heldTasks).toHaveLength(1);
+  await vi.advanceTimersByTimeAsync(1000);
+  await flush();
+  expect(wrapper.find(".tc-held").exists()).toBe(false);
+  expect(repo.heldTasks).toHaveLength(0);
+  wrapper.unmount();
+  repo.$dispose();
 });

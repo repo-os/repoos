@@ -3432,6 +3432,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       existing.absPath,
       {
         hold: false,
+        tags: existing.tags.filter((tag) => tag.trim().toLowerCase() !== "hold"),
         holdReason: null,
         holdUntil: null,
         holdBy: null,
@@ -3440,39 +3441,33 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       { onStatusChange: onServerStatusChange },
     );
     index.applyFileChange(updated.absPath);
-    // Optional `--start`: re-launch the engineer on the now-released task. This
-    // routes through the central chokepoint so its hold guard (already cleared)
-    // plus all the usual active/running checks still apply.
-    let launch: Awaited<ReturnType<typeof relaunchEngineerOnActiveTask>> | undefined;
+    // Use the normal start route for both ready and active tasks: it owns
+    // ready-to-active activation, bootstrap, dependency checks and launch guards.
     if (wantStart) {
-      const unheld = index.getTask(updated.id);
-      if (!unheld) {
-        return json(res, 409, {
-          ok: false,
-          error: `Task #${id} not found after release`,
-          released: true,
-        });
-      }
-      launch = await relaunchEngineerOnActiveTask(
-        { config, index, runner, logger },
-        unheld,
-        "",
-        {},
-      );
-      if (!launch.ok) {
-        return json(res, 409, {
-          ok: false,
-          error: launch.reason,
-          released: true,
-        });
-      }
+      const startReq = Readable.from([Buffer.from("{}")]) as unknown as import("node:http").IncomingMessage;
+      startReq.headers = req.headers;
+      const captured = {
+        statusCode: 200,
+        body: {} as Record<string, any>,
+        writeHead(code: number) {
+          this.statusCode = code;
+        },
+        end(data?: string) {
+          if (data) this.body = JSON.parse(data);
+        },
+      };
+      await taskAction(ctx, startReq, captured as unknown as ServerResponse, {
+        param1: id,
+        param2: "start",
+      });
+      return json(res, captured.statusCode, {
+        ...captured.body,
+        released: true,
+        started: captured.body.spawn?.ok ?? false,
+        pid: captured.body.spawn?.pid,
+      });
     }
-    return json(res, 200, {
-      ok: true,
-      task: index.getTask(updated.id),
-      started: launch?.ok ?? false,
-      pid: launch && "pid" in launch ? (launch as { pid?: number }).pid : undefined,
-    });
+    return json(res, 200, { ok: true, task: index.getTask(updated.id), started: false });
   }
 
   // Abandon (lifecycle audit, task-transitions.ts): active or review -> ready,

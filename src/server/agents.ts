@@ -6022,6 +6022,7 @@ export class AgentRunner {
    * Cleared automatically the moment a new turn starts for the task.
    */
   markPaused(taskId: string): void {
+    this.holdPauses.delete(taskId);
     this.pausedTasks.add(taskId);
   }
 
@@ -6253,7 +6254,8 @@ export class AgentRunner {
       this.recordEntry(task.id, session, "sys", { s: "sys", d: storySummary });
     }
     // Deliver any messages queued while the previous turn was running.
-    const queuedMessagesPreamble = this.drainQueuedMessages(task.id, session);
+    const queued = this.prepareQueuedMessages(task.id, session);
+    const queuedMessagesPreamble = queued.preamble;
 
     const mission = missionFor(
       task,
@@ -6270,6 +6272,7 @@ export class AgentRunner {
     const { cmd, args } = cliCommand(agent, mission, cwd, { sessionId: launchSessionId });
     return this.spawnOrQueue(task.id, cmd, args, cwd, task, branch, {
       bypassHold: opts.bypassHold,
+      onSpawn: queued.onSpawn,
     });
   }
 
@@ -6473,8 +6476,8 @@ export class AgentRunner {
       // Queue the message for delivery when the current turn ends (#0821).
       return this.queueMessageForDelivery(taskId, text, agent, opts);
     }
-    const queuedPreamble = this.drainQueuedMessages(taskId, session);
-    return this.buildResume(taskId, session, text, agent, opts, queuedPreamble);
+    const queued = this.prepareQueuedMessages(taskId, session);
+    return this.buildResume(taskId, session, text, agent, opts, queued.preamble, queued.onSpawn);
   }
 
   /**
@@ -6507,33 +6510,50 @@ export class AgentRunner {
     return { ok: true, queued: true };
   }
 
-  /**
-   * Move every message queued for `id` into its session transcript, record the
-   * delivery in the activity log, clear the queue (in memory and on disk), and
-   * return a preamble listing the delivered texts. Empty string when nothing
-   * was queued. Shared by the start/send turn launches and the end-of-turn
-   * delivery (#0821).
-   */
-  private drainQueuedMessages(id: string, session: Session): string {
-    const msgs = this.queuedMessages.get(id);
-    if (!msgs || msgs.length === 0) return "";
-    for (const msg of msgs) {
-      const entry: AgentOutputEntry = { type: "human", text: msg.text, at: msg.queuedAt };
-      session.lines.push(entry);
-      session.bytes += entryBytes(entry);
-    }
-    while (session.bytes > OUTPUT_CAP_BYTES) {
-      const dropped = session.lines.shift();
-      if (!dropped) break;
-      session.bytes -= entryBytes(dropped);
-    }
-    this.schedulePersist(id);
-    this.recordTaskActivity(id, `message_delivered: ${msgs.length} message(s)`);
-    this.queuedMessages.delete(id);
-    this.messageQueuedAt.delete(id);
-    this.messageOverdueFlagged.delete(id);
-    this.persistQueuedMessages();
-    return `## Queued messages:\n\n${msgs.map((msg) => `- ${msg.text}`).join("\n")}\n\n`;
+  /** Read a launch's queue snapshot; acknowledge it only after an actual spawn.
+   * Slot/pressure deferral, cancellation and any refusal leave it durable.
+   * Messages arriving while the launch waits belong to the next turn. */
+  private prepareQueuedMessages(
+    id: string,
+    session: Session,
+  ): {
+    preamble: string;
+    onSpawn: () => void;
+  } {
+    const msgs = [...(this.queuedMessages.get(id) ?? [])];
+    return {
+      preamble: msgs.length
+        ? `## Queued messages:\n\n${msgs.map((msg) => `- ${msg.text}`).join("\n")}\n\n`
+        : "",
+      onSpawn: () => {
+        if (!msgs.length) return;
+        const pending = this.queuedMessages.get(id) ?? [];
+        const delivered = pending.filter((msg) => msgs.includes(msg));
+        if (!delivered.length) return;
+        for (const msg of delivered) {
+          const entry: AgentOutputEntry = { type: "human", text: msg.text, at: msg.queuedAt };
+          session.lines.push(entry);
+          session.bytes += entryBytes(entry);
+        }
+        while (session.bytes > OUTPUT_CAP_BYTES) {
+          const dropped = session.lines.shift();
+          if (!dropped) break;
+          session.bytes -= entryBytes(dropped);
+        }
+        const remaining = pending.filter((msg) => !msgs.includes(msg));
+        if (remaining.length) {
+          this.queuedMessages.set(id, remaining);
+          this.messageQueuedAt.set(id, remaining[0].queuedAt);
+        } else {
+          this.queuedMessages.delete(id);
+          this.messageQueuedAt.delete(id);
+        }
+        this.messageOverdueFlagged.delete(id);
+        this.schedulePersist(id);
+        this.persistQueuedMessages();
+        this.recordTaskActivity(id, `message_delivered: ${delivered.length} message(s)`);
+      },
+    };
   }
 
   /**
@@ -6554,7 +6574,18 @@ export class AgentRunner {
       emitHumanTurn?: boolean;
     },
     queuedPreamble: string,
+    onSpawn?: () => void,
   ): StartResult {
+    // Before any session write. A refusal must leave the queue and the
+    // transcript untouched so the message can be delivered after unhold.
+    const holdTask = this.getTask?.(id);
+    if (holdTask && isHoldActive(holdTask)) {
+      const reason = holdTask.holdReason ? `: ${holdTask.holdReason}` : "";
+      return {
+        ok: false,
+        reason: `Task #${id} is held${reason} — use "repoos unhold ${id}" to release it`,
+      };
+    }
     this.sessions.set(id, session);
     session.agent = agent.name;
     session.model = agent.model;
@@ -6590,19 +6621,6 @@ export class AgentRunner {
       }
     }
     const fullText = (fullPreamble ? `${fullPreamble}\n\n${text}` : text).trim();
-    // #0960: a held task is inert for ALL automation — including queued-message
-    // delivery and a human send that would start a fresh turn here. Only
-    // `repoos unhold` (which clears the hold) or `repoos start --force` may
-    // start it; this resume path is reached when nothing is currently running,
-    // which is exactly the case the hold is meant to prevent.
-    const holdTask = this.getTask?.(id);
-    if (holdTask && isHoldActive(holdTask)) {
-      const reason = holdTask.holdReason ? `: ${holdTask.holdReason}` : "";
-      return {
-        ok: false,
-        reason: `Task #${id} is held${reason} — use "repoos unhold ${id}" to release it`,
-      };
-    }
     // session.sessionId is only meaningful to the CLI that produced it — if
     // agent.cli has since changed (override edited/cleared between turns),
     // reusing it would hand one CLI's session id to a different CLI's
@@ -6636,6 +6654,7 @@ export class AgentRunner {
     const { cmd, args } = resumeCommand(agent, fullText, sessionId, cwd);
     return this.spawnOrQueue(id, cmd, args, cwd, session.task, session.branch, {
       skipBoardDivergence: opts.skipBoardDivergence,
+      onSpawn,
     });
   }
 
@@ -6776,6 +6795,7 @@ export class AgentRunner {
       review?: boolean;
       reviewKind?: "run" | "chat";
       bypassHold?: boolean;
+      onSpawn?: () => void;
     } = {},
   ): StartResult {
     const refusal = antigravityWorktreeRefusal(cmd, args, cwd, task);
@@ -6982,23 +7002,17 @@ export class AgentRunner {
       this.recordQueuedUndelivered(id, msgs.length);
       return;
     }
-    const beforeLines = session.lines.length;
-    const beforeBytes = session.bytes;
-    const snapshot = msgs.map((m) => ({ ...m, opts: { ...m.opts } }));
-    const queuedPreamble = this.drainQueuedMessages(id, session);
-    const result = this.buildResume(id, session, "", first.agent, first.opts, queuedPreamble);
-    if (!result.ok) {
-      // The resume spawn was refused (a review lock, a bad worktree). Put the
-      // session and the queue back exactly as they were — a queued message is
-      // never silently lost, and the next start/send will try again (#0821).
-      session.lines.length = beforeLines;
-      session.bytes = beforeBytes;
-      this.queuedMessages.set(id, snapshot);
-      this.messageQueuedAt.set(id, snapshot[0].queuedAt);
-      this.messageOverdueFlagged.delete(id);
-      this.persistQueuedMessages();
-      this.recordQueuedUndelivered(id, snapshot.length);
-    }
+    const queued = this.prepareQueuedMessages(id, session);
+    const result = this.buildResume(
+      id,
+      session,
+      "",
+      first.agent,
+      first.opts,
+      queued.preamble,
+      queued.onSpawn,
+    );
+    if (!result.ok) this.recordQueuedUndelivered(id, msgs.length);
   }
 
   /** Record an activity entry in the task's activity log. Fail-soft. */
@@ -7119,6 +7133,7 @@ export class AgentRunner {
       review?: boolean;
       reviewKind?: "run" | "chat";
       bypassHold?: boolean;
+      onSpawn?: () => void;
     } = {},
   ): StartResult {
     // #0960: this is the last moment before a process exists, including a turn
@@ -7160,6 +7175,7 @@ export class AgentRunner {
     // A new turn means the task is active again — a human restarted a paused
     // task, or sent a follow-up — so the pause marker no longer applies.
     this.pausedTasks.delete(taskId);
+    this.holdPauses.delete(taskId);
     // A new turn supersedes any persisted handoff from a previous turn (#0235).
     this.clearPendingHandoff(taskId);
     // A new run supersedes the previous run's preview capability for this task
@@ -7256,6 +7272,7 @@ export class AgentRunner {
       if (outFd !== undefined) closeSync(outFd);
       if (errFd !== undefined) closeSync(errFd);
     }
+    if (proc.pid) opts.onSpawn?.();
     const tailers = [this.tailLog(taskId, outLog, "out"), this.tailLog(taskId, errLog, "err")];
     this.entries.set(taskId, {
       proc,

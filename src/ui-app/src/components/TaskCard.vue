@@ -43,8 +43,10 @@ import {
 } from "../lib/integration-pipeline-ui";
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
+import { useNow } from "../composables/useNow";
 import { isHoldActive } from "../../../core/task-selection.js";
 
+const holdNow = useNow();
 const props = withDefaults(
   defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(),
   {
@@ -78,7 +80,7 @@ const taskAreaChips = computed<string[]>(() => {
  * task is shown whether parked by flag or by tag, and vanishes once the hold
  * auto-releases — mirroring the server's single predicate.
  */
-const held = computed(() => (isHoldActive(props.task) ? props.task : null));
+const held = computed(() => (isHoldActive(props.task, holdNow.value) ? props.task : null));
 
 /**
  * Effective per-task agent/model assignments shown by the card's robot toggle.
