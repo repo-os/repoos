@@ -3,12 +3,6 @@ id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: Go usage limit exceeded"
-debug_tldr: "The engineer agent hit its Go provider usage limit mid-run, so pick a different engineer agent or model from the budget allowlist and resume task #0961."
-debug_tldr_at: "2026-10-27T07:34:47Z"
-debug_tldr_key: "dev-error|error: Go usage limit exceeded"
 priority: p1
 area: core
 assigned_to: ai
@@ -19,7 +13,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T08:03:48Z"
+updated_at: "2026-10-27T08:03:49Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
 last_handoff_failure_sha: 77839669fb6a44683177bf22b7321ae49a957369
 review_passes: 2
@@ -167,3 +161,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T07:34:21Z · agent exited with an error (opencode) · error: Go usage limit exceeded
 - 2026-10-27T07:34:21Z · engineer crash recovery: switched opencode + opencode-go/kimi-k3.1-pro → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · error: Go usage limit exceeded
 - 2026-10-27T08:03:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T08:03:49Z · needs_input
