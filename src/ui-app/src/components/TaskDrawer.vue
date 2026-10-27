@@ -58,6 +58,7 @@ import { fmtTokens } from "../lib/format";
 import { api, JSON_OPTS } from "../api";
 import { checkRunSkipped } from "../../../core/check-skip.js";
 import { PRIORITIES, TASK_TYPES } from "../../../core/types.js";
+import { isHoldActive } from "../../../core/task-selection.js";
 import {
   needsInputBannerText,
   formatNeedsInputDetailForDisplay,
@@ -732,16 +733,14 @@ const drawerStatusDetails = computed(() => {
   const rows: { title: string; detail: string }[] = [];
   // #0960: a held task is inert for ALL automation — surface the hold (and its
   // reason/by/until) in the drawer's single status area so it is visible here
-  // too, not just on the board card. A passed auto-release time makes the hold
-  // inactive, so it is not shown once expired.
-  if (task.isHeld) {
-    const until = task.holdUntil ? Date.parse(task.holdUntil) : NaN;
-    const expired = Number.isFinite(until) && until <= Date.now();
-    if (!expired)
-      rows.push({
-        title: "Held",
-        detail: `This task is held — automation will not start it.${task.holdReason ? `\nReason: ${task.holdReason}` : ""}${task.holdBy ? `\nBy: ${task.holdBy}` : ""}${task.holdUntil ? `\nAuto-releases: ${task.holdUntil}` : ""}\nRelease with "repoos unhold ${task.id}".`,
-      });
+  // too, not just on the board card. `isHoldActive` is tag-aware and
+  // expiry-aware, so a `hold` tag shows here just like the flag, and a hold that
+  // has auto-released is no longer shown.
+  if (isHoldActive(task)) {
+    rows.push({
+      title: "Held",
+      detail: `This task is held — automation will not start it.${task.holdReason ? `\nReason: ${task.holdReason}` : ""}${task.holdBy ? `\nBy: ${task.holdBy}` : ""}${task.holdUntil ? `\nAuto-releases: ${task.holdUntil}` : ""}\nRelease with "repoos unhold ${task.id}".`,
+    });
   }
   if (task.needsInput)
     rows.push({

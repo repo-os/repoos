@@ -443,6 +443,73 @@ describe("POST /api/tasks/:id — hold / unhold / start gate (#0960)", () => {
       fx.clean();
     }
   });
+
+  it("requires a reason to hold (rejects an empty reason)", async () => {
+    const fx = makeFixture("active");
+    try {
+      const { res, fake } = makeRes();
+      await taskAction(makeCtx(fx), makeReq({}), res, { param1: "0296", param2: "hold" });
+      expect(fake.status).toBe(400);
+      expect((fake.payload as { ok: boolean }).ok).toBe(false);
+      // Nothing was written.
+      expect(readTaskFile(fx).isHeld).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("rejects a hold with an unparseable --until (would never auto-release)", async () => {
+    const fx = makeFixture("active");
+    try {
+      const { res, fake } = makeRes();
+      await taskAction(
+        makeCtx(fx),
+        makeReq({ reason: "waiting on design", until: "not-a-date" }),
+        res,
+        { param1: "0296", param2: "hold" },
+      );
+      expect(fake.status).toBe(400);
+      expect((fake.payload as { error: string }).error).toMatch(/invalid --until/i);
+      expect(readTaskFile(fx).isHeld).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("unhold fully releases a task held only by a `hold` tag", async () => {
+    // #0960: a `hold` tag is an equivalent spelling of the hold flag, so
+    // releasing must also strip the tag — otherwise the task would stay held.
+    const fx = makeFixture("active", "tags: [hold]\n");
+    try {
+      const held = readTaskFile(fx);
+      expect(held.isHeld).toBe(false);
+      expect(held.tags.some((t) => t.toLowerCase() === "hold")).toBe(true);
+      const { res, fake } = makeRes();
+      await taskAction(makeCtx(fx), makeReq(), res, { param1: "0296", param2: "unhold" });
+      expect(fake.status).toBe(200);
+      const released = readTaskFile(fx);
+      expect(released.tags.some((t) => t.toLowerCase() === "hold")).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("rejects an invalid --until even when a valid reason is given", async () => {
+    const fx = makeFixture("active");
+    try {
+      const { res, fake } = makeRes();
+      await taskAction(
+        makeCtx(fx),
+        makeReq({ reason: "x", until: "2030-13-40T00:00:00Z" }),
+        res,
+        { param1: "0296", param2: "hold" },
+      );
+      expect(fake.status).toBe(400);
+      expect(readTaskFile(fx).isHeld).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
 });
 
 describe("POST /api/tasks/:id/abandon", () => {

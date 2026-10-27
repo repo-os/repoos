@@ -26,6 +26,7 @@ import {
   shotPreviewSkipsTaskLogsFetch,
 } from "../lib/shot-preview-fixtures";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
+import { isHoldActive } from "../../../core/task-selection.js";
 import type { StoryListSortOrder } from "../../../core/stories.js";
 import type {
   AgentOutputEntry,
@@ -982,18 +983,12 @@ export const useRepoStore = defineStore("repo", () => {
   );
 
   /** Held tasks (#0960) for the work queue's collapsible Held list: tasks
-   *  parked out of ALL automation. A hold whose auto-release time has passed is
-   *  inactive, so it is excluded — this mirrors `isHoldActive` on the server. */
+   *  parked out of ALL automation. Uses `isHoldActive` (tag-aware and
+   *  expiry-aware) so a `hold` tag surfaces here exactly as the flag does, and
+   *  a hold whose auto-release time has passed is no longer shown. */
   const heldTasks = computed<Task[]>(() =>
     tasks.value
-      .filter((t) => {
-        if (!t.isHeld || t.isArchived) return false;
-        if (t.holdUntil) {
-          const until = Date.parse(t.holdUntil);
-          if (Number.isFinite(until) && until <= Date.now()) return false;
-        }
-        return true;
-      })
+      .filter((t) => !t.isArchived && isHoldActive(t))
       .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")),
   );
 

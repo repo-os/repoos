@@ -439,4 +439,20 @@ describe("buildDriverBrief — held tasks (#0960)", () => {
       reason: "design sign-off",
     });
   });
+
+  it("surfaces a task held only by a `hold` tag (no reason/until metadata)", () => {
+    // #0960 bug: a `hold` tag is an equivalent spelling of the hold flag. The
+    // collector passes `isHeld: taskIsHeld(t)` (tag-aware), so a tag-held task
+    // must appear here with a null reason — not be invisible.
+    const brief = buildDriverBrief(
+      baseInput({
+        tasks: [
+          taskInput({ id: "0005", status: "ready", isHeld: true }),
+          taskInput({ id: "0006", status: "active" }),
+        ],
+      }),
+    );
+    expect(brief.heldTasks.map((t) => t.id)).toEqual(["0005"]);
+    expect(brief.heldTasks[0]).toMatchObject({ id: "0005", reason: null, until: null });
+  });
 });

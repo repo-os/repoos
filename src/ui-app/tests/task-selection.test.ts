@@ -116,6 +116,22 @@ describe("isSelectableReady", () => {
       false,
     );
   });
+
+  it("re-selects a ready task once its hold auto-release time passes (#0960)", () => {
+    const past = new Date(Date.now() - 60_000).toISOString();
+    const future = new Date(Date.now() + 60_000).toISOString();
+    // A held ready task with an elapsed `holdUntil` behaves as if never held —
+    // it must re-enter the dispatch pool like every other path that consults
+    // `isHoldActive`. A still-active hold stays excluded.
+    expect(isSelectableReady(task({ id: "7", status: "ready", isHeld: true, holdUntil: past }))).toBe(
+      true,
+    );
+    expect(
+      isSelectableReady(task({ id: "8", status: "ready", isHeld: true, holdUntil: future })),
+    ).toBe(false);
+    // A `hold` tag (flag-free) is held until explicitly released.
+    expect(isSelectableReady(task({ id: "9", status: "ready", tags: ["hold"] }))).toBe(false);
+  });
 });
 
 describe("criticalPathWeights", () => {

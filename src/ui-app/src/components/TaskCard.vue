@@ -43,6 +43,7 @@ import {
 } from "../lib/integration-pipeline-ui";
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
+import { isHoldActive } from "../../../core/task-selection.js";
 
 const props = withDefaults(
   defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(),
@@ -71,19 +72,13 @@ const taskAreaChips = computed<string[]>(() => {
 });
 
 /**
- * The task is held out of ALL automation (#0960): the `hold` flag is set and any
- * optional auto-release time has not yet passed. Drives the card's "Held" badge
- * and status hint. Mirrors `isHoldActive` on the server.
+ * The task is held out of ALL automation (#0960): the `hold` flag is set OR a
+ * `hold` tag is present, and any optional auto-release time has not yet passed.
+ * Drives the card's "Held" badge and status hint. Uses `isHoldActive` so a held
+ * task is shown whether parked by flag or by tag, and vanishes once the hold
+ * auto-releases — mirroring the server's single predicate.
  */
-const held = computed(() => {
-  const t = props.task;
-  if (!t.isHeld) return null;
-  if (t.holdUntil) {
-    const until = Date.parse(t.holdUntil);
-    if (Number.isFinite(until) && until <= Date.now()) return null;
-  }
-  return t;
-});
+const held = computed(() => (isHoldActive(props.task) ? props.task : null));
 
 /**
  * Effective per-task agent/model assignments shown by the card's robot toggle.
