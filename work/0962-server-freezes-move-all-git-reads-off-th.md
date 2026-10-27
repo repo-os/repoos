@@ -2,7 +2,7 @@
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_merge: true
