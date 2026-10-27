@@ -2,14 +2,25 @@
 id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
-status: ready
+status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "network problem reaching the model provider, not a code issue: Timed out waiting for response headers"
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/task-hold-one-durable-documented-state-t
+cli_override: opencode
+model_override: opencode-go/hy3
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-26T18:53:55Z"
+updated_at: "2026-10-27T05:46:02Z"
+review_rounds: 1
+review_passes: 1
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/hy3\",\"at\":\"2026-10-27T04:49:39.384Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -43,3 +54,22 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 
 - 2026-10-25T14:23:48Z · created · njachowski@gmail.com
 - 2026-10-26T18:53:55Z · status inbox→ready
+- 2026-10-26T21:39:24Z · cli_override
+- 2026-10-26T21:39:30Z · cli_override
+- 2026-10-26T21:39:33Z · model_override
+- 2026-10-26T21:39:45Z · model_override
+- 2026-10-26T21:39:47Z · status ready→active, branch
+- 2026-10-27T00:32:28Z · body
+- 2026-10-27T00:46:00Z · handoff failed · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist, tests/cli-control-api.test.ts > control API CLI > agents pause/resume writes the allowlist config (#0850), tests/refresh-evidence-route.test.ts > POST /api/tasks/:id/verify guards > refuses engineer start while evidence refresh is in progress on mini — fix it in the feature branch and re-run the gate
+- 2026-10-27T00:51:03Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist, tests/cli-control-api.test.ts > control API CLI > agents pause/resume writes the allowlist config (#0850), tests/refresh-evidence-route.test.ts > POST /api/tasks/:id/verify guards > refuses engineer start while evidence refresh is in progress on mini — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-27T00:51:03Z · note: handoff requested (cli)
+- 2026-10-27T01:06:29Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist, tests/cli-control-api.test.ts > control API CLI > agents pause/resume writes the allowlist config (#0850), tests/refresh-evidence-route.test.ts > POST /api/tasks/:id/verify guards > refuses engineer start while evidence refresh is in progress on bee — fix it in the feature branch and re-run the gate
+- 2026-10-27T03:02:38Z · review_cli_override, review_model_override
+- 2026-10-27T03:02:48Z · note: handoff requested (ui-review)
+- 2026-10-27T03:02:50Z · status active→review
+- 2026-10-27T03:02:50Z · note: review without checks by hello@repoos.org
+- 2026-10-27T03:06:50Z · note: review pass 1: needs some work
+- 2026-10-27T03:06:50Z · status review→active
+- 2026-10-27T04:49:39Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: Timed out waiting for response headers
+- 2026-10-27T04:49:39Z · engineer crash recovery: resuming opencode + opencode-go/hy3 (1/3 crashes in 30m) · network problem reaching the model provider, not a code issue: Timed out waiting for response headers
+- 2026-10-27T05:46:02Z · body

@@ -534,6 +534,14 @@ never the worktree's tracked `repoos.toml` — so autosave during shot capture
 cannot dirty a task branch. Config fixtures such as `settings:birdQuickTrail`
 seed the Settings form after `config.load()` via `formSyncGeneration`.
 
+**Read-only task bookkeeping (#0954).** A preview child is still a full HTTP
+server rooted in the task worktree, but it must not run control-plane side
+effects: mutating API routes are rejected, `recordTaskActivity` and engineer
+crash recovery no-op, the task watchdog and auto-engineering do not start, and
+`commitTaskFile` / `patchTaskFile` refuse to create commits. Bookkeeping for
+other tasks continues on the primary checkout only, so a shot capture during
+another task's handoff gate cannot move the worktree HEAD under test.
+
 **Light and dark captures (#0782).** A declared entry may set `theme` to
 `"light"` or `"dark"`: the capture pins the page's stored theme before the
 screenshot (the same two values the contrast audit writes —

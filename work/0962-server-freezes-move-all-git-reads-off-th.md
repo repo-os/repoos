@@ -1,30 +1,28 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: bedc55741a9e477fc772b91b48c18f324b8204c0
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
-debug_tldr: "Engineer agent stalled in repeated resumes with no progress after an earlier provider usage-limit failover — open the task, pick a different engineer agent or model, and restart it."
-debug_tldr_at: "2026-10-26T20:11:02Z"
-debug_tldr_key: "dev-error|RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 needs_merge: true
 priority: p0
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-freezes-move-all-git-reads-off-th
-cli_override: cursor
-model_override: grok-4.7-low
+cli_override: codex
+model_override: gpt-6.1-sol
+review_cli_override: cursor
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T20:30:40Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — timed out — timed out after 420s"
-last_handoff_failure_sha: d6f169681129427227d208b1bcb0917a49d309bb
+updated_at: "2026-10-27T04:34:07Z"
+review_rounds: 1
+review_passes: 1
 handoff_signal_retry_count: 1
 dev_error_count: 5
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-26T20:10:33.970Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The RepoOS server (single Bun main thread) repeatedly freezes or becomes unusably slow (UI never loads, accepts then resets connections) because it runs blocking git child processes per task/branch on the same thread that serves HTTP. With ~910 tasks, ~100 branches, 27 worktrees, each spawn costs 0.1-0.3 s on macOS (syspolicyd). Fixed one loop at a time so far (live-index per-file git, dir-log walk cache, async ahead-count cache, GET /api/system/worktree-gc preview cache) but others remain: worktreeStatus() callers (task-watchdog.ts, indexer.ts), per-task `git rev-list --count`, per-branch `merge-base --is-ancestor` (worktree-gc.ts, task-dependencies.ts, worktree-handoff-guard.ts, done.ts), sync `git log --name-only -- work` walks (indexer.ts:76, story-definition-files.ts).
@@ -122,4 +120,29 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T19:57:02Z · message_delivered: 1 message(s)
 - 2026-10-26T20:10:33Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-10-26T20:10:33Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
-- 2026-10-26T20:30:40Z · status active→review
+- 2026-10-26T20:19:02Z · body
+- 2026-10-26T20:21:30Z · needs_input
+- 2026-10-26T20:21:31Z · needs_input
+- 2026-10-26T20:30:41Z · status active→review
+- 2026-10-26T20:30:41Z · note: shots: skipped — the diff (16 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-26T20:32:01Z · note: review pass 2: needs some work
+- 2026-10-26T20:32:02Z · status review→active
+- 2026-10-26T20:53:31Z · body
+- 2026-10-26T20:57:15Z · body
+- 2026-10-26T21:10:40Z · handoff failed · remote validation failed: test failure: tests/input-story-delete-routes.test.ts > DELETE /api/inputs/:id > removes the input file and its attachments, tests/input-story-delete-routes.test.ts > DELETE /api/stories/:key > removes the definition file, emits definitionsChanged, leaves tasks alone on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-26T21:14:55Z · cli_override, model_override
+- 2026-10-26T21:14:58Z · model_override
+- 2026-10-27T01:00:26Z · cli_override, model_override
+- 2026-10-27T02:31:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T02:31:47Z · needs_input
+- 2026-10-27T02:31:48Z · status active→review, needs_input
+- 2026-10-27T02:31:48Z · note: handoff requested (cli)
+- 2026-10-27T02:42:29Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/agent-drivers.test.ts > crush driver > captures the session id by before/after diff and ingests usage from session show, tests/agent-review.test.ts > agent review before human sign-off (#0101) > rejects move-to-done while automatic review is still running without cancelling it, tests/areas-settings.test.ts > area-vocabulary drift advisory (#0587) > fires on a raw repoos.toml edit, not just a curated PATCH on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-27T03:24:15Z · review_cli_override
+- 2026-10-27T03:38:24Z · cli_override, model_override
+- 2026-10-27T04:00:45Z · engineer stopped by request
+- 2026-10-27T04:00:45Z · needs_input
+- 2026-10-27T04:00:46Z · status active→review, needs_input
+- 2026-10-27T04:00:46Z · note: handoff requested (cli)
+- 2026-10-27T04:34:07Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
