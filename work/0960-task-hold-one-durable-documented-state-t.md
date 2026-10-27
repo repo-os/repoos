@@ -3,9 +3,6 @@ id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "network problem reaching the model provider, not a code issue: Timed out waiting for response headers"
 priority: p2
 area: core
 assigned_to: ai
@@ -80,3 +77,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T06:19:04Z · status review→active
 - 2026-10-27T06:22:00Z · handoff failed · remote validation failed: test failure: tests/cli-control-api.test.ts > control API CLI > agents pause/resume writes the allowlist config (#0850), tests/refresh-evidence-route.test.ts > POST /api/tasks/:id/verify guards > refuses engineer start while evidence refresh is in progress, tests/refresh-evidence-route.test.ts > automatic stale-evidence refresh serialization (#0772) > blocks an engineer start while the automatic refresh holds the lock on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-27T06:25:56Z · message_delivered: 1 message(s)
+- 2026-10-27T06:25:56Z · needs_input
