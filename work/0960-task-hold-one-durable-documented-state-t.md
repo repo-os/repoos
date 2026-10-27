@@ -3,6 +3,9 @@ id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Board serialization, release routing, queue preservation, pause ownership, and expiry display need fixes."
 priority: p2
 area: core
 assigned_to: ai
@@ -106,3 +109,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T12:03:45Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-27T12:11:03Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-27T12:12:41Z · note: review pass 4: needs some work
+- 2026-10-27T12:12:41Z · needs_input
