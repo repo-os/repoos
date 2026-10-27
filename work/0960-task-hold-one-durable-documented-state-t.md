@@ -13,7 +13,7 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T20:44:10Z"
+updated_at: "2026-10-27T20:44:59Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T14:46:39.664Z: repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]"
 review_passes: 4
@@ -70,6 +70,11 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
   "target": "default",
   "route": "/work?task=9999&tab=debug",
   "highlight": ".debug-status-detail",
+  "steps": [
+    {
+      "click": "[data-test-id=debug-tab-status]"
+    }
+  ],
   "state": "drawer:held"
 }
 ]
@@ -161,3 +166,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T20:41:53Z · message_queued at 2026-10-27T20:41:53.508Z
 - 2026-10-27T20:43:23Z · body
 - 2026-10-27T20:44:10Z · body
+- 2026-10-27T20:44:59Z · body
