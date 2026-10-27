@@ -2,7 +2,10 @@
 id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-10-27T13:19:48.661700Z ERROR codex_core::session: failed to record rollout items: thread 01a17d81-24ce-77c0-aff3-5b60541d5650 not found"
 priority: p2
 area: core
 assigned_to: ai
@@ -13,10 +16,10 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T13:16:18Z"
+updated_at: "2026-10-27T13:19:48Z"
 review_passes: 3
 review_rounds: 2
-dev_error_count: 3
+dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/hy3\",\"at\":\"2026-10-27T04:49:39.384Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -113,3 +116,5 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T13:16:17Z · message_delivered: 1 message(s)
 - 2026-10-27T13:16:17Z · needs_input
 - 2026-10-27T13:16:18Z · message_queued at 2026-10-27T13:16:18.123Z
+- 2026-10-27T13:19:48Z · agent exited with an error (codex) · 2026-10-27T13:19:48.661700Z ERROR codex_core::session: failed to record rollout items: thread 01a17d81-24ce-77c0-aff3-5b60541d5650 not found
+- 2026-10-27T13:19:48Z · status active→review
