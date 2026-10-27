@@ -12,11 +12,11 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-hold-one-durable-documented-state-t
 cli_override: cursor
-model_override: composer-2.5
+model_override: grok-4.7-low
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T08:58:07Z"
+updated_at: "2026-10-27T09:33:58Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 3
@@ -96,3 +96,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T07:48:59Z · message_queued at 2026-10-27T07:48:59.760Z
 - 2026-10-27T08:52:56Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-10-27T08:58:07Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-27T09:33:58Z · model_override
