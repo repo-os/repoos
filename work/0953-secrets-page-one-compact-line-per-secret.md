@@ -111,3 +111,4 @@ Done in this task:
 - 2026-10-27T01:36:01Z · body
 - 2026-10-27T01:41:42Z · body
 - 2026-10-27T01:45:38Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-27T01:45:38Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
