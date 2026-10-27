@@ -8,8 +8,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-10-27T12:02:49Z"
-updated_at: "2026-10-27T13:20:22Z"
+updated_at: "2026-10-27T13:20:30Z"
 ---
 ## Problem
 Split from #0962. When the server stalls there is no record of which request or git call was slow, so every freeze is diagnosed by guesswork.
@@ -29,3 +31,4 @@ Independent and small. No server restarts, no previews, no repoos.toml edits.
 
 - 2026-10-27T12:02:49Z · created · njachowski@gmail.com
 - 2026-10-27T13:20:22Z · status inbox→active
+- 2026-10-27T13:20:30Z · cli_override, model_override
