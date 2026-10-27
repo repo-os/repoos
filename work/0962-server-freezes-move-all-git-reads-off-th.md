@@ -2,7 +2,9 @@
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
 needs_merge: true
 priority: p0
 area: core
@@ -12,7 +14,7 @@ branch: feat/server-freezes-move-all-git-reads-off-th
 cli_override: opencode
 model_override: opencode-go/glm-5.3
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T02:31:47Z"
+updated_at: "2026-10-27T02:31:48Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -130,3 +132,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T01:00:26Z · cli_override, model_override
 - 2026-10-27T02:31:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-27T02:31:47Z · needs_input
+- 2026-10-27T02:31:48Z · status active→review, needs_input
