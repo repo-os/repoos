@@ -8,12 +8,12 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/bound-local-load-shared-build-test-slots
-cli_override: opencode
-model_override: opencode-go/kimi-k3.1-pro
+cli_override: codex
+model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T06:41:06Z"
+updated_at: "2026-10-27T06:41:13Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
@@ -141,3 +141,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T06:41:02Z · note: review pass 4: failed — no usable report
 - 2026-10-27T06:41:02Z · needs_input
 - 2026-10-27T06:41:06Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-10-27T06:41:13Z · cli_override, model_override
