@@ -3,6 +3,9 @@ id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the codex agent exited without output: Reading additional input from stdin... error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 3:38 PM."
 priority: p1
 area: core
 assigned_to: ai
@@ -145,3 +148,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T06:41:13Z · cli_override, model_override
 - 2026-10-27T06:41:29Z · note: review pass 5: incomplete — no verdict in report
 - 2026-10-27T06:41:47Z · note: review pass 6: failed — no usable report
+- 2026-10-27T06:41:47Z · needs_input
