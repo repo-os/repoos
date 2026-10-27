@@ -19,14 +19,14 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T21:39:11Z"
+updated_at: "2026-10-27T21:39:17Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — timed out — timed out after 900s"
 last_handoff_failure_sha: 4712736a654159c3e2264af2b94bc7716b8f6413
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T14:46:39.664Z: repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]"
 review_passes: 4
 review_rounds: 2
-dev_error_count: 6
+dev_error_count: 7
 ---
 ## Problem
 
