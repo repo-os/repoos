@@ -332,7 +332,7 @@ Examples: `REPOOS_AGENT`, `REPOOS_RELOAD`, `REPOOS_PREVIEW_CHILD`,
 `REPOOS_TEST_WORKERS`, `REPOOS_SKIP_TESTS`, `REPOOS_REMOTE_VALIDATION_DONE`,
 `REPOOS_FORCE_BUILD`,
 `REPOOS_SKIP_BUILD`, `REPOOS_STRICT_TIMING`, `REPOOS_TASK_ID`, `REPOOS_RUN_ID`,
-`REPOOS_NO_WORKTREE_GC`, and `REPOOS_NO_AUTO_RELOAD` (`1` stops the server restarting itself when `dist/` changes; restart it yourself after a build).
+`REPOOS_NO_WORKTREE_GC`, `REPOOS_HANDOFF_DEADLINE_MS` and `REPOOS_LOCAL_CHECK_TIMEOUT_MS` (raise both when local handoff gates run long), and `REPOOS_NO_AUTO_RELOAD` (`1` stops the server restarting itself when `dist/` changes; restart it yourself after a build).
 
 If you need a project setting, use `repoos.toml` or a supported override
 documented above. If a variable is only used to drive RepoOS's own processes,
