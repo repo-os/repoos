@@ -2,7 +2,10 @@
 id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: core
 assigned_to: ai
@@ -13,10 +16,10 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T07:20:36Z"
+updated_at: "2026-10-27T07:23:34Z"
 review_rounds: 2
 review_passes: 2
-dev_error_count: 1
+dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/hy3\",\"at\":\"2026-10-27T04:49:39.384Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -84,3 +87,5 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T07:01:49Z · cli_override, model_override
 - 2026-10-27T07:14:32Z · body
 - 2026-10-27T07:20:36Z · body
+- 2026-10-27T07:23:34Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-27T07:23:34Z · status active→review
