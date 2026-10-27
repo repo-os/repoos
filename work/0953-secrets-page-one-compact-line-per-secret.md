@@ -6,6 +6,9 @@ status: review
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: the opencode agent timed out after 900s
+debug_tldr: "Review agent (opencode) hit its 900s timeout while still inspecting screenshots and diffs — retry the review, or pick a faster reviewer agent if it times out again."
+debug_tldr_at: "2026-10-27T02:21:10Z"
+debug_tldr_key: review-failed|the opencode agent timed out after 900s
 priority: p2
 area: web
 depends_on: ["0950"]
@@ -13,7 +16,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/secrets-page-one-compact-line-per-secret
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-27T02:20:53Z"
+updated_at: "2026-10-27T02:21:10Z"
 ---
 ## Problem
 
