@@ -2,7 +2,7 @@
 id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
-status: review
+status: active
 priority: p2
 area: core
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T14:20:29Z"
+updated_at: "2026-10-27T14:20:30Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 4
