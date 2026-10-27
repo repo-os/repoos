@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 411581
-last_close_out_gate_at: "2026-10-27T06:22:03.136Z"
 id: "0953"
 title: "Secrets page: one compact line per secret with actions behind an options menu (Railway-style)"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 depends_on: ["0950"]
+merged_commit: 6abe39284108028b2b0d623a5c7c44e9cbb93559
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/secrets-page-one-compact-line-per-secret
@@ -15,6 +14,8 @@ review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-24T23:23:08Z"
 updated_at: "2026-10-27T06:22:03Z"
+last_close_out_gate_ms: 411581
+last_close_out_gate_at: "2026-10-27T06:22:03.136Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-10-27T03:59:59.344Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
