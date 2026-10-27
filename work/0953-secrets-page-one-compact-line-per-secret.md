@@ -139,3 +139,4 @@ Done in this task:
 - 2026-10-27T03:22:58Z · body
 - 2026-10-27T05:10:34Z · message_queued at 2026-10-27T05:10:34.951Z
 - 2026-10-27T05:12:31Z · status active→review
+- 2026-10-27T05:12:31Z · note: handoff requested (cli)
