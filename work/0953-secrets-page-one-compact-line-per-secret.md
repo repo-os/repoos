@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/secrets-page-one-compact-line-per-secret
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-26T23:23:28Z"
+updated_at: "2026-10-27T01:28:34Z"
 ---
 ## Problem
 
@@ -47,6 +47,41 @@ Values are plaintext dotenv text in gitignored local files (user-docs/environmen
 ![32](/api/tasks/0953/attachments/att_4d7f0e1b-8556-463c-a54e-c55d0dc87bd4.png)
 ![33](/api/tasks/0953/attachments/att_a916d88c-6229-483a-b449-897fc80fec55.png)
 
+## Shots
+```json
+[
+{
+  "label": "Compact one-line secrets list with count, search and add in the header",
+  "target": "default",
+  "route": "/secrets",
+  "highlight": ".secrets-rows",
+  "state": "secrets:populated"
+},
+{
+  "label": "Row options menu open with replace and remove actions",
+  "target": "default",
+  "route": "/secrets",
+  "highlight": ".secrets-menu",
+  "steps": [
+    {
+      "click": ".secrets-row:first-child .secrets-menu-trigger"
+    },
+    {
+      "waitMs": 300
+    }
+  ],
+  "state": "secrets:populated"
+},
+{
+  "label": "Remove-key confirmation dialog",
+  "target": "default",
+  "route": "/secrets",
+  "highlight": ".delete-confirm-modal",
+  "state": "secrets:removeDialog"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-24T23:23:08Z · created · njachowski@gmail.com
@@ -60,3 +95,4 @@ Values are plaintext dotenv text in gitignored local files (user-docs/environmen
 - 2026-10-26T23:16:52Z · body
 - 2026-10-26T23:19:01Z · body
 - 2026-10-26T23:23:28Z · body
+- 2026-10-27T01:28:34Z · body
