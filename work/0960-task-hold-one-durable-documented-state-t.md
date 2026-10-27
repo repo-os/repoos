@@ -2,7 +2,10 @@
 id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 8:23 AM."
 priority: p2
 area: core
 assigned_to: ai
@@ -13,14 +16,14 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T20:50:22Z"
+updated_at: "2026-10-27T21:01:05Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T14:46:39.664Z: repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]"
 review_passes: 4
 last_handoff_failure_fingerprint: "check|repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]"
 last_handoff_failure_sha: 2ddf481e7b564d0995ded4b9380b937785a08e82
 review_rounds: 2
-dev_error_count: 5
+dev_error_count: 6
 ---
 ## Problem
 
@@ -54,23 +57,23 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 ```json
 [
 {
-  "label": "Held task badge and expanded Held group",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".tc-held, .held-toggle, .held-rows",
-  "steps": [
-    {
-      "click": ".held-toggle"
-    }
-  ],
-  "state": "card:held"
+"label": "Held task badge and expanded Held group",
+"target": "default",
+"route": "/work",
+"highlight": ".tc-held, .held-toggle, .held-rows",
+"steps": [
+{
+  "click": ".held-toggle"
+}
+],
+"state": "card:held"
 },
 {
-  "label": "Hold reason and automatic release in task status details",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".debug-status-detail",
-  "state": "drawer:held"
+"label": "Hold reason and automatic release in task status details",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".debug-status-detail",
+"state": "drawer:held"
 }
 ]
 ```
@@ -165,3 +168,5 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T20:48:31Z · note: click [data-test-id=debug-tab-status]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=debug
 - 2026-10-27T20:48:31Z · note: highlight .debug-status-detail matched nothing on /work?task=9999&tab=debug
 - 2026-10-27T20:50:22Z · body
+- 2026-10-27T21:01:05Z · agent exited with an error (codex) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 8:23 AM.
+- 2026-10-27T21:01:05Z · status active→review
