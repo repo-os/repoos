@@ -580,7 +580,7 @@ onBeforeUnmount(() => {
             <span class="secrets-key-name" tabindex="0" :data-tip="rowTip(row)">{{
               row.name
             }}</span>
-            <span class="sr-only">{{ rowTip }}</span>
+            <span class="sr-only">{{ rowTip(row) }}</span>
             <span class="secrets-badges">
               <span v-if="row.status === 'inherited'" class="secrets-badge is-inherited"
                 >inherited</span
