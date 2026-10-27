@@ -152,3 +152,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T06:08:15Z · body
 - 2026-10-27T06:11:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-27T06:11:43Z · needs_input
+- 2026-10-27T06:11:43Z · message_delivered: 1 message(s)
