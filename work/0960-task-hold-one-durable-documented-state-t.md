@@ -3,6 +3,9 @@ id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the codex agent timed out after 900s
 priority: p2
 area: core
 assigned_to: ai
@@ -102,3 +105,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T10:53:23Z · note: phantom runner detected: no live process, restarted
 - 2026-10-27T11:09:28Z · note: shots: failed — preview for target "default" did not start: preview server for #0960 did not become ready — $ bun scripts/build.mjs
 - 2026-10-27T11:09:29Z · note: review pass 3: failed — no usable report
+- 2026-10-27T11:09:29Z · needs_input
