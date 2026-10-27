@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "2026-10-27T13:19:48.661700Z ERROR codex_core::session: failed to record rollout items: thread 01a17d81-24ce-77c0-aff3-5b60541d5650 not found"
+debug_tldr: "Codex engineer agent hit its usage limit (the rollout error is a side effect) — wait until 9:07 PM or switch the engineer to another agent, then resume task #0960."
+debug_tldr_at: "2026-10-27T13:20:04Z"
+debug_tldr_key: "dev-error|2026-10-27T13:19:48.661700Z ERROR codex_core::session: failed to record rollout items: thread 01a17d81-24ce-77c0-aff3-5b60541d5650 not found"
 priority: p2
 area: core
 assigned_to: ai
@@ -16,7 +19,7 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T13:19:49Z"
+updated_at: "2026-10-27T13:20:04Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 4
