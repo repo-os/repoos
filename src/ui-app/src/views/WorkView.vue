@@ -140,7 +140,9 @@ async function openFromTaskParam(raw: string): Promise<void> {
   if (tab) ui.activeTab = tab;
   if (
     typeof window !== "undefined" &&
-    readShotPreviewFixtureFromLocation(window.location) === "drawer:statusDetails"
+    ["drawer:statusDetails", "drawer:held"].includes(
+      readShotPreviewFixtureFromLocation(window.location) ?? "",
+    )
   ) {
     ui.activeTab = "debug";
     ui.debugView = "status";

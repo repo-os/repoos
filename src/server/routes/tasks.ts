@@ -2460,6 +2460,13 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: `Task #${id} is archived — unarchive it before starting work`,
       });
     }
+    // Refuse a locked start before consuming the request stream. Keep the
+    // post-read check too: a refresh can acquire the lock during that await.
+    if (isEvidenceRefreshActive(id)) {
+      return json(res, 409, {
+        error: `Evidence refresh is in progress for #${id}; wait for it to finish before starting the engineer`,
+      });
+    }
     const body = (await readBody(req)) as {
       mode?: unknown;
       instruction?: unknown;
