@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  type ComponentPublicInstance,
+} from "vue";
 import Button from "../components/ui/button.vue";
 import Select from "../components/ui/select/root.vue";
 import SelectContent from "../components/ui/select/content.vue";
@@ -16,11 +23,16 @@ import DialogDescription from "../components/ui/dialog/description.vue";
 import DialogClose from "../components/ui/dialog/close.vue";
 import { ApiError, api, JSON_OPTS } from "../api";
 import { useAuthStore } from "../stores/auth";
+import { useRepoStore } from "../stores/repo";
+import { useConfigStore } from "../stores/config";
 import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
 import PageSkeleton from "../components/PageSkeleton.vue";
 import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
 
-type Environment = { id: string; sources: { id: string; path: string; examplePath?: string }[] };
+type Environment = {
+  id: string;
+  sources: { id: string; path: string; examplePath?: string; exists?: boolean }[];
+};
 type KeyRow = {
   name: string;
   status: "set" | "missing" | "inherited";
@@ -52,6 +64,8 @@ const restartKeys = ref(new Set<string>());
 const shotFixture = readShotPreviewFixtureFromLocation(window.location);
 const fixture = shotFixture === "secrets:populated" || shotFixture === "secrets:removeDialog";
 const auth = useAuthStore();
+const repo = useRepoStore();
+const config = useConfigStore();
 const canManage = computed(() => fixture || auth.role === "admin");
 const environmentFile = computed(() => {
   const env = environments.value.find((item) => item.id === selected.value);
@@ -76,6 +90,152 @@ const visibleRows = computed(() =>
 );
 const rowVisibility = (row: KeyRow) =>
   row.visibility === "public" ? "Public · exposed to client builds" : "Server only";
+
+// ---- Compact rows (#0953) ----
+//
+// Every key is one line: status dot, monospace name, short badges, a masked
+// value placeholder, and an options menu. Values are write-only — the masked
+// column is decorative and no reveal or copy control exists anywhere on this
+// page (user-docs/environment-and-secrets.md, "What file-backed means").
+
+/** Decorative masked placeholder; never derived from a real value. */
+const MASK = "•••••••";
+const statusLabel = (status: KeyRow["status"]) =>
+  status === "set" ? "Set" : status === "inherited" ? "Inherited" : "Missing";
+const maskedFor = (row: KeyRow) => (row.status === "missing" ? "Not set" : MASK);
+/** Hover/focus tooltip for a truncated key: one line of key metadata. */
+const rowTip = (row: KeyRow) =>
+  [
+    `${statusLabel(row.status)} · ${rowVisibility(row)}`,
+    `Source: ${row.source}`,
+    `Consumers: ${row.consumers.length ? row.consumers.join(", ") : "none"}`,
+    row.restartNeeded || restartKeys.value.has(row.name) ? "Restart needed after change" : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+const countText = computed(() => {
+  const total = snapshot.value?.keys.length ?? 0;
+  const shown = visibleRows.value.length;
+  return query.value.trim() ? `${shown} of ${total} keys` : `${total} keys`;
+});
+
+// ---- Per-row options menu ----
+
+const openMenuKey = ref<string | null>(null);
+const editingKey = ref<string | null>(null);
+const menuPopover = ref<HTMLElement | null>(null);
+const menuTrigger = ref<HTMLElement | null>(null);
+
+function toggleMenu(row: KeyRow, event: MouseEvent): void {
+  if (openMenuKey.value === row.name) {
+    closeMenu();
+    return;
+  }
+  openMenuKey.value = row.name;
+  menuTrigger.value = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  void nextTick(() => menuPopover.value?.querySelector<HTMLElement>("button")?.focus());
+}
+/** Function ref: rows render in a v-for, so only the open menu binds here. */
+function setMenuRef(el: Element | ComponentPublicInstance | null): void {
+  menuPopover.value = el instanceof HTMLElement ? el : null;
+}
+function closeMenu(refocusTrigger = false): void {
+  openMenuKey.value = null;
+  if (refocusTrigger) void nextTick(() => menuTrigger.value?.focus());
+}
+/** Arrow keys walk the items, Escape closes back onto the trigger. */
+function onMenuKeydown(event: KeyboardEvent): void {
+  const popover = menuPopover.value;
+  if (!popover) return;
+  const items = [...popover.querySelectorAll<HTMLElement>("button")];
+  const index = items.indexOf(document.activeElement as HTMLElement);
+  if (event.key === "Escape") {
+    event.stopPropagation();
+    closeMenu(true);
+  } else if (event.key === "ArrowDown") {
+    event.preventDefault();
+    items[(index + 1) % items.length]?.focus();
+  } else if (event.key === "ArrowUp") {
+    event.preventDefault();
+    items[(index - 1 + items.length) % items.length]?.focus();
+  }
+}
+function onDocumentPointerDown(event: PointerEvent): void {
+  if (!(event.target instanceof Element)) return;
+  if (!event.target.closest(".secrets-row-menu")) closeMenu();
+}
+function beginEdit(row: KeyRow): void {
+  keyDraft.value = row.name;
+  valueDraft.value = "";
+  editingKey.value = row.name;
+  closeMenu();
+}
+function cancelEdit(): void {
+  editingKey.value = null;
+  keyDraft.value = "";
+  valueDraft.value = "";
+}
+function menuLabel(row: KeyRow): string {
+  return `Options for ${row.name}`;
+}
+function editLabel(row: KeyRow): string {
+  return row.status === "missing" ? "Set value" : "Replace value";
+}
+
+// ---- Open the environment file in the editor (#0953) ----
+//
+// Values stay write-only in the UI and API. The file itself is plaintext
+// dotenv on this machine, so the page offers to open it in the configured
+// editor — only on a local connection, only with an editor command set, and
+// only when the registered source file exists.
+
+const EDITOR_HINT =
+  "Open in editor is off until an editor command is set: Settings → General → “Editor command”.";
+const isLocalOrigin = computed(() => {
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
+});
+const editorConfigured = computed(() => {
+  const inspector = (
+    config.data?.dev as { inspector?: { enabled?: boolean; editorCommand?: string } } | undefined
+  )?.inspector;
+  const devCommand =
+    typeof inspector?.editorCommand === "string" ? inspector.editorCommand.trim() : "";
+  if (devCommand) return inspector?.enabled !== false;
+  const generalCommand = (config.data?.editor as { command?: string } | undefined)?.command?.trim();
+  return !!generalCommand;
+});
+const selectedEnv = computed(() => environments.value.find((item) => item.id === selected.value));
+const envSourceExists = computed(() => {
+  if (fixture) return true;
+  const source = selectedEnv.value?.sources.at(-1);
+  return source?.exists === true;
+});
+const canOpenInEditor = computed(
+  () =>
+    canManage.value &&
+    // The fixture page fakes the whole setup so the shot shows the affordance.
+    (fixture || (isLocalOrigin.value && editorConfigured.value)) &&
+    envSourceExists.value,
+);
+const showEditorHint = computed(
+  () => canManage.value && !fixture && isLocalOrigin.value && !editorConfigured.value,
+);
+async function openEnvInEditor(): Promise<void> {
+  const source = selectedEnv.value?.sources.at(-1);
+  try {
+    await api(
+      `/api/project-environments/${encodeURIComponent(selected.value)}/open-in-editor`,
+      JSON_OPTS("POST", source ? { source: source.id } : {}),
+    );
+    repo.pushToast(`${source?.path ?? "Environment file"} opened in your editor.`, "success");
+  } catch (err) {
+    repo.pushToast(err instanceof Error ? err.message : "Could not open editor", "error");
+  }
+}
+
+// Exposed for the shot-preview fixture: the fixture page runs in a browser the
+// server cannot open an editor from, so config is faked rather than read.
 
 async function loadEnvironments(): Promise<void> {
   loading.value = true;
@@ -236,6 +396,7 @@ async function saveKey(row?: KeyRow): Promise<void> {
     valueDraft.value = "";
     keyDraft.value = "";
     addOpen.value = false;
+    editingKey.value = null;
     restartKeys.value = new Set(restartKeys.value).add(name);
     message.value = `${name} saved. Restart affected processes to use the new value.`;
     await loadSnapshot();
@@ -267,15 +428,21 @@ async function removeKey(): Promise<void> {
   }
 }
 onMounted(() => {
+  document.addEventListener("pointerdown", onDocumentPointerDown);
   if (fixture) {
     const theme = new URLSearchParams(location.search).get("theme");
     if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
-    environments.value = [{ id: "dev-nick", sources: [{ id: "local", path: ".env.dev-nick" }] }];
+    environments.value = [
+      { id: "dev-nick", sources: [{ id: "local", path: ".env.dev-nick", exists: true }] },
+    ];
     selected.value = "dev-nick";
     void loadSnapshot();
     if (shotFixture === "secrets:removeDialog") confirmKey.value = snapshot.value?.keys[0] ?? null;
     loading.value = false;
   } else void loadEnvironments();
+});
+onBeforeUnmount(() => {
+  document.removeEventListener("pointerdown", onDocumentPointerDown);
 });
 </script>
 
@@ -349,21 +516,31 @@ onMounted(() => {
       <section v-else-if="snapshot" class="secrets-ledger" aria-label="Environment keys">
         <p v-if="environmentFile" class="secrets-file">
           <code>{{ environmentFile }}</code>
+          <button
+            v-if="canOpenInEditor"
+            class="secrets-open-editor"
+            type="button"
+            @click="openEnvInEditor"
+          >
+            Open in editor
+          </button>
+          <span v-else-if="showEditorHint" class="secrets-editor-hint">{{ EDITOR_HINT }}</span>
         </p>
         <div class="secrets-ledger-top">
-          <div>
+          <div class="secrets-ledger-heading">
             <h2>Key inventory</h2>
-            <p>
-              {{ snapshot.keys.length }} expected or configured keys
-              <span class="secrets-separator">·</span> Values are never shown
-            </p>
+            <p>{{ countText }}<span class="secrets-separator">·</span>Values are never shown</p>
           </div>
+          <label class="secrets-search"
+            ><span aria-hidden="true">⌕</span
+            ><input
+              v-model="query"
+              type="search"
+              placeholder="Search keys"
+              aria-label="Search keys"
+          /></label>
           <Button v-if="canManage" variant="accent" @click="beginAdd">Add key</Button>
         </div>
-        <label class="secrets-search"
-          ><span aria-hidden="true">⌕</span
-          ><input v-model="query" type="search" placeholder="Search keys" aria-label="Search keys"
-        /></label>
         <div v-if="canManage && addOpen" class="secrets-add-row">
           <label
             >Key name<input
@@ -393,61 +570,77 @@ onMounted(() => {
           >
         </div>
         <div v-if="visibleRows.length" class="secrets-rows">
-          <article v-for="row in visibleRows" :key="row.name" class="secrets-row">
-            <div class="secrets-key-cell">
-              <strong>{{ row.name }}</strong
-              ><span class="secrets-status" :class="`is-${row.status}`">{{
-                row.status === "set" ? "Set" : row.status === "inherited" ? "Inherited" : "Missing"
-              }}</span>
-            </div>
-            <dl class="kv-rows secrets-kv">
-              <div>
-                <dt>Visibility</dt>
-                <dd>{{ rowVisibility(row) }}</dd>
-              </div>
-              <div>
-                <dt>Consumers</dt>
-                <dd>{{ row.consumers.length ? row.consumers.join(", ") : "None" }}</dd>
-              </div>
-              <div>
-                <dt>Restart</dt>
-                <dd>
-                  {{
-                    row.restartNeeded || restartKeys.has(row.name)
-                      ? "Needed after change"
-                      : "No pending restart"
-                  }}
-                </dd>
-              </div>
-            </dl>
-            <div class="secrets-row-actions">
-              <template
-                ><Button
-                  v-if="canManage && row.status !== 'inherited'"
-                  variant="outline"
-                  @click="
-                    keyDraft = row.name;
-                    valueDraft = '';
-                  "
-                  >{{
-                    row.status === "missing"
-                      ? "Set value"
-                      : row.status === "inherited"
-                        ? "Add override"
-                        : "Replace"
-                  }}</Button
-                ><Button
-                  v-if="canManage && row.status === 'set'"
-                  variant="outline"
-                  class="secrets-remove"
-                  @click="confirmKey = row"
-                  >Remove</Button
-                ></template
-              ><span v-if="row.status === 'inherited'" class="secrets-readonly"
-                >Defined in an earlier source</span
+          <article
+            v-for="row in visibleRows"
+            :key="row.name"
+            class="secrets-row"
+            :class="{ 'is-editing': editingKey === row.name }"
+          >
+            <span class="secrets-dot" :class="`is-${row.status}`" aria-hidden="true"></span>
+            <span class="secrets-key-name" tabindex="0" :data-tip="rowTip(row)">{{
+              row.name
+            }}</span>
+            <span class="sr-only">{{ row.name }}. {{ rowTip(row) }}</span>
+            <span class="secrets-badges">
+              <span v-if="row.status === 'inherited'" class="secrets-badge is-inherited"
+                >inherited</span
               >
+              <span v-if="row.visibility === 'public'" class="secrets-badge is-public">public</span>
+              <span
+                v-if="row.restartNeeded || restartKeys.has(row.name)"
+                class="secrets-badge is-restart"
+                >restart</span
+              >
+            </span>
+            <span class="secrets-masked" aria-hidden="true">{{ maskedFor(row) }}</span>
+            <div v-if="canManage && row.status !== 'inherited'" class="secrets-row-menu">
+              <button
+                type="button"
+                class="secrets-menu-trigger"
+                :aria-label="menuLabel(row)"
+                aria-haspopup="menu"
+                :aria-expanded="openMenuKey === row.name"
+                @click="toggleMenu(row, $event)"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="5" r="1.7" />
+                  <circle cx="12" cy="12" r="1.7" />
+                  <circle cx="12" cy="19" r="1.7" />
+                </svg>
+              </button>
+              <div
+                v-if="openMenuKey === row.name"
+                :ref="setMenuRef"
+                class="secrets-menu"
+                role="menu"
+                aria-label="Key actions"
+                @keydown="onMenuKeydown"
+              >
+                <button type="button" role="menuitem" @click="beginEdit(row)">
+                  {{ editLabel(row) }}
+                </button>
+                <button
+                  v-if="row.status === 'set'"
+                  type="button"
+                  role="menuitem"
+                  class="is-danger"
+                  @click="
+                    confirmKey = row;
+                    closeMenu();
+                  "
+                >
+                  Remove key
+                </button>
+              </div>
             </div>
-            <div v-if="canManage && keyDraft === row.name" class="secrets-inline-form">
+            <span v-else-if="row.status === 'inherited'" class="secrets-readonly">read-only</span>
+            <div v-if="editingKey === row.name" class="secrets-inline-form">
               <label class="sr-only" :for="`secret-${row.name}`">New value for {{ row.name }}</label
               ><input
                 :id="`secret-${row.name}`"
@@ -457,14 +650,7 @@ onMounted(() => {
                 placeholder="Enter replacement value"
               /><Button variant="accent" :disabled="saving || !valueDraft" @click="saveKey(row)"
                 >Save</Button
-              ><Button
-                variant="outline"
-                @click="
-                  keyDraft = '';
-                  valueDraft = '';
-                "
-                >Cancel</Button
-              >
+              ><Button variant="outline" @click="cancelEdit">Cancel</Button>
             </div>
           </article>
         </div>

@@ -35,6 +35,40 @@ describe("detectProviderUsageLimit", () => {
     ).toBeUndefined();
   });
 
+  it.each([
+    [
+      "codex",
+      "error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro) or try again at 9:07 PM.",
+    ],
+    [
+      "antigravity",
+      'AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Resets in 147h15m0s."}',
+    ],
+    ["antigravity plain", "error: Individual quota reached. Please upgrade your subscription."],
+  ])("recognizes real %s limit output seen on 2026-10-27", (_cli, output) => {
+    expect(detectProviderUsageLimit(output)).not.toBeNull();
+  });
+
+  it("parses 'Resets in 147h15m0s' and 'try again at 9:07 PM' reset times", () => {
+    const now = Date.now;
+    const base = new Date(2026, 9, 27, 18, 0, 0, 0).getTime();
+    Date.now = () => base;
+    try {
+      expect(detectProviderUsageLimit("Individual quota reached. Resets in 2h30m0s")?.retryAt).toBe(
+        new Date(base + 2.5 * 3600_000).toISOString(),
+      );
+      expect(
+        detectProviderUsageLimit("You’ve hit your usage limit. Try again at 9:07 PM.")?.retryAt,
+      ).toBe(new Date(2026, 9, 27, 21, 7, 0, 0).toISOString());
+      // A clock time already passed today means tomorrow.
+      expect(
+        detectProviderUsageLimit("You’ve hit your usage limit. Try again at 3:38 PM.")?.retryAt,
+      ).toBe(new Date(2026, 9, 28, 15, 38, 0, 0).toISOString());
+    } finally {
+      Date.now = now;
+    }
+  });
+
   it("does not classify ordinary failures", () => {
     expect(detectProviderUsageLimit("connection reset by peer")).toBeNull();
   });

@@ -11,14 +11,18 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-freezes-move-all-git-reads-off-th
-cli_override: github copilot
-model_override: copilot-auto-balance
+cli_override: codex
+model_override: gpt-6.1-sol
+review_cli_override: cursor
+review_model_override: composer-2.5
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-26T21:21:45Z"
+updated_at: "2026-10-27T20:57:11Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: TypeError: index.refreshAllAsync is not a function. (In 'index.refreshAllAsync()', 'index.refreshAllAsync' is undefined)"
+last_handoff_failure_sha: "020afcc6300f9e5f8647f654c0a7c41095115f60"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
-dev_error_count: 5
+dev_error_count: 10
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
@@ -28,13 +32,12 @@ The RepoOS server (single Bun main thread) repeatedly freezes or becomes unusabl
 The UI loads in under a second and stays responsive no matter how many tasks/branches/engineers exist. A slow git call can delay only the answer that needs it.
 
 ## Acceptance criteria
-1. No synchronous child process (execFileSync/spawnSync/execSync) is reachable from the server's request handlers or timers; a test/lint guard fails the build if one is added under src/server or the code it calls.
-2. Git reads for the board come from a small set of batched, cached queries: one `for-each-ref` with `%(ahead-behind:main)` + objectname, one `branch --merged main`, one incremental `log --name-only -- work`, one `worktree list --porcelain`; caches invalidate on ref/HEAD change (not a timer), and per-task/per-branch spawns are removed.
-3. Git work runs in a worker (Bun Worker or child process) with a request queue and per-call timeout; the HTTP thread never awaits a spawn inline.
-4. Every HTTP request logs duration; a request open >10 s logs "STUCK <route>" plus in-flight git calls and their age.
-5. UI-polled GET routes (Control page worktree-gc, /api/tasks, deployments) never trigger a full index rebuild.
-6. Measured: with 900 tasks / 100 branches the server answers /api/auth/session and /api/tasks in <200 ms warm and within 5 s of boot, and stays that way for 1 h with two engineers running.
-Also cap local build/test fan-out (see #0961) and keep agents at nice 10.
+Narrowed on 2026-10-27 to what this branch already does (1/4 of the server-freeze work); the rest moved to #0965 (remaining sync git spawns + guard), #0966 (batched cached board queries), #0967 (request timing / STUCK log), #0969 (1 h latency measurement). #0968 covers the auto-reload handover bug.
+
+- [ ] Git work runs in a worker with a request queue and a per-call timeout; the HTTP thread never awaits a spawn inline for the call sites this branch moved.
+- [ ] GET /api/tasks is paged so the board no longer builds every task's enrichment per request.
+- [ ] The three regressions found on 2026-10-27 are fixed: agent-drivers "crush driver captures the session id", agent-review "reviews again after a human returns a task", agent-review "rejects move-to-done while automatic review is still running". They pass on main, so they must pass here without weakening the tests.
+- [ ] Run only the affected test files plus `repoos check --changed main` (no full-suite run: one took 80 min and swamped the machine).
 
 ## Notes for AI
 Read HANDOFF-2026-10-25.md in the repo root first (evidence, hypotheses, file/line suspects). Do not restart the server yourself; ask the human. Never run `just serve-noauth` or request previews while editing server git code.
@@ -129,3 +132,65 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T21:10:40Z · handoff failed · remote validation failed: test failure: tests/input-story-delete-routes.test.ts > DELETE /api/inputs/:id > removes the input file and its attachments, tests/input-story-delete-routes.test.ts > DELETE /api/stories/:key > removes the definition file, emits definitionsChanged, leaves tasks alone on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-26T21:14:55Z · cli_override, model_override
 - 2026-10-26T21:14:58Z · model_override
+- 2026-10-27T01:00:26Z · cli_override, model_override
+- 2026-10-27T02:31:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T02:31:47Z · needs_input
+- 2026-10-27T02:31:48Z · status active→review, needs_input
+- 2026-10-27T02:31:48Z · note: handoff requested (cli)
+- 2026-10-27T02:42:29Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/agent-drivers.test.ts > crush driver > captures the session id by before/after diff and ingests usage from session show, tests/agent-review.test.ts > agent review before human sign-off (#0101) > rejects move-to-done while automatic review is still running without cancelling it, tests/areas-settings.test.ts > area-vocabulary drift advisory (#0587) > fires on a raw repoos.toml edit, not just a curated PATCH on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-27T03:24:15Z · review_cli_override
+- 2026-10-27T03:38:24Z · cli_override, model_override
+- 2026-10-27T04:00:45Z · engineer stopped by request
+- 2026-10-27T04:00:45Z · needs_input
+- 2026-10-27T04:00:46Z · status active→review, needs_input
+- 2026-10-27T04:00:46Z · note: handoff requested (cli)
+- 2026-10-27T04:34:07Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-10-27T05:51:59Z · needs_input
+- 2026-10-27T05:52:00Z · message_queued at 2026-10-27T05:52:00.119Z
+- 2026-10-27T05:56:13Z · body
+- 2026-10-27T06:01:18Z · note: AC6 live evidence remains unverified: the one-hour run with 900 tasks/100 branches and two engineers needs a human-controlled server rollout. Please split that measurement into a held human task; no server restart or preview was started. The worktree audit also found transitive blocking helpers beyond the current text guard; see docs/server-git-worker.md. Task remains active; no handoff requested.
+- 2026-10-27T06:08:15Z · body
+- 2026-10-27T06:11:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T06:11:43Z · needs_input
+- 2026-10-27T06:11:43Z · message_delivered: 1 message(s)
+- 2026-10-27T06:41:12Z · review_cli_override, review_model_override
+- 2026-10-27T06:41:31Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 3:38 PM.
+- 2026-10-27T06:41:43Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-27T06:43:24Z · engineer crash recovery: resuming codex + gpt-6.1-sol (3/12 crashes in 30m) · 2026-10-27T06:41:51.886191Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-10-27T06:43:34Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
+- 2026-10-27T09:07:23Z · needs_input
+- 2026-10-27T09:07:23Z · message_queued at 2026-10-27T09:07:23.457Z
+- 2026-10-27T09:08:34Z · agent exited with an error (codex) · 2026-10-27T09:07:28.467328Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-10-27T09:09:04Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/12 crashes in 30m) · 2026-10-27T09:07:28.467328Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-10-27T09:09:08Z · message_delivered: 1 message(s)
+- 2026-10-27T10:27:29Z · engineer stopped by request
+- 2026-10-27T10:27:29Z · needs_input
+- 2026-10-27T10:27:43Z · needs_input
+- 2026-10-27T12:03:43Z · body: Acceptance criteria (added 5, removed 7)
+- 2026-10-27T12:04:04Z · needs_input
+- 2026-10-27T12:04:04Z · message_queued at 2026-10-27T12:04:04.939Z
+- 2026-10-27T13:16:17Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-27T13:16:30Z · note: Narrowed-scope implementation and three reported async lifecycle regressions are fixed. Affected-file run: 280 passed, 1 skipped, with one worker stream fixture failure subsequently corrected and its 7 lifecycle tests passing unchanged in intent. Worktree clean after RepoOS self-check checkpoint 9a40b2aa1. Handoff blocked: normal scoped check refused because control-plane remote validation is disabled; supported --local-tests fallback with REPOOS_CHECK_CHANGED=main selected 429 test files and timed out at the configured 900s test limit (no failing assertion reported in that run). Staleness, formatting, lint, build, source guards, rendered contrast and UI smoke passed. No new full-suite run was started after scope was narrowed. Need remote validation enabled or the configured scoped gate made runnable; no handoff requested.
+- 2026-10-27T13:16:38Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T13:16:38Z · message_delivered: 1 message(s)
+- 2026-10-27T13:17:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T13:17:36Z · needs_input
+- 2026-10-27T14:11:04Z · needs_input
+- 2026-10-27T14:11:04Z · message_queued at 2026-10-27T14:11:04.932Z
+- 2026-10-27T14:20:32Z · engineer stopped by request
+- 2026-10-27T14:20:37Z · needs_input
+- 2026-10-27T20:23:15Z · review_cli_override, review_model_override
+- 2026-10-27T20:23:26Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-27T20:23:29Z · message_delivered: 1 message(s)
+- 2026-10-27T20:23:30Z · needs_input
+- 2026-10-27T20:23:30Z · message_queued at 2026-10-27T20:23:30.643Z
+- 2026-10-27T20:43:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T20:43:04Z · needs_input
+- 2026-10-27T20:43:04Z · message_delivered: 1 message(s)
+- 2026-10-27T20:44:18Z · note: 2026-10-28 resume: reviewed the queued-timeout lifecycle test now checkpointed in a209554e7. Re-ran 18 selected affected tests (worker lifecycle, review completion/preparation, and all three originally reported regressions): all passed, no assertions weakened. Required REPOOS_CHECK_CHANGED=main check retried and stopped at remote validation is not enabled. Did not repeat the previously timed-out 429-file local fallback or launch a full suite. RepoOS checkpointed the prior temporary-log deletions as 020afcc63; worktree is clean. Still blocked on enabling remote validation or an explicitly approved runnable check profile; no handoff requested.
+- 2026-10-27T20:44:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T20:44:22Z · needs_input
+- 2026-10-27T20:44:22Z · needs_input
+- 2026-10-27T20:45:13Z · note: handoff requested (ui-review)
+- 2026-10-27T20:55:14Z · handoff failed · ui-review handoff failed at check · repoos check failed: TypeError: index.refreshAllAsync is not a function. (In 'index.refreshAllAsync()', 'index.refreshAllAsync' is undefined)
+- 2026-10-27T20:57:11Z · note: handoff requested (ui-review)
