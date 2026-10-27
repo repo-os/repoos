@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 8:23 AM."
+debug_tldr: "Engineer agent hit its ChatGPT/Codex usage limit mid-gate — pick a different engineer agent (or retry after 8:23 AM) and resume #0960."
+debug_tldr_at: "2026-10-27T21:01:26Z"
+debug_tldr_key: "dev-error|error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 8:23 AM."
 priority: p2
 area: core
 assigned_to: ai
@@ -16,7 +19,7 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T21:01:06Z"
+updated_at: "2026-10-27T21:01:26Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T14:46:39.664Z: repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]"
 review_passes: 4
