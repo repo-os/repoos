@@ -15,8 +15,10 @@ depends_on: ["0950"]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/secrets-page-one-compact-line-per-secret
+review_cli_override: claude code
+review_model_override: default
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-27T02:21:10Z"
+updated_at: "2026-10-27T02:52:14Z"
 ---
 ## Problem
 
@@ -124,3 +126,4 @@ Done in this task:
 - 2026-10-27T02:05:49Z · status active→review
 - 2026-10-27T02:20:53Z · note: review pass 1: failed — no usable report
 - 2026-10-27T02:20:53Z · needs_input
+- 2026-10-27T02:52:14Z · review_cli_override, review_model_override
