@@ -486,12 +486,10 @@ describe("POST /api/tasks/:id — hold / unhold / start gate (#0960)", () => {
     try {
       const ctx = makeCtx(fx, { runnerRunning: true });
       const { res, fake } = makeRes();
-      await taskAction(
-        ctx,
-        makeReq({ reason: "waiting on design" }),
-        res,
-        { param1: "0296", param2: "hold" },
-      );
+      await taskAction(ctx, makeReq({ reason: "waiting on design" }), res, {
+        param1: "0296",
+        param2: "hold",
+      });
       expect(fake.status).toBe(200);
       // The engineer was asked to stop...
       expect(ctx.runner.stop).toHaveBeenCalled();
