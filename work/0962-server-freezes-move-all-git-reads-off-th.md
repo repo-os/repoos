@@ -13,9 +13,10 @@ created_by: njachowski@gmail.com
 branch: feat/server-freezes-move-all-git-reads-off-th
 cli_override: codex
 model_override: gpt-6.1-sol
-review_cli_override: cursor
+review_cli_override: codex
+review_model_override: gpt-6.1-sol
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T06:11:43Z"
+updated_at: "2026-10-27T06:41:12Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: bedc55741a9e477fc772b91b48c18f324b8204c0
 review_rounds: 1
@@ -153,3 +154,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T06:11:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-27T06:11:43Z · needs_input
 - 2026-10-27T06:11:43Z · message_delivered: 1 message(s)
+- 2026-10-27T06:41:12Z · review_cli_override, review_model_override
