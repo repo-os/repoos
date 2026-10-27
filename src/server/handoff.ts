@@ -259,7 +259,15 @@ async function runCheck(
 
 /** Hard cap on an entire finalization, whatever route asked for it. */
 /** Must exceed max host lock wait ({@link DEFAULT_HOST_LOCK_WAIT_SECS}) plus local/remote gate time. */
-export const HANDOFF_DEADLINE_MS = (DEFAULT_HOST_LOCK_WAIT_SECS + 15 * 60) * 1000; // 30 minutes
+/** Override with REPOOS_HANDOFF_DEADLINE_MS (at least 5 min) when local gates run long. */
+export const HANDOFF_DEADLINE_MS = handoffDeadlineMs(process.env.REPOOS_HANDOFF_DEADLINE_MS);
+
+export function handoffDeadlineMs(raw: string | undefined): number {
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 5 * 60_000
+    ? value
+    : (DEFAULT_HOST_LOCK_WAIT_SECS + 15 * 60) * 1000; // 30 minutes
+}
 
 /** Where a handoff came from. Diagnostics only — never trusted for authority. */
 export type HandoffOrigin =
