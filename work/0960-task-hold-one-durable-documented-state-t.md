@@ -2,7 +2,7 @@
 id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T14:33:32Z"
+updated_at: "2026-10-27T14:36:44Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]"
 last_handoff_failure_sha: 2ddf481e7b564d0995ded4b9380b937785a08e82
 review_passes: 3
@@ -126,3 +126,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T14:20:29Z · note: handoff requested (cli)
 - 2026-10-27T14:33:31Z · handoff failed · task-file handoff failed at check · repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]
 - 2026-10-27T14:33:32Z · message_delivered: 1 message(s)
+- 2026-10-27T14:36:44Z · status active→review
