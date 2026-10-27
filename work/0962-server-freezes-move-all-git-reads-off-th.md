@@ -3,8 +3,6 @@ id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
 needs_merge: true
 priority: p0
 area: core
@@ -141,3 +139,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T03:24:15Z · review_cli_override
 - 2026-10-27T03:38:24Z · cli_override, model_override
 - 2026-10-27T04:00:45Z · engineer stopped by request
+- 2026-10-27T04:00:45Z · needs_input
