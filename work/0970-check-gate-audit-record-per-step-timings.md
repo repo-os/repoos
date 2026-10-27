@@ -1,0 +1,32 @@
+---
+id: "0970"
+title: "Check gate audit: record per-step timings, then run slow rarely-failing steps at close-out only"
+type: chore
+status: inbox
+priority: p1
+area: core
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-27T14:50:38Z"
+updated_at: "2026-10-27T14:50:38Z"
+---
+## Problem
+Handoff checks are slow (full local gate 10-20 min under load; one #0961 run 17 min) and RepoOS cannot say which step costs the time: `.repoos/checks.db` `check_runs` stores only total `duration_ms`, `failed_step` and counts. Of the last 1,000 runs (2026-10-20 to 2026-10-27) only 266 passed; 553 failed on remote-validation infrastructure, 92 on tests, 49 on staleness, 13 on formatting, 7 on contrast/smoke/docs. The gate has 19 steps in `repoos.toml` `[[check.steps]]`, including 610 test files, a 224-screen rendered contrast audit (16 themes x 14 states), the UI smoke test, and separate installs+builds for user-docs, landing and telegram-manager plus a macOS icon check.
+
+## Desired UX
+Every check run records how long each step took, and the handoff (pre-review) gate runs only the steps that catch real bugs for the changed code; slow, rarely-failing steps run once at close-out (Move to done), so a handoff finishes in a few minutes.
+
+## Acceptance criteria
+- [ ] Per-step timing: each check run stores every step's name, duration and outcome (new column or table in checks.db, migration included); `repoos check` prints a per-step timing summary; the Checks page shows it.
+- [ ] A small report (CLI or Checks page) shows, per step over the last N runs: median and p90 duration, and how often it failed.
+- [ ] Using real numbers from that report, move slow, rarely-failing steps to the close-out profile only via `profiles` in `repoos.toml` (candidates: rendered-contrast, user-docs-build, landing-build, telegram-manager-build/test, macos-hub-icon-transparency), and make the path-scoped ones `whenChanged` so they skip when their folders are untouched. Record the before/after numbers in `docs/debugging-check-failures.md` or a new doc.
+- [ ] The close-out gate still runs every step; nothing is removed outright.
+- [ ] Tests for the timing recording and the report; `repoos check --changed main` passes.
+
+## Notes for AI
+Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definition of done"), not src/commands/check.ts, except for the timing recording itself. The repoos.toml step changes are explicitly authorized for this task by Nick (2026-10-27). Run only affected test files, never the full suite as a self-check. Never restart the RepoOS server, never run `repoos serve`, never request a preview.
+
+## Activity
+
+- 2026-10-27T14:50:38Z · created · njachowski@gmail.com
