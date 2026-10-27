@@ -2,19 +2,30 @@
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
-status: review
+status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "engineer keeps crashing (4 in 30m): a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
+needs_merge: true
 priority: p0
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-freezes-move-all-git-reads-off-th
-cli_override: cursor
-model_override: grok-4.7-low
+cli_override: codex
+model_override: gpt-6.1-sol
+review_cli_override: codex
+review_model_override: gpt-6.1-sol
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T06:50:20Z"
+updated_at: "2026-10-27T06:43:34Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: bedc55741a9e477fc772b91b48c18f324b8204c0
+review_rounds: 1
+review_passes: 1
 handoff_signal_retry_count: 1
-dev_error_count: 4
+dev_error_count: 9
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-27T06:41:31.905Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-27T06:41:43.908Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-27T06:41:54.173Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-27T06:43:34.731Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The RepoOS server (single Bun main thread) repeatedly freezes or becomes unusably slow (UI never loads, accepts then resets connections) because it runs blocking git child processes per task/branch on the same thread that serves HTTP. With ~910 tasks, ~100 branches, 27 worktrees, each spawn costs 0.1-0.3 s on macOS (syspolicyd). Fixed one loop at a time so far (live-index per-file git, dir-log walk cache, async ahead-count cache, GET /api/system/worktree-gc preview cache) but others remain: worktreeStatus() callers (task-watchdog.ts, indexer.ts), per-task `git rev-list --count`, per-branch `merge-base --is-ancestor` (worktree-gc.ts, task-dependencies.ts, worktree-handoff-guard.ts, done.ts), sync `git log --name-only -- work` walks (indexer.ts:76, story-definition-files.ts).
@@ -104,4 +115,49 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-26T19:14:27Z · status active→review
 - 2026-10-26T19:14:30Z · note: shots: skipped — the diff (16 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-26T19:15:58Z · note: review pass 1: good to go
-- 2026-10-27T06:50:20Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-10-26T19:30:11Z · needs_merge
+- 2026-10-26T19:31:05Z · status review→active
+- 2026-10-26T19:41:26Z · note: handoff requested (ui-review)
+- 2026-10-26T19:51:29Z · message_queued at 2026-10-26T19:51:29.675Z
+- 2026-10-26T19:57:02Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — timed out — timed out after 420s
+- 2026-10-26T19:57:02Z · message_delivered: 1 message(s)
+- 2026-10-26T20:10:33Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-26T20:10:33Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-26T20:19:02Z · body
+- 2026-10-26T20:21:30Z · needs_input
+- 2026-10-26T20:21:31Z · needs_input
+- 2026-10-26T20:30:41Z · status active→review
+- 2026-10-26T20:30:41Z · note: shots: skipped — the diff (16 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-26T20:32:01Z · note: review pass 2: needs some work
+- 2026-10-26T20:32:02Z · status review→active
+- 2026-10-26T20:53:31Z · body
+- 2026-10-26T20:57:15Z · body
+- 2026-10-26T21:10:40Z · handoff failed · remote validation failed: test failure: tests/input-story-delete-routes.test.ts > DELETE /api/inputs/:id > removes the input file and its attachments, tests/input-story-delete-routes.test.ts > DELETE /api/stories/:key > removes the definition file, emits definitionsChanged, leaves tasks alone on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-26T21:14:55Z · cli_override, model_override
+- 2026-10-26T21:14:58Z · model_override
+- 2026-10-27T01:00:26Z · cli_override, model_override
+- 2026-10-27T02:31:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T02:31:47Z · needs_input
+- 2026-10-27T02:31:48Z · status active→review, needs_input
+- 2026-10-27T02:31:48Z · note: handoff requested (cli)
+- 2026-10-27T02:42:29Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/agent-drivers.test.ts > crush driver > captures the session id by before/after diff and ingests usage from session show, tests/agent-review.test.ts > agent review before human sign-off (#0101) > rejects move-to-done while automatic review is still running without cancelling it, tests/areas-settings.test.ts > area-vocabulary drift advisory (#0587) > fires on a raw repoos.toml edit, not just a curated PATCH on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-27T03:24:15Z · review_cli_override
+- 2026-10-27T03:38:24Z · cli_override, model_override
+- 2026-10-27T04:00:45Z · engineer stopped by request
+- 2026-10-27T04:00:45Z · needs_input
+- 2026-10-27T04:00:46Z · status active→review, needs_input
+- 2026-10-27T04:00:46Z · note: handoff requested (cli)
+- 2026-10-27T04:34:07Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-10-27T05:51:59Z · needs_input
+- 2026-10-27T05:52:00Z · message_queued at 2026-10-27T05:52:00.119Z
+- 2026-10-27T05:56:13Z · body
+- 2026-10-27T06:01:18Z · note: AC6 live evidence remains unverified: the one-hour run with 900 tasks/100 branches and two engineers needs a human-controlled server rollout. Please split that measurement into a held human task; no server restart or preview was started. The worktree audit also found transitive blocking helpers beyond the current text guard; see docs/server-git-worker.md. Task remains active; no handoff requested.
+- 2026-10-27T06:08:15Z · body
+- 2026-10-27T06:11:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T06:11:43Z · needs_input
+- 2026-10-27T06:11:43Z · message_delivered: 1 message(s)
+- 2026-10-27T06:41:12Z · review_cli_override, review_model_override
+- 2026-10-27T06:41:31Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 3:38 PM.
+- 2026-10-27T06:41:43Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-27T06:43:24Z · engineer crash recovery: resuming codex + gpt-6.1-sol (3/12 crashes in 30m) · 2026-10-27T06:41:51.886191Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-10-27T06:43:34Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
