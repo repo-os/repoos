@@ -2,7 +2,7 @@
 id: "0953"
 title: "Secrets page: one compact line per secret with actions behind an options menu (Railway-style)"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 depends_on: ["0950"]
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/secrets-page-one-compact-line-per-secret
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-27T01:45:38Z"
+updated_at: "2026-10-27T02:05:48Z"
 ---
 ## Problem
 
@@ -113,3 +113,4 @@ Done in this task:
 - 2026-10-27T01:45:38Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-27T01:45:38Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-27T01:45:38Z · message_delivered: 1 message(s)
+- 2026-10-27T02:05:48Z · status active→review
