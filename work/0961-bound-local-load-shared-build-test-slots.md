@@ -3,6 +3,9 @@ id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the opencode agent timed out after 900s
 priority: p1
 area: core
 assigned_to: ai
@@ -110,3 +113,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T02:02:26Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-10-27T02:02:28Z · status active→review
 - 2026-10-27T02:17:34Z · note: review pass 1: failed — no usable report
+- 2026-10-27T02:17:34Z · needs_input
