@@ -13,7 +13,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T06:05:14Z"
+updated_at: "2026-10-27T06:20:19Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
@@ -134,3 +134,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T06:05:13Z · status active→review
 - 2026-10-27T06:05:13Z · message_delivered: 1 message(s)
 - 2026-10-27T06:05:14Z · engineer stopped by request
+- 2026-10-27T06:20:19Z · note: review pass 3: failed — no usable report
