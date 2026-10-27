@@ -19,7 +19,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T05:09:27Z"
+updated_at: "2026-10-27T05:52:01Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
