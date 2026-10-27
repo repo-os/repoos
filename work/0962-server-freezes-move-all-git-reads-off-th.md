@@ -16,7 +16,7 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T20:23:15Z"
+updated_at: "2026-10-27T20:23:26Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: bedc55741a9e477fc772b91b48c18f324b8204c0
 review_rounds: 1
@@ -180,3 +180,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T14:20:32Z · engineer stopped by request
 - 2026-10-27T14:20:37Z · needs_input
 - 2026-10-27T20:23:15Z · review_cli_override, review_model_override
+- 2026-10-27T20:23:26Z · message_overdue: still queued after 60m without being delivered
