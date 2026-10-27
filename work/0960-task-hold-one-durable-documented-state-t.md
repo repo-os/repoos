@@ -19,7 +19,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T07:48:55Z"
+updated_at: "2026-10-27T07:48:59Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 2
@@ -94,3 +94,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T07:26:17Z · body
 - 2026-10-27T07:31:40Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-27T07:48:53Z · cli_override, model_override
+- 2026-10-27T07:48:59Z · message_delivered: 1 message(s)
