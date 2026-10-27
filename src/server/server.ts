@@ -1581,6 +1581,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Initialize job processing (runs after emitEvent is available) (0118)
   triggerJobProcessing = () => {
+    if (isPreviewChild) return;
     if (processingJob) return;
     processingJob = true;
     setImmediate(async () => {
@@ -1777,7 +1778,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   };
 
   // Trigger processing of recovered jobs on startup
-  if (triggerRecoveryJobs) {
+  if (triggerRecoveryJobs && !isPreviewChild) {
     setImmediate(triggerRecoveryJobs);
   }
 
@@ -2090,7 +2091,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Adopt any agent children that survived a server restart (0214).
   // Reads the durable registry, checks PID aliveness, and re-attaches
   // to still-running children so isRunning() reports true immediately.
-  const runnerAdoption = runner.adoptRunningAgents();
+  const runnerAdoption = isPreviewChild ? Promise.resolve() : runner.adoptRunningAgents();
 
   // Recover any pending handoff requests from a previous interrupted turn (#0235).
   // Validates each request (task still exists, active, branch matches) and
@@ -2102,16 +2103,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // leaving the task stuck `active` with its work uncommitted.
   const startupRecoveryReady = Promise.allSettled([indexReady, runnerAdoption]);
   const runHandoffRecovery = (): void => runner.recoverPendingHandoffs();
-  void startupRecoveryReady.then(runHandoffRecovery).catch(() => {});
+  if (!isPreviewChild) {
+    void startupRecoveryReady.then(runHandoffRecovery).catch(() => {});
+  }
 
   const runOrphanEngineerReconcile = async (): Promise<void> => {
     await runner.reconcileOrphanedEngineers(index.getTasks());
   };
-  void startupRecoveryReady.then(runOrphanEngineerReconcile).catch((error) => {
-    logger.system("warn", "Could not reconcile orphaned engineers", {
-      error: (error as Error).message,
+  if (!isPreviewChild) {
+    void startupRecoveryReady.then(runOrphanEngineerReconcile).catch((error) => {
+      logger.system("warn", "Could not reconcile orphaned engineers", {
+        error: (error as Error).message,
+      });
     });
-  });
+  }
 
   // The one-time area-format migration (#0583) runs once AFTER the index has
   // populated: any task file whose `area` frontmatter still carries a legacy
@@ -2293,7 +2298,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // from the previous server (0288): the spawner's timer died with it, so an
   // adopted review would otherwise run without a deadline. Also registers the
   // adopted turns in `reviews` so cancellation and run/chat mode work for them.
-  reviews.armAdoptedTimeouts();
+  if (!isPreviewChild) reviews.armAdoptedTimeouts();
 
   // Re-spawn reviews a real (non-reload) shutdown killed: `handle.close()` runs
   // `reviews.cancelAll()` on SIGTERM/SIGINT, so a manual restart (or a crash)
@@ -2301,9 +2306,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // adopts them. Deferred until `indexReady` — it reads `index.getTasks()`.
   const runReviewRecovery = (): Promise<void> =>
     reviews.recoverInterruptedReviews(index.getTasks());
-  void indexReady.then(runReviewRecovery, runReviewRecovery).catch((err) => {
-    console.error(`[repoos] review recovery failed: ${(err as Error).message}`);
-  });
+  if (!isPreviewChild) {
+    void indexReady.then(runReviewRecovery, runReviewRecovery).catch((err) => {
+      console.error(`[repoos] review recovery failed: ${(err as Error).message}`);
+    });
+  }
 
   reviews.bindCleanReviewHandler((task, report) => {
     void tryAutoApproveAfterCleanReview(
@@ -2461,7 +2468,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const ctoIntervalMs =
     ((config as unknown as Record<string, unknown>)?.ctoMonitorIntervalMs as number | undefined) ||
     5 * 60 * 1000;
-  ctoMonitor.start(ctoIntervalMs);
+  if (!isPreviewChild) ctoMonitor.start(ctoIntervalMs);
 
   // Review activity is transient server state, not task-file frontmatter. Add
   // its small authoritative summary to index-shaped API responses so a board
@@ -2571,6 +2578,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const BUILT_IN_CHECK_INTERVAL_MS = 60_000;
   const builtInRun = { inFlight: false };
   const builtInTimer = setInterval(() => {
+    if (isPreviewChild) return;
     if (builtInRun.inFlight) return;
     const agents = repoos.config.builtInAgents ?? {};
     for (const name of Object.keys(agents)) {
@@ -2826,7 +2834,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // server was up is finalized from its durable log. Deferred until `indexReady`
   // so an adopted completion can resolve its draft task.
   const runFreeformAdoption = (): void => freeformRuns.adopt();
-  void indexReady.then(runFreeformAdoption, runFreeformAdoption).catch(() => {});
+  if (!isPreviewChild) {
+    void indexReady.then(runFreeformAdoption, runFreeformAdoption).catch(() => {});
+  }
 
   /**
    * #0507: the single entry point for EVERY route into `review` that is not the
@@ -4596,27 +4606,30 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       void reload.bootSelfHeal();
 
       // Agent supervisor: periodic health checks and safe recovery (0112)
-      supervisor = new AgentSupervisor(config, index, emitEvent);
-      supervisor.start();
+      if (!isPreviewChild) {
+        supervisor = new AgentSupervisor(config, index, emitEvent);
+        supervisor.start();
+      }
 
       // Task watchdog: surface active tasks whose agent session is dead or
       // stalled (0180). Guarded so it never fires while the server is handing
       // over to a reload replacement.
       const watchdogConfig = config.watchdog ?? {};
-      watchdog = new TaskWatchdog(
-        config,
-        index,
-        runner,
-        watchdogConfig.stalenessMs ?? 5 * 60 * 1000,
-        {
-          autoTransition: watchdogConfig.autoTransition !== false,
-          canRun: () => !(reload?.isReloading ?? false),
-          reviews,
-          onDiagnosableFailure: (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
-          logger,
-        },
-      );
-      if (watchdogConfig.enabled !== false) watchdog.start();
+      if (!isPreviewChild)
+        watchdog = new TaskWatchdog(
+          config,
+          index,
+          runner,
+          watchdogConfig.stalenessMs ?? 5 * 60 * 1000,
+          {
+            autoTransition: watchdogConfig.autoTransition !== false,
+            canRun: () => !(reload?.isReloading ?? false),
+            reviews,
+            onDiagnosableFailure: (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
+            logger,
+          },
+        );
+      if (watchdog && watchdogConfig.enabled !== false) watchdog.start();
 
       // Telegram transport resume (#0531): a stored `transport.mode =
       // "polling"` must survive a restart — re-arm the long-poll loop at

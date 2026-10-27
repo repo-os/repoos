@@ -30,7 +30,16 @@ import {
   taskNeedsBrowserUiVerification,
   taskNeedsUiHandoffVerification,
 } from "./ui-handoff-gate.js";
-import { runGit, uncommittedWorkFiles, workFileFilter, commitTaskFile } from "../core/git.js";
+import {
+  runGit,
+  worktreePathForBranch,
+  currentBranch,
+  branchChangesSinceBase,
+  uncommittedWorkFiles,
+  workFileFilter,
+  commitTaskFile,
+  pathsChangedBetweenCommits,
+} from "../core/git.js";
 import { getGitWorker } from "./git-worker.js";
 import { parseTask } from "../core/task.js";
 import { assessTaskUnderspecified } from "../core/task-underspecified.js";
@@ -350,10 +359,24 @@ async function worktreeState(workdir: string, config: RepoOSConfig): Promise<Wor
  * afterwards, leaving the gate's result describing a tree that no longer
  * existed).
  */
-function describeStateDrift(before: WorktreeState, after: WorktreeState): string | null {
+async function describeStateDrift(
+  workdir: string,
+  config: RepoOSConfig,
+  taskId: string,
+  before: WorktreeState,
+  after: WorktreeState,
+): Promise<string | null> {
   const parts: string[] = [];
   if (before.head !== after.head) {
-    parts.push(`HEAD moved from ${before.head.slice(0, 8)} to ${after.head.slice(0, 8)}`);
+    const changed = await pathsChangedBetweenCommits(workdir, before.head, after.head);
+    const ownTaskPath = `${(config.workDir ?? "work").replace(/\\/g, "/").replace(/\/+$/, "")}/${taskId}-`;
+    const bookkeepingOnly =
+      changed !== null &&
+      changed.length > 0 &&
+      changed.every((path) => path.startsWith(ownTaskPath) && path.endsWith(".md"));
+    if (!bookkeepingOnly) {
+      parts.push(`HEAD moved from ${before.head.slice(0, 8)} to ${after.head.slice(0, 8)}`);
+    }
   }
   const added = after.files.filter((f) => !before.files.includes(f));
   const removed = before.files.filter((f) => !after.files.includes(f));
@@ -676,7 +699,7 @@ async function runHandoffFinalization(
         `the gate passed but the worktree's state could not be re-checked (${(error as Error).message}) — refusing to hand off a result that cannot be tied to a tree`,
       );
     }
-    const drift = describeStateDrift(before, after);
+    const drift = await describeStateDrift(workdir, config, task.id, before, after);
     if (drift) return fail("check", drift);
 
     if (!opts.skipChecks) {
