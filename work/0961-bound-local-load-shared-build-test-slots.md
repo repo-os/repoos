@@ -13,10 +13,10 @@ created_by: njachowski@gmail.com
 branch: feat/bound-local-load-shared-build-test-slots
 cli_override: codex
 model_override: gpt-6.1-sol
-review_cli_override: codex
-review_model_override: gpt-6.1-sol
+review_cli_override: cursor
+review_model_override: composer-2.5
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T06:41:47Z"
+updated_at: "2026-10-27T06:42:20Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
@@ -149,3 +149,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T06:41:29Z · note: review pass 5: incomplete — no verdict in report
 - 2026-10-27T06:41:47Z · note: review pass 6: failed — no usable report
 - 2026-10-27T06:41:47Z · needs_input
+- 2026-10-27T06:42:20Z · review_cli_override, review_model_override
