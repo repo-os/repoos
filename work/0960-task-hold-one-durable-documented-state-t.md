@@ -3,12 +3,6 @@ id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
-debug_tldr: "The agent process crashed mid-run after the final fixes, likely while its scoped check ran, so open task #0960 to read the error output and resume the engineer."
-debug_tldr_at: "2026-10-27T07:24:06Z"
-debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p2
 area: core
 assigned_to: ai
@@ -95,3 +89,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T07:31:40Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-27T07:48:53Z · cli_override, model_override
 - 2026-10-27T07:48:59Z · message_delivered: 1 message(s)
+- 2026-10-27T07:48:59Z · needs_input
