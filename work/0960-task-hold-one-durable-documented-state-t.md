@@ -3,9 +3,6 @@ id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: the codex agent timed out after 900s
 priority: p2
 area: core
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: grok-4.7-low
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T12:03:45Z"
+updated_at: "2026-10-27T12:11:03Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 3
@@ -107,3 +104,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T11:09:29Z · note: review pass 3: failed — no usable report
 - 2026-10-27T11:09:29Z · needs_input
 - 2026-10-27T12:03:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-27T12:11:03Z · needs_input (review-failed) cleared for review again by hello@repoos.org
