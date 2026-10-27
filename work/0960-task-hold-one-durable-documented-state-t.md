@@ -8,12 +8,12 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-hold-one-durable-documented-state-t
-cli_override: codex
-model_override: gpt-6.1-sol
+cli_override: opencode
+model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T06:40:54Z"
+updated_at: "2026-10-27T07:01:49Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 1
@@ -81,3 +81,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T06:25:57Z · message_queued at 2026-10-27T06:25:57.295Z
 - 2026-10-27T06:26:28Z · review_cli_override, review_model_override
 - 2026-10-27T06:40:54Z · cli_override, model_override
+- 2026-10-27T07:01:49Z · cli_override, model_override
