@@ -79,6 +79,7 @@ function writeTask(
   entry: string,
   commitMessage = `docs(${task.id}): engineer crash recovery`,
 ): void {
+  if (process.env.REPOOS_PREVIEW_CHILD === "1") return;
   recordChange(task, entry);
   writeFileSync(task.absPath, serializeTask(task));
   commitTaskFile(config.root, task.absPath, commitMessage);
@@ -566,6 +567,7 @@ export function clearEngineerCrashRecoveryState(
   deps: Pick<EngineerCrashRecoveryDeps, "config" | "index" | "logger">,
   taskId: string,
 ): void {
+  if (process.env.REPOOS_PREVIEW_CHILD === "1") return;
   const { config, index, logger } = deps;
   try {
     const indexed = index.getTask(taskId);
