@@ -19,7 +19,6 @@ last_handoff_failure_sha: 2ddf481e7b564d0995ded4b9380b937785a08e82
 review_passes: 3
 review_rounds: 2
 dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/hy3\",\"at\":\"2026-10-27T04:49:39.384Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
