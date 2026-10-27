@@ -21,6 +21,7 @@ review_passes: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-26T20:30:15.157Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:38:45.831Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:47:01.501Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 2
+incomplete_review_retries: 1
 ---
 ## Problem
 
@@ -143,3 +144,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T06:41:06Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-27T06:41:13Z · cli_override, model_override
 - 2026-10-27T06:41:29Z · note: review pass 5: incomplete — no verdict in report
+
