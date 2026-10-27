@@ -89,6 +89,22 @@ argument because Playwright does not define a standard worker environment
 variable. The shims resolve RepoOS's own installed wrapper, not a source file in
 the managed project.
 
+Known limits:
+
+- **Windows** — the PATH shims need `/bin/sh`, so `installEngineerPathShims`
+  returns `null` and engineer shells there get no shared heavy-slot pool; the
+  env-var worker caps (`VITEST_MAX_WORKERS`, `PLAYWRIGHT_WORKERS`) still apply.
+- **Slot-dir migration** — the pool moved from per-repo
+  `.repoos/local-check-slots` to `~/.repoos/local-check-slots`. Holders recorded
+  under the old per-repo root are invisible to the new host-wide pool until
+  they exit (flock releases when the process dies) or their stale entries are
+  reclaimed; the window is one engineer turn after upgrading, not a leak.
+- **Package-script worker caps** — `bun run test` in a foreign project reaches
+  Vitest only through `VITEST_MAX_WORKERS`/`REPOOS_TEST_WORKERS` in the spawn
+  env, which Vitest honours natively; a project whose own config hard-codes
+  `maxWorkers` higher is not argv-pinned because RepoOS cannot rewrite its
+  package scripts. Direct and `bunx vitest` invocations are argv-pinned.
+
 ## Machine-wide engineer cap
 
 `maxConcurrentAgents` is per server. Two RepoOS projects on one laptop each used
