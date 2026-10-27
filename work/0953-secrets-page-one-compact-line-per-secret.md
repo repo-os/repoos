@@ -3,12 +3,6 @@ id: "0953"
 title: "Secrets page: one compact line per secret with actions behind an options menu (Railway-style)"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: the opencode agent timed out after 900s
-debug_tldr: "Review agent (opencode) hit its 900s timeout while still inspecting screenshots and diffs — retry the review, or pick a faster reviewer agent if it times out again."
-debug_tldr_at: "2026-10-27T02:21:10Z"
-debug_tldr_key: review-failed|the opencode agent timed out after 900s
 priority: p2
 area: web
 depends_on: ["0950"]
@@ -18,7 +12,7 @@ branch: feat/secrets-page-one-compact-line-per-secret
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-27T02:52:18Z"
+updated_at: "2026-10-27T02:52:21Z"
 ---
 ## Problem
 
@@ -129,3 +123,4 @@ Done in this task:
 - 2026-10-27T02:52:14Z · review_cli_override, review_model_override
 - 2026-10-27T02:52:16Z · review_cli_override
 - 2026-10-27T02:52:18Z · review_model_override
+- 2026-10-27T02:52:21Z · needs_input (review-failed) cleared for review again by hello@repoos.org
