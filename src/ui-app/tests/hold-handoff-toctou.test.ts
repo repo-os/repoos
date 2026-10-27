@@ -120,10 +120,7 @@ function readTask(root: string) {
 function setHold(root: string): void {
   const p = join(root, "work", `${ID}-handoff-toctou.md`);
   const body = readFileSync(p, "utf8");
-  const held = body.replace(
-    /^---$/m,
-    `---\nhold: true\nhold_reason: mid-finalization hold\n`,
-  );
+  const held = body.replace(/^---$/m, `---\nhold: true\nhold_reason: mid-finalization hold\n`);
   writeFileSync(p, held);
 }
 
@@ -141,50 +138,55 @@ describe("onHandoff honors a hold that lands during finalization (#0960 round 3)
     "keeps a task active when a hold is applied mid-check, rather than moving it to review",
     { timeout: 40_000 },
     async () => {
-    const fx = writeTask(CHECK_SLEEP_MS);
-    try {
-      seedPendingHandoff(fx.root);
-      process.env.PATH = `${join(fx.root, "fake-bin")}:${savedPath}`;
-      const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
-      servers.push(server);
+      const fx = writeTask(CHECK_SLEEP_MS);
+      try {
+        seedPendingHandoff(fx.root);
+        process.env.PATH = `${join(fx.root, "fake-bin")}:${savedPath}`;
+        const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
+        servers.push(server);
 
-      // Let the server pick up the pending handoff and begin finalization (which
-      // is now sitting in the sleeping `repoos check` step).
-      await new Promise((r) => setTimeout(r, 1000));
+        // Let the server pick up the pending handoff and begin finalization (which
+        // is now sitting in the sleeping `repoos check` step).
+        await new Promise((r) => setTimeout(r, 1000));
 
-      // A concurrent `repoos hold` lands mid-finalization.
-      setHold(fx.root);
+        // A concurrent `repoos hold` lands mid-finalization.
+        setHold(fx.root);
 
-      // The commit-point guard must refuse the held task. Wait for the recovery
-      // machinery to record the failed attempt, then assert the task is still
-      // active (never reached review).
-      await waitFor(
-        () => readTask(fx.root).body.includes("handoff recovery attempted"),
-        "hold guard refused the mid-finalization handoff",
-        20_000,
-      );
-      expect(readTask(fx.root).status).toBe("active");
-      expect(readTask(fx.root).isHeld).toBe(true);
-    } finally {
-      fx.clean();
-    }
-  });
+        // The commit-point guard must refuse the held task. Wait for the recovery
+        // machinery to record the failed attempt, then assert the task is still
+        // active (never reached review).
+        await waitFor(
+          () => readTask(fx.root).body.includes("handoff recovery attempted"),
+          "hold guard refused the mid-finalization handoff",
+          20_000,
+        );
+        expect(readTask(fx.root).status).toBe("active");
+        expect(readTask(fx.root).isHeld).toBe(true);
+      } finally {
+        fx.clean();
+      }
+    },
+  );
 
-  it("control: a non-held task with a pending handoff DOES reach review", { timeout: 40_000 }, async () => {
-    const fx = writeTask(0);
-    try {
-      seedPendingHandoff(fx.root);
-      process.env.PATH = `${join(fx.root, "fake-bin")}:${savedPath}`;
-      const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
-      servers.push(server);
-      await waitFor(
-        () => readTask(fx.root).status === "review",
-        "non-held task reaches review",
-        20_000,
-      );
-      expect(readTask(fx.root).status).toBe("review");
-    } finally {
-      fx.clean();
-    }
-  });
+  it(
+    "control: a non-held task with a pending handoff DOES reach review",
+    { timeout: 40_000 },
+    async () => {
+      const fx = writeTask(0);
+      try {
+        seedPendingHandoff(fx.root);
+        process.env.PATH = `${join(fx.root, "fake-bin")}:${savedPath}`;
+        const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
+        servers.push(server);
+        await waitFor(
+          () => readTask(fx.root).status === "review",
+          "non-held task reaches review",
+          20_000,
+        );
+        expect(readTask(fx.root).status).toBe("review");
+      } finally {
+        fx.clean();
+      }
+    },
+  );
 });
