@@ -16,7 +16,7 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T13:17:36Z"
+updated_at: "2026-10-27T13:21:20Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: bedc55741a9e477fc772b91b48c18f324b8204c0
 review_rounds: 1
