@@ -112,6 +112,7 @@ import { ensureStoryNumbers } from "../core/story-definition-files.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
 import { listModelSources, type ModelSourceResult } from "../core/models.js";
 import { createLogger, type Logger } from "../core/logger.js";
+import { watchHttpRequest } from "./request-timing.js";
 import {
   AGENT_CLIS,
   AGENT_MODELS,
@@ -3961,6 +3962,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const method = req.method ?? "GET";
     const url = new URL(req.url ?? "/", "http://localhost");
     const path = url.pathname;
+    // Duration for every request; STUCK after 10s names the route and age (#0967).
+    // The event stream is supposed to stay open, so it only logs duration.
+    watchHttpRequest({
+      method,
+      path,
+      res,
+      skipStuck: path === "/api/events",
+      log: (level, message) => logger.system(level, message),
+    });
 
     try {
       if (method === "OPTIONS") {
