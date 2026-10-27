@@ -15695,8 +15695,7 @@
     border-style: solid;
   }
   .secrets-readonly {
-    max-width: none;
-    text-align: left;
+    display: none;
   }
   .secrets-add-row {
     flex-wrap: wrap;
