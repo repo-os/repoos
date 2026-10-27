@@ -63,12 +63,12 @@ Values are plaintext dotenv text in gitignored local files (user-docs/environmen
 "route": "/secrets",
 "highlight": ".secrets-menu",
 "steps": [
-  {
-    "click": ".secrets-row:first-child .secrets-menu-trigger"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": ".secrets-row:first-child .secrets-menu-trigger"
+},
+{
+  "waitMs": 300
+}
 ],
 "state": "secrets:populated"
 },
@@ -107,3 +107,4 @@ Done in this task:
 - 2026-10-26T23:23:28Z · body
 - 2026-10-27T01:28:34Z · body
 - 2026-10-27T01:33:55Z · body: Implementation note (added)
+- 2026-10-27T01:33:55Z · message_queued at 2026-10-27T01:33:55.344Z
