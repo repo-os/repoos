@@ -19,7 +19,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T09:08:19Z"
+updated_at: "2026-10-27T13:21:40Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 687ea6b1cd2842380f1609211785833150cdb7d3
 review_passes: 3
@@ -177,3 +177,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T08:58:07Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-10-27T08:58:10Z · agent exited with an error (opencode) · Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id.
 - 2026-10-27T08:58:10Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (1/3 crashes in 30m) · Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id.
+- 2026-10-27T13:21:40Z · note: handoff requested (ui-review)
