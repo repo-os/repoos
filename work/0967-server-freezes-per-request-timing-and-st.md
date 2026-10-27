@@ -2,14 +2,14 @@
 id: "0967"
 title: "Server freezes: per-request timing and STUCK log"
 type: feature
-status: inbox
+status: active
 priority: p1
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-27T12:02:49Z"
-updated_at: "2026-10-27T13:20:02Z"
+updated_at: "2026-10-27T13:20:22Z"
 ---
 ## Problem
 Split from #0962. When the server stalls there is no record of which request or git call was slow, so every freeze is diagnosed by guesswork.
@@ -28,3 +28,4 @@ Independent and small. No server restarts, no previews, no repoos.toml edits.
 ## Activity
 
 - 2026-10-27T12:02:49Z · created · njachowski@gmail.com
+- 2026-10-27T13:20:22Z · status inbox→active
