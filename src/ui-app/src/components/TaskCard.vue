@@ -553,14 +553,15 @@ const hint = computed<CardHint | null>(() => {
   // than letting it read as idle. Held review/done tasks (close-out is
   // human/driver-invoked) keep their normal status cue, so only the
   // dispatch-affected states get the held hint.
-  if (held.value && (t.status === "ready" || t.status === "inbox" || t.status === "active" || t.status === "draft")) {
+  if (
+    held.value &&
+    (t.status === "ready" || t.status === "inbox" || t.status === "active" || t.status === "draft")
+  ) {
     return {
       label: t.holdUntil ? "held · auto-releases" : "held",
       title: `This task is held — automation will not start it.${
         t.holdReason ? ` Reason: ${t.holdReason}.` : ""
-      } Release with "repoos unhold ${t.id}"${
-        t.holdUntil ? ` or after ${t.holdUntil}` : ""
-      }.`,
+      } Release with "repoos unhold ${t.id}"${t.holdUntil ? ` or after ${t.holdUntil}` : ""}.`,
       cls: "tc-held",
     };
   }

@@ -401,7 +401,10 @@ function openHeld(task: Task): void {
     </div>
 
     <section
-      v-if="!statusFilter && (repo.humanTasks.length || repo.archivedTasks.length || repo.heldTasks.length)"
+      v-if="
+        !statusFilter &&
+        (repo.humanTasks.length || repo.archivedTasks.length || repo.heldTasks.length)
+      "
       class="parked-lists"
     >
       <div class="parked-toggles">
@@ -461,12 +464,7 @@ function openHeld(task: Task): void {
           data-tip="Tasks parked out of ALL automation (repoos hold)"
           @click="toggleHeld"
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            class="held-chevron"
-            :class="{ open: heldExpanded }"
-          >
+          <svg viewBox="0 0 24 24" fill="none" class="held-chevron" :class="{ open: heldExpanded }">
             <path
               d="m9 6 6 6-6 6"
               stroke="currentColor"

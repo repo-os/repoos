@@ -99,9 +99,9 @@ describe("isHoldActive", () => {
   });
 
   it("is false once the auto-release time passes, even if flagged", () => {
-    expect(
-      isHoldActive(task({ id: "5", isHeld: true, holdUntil: "2000-01-01T00:00:00Z" })),
-    ).toBe(false);
+    expect(isHoldActive(task({ id: "5", isHeld: true, holdUntil: "2000-01-01T00:00:00Z" }))).toBe(
+      false,
+    );
   });
 });
 

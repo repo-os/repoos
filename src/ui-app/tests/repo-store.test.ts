@@ -1848,12 +1848,22 @@ describe("heldTasks computed (#0960)", () => {
     es.emit("task.created", {
       type: "task.created",
       // Expired hold: auto-released, so not held anymore.
-      task: makeTask({ id: "0002", isHeld: true, holdUntil: "2000-01-01T00:00:00Z", updated_at: "2026-10-02T00:00:00Z" }),
+      task: makeTask({
+        id: "0002",
+        isHeld: true,
+        holdUntil: "2000-01-01T00:00:00Z",
+        updated_at: "2026-10-02T00:00:00Z",
+      }),
     });
     es.emit("task.created", {
       type: "task.created",
       // Held but archived: parked, not surfaced as a live hold.
-      task: makeTask({ id: "0003", isHeld: true, isArchived: true, updated_at: "2026-10-03T00:00:00Z" }),
+      task: makeTask({
+        id: "0003",
+        isHeld: true,
+        isArchived: true,
+        updated_at: "2026-10-03T00:00:00Z",
+      }),
     });
     es.emit("task.created", {
       type: "task.created",
