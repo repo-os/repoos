@@ -972,8 +972,8 @@ provider = "none"
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `maxConcurrentAgents` | number | derived from CPU count | yes | How many agent CLI processes (start/send/chat) may run at once; extras queue. Must be 1–16. The default is computed from this machine's CPU count and capped sensibly. |
-| `heavySlots` | select (1–8) | `2` | yes | Machine-wide budget for engineer builds, tests and local checks. Extra heavy jobs queue. When set, this is the shared pool (`localChecks.maxConcurrent` follows it). |
-| `vitest.maxWorkers` | select (1–16) | `2` | yes | Vitest worker cap for processes an engineer launches (`VITEST_MAX_WORKERS`, plus `REPOOS_TEST_WORKERS` for RepoOS's own suite). |
+| `heavySlots` | select (1–8) | `2` | yes | Host-wide budget for engineer builds, tests and local checks in every RepoOS checkout on this machine. Extra heavy jobs queue in the shared `~/.repoos/local-check-slots` pool (`localChecks.maxConcurrent` follows it). |
+| `vitest.maxWorkers` | select (1–16) | `2` | yes | Vitest worker cap for processes an engineer launches. Exports `VITEST_MAX_WORKERS` and `REPOOS_TEST_WORKERS`, and applies `--maxWorkers` to direct and Bun package invocations. |
 | `localChecks.maxConcurrent` | select (1–8) | `2` | yes | Cross-process cap on local `repoos check` runs on this machine; extras queue with a visible position (#0836). Shares the heavy-slot pool when `heavySlots` is set. |
 | `localChecks.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long a queued local check may wait for a slot before failing with an actionable timeout (minimum 60000). |
 | `localChecks.staleAfterMs` | number | `75000` | yes | Mark a silent but live local check holder as wedged after this heartbeat age (minimum 15000). |

@@ -3,7 +3,7 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { existsSync, mkdtempSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import type { RepoOSConfig } from "../../core/types.js";
@@ -66,6 +66,19 @@ describe("ConcurrencyGate", () => {
 });
 
 describe("cross-process local check slots", () => {
+  it("uses one host-wide root for every checkout", () => {
+    const previous = process.env.REPOOS_LOCAL_CHECK_SLOT_HOME;
+    try {
+      delete process.env.REPOOS_LOCAL_CHECK_SLOT_HOME;
+      const expected = join(homedir(), ".repoos", "local-check-slots");
+      expect(localCheckLockRoot("/tmp/project-a", ".repoos")).toBe(expected);
+      expect(localCheckLockRoot("/tmp/project-b", ".repoos")).toBe(expected);
+    } finally {
+      if (previous === undefined) delete process.env.REPOOS_LOCAL_CHECK_SLOT_HOME;
+      else process.env.REPOOS_LOCAL_CHECK_SLOT_HOME = previous;
+    }
+  });
+
   it("reclaims a slot immediately when its recorded holder is dead", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-dead-slot-"));
     dirs.push(root);
