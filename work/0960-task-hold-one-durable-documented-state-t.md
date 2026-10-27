@@ -118,3 +118,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T13:21:20Z · cli_override, model_override
 - 2026-10-27T13:21:33Z · message_delivered: 1 message(s)
 - 2026-10-27T13:21:33Z · needs_input
+- 2026-10-27T13:21:33Z · message_queued at 2026-10-27T13:21:33.908Z
