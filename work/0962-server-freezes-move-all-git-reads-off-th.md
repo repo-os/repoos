@@ -167,3 +167,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T10:27:43Z · needs_input
 - 2026-10-27T12:03:43Z · body: Acceptance criteria (added 5, removed 7)
 - 2026-10-27T12:04:04Z · needs_input
+- 2026-10-27T12:04:04Z · message_queued at 2026-10-27T12:04:04.939Z
