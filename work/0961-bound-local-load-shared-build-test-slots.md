@@ -19,7 +19,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T13:58:53Z"
+updated_at: "2026-10-27T14:17:30Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 393778400b665e96566eba04bc9a80c92a45d356
 review_passes: 3
@@ -179,4 +179,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T13:21:40Z · note: handoff requested (ui-review)
 - 2026-10-27T13:51:41Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-27T13:58:53Z · note: handoff requested (ui-review)
-
+- 2026-10-27T14:17:30Z · note: ui verification failed (1 issue(s)): [missing-target] Dashboard heavy-job line (target "default"): highlight [data-heavy-jobs] matched nothing on / (http://127.0.0.1:63701/)
