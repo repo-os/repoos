@@ -1317,8 +1317,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const uiBuildHash = loadedHash ?? serverBuildHash;
   const readUiIndex = (indexPath: string): string =>
     injectBuildHashIntoUiIndex(readFileSync(indexPath, "utf8"), uiBuildHash ?? "");
+  // REPOOS_NO_AUTO_RELOAD=1 turns the build-change auto-reload off; new builds
+  // are then picked up only by an explicit restart (`just revive`).
   const reloadEnabled =
-    !isDevBuild() && process.env.REPOOS_PREVIEW_CHILD !== "1" && opts.port !== 0;
+    !isDevBuild() &&
+    process.env.REPOOS_PREVIEW_CHILD !== "1" &&
+    process.env.REPOOS_NO_AUTO_RELOAD !== "1" &&
+    opts.port !== 0;
   let reload: ReloadManager | null = null;
 
   // Close-out lock (0143): while `completeTask` holds it, the reload manager
