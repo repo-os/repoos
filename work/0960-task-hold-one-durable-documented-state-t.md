@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T09:34:31Z"
+updated_at: "2026-10-27T09:34:32Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 3
@@ -96,3 +96,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T09:33:58Z · model_override
 - 2026-10-27T09:34:26Z · message_delivered: 1 message(s)
 - 2026-10-27T09:34:31Z · needs_input
+- 2026-10-27T09:34:32Z · message_queued at 2026-10-27T09:34:32.042Z
