@@ -60,11 +60,25 @@ the keys it needs:
 
 In the **Secrets** page, create an environment to make an empty ignored source
 file, then add or replace values through masked inputs and an explicit Save.
-The page shows expected names from `.env.example`, source, consumers, visibility,
-and whether a restart is needed; it never reads example values into the form or
-reveals saved values. Keys provided only by an earlier source are read-only in
-the page because writes and removals apply to the final writable source. A
-concurrent file edit requires reloading the inventory before retrying.
+Every key renders as one compact line — status dot, monospace key name, short
+badges (inherited, public prefix, pending restart), and a decorative masked
+placeholder — with the per-key actions (replace value, remove key) behind a
+three-dot options menu; removing a key still asks for confirmation. The list
+header shows the key count, a search field for key names, and the add action.
+The page shows expected names from `.env.example` plus each key's source,
+consumers, visibility, and restart state in the key's hover/focus tooltip; it
+never reads example values into the form or reveals saved values. Keys provided
+only by an earlier source are read-only in the page because writes and removals
+apply to the final writable source. A concurrent file edit requires reloading
+the inventory before retrying.
+
+Because values are ordinary dotenv text on this machine, an **Open in editor**
+link next to the environment's file name opens that registered source file in
+your configured editor (`editor.command`, or
+`dev.inspector.editorCommand`). It appears only on a local connection, only
+when an editor command is configured, and only when the source file exists —
+never through a tunnel or remote session, and the browser never receives any
+value.
 
 ```sh
 repoos secrets bind dev:web dev-nick DATABASE_URL STRIPE_SECRET_KEY
@@ -209,8 +223,10 @@ protection is required.
 
 Version 1 is write-only through RepoOS: the UI and API report names,
 set/missing state, source, visibility, and grants, but never return saved
-values. A local administrator who can read the source file can still retrieve
-them. Explicit bindings grant selected keys to a local dev, preview, or check
+values — the Secrets page's masked column and options menu hold no reveal or
+copy control, by design. A local administrator who can read the source file can
+still retrieve them, which is what the page's "Open in editor" link (local
+connections only) is for: edit the file directly in your own editor. Explicit bindings grant selected keys to a local dev, preview, or check
 consumer. Worktrees do not inherit production access, and remote validation
 receives no project values. This limits RepoOS-managed injection only. Agents
 and commands run as local processes with the user's OS permissions; unrestricted
