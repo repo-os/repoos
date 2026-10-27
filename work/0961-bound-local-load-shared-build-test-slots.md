@@ -19,7 +19,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T07:34:47Z"
+updated_at: "2026-10-27T08:03:48Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
 last_handoff_failure_sha: 77839669fb6a44683177bf22b7321ae49a957369
 review_passes: 2
@@ -166,3 +166,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T07:31:40Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-10-27T07:34:21Z · agent exited with an error (opencode) · error: Go usage limit exceeded
 - 2026-10-27T07:34:21Z · engineer crash recovery: switched opencode + opencode-go/kimi-k3.1-pro → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · error: Go usage limit exceeded
+- 2026-10-27T08:03:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
