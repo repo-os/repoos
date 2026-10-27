@@ -15,7 +15,6 @@ review_model_override: composer-2.5
 created_at: "2026-10-27T12:02:49Z"
 updated_at: "2026-10-27T21:31:00Z"
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-27T14:15:32.454Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Split from #0962. When the server stalls there is no record of which request or git call was slow, so every freeze is diagnosed by guesswork.
