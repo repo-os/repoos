@@ -1,4 +1,4 @@
-# Memory-pressure guard (#0836, #0871)
+# Memory-pressure guard (#0836, #0871, #0961)
 
 RepoOS holds new work when the machine cannot absorb it. This note records why
 the guard no longer keys off load average alone, and where each piece lives.
@@ -71,6 +71,20 @@ in the panel and `repoos stats`. `repoos stats` and the dashboard also show
 Queue state is also written to `.repoos/queue-markers/` so the task card and
 Debug output show the same reason.
 
+## Shared engineer heavy slots (#0961)
+
+Engineer processes receive `VITEST_MAX_WORKERS` (plus `REPOOS_TEST_WORKERS` for
+RepoOS's own suite) and Playwright worker limits from Settings, defaulting to 2.
+PATH shims for `bun`/`bunx`, `tsc`, `vitest`, `vue-tsc`, `vite build` and
+`playwright` route heavy invocations through the same `.repoos/local-check-slots`
+pool as `repoos check`, using `heavySlots` (default 2). An outer build/test run
+holds one slot for its whole process tree, so nested tools do not reacquire or
+deadlock; the next queued command starts when a holder releases or its dead
+process is reclaimed. `playwright test` also receives a bounded `--workers`
+argument because Playwright does not define a standard worker environment
+variable. The shims resolve RepoOS's own installed wrapper, not a source file in
+the managed project.
+
 ## Machine-wide engineer cap
 
 `maxConcurrentAgents` is per server. Two RepoOS projects on one laptop each used
@@ -121,8 +135,8 @@ they chose) or work around a guard hold by starting under a different limit.
   `repoos driver brief`, or a task queue marker with `reason: pressure` and the
   hold message.
 - On macOS, `vm.swapusage` "free" is unused swap capacity, not a pressure
-  signal; quiet high swap or compressor occupancy is advisory in the guard, not
-  a block on its own.
+  signal. Quiet high swap use and compressor *ratio* are advisory; compressor
+  *bytes* still block at `pressureGuard.maxCompressorBytes`.
 - Interpret `memory_pressure -Q` free percentage and the guard's pressure
   level against the configured `pressureGuard.*` limits in Settings, not ad-hoc
   numbers.
@@ -138,4 +152,7 @@ The operating rule lives in `AGENTS.md` (Rules) and is included in
 All pressure tests use fake probes and parsed fixture output — never the real
 machine's current pressure. See `src/ui-app/tests/pressure-guard.test.ts`,
 `global-engineers.test.ts`, and the top-process parser tests in
-`system-resources.test.ts`.
+`system-resources.test.ts`. The five-process fake-runner and worker-cap coverage
+is in `engineer-resources.test.ts`; slot/dead-holder coverage is in
+`local-resource-gates.test.ts`; CLI/dashboard reporting is in
+`resource-reporting.test.ts`.

@@ -9,6 +9,7 @@ import { spawn } from "node:child_process";
 import type { RepoOSConfig } from "../../core/types.js";
 import {
   acquireCrossProcessSlot,
+  heavyJobCounts,
   inspectCrossProcessSlots,
   reapOrphanedLocalCheckGroups,
   localCheckLockRoot,
@@ -269,6 +270,7 @@ describe("cross-process local check slots", () => {
     const heavySlots = 2;
     let peak = 0;
     let running = 0;
+    let completed = 0;
     const job = async () => {
       const release = await acquireCrossProcessSlot({
         slots: heavySlots,
@@ -281,10 +283,17 @@ describe("cross-process local check slots", () => {
       await new Promise((r) => setTimeout(r, 40));
       running--;
       release();
+      completed++;
     };
-    await Promise.all([job(), job(), job(), job(), job()]);
+    const pending = Promise.all([job(), job(), job(), job(), job()]);
+    // The first two jobs hold slots; the other three are live waiters. The
+    // counts are synchronous, so none of the 40ms jobs can release mid-assert.
+    expect(heavyJobCounts(lockRoot)).toEqual({ running: 2, queued: 3 });
+    await pending;
+    expect(completed).toBe(5);
     expect(peak).toBeLessThanOrEqual(heavySlots);
     expect(peak).toBe(heavySlots);
+    expect(heavyJobCounts(lockRoot)).toEqual({ running: 0, queued: 0 });
 
     const dead = spawn("sleep", ["30"], { stdio: "ignore" });
     if (!dead.pid) throw new Error("sleep failed");
@@ -292,8 +301,9 @@ describe("cross-process local check slots", () => {
     mkdirSync(slot, { recursive: true });
     writeFileSync(join(slot, ".holder"), String(dead.pid));
     writeFileSync(join(slot, ".meta.json"), JSON.stringify({ kind: "local-check" }));
+    const exited = new Promise((r) => dead.once("exit", r));
     dead.kill("SIGKILL");
-    await new Promise((r) => dead.once("exit", r));
+    await exited;
     const release = await acquireCrossProcessSlot({
       slots: 1,
       lockRoot,
