@@ -2744,6 +2744,27 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       clean || !existing.branch ? undefined : resumePreamble(config, taskForLaunch, branch, cwd);
     const preamble = [resumeContext, instruction].filter(Boolean).join("\n\n") || undefined;
 
+    // #0960 round-3 TOCTOU guard: the early hold check above (line ~2473) ran
+    // BEFORE the awaited bootstrap/context-pack work above. A `repoos hold` that
+    // lands during that window would not have been seen, and the engineer would
+    // spawn despite the hold. The hold is applied through the live index, so
+    // re-read the current task state here — after the awaited work — and refuse
+    // if it is now held. `force` (an explicit human/driver override) still wins.
+    const liveBeforeSpawn = index.getTask(id) ?? taskForLaunch;
+    if (isHoldActive(liveBeforeSpawn) && !force) {
+      const reason = liveBeforeSpawn.holdReason ? `: ${liveBeforeSpawn.holdReason}` : "";
+      const until = liveBeforeSpawn.holdUntil
+        ? ` (auto-releases ${liveBeforeSpawn.holdUntil})`
+        : "";
+      return json(res, 409, {
+        ok: false,
+        held: true,
+        reason: liveBeforeSpawn.holdReason,
+        until: liveBeforeSpawn.holdUntil,
+        error: `Task #${id} is held${reason}${until} — use "repoos unhold ${id}" to release it, or "repoos start ${id} --force"`,
+      });
+    }
+
     const spawnRes = runner.start(taskForLaunch, branch, agent, {
       cwd,
       contextPack: pack.content,
@@ -3373,8 +3394,16 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // Stop any live engineer run — a held task must not have automation in
     // flight. (Review runs and close-out are human/driver-invoked machinery, so
     // they are left to their own guards.)
+    //
+    // #0960 / round-3: deliberately do NOT call `runner.markPaused(id)` here.
+    // A hold is its own durable "parked" state: the hold flag makes the task
+    // inert for ALL automation, so no pause marker is needed. Marking paused on
+    // hold created the round-3 bug where `unhold --start` then failed (the
+    // shared launcher refuses paused tasks) and, after the hold auto-released,
+    // the watchdog and CTO recovery STILL skipped the task because the in-memory
+    // pause marker outlived the hold. Stopping the process is enough; the hold
+    // flag itself is what every automation consults.
     const stopRes = runner.stop(id);
-    if (stopRes.stopped) runner.markPaused(id);
     const updated = patchTaskFile(
       config,
       existing.absPath,

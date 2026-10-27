@@ -476,6 +476,35 @@ describe("POST /api/tasks/:id — hold / unhold / start gate (#0960)", () => {
     }
   });
 
+  it("holding a RUNNING task stops the engineer but does NOT mark it paused (#0960 round 3)", async () => {
+    // Round-3 bug: `hold` used to call `runner.markPaused(id)` after stopping the
+    // engineer. That left a pause marker that (a) blocked `unhold --start` — the
+    // shared launcher refuses paused tasks — and (b) survived the hold's
+    // auto-release, so the watchdog and CTO recovery kept skipping the task
+    // forever. A hold is its own durable "parked" state; it must not also pause.
+    const fx = makeFixture("active");
+    try {
+      const ctx = makeCtx(fx, { runnerRunning: true });
+      const { res, fake } = makeRes();
+      await taskAction(
+        ctx,
+        makeReq({ reason: "waiting on design" }),
+        res,
+        { param1: "0296", param2: "hold" },
+      );
+      expect(fake.status).toBe(200);
+      // The engineer was asked to stop...
+      expect(ctx.runner.stop).toHaveBeenCalled();
+      // ...but the task was NOT marked paused, so unhold --start and post-expiry
+      // recovery are not blocked by a stale pause marker.
+      expect(ctx.runner.markPaused).not.toHaveBeenCalled();
+      const held = readTaskFile(fx);
+      expect(held.isHeld).toBe(true);
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("unhold fully releases a task held only by a `hold` tag", async () => {
     // #0960: a `hold` tag is an equivalent spelling of the hold flag, so
     // releasing must also strip the tag — otherwise the task would stay held.
