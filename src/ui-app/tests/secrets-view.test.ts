@@ -288,8 +288,10 @@ describe("SecretsView (#0929)", () => {
     const name = row.get(".secrets-key-name");
     expect(name.attributes("data-tip")).toContain("Source: .env.dev-nick");
     expect(name.attributes("title")).toBeUndefined();
-    // The visually-hidden copy is rendered text, not an uninvoked helper.
+    // The visually-hidden copy is rendered text naming the key, not an
+    // uninvoked helper.
     const srOnly = row.get(".sr-only");
+    expect(srOnly.text()).toContain("DATABASE_URL.");
     expect(srOnly.text()).toContain("Source: .env.dev-nick");
     expect(srOnly.text()).not.toContain("=>");
     expect(row.get(".secrets-masked").text()).toBe("•••••••");
