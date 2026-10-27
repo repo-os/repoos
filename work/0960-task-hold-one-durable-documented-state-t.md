@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-27T14:46:39.664Z: repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]"
 updated_at: "2026-10-27T14:38:33Z"
 review_passes: 4
 id: "0960"
@@ -127,4 +129,5 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T14:33:32Z · message_delivered: 1 message(s)
 - 2026-10-27T14:36:44Z · status active→review
 - 2026-10-27T14:38:32Z · note: review pass 5: needs some work — clamped by automated verification: browser verification: Required UI handoff browser verification has no stored evidence — console errors were not checked.
+
 
