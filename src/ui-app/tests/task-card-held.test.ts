@@ -91,11 +91,14 @@ async function mountCard(pinia: Pinia, task: Task) {
 function newPinia(): Pinia {
   const pinia = createPinia();
   setActivePinia(pinia);
-  vi.stubGlobal("EventSource", class {
-    static instances: unknown[] = [];
-    addEventListener() {}
-    close() {}
-  });
+  vi.stubGlobal(
+    "EventSource",
+    class {
+      static instances: unknown[] = [];
+      addEventListener() {}
+      close() {}
+    },
+  );
   return pinia;
 }
 

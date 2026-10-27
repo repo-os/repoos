@@ -219,7 +219,9 @@ export function selectReadyTasks(
   options: SelectionOptions,
 ): SelectionResult {
   const blocked = options.blockedIds ?? new Set<string>();
-  const eligible = tasks.filter((task) => isSelectableReady(task, Date.now()) && !blocked.has(task.id));
+  const eligible = tasks.filter(
+    (task) => isSelectableReady(task, Date.now()) && !blocked.has(task.id),
+  );
   const eligibleTasks = orderReadyTasks(eligible, tasks);
   const slots = Math.max(0, options.availableSlots);
   return {

@@ -123,7 +123,7 @@ const GROUPS: readonly CommandGroup[] = [
         name: "hold",
         usage: 'hold <id> --reason "…" [--until <date>] [--by <who>] [--json] [--port N]',
         desc: "Park a task out of ALL automation: stop any running engineer and block auto-dispatch, CTO nudges/restarts, watchdog resume, crash recovery and queued messages (POST /api/tasks/:id/hold)",
-        flags: '--reason · --until · --by · --json · --port',
+        flags: "--reason · --until · --by · --json · --port",
       },
       {
         name: "unhold",

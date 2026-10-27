@@ -103,7 +103,9 @@ function seedPendingHandoff(root: string): void {
   writeFileSync(
     join(root, ".repoos", "pending-handoffs.json"),
     JSON.stringify({
-      requests: [{ taskId: ID, runId: "run-1", branch: BRANCH, workdir: `${root}-wt`, sessionId: "sess-1" }],
+      requests: [
+        { taskId: ID, runId: "run-1", branch: BRANCH, workdir: `${root}-wt`, sessionId: "sess-1" },
+      ],
     }),
   );
 }

@@ -123,9 +123,9 @@ describe("isSelectableReady", () => {
     // A held ready task with an elapsed `holdUntil` behaves as if never held —
     // it must re-enter the dispatch pool like every other path that consults
     // `isHoldActive`. A still-active hold stays excluded.
-    expect(isSelectableReady(task({ id: "7", status: "ready", isHeld: true, holdUntil: past }))).toBe(
-      true,
-    );
+    expect(
+      isSelectableReady(task({ id: "7", status: "ready", isHeld: true, holdUntil: past })),
+    ).toBe(true);
     expect(
       isSelectableReady(task({ id: "8", status: "ready", isHeld: true, holdUntil: future })),
     ).toBe(false);
