@@ -38,6 +38,19 @@ describe("Git worker context-pack facts", () => {
     expect(facts.worktreeState.diffSummary).toContain("tracked.txt");
   });
 
+  it.each(["missing", "removed"])("returns absent git facts for a %s repository", async (state) => {
+    root = mkdtempSync(join(tmpdir(), "repoos-missing-worker-"));
+    if (state === "removed") rmSync(root, { recursive: true });
+    else {
+      rmSync(root, { recursive: true });
+      root = join(root, "absent");
+    }
+    const overview = await getGitWorker(root).gitOverview();
+    expect(overview.useGit).toBe(false);
+    expect(overview.branches.size).toBe(0);
+    expect(await getGitWorker(root).worktreePath("feat/missing")).toBeNull();
+  });
+
   it("prepares the canary counter through the worker", async () => {
     root = mkdtempSync(join(tmpdir(), "repoos-canary-worker-"));
     execFileSync("git", ["init", "-q", "-b", "main"], { cwd: root });

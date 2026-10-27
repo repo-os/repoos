@@ -442,7 +442,10 @@ export class GitWorker {
     const entry = workerEntry();
     const command = entry.endsWith(".ts") && !process.versions.bun ? "bun" : process.execPath;
     const child = this.launch(command, [entry], {
-      cwd: this.root,
+      // The requested repository may have disappeared (or never existed).
+      // Start the worker from its own installation so git's fail-soft reads
+      // can return absent facts instead of failing to spawn the worker itself.
+      cwd: import.meta.dirname,
       env: { ...process.env, REPOOS_GIT_WORKER: "1" },
       detached: process.platform !== "win32",
       stdio: ["pipe", "pipe", "pipe"],

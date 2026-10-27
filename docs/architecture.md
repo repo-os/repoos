@@ -170,9 +170,21 @@ Adds liveness over the one-shot core. No new business logic.
 
 - `live-index.ts` — holds the index in memory, applies incremental per-file
   updates, emits typed events (task.created / task.updated / task.deleted).
-  `refreshAllAsync` (boot only) lets `server.ts` bind the port before the
-  full rebuild finishes; `refreshAll` (synchronous) is for callers that need
-  the index populated when the call returns.
+  `refreshAllAsync` lets `server.ts` bind the port before the worker's full
+  rebuild finishes. Incremental changes request worker facts without blocking
+  HTTP; polled task-list and worktree-GC routes use the index/cache instead of
+  requesting a rebuild. The synchronous `refreshAll` remains for legacy
+  one-shot/test callers.
+  Lifecycle-session loading and dependency validation request metadata only
+  (`buildIndex` with `skipGit`), avoiding Git enrichment for those reads.
+- Turn completion includes bounded Kiro/Crush session discovery and usage
+  capture before publishing agent exit or recording spend. Review completion
+  remains in flight until its report and pass counter are stored, including
+  adopted turns after reload. Review starts reserve their run before the first
+  worker read, so concurrent starts cannot overlap during preparation. Duplicate
+  exit notifications share one completion promise; failures release the fence
+  and propagate through the completion hook. Automatic close-out callbacks run
+  after the completion fence is released.
 - `watcher.ts` — native fs.watch over `work/`, debounced; feeds live-index.
 - `write.ts` — safe single-task mutation that re-reads immediately before
   writing, so concurrent edits to the same file don't clobber.

@@ -119,7 +119,11 @@ function makeCtx(
       defaultStatus: "inbox",
       defaultAssignee: "ai",
     } as any,
-    index: { getTask: () => task, getTasks: () => [task], refreshBranches: () => {} } as any,
+    index: {
+      getTask: () => task,
+      getTasks: () => [task],
+      refreshBranchesAsync: async () => {},
+    } as any,
     indexReady: Promise.resolve(),
     runner: {
       isRunning: () => false,
