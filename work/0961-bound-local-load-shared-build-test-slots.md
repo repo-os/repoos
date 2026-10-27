@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-27T08:05:41Z"
-review_passes: 3
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
-status: review
+status: active
 priority: p1
 area: core
 assigned_to: ai
@@ -15,6 +13,8 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T15:37:17Z"
+updated_at: "2026-10-27T08:23:23Z"
+review_passes: 3
 last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
 last_handoff_failure_sha: 77839669fb6a44683177bf22b7321ae49a957369
 check_retry_count: 1
@@ -164,4 +164,5 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T08:03:49Z · status active→review
 - 2026-10-27T08:05:10Z · note: loading state detected: loading text "Loading service status…" on /settings?tab=general&section=performance
 - 2026-10-27T08:05:41Z · note: review pass 8: needs some work
-
+- 2026-10-27T08:23:19Z · status review→active
+- 2026-10-27T08:23:23Z · note: handoff requested (ui-review)
