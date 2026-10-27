@@ -59,9 +59,9 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 "route": "/work",
 "highlight": ".tc-held, .held-toggle, .held-rows",
 "steps": [
-  {
-    "click": ".held-toggle"
-  }
+{
+  "click": ".held-toggle"
+}
 ],
 "state": "card:held"
 },
@@ -71,9 +71,9 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 "route": "/work?task=9999&tab=debug",
 "highlight": ".debug-status-detail",
 "steps": [
-  {
-    "click": "[data-test-id=debug-tab-status]"
-  }
+{
+  "click": "[data-test-id=debug-tab-status]"
+}
 ],
 "state": "drawer:held"
 }
@@ -168,3 +168,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T20:44:10Z · body
 - 2026-10-27T20:44:59Z · body
 - 2026-10-27T20:48:31Z · note: click [data-test-id=debug-tab-status]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=debug
+- 2026-10-27T20:48:31Z · note: highlight .debug-status-detail matched nothing on /work?task=9999&tab=debug
