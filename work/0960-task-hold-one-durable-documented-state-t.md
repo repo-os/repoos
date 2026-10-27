@@ -16,7 +16,7 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T13:16:13Z"
+updated_at: "2026-10-27T13:16:17Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 3
@@ -113,3 +113,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T13:16:03Z · cli_override, model_override
 - 2026-10-27T13:16:13Z · status review→active
 - 2026-10-27T13:16:13Z · note: send-back — returned to active for engineer follow-up
+- 2026-10-27T13:16:17Z · message_delivered: 1 message(s)
