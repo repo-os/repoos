@@ -2024,6 +2024,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             remoteValidator,
             previews,
             (id, level, message) => logger.task(id, level, message),
+            true,
           );
           if (result.ok) {
             index.applyFileChange(task.absPath, { guarded: true });

@@ -41,6 +41,7 @@ import {
   pathsChangedBetweenCommits,
 } from "../core/git.js";
 import { parseTask } from "../core/task.js";
+import { isHoldActive } from "../core/task-selection.js";
 import { assessTaskUnderspecified } from "../core/task-underspecified.js";
 import { notifyGitMutation } from "../core/git-activity.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
@@ -304,6 +305,17 @@ export interface ReviewHandoffOptions extends HandoffSink {
    * is re-reviewed before close-out resumes.
    */
   checkpointRecovery?: { approvedSha: string };
+  /**
+   * #0960 round-3 TOCTOU guard: only the agent handoff path (an automatic or
+   * recovered engineer handoff) passes this. When set, `runHandoffFinalization`
+   * re-reads the live task file at entry and refuses to move a held task to
+   * review — closing the window between the `onHandoff` pre-check (which runs
+   * before `consumeHandoff`) and the awaited finalization, where a hold that
+   * lands mid-finalization would otherwise slip through. Human-initiated review
+   * (`finalizeReviewHandoff`) never sets this, so a human may still move a held
+   * task to review deliberately.
+   */
+  holdGuard?: boolean;
 }
 
 /** The worktree-side facts the finalization body needs, once resolved. */
@@ -500,6 +512,28 @@ async function runHandoffFinalization(
   const { workdir, isHotfix, worktreeTaskPath, worktreeTask } = resolved;
   const onProgress = opts.onProgress;
   const onStatusChange = opts.onStatusChange;
+  // #0960 round-3 TOCTOU guard: the `onHandoff` pre-check in server.ts runs
+  // before `consumeHandoff`, so a hold that lands during the awaited
+  // finalization (resolveWorktree, the commit gate, the check suite) would
+  // otherwise move a held task to review. The hold is applied through the live
+  // task file, so re-read it from disk here — rather than trusting the
+  // request-time snapshot — and refuse before any commit. Only the agent
+  // handoff path sets `holdGuard`; human-initiated review is unaffected.
+  if (opts.holdGuard) {
+    const live = parseTask({
+      content: readFileSync(task.absPath, "utf8"),
+      absPath: task.absPath,
+      root: config.root,
+      defaultStatus: config.defaultStatus,
+      defaultAssignee: config.defaultAssignee,
+    });
+    if (isHoldActive(live)) {
+      return fail(
+        "validate",
+        `task #${task.id} is held — release it with "repoos unhold ${task.id}" before it can move to review`,
+      );
+    }
+  }
   // Mirrors `withHandoffDeadline` (armed moments before this body runs): a remote
   // run still QUEUED at that point cancels itself and releases its host slot
   // instead of orphaning it (#0521).
@@ -732,6 +766,28 @@ async function runHandoffFinalization(
   }
 
   onProgress?.("review");
+  // #0960 round-3: hold re-check AT the commit point. The entry guard above
+  // covers a hold landing before/during resolveWorktree; this covers one that
+  // lands during the (potentially long) check/verify step that precedes the
+  // status change. The hold is applied through the live task file, so re-read it
+  // from disk here — immediately before committing `status: review` — and refuse
+  // rather than moving a held task to review. Only the agent handoff path sets
+  // holdGuard; human-initiated review is unaffected.
+  if (opts.holdGuard) {
+    const live = parseTask({
+      content: readFileSync(task.absPath, "utf8"),
+      absPath: task.absPath,
+      root: config.root,
+      defaultStatus: config.defaultStatus,
+      defaultAssignee: config.defaultAssignee,
+    });
+    if (isHoldActive(live)) {
+      return fail(
+        "review",
+        `task #${task.id} is held — release it with "repoos unhold ${task.id}" before it can move to review`,
+      );
+    }
+  }
   if (
     !opts.checkpointRecovery &&
     (worktreeTask.status !== "review" || worktreeTask.branch !== task.branch)
@@ -896,6 +952,8 @@ export async function handoffTask(
   remoteValidator?: RemoteValidator,
   previews?: PreviewManager,
   onTaskLog?: (taskId: string, level: LogLevel, message: string) => void,
+  /** #0960 round-3: when true, refuse to finalize a held task (agent handoff only). */
+  holdGuard?: boolean,
 ): Promise<HandoffResult> {
   return withHandoffDeadline(async (markSettled) => {
     try {
@@ -916,6 +974,7 @@ export async function handoffTask(
         remoteValidator,
         previews,
         onTaskLog,
+        holdGuard,
       });
     } catch (err) {
       markSettled();
