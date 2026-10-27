@@ -3,8 +3,6 @@ id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
 needs_merge: true
 priority: p0
 area: core
@@ -15,7 +13,7 @@ cli_override: codex
 model_override: gpt-6.1-sol
 review_cli_override: cursor
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T05:51:57Z"
+updated_at: "2026-10-27T05:51:59Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: bedc55741a9e477fc772b91b48c18f324b8204c0
 review_rounds: 1
@@ -145,4 +143,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T04:00:46Z · status active→review, needs_input
 - 2026-10-27T04:00:46Z · note: handoff requested (cli)
 - 2026-10-27T04:34:07Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-10-27T05:51:59Z · needs_input
