@@ -3272,7 +3272,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: String(i + 1),
       })),
       description:
-        "Machine-wide budget for engineer builds, tests and local checks. Extra heavy jobs queue. Default 2, so several engineers share two build/test stacks.",
+        "Host-wide budget shared by engineer builds, tests and local checks in every checkout on this machine. Extra heavy jobs queue. Default 2, so several engineers share two build/test stacks.",
     },
     {
       key: "vitest.maxWorkers",
@@ -3286,7 +3286,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: String(i + 1),
       })),
       description:
-        "Vitest worker cap (VITEST_MAX_WORKERS) for processes an engineer launches. Default 2.",
+        "Vitest worker cap for engineer-launched runs. Exports VITEST_MAX_WORKERS and REPOOS_TEST_WORKERS, and applies --maxWorkers to direct and Bun package invocations. Default 2.",
     },
     {
       key: "localChecks.maxConcurrent",
@@ -3314,7 +3314,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: String(i + 1),
       })),
       description:
-        "Playwright worker cap for a run an engineer launches (PLAYWRIGHT_WORKERS). Default 2. Separate from how many browser sessions may run at once.",
+        "Playwright worker cap for a run an engineer launches. The PATH shim applies --workers to playwright test and exports PLAYWRIGHT_WORKERS. Default 2; separate from browser-session concurrency.",
     },
     {
       key: "playwright.maxConcurrent",

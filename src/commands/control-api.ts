@@ -1433,7 +1433,7 @@ function printTopProcesses(title: string, rows: StatsTopProcess[]): void {
   }
 }
 
-function printSystemSummary(system: StatsSystemView): void {
+export function printSystemSummary(system: StatsSystemView): void {
   const p = system.pressure;
   if (p) {
     const label =

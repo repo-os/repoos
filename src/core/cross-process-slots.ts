@@ -9,6 +9,7 @@ import {
   statSync,
 } from "node:fs";
 import { join } from "node:path";
+import { homedir } from "node:os";
 import { randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
 export const STALE_MS = 75 * 1000;
@@ -525,8 +526,14 @@ export function heavyJobCounts(lockRoot: string): { running: number; queued: num
   };
 }
 
-export function localCheckLockRoot(repoRoot: string, cacheDir: string): string {
-  return join(repoRoot, cacheDir, "local-check-slots");
+/**
+ * One heavy-job pool per host, shared by every RepoOS checkout and worktree.
+ * The repository arguments remain for call-site compatibility, but deliberately
+ * do not shard the pool. Tests override the host state home for isolation.
+ */
+export function localCheckLockRoot(_repoRoot: string, _cacheDir: string): string {
+  const stateHome = process.env.REPOOS_LOCAL_CHECK_SLOT_HOME?.trim() || join(homedir(), ".repoos");
+  return join(stateHome, "local-check-slots");
 }
 
 export function playwrightLockRoot(repoRoot: string, cacheDir: string): string {
