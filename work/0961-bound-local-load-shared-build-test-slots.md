@@ -2,7 +2,7 @@
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/bound-local-load-shared-build-test-slots
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-26T19:26:22Z"
+updated_at: "2026-10-27T02:02:27Z"
 ---
 ## Problem
 
@@ -81,3 +81,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-26T19:26:22Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-10-26T19:26:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-26T19:26:22Z · message_delivered: 2 message(s)
+- 2026-10-27T02:02:27Z · status active→review
