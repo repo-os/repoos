@@ -79,6 +79,7 @@ import { commitTaskFile, fileCommittedClean, currentBranch } from "../core/git.j
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { isHoldActive } from "../core/task-selection.js";
+import { holdBlocksEngineer } from "./hold-guard.js";
 import { SHOT_PREVIEW_FIXTURE_IDS } from "../core/shot-fixtures.js";
 import { buildStoryContext, storyContextSummary } from "../core/story-context.js";
 import { unresolvedReviewFindingsBlock } from "../core/review-findings.js";
@@ -6024,6 +6025,25 @@ export class AgentRunner {
     this.pausedTasks.add(taskId);
   }
 
+  /**
+   * Pause recorded because `hold` stopped a live engineer (#0960). Distinct
+   * from a human `pause`, so releasing the hold (or its expiry) can drop this
+   * marker without clearing a pause the person set themselves.
+   */
+  private readonly holdPauses = new Set<string>();
+
+  markHoldPause(taskId: string): void {
+    if (this.pausedTasks.has(taskId)) return;
+    this.holdPauses.add(taskId);
+    this.pausedTasks.add(taskId);
+  }
+
+  /** Clear only a pause that {@link markHoldPause} recorded. */
+  clearHoldPause(taskId: string): void {
+    if (!this.holdPauses.delete(taskId)) return;
+    this.pausedTasks.delete(taskId);
+  }
+
   /** True when the task was explicitly paused and no new turn has started since. */
   isPaused(taskId: string): boolean {
     return this.pausedTasks.has(taskId);
@@ -6152,6 +6172,8 @@ export class AgentRunner {
       freshSession?: boolean;
       /** Internal: a crash-recovery relaunch must keep the crash guard (#0869). */
       fromCrashRecovery?: boolean;
+      /** Explicit `repoos start --force` may spawn a held task (#0960). */
+      bypassHold?: boolean;
     } = {},
   ): StartResult {
     if (!DRIVABLE_CLIS.has(agent.cli)) {
@@ -6246,7 +6268,9 @@ export class AgentRunner {
       selectedSkills,
     );
     const { cmd, args } = cliCommand(agent, mission, cwd, { sessionId: launchSessionId });
-    return this.spawnOrQueue(task.id, cmd, args, cwd, task, branch);
+    return this.spawnOrQueue(task.id, cmd, args, cwd, task, branch, {
+      bypassHold: opts.bypassHold,
+    });
   }
 
   /** Start a persistent, non-task conversation with an explicit role mission. */
@@ -6747,7 +6771,12 @@ export class AgentRunner {
     cwd: string,
     task?: Task,
     branch?: string,
-    opts: { skipBoardDivergence?: boolean; review?: boolean; reviewKind?: "run" | "chat" } = {},
+    opts: {
+      skipBoardDivergence?: boolean;
+      review?: boolean;
+      reviewKind?: "run" | "chat";
+      bypassHold?: boolean;
+    } = {},
   ): StartResult {
     const refusal = antigravityWorktreeRefusal(cmd, args, cwd, task);
     if (refusal) return { ok: false, reason: refusal };
@@ -7085,8 +7114,21 @@ export class AgentRunner {
     cwd: string,
     task?: Task,
     branch?: string,
-    opts: { skipBoardDivergence?: boolean; review?: boolean; reviewKind?: "run" | "chat" } = {},
+    opts: {
+      skipBoardDivergence?: boolean;
+      review?: boolean;
+      reviewKind?: "run" | "chat";
+      bypassHold?: boolean;
+    } = {},
   ): StartResult {
+    // #0960: this is the last moment before a process exists, including a turn
+    // that waited on a slot or a pressure retry. The caller's earlier hold
+    // check ran before that wait. Review turns are not engineers.
+    if (!opts.review && !opts.bypassHold) {
+      const live = this.getTask?.(taskId) ?? task;
+      const held = holdBlocksEngineer(this.config, live);
+      if (held) return { ok: false, reason: held };
+    }
     // A prompt assembled from agent output (crash detail, task body, queued
     // message, log line, path) can contain NUL bytes, which make `spawn` throw
     // before the CLI starts (#0889). Sanitize every launch, whichever path built

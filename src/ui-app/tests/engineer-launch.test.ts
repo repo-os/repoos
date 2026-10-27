@@ -144,4 +144,65 @@ body
       expect(result.reason).not.toMatch(/held/i);
     }
   });
+
+  it("clears the hold's pause after hold_until expires so relaunch is not skipped", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-hold-expiry-"));
+    roots.push(root);
+    const workDir = join(root, "work");
+    mkdirSync(workDir, { recursive: true });
+    const absPath = join(workDir, "0004-expired.md");
+    writeFileSync(
+      absPath,
+      `---
+id: "0004"
+title: t
+type: feature
+status: active
+priority: p2
+area: core
+assigned_to: ai
+branch: feat/x
+hold: true
+hold_reason: machine overload
+hold_until: 2000-01-01T00:00:00Z
+---
+body
+`,
+    );
+    const pauses = new Set(["0004"]);
+    const holdPauses = new Set(["0004"]);
+    const start = vi.fn(() => ({ ok: true as const, pid: 1, queued: false }));
+    const config: RepoOSConfig = { ...DEFAULT_CONFIG, root };
+    const launchDeps: EngineerLaunchDeps = {
+      config,
+      index: { refreshBranches: () => {}, getTask: () => undefined } as never,
+      runner: {
+        releasePhantomForStart: () => {},
+        isRunning: () => false,
+        isPaused: () => pauses.has("0004"),
+        clearHoldPause: (id: string) => {
+          if (holdPauses.delete(id)) pauses.delete(id);
+        },
+        isHandoffInFlight: () => false,
+        hasPendingHandoff: () => false,
+        start,
+      } as never,
+      logger: { task: () => {}, system: () => {}, agent: () => {} } as never,
+    };
+    const result = await relaunchEngineerOnActiveTask(
+      launchDeps,
+      activeTask({
+        id: "0004",
+        absPath,
+        isHeld: true,
+        holdReason: "machine overload",
+        holdUntil: "2000-01-01T00:00:00Z",
+      }),
+      "",
+      {},
+    );
+    expect(pauses.size).toBe(0);
+    if (!result.ok) expect(result.reason).not.toMatch(/paused|held/i);
+    else expect(start).toHaveBeenCalled();
+  });
 });

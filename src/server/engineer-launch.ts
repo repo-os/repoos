@@ -12,6 +12,7 @@ import type { LiveIndex } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";
 import { resolveAgentForTask, noAgentAvailableMessage, pausedAgentFallbackNote } from "./agents.js";
 import { isHoldActive } from "../core/task-selection.js";
+import { holdBlocksEngineer } from "./hold-guard.js";
 import type { Logger } from "../core/logger.js";
 export type EngineerLaunchResult =
   | {
@@ -69,6 +70,12 @@ export async function relaunchEngineerOnActiveTask(
   if (runner.isRunning(id)) {
     return { ok: false, reason: `Task #${id} already has a running agent` };
   }
+  // A hold that stopped a live engineer recorded its own pause. Once the hold
+  // is gone or `hold_until` has passed, that pause must not keep blocking
+  // relaunch. A human pause (markPaused, not markHoldPause) stays.
+  if ((opts.force || !isHoldActive(task)) && typeof runner.clearHoldPause === "function") {
+    runner.clearHoldPause(id);
+  }
   if (runner.isPaused(id)) {
     return { ok: false, reason: `Task #${id} is paused` };
   }
@@ -113,20 +120,15 @@ export async function relaunchEngineerOnActiveTask(
     return { ok: false, reason: `Bootstrap failed: ${bootResult.reason ?? "unknown error"}` };
   }
 
-  // #0960 round-3 TOCTOU guard: the hold check above ran before the awaited
-  // bootstrap work. A `repoos hold` that lands during that window (from /start,
-  // unhold --start, CTO recovery, or the watchdog) must not spawn an engineer.
-  // Re-read the live index state after bootstrap — the hold is applied through
-  // patchTaskFile + applyFileChange, so the index is authoritative here.
+  // #0960: the hold check above ran before the awaited bootstrap. Re-read the
+  // task file (not the request snapshot) and refuse before spawn. spawnTurn
+  // checks again, including after a slot/pressure queue.
   const liveBeforeSpawn = index.getTask?.(id) ?? fresh;
-  if (isHoldActive(liveBeforeSpawn) && !opts.force) {
-    const reason = liveBeforeSpawn.holdReason ? `: ${liveBeforeSpawn.holdReason}` : "";
-    const until = liveBeforeSpawn.holdUntil ? ` (auto-releases ${liveBeforeSpawn.holdUntil})` : "";
+  const heldNow = !opts.force ? holdBlocksEngineer(config, liveBeforeSpawn) : null;
+  if (heldNow) {
     return {
       ok: false,
-      reason: `Task #${id} is held${reason}${until} — use "repoos unhold ${id}" to release it${
-        opts.fromCrashRecovery ? "" : ", or " + `"repoos start ${id} --force"`
-      }`,
+      reason: opts.fromCrashRecovery ? heldNow : `${heldNow}, or "repoos start ${id} --force"`,
     };
   }
 
@@ -140,6 +142,7 @@ export async function relaunchEngineerOnActiveTask(
     resumePreamble: preamble,
     freshSession: opts.freshSession === true,
     ...(opts.fromCrashRecovery ? { fromCrashRecovery: true } : {}),
+    ...(opts.force ? { bypassHold: true } : {}),
   });
 
   if (!spawnRes.ok) {

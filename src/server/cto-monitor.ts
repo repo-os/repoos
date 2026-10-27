@@ -26,6 +26,7 @@ import type { LiveIndex } from "./live-index.js";
 import type { CTOManager } from "./cto.js";
 import { resolveAgentForTask, type AgentRunner } from "./agents.js";
 import { isHoldActive } from "../core/task-selection.js";
+import { clearExpiredHoldPauses } from "./hold-guard.js";
 import { hasRecentWorktreeActivity } from "./task-watchdog.js";
 import { pressureReason } from "../core/pressure-guard.js";
 import {
@@ -237,7 +238,9 @@ export class CTOMonitor {
       if (pressure === undefined) pressure = this.currentPressureReason();
       return pressure;
     };
-    for (const task of this.index.getTasks("active")) {
+    const active = this.index.getTasks("active");
+    if (this.runner) clearExpiredHoldPauses(active, this.runner);
+    for (const task of active) {
       // Archived tasks are parked (#0657): never nudge them, even if their
       // underlying status is active.
       if (task.isArchived) continue;
