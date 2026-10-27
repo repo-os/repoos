@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 411581
+last_close_out_gate_at: "2026-10-27T06:22:03.136Z"
 id: "0953"
 title: "Secrets page: one compact line per secret with actions behind an options menu (Railway-style)"
 type: feature
@@ -12,7 +14,7 @@ branch: feat/secrets-page-one-compact-line-per-secret
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-27T06:14:27Z"
+updated_at: "2026-10-27T06:22:03Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-10-27T03:59:59.344Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
@@ -149,3 +151,5 @@ Done in this task:
 - 2026-10-27T06:10:41Z · note: ui verification passed: 3 of 3 shots captured with clean console (1 shot warning)
 - 2026-10-27T06:10:42Z · status active→review
 - 2026-10-27T06:14:27Z · note: review pass 6: good to go
+- 2026-10-27T06:22:03Z · close-out gate completed in 412s
+
