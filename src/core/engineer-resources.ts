@@ -17,7 +17,6 @@ import {
   writeFileSync,
 } from "node:fs";
 import { delimiter, dirname, join } from "node:path";
-import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import type { RepoOSConfig } from "./types.js";
 import { playwrightWorkerLimit, vitestMaxWorkers } from "./resource-limits.js";
