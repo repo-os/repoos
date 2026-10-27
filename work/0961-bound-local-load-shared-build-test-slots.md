@@ -2,7 +2,7 @@
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "network problem reaching the model provider, not a code issue: Timed out waiting for response headers"
@@ -16,14 +16,14 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T04:39:17Z"
+updated_at: "2026-10-27T05:07:29Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-26T20:30:15.157Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:38:45.831Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:47:01.501Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 1
+dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-27T04:39:17.996Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -130,3 +130,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T03:38:30Z · body
 - 2026-10-27T04:39:17Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: Timed out waiting for response headers
 - 2026-10-27T04:39:17Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (1/3 crashes in 30m) · network problem reaching the model provider, not a code issue: Timed out waiting for response headers
+- 2026-10-27T05:07:29Z · status active→review
