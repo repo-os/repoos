@@ -199,3 +199,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T22:30:40Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
 - 2026-10-27T23:11:04Z · cli_override, model_override
 - 2026-10-27T23:11:08Z · needs_input
+- 2026-10-27T23:11:08Z · message_queued at 2026-10-27T23:11:08.364Z
