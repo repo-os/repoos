@@ -2,7 +2,7 @@
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id."
@@ -16,7 +16,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T08:58:10Z"
+updated_at: "2026-10-27T09:07:58Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 687ea6b1cd2842380f1609211785833150cdb7d3
 review_passes: 3
@@ -25,7 +25,7 @@ last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check fail
 review_rounds: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-26T20:30:15.157Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:38:45.831Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:47:01.501Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 4
+dev_error_count: 5
 incomplete_review_retries: 1
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-27T08:58:10.534Z\",\"kind\":\"dev-error\"}]"
@@ -174,3 +174,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T08:58:07Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-10-27T08:58:10Z · agent exited with an error (opencode) · Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id.
 - 2026-10-27T08:58:10Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (1/3 crashes in 30m) · Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id.
+- 2026-10-27T09:07:58Z · status active→review
