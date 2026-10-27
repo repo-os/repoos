@@ -2,7 +2,7 @@
 id: "0953"
 title: "Secrets page: one compact line per secret with actions behind an options menu (Railway-style)"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 depends_on: ["0950"]
@@ -12,7 +12,7 @@ branch: feat/secrets-page-one-compact-line-per-secret
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-27T03:18:03Z"
+updated_at: "2026-10-27T03:18:04Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -131,3 +131,4 @@ Done in this task:
 - 2026-10-27T03:00:54Z · body
 - 2026-10-27T03:04:09Z · body
 - 2026-10-27T03:18:03Z · note: ui verification passed: 3 of 3 shots captured with clean console (1 shot warning)
+- 2026-10-27T03:18:04Z · status active→review
