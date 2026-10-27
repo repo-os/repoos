@@ -98,3 +98,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T09:34:31Z · needs_input
 - 2026-10-27T09:34:32Z · message_queued at 2026-10-27T09:34:32.042Z
 - 2026-10-27T10:53:23Z · status active→review
+- 2026-10-27T10:53:23Z · phantom runner detected: no live process, restarted
