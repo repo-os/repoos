@@ -128,3 +128,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T04:39:17Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: Timed out waiting for response headers
 - 2026-10-27T04:39:17Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (1/3 crashes in 30m) · network problem reaching the model provider, not a code issue: Timed out waiting for response headers
 - 2026-10-27T05:52:04Z · needs_input
+- 2026-10-27T05:52:04Z · message_queued at 2026-10-27T05:52:04.680Z
