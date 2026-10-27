@@ -3,12 +3,6 @@ id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: the github copilot agent timed out after 900s
-debug_tldr: "The GitHub Copilot reviewer hit its 900s timeout on this large diff, so open the task and retry the review, or pick a different reviewer agent."
-debug_tldr_at: "2026-10-27T06:20:53Z"
-debug_tldr_key: review-failed|the github copilot agent timed out after 900s
 priority: p1
 area: core
 assigned_to: ai
@@ -19,7 +13,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T06:20:53Z"
+updated_at: "2026-10-27T06:25:58Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
@@ -142,3 +136,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T06:05:14Z · engineer stopped by request
 - 2026-10-27T06:20:19Z · note: review pass 3: failed — no usable report
 - 2026-10-27T06:20:19Z · needs_input
+- 2026-10-27T06:25:58Z · needs_input (review-failed) cleared for review again by hello@repoos.org
