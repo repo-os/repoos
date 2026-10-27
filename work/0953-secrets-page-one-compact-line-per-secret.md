@@ -13,7 +13,7 @@ branch: feat/secrets-page-one-compact-line-per-secret
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-27T06:22:03Z"
+updated_at: "2026-10-27T06:24:58Z"
 last_close_out_gate_ms: 411581
 last_close_out_gate_at: "2026-10-27T06:22:03.136Z"
 review_passes: 4
@@ -153,4 +153,4 @@ Done in this task:
 - 2026-10-27T06:10:42Z · status active→review
 - 2026-10-27T06:14:27Z · note: review pass 6: good to go
 - 2026-10-27T06:22:03Z · close-out gate completed in 412s
-
+- 2026-10-27T06:24:58Z · status done→done, release:success
