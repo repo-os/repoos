@@ -3,6 +3,8 @@ id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
 needs_merge: true
 priority: p0
 area: core
@@ -14,7 +16,7 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T10:27:29Z"
+updated_at: "2026-10-27T12:03:43Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: bedc55741a9e477fc772b91b48c18f324b8204c0
 review_rounds: 1
@@ -31,13 +33,12 @@ The RepoOS server (single Bun main thread) repeatedly freezes or becomes unusabl
 The UI loads in under a second and stays responsive no matter how many tasks/branches/engineers exist. A slow git call can delay only the answer that needs it.
 
 ## Acceptance criteria
-1. No synchronous child process (execFileSync/spawnSync/execSync) is reachable from the server's request handlers or timers; a test/lint guard fails the build if one is added under src/server or the code it calls.
-2. Git reads for the board come from a small set of batched, cached queries: one `for-each-ref` with `%(ahead-behind:main)` + objectname, one `branch --merged main`, one incremental `log --name-only -- work`, one `worktree list --porcelain`; caches invalidate on ref/HEAD change (not a timer), and per-task/per-branch spawns are removed.
-3. Git work runs in a worker (Bun Worker or child process) with a request queue and per-call timeout; the HTTP thread never awaits a spawn inline.
-4. Every HTTP request logs duration; a request open >10 s logs "STUCK <route>" plus in-flight git calls and their age.
-5. UI-polled GET routes (Control page worktree-gc, /api/tasks, deployments) never trigger a full index rebuild.
-6. Measured: with 900 tasks / 100 branches the server answers /api/auth/session and /api/tasks in <200 ms warm and within 5 s of boot, and stays that way for 1 h with two engineers running.
-Also cap local build/test fan-out (see #0961) and keep agents at nice 10.
+Narrowed on 2026-10-27 to what this branch already does (1/4 of the server-freeze work); the rest moved to #0965 (remaining sync git spawns + guard), #0966 (batched cached board queries), #0967 (request timing / STUCK log), #0969 (1 h latency measurement). #0968 covers the auto-reload handover bug.
+
+- [ ] Git work runs in a worker with a request queue and a per-call timeout; the HTTP thread never awaits a spawn inline for the call sites this branch moved.
+- [ ] GET /api/tasks is paged so the board no longer builds every task's enrichment per request.
+- [ ] The three regressions found on 2026-10-27 are fixed: agent-drivers "crush driver captures the session id", agent-review "reviews again after a human returns a task", agent-review "rejects move-to-done while automatic review is still running". They pass on main, so they must pass here without weakening the tests.
+- [ ] Run only the affected test files plus `repoos check --changed main` (no full-suite run: one took 80 min and swamped the machine).
 
 ## Notes for AI
 Read HANDOFF-2026-10-25.md in the repo root first (evidence, hypotheses, file/line suspects). Do not restart the server yourself; ask the human. Never run `just serve-noauth` or request previews while editing server git code.
@@ -165,3 +166,5 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T09:09:08Z · message_delivered: 1 message(s)
 - 2026-10-27T10:27:29Z · engineer stopped by request
 - 2026-10-27T10:27:29Z · needs_input
+- 2026-10-27T10:27:43Z · needs_input
+- 2026-10-27T12:03:43Z · body: Acceptance criteria (added 5, removed 7)
