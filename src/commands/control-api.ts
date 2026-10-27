@@ -1365,8 +1365,11 @@ async function cmdAgentsPauseResume(mode: "pause" | "resume", args: string[]): P
     return 1;
   }
   let model: string | undefined;
-  let until: string | undefined;
-  let reason: string | undefined;
+  // `--reason` and `--until` are shared flags (hold uses them too) and
+  // parseCommonFlags already consumed them. Reading them again from `rest`
+  // dropped the pause reason on `repoos agents pause`.
+  let until = opts.until;
+  let reason = opts.reason;
   let agent = "";
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i]!;
@@ -1375,8 +1378,6 @@ async function cmdAgentsPauseResume(mode: "pause" | "resume", args: string[]): P
       return 0;
     }
     if (a === "--model") model = rest[++i];
-    else if (a === "--until") until = rest[++i];
-    else if (a === "--reason") reason = rest[++i];
     else if (!a.startsWith("-") && !agent) agent = a;
   }
   if (!agent) {
