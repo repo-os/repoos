@@ -159,3 +159,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T06:43:24Z · engineer crash recovery: resuming codex + gpt-6.1-sol (3/12 crashes in 30m) · 2026-10-27T06:41:51.886191Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
 - 2026-10-27T06:43:34Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
 - 2026-10-27T09:07:23Z · needs_input
+- 2026-10-27T09:07:23Z · message_queued at 2026-10-27T09:07:23.457Z
