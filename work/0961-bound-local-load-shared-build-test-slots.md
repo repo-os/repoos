@@ -16,8 +16,10 @@ created_by: njachowski@gmail.com
 branch: feat/bound-local-load-shared-build-test-slots
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T02:17:53Z"
+updated_at: "2026-10-27T02:52:51Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-26T20:30:15.157Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:38:45.831Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:47:01.501Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -117,3 +119,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T02:02:28Z · status active→review
 - 2026-10-27T02:17:34Z · note: review pass 1: failed — no usable report
 - 2026-10-27T02:17:34Z · needs_input
+- 2026-10-27T02:52:51Z · review_cli_override, review_model_override
