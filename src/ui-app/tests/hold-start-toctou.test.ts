@@ -163,6 +163,7 @@ function makeCtx(fx: Fixture): RouteContext {
     stop: vi.fn(() => ({ stopped: true })),
     start: vi.fn(() => ({ ok: true as const, pid: 1, queued: false })),
     markPaused: vi.fn(),
+    clearHoldPause: vi.fn(),
   } as never;
   return {
     config: fx.config,
@@ -245,5 +246,25 @@ describe("start honors a hold that lands during bootstrap (#0960 round 3 TOCTOU)
     await taskAction(ctx, makeReq(), res, { param1: "0296", param2: "start" });
     expect(fake.status).toBe(409);
     expect((ctx.runner as any).start).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("unhold --start uses normal activation", () => {
+  it.each(["ready", "active"])("releases and starts a %s task", async (status) => {
+    const fx = makeFixture(status, 'hold: true\nhold_reason: maintenance\ntags: [hold]\n');
+    fixture = fx;
+    const ctx = makeCtx(fx);
+    const { res, fake } = makeRes();
+    hoisted.resolve = null;
+    const pending = taskAction(ctx, makeReq({ start: true }), res, { param1: "0296", param2: "unhold" });
+    await vi.waitFor(() => expect(hoisted.resolve).not.toBeNull());
+    hoisted.resolve!({ ok: true, durationMs: 1, steps: [] });
+    await pending;
+    expect(fake.status).toBe(200);
+    expect(fake.payload).toMatchObject({ released: true, started: true });
+    expect(readTaskFile(fx)).toMatchObject({ status: "active", isHeld: false, tags: [] });
+    expect(ctx.runner.clearHoldPause).toHaveBeenCalledWith("0296");
+    expect(ctx.runner.start).toHaveBeenCalledOnce();
   });
 });

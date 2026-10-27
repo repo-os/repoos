@@ -27,7 +27,10 @@ const heldTask = (over: Partial<Task> = {}): Task =>
     ...over,
   });
 
+let mounted: { unmount: () => void } | undefined;
+
 async function mountDrawer(pinia: Pinia, task: Task) {
+  mounted?.unmount();
   const router = createRouter({ history: createMemoryHistory(), routes: [] });
   await router.push("/");
   await router.isReady();
@@ -61,6 +64,7 @@ async function mountDrawer(pinia: Pinia, task: Task) {
     global: { plugins: [pinia, router], stubs: { teleport: true, Transition: true } },
   });
   await flush();
+  mounted = wrapper;
   return wrapper;
 }
 
@@ -71,6 +75,9 @@ function setup(): Pinia {
 }
 
 afterEach(() => {
+  mounted?.unmount();
+  mounted = undefined;
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -116,4 +123,17 @@ describe("task drawer Held reason (#0960)", () => {
     const details = wrapper.findAll(".debug-status-detail");
     expect(details.some((d) => d.find("strong")?.text() === "Held")).toBe(false);
   });
+});
+
+it.each([true, false])("expires the mounted drawer with flag=%s", async (flag) => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-27T00:00:00Z"));
+  const pinia = setup();
+  const wrapper = await mountDrawer(pinia, heldTask({ isHeld: flag, tags: flag ? [] : ["hold"], holdUntil: "2026-10-27T00:00:01Z" }));
+  const hasHeld = () => wrapper.findAll(".debug-status-detail").some((d) => d.find("strong")?.text() === "Held");
+  expect(hasHeld()).toBe(true);
+  await vi.advanceTimersByTimeAsync(1000);
+  await nextTick();
+  expect(hasHeld()).toBe(false);
+  useRepoStore().$dispose();
 });

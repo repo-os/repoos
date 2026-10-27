@@ -26,6 +26,7 @@ import {
   shotPreviewSkipsTaskLogsFetch,
 } from "../lib/shot-preview-fixtures";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
+import { useNow } from "../composables/useNow";
 import { isHoldActive } from "../../../core/task-selection.js";
 import type { StoryListSortOrder } from "../../../core/stories.js";
 import type {
@@ -647,6 +648,7 @@ function isSeededShotFixtureTask(id: string): boolean {
 }
 
 export const useRepoStore = defineStore("repo", () => {
+  const holdNow = useNow();
   const origin = window.location.origin;
   const loading = ref(true);
   const connected = ref(false);
@@ -988,7 +990,7 @@ export const useRepoStore = defineStore("repo", () => {
    *  a hold whose auto-release time has passed is no longer shown. */
   const heldTasks = computed<Task[]>(() =>
     tasks.value
-      .filter((t) => !t.isArchived && isHoldActive(t))
+      .filter((t) => !t.isArchived && isHoldActive(t, holdNow.value))
       .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")),
   );
 

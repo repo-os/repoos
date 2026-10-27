@@ -2319,6 +2319,11 @@ export interface BoardTask {
   title: string;
   type: string;
   status: Status;
+  isHeld?: boolean;
+  holdReason?: string;
+  holdUntil?: string;
+  holdBy?: string;
+  holdAt?: string;
   needsInput: boolean;
   /** Specific human-decisions blocking implementation until answered. */
   questions?: string[];
