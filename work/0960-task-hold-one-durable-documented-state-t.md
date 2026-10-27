@@ -2,7 +2,7 @@
 id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
@@ -95,4 +95,3 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T07:48:59Z · needs_input
 - 2026-10-27T07:48:59Z · message_queued at 2026-10-27T07:48:59.760Z
 - 2026-10-27T08:52:56Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
-- 2026-10-27T08:52:56Z · status active→review
