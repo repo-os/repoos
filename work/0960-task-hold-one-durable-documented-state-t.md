@@ -3,12 +3,6 @@ id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 8:23 AM."
-debug_tldr: "Engineer agent hit its ChatGPT/Codex usage limit mid-gate — pick a different engineer agent (or retry after 8:23 AM) and resume #0960."
-debug_tldr_at: "2026-10-27T21:01:26Z"
-debug_tldr_key: "dev-error|error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 8:23 AM."
 priority: p2
 area: core
 assigned_to: ai
@@ -183,3 +177,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T23:47:16Z · message_queued at 2026-10-27T23:47:16.354Z
 - 2026-10-27T23:47:24Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-27T23:47:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T23:47:24Z · needs_input
