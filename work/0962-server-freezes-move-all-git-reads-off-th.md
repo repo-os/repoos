@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: bedc55741a9e477fc772b91b48c18f324b8204c0
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
@@ -17,7 +15,9 @@ cli_override: codex
 model_override: gpt-6.1-sol
 review_cli_override: cursor
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T04:34:07Z"
+updated_at: "2026-10-27T05:51:57Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: bedc55741a9e477fc772b91b48c18f324b8204c0
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
