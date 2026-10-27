@@ -13,7 +13,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T06:26:19Z"
+updated_at: "2026-10-27T06:41:02Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
@@ -138,3 +138,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T06:20:19Z · needs_input
 - 2026-10-27T06:25:58Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-27T06:26:19Z · review_cli_override, review_model_override
+- 2026-10-27T06:41:02Z · note: review pass 4: failed — no usable report
