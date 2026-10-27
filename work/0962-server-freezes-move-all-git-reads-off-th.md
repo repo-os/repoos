@@ -16,7 +16,7 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T20:57:11Z"
+updated_at: "2026-10-27T21:17:09Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: TypeError: index.refreshAllAsync is not a function. (In 'index.refreshAllAsync()', 'index.refreshAllAsync' is undefined)"
 last_handoff_failure_sha: "020afcc6300f9e5f8647f654c0a7c41095115f60"
 review_rounds: 1
@@ -194,3 +194,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T20:45:13Z · note: handoff requested (ui-review)
 - 2026-10-27T20:55:14Z · handoff failed · ui-review handoff failed at check · repoos check failed: TypeError: index.refreshAllAsync is not a function. (In 'index.refreshAllAsync()', 'index.refreshAllAsync' is undefined)
 - 2026-10-27T20:57:11Z · note: handoff requested (ui-review)
+- 2026-10-27T21:17:09Z · handoff failed · ui-review handoff failed at check · repoos check failed: staleness — Stale build: src/ has changed since the last `bun run build`.
