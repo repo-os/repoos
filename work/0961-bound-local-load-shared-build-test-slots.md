@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id."
+debug_tldr: "Engineer agent hit a provider usage limit and the handoff `repoos check` still fails on the unchanged tip — switch to an allowlisted agent with credit, then run `repoos check` and fix the failure."
+debug_tldr_at: "2026-10-27T09:08:19Z"
+debug_tldr_key: "dev-error|Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id."
 priority: p1
 area: core
 assigned_to: ai
@@ -16,7 +19,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T09:07:58Z"
+updated_at: "2026-10-27T09:08:19Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 687ea6b1cd2842380f1609211785833150cdb7d3
 review_passes: 3
