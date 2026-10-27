@@ -3,6 +3,8 @@ id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
 needs_merge: true
 priority: p0
 area: core
@@ -187,4 +189,5 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T20:43:04Z · message_delivered: 1 message(s)
 - 2026-10-27T20:44:18Z · note: 2026-10-28 resume: reviewed the queued-timeout lifecycle test now checkpointed in a209554e7. Re-ran 18 selected affected tests (worker lifecycle, review completion/preparation, and all three originally reported regressions): all passed, no assertions weakened. Required REPOOS_CHECK_CHANGED=main check retried and stopped at remote validation is not enabled. Did not repeat the previously timed-out 429-file local fallback or launch a full suite. RepoOS checkpointed the prior temporary-log deletions as 020afcc63; worktree is clean. Still blocked on enabling remote validation or an explicitly approved runnable check profile; no handoff requested.
 - 2026-10-27T20:44:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T20:44:22Z · needs_input
 - 2026-10-27T20:44:22Z · needs_input
