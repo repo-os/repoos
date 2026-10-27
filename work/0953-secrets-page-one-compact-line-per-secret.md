@@ -2,7 +2,7 @@
 id: "0953"
 title: "Secrets page: one compact line per secret with actions behind an options menu (Railway-style)"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 depends_on: ["0950"]
@@ -12,7 +12,7 @@ branch: feat/secrets-page-one-compact-line-per-secret
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-27T05:44:01Z"
+updated_at: "2026-10-27T05:46:50Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: user-docs-build — timed out — timed out after 600s"
 last_handoff_failure_sha: 328e71d1c53c58e97c9df3c488a0dd140a88d29f
 check_retry_count: 1
@@ -145,3 +145,4 @@ Done in this task:
 - 2026-10-27T05:22:58Z · handoff failed · task-file handoff failed at check · repoos check failed: user-docs-build — timed out — timed out after 600s
 - 2026-10-27T05:22:59Z · message_delivered: 1 message(s)
 - 2026-10-27T05:44:01Z · body
+- 2026-10-27T05:46:50Z · status active→review
