@@ -1975,9 +1975,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           if (preCheck && isHoldActive(preCheck)) {
             runner.system(
               request.taskId,
-              "✗ server-side handoff rejected: task is held — release it with \"repoos unhold " +
+              '✗ server-side handoff rejected: task is held — release it with "repoos unhold ' +
                 request.taskId +
-                "\" before it can move to review",
+                '" before it can move to review',
             );
             return;
           }

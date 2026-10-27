@@ -498,12 +498,10 @@ describe("POST /api/tasks/:id — hold / unhold / start gate (#0960)", () => {
     const fx = makeFixture("active");
     try {
       const { res, fake } = makeRes();
-      await taskAction(
-        makeCtx(fx),
-        makeReq({ reason: "x", until: "2030-13-40T00:00:00Z" }),
-        res,
-        { param1: "0296", param2: "hold" },
-      );
+      await taskAction(makeCtx(fx), makeReq({ reason: "x", until: "2030-13-40T00:00:00Z" }), res, {
+        param1: "0296",
+        param2: "hold",
+      });
       expect(fake.status).toBe(400);
       expect(readTaskFile(fx).isHeld).toBe(false);
     } finally {

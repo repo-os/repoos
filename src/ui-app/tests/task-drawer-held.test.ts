@@ -111,10 +111,7 @@ describe("task drawer Held reason (#0960)", () => {
   it("hides the Held detail once a dated hold has auto-released", async () => {
     const pinia = setup();
     useRepoStore();
-    const wrapper = await mountDrawer(
-      pinia,
-      heldTask({ holdUntil: "2000-01-01T00:00:00Z" }),
-    );
+    const wrapper = await mountDrawer(pinia, heldTask({ holdUntil: "2000-01-01T00:00:00Z" }));
 
     const details = wrapper.findAll(".debug-status-detail");
     expect(details.some((d) => d.find("strong")?.text() === "Held")).toBe(false);
