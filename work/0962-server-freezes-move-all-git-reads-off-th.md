@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component."
-last_handoff_failure_sha: 10cb5cd1e550223aa114ba2c37236cbda9e18775
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
@@ -13,12 +11,14 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-freezes-move-all-git-reads-off-th
-cli_override: codex
-model_override: gpt-6.1-sol
+cli_override: cursor
+model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T22:30:40Z"
+updated_at: "2026-10-27T23:11:04Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: tests — If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component."
+last_handoff_failure_sha: 10cb5cd1e550223aa114ba2c37236cbda9e18775
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -199,4 +199,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T22:07:46Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — version: 0,
 - 2026-10-27T22:07:54Z · note: handoff requested (ui-review)
 - 2026-10-27T22:30:40Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
-
+- 2026-10-27T23:11:04Z · cli_override, model_override
