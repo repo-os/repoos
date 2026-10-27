@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/secrets-page-one-compact-line-per-secret
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-27T01:33:55Z"
+updated_at: "2026-10-27T01:36:01Z"
 ---
 ## Problem
 
@@ -42,11 +42,6 @@ On the Secrets page each secret takes up too much vertical space, so a project w
 ## Open the env file in the editor
 Values are plaintext dotenv text in gitignored local files (user-docs/environment-and-secrets.md, 'What file-backed means'; ADR 0010). So instead of a reveal or copy button, add an Open in editor link next to the selected environment's file name (for example .env.dev-local), shown only when that environment's file exists. It reuses the existing open-in-editor mechanism (server route in src/server/routes/copy-inspector.ts and the dev.inspector.editorCommand setting). Security rules, with tests: the server opens only files registered as project environment sources (resolved from config and the environment id, never a path supplied by the client); the browser never receives a value; the link is hidden or disabled when the page is reached through a tunnel or any non-local request, and when no editor command is configured it explains how to set it (Settings control already exists for that key). Update user-docs/environment-and-secrets.md to say that values stay write-only in the UI and API, and that the file can be edited directly in an editor.
 
-## Screenshots
-
-![32](/api/tasks/0953/attachments/att_4d7f0e1b-8556-463c-a54e-c55d0dc87bd4.png)
-![33](/api/tasks/0953/attachments/att_a916d88c-6229-483a-b449-897fc80fec55.png)
-
 ## Shots
 ```json
 [
@@ -64,10 +59,10 @@ Values are plaintext dotenv text in gitignored local files (user-docs/environmen
 "highlight": ".secrets-menu",
 "steps": [
 {
-  "click": ".secrets-row:first-child .secrets-menu-trigger"
+"click": ".secrets-row:first-child .secrets-menu-trigger"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "state": "secrets:populated"
@@ -92,6 +87,11 @@ Done in this task:
 - Tests: secrets-view.test.ts covers the row structure, menu actions, delete confirmation, filter count sync, keyboard access (focus into menu, arrows, Escape back to trigger), write-only guarantees, and the editor link's payload; project-environment-routes.test.ts covers existence metadata, registry-only path resolution, non-local rejection, missing editor/file errors, and auth.
 - Docs: user-docs/environment-and-secrets.md updated (one-line layout, write-only wording, editor link).
 
+## Screenshots
+
+![32](/api/tasks/0953/attachments/att_4d7f0e1b-8556-463c-a54e-c55d0dc87bd4.png)
+![33](/api/tasks/0953/attachments/att_a916d88c-6229-483a-b449-897fc80fec55.png)
+
 ## Activity
 
 - 2026-10-24T23:23:08Z · created · njachowski@gmail.com
@@ -108,3 +108,4 @@ Done in this task:
 - 2026-10-27T01:28:34Z · body
 - 2026-10-27T01:33:55Z · body: Implementation note (added)
 - 2026-10-27T01:33:55Z · message_queued at 2026-10-27T01:33:55.344Z
+- 2026-10-27T01:36:01Z · body
