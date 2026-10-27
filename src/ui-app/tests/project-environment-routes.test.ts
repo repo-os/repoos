@@ -11,6 +11,7 @@ import {
   listProjectEnvironments,
   listProjectEnvironmentSecrets,
   mutateProjectEnvironmentSecret,
+  openProjectEnvironmentSourceInEditor,
   getProjectEnvironmentBindings,
   putProjectEnvironmentBinding,
   RESERVED_PROJECT_ENVIRONMENT_KEYS,
@@ -71,14 +72,24 @@ function makeFixture() {
       } as unknown as ServerResponse,
     };
   };
-  const req = (body = "{}", opts?: { token?: string; host?: string; origin?: string }) =>
+  const req = (
+    body = "{}",
+    opts?: {
+      token?: string;
+      host?: string;
+      origin?: string;
+      headers?: Record<string, string>;
+      socket?: { remoteAddress?: string };
+    },
+  ) =>
     ({
       headers: {
         cookie: `${SESSION_COOKIE_NAME}=${opts?.token ?? adminToken}`,
         host: opts?.host ?? "localhost",
         ...(opts?.origin ? { origin: opts.origin } : {}),
+        ...(opts?.headers ?? {}),
       },
-      socket: {},
+      socket: opts?.socket ?? {},
       async *[Symbol.asyncIterator]() {
         yield Buffer.from(body);
       },
@@ -688,5 +699,148 @@ describe("project environment secret routes", () => {
       { param1: "dev" },
     );
     expect(mutateOrigin.fake.status).toBe(403);
+  });
+});
+
+describe("open project environment source in editor (#0953)", () => {
+  let localRoot = "";
+  afterEach(() => {
+    if (localRoot) rmSync(localRoot, { recursive: true, force: true });
+    localRoot = "";
+    resetAuthStoreInstance();
+  });
+
+  it("reports whether each registered source file exists without exposing values", async () => {
+    const fx = makeFixture();
+    localRoot = fx.root;
+    writeFileSync(
+      join(localRoot, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [
+          { id: "dev", sources: [{ id: "local", path: ".env.dev" }] },
+          { id: "ghost", sources: [{ id: "local", path: ".env.ghost" }] },
+        ],
+      }),
+    );
+    const response = fx.response();
+    await listProjectEnvironments(fx.ctx, fx.req(), response.res, {});
+    const environments = (
+      response.fake.payload as {
+        environments: { id: string; sources: { path: string; exists: boolean }[] }[];
+      }
+    ).environments;
+    expect(environments.find((env) => env.id === "dev")!.sources[0]).toMatchObject({
+      path: ".env.dev",
+      exists: true,
+    });
+    expect(environments.find((env) => env.id === "ghost")!.sources[0]).toMatchObject({
+      path: ".env.ghost",
+      exists: false,
+    });
+    // Existence metadata only — no file contents anywhere in the response.
+    expect(response.fake.raw).not.toContain("TOKEN");
+  });
+
+  it("opens a registered source in the editor, resolving the path from the registry", async () => {
+    const fx = makeFixture();
+    localRoot = fx.root;
+    (fx.ctx as { config: { editor?: { command?: string } } }).config.editor = { command: "true" };
+    const response = fx.response();
+    await openProjectEnvironmentSourceInEditor(
+      fx.ctx,
+      fx.req(JSON.stringify({ source: "local" }), { socket: { remoteAddress: "127.0.0.1" } }),
+      response.res,
+      { param1: "dev" },
+    );
+    expect(response.fake.status).toBe(200);
+    expect(response.fake.payload).toEqual({ ok: true, path: ".env.dev" });
+  });
+
+  it("refuses a client-supplied source id that is not registered", async () => {
+    const fx = makeFixture();
+    localRoot = fx.root;
+    (fx.ctx as { config: { editor?: { command?: string } } }).config.editor = { command: "true" };
+    const response = fx.response();
+    await openProjectEnvironmentSourceInEditor(
+      fx.ctx,
+      fx.req(JSON.stringify({ source: "../../etc/passwd", file: ".env.dev" }), {
+        socket: { remoteAddress: "127.0.0.1" },
+      }),
+      response.res,
+      { param1: "dev" },
+    );
+    expect(response.fake.status).toBe(400);
+    expect(response.fake.raw).not.toContain(".env.dev");
+  });
+
+  it("rejects non-local requests and forwarded connections outright", async () => {
+    const fx = makeFixture();
+    localRoot = fx.root;
+    (fx.ctx as { config: { editor?: { command?: string } } }).config.editor = { command: "true" };
+    const forwarded = fx.response();
+    await openProjectEnvironmentSourceInEditor(
+      fx.ctx,
+      fx.req("{}", {
+        socket: { remoteAddress: "127.0.0.1" },
+        headers: { "x-forwarded-for": "10.0.0.1" },
+      }),
+      forwarded.res,
+      { param1: "dev" },
+    );
+    expect(forwarded.fake.status).toBe(403);
+    const remote = fx.response();
+    await openProjectEnvironmentSourceInEditor(
+      fx.ctx,
+      fx.req(JSON.stringify({ source: "local" }), { socket: { remoteAddress: "10.0.0.9" } }),
+      remote.res,
+      { param1: "dev" },
+    );
+    expect(remote.fake.status).toBe(403);
+  });
+
+  it("reports a missing editor command and a missing file distinctly", async () => {
+    const fx = makeFixture();
+    localRoot = fx.root;
+    const noEditor = fx.response();
+    await openProjectEnvironmentSourceInEditor(
+      fx.ctx,
+      fx.req(JSON.stringify({ source: "local" }), { socket: { remoteAddress: "127.0.0.1" } }),
+      noEditor.res,
+      { param1: "dev" },
+    );
+    expect(noEditor.fake.status).toBe(400);
+    expect(noEditor.fake.payload).toEqual({ error: "no editor command configured" });
+
+    writeFileSync(
+      join(localRoot, ".repoos/environments.json"),
+      JSON.stringify({
+        environments: [{ id: "dev", sources: [{ id: "local", path: ".env.ghost" }] }],
+      }),
+    );
+    (fx.ctx as { config: { editor?: { command?: string } } }).config.editor = { command: "true" };
+    const noFile = fx.response();
+    await openProjectEnvironmentSourceInEditor(
+      fx.ctx,
+      fx.req(JSON.stringify({ source: "local" }), { socket: { remoteAddress: "127.0.0.1" } }),
+      noFile.res,
+      { param1: "dev" },
+    );
+    expect(noFile.fake.status).toBe(400);
+    expect(noFile.fake.payload).toEqual({
+      error: "The environment source file does not exist yet",
+    });
+  });
+
+  it("requires a signed-in user", async () => {
+    const fx = makeFixture();
+    localRoot = fx.root;
+    const response = fx.response();
+    await openProjectEnvironmentSourceInEditor(
+      fx.ctx,
+      fx.req("{}", { token: "invalid-session", socket: { remoteAddress: "127.0.0.1" } }),
+      response.res,
+      { param1: "dev" },
+    );
+    expect(response.fake.status).toBe(401);
   });
 });
