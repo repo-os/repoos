@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]"
+last_handoff_failure_sha: 2ddf481e7b564d0995ded4b9380b937785a08e82
 id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
@@ -123,3 +125,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T14:20:29Z · status active→review
 - 2026-10-27T14:20:29Z · note: handoff requested (cli)
 - 2026-10-27T14:33:31Z · handoff failed · task-file handoff failed at check · repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]
+
