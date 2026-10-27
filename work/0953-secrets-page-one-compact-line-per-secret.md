@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/secrets-page-one-compact-line-per-secret
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-27T01:28:34Z"
+updated_at: "2026-10-27T01:33:55Z"
 ---
 ## Problem
 
@@ -51,36 +51,46 @@ Values are plaintext dotenv text in gitignored local files (user-docs/environmen
 ```json
 [
 {
-  "label": "Compact one-line secrets list with count, search and add in the header",
-  "target": "default",
-  "route": "/secrets",
-  "highlight": ".secrets-rows",
-  "state": "secrets:populated"
+"label": "Compact one-line secrets list with count, search and add in the header",
+"target": "default",
+"route": "/secrets",
+"highlight": ".secrets-rows",
+"state": "secrets:populated"
 },
 {
-  "label": "Row options menu open with replace and remove actions",
-  "target": "default",
-  "route": "/secrets",
-  "highlight": ".secrets-menu",
-  "steps": [
-    {
-      "click": ".secrets-row:first-child .secrets-menu-trigger"
-    },
-    {
-      "waitMs": 300
-    }
-  ],
-  "state": "secrets:populated"
+"label": "Row options menu open with replace and remove actions",
+"target": "default",
+"route": "/secrets",
+"highlight": ".secrets-menu",
+"steps": [
+  {
+    "click": ".secrets-row:first-child .secrets-menu-trigger"
+  },
+  {
+    "waitMs": 300
+  }
+],
+"state": "secrets:populated"
 },
 {
-  "label": "Remove-key confirmation dialog",
-  "target": "default",
-  "route": "/secrets",
-  "highlight": ".delete-confirm-modal",
-  "state": "secrets:removeDialog"
+"label": "Remove-key confirmation dialog",
+"target": "default",
+"route": "/secrets",
+"highlight": ".delete-confirm-modal",
+"state": "secrets:removeDialog"
 }
 ]
 ```
+
+## Implementation note
+Done in this task:
+
+- **One compact line per secret** in SecretsView.vue: status dot, monospace key name (long names truncate; the full name plus source, consumers and restart state shows in the shared styled tooltip on hover/focus), short badges (inherited / public prefix / pending restart), a decorative masked `•••••••` placeholder (or "Not set" for missing keys), and a three-dot options menu at the right. All per-key actions live in the menu: Replace value (inline masked form) and Remove key (still confirmed by the shared ConfirmDialog with consumers listed). Inherited keys stay read-only with no actions, as before. No reveal or copy control was added — values remain write-only (the old layout had none either; the new write-only test now guards that no menu ever offers copy/reveal and every value input stays type=password).
+- **Header**: key count (live "N of M keys" while filtering), search field, and Add key share one row, Railway-style.
+- **Open in editor** (#0953 body addition): a link next to the environment's file name opens the registered source file via a new `POST /api/project-environments/:id/open-in-editor` route. The server resolves the file from the registry + environment id only (client sends just the environment and source id — tested that no path/value can be smuggled), serves only loopback un-forwarded requests, and requires an editor command (`dev.inspector.editorCommand` or `editor.command`). The UI shows the link only for admins on a local origin with an editor command configured and the source file existing (new `exists` flag on the environments listing, existence metadata only); otherwise it explains where to set the editor command.
+- **Row height**: before ≈193px + 12px gap per key (derived from the old CSS box model: 16px×2 padding, three stacked sub-rows of metadata plus an actions row); after 38px + 5px gap per key, measured live in headless Chromium against the fixture page. A 20-key list goes from ~4100px to ~860px.
+- Tests: secrets-view.test.ts covers the row structure, menu actions, delete confirmation, filter count sync, keyboard access (focus into menu, arrows, Escape back to trigger), write-only guarantees, and the editor link's payload; project-environment-routes.test.ts covers existence metadata, registry-only path resolution, non-local rejection, missing editor/file errors, and auth.
+- Docs: user-docs/environment-and-secrets.md updated (one-line layout, write-only wording, editor link).
 
 ## Activity
 
@@ -96,3 +106,4 @@ Values are plaintext dotenv text in gitignored local files (user-docs/environmen
 - 2026-10-26T23:19:01Z · body
 - 2026-10-26T23:23:28Z · body
 - 2026-10-27T01:28:34Z · body
+- 2026-10-27T01:33:55Z · body: Implementation note (added)
