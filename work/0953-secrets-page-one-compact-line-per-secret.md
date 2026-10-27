@@ -2,7 +2,7 @@
 id: "0953"
 title: "Secrets page: one compact line per secret with actions behind an options menu (Railway-style)"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 depends_on: ["0950"]
