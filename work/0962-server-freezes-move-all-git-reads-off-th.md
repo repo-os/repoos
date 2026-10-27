@@ -5,6 +5,7 @@ type: bug
 status: active
 needs_input: true
 needs_input_reason: dev-error
+needs_input_detail: "error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 3:38 PM."
 needs_merge: true
 priority: p0
 area: core
@@ -16,13 +17,13 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T06:41:12Z"
+updated_at: "2026-10-27T06:41:31Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: bedc55741a9e477fc772b91b48c18f324b8204c0
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
-dev_error_count: 5
+dev_error_count: 6
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
