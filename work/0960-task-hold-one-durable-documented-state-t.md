@@ -3,9 +3,6 @@ id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — Board serialization, release routing, queue preservation, pause ownership, and expiry display need fixes."
 priority: p2
 area: core
 assigned_to: ai
@@ -114,3 +111,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T13:16:13Z · status review→active
 - 2026-10-27T13:16:13Z · note: send-back — returned to active for engineer follow-up
 - 2026-10-27T13:16:17Z · message_delivered: 1 message(s)
+- 2026-10-27T13:16:17Z · needs_input
