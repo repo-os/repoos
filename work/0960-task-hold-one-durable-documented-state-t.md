@@ -13,7 +13,7 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T20:41:53Z"
+updated_at: "2026-10-27T20:43:23Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T14:46:39.664Z: repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]"
 review_passes: 4
@@ -49,6 +49,26 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 
 - This touches central automation (CTO, watchdog, crash recovery, dispatch). It is deliberately a normal task with review, not a hotfix on main: a bug here silently skips tasks that should run.
 - Do not start a second RepoOS server from a worktree (see #0954).
+
+## Shots
+```json
+[
+{
+  "label": "Held task badge and Held group",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".tc-held, .held-toggle",
+  "state": "card:held"
+},
+{
+  "label": "Hold reason and automatic release in task status",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-area",
+  "state": "drawer:held"
+}
+]
+```
 
 ## Activity
 
@@ -134,3 +154,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T20:41:41Z · cli_override, model_override
 - 2026-10-27T20:41:53Z · needs_input
 - 2026-10-27T20:41:53Z · message_queued at 2026-10-27T20:41:53.508Z
+- 2026-10-27T20:43:23Z · body
