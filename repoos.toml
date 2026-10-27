@@ -256,7 +256,7 @@ whenChanged = ["work/**", "inputs/**"]
 name = "tests"
 kind = "tests"
 requires = ["bun"]
-timeoutMs = 900000 # 15 min: a loaded laptop ran the full suite past the 420s default (2026-10-22, #0909)
+timeoutMs = 2400000 # 40 min: local full suite under load (remote validation off, 2026-10-27); was 15 min (#0909)
 dependsOn = ["check-fmt:check", "check-lint"]
 
 [[check.steps]]
@@ -752,6 +752,7 @@ models = ["composer-2.5", "grok-4.7-low"]
 [[budget.allowlist]]
 cli = "codex"
 models = ["gpt-6-luna", "gpt-6.1-sol"]
+pausedModels = [{ model = "gpt-6.1-sol", pausedUntil = "2026-10-28T01:23:00.000Z", pausedReason = "out of usage since 2026-10-27T21:39:17.853Z: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 8:23 AM." }]
 [[budget.allowlist]]
 cli = "antigravity"
 models = ["gemini-3.8-flash-medium", "gemini-3.8-flash-high"]
