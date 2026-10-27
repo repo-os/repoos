@@ -298,7 +298,9 @@ export async function branchRefSnapshotAsync(
   const key = `${root}\0${base ?? ""}`;
   const hit = branchRefsCache.get(key);
   if (hit && hit.fingerprint === fingerprint) return cloneBranchRefs(hit.snapshot);
-  const snapshot = parseBranchRefs(await gitAsync(root, branchRefArgs(base), base ? 60_000 : 4000));
+  const withAhead = await gitAsync(root, branchRefArgs(base), base ? 60_000 : 4000);
+  const refs = withAhead ?? (base ? await gitAsync(root, branchRefArgs(null), 4000) : null);
+  const snapshot = parseBranchRefs(refs);
   if (base) await fillMissingAheadCounts(root, base, snapshot);
   branchRefsCache.set(key, { fingerprint, snapshot });
   return cloneBranchRefs(snapshot);
@@ -307,7 +309,8 @@ export async function branchRefSnapshotAsync(
 /**
  * `%(ahead-behind:)` is empty on git before 2.41 and when the merge base cannot
  * be computed. Missing must not become "0 ahead" or a branch with real commits
- * reads clean. One rev-list per such branch, off the HTTP thread.
+ * reads clean. The merged-branch query provides the same zero/nonzero
+ * information needed by worktree dirtiness without a per-branch process.
  */
 async function fillMissingAheadCounts(
   root: string,
@@ -318,16 +321,8 @@ async function fillMissingAheadCounts(
     (branch) => branch !== base && !snapshot.aheadCounts.has(branch),
   );
   if (missing.length === 0) return;
-  const queue = [...missing];
-  await Promise.all(
-    Array.from({ length: Math.min(4, queue.length) }, async () => {
-      for (let branch = queue.shift(); branch; branch = queue.shift()) {
-        const out = await gitAsync(root, ["rev-list", "--count", `${base}..${branch}`], 60_000);
-        const count = Number(out);
-        if (out !== null && Number.isFinite(count)) snapshot.aheadCounts.set(branch, count);
-      }
-    }),
-  );
+  const merged = await mergedBranchesAsync(root, base);
+  for (const branch of missing) snapshot.aheadCounts.set(branch, merged.has(branch) ? 0 : 1);
 }
 
 /** Commits-ahead count for every local branch relative to `base`, in one query. */
@@ -1220,6 +1215,7 @@ export async function resolveWorktreeStatuses(
     baseBranch: string | null;
     cache?: WorktreeDirtyCache;
     skipStatus?: boolean;
+    forceStatus?: boolean;
     /** Batched facts from `repoGitOverviewAsync`; avoids repeating either query. */
     worktrees?: Map<string, WorktreeEntry>;
     aheadCounts?: Map<string, number>;
@@ -1274,7 +1270,7 @@ export async function resolveWorktreeStatuses(
 
     const ahead = (aheadCounts.get(branch) ?? 0) > 0;
     const cached = cache.get(branch);
-    if (opts.skipStatus || (cached && cached.head === entry.head)) {
+    if (opts.skipStatus || (!opts.forceStatus && cached && cached.head === entry.head)) {
       const uncommitted = cached && cached.head === entry.head ? cached.uncommitted : false;
       statuses.set(branch, { path: entry.path, dirty: uncommitted || ahead });
     } else {

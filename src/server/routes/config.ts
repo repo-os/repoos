@@ -934,7 +934,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   logAreaVocabularyDrift(repoos, index, ctx.logger, vocabularyBefore);
 
   if (patch.workDir || patch.cacheDir || patch.taskExtensions) {
-    index.refreshAll();
+    await index.refreshAllAsync();
   }
 
   return json(res, 200, { ok: true, config: safeConfigForBrowser({ ...repoos.config }) });
@@ -1044,7 +1044,7 @@ export const writeRawConfig: RouteHandler = async (ctx, req, res) => {
   const vocabularyBefore = effectiveAreaNames(repoos.config);
   applyLoadedConfig(repoos, loadConfigAfterServerWrite(config.root, config.cacheDir));
   ctx.remoteValidator?.applyConfig?.();
-  index.refreshAll();
+  await index.refreshAllAsync();
 
   // A raw edit is a direct repoos.toml edit, so it is exactly where an area
   // vocabulary can shrink without the curated PATCH path noticing — run the

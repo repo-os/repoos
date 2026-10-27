@@ -419,14 +419,14 @@ describe("the publish commit stamps status done atomically (#0886)", () => {
     }
   }, 30_000);
 
-  it("markTaskReleased records the release marker for a stamped done task", () => {
+  it("markTaskReleased records the release marker for a stamped done task", async () => {
     const { root, clean } = makeRepo();
     try {
       const absPath = writeTask(root, "review");
       const config = configFor(root);
       // Simulate the publish stamp: status done, no release marker yet.
       writeFileSync(absPath, taskContent("done"));
-      const released = markTaskReleased(config, absPath, "abc123");
+      const released = await markTaskReleased(config, absPath, "abc123");
       expect(released.status).toBe("done");
       expect(released.mergedCommit).toBe("abc123");
       expect(releasedAtFromActivity(released.body)).toBeTruthy();

@@ -3,8 +3,8 @@
  * Only PIDs recorded in the durable agent registry or ownership file are
  * considered — never scan or signal by process name.
  */
-import { execFileSync } from "node:child_process";
-import { readlinkSync, realpathSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { readlink, realpathSync } from "node:fs";
 import { listProcessGroupPids } from "../core/process-group.js";
 import { signalProcessGroup } from "../core/process-group.js";
 import type { OwnershipRecord } from "./system.js";
@@ -66,34 +66,32 @@ export function isManagedHarnessCommand(command: string): boolean {
   return false;
 }
 
-function safeExec(cmd: string, args: string[]): string | null {
-  try {
-    return execFileSync(cmd, args, {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-      timeout: 5000,
-    }).trim();
-  } catch {
-    return null;
-  }
+function safeExec(cmd: string, args: string[]): Promise<string | null> {
+  return new Promise((resolve) => {
+    execFile(cmd, args, { encoding: "utf8", timeout: 5000 }, (error, stdout) => {
+      resolve(error ? null : stdout.trim());
+    });
+  });
 }
 
 /** Best-effort command line for a live PID. */
-export function processCommandLine(pid: number): string | null {
+export function processCommandLine(pid: number): Promise<string | null> {
   return safeExec("ps", ["-p", String(pid), "-o", "command="]);
 }
 
-/** Best-effort cwd for a live PID (sync). */
-export function processCwdSync(pid: number): string | null {
+/** Best-effort cwd for a live PID. */
+export async function processCwd(pid: number): Promise<string | null> {
   if (process.platform === "linux") {
     try {
-      const raw = readlinkSync(`/proc/${pid}/cwd`);
+      const raw = await new Promise<string>((resolve, reject) =>
+        readlink(`/proc/${pid}/cwd`, (error, path) => (error ? reject(error) : resolve(path))),
+      );
       return raw.replace(/ \(deleted\)$/, "") || null;
     } catch {
       return null;
     }
   }
-  const out = safeExec("lsof", ["-a", "-p", String(pid), "-d", "cwd", "-Fn"]);
+  const out = await safeExec("lsof", ["-a", "-p", String(pid), "-d", "cwd", "-Fn"]);
   if (!out) return null;
   const line = out.split("\n").find((entry) => entry.startsWith("n"));
   const cwd = line?.slice(1) ?? null;
@@ -113,11 +111,14 @@ export function sameWorkdirPath(a: string, b: string): boolean {
  * Positive identification: PID is alive, cwd matches the recorded worktree,
  * and the command line looks like a managed harness — not an unrelated process.
  */
-export function verifyRecordedHarnessPid(pid: number, expectedWorkdir: string): boolean {
+export async function verifyRecordedHarnessPid(
+  pid: number,
+  expectedWorkdir: string,
+): Promise<boolean> {
   if (!pidAlive(pid)) return false;
-  const cmd = processCommandLine(pid);
+  const cmd = await processCommandLine(pid);
   if (!cmd || !isManagedHarnessCommand(cmd)) return false;
-  const cwd = processCwdSync(pid);
+  const cwd = await processCwd(pid);
   if (!cwd) return false;
   return sameWorkdirPath(cwd, expectedWorkdir);
 }

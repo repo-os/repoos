@@ -9,7 +9,8 @@ import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "
 import { dirname, join } from "node:path";
 import type { LogLevel } from "../core/logger.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
-import { runGit, worktreePathForBranch } from "../core/git.js";
+import { runGit } from "../core/git.js";
+import { getGitWorker } from "./git-worker.js";
 import type { JobCoordinator } from "./integration-job.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
 import type { PreviewManager } from "./preview.js";
@@ -158,7 +159,7 @@ async function runRecoveryPipeline(
   const { config, reviews } = deps;
   const branch = task.branch;
   if (!branch) throw new Error("task has no branch");
-  const workdir = worktreePathForBranch(config.root, branch);
+  const workdir = await getGitWorker(config.root).worktreePath(branch);
   if (!workdir) throw new Error("feature worktree not found");
 
   const headRes = await runGit(workdir, ["rev-parse", "HEAD"], 10_000);

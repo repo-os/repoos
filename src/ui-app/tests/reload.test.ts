@@ -952,8 +952,8 @@ branch: feat/adopt-test
       expect(runner.isRunning("0001")).toBe(false); // not running yet
       expect(runner.isRunning("0002")).toBe(false);
 
-      vi.spyOn(orphanEngineers, "verifyRecordedHarnessPid").mockReturnValue(true);
-      runner.adoptRunningAgents();
+      vi.spyOn(orphanEngineers, "verifyRecordedHarnessPid").mockResolvedValue(true);
+      await runner.adoptRunningAgents();
 
       // The live entry (our own PID) should be adopted
       expect(runner.isRunning("0001")).toBe(true);
@@ -1060,7 +1060,7 @@ branch: feat/review-adopt
           doneKind = reviewKind;
         },
       });
-      runner.adoptRunningAgents();
+      await runner.adoptRunningAgents();
 
       // The completion hook is deferred so the server has built its
       // ReviewManager before it fires; wait for it here.
@@ -1135,7 +1135,7 @@ branch: feat/review-chat
           doneKind = reviewKind;
         },
       });
-      runner.adoptRunningAgents();
+      await runner.adoptRunningAgents();
 
       const deadline = Date.now() + 5000;
       while (doneKind === undefined && Date.now() < deadline) {

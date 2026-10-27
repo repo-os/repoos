@@ -19,7 +19,7 @@
  * completion nudge to an active engineer after five minutes of real inactivity.
  */
 import { existsSync, statSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";
@@ -47,7 +47,7 @@ const AUTOMATIC_NUDGE_MARKER = "CTO nudge: sent engineer a completion reminder";
  */
 export interface CTOMonitorProbes {
   /** Process snapshot for a task; defaults to the runner's own sample. */
-  engineerProcess?: (taskId: string) => EngineerProcessState;
+  engineerProcess?: (taskId: string) => EngineerProcessState | Promise<EngineerProcessState>;
   /** Machine-pressure reason, or null when pressure is normal. */
   pressureReason?: () => string | null;
   /** True while a review turn is running for the task. */
@@ -166,7 +166,7 @@ export class CTOMonitor {
     // engineer nudge should still be timely if a report is in progress. The
     // master kill switch (#0727) halts the automatic nudge too.
     if (this.config.automation?.paused !== true) {
-      this.nudgeIdleActiveTasks();
+      await this.nudgeIdleActiveTasks();
     }
     if (this.safeActions) {
       await this.safeActions();
@@ -174,7 +174,7 @@ export class CTOMonitor {
 
     if (this.cto.isRunning()) return;
 
-    const built = this.buildDigest();
+    const built = await this.buildDigest();
     if (!built) return;
 
     const materialHash = simpleHash(built.material);
@@ -225,7 +225,7 @@ export class CTOMonitor {
    * engineer was silent instead of sending a reminder that queues behind the
    * work and arrives as noise.
    */
-  private nudgeIdleActiveTasks(): void {
+  private async nudgeIdleActiveTasks(): Promise<void> {
     const now = Date.now();
     const idleMs = resolveCtoNudgeIdleMs(this.config);
     const cooldownMs = resolveCtoNudgeCooldownMs(this.config);
@@ -248,7 +248,10 @@ export class CTOMonitor {
       }
 
       const runnerRunning = this.runner?.isRunning(task.id) ?? false;
-      const process = this.processStateFor(task.id, runnerRunning);
+      const process = await this.processStateFor(task.id, runnerRunning);
+      const recentWorktreeActivity =
+        runnerRunning &&
+        (await hasRecentWorktreeActivity(this.config.root, task.branch, idleMs, now));
       const decision = decideIdleNudge({
         runnerRunning,
         processGroupAlive: process.groupAlive,
@@ -259,8 +262,7 @@ export class CTOMonitor {
         reviewRunning: this.probes.reviewRunning?.(task.id) ?? false,
         remoteValidationRunning: this.probes.remoteValidationRunning?.(task.id) ?? false,
         messageQueued: this.runner?.hasQueuedMessages?.(task.id) ?? false,
-        recentWorktreeActivity:
-          runnerRunning && hasRecentWorktreeActivity(this.config.root, task.branch, idleMs, now),
+        recentWorktreeActivity,
         idleForMs: this.idleFor(task, now),
         idleThresholdMs: idleMs,
         cooldownActive: this.wasRecentlyNudged(task, now, cooldownMs),
@@ -324,9 +326,12 @@ export class CTOMonitor {
   }
 
   /** Runner process sample, with a conservative fallback for test doubles. */
-  private processStateFor(taskId: string, runnerRunning: boolean): EngineerProcessState {
-    if (this.probes.engineerProcess) return this.probes.engineerProcess(taskId);
-    if (this.runner?.engineerProcessState) return this.runner.engineerProcessState(taskId);
+  private async processStateFor(
+    taskId: string,
+    runnerRunning: boolean,
+  ): Promise<EngineerProcessState> {
+    if (this.probes.engineerProcess) return await this.probes.engineerProcess(taskId);
+    if (this.runner?.engineerProcessState) return await this.runner.engineerProcessState(taskId);
     return runnerRunning
       ? { tracked: true, groupAlive: true, busyChild: null }
       : NO_ENGINEER_PROCESS;
@@ -366,7 +371,7 @@ export class CTOMonitor {
     return last > 0 && now - last < cooldownMs;
   }
 
-  private buildDigest(): BuiltDigest | null {
+  private async buildDigest(): Promise<BuiltDigest | null> {
     // Archived tasks are parked (#0657): they must not appear in the digest's
     // stuck list or count as work in progress. The status counts below come
     // from `index.counts()`, which already excludes them.
@@ -403,7 +408,7 @@ export class CTOMonitor {
     lines.push("");
 
     const build = this.buildHealth();
-    const processes = this.processHealth();
+    const processes = await this.processHealth();
     lines.push("## Build and Process Health");
     lines.push("");
     lines.push(`- Build marker: ${build.label}`);
@@ -468,24 +473,18 @@ export class CTOMonitor {
     }
   }
 
-  private processHealth(): HealthSignal {
+  private async processHealth(): Promise<HealthSignal> {
+    const psOutput = await new Promise<string | null>((resolve) => {
+      execFile("ps", ["aux"], { encoding: "utf8", timeout: 5000 }, (error, stdout) => {
+        resolve(error ? null : stdout);
+      });
+    });
+    if (psOutput === null) return { healthy: false, label: "? unable to check processes" };
     try {
-      // Check for lingering serve processes or agent processes that should have exited
-      // Use ps to find processes with "serve" or "bun" or "node" in their command
-      let psOutput = "";
-      try {
-        psOutput = execSync("ps aux | grep -E '(serve|bun|node)' | grep -v grep || true", {
-          encoding: "utf8",
-          stdio: ["pipe", "pipe", "pipe"],
-        });
-      } catch {
-        return { healthy: false, label: "? unable to check processes" };
-      }
-
       const lines = psOutput
         .trim()
         .split("\n")
-        .filter((l) => l.length > 0);
+        .filter((line) => /serve|bun|node/.test(line) && !line.includes("grep"));
       if (lines.length === 0) {
         return { healthy: true, label: "✓ no stale processes detected" };
       }

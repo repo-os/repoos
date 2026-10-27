@@ -32,16 +32,13 @@ import {
   deleteBranch,
   removeWorktree,
   commitTaskFile,
-  currentBranch,
-  isAncestor,
-  localBranches,
   runGit,
   mainDirtyFilesForCloseOut,
   GitDirtyCheckError,
-  worktreePathForBranch,
 } from "../core/git.js";
 import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
 import { markTaskReleased } from "./write.js";
+import { getGitWorker } from "./git-worker.js";
 
 export interface CheckSummary {
   ok: boolean;
@@ -180,8 +177,9 @@ export async function mergeTaskBranchWithAutoSync(
   // branch ref is also gone the close-out cleanup already ran (`deleteBranch`
   // refuses unmerged branches, so a missing branch was integrated) and there
   // is nothing left to merge.
-  const head = currentBranch(root);
-  if (head !== null && head !== branch && isAncestor(root, branch, head) === true) {
+  const worker = getGitWorker(root);
+  const [head, overview] = await Promise.all([worker.currentBranch(), worker.gitOverview()]);
+  if (head !== null && head !== branch && (await worker.isAncestor(root, branch, head)) === true) {
     return {
       merged: true,
       ff: true,
@@ -190,7 +188,7 @@ export async function mergeTaskBranchWithAutoSync(
       alreadyMerged: true,
     };
   }
-  if (!localBranches(root).has(branch) && worktreePathForBranch(root, branch) === null) {
+  if (!overview.branches.has(branch) && !overview.worktrees.has(branch)) {
     return {
       merged: true,
       ff: true,
@@ -522,7 +520,7 @@ async function removeUntrackedGeneratedDist(
   branch: string | undefined,
 ): Promise<void> {
   if (!branch) return;
-  const wt = worktreePathForBranch(root, branch);
+  const wt = await getGitWorker(root).worktreePath(branch);
   if (!wt || !existsSync(join(wt, "dist"))) return;
   const tracked = await runGit(wt, ["ls-files", "dist/"], 5000);
   if (tracked.status !== 0 || tracked.stdout.trim() !== "") return; // tracked (or unknown) → keep
@@ -580,7 +578,7 @@ async function completeTaskLocked(
   // Drop `dist/` from the branch before merging so hashed Vite asset filenames
   // don't cause artificial conflicts. It is regenerated from source on main
   // right after the merge anyway.
-  const wt = worktreePathForBranch(root, task.branch);
+  const wt = task.branch ? await getGitWorker(root).worktreePath(task.branch) : null;
   if (wt !== null && !task.hotfix) {
     const r1 = await runGit(wt, ["ls-files", "dist/"], 5000);
     if (r1.status === 0 && r1.stdout.trim().length > 0) {
@@ -700,7 +698,7 @@ async function completeTaskLocked(
   }
 
   onProgress?.("done");
-  const updated = markTaskReleased(config, task.absPath);
+  const updated = await markTaskReleased(config, task.absPath);
   // Best-effort cleanup; content is preserved in the merged main. The worktree
   // must go first — git refuses to delete a branch checked out in a worktree.
   // Both are fail-soft, so an already-cleaned retry is a no-op here.

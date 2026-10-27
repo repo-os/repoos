@@ -12,13 +12,13 @@ import {
   projectEnvironmentSourceHasKey,
   readProjectEnvironment,
   validateEnvironmentRegistry,
-  writeProjectEnvironmentValue,
   readProjectEnvironmentBindings,
   writeProjectEnvironmentBinding,
   hasConfiguredProjectEnvironmentSecrets,
 } from "../../core/project-environments.js";
 import { MODEL_PROVIDERS } from "../../core/providers/spend.js";
 import { getCurrentUser, requireAdmin } from "./auth.js";
+import { getGitWorker } from "../git-worker.js";
 import { readBody } from "./utils.js";
 import type { RouteHandler } from "./types.js";
 
@@ -231,7 +231,7 @@ export const mutateProjectEnvironmentSecret: RouteHandler = async (ctx, req, res
         error: "Key is inherited from an earlier source and cannot be changed here",
       });
     }
-    const version = writeProjectEnvironmentValue(
+    const version = await getGitWorker(ctx.config.root).writeProjectEnvironmentValue(
       ctx.config.root,
       writable.path,
       key,

@@ -36,7 +36,8 @@ import { hasUnresolvedConflictMarkers } from "../core/frontmatter.js";
 import { formatTaskAreas, parseTaskAreas } from "../core/areas.js";
 import { bundleItemSectionIds, bundleItemsListIds } from "../core/easter-eggs-bundle.js";
 import { normalizeStoryName } from "../core/stories.js";
-import { branchCommit, commitTaskFile, currentBranch } from "../core/git.js";
+import { commitTaskFile } from "../core/git.js";
+import { getGitWorker } from "./git-worker.js";
 import { buildIndex } from "../core/indexer.js";
 import { normalizeTaskDependencies, validateTaskDependencies } from "../core/task-dependencies.js";
 import { taskPriorityError, taskTypeError } from "../core/task-fields.js";
@@ -252,6 +253,8 @@ export interface TaskPatch {
 }
 
 export interface PatchTaskOptions {
+  /** Current board snapshot, supplied by server handlers to avoid rebuilding the index. */
+  validationTasks?: readonly Task[];
   /**
    * Called when a patch actually changes a task's status, with the task being
    * written and the previous/new statuses. Lets the server reap preview
@@ -482,7 +485,11 @@ export function patchTaskFile(
   }
   if (patch.dependsOn !== undefined) {
     const dependsOn = normalizeTaskDependencies(patch.dependsOn);
-    validateTaskDependencies(current.id, dependsOn, buildIndex(config).tasks);
+    validateTaskDependencies(
+      current.id,
+      dependsOn,
+      opts.validationTasks ?? buildIndex(config).tasks,
+    );
     if (dependsOn.join("\0") !== (current.dependsOn ?? []).join("\0")) {
       changes.push("depends_on");
     }
@@ -735,10 +742,31 @@ export function revertPublishDoneStamp(config: RepoOSConfig, absPath: string): T
  * append-only activity log. This is deliberately separate from TaskPatch so a
  * normal status edit cannot make an unmerged task appear in release history.
  */
-export function markTaskReleased(
+export async function markTaskReleased(
   config: RepoOSConfig,
   absPath: string,
   mergedCommit?: string | null,
+): Promise<Task> {
+  if (mergedCommit !== undefined && mergedCommit !== null) {
+    return markTaskReleasedImpl(config, absPath, mergedCommit);
+  }
+  if (!existsSync(absPath)) throw new WriteError(`Task file not found: ${absPath}`);
+  const task = parseTask({
+    content: readFileSync(absPath, "utf8"),
+    absPath,
+    root: config.root,
+    defaultStatus: config.defaultStatus,
+    defaultAssignee: config.defaultAssignee,
+  });
+  const worker = getGitWorker(config.root);
+  const branch = task.branch || (await worker.currentBranch()) || "main";
+  return markTaskReleasedImpl(config, absPath, await worker.branchCommit(branch));
+}
+
+function markTaskReleasedImpl(
+  config: RepoOSConfig,
+  absPath: string,
+  mergedCommit: string | null | undefined,
 ): Task {
   if (!existsSync(absPath)) throw new WriteError(`Task file not found: ${absPath}`);
 
@@ -760,11 +788,7 @@ export function markTaskReleased(
   // silently no-op'd every subsequent close-out (#0195, 2026-08-15): main got
   // the merge, but the task sat published-and-still-review indefinitely.
   // `status === "done"` is only true for an actually-current release.
-  const resolvedMergedCommit =
-    mergedCommit ??
-    branchCommit(config.root, task.branch || currentBranch(config.root) || "main") ??
-    task.mergedCommit ??
-    null;
+  const resolvedMergedCommit = mergedCommit ?? task.mergedCommit ?? null;
   if (task.status === "done") {
     // The publish stamp (#0886) already wrote `status: done` into the merge
     // commit, but deliberately left the release marker for this step — the

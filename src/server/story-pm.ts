@@ -23,11 +23,13 @@ import type { Logger } from "../core/logger.js";
 import { commitFiles } from "../core/git.js";
 import { normalizeStoryName } from "../core/stories.js";
 import {
+  storiesDirOf,
   setStoryPmWorking,
   parseGeneratedStoryDefinition,
   rewriteStoryDefinition,
   storyFreeformPrompt,
 } from "../core/story-definition-files.js";
+import { getGitWorker } from "./git-worker.js";
 import {
   extractOneShotReportText,
   parseOneShotLine,
@@ -105,7 +107,11 @@ export async function fleshOutStory(deps: StoryPmDeps, run: StoryPmRun): Promise
       if (!parsed.hadFrontmatter) {
         reason = "the PM agent did not return a valid story definition";
       } else {
-        const { definition, previousPath } = rewriteStoryDefinition(config, path, parsed);
+        const commits = await getGitWorker(config.root).directoryCommits(
+          config.root,
+          storiesDirOf(config),
+        );
+        const { definition, previousPath } = rewriteStoryDefinition(config, path, parsed, commits);
         setStoryPmWorking(path, false);
         path = definition.path;
         name = definition.name;

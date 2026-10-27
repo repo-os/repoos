@@ -9,7 +9,8 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { gitOutputAsync, worktreeListAsync } from "../core/git.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
-import { commitTaskFile, worktreePathForBranch } from "../core/git.js";
+import { commitTaskFile } from "../core/git.js";
+import { getGitWorker } from "./git-worker.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import { parseTask, recordChange, serializeTask } from "../core/task.js";
 import type { AgentRunner } from "./agents.js";
@@ -260,13 +261,13 @@ export function parkTaskForIdenticalHandoffFailures(
  * Restart the engineer once with the last check failure text. Returns true when
  * a restart was scheduled (caller should not surface / re-validate).
  */
-export function scheduleIdenticalCheckFailureEngineerRestart(
+export async function scheduleIdenticalCheckFailureEngineerRestart(
   config: RepoOSConfig,
   task: Task,
   failure: HandoffFailureRecord,
   runner: AgentRunner,
   onFileChange?: (absPath: string) => void,
-): boolean {
+): Promise<boolean> {
   if (alreadyRestartedEngineerForCheckFailure(task.body)) return false;
   const engineer = resolveAgentForTask(config, task);
   if (!engineer) return false;
@@ -292,9 +293,8 @@ export function scheduleIdenticalCheckFailureEngineerRestart(
     return false;
   }
 
-  const workdir = task.branch
-    ? (worktreePathForBranch(config.root, task.branch) ?? config.root)
-    : config.root;
+  const worktree = task.branch ? await getGitWorker(config.root).worktreePath(task.branch) : null;
+  const workdir = worktree ?? config.root;
   const message = [
     "Automatic recovery: the server already recorded this exact handoff check failure on the current branch tip, so it will not re-run validation until the branch changes.",
     "",

@@ -74,8 +74,12 @@ export class WorkWatcher {
     // restart (the UI's "server did not respond in time" popup). The boot index
     // build reads the files after this point, so nothing changed since is missed:
     // a later edit shows up as an mtime difference.
-    if (existsSync(workPath)) this.scanDirectory(workPath, new Set(), false);
-    this.pollTimer = setInterval(() => this.reconcile(), DEFAULT_POLL_MS);
+    if (existsSync(workPath)) this.seedDirectory(workPath);
+    this.pollTimer = setInterval(() => {
+      void this.reconcile().catch((error) => {
+        console.error(`[repoos] work watcher reconcile failed: ${(error as Error).message}`);
+      });
+    }, DEFAULT_POLL_MS);
     this.pollTimer.unref?.();
   }
 
@@ -241,7 +245,9 @@ export class WorkWatcher {
           this.index.notifyStoryDefinitionsChanged();
           return;
         }
-        this.index.applyFileChange(absPath);
+        void Promise.resolve(this.index.applyFileChange(absPath)).catch((error) => {
+          console.error(`[repoos] work watcher file update failed: ${(error as Error).message}`);
+        });
       }, DEBOUNCE_MS),
     );
   }
@@ -259,12 +265,12 @@ export class WorkWatcher {
     }
   }
 
-  private reconcile(): void {
+  private async reconcile(): Promise<void> {
     const workPath = join(this.config.root, this.config.workDir);
     if (!existsSync(workPath)) return;
 
     const seenPaths = new Set<string>();
-    this.scanDirectory(workPath, seenPaths);
+    await this.scanDirectoryAsync(workPath, seenPaths);
 
     // Check for deletions: tracked files that no longer exist
     for (const [path] of this.pathToMtime) {
@@ -277,7 +283,25 @@ export class WorkWatcher {
   }
 
   /** `apply: false` only records mtimes (boot seeding); true re-applies new/changed files. */
-  private scanDirectory(dir: string, seenPaths: Set<string>, apply = true): void {
+  private seedDirectory(dir: string): void {
+    try {
+      for (const entry of readdirSync(dir)) {
+        if (entry.startsWith(".")) continue;
+        const fullPath = join(dir, entry);
+        try {
+          const stat = statSync(fullPath);
+          if (stat.isDirectory()) this.seedDirectory(fullPath);
+          else if (this.isTaskFile(fullPath)) this.pathToMtime.set(fullPath, stat.mtimeMs);
+        } catch {
+          /* ignore stat errors on individual entries */
+        }
+      }
+    } catch {
+      /* ignore directory read errors */
+    }
+  }
+
+  private async scanDirectoryAsync(dir: string, seenPaths: Set<string>): Promise<void> {
     try {
       for (const entry of readdirSync(dir)) {
         if (entry.startsWith(".")) continue;
@@ -285,7 +309,7 @@ export class WorkWatcher {
         try {
           const stat = statSync(fullPath);
           if (stat.isDirectory()) {
-            this.scanDirectory(fullPath, seenPaths, apply);
+            await this.scanDirectoryAsync(fullPath, seenPaths);
           } else if (this.isTaskFile(fullPath)) {
             seenPaths.add(fullPath);
             const currentMtime = stat.mtimeMs;
@@ -294,11 +318,11 @@ export class WorkWatcher {
             if (cachedMtime === undefined) {
               // New file not yet tracked
               this.pathToMtime.set(fullPath, currentMtime);
-              if (apply) this.index.applyFileChange(fullPath);
+              await this.index.applyFileChange(fullPath);
             } else if (cachedMtime !== currentMtime) {
               // Content changed (mtime differs)
               this.pathToMtime.set(fullPath, currentMtime);
-              if (apply) this.index.applyFileChange(fullPath);
+              await this.index.applyFileChange(fullPath);
             }
           }
         } catch {

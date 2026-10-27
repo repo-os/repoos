@@ -20,15 +20,14 @@ import { isEngineerSelfCheckCheckpointMessage } from "../core/engineer-checkpoin
 import {
   diffNumstat,
   GitDirtyCheckError,
-  isAncestor,
   isGeneratedOrRuntimePath,
   isTaskBookkeepingPath,
   runGit,
   uncommittedWorkFiles,
   workFileFilter,
   type WorkFileFilter,
-  worktreePathForBranch,
 } from "../core/git.js";
+import { getGitWorker } from "./git-worker.js";
 
 /** Stable prefix for close-out / HTTP refusal reasons — grep-friendly. */
 export const WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX = "worktree changed after handoff";
@@ -371,6 +370,7 @@ async function replayMergeTree(
  * answer any step.
  */
 async function isMainSyncDrift(
+  root: string,
   wt: string,
   expectedSha: string,
   actualHead: string,
@@ -394,7 +394,7 @@ async function isMainSyncDrift(
     if (parents.length >= 2) {
       const [first, ...imported] = parents;
       for (const mp of imported) {
-        if (isAncestor(wt, mp, "main") !== true) return false;
+        if ((await getGitWorker(root).isAncestor(wt, mp, "main")) !== true) return false;
       }
       const replay = await replayMergeTree(wt, first, imported);
       if (replay === null) return false;
@@ -478,7 +478,7 @@ export async function verifyWorktreeHandoffIntegrity(
   expectedSha: string,
   opts: { handoffAt?: string; taskId?: string } = {},
 ): Promise<WorktreeHandoffCheckResult> {
-  const wt = worktreePathForBranch(config.root, branch);
+  const wt = await getGitWorker(config.root).worktreePath(branch);
   if (!wt) {
     return {
       ok: false,
@@ -510,7 +510,11 @@ export async function verifyWorktreeHandoffIntegrity(
     return { ok: true };
   }
   if (headMoved && dirtyFiles.length === 0) {
-    const handoffStillReachable = isAncestor(wt, expectedSha, actualHead);
+    const handoffStillReachable = await getGitWorker(config.root).isAncestor(
+      wt,
+      expectedSha,
+      actualHead,
+    );
     if (handoffStillReachable === true) {
       const filter = workFileFilter(config as RepoOSConfig);
       // A conflict-free merge of main into the branch while the task is in
@@ -518,7 +522,7 @@ export async function verifyWorktreeHandoffIntegrity(
       // into a fresh candidate anyway. Allow it when every task-side commit
       // since handoff is bookkeeping-only (#0600) or a verified main-sync
       // merge.
-      if (await isMainSyncDrift(wt, expectedSha, actualHead, filter)) {
+      if (await isMainSyncDrift(config.root, wt, expectedSha, actualHead, filter)) {
         return { ok: true };
       }
       const taskId = opts.taskId;
@@ -668,7 +672,7 @@ export async function discardWorktreeHandoffChanges(
   if (!snap || snap.branch !== branch) {
     return { ok: false, reason: "no handoff snapshot for this task" };
   }
-  const wt = worktreePathForBranch(config.root, branch);
+  const wt = await getGitWorker(config.root).worktreePath(branch);
   if (!wt) {
     return { ok: false, reason: `worktree for ${branch} not found` };
   }
@@ -692,16 +696,12 @@ export function worktreeReviewLockRefusal(
   cwd: string,
   taskId: string | undefined,
   taskStatus: string | undefined,
-  branch?: string,
+  _branch?: string,
 ): string | undefined {
   if (!taskId || taskStatus !== "review") return undefined;
   const lock = readWorktreeReviewLock(root, cacheDir ?? ".repoos", taskId);
   if (!lock) return undefined;
   if (cwd === root) return undefined;
-  if (branch) {
-    const expected = worktreePathForBranch(root, branch);
-    if (expected && cwd !== expected) return undefined;
-  }
   return (
     "This task's worktree is locked while it is in review — send it back to the engineer " +
     "through RepoOS before editing or starting an agent here."

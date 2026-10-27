@@ -67,9 +67,9 @@ import {
   commitTaskFile,
   gitOutputAsync,
   worktreeListAsync,
-  worktreePathForBranch,
   worktreeStatusAsync,
 } from "../core/git.js";
+import { getGitWorker } from "./git-worker.js";
 import { scheduleHandoffSignalRetry } from "./handoff.js";
 import { isTaskClosingOut } from "./close-out-lock.js";
 import {
@@ -234,14 +234,14 @@ function hasRecentMtime(
  * mtimes are a signal that survives a restart because they live on disk, not
  * in server memory.
  */
-export function hasRecentWorktreeActivity(
+export async function hasRecentWorktreeActivity(
   root: string,
   branch: string | undefined,
   stalenessMs: number,
   now: number,
-): boolean {
+): Promise<boolean> {
   if (!branch) return false;
-  const path = worktreePathForBranch(root, branch);
+  const path = await getGitWorker(root).worktreePath(branch);
   if (!path) return false;
   return hasRecentMtime(path, stalenessMs, now, { left: ACTIVITY_SCAN_FILE_LIMIT });
 }
@@ -535,7 +535,7 @@ export class TaskWatchdog {
       // on the review side where the watchdog never looked before.
       for (const status of ["active", "review"] as const) {
         for (const task of this.index.getTasks(status)) {
-          if (this.isStuck(task, stalenessNow)) {
+          if (await this.isStuck(task, stalenessNow)) {
             await this.handleStuck(task);
           }
         }
@@ -545,7 +545,7 @@ export class TaskWatchdog {
     }
   }
 
-  private isStuck(task: Task, now: number = Date.now()): boolean {
+  private async isStuck(task: Task, now: number = Date.now()): Promise<boolean> {
     // An archived task is parked (#0657): it is never surfaced or escalated,
     // even if its underlying status is active/review. The human set it aside
     // on purpose; unarchiving restores the stuck-detection window.
@@ -582,7 +582,9 @@ export class TaskWatchdog {
     // check the worktree's own file mtimes — durable, on-disk evidence a
     // registry reset can't erase. Skips the scan entirely once the log
     // already proves recent activity, so the common case pays nothing extra.
-    if (hasRecentWorktreeActivity(this.config.root, task.branch, this.stalenessThresholdMs, now)) {
+    if (
+      await hasRecentWorktreeActivity(this.config.root, task.branch, this.stalenessThresholdMs, now)
+    ) {
       return false;
     }
     return true;
@@ -597,7 +599,7 @@ export class TaskWatchdog {
    * is not stuck even if it "failed"; only a round that produced nothing at all
    * needs the watchdog.
    */
-  private isStuckReview(task: Task, now: number): boolean {
+  private async isStuckReview(task: Task, now: number): Promise<boolean> {
     if (!this.reviews) return false; // no review manager wired — nothing to do
     if (this.reviews.isRunning(task.id)) return false;
     // A report post-dating this episode's →review transition means this round's
@@ -611,7 +613,9 @@ export class TaskWatchdog {
     // active; a registry reset can't erase mtimes (#0214/#0203). The
     // completed-review `reviews.read` check above already ruled out the
     // finished case, so this is only a false-suppression guard, never a mask.
-    if (hasRecentWorktreeActivity(this.config.root, task.branch, this.stalenessThresholdMs, now)) {
+    if (
+      await hasRecentWorktreeActivity(this.config.root, task.branch, this.stalenessThresholdMs, now)
+    ) {
       return false;
     }
     return true;
@@ -834,13 +838,13 @@ export class TaskWatchdog {
     if (
       !this.runner.isRunning(task.id) &&
       state.lastFailure &&
-      scheduleIdenticalCheckFailureEngineerRestart(
+      (await scheduleIdenticalCheckFailureEngineerRestart(
         this.config,
         task,
         state.lastFailure,
         this.runner,
         (absPath) => this.index.applyFileChange(absPath),
-      )
+      ))
     ) {
       return true;
     }

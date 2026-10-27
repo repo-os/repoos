@@ -6,9 +6,8 @@
  * slot from the local-check pool via a PATH shim, so five engineers share
  * `heavySlots` instead of five full stacks.
  */
-import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { spawnSync } from "node:child_process";
+import { accessSync, chmodSync, constants, mkdirSync, writeFileSync } from "node:fs";
+import { delimiter, join } from "node:path";
 import type { RepoOSConfig } from "./types.js";
 import { playwrightWorkerLimit, vitestMaxWorkers } from "./resource-limits.js";
 
@@ -50,12 +49,21 @@ export function isHeavyInvocation(tool: string, args: string[]): boolean {
 }
 
 function which(bin: string, pathEnv: string | undefined): string | null {
-  const result = spawnSync("/bin/sh", ["-c", `command -v ${bin}`], {
-    encoding: "utf8",
-    env: { ...process.env, PATH: pathEnv ?? "" },
-  });
-  const found = result.stdout.trim().split("\n")[0]?.trim();
-  return result.status === 0 && found ? found : null;
+  const extensions =
+    process.platform === "win32" ? (process.env.PATHEXT ?? ".EXE;.CMD;.BAT").split(";") : [""];
+  for (const dir of (pathEnv ?? "").split(delimiter)) {
+    if (!dir) continue;
+    for (const extension of extensions) {
+      const candidate = join(dir, `${bin}${extension}`);
+      try {
+        accessSync(candidate, constants.X_OK);
+        return candidate;
+      } catch {
+        // Keep searching unreadable or missing PATH entries.
+      }
+    }
+  }
+  return null;
 }
 
 /**

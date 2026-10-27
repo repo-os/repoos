@@ -46,14 +46,14 @@ export type ReviewAutomationDecision = AutomaticReviewDecision & {
  * Explicit human/CLI "review again" always runs; automatic paths respect the
  * open-findings + unchanged-tree guard.
  */
-export function decideReviewAutomation(
+export async function decideReviewAutomation(
   config: RepoOSConfig,
   task: Task,
   report: ReviewGuardReport | null,
   trigger: ReviewRunTrigger,
-): ReviewAutomationDecision {
+): Promise<ReviewAutomationDecision> {
   const explicit = isExplicitReviewTrigger(trigger);
-  const base = decideAutomaticReview(config, task, report, { manual: explicit });
+  const base = await decideAutomaticReview(config, task, report, { manual: explicit });
   return { ...base, trigger };
 }
 

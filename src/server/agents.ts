@@ -7,7 +7,7 @@
  * an HTTP response, so spawns are async-fired and failures surface as events.
  */
 import { randomUUID } from "node:crypto";
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { spawn, execFile, type ChildProcess } from "node:child_process";
 import { setPriority } from "node:os";
 import {
   patternKillWarning,
@@ -75,11 +75,12 @@ import { sanitizeSpawnArgs, stripNulBytes } from "../core/spawn-args.js";
 import { notifyAttentionAfterSession, notifyAttentionAgentStalled } from "./attention-notify.js";
 import { taskWorkLink } from "./board-events.js";
 import { parseTaskAreas } from "../core/areas.js";
-import { commitTaskFile, fileCommittedClean, currentBranch, gitOutputAsync } from "../core/git.js";
+import { commitTaskFile, fileCommittedClean, gitOutputAsync } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { SHOT_PREVIEW_FIXTURE_IDS } from "../core/shot-fixtures.js";
 import { buildStoryContext, storyContextSummary } from "../core/story-context.js";
+import { getGitWorker } from "./git-worker.js";
 import { unresolvedReviewFindingsBlock } from "../core/review-findings.js";
 import { needsInputClearsOnNewEngineerRun } from "../core/needs-input.js";
 import { ENGINEER_STOPPED_ACTIVITY } from "../core/engineer-crash-recovery.js";
@@ -1371,46 +1372,41 @@ export function parseCrushSessionUsage(raw: string): CrushUsage | null {
 }
 
 /** Run `crush session list --json` in a cwd and return its raw stdout. Null on failure. */
-function readCrushSessionListRaw(cwd: string): string | null {
-  try {
-    const res = spawnSync("crush", ["session", "list", "--json"], {
-      cwd,
-      encoding: "utf8",
-      timeout: 5000,
-      stdio: ["ignore", "pipe", "ignore"],
-      // Never let a user's exported client/server mode turn this read into a
-      // detached `crush server` spawn (matches harnessChildEnv at spawn time).
-      env: { ...process.env, CRUSH_CLIENT_SERVER: "0" },
+function execFileOutput(
+  command: string,
+  args: string[],
+  cwd: string,
+  timeout: number,
+  env?: NodeJS.ProcessEnv,
+): Promise<string | null> {
+  return new Promise((resolve) => {
+    execFile(command, args, { cwd, encoding: "utf8", timeout, env }, (error, stdout) => {
+      resolve(error ? null : stdout);
     });
-    if (res.error || res.status !== 0 || typeof res.stdout !== "string") return null;
-    return res.stdout;
-  } catch {
-    return null;
-  }
+  });
+}
+
+function readCrushSessionListRaw(cwd: string): Promise<string | null> {
+  return execFileOutput("crush", ["session", "list", "--json"], cwd, 5000, {
+    ...process.env,
+    CRUSH_CLIENT_SERVER: "0",
+  });
 }
 
 /** Read the current `crush session list --json` ids for a cwd. Null on failure. */
-function readCrushSessionIds(cwd: string): string[] | null {
-  const raw = readCrushSessionListRaw(cwd);
+async function readCrushSessionIds(cwd: string): Promise<string[] | null> {
+  const raw = await readCrushSessionListRaw(cwd);
   if (raw === null) return null;
   return parseCrushSessionList(raw).map((row) => row.id);
 }
 
 /** Read one Crush session's usage via `crush session show <id> --json`. */
-function readCrushSessionUsage(id: string, cwd: string): CrushUsage | null {
-  try {
-    const res = spawnSync("crush", ["session", "show", id, "--json"], {
-      cwd,
-      encoding: "utf8",
-      timeout: 5000,
-      stdio: ["ignore", "pipe", "ignore"],
-      env: { ...process.env, CRUSH_CLIENT_SERVER: "0" },
-    });
-    if (res.error || res.status !== 0 || typeof res.stdout !== "string") return null;
-    return parseCrushSessionUsage(res.stdout);
-  } catch {
-    return null;
-  }
+async function readCrushSessionUsage(id: string, cwd: string): Promise<CrushUsage | null> {
+  const raw = await execFileOutput("crush", ["session", "show", id, "--json"], cwd, 5000, {
+    ...process.env,
+    CRUSH_CLIENT_SERVER: "0",
+  });
+  return raw ? parseCrushSessionUsage(raw) : null;
 }
 
 /**
@@ -3902,7 +3898,7 @@ export function missionFor(
   // Source edits stay inside the sandbox. RepoOS owns the privileged Git and
   // canonical-board mutations after the structured signal below (ADR-0005).
   const worktreeTask = join(workdir, relative(config.root, task.path));
-  const baseBranch = currentBranch(config.root) ?? "main";
+  const baseBranch = getGitWorker(config.root).baseBranchFromCache() ?? "main";
   const parts: string[] = [];
 
   // Task-specific and deliberately first (see the CACHING note below): the
@@ -5386,7 +5382,7 @@ export class AgentRunner {
    * so `isRunning()` reports true and SSE streaming resumes from this point.
    * Stale entries (PID dead) are dropped — this must not resurrect dead sessions.
    */
-  adoptRunningAgents(): void {
+  async adoptRunningAgents(): Promise<void> {
     const registry = readRegistry(this.cacheDir);
     const live: DurableRegistryEntry[] = [];
     for (const rec of registry.entries) {
@@ -5411,7 +5407,7 @@ export class AgentRunner {
       if (!alive && !isReview) continue;
       if (!isReview && alive) {
         const groupLeader = rec.processGroupLeader ?? rec.pid;
-        if (!verifyRecordedHarnessPid(livePid, rec.workdir)) {
+        if (!(await verifyRecordedHarnessPid(livePid, rec.workdir))) {
           this.stopUnattachedRecordedEngineer({
             taskId: rec.taskId,
             pid: livePid,
@@ -5446,7 +5442,7 @@ export class AgentRunner {
    * typical after a reload when the registry leader PID died but the harness
    * survived, or when only ownership survived a registry rewrite (#0837).
    */
-  reconcileOrphanedEngineers(tasks: Task[]): void {
+  async reconcileOrphanedEngineers(tasks: Task[]): Promise<void> {
     const activeIds = new Set(
       tasks.filter((t) => t.status === "active" && !t.isArchived).map((t) => t.id),
     );
@@ -5460,7 +5456,7 @@ export class AgentRunner {
     for (const cand of candidates) {
       if (this.entries.has(cand.taskId)) continue;
       const registry = readRegistry(this.cacheDir);
-      const adopted = this.adoptOrStopRecordedEngineer(cand, registry, tasks);
+      const adopted = await this.adoptOrStopRecordedEngineer(cand, registry, tasks);
       if (!adopted) continue;
       const fresh = readRegistry(this.cacheDir);
       writeRegistry(this.cacheDir, {
@@ -5538,23 +5534,8 @@ export class AgentRunner {
    * Re-attach a recorded live harness for this task/worktree when the human
    * requests a start after reload (#0837). Boot uses `reconcileOrphanedEngineers`.
    */
-  private tryAdoptRecordedOrphanForTask(taskId: string, cwd: string): void {
-    if (this.entries.has(taskId)) return;
-    const registry = readRegistry(this.cacheDir);
-    const ownership = readProcessOwnership(this.cacheDir);
-    const candidates = collectRecordedEngineerPids(
-      registry.entries,
-      ownership,
-      new Set([taskId]),
-    ).filter((c) => c.taskId === taskId && sameWorkdirPath(c.workdir, cwd));
-    for (const cand of candidates) {
-      this.adoptOrStopRecordedEngineer(cand, registry);
-      return;
-    }
-  }
-
   /** Block a new engineer when another task's recorded live harness holds this worktree. */
-  private otherTaskLiveEngineerInWorkdir(taskId: string, cwd: string): string | undefined {
+  private otherTaskLiveEngineerInWorkdir(_taskId: string, cwd: string): string | undefined {
     const registry = readRegistry(this.cacheDir);
     const ownership = readProcessOwnership(this.cacheDir);
     const taskIds = new Set<string>();
@@ -5563,15 +5544,10 @@ export class AgentRunner {
     }
     for (const o of ownership) taskIds.add(o.taskId);
     const candidates = collectRecordedEngineerPids(registry.entries, ownership, taskIds).filter(
-      (c) => c.taskId !== taskId && sameWorkdirPath(c.workdir, cwd),
+      (c) => sameWorkdirPath(c.workdir, cwd),
     );
     for (const cand of candidates) {
-      if (verifyRecordedHarnessPid(cand.pid, cand.workdir)) {
-        return `This worktree already has a live engineer for task #${cand.taskId} (pid ${cand.pid})`;
-      }
-      if (this.recordedEngineerGroupStillLive(cand)) {
-        this.stopUnattachedRecordedEngineer(cand);
-      }
+      return `This worktree already has a recorded live engineer for task #${cand.taskId} (pid ${cand.pid})`;
     }
     return undefined;
   }
@@ -5585,12 +5561,12 @@ export class AgentRunner {
    * Adopt a positively identified recorded engineer, or stop the recorded group
    * when it is still live but cannot be re-attached (#0837).
    */
-  private adoptOrStopRecordedEngineer(
+  private async adoptOrStopRecordedEngineer(
     cand: RecordedEngineerPid,
     registry: DurableRegistry,
     tasks?: Task[],
-  ): DurableRegistryEntry[] | null {
-    if (verifyRecordedHarnessPid(cand.pid, cand.workdir)) {
+  ): Promise<DurableRegistryEntry[] | null> {
+    if (await verifyRecordedHarnessPid(cand.pid, cand.workdir)) {
       const fromRegistry = registry.entries.find((e) => e.taskId === cand.taskId);
       const task = tasks?.find((t) => t.id === cand.taskId);
       const rec: DurableRegistryEntry = fromRegistry
@@ -5962,7 +5938,7 @@ export class AgentRunner {
    * live *child* doing a known step is the signal that the turn is busy and a
    * reminder would queue up behind real work.
    */
-  engineerProcessState(taskId: string): EngineerProcessState {
+  async engineerProcessState(taskId: string): Promise<EngineerProcessState> {
     const entry = this.entries.get(taskId);
     if (!entry || entry.review) return { tracked: false, groupAlive: false, busyChild: null };
     const leader = entry.processGroupLeader ?? entry.proc?.pid ?? entry.adoptedPid;
@@ -5983,7 +5959,7 @@ export class AgentRunner {
     let busyChild: string | null = null;
     for (const pid of pids) {
       if (harnessPids.has(pid)) continue;
-      const label = knownWorkProcessLabel(processCommandLine(pid));
+      const label = knownWorkProcessLabel(await processCommandLine(pid));
       if (label) {
         busyChild = label;
         break;
@@ -6154,7 +6130,6 @@ export class AgentRunner {
     }
     this.checkExpiredMessages();
     const cwd = opts.cwd ?? this.config.root;
-    this.tryAdoptRecordedOrphanForTask(task.id, cwd);
     this.releasePhantomRunner(task.id);
     if (
       this.entries.has(task.id) ||
@@ -6729,7 +6704,12 @@ export class AgentRunner {
     cwd: string,
     task?: Task,
     branch?: string,
-    opts: { skipBoardDivergence?: boolean; review?: boolean; reviewKind?: "run" | "chat" } = {},
+    opts: {
+      skipBoardDivergence?: boolean;
+      review?: boolean;
+      reviewKind?: "run" | "chat";
+      crushSessionsBefore?: string[];
+    } = {},
   ): StartResult {
     const refusal = antigravityWorktreeRefusal(cmd, args, cwd, task);
     if (refusal) return { ok: false, reason: refusal };
@@ -6772,6 +6752,48 @@ export class AgentRunner {
         detail: pressure,
       });
       this.schedulePressureRetry();
+      return { ok: true, queued: true };
+    }
+    if (cmd === "crush" && opts.crushSessionsBefore === undefined) {
+      this.queuedIds.set(id, now());
+      this.queuedMeta.set(id, {
+        reason: "slot",
+        detail: "Preparing a Crush session baseline before launch",
+      });
+      this.emit({
+        type: "agent.queued",
+        id,
+        at: now(),
+        reason: "slot",
+        detail: "Preparing a Crush session baseline before launch",
+      });
+      void readCrushSessionIds(cwd)
+        .then((before) => {
+          this.finishAgentQueued(id);
+          const result = this.spawnOrQueue(id, cmd, args, cwd, task, branch, {
+            ...opts,
+            crushSessionsBefore: before ?? [],
+          });
+          if (!result.ok) {
+            this.emit({
+              type: "agent.exited",
+              id,
+              at: now(),
+              exitCode: 1,
+              cause: result.reason ?? "could not launch the agent",
+            });
+          }
+        })
+        .catch((error) => {
+          this.finishAgentQueued(id);
+          console.error(
+            `[repoos] could not read Crush session baseline for ${id}: ${(error as Error).message}`,
+          );
+          this.spawnOrQueue(id, cmd, args, cwd, task, branch, {
+            ...opts,
+            crushSessionsBefore: [],
+          });
+        });
       return { ok: true, queued: true };
     }
     const { capacity, otherEngineers } = this.machineCapacity();
@@ -7066,7 +7088,12 @@ export class AgentRunner {
     cwd: string,
     task?: Task,
     branch?: string,
-    opts: { skipBoardDivergence?: boolean; review?: boolean; reviewKind?: "run" | "chat" } = {},
+    opts: {
+      skipBoardDivergence?: boolean;
+      review?: boolean;
+      reviewKind?: "run" | "chat";
+      crushSessionsBefore?: string[];
+    } = {},
   ): StartResult {
     // A prompt assembled from agent output (crash detail, task body, queued
     // message, log line, path) can contain NUL bytes, which make `spawn` throw
@@ -7114,11 +7141,7 @@ export class AgentRunner {
     const logStem = opts.review ? `${taskId}.${runId}` : taskId;
     const outLog = join(this.logDir, `${logStem}.out.log`);
     const errLog = join(this.logDir, `${logStem}.err.log`);
-    // Crush prints no session id during a run, so snapshot the project's
-    // session list before this turn starts; cleanup() diffs it to name THIS
-    // turn's session (never `--continue`, which could attach another task).
-    const crushSessionsBefore =
-      cmd === "crush" ? (readCrushSessionIds(cwd) ?? undefined) : undefined;
+    const crushSessionsBefore = opts.crushSessionsBefore;
     // The launch is going ahead: if the sanitizer had to change this prompt,
     // name that once in the task activity. Recorded after the refusals above so
     // a start that never ran is not described as sanitized.
@@ -8822,16 +8845,22 @@ export class AgentRunner {
     if (session?.engine === "kiro" && !session.sessionId && entry.workdir) {
       void this.captureKiroSessionId(taskId, session, entry.workdir);
     }
-    // Crush, like kiro, prints no session id during a run. Capture it (and the
-    // turn's usage) synchronously before the DB write below, so the row lands
-    // with the real cost/tokens instead of a token estimate or a blank. On the
-    // first turn a diff against the pre-spawn listing names exactly this turn's
-    // session; later turns reuse the captured id and only refresh usage. No
-    // baseline (e.g. an entry adopted after a reload) leaves the id unset rather
-    // than guessing. Best-effort: a failure changes nothing.
+    // Crush, like kiro, prints no session id during a run. Capture its id and
+    // usage asynchronously so a local CLI probe cannot stall the server thread.
+    // On the first turn a diff against the pre-spawn listing names exactly this
+    // turn's session; later turns reuse the captured id and refresh usage.
     if (session?.engine === "crush" && entry.workdir) {
-      this.captureCrushSession(session, entry.workdir, entry.crushSessionsBefore);
-      if (session.sessionId) this.schedulePersist(taskId);
+      void this.captureCrushSession(session, entry.workdir, entry.crushSessionsBefore)
+        .then(() => {
+          if (session.sessionId) this.schedulePersist(taskId);
+        })
+        .catch((error) => {
+          this.logger?.agent(
+            taskId,
+            "warn",
+            `Failed to capture Crush session usage: ${(error as Error).message}`,
+          );
+        });
     }
     const logStem = entry.runId ?? taskId;
     const logPath = join(this.cacheDir, "agent-logs", `${logStem}.out.log`);
@@ -9138,22 +9167,22 @@ export class AgentRunner {
    * fail-soft: any failure leaves the fields untouched so the next turn simply
    * starts a fresh Crush session.
    */
-  private captureCrushSession(
+  private async captureCrushSession(
     session: Session,
     cwd: string,
     before: readonly string[] | undefined,
-  ): void {
+  ): Promise<void> {
     let id = session.sessionId;
     if (!id) {
       if (!before) return;
-      const afterRaw = readCrushSessionListRaw(cwd);
+      const afterRaw = await readCrushSessionListRaw(cwd);
       if (!afterRaw) return;
       const picked = pickNewCrushSessionId(before, parseCrushSessionList(afterRaw));
       if (!picked) return;
       id = picked;
       session.sessionId = id;
     }
-    const usage = readCrushSessionUsage(id, cwd);
+    const usage = await readCrushSessionUsage(id, cwd);
     if (!usage) return;
     if (usage.inputTokens !== undefined) session.inputTokens = usage.inputTokens;
     if (usage.outputTokens !== undefined) session.outputTokens = usage.outputTokens;

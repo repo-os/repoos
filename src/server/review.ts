@@ -31,13 +31,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
-import {
-  commitTaskFile,
-  currentBranch,
-  headCommitISO,
-  shortHeadOf,
-  worktreePathForBranch,
-} from "../core/git.js";
+import { commitTaskFile } from "../core/git.js";
 import { MAX_AUTO_REVIEW_ROUNDS, needsInputClearsOnSuccessfulReview } from "../core/needs-input.js";
 import {
   EVIDENCE_GAP_ONLY_MARKER,
@@ -62,6 +56,7 @@ import {
 } from "../core/review-report-sections.js";
 import type { LandableResult } from "../core/landable.js";
 import { gatherLandable } from "./landable.js";
+import { getGitWorker } from "./git-worker.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
 import {
   deterministicSessionId,
@@ -451,7 +446,7 @@ export function reviewMission(
   const handoffCheck = options.handoffCheck ?? "passed";
   // #0765: tell the reviewer whether browser UI verification applies, so it is
   // never sent looking for a console log a command-target task cannot produce.
-  const uiMode = options.uiVerification ?? taskUiVerificationMode(config, task);
+  const uiMode = options.uiVerification ?? "none";
   const spec = task.body.trim().slice(0, SPEC_CHARS);
   const role = agent.instructions?.trim();
   const storyContext = buildStoryContext(task, config);
@@ -1002,7 +997,7 @@ export class ReviewManager {
    * handler can answer "why not" without waiting for a prompt that will never
    * start.
    */
-  canRun(task: Task): { ok: boolean; reason?: string } {
+  async canRun(task: Task): Promise<{ ok: boolean; reason?: string }> {
     if (isEvidenceRefreshActive(task.id)) {
       return { ok: false, reason: "evidence refresh is in progress for this task" };
     }
@@ -1016,7 +1011,9 @@ export class ReviewManager {
     if (!agent) {
       return { ok: false, reason: "the review agent is disabled on the Agents page" };
     }
-    const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
+    const workdir = task.branch
+      ? await getGitWorker(this.config.root).worktreePath(task.branch)
+      : null;
     if (!workdir) {
       return { ok: false, reason: "the task has no worktree to review" };
     }
@@ -1027,8 +1024,8 @@ export class ReviewManager {
    * Same gate for a follow-up chat turn, which additionally needs a prior
    * conversation (a review must have run at least once).
    */
-  canSend(task: Task): { ok: boolean; reason?: string } {
-    const base = this.canRun(task);
+  async canSend(task: Task): Promise<{ ok: boolean; reason?: string }> {
+    const base = await this.canRun(task);
     if (!base.ok) return base;
     if (!this.hasSession(task.id)) {
       return { ok: false, reason: "no review has run for this task — start a review first" };
@@ -1058,7 +1055,7 @@ export class ReviewManager {
       return { ok: false, reason: "a review is already running for this task", trigger };
     }
     const stored = this.read(task.id);
-    const auto = decideReviewAutomation(
+    const auto = await decideReviewAutomation(
       this.config,
       task,
       stored as ReviewGuardReport | null,
@@ -1090,6 +1087,7 @@ export class ReviewManager {
     // enabled. Off/shadow and human pins return the base reviewer unchanged,
     // and routing can never disable the review.
     let agent = baseReviewer;
+    const baseBranch = (await getGitWorker(this.config.root).currentBranch()) ?? "main";
     const routed = await resolveRoutedAgent(
       { config: this.config },
       {
@@ -1100,16 +1098,17 @@ export class ReviewManager {
           !!task.reviewAgentOverride ||
           !!task.reviewCliOverride ||
           isModelOverridePinned(task.reviewModelOverride),
-        briefExtra: `Reviewing branch ${task.branch ?? "(none)"} against ${currentBranch(this.config.root) ?? "main"}.`,
+        briefExtra: `Reviewing branch ${task.branch ?? "(none)"} against ${baseBranch}.`,
       },
     );
     if (routed.agent) agent = routed.agent;
-    const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
+    const workdir = task.branch
+      ? await getGitWorker(this.config.root).worktreePath(task.branch)
+      : null;
     if (!workdir) {
       this.logger.task(task.id, "info", "review skipped — no worktree", { branch: task.branch });
       return { ok: false, skipped: true, reason: "the task has no worktree to review" };
     }
-    const baseBranch = currentBranch(this.config.root) ?? "main";
 
     // Fresh run: drop any earlier conversation and its persisted copy so the
     // new report reads as a new assessment, not a continuation of the old one.
@@ -1128,7 +1127,7 @@ export class ReviewManager {
     const landable = await gatherLandable(this.config, task, this.read(task.id));
     const missionBase = reviewMission(task, agent, workdir, baseBranch, this.config, {
       handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
-      uiVerification: taskUiVerificationMode(this.config, task),
+      uiVerification: await taskUiVerificationMode(this.config, task),
       landable,
     });
     const uiNote = await this.uiVerificationSummary(task);
@@ -1166,11 +1165,13 @@ export class ReviewManager {
     if (!baseReviewer) {
       return { ok: false, skipped: true, reason: "the review agent is disabled" };
     }
-    const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
+    const workdir = task.branch
+      ? await getGitWorker(this.config.root).worktreePath(task.branch)
+      : null;
     if (!workdir) {
       return { ok: false, skipped: true, reason: "the task has no worktree to review" };
     }
-    const baseBranch = currentBranch(this.config.root) ?? "main";
+    const baseBranch = (await getGitWorker(this.config.root).currentBranch()) ?? "main";
     let agent = baseReviewer;
     const routed = await resolveRoutedAgent(
       { config: this.config },
@@ -1203,7 +1204,7 @@ export class ReviewManager {
     const landable = await gatherLandable(this.config, task, this.read(task.id));
     const missionBase = reviewMission(task, agent, workdir, baseBranch, this.config, {
       handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
-      uiVerification: taskUiVerificationMode(this.config, task),
+      uiVerification: await taskUiVerificationMode(this.config, task),
       deltaSinceApprovedSha: approvedSha,
       landable,
     });
@@ -1332,7 +1333,7 @@ export class ReviewManager {
    *
    * Must be called AFTER the index has populated — it reads `index.getTasks()`.
    */
-  recoverInterruptedReviews(tasks: Task[]): void {
+  async recoverInterruptedReviews(tasks: Task[]): Promise<void> {
     let delay = 0;
     for (const task of tasks) {
       if (task.status !== "review") continue;
@@ -1343,11 +1344,11 @@ export class ReviewManager {
       if (this.isCancelled(task.id)) continue;
       if (!task.branch) continue;
       if (!resolveReviewerForTask(this.config, task)) continue;
-      const workdir = worktreePathForBranch(this.config.root, task.branch);
+      const workdir = await getGitWorker(this.config.root).worktreePath(task.branch);
       if (!workdir) continue;
 
       const report = this.read(task.id);
-      const currentIdentity = reviewTreeIdentityForTask(this.config, task);
+      const currentIdentity = await reviewTreeIdentityForTask(this.config, task);
       let scheduleRecovery = !report;
       if (report?.state === "ok") {
         if (report.treeIdentity && currentIdentity && report.treeIdentity === currentIdentity) {
@@ -1362,7 +1363,12 @@ export class ReviewManager {
           continue;
         }
         if (!report.treeIdentity) {
-          const headAt = headCommitISO(workdir);
+          const headAtResult = await getGitWorker(this.config.root).runGit(
+            workdir,
+            ["log", "-1", "--format=%cI", "HEAD"],
+            5_000,
+          );
+          const headAt = headAtResult.status === 0 ? headAtResult.stdout.trim() || null : null;
           scheduleRecovery =
             !report.at || (headAt !== null && Date.parse(report.at) < Date.parse(headAt));
         }
@@ -1488,15 +1494,17 @@ export class ReviewManager {
     let clampReason: string | undefined;
     const hasReport = ok && reportText;
     if (hasReport) {
-      const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
+      const workdir = task.branch
+        ? await getGitWorker(this.config.root).worktreePath(task.branch)
+        : null;
       const verification = workdir
         ? await gatherReviewVerification(
             this.config,
             task,
             workdir,
-            currentBranch(this.config.root) ?? "main",
+            (await getGitWorker(this.config.root).currentBranch()) ?? "main",
           )
-        : gatherReviewVerificationWithoutWorktree(this.config, task);
+        : await gatherReviewVerificationWithoutWorktree(this.config, task);
       const applied = applyMechanicalReviewVerification(reportText, verification);
       reportText = applied.markdown;
       clampReason = applied.clampReason;
@@ -1510,7 +1518,7 @@ export class ReviewManager {
     const body = !hasReport
       ? `The review agent produced no report: ${error ?? "no report"}`
       : reportText;
-    const treeIdentity = reviewTreeIdentityForTask(this.config, task);
+    const treeIdentity = await reviewTreeIdentityForTask(this.config, task);
     const report: ReviewReport = {
       id: task.id,
       at: now(),
@@ -1836,11 +1844,13 @@ export class ReviewManager {
     if (!agent) {
       return { ok: false, reason: "the review agent is disabled" };
     }
-    const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
+    const workdir = task.branch
+      ? await getGitWorker(this.config.root).worktreePath(task.branch)
+      : null;
     if (!workdir) {
       return { ok: false, reason: "the task has no worktree to review" };
     }
-    const baseBranch = currentBranch(this.config.root) ?? "main";
+    const baseBranch = (await getGitWorker(this.config.root).currentBranch()) ?? "main";
 
     // The human's message starts the turn and streams into the reviewer
     // conversation under `review:<taskId>`.
@@ -2357,7 +2367,9 @@ export class ReviewManager {
       let sent = engineerSession
         ? this.runner.send(task.id, message, engineerAgent, { skipBoardDivergence: true })
         : { ok: false as const, reason: "engineer session is not resumable" };
-      const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
+      const workdir = task.branch
+        ? await getGitWorker(this.config.root).worktreePath(task.branch)
+        : null;
       if (!sent.ok && task.branch && workdir) {
         const started = this.runner.start(task, task.branch, engineerAgent, {
           cwd: workdir,
@@ -2582,8 +2594,15 @@ export class ReviewManager {
     // is provably pure task bookkeeping (#0766) does not count as a mismatch:
     // work-file commits land after the capture and change nothing the captures
     // describe.
-    const worktree = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
-    const reviewedHead = shortHeadOf(worktree ?? this.config.root);
+    const worktree = task.branch
+      ? await getGitWorker(this.config.root).worktreePath(task.branch)
+      : null;
+    const headResult = await getGitWorker(this.config.root).runGit(worktree ?? this.config.root, [
+      "rev-parse",
+      "--short",
+      "HEAD",
+    ]);
+    const reviewedHead = headResult.status === 0 ? headResult.stdout.trim() : null;
     const treeStatus = await effectiveHandoffTreeStatus(
       worktree ?? this.config.root,
       evidence,

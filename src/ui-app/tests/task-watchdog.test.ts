@@ -306,7 +306,7 @@ describe("stuck detection", () => {
 });
 
 describe("hasRecentWorktreeActivity (#0203)", () => {
-  it("is true when a worktree file was modified within the staleness window", () => {
+  it("is true when a worktree file was modified within the staleness window", async () => {
     const fx = makeGitFx(600_000, { committedWork: true });
     try {
       // Uncommitted, freshly-written — the exact shape of a live agent
@@ -315,42 +315,46 @@ describe("hasRecentWorktreeActivity (#0203)", () => {
         join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x", "live.txt"),
         "editing now\n",
       );
-      expect(hasRecentWorktreeActivity(fx.root, "feat/x", 5 * 60_000, Date.now())).toBe(true);
+      expect(await hasRecentWorktreeActivity(fx.root, "feat/x", 5 * 60_000, Date.now())).toBe(true);
     } finally {
       fx.clean();
     }
   });
 
-  it("is false once nothing in the worktree has changed within the window", () => {
+  it("is false once nothing in the worktree has changed within the window", async () => {
     const fx = makeGitFx(600_000, { committedWork: true });
     try {
       const now = Date.now();
       // committedWork's file was written well before "now" in wall-clock
       // terms, but to make the boundary deterministic, use a threshold of 0.
-      expect(hasRecentWorktreeActivity(fx.root, "feat/x", 0, now)).toBe(false);
+      expect(await hasRecentWorktreeActivity(fx.root, "feat/x", 0, now)).toBe(false);
     } finally {
       fx.clean();
     }
   });
 
-  it("is false when the task has no branch, or the branch has no worktree", () => {
+  it("is false when the task has no branch, or the branch has no worktree", async () => {
     const fx = makeGitFx(600_000);
     try {
-      expect(hasRecentWorktreeActivity(fx.root, undefined, 5 * 60_000, Date.now())).toBe(false);
-      expect(hasRecentWorktreeActivity(fx.root, "feat/x", 5 * 60_000, Date.now())).toBe(false);
+      expect(await hasRecentWorktreeActivity(fx.root, undefined, 5 * 60_000, Date.now())).toBe(
+        false,
+      );
+      expect(await hasRecentWorktreeActivity(fx.root, "feat/x", 5 * 60_000, Date.now())).toBe(
+        false,
+      );
     } finally {
       fx.clean();
     }
   });
 
-  it("ignores node_modules and .git so a scan never pays for their size", () => {
+  it("ignores node_modules and .git so a scan never pays for their size", async () => {
     const fx = makeGitFx(600_000, { committedWork: true });
     try {
       const wt = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x");
       const nm = join(wt, "node_modules", "pkg");
       mkdirSync(nm, { recursive: true });
       writeFileSync(join(nm, "index.js"), "module.exports = {};\n");
-      expect(hasRecentWorktreeActivity(fx.root, "feat/x", 0, Date.now())).toBe(false);
+      expect(await hasRecentWorktreeActivity(fx.root, "feat/x", 0, Date.now())).toBe(false);
     } finally {
       fx.clean();
     }

@@ -43,13 +43,13 @@ import type { LogLevel } from "../core/logger.js";
 import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
 import type { RepoOSConfig, ShotTargetConfig, Task } from "../core/types.js";
 import { DEFAULT_MAX_AUTO_SHOTS } from "../core/types.js";
-import { runGit, worktreePathForBranch } from "../core/git.js";
 import { isEvidenceCurrent } from "./evidence-current.js";
 import { runShotCommand, slugName } from "../core/shot-command.js";
 import { isShotCaptureUnavailable } from "../commands/shot.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/ui-harness.js";
 import type { PreviewManager } from "./preview.js";
 import { computeTaskShotContext } from "./shot-context.js";
+import { getGitWorker } from "./git-worker.js";
 import { importShotArtifacts, localShotStore, shotsDir, type ShotStore } from "./shots.js";
 import { patchTaskFile } from "./write.js";
 import {
@@ -171,9 +171,9 @@ export function releaseBrowserCapture(taskId: string): void {
  * rather than failing.
  */
 async function headIdentity(config: RepoOSConfig, task: Task): Promise<string | undefined> {
-  const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
-  const dir = worktree ?? config.root;
-  const res = await runGit(dir, ["rev-parse", "--short", "HEAD"], 10_000);
+  const dir =
+    (task.branch ? await getGitWorker(config.root).worktreePath(task.branch) : null) ?? config.root;
+  const res = await getGitWorker(config.root).runGit(dir, ["rev-parse", "--short", "HEAD"], 10_000);
   if (res.status !== 0) return undefined;
   const sha = res.stdout.trim();
   return sha || undefined;
@@ -225,11 +225,11 @@ async function startTargetPreview(
  * touching a browser. Fail-soft: every reason to stand down is returned as a
  * string, never a throw.
  */
-export function planAutoCapture(
+export async function planAutoCapture(
   config: RepoOSConfig,
   task: Task,
   opts: { forceRefresh?: boolean } = {},
-):
+): Promise<
   | {
       entries: CaptureEntry[];
       errors: string[];
@@ -238,7 +238,8 @@ export function planAutoCapture(
       skips: string[];
       collapsed: string[];
     }
-  | { reason: string; blockingErrors?: string[] } {
+  | { reason: string; blockingErrors?: string[] }
+> {
   if (!task.branch) return { reason: "the task has no branch yet" };
   // Only engineer-made shots pre-empt. A shot the server's own capture wrote is
   // replaced on re-handoff: otherwise a first capture taken from a stale or
@@ -284,7 +285,7 @@ export function planAutoCapture(
         "an engineer-made capture pre-empts the automatic one",
     };
   }
-  const context = computeTaskShotContext(config, task);
+  const context = await computeTaskShotContext(config, task);
   // Read fixtures from the task branch if available (#0786).
   const fixtureValidator = taskFixtureValidator(
     (path: string) => {
@@ -639,7 +640,7 @@ export async function runAutoShotCapture(
       // the board (a `## Shots` edit after branch creation) and its detached
       // checkout cannot re-diff changed paths, so a runner-planned capture could
       // differ from — or skip — what local capture would produce (#0854).
-      const remotePlan = planAutoCapture(config, task);
+      const remotePlan = await planAutoCapture(config, task);
       if ("reason" in remotePlan) return finish("skipped", remotePlan.reason);
       if (remotePlan.blockingErrors?.length) {
         return finish(
@@ -648,8 +649,12 @@ export async function runAutoShotCapture(
         );
       }
       const canonical = canonicalCaptureContext(config, task, remotePlan);
-      const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
-      const head = worktree ? await runGit(worktree, ["rev-parse", "HEAD"], 10_000) : null;
+      const worktree = task.branch
+        ? await getGitWorker(config.root).worktreePath(task.branch)
+        : null;
+      const head = worktree
+        ? await getGitWorker(config.root).runGit(worktree, ["rev-parse", "HEAD"], 10_000)
+        : null;
       const request =
         worktree && head?.status === 0 && task.branch
           ? {
@@ -693,9 +698,9 @@ export async function runAutoShotCapture(
 
   // The runner (mode forced local) passes the control plane's plan so it
   // executes exactly what the board would; every other caller plans locally.
-  const planned: ReturnType<typeof planAutoCapture> = canonicalPlan
+  const planned: Awaited<ReturnType<typeof planAutoCapture>> = canonicalPlan
     ? { ...canonicalPlan, blockingErrors: canonicalPlan.blockingErrors ?? [] }
-    : planAutoCapture(config, task);
+    : await planAutoCapture(config, task);
   if ("reason" in planned) {
     return finish("skipped", planned.reason);
   }
@@ -734,9 +739,9 @@ export async function runAutoShotCapture(
     .filter((shot) => shot.origin === "auto");
   const currentCaptureIdentities = new Set<string>();
   if (sourceIdentity) {
-    const worktree = task.branch
-      ? (worktreePathForBranch(config.root, task.branch) ?? config.root)
-      : config.root;
+    const worktree =
+      (task.branch ? await getGitWorker(config.root).worktreePath(task.branch) : null) ??
+      config.root;
     for (const shot of autoExisting) {
       if (
         shot.sourceIdentity &&
@@ -793,7 +798,7 @@ export async function runAutoShotCapture(
     (e): e is CaptureEntry & { route: string } => !commandTargets.has(e.target),
   );
   const commandEntries = entries.filter((e) => commandTargets.has(e.target));
-  const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+  const worktree = task.branch ? await getGitWorker(config.root).worktreePath(task.branch) : null;
   const commandRoot = worktree ?? config.root;
 
   let browser: SmokeBrowser | undefined;
@@ -1132,8 +1137,10 @@ async function captureDeclaredShotImpl(
     config.remoteValidation.browserCaptureMode !== "local"
   ) {
     const canonical = canonicalCaptureContext(config, task);
-    const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
-    const head = worktree ? await runGit(worktree, ["rev-parse", "HEAD"], 10_000) : null;
+    const worktree = task.branch ? await getGitWorker(config.root).worktreePath(task.branch) : null;
+    const head = worktree
+      ? await getGitWorker(config.root).runGit(worktree, ["rev-parse", "HEAD"], 10_000)
+      : null;
     const request =
       worktree && task.branch && head?.status === 0
         ? {

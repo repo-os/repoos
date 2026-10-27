@@ -13,10 +13,13 @@
  * Zero runtime deps — `node:child_process` only. Like the rest of core, every
  * check here is best-effort and degrades gracefully.
  */
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import type { RepoOSConfig, Task } from "./types.js";
+
+const execFileAsync = promisify(execFile);
 
 /** Outcome of a single bootstrap step. */
 export interface BootstrapStep {
@@ -44,7 +47,7 @@ export type PackageManager = "bun" | "npm" | null;
  * Detect the package manager for a directory. Checks lockfiles first (the
  * authoritative signal) then falls back to binary probe.
  */
-export function detectPackageManager(dir: string): PackageManager {
+export async function detectPackageManager(dir: string): Promise<PackageManager> {
   if (existsSync(join(dir, "bun.lock")) || existsSync(join(dir, "bun.lockb"))) {
     return "bun";
   }
@@ -52,12 +55,19 @@ export function detectPackageManager(dir: string): PackageManager {
     return "npm";
   }
   if (existsSync(join(dir, "package.json"))) {
-    const probe = spawnSync("bun", ["--version"], { cwd: dir, timeout: 4000 });
-    if (probe.status === 0) return "bun";
-    const npmProbe = spawnSync("npm", ["--version"], { cwd: dir, timeout: 4000 });
-    if (npmProbe.status === 0) return "npm";
+    if (await hasPackageManager("bun", dir)) return "bun";
+    if (await hasPackageManager("npm", dir)) return "npm";
   }
   return null;
+}
+
+async function hasPackageManager(command: "bun" | "npm", dir: string): Promise<boolean> {
+  try {
+    await execFileAsync(command, ["--version"], { cwd: dir, timeout: 4000 });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -178,11 +188,11 @@ function validateWorktree(config: RepoOSConfig, cwd: string): { ok: boolean; det
  * The package-manager cache (e.g. `~/.bun/install/cache`) is reused so a cold
  * network fetch is only needed on the first-ever install.
  */
-function installDeps(dir: string): { ok: boolean; detail: string } {
+async function installDeps(dir: string): Promise<{ ok: boolean; detail: string }> {
   if (existsSync(join(dir, "node_modules"))) {
     return { ok: true, detail: "node_modules already present" };
   }
-  const pm = detectPackageManager(dir);
+  const pm = await detectPackageManager(dir);
   if (!pm) {
     return { ok: true, detail: "no package.json — nothing to install" };
   }
@@ -190,10 +200,19 @@ function installDeps(dir: string): { ok: boolean; detail: string } {
   if (!cmd) {
     return { ok: true, detail: `package manager ${pm} detected but no install command available` };
   }
-  const proc = spawnSync(cmd.cmd, cmd.args, { cwd: dir, timeout: 120_000 });
-  if (proc.status !== 0) {
-    const err =
-      proc.stderr?.toString("utf8").trim().split("\n").slice(-3).join(" ") || "unknown error";
+  try {
+    await execFileAsync(cmd.cmd, cmd.args, {
+      cwd: dir,
+      timeout: 120_000,
+      maxBuffer: 10 * 1024 * 1024,
+    });
+  } catch (error) {
+    const stderr =
+      typeof error === "object" && error !== null && "stderr" in error
+        ? String(error.stderr).trim()
+        : "";
+    const message = error instanceof Error ? error.message : String(error);
+    const err = stderr.split("\n").slice(-3).join(" ") || message;
     return { ok: false, detail: `${cmd.cmd} install failed: ${err}` };
   }
   return { ok: true, detail: `dependencies installed with ${cmd.cmd}` };
@@ -272,7 +291,7 @@ export async function bootstrap(
   }
 
   // Step 4: install dependencies (async — may spawn a child process)
-  const { value: depsOk, durationMs: depsDur } = await timed(async () => installDeps(cwd));
+  const { value: depsOk, durationMs: depsDur } = await timed(() => installDeps(cwd));
   add(STEP_NAMES.INSTALL_DEPS, depsOk.ok, depsDur, depsOk.detail);
 
   const durationMs = Date.now() - overallStart;

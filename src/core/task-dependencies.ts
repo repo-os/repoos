@@ -49,7 +49,11 @@ export function normalizeTaskDependencies(raw: unknown): string[] {
 }
 
 /** Validate dependencies against the current board, including indirect cycles. */
-export function validateTaskDependencies(taskId: string, dependsOn: string[], tasks: Task[]): void {
+export function validateTaskDependencies(
+  taskId: string,
+  dependsOn: string[],
+  tasks: readonly Task[],
+): void {
   const byId = new Map(tasks.map((task) => [task.id, task]));
   const dependencies = [...new Set(dependsOn)];
   for (const id of dependencies) {
