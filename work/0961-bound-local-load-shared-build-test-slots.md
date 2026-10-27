@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 687ea6b1cd2842380f1609211785833150cdb7d3
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
@@ -15,8 +17,6 @@ review_model_override: composer-2.5
 created_at: "2026-10-25T15:37:17Z"
 updated_at: "2026-10-27T08:47:44Z"
 review_passes: 3
-last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
-last_handoff_failure_sha: 77839669fb6a44683177bf22b7321ae49a957369
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
@@ -167,3 +167,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T08:23:19Z · status review→active
 - 2026-10-27T08:23:23Z · note: handoff requested (ui-review)
 - 2026-10-27T08:47:44Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
+
