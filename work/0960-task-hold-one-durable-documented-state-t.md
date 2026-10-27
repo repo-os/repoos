@@ -121,3 +121,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T13:21:33Z · message_queued at 2026-10-27T13:21:33.908Z
 - 2026-10-27T14:20:28Z · engineer stopped by request
 - 2026-10-27T14:20:29Z · status active→review
+- 2026-10-27T14:20:29Z · note: handoff requested (cli)
