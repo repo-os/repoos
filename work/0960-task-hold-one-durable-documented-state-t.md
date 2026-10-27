@@ -16,7 +16,7 @@ model_override: opencode-go/hy3
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T06:22:00Z"
+updated_at: "2026-10-27T06:25:52Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 1
