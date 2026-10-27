@@ -2,7 +2,7 @@
 id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/task-hold-one-durable-documented-state-t
 cli_override: opencode
 model_override: opencode-go/hy3
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-26T21:39:47Z"
+updated_at: "2026-10-27T03:02:49Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-26T21:39:33Z · model_override
 - 2026-10-26T21:39:45Z · model_override
 - 2026-10-26T21:39:47Z · status ready→active, branch
+- 2026-10-27T03:02:49Z · status active→review
