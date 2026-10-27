@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
+last_handoff_failure_sha: 77839669fb6a44683177bf22b7321ae49a957369
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
@@ -153,3 +155,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T07:02:35Z · status review→active
 - 2026-10-27T07:02:47Z · note: handoff requested (ui-review)
 - 2026-10-27T07:26:28Z · handoff failed · ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
+
