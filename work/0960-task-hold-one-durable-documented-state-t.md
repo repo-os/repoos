@@ -3,6 +3,8 @@ id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
 priority: p2
 area: core
 assigned_to: ai
@@ -177,4 +179,5 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T23:47:16Z · message_queued at 2026-10-27T23:47:16.354Z
 - 2026-10-27T23:47:24Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-27T23:47:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T23:47:24Z · needs_input
 - 2026-10-27T23:47:24Z · needs_input
