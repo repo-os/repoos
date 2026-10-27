@@ -2,7 +2,7 @@
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id."
@@ -19,7 +19,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T14:18:18Z"
+updated_at: "2026-10-27T14:36:19Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 393778400b665e96566eba04bc9a80c92a45d356
 review_passes: 3
@@ -177,3 +177,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T14:17:31Z · handoff failed · ui-review handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Dashboard heavy-job line (target "default"): highlight [data-heavy-jobs] matched nothing on / (http://127.0.0.1:63701/)
 - 2026-10-27T14:18:18Z · body
 - 2026-10-27T14:18:18Z · note: handoff requested (ui-review)
+- 2026-10-27T14:36:19Z · status active→review
