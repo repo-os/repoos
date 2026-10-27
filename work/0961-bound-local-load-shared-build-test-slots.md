@@ -71,10 +71,10 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 ```json
 [
 {
-  "label": "Heavy slots and pressure limits in Settings",
-  "target": "default",
-  "route": "/settings?tab=general&section=performance",
-  "highlight": "[data-settings-section=\"performance\"]"
+"label": "Heavy slots and pressure limits in Settings",
+"target": "default",
+"route": "/settings?tab=general&section=performance",
+"highlight": "[data-settings-section=\"performance\"]"
 }
 ]
 ```
@@ -176,3 +176,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T14:17:30Z · note: ui verification failed (1 issue(s)): [missing-target] Dashboard heavy-job line (target "default"): highlight [data-heavy-jobs] matched nothing on / (http://127.0.0.1:63701/)
 - 2026-10-27T14:17:31Z · handoff failed · ui-review handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Dashboard heavy-job line (target "default"): highlight [data-heavy-jobs] matched nothing on / (http://127.0.0.1:63701/)
 - 2026-10-27T14:18:18Z · body
+- 2026-10-27T14:18:18Z · note: handoff requested (ui-review)
