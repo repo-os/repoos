@@ -119,7 +119,14 @@ interface BriefView {
   rules: { heading: string; text: string }[];
   recommendations: { owner: string; title: string; detail: string; taskId: string | null }[];
   /** #0960: tasks held out of ALL automation, with their hold reason. */
-  heldTasks: { id: string; title: string; status: string; reason: string | null; by: string | null; until: string | null }[];
+  heldTasks: {
+    id: string;
+    title: string;
+    status: string;
+    reason: string | null;
+    by: string | null;
+    until: string | null;
+  }[];
 }
 
 function renderBrief(brief: BriefView): void {

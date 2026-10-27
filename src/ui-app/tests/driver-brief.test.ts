@@ -422,7 +422,12 @@ describe("buildDriverBrief — held tasks (#0960)", () => {
       baseInput({
         tasks: [
           taskInput({ id: "0001", status: "active", isHeld: true, holdReason: "design sign-off" }),
-          taskInput({ id: "0002", status: "ready", isHeld: true, holdUntil: "2000-01-01T00:00:00Z" }),
+          taskInput({
+            id: "0002",
+            status: "ready",
+            isHeld: true,
+            holdUntil: "2000-01-01T00:00:00Z",
+          }),
           taskInput({ id: "0003", status: "active", isHeld: true, isArchived: true }),
           taskInput({ id: "0004", status: "active" }),
         ],

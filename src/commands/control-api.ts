@@ -204,7 +204,9 @@ export async function cmdHold(args: string[]): Promise<number> {
   }
   const id = rest[0];
   if (!id) {
-    printErr('Usage: repoos hold <id> --reason "<text>" [--until <date>] [--by <who>] [--json] [--port N]');
+    printErr(
+      'Usage: repoos hold <id> --reason "<text>" [--until <date>] [--by <who>] [--json] [--port N]',
+    );
     return 1;
   }
   const api = new RepoOsApi({ port: opts.port });

@@ -512,7 +512,9 @@ export function parseTask(args: ParseTaskArgs): Task {
         : undefined,
     isHeld: data.hold === true,
     holdReason:
-      typeof data.hold_reason === "string" && data.hold_reason.trim() ? data.hold_reason : undefined,
+      typeof data.hold_reason === "string" && data.hold_reason.trim()
+        ? data.hold_reason
+        : undefined,
     holdUntil:
       typeof data.hold_until === "string" && data.hold_until.trim() ? data.hold_until : undefined,
     holdBy: typeof data.hold_by === "string" && data.hold_by.trim() ? data.hold_by : undefined,
