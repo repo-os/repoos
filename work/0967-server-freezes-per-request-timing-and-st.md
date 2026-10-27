@@ -2,7 +2,7 @@
 id: "0967"
 title: "Server freezes: per-request timing and STUCK log"
 type: feature
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
@@ -48,4 +48,4 @@ Independent and small. No server restarts, no previews, no repoos.toml edits.
 - 2026-10-27T21:31:00Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-27T21:31:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-27T21:31:00Z · message_delivered: 1 message(s)
-- 2026-10-27T22:04:37Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-27T22:04:37Z · status active→review
