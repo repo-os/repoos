@@ -42,6 +42,7 @@ import {
 } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import { isHoldActive } from "../core/task-selection.js";
+import { taskWithLiveHold } from "./hold-guard.js";
 import { assessTaskUnderspecified } from "../core/task-underspecified.js";
 import { notifyGitMutation } from "../core/git-activity.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
@@ -512,28 +513,20 @@ async function runHandoffFinalization(
   const { workdir, isHotfix, worktreeTaskPath, worktreeTask } = resolved;
   const onProgress = opts.onProgress;
   const onStatusChange = opts.onStatusChange;
-  // #0960 round-3 TOCTOU guard: the `onHandoff` pre-check in server.ts runs
-  // before `consumeHandoff`, so a hold that lands during the awaited
-  // finalization (resolveWorktree, the commit gate, the check suite) would
-  // otherwise move a held task to review. The hold is applied through the live
-  // task file, so re-read it from disk here — rather than trusting the
-  // request-time snapshot — and refuse before any commit. Only the agent
-  // handoff path sets `holdGuard`; human-initiated review is unaffected.
-  if (opts.holdGuard) {
-    const live = parseTask({
-      content: readFileSync(task.absPath, "utf8"),
-      absPath: task.absPath,
-      root: config.root,
-      defaultStatus: config.defaultStatus,
-      defaultAssignee: config.defaultAssignee,
-    });
-    if (isHoldActive(live)) {
-      return fail(
-        "validate",
-        `task #${task.id} is held — release it with "repoos unhold ${task.id}" before it can move to review`,
-      );
-    }
-  }
+  // #0960: agent handoff must not reach review if a hold lands during the
+  // awaited check. Re-read the task file at each commit point; a human review
+  // leaves `holdGuard` unset.
+  const heldHandoff = (step: HandoffStep): HandoffResult | null => {
+    if (!opts.holdGuard) return null;
+    const live = taskWithLiveHold(config, task);
+    if (!isHoldActive(live)) return null;
+    return fail(
+      step,
+      `task #${task.id} is held — release it with "repoos unhold ${task.id}" before it can move to review`,
+    );
+  };
+  const heldAtEntry = heldHandoff("validate");
+  if (heldAtEntry) return heldAtEntry;
   // Mirrors `withHandoffDeadline` (armed moments before this body runs): a remote
   // run still QUEUED at that point cancels itself and releases its host slot
   // instead of orphaning it (#0521).
@@ -766,32 +759,12 @@ async function runHandoffFinalization(
   }
 
   onProgress?.("review");
-  // #0960 round-3: hold re-check AT the commit point. The entry guard above
-  // covers a hold landing before/during resolveWorktree; this covers one that
-  // lands during the (potentially long) check/verify step that precedes the
-  // status change. The hold is applied through the live task file, so re-read it
-  // from disk here — immediately before committing `status: review` — and refuse
-  // rather than moving a held task to review. Only the agent handoff path sets
-  // holdGuard; human-initiated review is unaffected.
-  if (opts.holdGuard) {
-    const live = parseTask({
-      content: readFileSync(task.absPath, "utf8"),
-      absPath: task.absPath,
-      root: config.root,
-      defaultStatus: config.defaultStatus,
-      defaultAssignee: config.defaultAssignee,
-    });
-    if (isHoldActive(live)) {
-      return fail(
-        "review",
-        `task #${task.id} is held — release it with "repoos unhold ${task.id}" before it can move to review`,
-      );
-    }
-  }
   if (
     !opts.checkpointRecovery &&
     (worktreeTask.status !== "review" || worktreeTask.branch !== task.branch)
   ) {
+    const heldBeforeWorktree = heldHandoff("review");
+    if (heldBeforeWorktree) return heldBeforeWorktree;
     try {
       patchTaskFile({ ...config, root: workdir }, worktreeTaskPath, {
         status: "review",
@@ -823,6 +796,8 @@ async function runHandoffFinalization(
         // indicator directly rather than waiting for a watcher event (#0584).
         notifyGitMutation(config.root, "checkout");
         try {
+          const heldBeforeCanonical = heldHandoff("main");
+          if (heldBeforeCanonical) return heldBeforeCanonical;
           patchTaskFile(
             config,
             join(config.root, task.path),
@@ -845,6 +820,8 @@ async function runHandoffFinalization(
           notifyGitMutation(config.root, "checkout");
         }
       } else {
+        const heldBeforeCanonical = heldHandoff("main");
+        if (heldBeforeCanonical) return heldBeforeCanonical;
         patchTaskFile(
           config,
           task.absPath,

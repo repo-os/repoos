@@ -201,6 +201,8 @@ function makeCtx(
       isRunning: () => opts.runnerRunning ?? false,
       stop: opts.stop ?? vi.fn(() => ({ stopped: true })),
       markPaused: vi.fn(),
+      markHoldPause: vi.fn(),
+      clearHoldPause: vi.fn(),
     } as any,
     previews: { stop: vi.fn(async () => {}) } as any,
     cto: {} as any,
@@ -476,12 +478,10 @@ describe("POST /api/tasks/:id — hold / unhold / start gate (#0960)", () => {
     }
   });
 
-  it("holding a RUNNING task stops the engineer but does NOT mark it paused (#0960 round 3)", async () => {
-    // Round-3 bug: `hold` used to call `runner.markPaused(id)` after stopping the
-    // engineer. That left a pause marker that (a) blocked `unhold --start` — the
-    // shared launcher refuses paused tasks — and (b) survived the hold's
-    // auto-release, so the watchdog and CTO recovery kept skipping the task
-    // forever. A hold is its own durable "parked" state; it must not also pause.
+  it("holding a RUNNING task records a hold pause that unhold clears (#0960)", async () => {
+    // Stopping the live engineer records a hold-scoped pause so the watchdog
+    // does not treat the stop as a crash. That pause must not outlive the hold:
+    // unhold clears it before `--start`, and a human `markPaused` is not used.
     const fx = makeFixture("active");
     try {
       const ctx = makeCtx(fx, { runnerRunning: true });
@@ -491,13 +491,13 @@ describe("POST /api/tasks/:id — hold / unhold / start gate (#0960)", () => {
         param2: "hold",
       });
       expect(fake.status).toBe(200);
-      // The engineer was asked to stop...
       expect(ctx.runner.stop).toHaveBeenCalled();
-      // ...but the task was NOT marked paused, so unhold --start and post-expiry
-      // recovery are not blocked by a stale pause marker.
+      expect(ctx.runner.markHoldPause).toHaveBeenCalledWith("0296");
       expect(ctx.runner.markPaused).not.toHaveBeenCalled();
-      const held = readTaskFile(fx);
-      expect(held.isHeld).toBe(true);
+      const released = makeRes();
+      await taskAction(ctx, makeReq({}), released.res, { param1: "0296", param2: "unhold" });
+      expect(released.fake.status).toBe(200);
+      expect(ctx.runner.clearHoldPause).toHaveBeenCalledWith("0296");
     } finally {
       fx.clean();
     }

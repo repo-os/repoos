@@ -69,6 +69,7 @@ import { humanStepFlagDetail } from "../../core/human-step-decision.js";
 import { runHumanStepDecisionCheck } from "../human-step-decision.js";
 import { HumanStepSplitError, splitHumanStepTask } from "../human-step-split.js";
 import { isHoldActive } from "../../core/task-selection.js";
+import { holdBlocksEngineer } from "../hold-guard.js";
 import { relaunchEngineerOnActiveTask } from "../engineer-launch.js";
 import {
   answeringQuestionsMatchTask,
@@ -2744,32 +2745,26 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       clean || !existing.branch ? undefined : resumePreamble(config, taskForLaunch, branch, cwd);
     const preamble = [resumeContext, instruction].filter(Boolean).join("\n\n") || undefined;
 
-    // #0960 round-3 TOCTOU guard: the early hold check above (line ~2473) ran
-    // BEFORE the awaited bootstrap/context-pack work above. A `repoos hold` that
-    // lands during that window would not have been seen, and the engineer would
-    // spawn despite the hold. The hold is applied through the live index, so
-    // re-read the current task state here — after the awaited work — and refuse
-    // if it is now held. `force` (an explicit human/driver override) still wins.
+    // #0960: the early hold check ran before bootstrap. Re-read the task file
+    // here, and spawnTurn checks again if this start waits on a slot.
     const liveBeforeSpawn = index.getTask(id) ?? taskForLaunch;
-    if (isHoldActive(liveBeforeSpawn) && !force) {
-      const reason = liveBeforeSpawn.holdReason ? `: ${liveBeforeSpawn.holdReason}` : "";
-      const until = liveBeforeSpawn.holdUntil
-        ? ` (auto-releases ${liveBeforeSpawn.holdUntil})`
-        : "";
+    const heldNow = !force ? holdBlocksEngineer(config, liveBeforeSpawn) : null;
+    if (heldNow) {
       return json(res, 409, {
         ok: false,
         held: true,
         reason: liveBeforeSpawn.holdReason,
         until: liveBeforeSpawn.holdUntil,
-        error: `Task #${id} is held${reason}${until} — use "repoos unhold ${id}" to release it, or "repoos start ${id} --force"`,
+        error: `${heldNow}, or "repoos start ${id} --force"`,
       });
     }
 
-    const spawnRes = runner.start(taskForLaunch, branch, agent, {
+    const spawnRes = runner.start(liveBeforeSpawn, branch, agent, {
       cwd,
       contextPack: pack.content,
       resumePreamble: preamble,
       freshSession,
+      ...(force ? { bypassHold: true } : {}),
     });
     return json(res, 200, {
       ok: true,
@@ -3395,15 +3390,13 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // flight. (Review runs and close-out are human/driver-invoked machinery, so
     // they are left to their own guards.)
     //
-    // #0960 / round-3: deliberately do NOT call `runner.markPaused(id)` here.
-    // A hold is its own durable "parked" state: the hold flag makes the task
-    // inert for ALL automation, so no pause marker is needed. Marking paused on
-    // hold created the round-3 bug where `unhold --start` then failed (the
-    // shared launcher refuses paused tasks) and, after the hold auto-released,
-    // the watchdog and CTO recovery STILL skipped the task because the in-memory
-    // pause marker outlived the hold. Stopping the process is enough; the hold
-    // flag itself is what every automation consults.
+    // Stopping a live engineer also records a hold-scoped pause so the watchdog
+    // does not treat the stop as a crash. That pause is cleared by unhold and
+    // by hold_until expiry (`clearHoldPause` / `clearExpiredHoldPauses`). It is
+    // not a human pause: `markPaused` is left for `repoos pause`.
+    const wasRunning = runner.isRunning(id);
     const stopRes = runner.stop(id);
+    if (wasRunning) runner.markHoldPause(id);
     const updated = patchTaskFile(
       config,
       existing.absPath,
@@ -3431,6 +3424,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       [key: string]: unknown;
     };
     const wantStart = body?.start === true;
+    // Drop the pause this hold recorded before any relaunch. A human pause is
+    // a different set and is left in place.
+    runner.clearHoldPause(id);
     const updated = patchTaskFile(
       config,
       existing.absPath,

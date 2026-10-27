@@ -65,6 +65,7 @@ import { REVIEW_RUN_TRIGGERS } from "./review-automation.js";
 import { effectiveStalenessNow } from "../core/agent-run-health.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { isHoldActive } from "../core/task-selection.js";
+import { clearExpiredHoldPauses } from "./hold-guard.js";
 import { commitTaskFile, worktreeStatus, worktreePathForBranch } from "../core/git.js";
 import { scheduleHandoffSignalRetry } from "./handoff.js";
 import { isTaskClosingOut } from "./close-out-lock.js";
@@ -531,6 +532,12 @@ export class TaskWatchdog {
     this.lastWatchdogTickMs = wallNow;
     try {
       this.runner.reconcileDeadAgents?.();
+      // A hold that stopped an engineer left a pause. Once hold_until passes,
+      // that pause must not keep this scan from resuming the task.
+      clearExpiredHoldPauses(
+        [...this.index.getTasks("active"), ...this.index.getTasks("review")],
+        this.runner,
+      );
       // The `active` status is scanned for the dead/stalled ENGINEER shape
       // (#0180). The `review` status is scanned too (#0286): a task whose
       // REVIEWER session died silently sits in `review` forever with no report
