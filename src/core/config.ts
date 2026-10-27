@@ -3285,7 +3285,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: String(i + 1),
       })),
       description:
-        "Vitest worker cap (VITEST_MAX_WORKERS) for processes an engineer launches. Default 2.",
+        "Vitest worker cap (VITEST_MAX_WORKERS, and REPOOS_TEST_WORKERS for RepoOS's own suite) for processes an engineer launches. Default 2.",
     },
     {
       key: "localChecks.maxConcurrent",
@@ -3313,7 +3313,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: String(i + 1),
       })),
       description:
-        "Playwright worker cap for a run an engineer launches (PLAYWRIGHT_WORKERS). Default 2. Separate from how many browser sessions may run at once.",
+        "Playwright worker cap for a run an engineer launches. The PATH shim applies --workers to playwright test and exports PLAYWRIGHT_WORKERS. Default 2; separate from browser-session concurrency.",
     },
     {
       key: "playwright.maxConcurrent",

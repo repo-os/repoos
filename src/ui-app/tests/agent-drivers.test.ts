@@ -38,7 +38,7 @@ const FAKEBIN = `#!/usr/bin/env node
 const fs = require("fs");
 const path = require("path");
 const args = process.argv.slice(2);
-fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args, cwd: process.cwd(), agent: process.env.REPOOS_AGENT || "", task: process.env.REPOOS_TASK_ID || "", api: process.env.REPOOS_API_URL || "" }) + "\\n");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args, cwd: process.cwd(), agent: process.env.REPOOS_AGENT || "", task: process.env.REPOOS_TASK_ID || "", api: process.env.REPOOS_API_URL || "", vitestWorkers: process.env.VITEST_MAX_WORKERS || "", repoosTestWorkers: process.env.REPOOS_TEST_WORKERS || "", playwrightWorkers: process.env.PLAYWRIGHT_WORKERS || "", path: process.env.PATH || "" }) + "\\n");
 if (path.basename(process.argv[1]) === "pi") {
   if (process.env.REPOOS_FAKEBIN_PI_NO_SESSION_HEADER !== "1") process.stdout.write(JSON.stringify({ type: "session", version: 3, id: "sess-pi" }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "turn_start" }) + "\\n");
@@ -114,6 +114,10 @@ interface SpawnRecord {
   task?: string;
   /** REPOOS_API_URL — the actual control-plane URL injected by the runner. */
   api?: string;
+  vitestWorkers?: string;
+  repoosTestWorkers?: string;
+  playwrightWorkers?: string;
+  path?: string;
 }
 
 interface Fixture {
@@ -306,6 +310,42 @@ describe("model-aware driver commands", () => {
     });
     expect(command.args).not.toContain("--output-format");
     expect(command.args).toContain("--yolo");
+  });
+});
+
+describe("engineer resource limits (#0961)", () => {
+  it("passes worker caps and the shared shim path to the spawned engineer", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const runner = new AgentRunner(
+      {
+        ...config(fx.bin),
+        heavySlots: 2,
+        vitest: { maxWorkers: 3 },
+        playwright: { maxConcurrent: 1, workers: 1 },
+      },
+      () => {},
+    );
+    try {
+      const start = runner.start(TASK, "feat/x", agent("opencode"), { cwd: fx.bin });
+      expect(start.ok).toBe(true);
+      await waitFor(() => existsSync(fx.log) && spawns(fx).length === 1, "engineer resource spawn");
+      await waitFor(() => !runner.isRunning("0001"), "engineer resource turn exit");
+
+      const [run] = spawns(fx);
+      expect(run.vitestWorkers).toBe("3");
+      expect(run.repoosTestWorkers).toBe("3");
+      expect(run.playwrightWorkers).toBe("1");
+      const shimDir = join(fx.bin, ".repoos", "bin");
+      expect(run.path?.split(":")[0]).toBe(shimDir);
+      expect(existsSync(join(shimDir, "bun"))).toBe(true);
+    } finally {
+      runner.dispose();
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
   });
 });
 
