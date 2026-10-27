@@ -3,6 +3,9 @@ id: "0953"
 title: "Secrets page: one compact line per secret with actions behind an options menu (Railway-style)"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the opencode agent timed out after 900s
 priority: p2
 area: web
 depends_on: ["0950"]
@@ -117,3 +120,4 @@ Done in this task:
 - 2026-10-27T02:05:48Z · note: ui verification passed: 3 of 3 shots captured with clean console (1 shot warning)
 - 2026-10-27T02:05:49Z · status active→review
 - 2026-10-27T02:20:53Z · note: review pass 1: failed — no usable report
+- 2026-10-27T02:20:53Z · needs_input
