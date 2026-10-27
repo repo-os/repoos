@@ -24,7 +24,6 @@ handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-26T20:30:15.157Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:38:45.831Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:47:01.501Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 3
 incomplete_review_retries: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-27T07:34:21.880Z\",\"kind\":\"usage-limit\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
