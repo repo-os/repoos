@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-27T02:57:04Z"
+review_passes: 1
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
@@ -13,7 +15,6 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T02:57:03Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-26T20:30:15.157Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:38:45.831Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:47:01.501Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -116,3 +117,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T02:52:51Z · review_cli_override, review_model_override
 - 2026-10-27T02:52:54Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-27T02:57:03Z · note: review pass 2: needs some work
+
