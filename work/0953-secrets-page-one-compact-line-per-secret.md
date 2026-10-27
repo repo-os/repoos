@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: user-docs-build — timed out — timed out after 600s"
+last_handoff_failure_sha: 328e71d1c53c58e97c9df3c488a0dd140a88d29f
 id: "0953"
 title: "Secrets page: one compact line per secret with actions behind an options menu (Railway-style)"
 type: feature
@@ -141,3 +143,4 @@ Done in this task:
 - 2026-10-27T05:12:31Z · status active→review
 - 2026-10-27T05:12:31Z · note: handoff requested (cli)
 - 2026-10-27T05:22:58Z · handoff failed · task-file handoff failed at check · repoos check failed: user-docs-build — timed out — timed out after 600s
+
