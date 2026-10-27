@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 687ea6b1cd2842380f1609211785833150cdb7d3
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
@@ -15,7 +13,9 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T08:47:44Z"
+updated_at: "2026-10-27T08:58:07Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 687ea6b1cd2842380f1609211785833150cdb7d3
 review_passes: 3
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -167,4 +167,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T08:23:19Z · status review→active
 - 2026-10-27T08:23:23Z · note: handoff requested (ui-review)
 - 2026-10-27T08:47:44Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
-
+- 2026-10-27T08:58:07Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
