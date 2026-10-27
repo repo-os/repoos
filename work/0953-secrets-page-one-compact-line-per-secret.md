@@ -16,9 +16,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/secrets-page-one-compact-line-per-secret
 review_cli_override: cursor
-review_model_override: default
+review_model_override: composer-2.5
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-27T02:52:16Z"
+updated_at: "2026-10-27T02:52:18Z"
 ---
 ## Problem
 
@@ -128,3 +128,4 @@ Done in this task:
 - 2026-10-27T02:20:53Z · needs_input
 - 2026-10-27T02:52:14Z · review_cli_override, review_model_override
 - 2026-10-27T02:52:16Z · review_cli_override
+- 2026-10-27T02:52:18Z · review_model_override
