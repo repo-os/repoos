@@ -1,4 +1,0 @@
-$ vitest run --config src/ui-app/vite.config.ts /Users/nick/code/nick/repoos-worktrees/feat/server-freezes-move-all-git-reads-off-th/src/ui-app/tests/git-worker-lifecycle.test.ts /Users/nick/code/nick/repoos-worktrees/feat/server-freezes-move-all-git-reads-off-th/src/ui-app/tests/agent-drivers.test.ts /Users/nick/code/nick/repoos-worktrees/feat/server-freezes-move-all-git-reads-off-th/src/ui-app/tests/agent-review.test.ts "--maxWorkers=1"
-
- RUN  v4.1.10 /Users/nick/code/nick/repoos-worktrees/feat/server-freezes-move-all-git-reads-off-th/src/ui-app
-
