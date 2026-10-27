@@ -103,6 +103,32 @@ function resolveRepoPath(root: string, relative: string): string {
   return destination;
 }
 
+export interface ResolvedProjectEnvironmentSource {
+  source: ProjectEnvironmentSource;
+  /** Absolute path resolved inside the project root. */
+  absPath: string;
+  /** True when the file currently exists on disk. */
+  exists: boolean;
+}
+
+/**
+ * Resolve one registered source of a project environment to an absolute,
+ * root-contained path using the same validation as reads and writes. Callers
+ * supply identifiers only — never a raw path — so a client cannot name an
+ * arbitrary file for editor or export surfaces (#0953).
+ * `sourceId` omitted means the final (writable) source.
+ */
+export function resolveProjectEnvironmentSource(
+  root: string,
+  env: ProjectEnvironment,
+  sourceId?: string,
+): ResolvedProjectEnvironmentSource | null {
+  const source = sourceId ? env.sources.find((item) => item.id === sourceId) : env.sources.at(-1);
+  if (!source) return null;
+  const absPath = resolveRepoPath(root, source.path);
+  return { source, absPath, exists: existsSync(absPath) };
+}
+
 function resolveWritablePath(root: string, relative: string): string {
   const destination = resolveRepoPath(root, relative);
   const base = resolve(root);

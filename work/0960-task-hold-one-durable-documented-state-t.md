@@ -3,24 +3,24 @@ id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "network problem reaching the model provider, not a code issue: Timed out waiting for response headers"
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-hold-one-durable-documented-state-t
-cli_override: opencode
-model_override: opencode-go/hy3
-review_cli_override: github copilot
-review_model_override: default
+cli_override: codex
+model_override: gpt-6.1-sol
+review_cli_override: cursor
+review_model_override: composer-2.5
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T05:46:02Z"
-review_rounds: 1
-review_passes: 1
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/hy3\",\"at\":\"2026-10-27T04:49:39.384Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-10-27T20:50:22Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-27T14:46:39.664Z: repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]"
+review_passes: 4
+last_handoff_failure_fingerprint: "check|repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]"
+last_handoff_failure_sha: 2ddf481e7b564d0995ded4b9380b937785a08e82
+review_rounds: 2
+dev_error_count: 5
 ---
 ## Problem
 
@@ -50,6 +50,31 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - This touches central automation (CTO, watchdog, crash recovery, dispatch). It is deliberately a normal task with review, not a hotfix on main: a bug here silently skips tasks that should run.
 - Do not start a second RepoOS server from a worktree (see #0954).
 
+## Shots
+```json
+[
+{
+  "label": "Held task badge and expanded Held group",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".tc-held, .held-toggle, .held-rows",
+  "steps": [
+    {
+      "click": ".held-toggle"
+    }
+  ],
+  "state": "card:held"
+},
+{
+  "label": "Hold reason and automatic release in task status details",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": ".debug-status-detail",
+  "state": "drawer:held"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-25T14:23:48Z · created · njachowski@gmail.com
@@ -73,3 +98,70 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T04:49:39Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: Timed out waiting for response headers
 - 2026-10-27T04:49:39Z · engineer crash recovery: resuming opencode + opencode-go/hy3 (1/3 crashes in 30m) · network problem reaching the model provider, not a code issue: Timed out waiting for response headers
 - 2026-10-27T05:46:02Z · body
+- 2026-10-27T05:50:43Z · body
+- 2026-10-27T06:06:15Z · status active→review
+- 2026-10-27T06:19:04Z · note: review pass 2: needs some work
+- 2026-10-27T06:19:04Z · message_queued at 2026-10-27T06:19:04.635Z
+- 2026-10-27T06:19:04Z · status review→active
+- 2026-10-27T06:22:00Z · handoff failed · remote validation failed: test failure: tests/cli-control-api.test.ts > control API CLI > agents pause/resume writes the allowlist config (#0850), tests/refresh-evidence-route.test.ts > POST /api/tasks/:id/verify guards > refuses engineer start while evidence refresh is in progress, tests/refresh-evidence-route.test.ts > automatic stale-evidence refresh serialization (#0772) > blocks an engineer start while the automatic refresh holds the lock on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-27T06:25:56Z · message_delivered: 1 message(s)
+- 2026-10-27T06:25:56Z · needs_input
+- 2026-10-27T06:25:57Z · message_queued at 2026-10-27T06:25:57.295Z
+- 2026-10-27T06:26:28Z · review_cli_override, review_model_override
+- 2026-10-27T06:40:54Z · cli_override, model_override
+- 2026-10-27T07:01:49Z · cli_override, model_override
+- 2026-10-27T07:14:32Z · body
+- 2026-10-27T07:20:36Z · body
+- 2026-10-27T07:23:34Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-27T07:26:17Z · body
+- 2026-10-27T07:31:40Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-27T07:48:53Z · cli_override, model_override
+- 2026-10-27T07:48:59Z · message_delivered: 1 message(s)
+- 2026-10-27T07:48:59Z · needs_input
+- 2026-10-27T07:48:59Z · message_queued at 2026-10-27T07:48:59.760Z
+- 2026-10-27T08:52:56Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-27T08:58:07Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-27T09:33:58Z · model_override
+- 2026-10-27T09:34:26Z · message_delivered: 1 message(s)
+- 2026-10-27T09:34:31Z · needs_input
+- 2026-10-27T09:34:32Z · message_queued at 2026-10-27T09:34:32.042Z
+- 2026-10-27T10:53:23Z · status active→review
+- 2026-10-27T10:53:23Z · phantom runner detected: no live process, restarted
+- 2026-10-27T10:53:23Z · note: phantom runner detected: no live process, restarted
+- 2026-10-27T11:09:28Z · note: shots: failed — preview for target "default" did not start: preview server for #0960 did not become ready — $ bun scripts/build.mjs
+- 2026-10-27T11:09:29Z · note: review pass 3: failed — no usable report
+- 2026-10-27T11:09:29Z · needs_input
+- 2026-10-27T12:03:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-27T12:11:03Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-10-27T12:12:41Z · note: review pass 4: needs some work
+- 2026-10-27T12:12:41Z · needs_input
+- 2026-10-27T13:16:03Z · cli_override, model_override
+- 2026-10-27T13:16:13Z · status review→active
+- 2026-10-27T13:16:13Z · note: send-back — returned to active for engineer follow-up
+- 2026-10-27T13:16:17Z · message_delivered: 1 message(s)
+- 2026-10-27T13:16:17Z · needs_input
+- 2026-10-27T13:16:18Z · message_queued at 2026-10-27T13:16:18.123Z
+- 2026-10-27T13:19:48Z · agent exited with an error (codex) · 2026-10-27T13:19:48.661700Z ERROR codex_core::session: failed to record rollout items: thread 01a17d81-24ce-77c0-aff3-5b60541d5650 not found
+- 2026-10-27T13:21:12Z · review_cli_override, review_model_override
+- 2026-10-27T13:21:20Z · cli_override, model_override
+- 2026-10-27T13:21:33Z · message_delivered: 1 message(s)
+- 2026-10-27T13:21:33Z · needs_input
+- 2026-10-27T13:21:33Z · message_queued at 2026-10-27T13:21:33.908Z
+- 2026-10-27T14:20:28Z · engineer stopped by request
+- 2026-10-27T14:20:29Z · status active→review
+- 2026-10-27T14:20:29Z · note: handoff requested (cli)
+- 2026-10-27T14:33:31Z · handoff failed · task-file handoff failed at check · repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]
+- 2026-10-27T14:33:32Z · message_delivered: 1 message(s)
+- 2026-10-27T14:36:44Z · status active→review
+- 2026-10-27T14:38:32Z · note: review pass 5: needs some work — clamped by automated verification: browser verification: Required UI handoff browser verification has no stored evidence — console errors were not checked.
+- 2026-10-27T15:04:39Z · agent exited with an error (cursor) · ✗ Server finalization stopped at check: repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]. The same worktree can be resumed and retried.
+- 2026-10-27T20:41:34Z · status review→active
+- 2026-10-27T20:41:41Z · cli_override, model_override
+- 2026-10-27T20:41:53Z · needs_input
+- 2026-10-27T20:41:53Z · message_queued at 2026-10-27T20:41:53.508Z
+- 2026-10-27T20:43:23Z · body
+- 2026-10-27T20:44:10Z · body
+- 2026-10-27T20:44:59Z · body
+- 2026-10-27T20:48:31Z · note: click [data-test-id=debug-tab-status]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=debug
+- 2026-10-27T20:48:31Z · note: highlight .debug-status-detail matched nothing on /work?task=9999&tab=debug
+- 2026-10-27T20:50:22Z · body

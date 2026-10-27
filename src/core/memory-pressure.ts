@@ -4,9 +4,10 @@
  * Load average alone is a poor pressure signal on a thrashing machine: threads
  * pile up waiting on swap while the CPU sits idle, and the number says nothing
  * about the cause. Paging activity, low reclaimable memory, macOS pressure
- * state and Linux PSI indicate the machine paying a memory cost. Swap use and
- * the macOS compressor pool are advisory occupancy signals. If the platform
- * has no usable memory signals, the caller falls back to load average.
+ * state and Linux PSI indicate the machine paying a memory cost. Swap-use and
+ * compressor ratios are advisory; the configured absolute compressor byte cap
+ * blocks. If the platform has no usable memory signals, the caller falls back
+ * to load average.
  *
  * Every external command is optional and failure-tolerant: a missing tool must
  * degrade the signal, never break a start or a stats sample.

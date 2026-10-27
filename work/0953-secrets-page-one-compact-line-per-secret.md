@@ -2,23 +2,23 @@
 id: "0953"
 title: "Secrets page: one compact line per secret with actions behind an options menu (Railway-style)"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 depends_on: ["0950"]
+merged_commit: 6abe39284108028b2b0d623a5c7c44e9cbb93559
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/secrets-page-one-compact-line-per-secret
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-27T05:46:50Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: user-docs-build — timed out — timed out after 600s"
-last_handoff_failure_sha: 328e71d1c53c58e97c9df3c488a0dd140a88d29f
-check_retry_count: 1
+updated_at: "2026-10-27T06:24:58Z"
+last_close_out_gate_ms: 411581
+last_close_out_gate_at: "2026-10-27T06:22:03.136Z"
+review_passes: 4
 last_check_failure: "repoos check at 2026-10-27T03:59:59.344Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
-review_passes: 2
 ---
 ## Problem
 
@@ -146,3 +146,11 @@ Done in this task:
 - 2026-10-27T05:22:59Z · message_delivered: 1 message(s)
 - 2026-10-27T05:44:01Z · body
 - 2026-10-27T05:46:50Z · status active→review
+- 2026-10-27T05:50:55Z · note: review pass 4: needs some work
+- 2026-10-27T05:53:27Z · note: review pass 5: needs some work
+- 2026-10-27T05:54:23Z · status review→active
+- 2026-10-27T06:10:41Z · note: ui verification passed: 3 of 3 shots captured with clean console (1 shot warning)
+- 2026-10-27T06:10:42Z · status active→review
+- 2026-10-27T06:14:27Z · note: review pass 6: good to go
+- 2026-10-27T06:22:03Z · close-out gate completed in 412s
+- 2026-10-27T06:24:58Z · status done→done, release:success

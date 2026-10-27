@@ -349,6 +349,25 @@ describe("evaluatePressure", () => {
     expect(held).toMatch(/load is high/i);
   });
 
+  it("uses the incident-calibrated default limits for each blocking signal", () => {
+    const gb = 1024 ** 3;
+    const healthy = {
+      ...readings({ totalMemBytes: 24 * gb, availableMemRatio: 0.4 }),
+      cpuIdlePercent: 50,
+    };
+    const cases = [
+      [{ compressorBytes: 10 * gb }, /compressor/i],
+      [{ loadPerCpu: 4 }, /load is high/i],
+      [{ cpuIdlePercent: 0 }, /idle/i],
+      [{ availableMemRatio: 0.01 }, /available memory is low/i],
+    ] as const;
+    for (const [reading, expected] of cases) {
+      const snapshot = evaluatePressure({ ...healthy, ...reading }, pressureThresholds());
+      expect(snapshot.level).toBe("critical");
+      expect(snapshot.reason).toMatch(expected);
+    }
+  });
+
   it("falls back to load as a hold when memory stats are unavailable", () => {
     const snapshot = evaluatePressure(
       {

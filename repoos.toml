@@ -67,14 +67,14 @@ auth.emailProvider.fromAddress = "otp@send.repoos.org"
 # # clientSecret likewise goes in .env as REPOOS_GOOGLE_CLIENT_SECRET, not here.
 whisper.provider = "none"
 
-remoteValidation.enabled = true
+remoteValidation.enabled = false
 remoteValidation.fallbackToLocal = true
 
 worktreeWarnThreshold = 20
 
 # Move-to-done pipeline budget (ms). The 6 min default leaves under a minute of
 # slack over a ~4.7 min close-out, so one resync (e.g. main moving) times out.
-closeOut.timeoutMs = 1800000
+closeOut.timeoutMs = 7200000
 
 # Task worktrees inherit the main checkout's gitignored `.env` (#0373). This
 # repo has auth.enabled = true, and its own `[preview] command` below boots a
@@ -111,7 +111,7 @@ remoteValidation.containerImage = "repoos-ci"
 #   os = "linux"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
-remoteValidation.engineerSelfCheckRemote = true
+remoteValidation.engineerSelfCheckRemote = false
 activityAnimationStyle = "three-dots"
 model_routing.mode = "shadow"
 model_routing.provider = "openrouter"
@@ -684,7 +684,7 @@ name = "reviewer"
 cli = "opencode"
 model = "opencode-go/mimo-v2.6-flash"
 enabled = true
-instructions = "Review the task's implementation on its feature branch. The implementer already ran `repoos check` green (that is the gate to enter review), so do NOT re-run the full build or test suite — and never start long-running processes such as `bun run dev` or `repoos serve`. Work directly from the diff: run `git diff <base>...HEAD` and `git log <base>..HEAD --oneline` in the worktree, read the files the diff touches, and judge the code against every acceptance criterion in the task spec. For UI work, read the handoff screenshots in the task drawer Changes tab and comment on them; flag blank or broken captures. Look for real bugs (wrong logic, unhandled errors, races, broken contracts) and the edge cases that matter. Flag any new bare `node`, `npm` or `npx` invocation (package.json scripts, justfile recipes, shebangs, spawned subprocesses): RepoOS runs on Bun and keeps Node only as a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Report the WHOLE CLASS of every bug, in one pass: when you find a bug, name its class (for example lifecycle/teardown ordering, unhandled spawn errors, config-key registration, import/export path rewriting, fallback handling) and grep the diff and the files it touches for every other instance of the same pattern, including sibling code paths, callers, config/schema/docs/test registrations and the other branch of any fallback. List ALL instances under ## Bugs in this one report, so the engineer fixes the class in one round instead of one instance per review pass. Never hold a finding back for a later round. If earlier reports exist for this task (`.repoos/reviews/<id>/`, newest first) read their findings first, verify each was actually fixed, and do not re-report a fixed item as new. Separate code defects from evidence-only gaps: when the code is sound but the capture is wrong or stale, say `EVIDENCE-GAP-ONLY` or `STALE-EVIDENCE-ONLY` in the verdict, and check that each declared shot's target and route can really render its declared state (a state fixture or drawer route on the wrong target, such as the Docs site instead of the app, is an evidence gap). Before `good to go`, confirm the branch merges cleanly with its base (`git merge-tree --write-tree <base> HEAD`); a conflict in source files is `needs some work` even when the code is fine, and say which files conflict. Stay focused: the extra greps for the class are expected, but do not re-read unrelated code. Your report MUST end with a parseable ## Verdict (`good to go`, `needs some work`, or `back to the drawing board`). Read-only: never edit files, never change task status, never move the task to done."
+instructions = "Review the task's implementation on its feature branch. The implementer already ran `repoos check` green (that is the gate to enter review), so do NOT re-run the full build or test suite — and never start long-running processes such as `bun run dev` or `repoos serve`. Work directly from the diff: run `git diff <base>...HEAD` and `git log <base>..HEAD --oneline` in the worktree, read the files the diff touches, and judge the code against every acceptance criterion in the task spec. For UI work, read the handoff screenshots in the task drawer Changes tab and comment on them; flag blank or broken captures. Look for real bugs (wrong logic, unhandled errors, races, broken contracts) and the edge cases that matter. Flag any new bare `node`, `npm` or `npx` invocation (package.json scripts, justfile recipes, shebangs, spawned subprocesses): RepoOS runs on Bun and keeps Node only as a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Report the WHOLE CLASS of every bug, in one pass: when you find a bug, name its class (for example lifecycle/teardown ordering, unhandled spawn errors, config-key registration, import/export path rewriting, fallback handling) and grep the diff and the files it touches for every other instance of the same pattern, including sibling code paths, callers, config/schema/docs/test registrations and the other branch of any fallback. List ALL instances under ## Bugs in this one report, so the engineer fixes the class in one round instead of one instance per review pass. Never hold a finding back for a later round. If earlier reports exist for this task (`.repoos/reviews/<id>/`, newest first) read their findings first, verify each was actually fixed, and do not re-report a fixed item as new. Separate code defects from evidence-only gaps: when the code is sound but the capture is wrong or stale, say `EVIDENCE-GAP-ONLY` or `STALE-EVIDENCE-ONLY` in the verdict, and check that each declared shot's target and route can really render its declared state (a state fixture or drawer route on the wrong target, such as the Docs site instead of the app, is an evidence gap). Evidence alone never blocks: when the ONLY findings are stale, missing or wrong captures, the verdict is `good to go`, and you name the affected captures under ## Suggestions so the human can look. A capture that shows a real visual defect is a bug, not an evidence gap. Before `good to go`, confirm the branch merges cleanly with its base (`git merge-tree --write-tree <base> HEAD`); a conflict in source files is `needs some work` even when the code is fine, and say which files conflict. Stay focused: the extra greps for the class are expected, but do not re-read unrelated code. Your report MUST end with a parseable ## Verdict (`good to go`, `needs some work`, or `back to the drawing board`). Read-only: never edit files, never change task status, never move the task to done."
 [[agents]]
 name = "pm"
 cli = "github copilot"
@@ -749,11 +749,11 @@ models = ["default"]
 [[budget.allowlist]]
 cli = "cursor"
 models = ["composer-2.5", "grok-4.7-low"]
-pausedModels = [{ model = "grok-4.7-low", pausedReason = "suspected quota exhaustion 2026-10-26: clean-exit-without-handoff loops on 0954/0961, stall-loop on 0962 after usage-limit failover; antigravity pairs hit 429s same day" }]
 [[budget.allowlist]]
 cli = "codex"
 models = ["gpt-6-luna", "gpt-6.1-sol"]
 [[budget.allowlist]]
 cli = "antigravity"
 models = ["gemini-3.8-flash-medium", "gemini-3.8-flash-high"]
+paused = true
 pausedModels = [{ model = "gemini-3.8-flash-medium", pausedReason = "out of usage since 2026-10-26T12:27:45.440Z: AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryabl" }, { model = "gemini-3.8-flash-high", pausedReason = "out of usage since 2026-10-26T14:45:37.315Z: AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 164h31m2s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryable" }]

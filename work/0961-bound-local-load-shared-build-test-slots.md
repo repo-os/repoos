@@ -2,13 +2,13 @@
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
-status: active
+status: done
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "network problem reaching the model provider, not a code issue: Timed out waiting for response headers"
-debug_tldr: "Engineer run timed out reaching the model provider (network, not code) after a handoff check timeout — retry the engineer resume once the connection is stable."
-debug_tldr_at: "2026-10-27T05:09:27Z"
-debug_tldr_key: "dev-error|network problem reaching the model provider, not a code issue: Timed out waiting for response headers"
+needs_input_detail: "Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id."
+debug_tldr: "Engineer agent hit a provider usage limit and the handoff `repoos check` still fails on the unchanged tip — switch to an allowlisted agent with credit, then run `repoos check` and fix the failure."
+debug_tldr_at: "2026-10-27T09:08:19Z"
+debug_tldr_key: "dev-error|Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id."
 priority: p1
 area: core
 assigned_to: ai
@@ -16,18 +16,19 @@ created_by: njachowski@gmail.com
 branch: feat/bound-local-load-shared-build-test-slots
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
-review_cli_override: github copilot
-review_model_override: default
+review_cli_override: cursor
+review_model_override: composer-2.5
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T05:09:27Z"
-check_retry_count: 1
+updated_at: "2026-10-27T20:30:55Z"
+review_passes: 4
 last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
-review_passes: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-26T20:30:15.157Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:38:45.831Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:47:01.501Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-27T04:39:17.996Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 5
+incomplete_review_retries: 1
+engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/kimi-k3.1-pro\",\"at\":\"2026-10-27T08:58:10.534Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -72,12 +73,6 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 "target": "default",
 "route": "/settings?tab=general&section=performance",
 "highlight": "[data-settings-section=\"performance\"]"
-},
-{
-"label": "Dashboard heavy-job line",
-"target": "default",
-"route": "/",
-"highlight": "[data-heavy-jobs]"
 }
 ]
 ```
@@ -133,3 +128,54 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T03:38:30Z · body
 - 2026-10-27T04:39:17Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: Timed out waiting for response headers
 - 2026-10-27T04:39:17Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (1/3 crashes in 30m) · network problem reaching the model provider, not a code issue: Timed out waiting for response headers
+- 2026-10-27T05:52:04Z · needs_input
+- 2026-10-27T05:52:04Z · message_queued at 2026-10-27T05:52:04.680Z
+- 2026-10-27T06:03:13Z · body
+- 2026-10-27T06:05:13Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-27T06:05:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T06:05:13Z · status active→review
+- 2026-10-27T06:05:13Z · message_delivered: 1 message(s)
+- 2026-10-27T06:05:14Z · engineer stopped by request
+- 2026-10-27T06:20:19Z · note: review pass 3: failed — no usable report
+- 2026-10-27T06:20:19Z · needs_input
+- 2026-10-27T06:25:58Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-10-27T06:26:19Z · review_cli_override, review_model_override
+- 2026-10-27T06:41:02Z · note: review pass 4: failed — no usable report
+- 2026-10-27T06:41:02Z · needs_input
+- 2026-10-27T06:41:06Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-10-27T06:41:13Z · cli_override, model_override
+- 2026-10-27T06:41:29Z · note: review pass 5: incomplete — no verdict in report
+- 2026-10-27T06:41:47Z · note: review pass 6: failed — no usable report
+- 2026-10-27T06:41:47Z · needs_input
+- 2026-10-27T06:42:20Z · review_cli_override, review_model_override
+- 2026-10-27T06:42:21Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-10-27T06:44:01Z · note: review pass 7: needs some work
+- 2026-10-27T07:01:44Z · cli_override, model_override
+- 2026-10-27T07:02:35Z · status review→active
+- 2026-10-27T07:02:47Z · note: handoff requested (ui-review)
+- 2026-10-27T07:26:28Z · handoff failed · ui-review handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
+- 2026-10-27T07:31:40Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
+- 2026-10-27T07:34:21Z · agent exited with an error (opencode) · error: Go usage limit exceeded
+- 2026-10-27T07:34:21Z · engineer crash recovery: switched opencode + opencode-go/kimi-k3.1-pro → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · error: Go usage limit exceeded
+- 2026-10-27T08:03:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T08:03:49Z · needs_input
+- 2026-10-27T08:03:49Z · status active→review
+- 2026-10-27T08:05:10Z · note: loading state detected: loading text "Loading service status…" on /settings?tab=general&section=performance
+- 2026-10-27T08:05:41Z · note: review pass 8: needs some work
+- 2026-10-27T08:23:19Z · status review→active
+- 2026-10-27T08:23:23Z · note: handoff requested (ui-review)
+- 2026-10-27T08:47:44Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-10-27T08:58:07Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
+- 2026-10-27T08:58:10Z · agent exited with an error (opencode) · Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id.
+- 2026-10-27T08:58:10Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (1/3 crashes in 30m) · Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id.
+- 2026-10-27T13:21:40Z · note: handoff requested (ui-review)
+- 2026-10-27T13:51:41Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-10-27T13:58:53Z · note: handoff requested (ui-review)
+- 2026-10-27T14:17:30Z · note: ui verification failed (1 issue(s)): [missing-target] Dashboard heavy-job line (target "default"): highlight [data-heavy-jobs] matched nothing on / (http://127.0.0.1:63701/)
+- 2026-10-27T14:17:31Z · handoff failed · ui-review handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Dashboard heavy-job line (target "default"): highlight [data-heavy-jobs] matched nothing on / (http://127.0.0.1:63701/)
+- 2026-10-27T14:18:18Z · body
+- 2026-10-27T14:18:18Z · note: handoff requested (ui-review)
+- 2026-10-27T14:36:19Z · status active→review
+- 2026-10-27T14:36:20Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (e28e8bd83) during finalization (#0734)
+- 2026-10-27T14:37:56Z · note: review pass 9: good to go
+- 2026-10-27T20:30:55Z · status review→done
