@@ -113,11 +113,28 @@ export async function relaunchEngineerOnActiveTask(
     return { ok: false, reason: `Bootstrap failed: ${bootResult.reason ?? "unknown error"}` };
   }
 
-  const pack = generateContextPack(config, fresh, branch, cwd, bootResult);
-  const resumeContext = resumePreamble(config, fresh, branch, cwd);
+  // #0960 round-3 TOCTOU guard: the hold check above ran before the awaited
+  // bootstrap work. A `repoos hold` that lands during that window (from /start,
+  // unhold --start, CTO recovery, or the watchdog) must not spawn an engineer.
+  // Re-read the live index state after bootstrap — the hold is applied through
+  // patchTaskFile + applyFileChange, so the index is authoritative here.
+  const liveBeforeSpawn = index.getTask?.(id) ?? fresh;
+  if (isHoldActive(liveBeforeSpawn) && !opts.force) {
+    const reason = liveBeforeSpawn.holdReason ? `: ${liveBeforeSpawn.holdReason}` : "";
+    const until = liveBeforeSpawn.holdUntil ? ` (auto-releases ${liveBeforeSpawn.holdUntil})` : "";
+    return {
+      ok: false,
+      reason: `Task #${id} is held${reason}${until} — use "repoos unhold ${id}" to release it${
+        opts.fromCrashRecovery ? "" : ", or " + `"repoos start ${id} --force"`
+      }`,
+    };
+  }
+
+  const pack = generateContextPack(config, liveBeforeSpawn, branch, cwd, bootResult);
+  const resumeContext = resumePreamble(config, liveBeforeSpawn, branch, cwd);
   const preamble = [resumeContext, instruction.trim()].filter(Boolean).join("\n\n") || undefined;
 
-  const spawnRes = runner.start(fresh, branch, agent, {
+  const spawnRes = runner.start(liveBeforeSpawn, branch, agent, {
     cwd,
     contextPack: pack.content,
     resumePreamble: preamble,
