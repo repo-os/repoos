@@ -749,11 +749,11 @@ models = ["default"]
 [[budget.allowlist]]
 cli = "cursor"
 models = ["composer-2.5", "grok-4.7-low"]
-pausedModels = [{ model = "grok-4.7-low", pausedReason = "suspected quota exhaustion 2026-10-26: clean-exit-without-handoff loops on 0954/0961, stall-loop on 0962 after usage-limit failover; antigravity pairs hit 429s same day" }]
 [[budget.allowlist]]
 cli = "codex"
 models = ["gpt-6-luna", "gpt-6.1-sol"]
 [[budget.allowlist]]
 cli = "antigravity"
 models = ["gemini-3.8-flash-medium", "gemini-3.8-flash-high"]
+paused = true
 pausedModels = [{ model = "gemini-3.8-flash-medium", pausedReason = "out of usage since 2026-10-26T12:27:45.440Z: AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryabl" }, { model = "gemini-3.8-flash-high", pausedReason = "out of usage since 2026-10-26T14:45:37.315Z: AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 164h31m2s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryable" }]
