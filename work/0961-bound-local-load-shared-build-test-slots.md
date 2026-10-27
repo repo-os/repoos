@@ -2,7 +2,7 @@
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
@@ -162,3 +162,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T07:34:21Z · engineer crash recovery: switched opencode + opencode-go/kimi-k3.1-pro → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · error: Go usage limit exceeded
 - 2026-10-27T08:03:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-27T08:03:49Z · needs_input
+- 2026-10-27T08:03:49Z · status active→review
