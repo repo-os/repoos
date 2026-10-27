@@ -3,9 +3,6 @@ id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p2
 area: core
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: grok-4.7-low
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T09:34:26Z"
+updated_at: "2026-10-27T09:34:31Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 3
@@ -98,3 +95,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T08:58:07Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-27T09:33:58Z · model_override
 - 2026-10-27T09:34:26Z · message_delivered: 1 message(s)
+- 2026-10-27T09:34:31Z · needs_input
