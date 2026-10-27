@@ -155,7 +155,11 @@ it.each([true, false])("expires the mounted card and Held group with flag=%s", a
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-27T00:00:00Z"));
   const pinia = newPinia();
-  const task = makeTask({ isHeld: flag, tags: flag ? [] : ["hold"], holdUntil: "2026-10-27T00:00:01Z" });
+  const task = makeTask({
+    isHeld: flag,
+    tags: flag ? [] : ["hold"],
+    holdUntil: "2026-10-27T00:00:01Z",
+  });
   const wrapper = await mountCard(pinia, task);
   const repo = useRepoStore();
   expect(wrapper.find(".tc-held").exists()).toBe(true);

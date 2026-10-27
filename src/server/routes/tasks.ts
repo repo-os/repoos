@@ -3432,7 +3432,6 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       existing.absPath,
       {
         hold: false,
-        tags: existing.tags.filter((tag) => tag.trim().toLowerCase() !== "hold"),
         holdReason: null,
         holdUntil: null,
         holdBy: null,
@@ -3444,7 +3443,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // Use the normal start route for both ready and active tasks: it owns
     // ready-to-active activation, bootstrap, dependency checks and launch guards.
     if (wantStart) {
-      const startReq = Readable.from([Buffer.from("{}")]) as unknown as import("node:http").IncomingMessage;
+      const startReq = Readable.from([
+        Buffer.from("{}"),
+      ]) as unknown as import("node:http").IncomingMessage;
       startReq.headers = req.headers;
       const captured = {
         statusCode: 200,

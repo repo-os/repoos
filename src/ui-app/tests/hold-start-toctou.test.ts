@@ -249,15 +249,17 @@ describe("start honors a hold that lands during bootstrap (#0960 round 3 TOCTOU)
   });
 });
 
-
 describe("unhold --start uses normal activation", () => {
   it.each(["ready", "active"])("releases and starts a %s task", async (status) => {
-    const fx = makeFixture(status, 'hold: true\nhold_reason: maintenance\ntags: [hold]\n');
+    const fx = makeFixture(status, "hold: true\nhold_reason: maintenance\ntags: [hold]\n");
     fixture = fx;
     const ctx = makeCtx(fx);
     const { res, fake } = makeRes();
     hoisted.resolve = null;
-    const pending = taskAction(ctx, makeReq({ start: true }), res, { param1: "0296", param2: "unhold" });
+    const pending = taskAction(ctx, makeReq({ start: true }), res, {
+      param1: "0296",
+      param2: "unhold",
+    });
     await vi.waitFor(() => expect(hoisted.resolve).not.toBeNull());
     hoisted.resolve!({ ok: true, durationMs: 1, steps: [] });
     await pending;
