@@ -13,7 +13,7 @@ cli_override: codex
 model_override: gpt-6.1-sol
 review_cli_override: cursor
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T06:08:15Z"
+updated_at: "2026-10-27T06:11:42Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: bedc55741a9e477fc772b91b48c18f324b8204c0
 review_rounds: 1
@@ -148,3 +148,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T05:56:13Z · body
 - 2026-10-27T06:01:18Z · note: AC6 live evidence remains unverified: the one-hour run with 900 tasks/100 branches and two engineers needs a human-controlled server rollout. Please split that measurement into a held human task; no server restart or preview was started. The worktree audit also found transitive blocking helpers beyond the current text guard; see docs/server-git-worker.md. Task remains active; no handoff requested.
 - 2026-10-27T06:08:15Z · body
+- 2026-10-27T06:11:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
