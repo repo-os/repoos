@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-27T05:53:27Z"
+review_passes: 4
 id: "0953"
 title: "Secrets page: one compact line per secret with actions behind an options menu (Railway-style)"
 type: feature
@@ -12,8 +14,6 @@ branch: feat/secrets-page-one-compact-line-per-secret
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-24T23:23:08Z"
-updated_at: "2026-10-27T05:53:27Z"
-review_passes: 3
 last_handoff_failure_fingerprint: "check|repoos check failed: user-docs-build — timed out — timed out after 600s"
 last_handoff_failure_sha: 328e71d1c53c58e97c9df3c488a0dd140a88d29f
 check_retry_count: 1
@@ -148,3 +148,4 @@ Done in this task:
 - 2026-10-27T05:46:50Z · status active→review
 - 2026-10-27T05:50:55Z · note: review pass 4: needs some work
 - 2026-10-27T05:53:27Z · note: review pass 5: needs some work
+
