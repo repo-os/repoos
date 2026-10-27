@@ -23,7 +23,6 @@ updated_at: "2026-10-27T13:58:53Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 393778400b665e96566eba04bc9a80c92a45d356
 review_passes: 3
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
 handoff_signal_retry_count: 2
@@ -180,3 +179,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T13:21:40Z · note: handoff requested (ui-review)
 - 2026-10-27T13:51:41Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-27T13:58:53Z · note: handoff requested (ui-review)
+
