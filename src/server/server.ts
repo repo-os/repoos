@@ -95,7 +95,7 @@ import { extname, join, dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import type { MemoryPressureProbe } from "../core/memory-pressure.js";
-import { runnerHealthCheckEnabled } from "../core/resource-limits.js";
+import { heavySlotLimit, runnerHealthCheckEnabled } from "../core/resource-limits.js";
 import {
   inspectCrossProcessSlots,
   localCheckLockRoot,
@@ -458,6 +458,7 @@ import {
   getProjectEnvironmentBindings,
   putProjectEnvironmentBinding,
   mutateProjectEnvironmentSecret,
+  openProjectEnvironmentSourceInEditor,
   getModelRoutingStatus,
   getModelRoutingDecisions,
   postModelRoutingProbe,
@@ -1317,8 +1318,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const uiBuildHash = loadedHash ?? serverBuildHash;
   const readUiIndex = (indexPath: string): string =>
     injectBuildHashIntoUiIndex(readFileSync(indexPath, "utf8"), uiBuildHash ?? "");
+  // REPOOS_NO_AUTO_RELOAD=1 turns the build-change auto-reload off; new builds
+  // are then picked up only by an explicit restart (`just revive`).
   const reloadEnabled =
-    !isDevBuild() && process.env.REPOOS_PREVIEW_CHILD !== "1" && opts.port !== 0;
+    !isDevBuild() &&
+    process.env.REPOOS_PREVIEW_CHILD !== "1" &&
+    process.env.REPOOS_NO_AUTO_RELOAD !== "1" &&
+    opts.port !== 0;
   let reload: ReloadManager | null = null;
 
   // Close-out lock (0143): while `completeTask` holds it, the reload manager
@@ -3710,7 +3716,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       ok: true,
       holders: inspectCrossProcessSlots(
         localCheckLockRoot(root, cache),
-        config.localChecks?.maxConcurrent ?? 2,
+        heavySlotLimit(config),
         config.localChecks?.staleAfterMs,
       ),
       queue: readQueueMarkers(root, cache)
@@ -3812,6 +3818,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     "PUT",
     /^\/api\/project-environments\/([^/]+)\/secrets$/,
     mutateProjectEnvironmentSecret,
+  );
+  router.register(
+    "POST",
+    /^\/api\/project-environments\/([^/]+)\/open-in-editor$/,
+    openProjectEnvironmentSourceInEditor,
   );
   router.register("GET", "/api/project-environment-bindings", getProjectEnvironmentBindings);
   router.register("PUT", "/api/project-environment-bindings", putProjectEnvironmentBinding);

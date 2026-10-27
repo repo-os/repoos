@@ -177,6 +177,11 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   // Secrets page: list safe environment labels and create an empty source; no CLI flow exists.
   exact("GET", "/api/project-environments"),
   exact("POST", "/api/project-environments"),
+  // Secrets page (#0953): open a registered environment source file in the
+  // administrator's configured editor. Browser-only by nature — it launches a
+  // GUI process on the machine running RepoOS, and the file is resolved from
+  // the registry, never from a client path.
+  re("POST", /^\/api\/project-environments\/([^/]+)\/open-in-editor$/.source),
   exact("GET", "/api/agents/queued"),
   exact("GET", "/api/agents/detect"),
   exact("GET", "/api/agents/detect/stream"),

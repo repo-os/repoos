@@ -177,9 +177,10 @@ export const postOpenTestInEditor: RouteHandler = async (ctx, req, res) => {
 /**
  * Spawn an already-built editor argv detached. Returns false when the binary
  * cannot be launched; never throws, because an unhandled `error` event on a
- * detached child would otherwise take down the server.
+ * detached child would otherwise take down the server. Shared with the
+ * project-environment "open in editor" route (#0953).
  */
-async function spawnDetached(args: string[], root: string): Promise<boolean> {
+export async function spawnDetached(args: string[], root: string): Promise<boolean> {
   const [bin, ...spawnArgs] = args;
   return new Promise<boolean>((resolveSpawn) => {
     try {

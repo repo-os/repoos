@@ -7244,7 +7244,11 @@ export class AgentRunner {
       harnessChildEnv(cmd, agentEnv);
       if (!opts.review) {
         applyEngineerResourceEnv(agentEnv, this.config);
-        const shimDir = installEngineerPathShims(this.config.root, this.cacheDir);
+        const shimDir = installEngineerPathShims(
+          this.config.root,
+          this.config.cacheDir ?? ".repoos",
+          agentEnv.PATH,
+        );
         if (shimDir) prependPath(agentEnv, shimDir);
       }
       proc = spawn(cmd, args, {
