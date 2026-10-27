@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T14:20:30Z"
+updated_at: "2026-10-27T14:33:31Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 4
@@ -122,3 +122,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T14:20:28Z · engineer stopped by request
 - 2026-10-27T14:20:29Z · status active→review
 - 2026-10-27T14:20:29Z · note: handoff requested (cli)
+- 2026-10-27T14:33:31Z · handoff failed · task-file handoff failed at check · repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]
