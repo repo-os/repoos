@@ -11,7 +11,7 @@ branch: feat/task-hold-one-durable-documented-state-t
 cli_override: opencode
 model_override: opencode-go/hy3
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T00:32:28Z"
+updated_at: "2026-10-27T00:46:00Z"
 ---
 ## Problem
 
@@ -51,3 +51,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-26T21:39:45Z · model_override
 - 2026-10-26T21:39:47Z · status ready→active, branch
 - 2026-10-27T00:32:28Z · body
+- 2026-10-27T00:46:00Z · handoff failed · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist, tests/cli-control-api.test.ts > control API CLI > agents pause/resume writes the allowlist config (#0850), tests/refresh-evidence-route.test.ts > POST /api/tasks/:id/verify guards > refuses engineer start while evidence refresh is in progress on mini — fix it in the feature branch and re-run the gate
