@@ -95,7 +95,7 @@ import { extname, join, dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import type { MemoryPressureProbe } from "../core/memory-pressure.js";
-import { runnerHealthCheckEnabled } from "../core/resource-limits.js";
+import { heavySlotLimit, runnerHealthCheckEnabled } from "../core/resource-limits.js";
 import {
   inspectCrossProcessSlots,
   localCheckLockRoot,
@@ -3681,7 +3681,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       ok: true,
       holders: inspectCrossProcessSlots(
         localCheckLockRoot(root, cache),
-        config.localChecks?.maxConcurrent ?? 2,
+        heavySlotLimit(config),
         config.localChecks?.staleAfterMs,
       ),
       queue: readQueueMarkers(root, cache)

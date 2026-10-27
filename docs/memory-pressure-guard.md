@@ -76,11 +76,15 @@ Debug output show the same reason.
 Engineer processes receive `VITEST_MAX_WORKERS` (plus `REPOOS_TEST_WORKERS` for
 RepoOS's own suite) and Playwright worker limits from Settings, defaulting to 2.
 PATH shims for `bun`/`bunx`, `tsc`, `vitest`, `vue-tsc`, `vite build` and
-`playwright` route heavy invocations through the same `.repoos/local-check-slots`
-pool as `repoos check`, using `heavySlots` (default 2). An outer build/test run
-holds one slot for its whole process tree, so nested tools do not reacquire or
-deadlock; the next queued command starts when a holder releases or its dead
-process is reclaimed. `playwright test` also receives a bounded `--workers`
+`playwright` route heavy invocations through `~/.repoos/local-check-slots`, one
+host-wide pool shared by every checkout and worktree, using `heavySlots`
+(default 2). Slot inspection, cleanup, `repoos stats` and the dashboard read that
+same pool, so their counts include jobs from other checkouts. An outer build/test
+run holds one slot for its whole process tree, so nested tools do not reacquire
+or deadlock; the next queued command starts when a holder releases or its dead
+process is reclaimed. Direct and Bun-package Vitest invocations receive a
+bounded `--maxWorkers` argument; native `VITEST_MAX_WORKERS` also covers Vitest
+spawned inside package scripts. `playwright test` receives a bounded `--workers`
 argument because Playwright does not define a standard worker environment
 variable. The shims resolve RepoOS's own installed wrapper, not a source file in
 the managed project.
@@ -152,7 +156,7 @@ The operating rule lives in `AGENTS.md` (Rules) and is included in
 All pressure tests use fake probes and parsed fixture output — never the real
 machine's current pressure. See `src/ui-app/tests/pressure-guard.test.ts`,
 `global-engineers.test.ts`, and the top-process parser tests in
-`system-resources.test.ts`. The five-process fake-runner and worker-cap coverage
-is in `engineer-resources.test.ts`; slot/dead-holder coverage is in
-`local-resource-gates.test.ts`; CLI/dashboard reporting is in
-`resource-reporting.test.ts`.
+`system-resources.test.ts`. The two-checkout, five-process fake-runner and real
+resolved-Vitest worker-cap coverage is in `engineer-resources.test.ts`;
+slot/dead-holder coverage is in `local-resource-gates.test.ts`; CLI/dashboard
+reporting is in `resource-reporting.test.ts`.

@@ -1,9 +1,10 @@
 /**
  * Bounds engineer-launched builds and tests (#0961).
  *
- * Worker caps travel in the spawn environment. Heavy commands (`bun run build*`,
- * `bun run test*`, `vue-tsc`, `vitest`, `playwright`) also take a machine-wide
- * slot from the local-check pool via a PATH shim, so five engineers share
+ * Worker caps travel in the spawn environment and wrapper-supplied CLI args.
+ * Heavy commands (`bun run build*`, `bun run test*`, `vue-tsc`, `vitest`,
+ * `playwright`) also take a machine-wide slot from the local-check pool via a
+ * PATH shim, so five engineers share
  * `heavySlots` instead of five full stacks.
  */
 import { chmodSync, existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
@@ -66,25 +67,35 @@ function boundedWorkerValue(raw: string | undefined, cap: number): string {
   return String(Math.min(cap, Math.floor(parsed)));
 }
 
-/** Playwright has no standard worker environment variable; use its CLI flag. */
-function capPlaywrightArgs(args: string[], cap: number): string[] {
-  if (args[0] !== "test") return args;
+function capWorkerArgs(args: string[], option: string, cap: number): string[] {
   const out: string[] = [];
   let found = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (arg === "--workers") {
-      out.push(`--workers=${boundedWorkerValue(args[++i], cap)}`);
+    if (arg === option) {
+      out.push(`${option}=${boundedWorkerValue(args[++i], cap)}`);
       found = true;
-    } else if (arg.startsWith("--workers=")) {
-      out.push(`--workers=${boundedWorkerValue(arg.slice("--workers=".length), cap)}`);
+    } else if (arg.startsWith(`${option}=`)) {
+      out.push(`${option}=${boundedWorkerValue(arg.slice(option.length + 1), cap)}`);
       found = true;
     } else {
       out.push(arg);
     }
   }
-  if (!found) out.push(`--workers=${cap}`);
+  if (!found) out.push(`${option}=${cap}`);
   return out;
+}
+
+/** Playwright has no standard worker environment variable; use its CLI flag. */
+function capPlaywrightArgs(args: string[], cap: number): string[] {
+  return args[0] === "test" ? capWorkerArgs(args, "--workers", cap) : args;
+}
+
+/** Also pin Vitest in argv so project config cannot silently override the cap. */
+function capVitestArgs(args: string[], cap: number): string[] {
+  return args.includes("--help") || args.includes("--version") || args.includes("-v")
+    ? args
+    : capWorkerArgs(args, "--maxWorkers", cap);
 }
 
 function nextBunArg(args: string[], start: number): number {
@@ -101,16 +112,24 @@ export function withEngineerWorkerArgs(
   config: RepoOSConfig,
 ): string[] {
   const base = toolName(tool);
-  const cap = playwrightWorkerLimit(config);
-  if (base === "playwright") return capPlaywrightArgs(args, cap);
+  if (base === "playwright") return capPlaywrightArgs(args, playwrightWorkerLimit(config));
+  if (base === "vitest") return capVitestArgs(args, vitestMaxWorkers(config));
   if (base !== "bun" && base !== "bunx") return args;
   const command = nextBunArg(args, 0);
   if (command < 0 || (base === "bun" && args[command] !== "x" && args[command] !== "exec")) {
     return args;
   }
   const pkg = base === "bunx" ? command : nextBunArg(args, command + 1);
-  if (pkg < 0 || !/^playwright(@|$)/.test(args[pkg])) return args;
-  return [...args.slice(0, pkg + 1), ...capPlaywrightArgs(args.slice(pkg + 1), cap)];
+  if (pkg < 0) return args;
+  const name = args[pkg];
+  const rest = args.slice(pkg + 1);
+  if (/^playwright(@|$)/.test(name)) {
+    return [...args.slice(0, pkg + 1), ...capPlaywrightArgs(rest, playwrightWorkerLimit(config))];
+  }
+  if (/^vitest(@|$)/.test(name)) {
+    return [...args.slice(0, pkg + 1), ...capVitestArgs(rest, vitestMaxWorkers(config))];
+  }
+  return args;
 }
 
 function which(bin: string, pathEnv: string | undefined): string | null {

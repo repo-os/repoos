@@ -3271,7 +3271,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: String(i + 1),
       })),
       description:
-        "Machine-wide budget for engineer builds, tests and local checks. Extra heavy jobs queue. Default 2, so several engineers share two build/test stacks.",
+        "Host-wide budget shared by engineer builds, tests and local checks in every checkout on this machine. Extra heavy jobs queue. Default 2, so several engineers share two build/test stacks.",
     },
     {
       key: "vitest.maxWorkers",
@@ -3285,7 +3285,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: String(i + 1),
       })),
       description:
-        "Vitest worker cap (VITEST_MAX_WORKERS, and REPOOS_TEST_WORKERS for RepoOS's own suite) for processes an engineer launches. Default 2.",
+        "Vitest worker cap for engineer-launched runs. Exports VITEST_MAX_WORKERS and REPOOS_TEST_WORKERS, and applies --maxWorkers to direct and Bun package invocations. Default 2.",
     },
     {
       key: "localChecks.maxConcurrent",

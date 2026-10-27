@@ -420,9 +420,10 @@ cannot tell from the code alone:
   memory, compressor bytes above `pressureGuard.maxCompressorBytes` (default
   8 GiB), load above `pressureGuard.maxLoadPerCpu` (default 3× per CPU), idle
   CPU below `pressureGuard.minIdleCpuPercent` (default 5%), and the other
-  configured limits above. Heavy builds and tests share `heavySlots` (default
-  2) and engineer-launched Vitest/Playwright runs use the worker caps in
-  Settings. When the guard
+  configured limits above. Heavy builds and tests across every checkout on the
+  host share `heavySlots` (default 2, `~/.repoos/local-check-slots`) and
+  engineer-launched Vitest/Playwright runs use the worker caps in Settings.
+  When the guard
   holds a start, report RepoOS's reason to the human and wait (or help clear
   pressure). When `pressureGuard.enabled` is off or the limits look wrong for
   this machine, ask the human to change Settings — do not invent another gate.
