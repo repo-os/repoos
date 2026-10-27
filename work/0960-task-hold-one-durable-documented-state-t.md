@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-27T06:19:04Z"
-review_passes: 2
 id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
@@ -18,6 +16,8 @@ model_override: opencode-go/hy3
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-25T14:23:48Z"
+updated_at: "2026-10-27T06:19:04Z"
+review_passes: 2
 review_rounds: 1
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/hy3\",\"at\":\"2026-10-27T04:49:39.384Z\",\"kind\":\"dev-error\"}]"
@@ -76,4 +76,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T05:50:43Z · body
 - 2026-10-27T06:06:15Z · status active→review
 - 2026-10-27T06:19:04Z · note: review pass 2: needs some work
-
+- 2026-10-27T06:19:04Z · message_queued at 2026-10-27T06:19:04.635Z
