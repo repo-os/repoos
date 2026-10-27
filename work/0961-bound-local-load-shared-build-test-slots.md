@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-27T14:37:56Z"
-review_passes: 4
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
-status: review
+status: done
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "Warning: No project session found with id 'repoos-0961-engineer-fmvqddw43'; creating a new session with that id."
@@ -21,6 +19,8 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T15:37:17Z"
+updated_at: "2026-10-27T20:30:55Z"
+review_passes: 4
 last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
 handoff_signal_retry_count: 2
@@ -178,4 +178,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T14:36:19Z · status active→review
 - 2026-10-27T14:36:20Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (e28e8bd83) during finalization (#0734)
 - 2026-10-27T14:37:56Z · note: review pass 9: good to go
-
+- 2026-10-27T20:30:55Z · status review→done
