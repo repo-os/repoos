@@ -15484,6 +15484,11 @@
   font-size: 12.5px;
   color: var(--txt);
 }
+.secrets-key-name:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
 .secrets-badges {
   flex: none;
   display: flex;

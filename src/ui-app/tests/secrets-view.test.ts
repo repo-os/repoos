@@ -284,6 +284,10 @@ describe("SecretsView (#0929)", () => {
     const row = wrapper.get(".secrets-row");
     expect(row.find(".secrets-dot").exists()).toBe(true);
     expect(row.get(".secrets-key-name").text()).toBe("DATABASE_URL");
+    // Truncated names use the styled tooltip (data-tip), never a native title.
+    const name = row.get(".secrets-key-name");
+    expect(name.attributes("data-tip")).toContain("Source: .env.dev-nick");
+    expect(name.attributes("title")).toBeUndefined();
     expect(row.get(".secrets-masked").text()).toBe("•••••••");
     // Missing keys show an explicit not-set placeholder instead of dots.
     const missing = wrapper

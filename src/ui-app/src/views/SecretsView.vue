@@ -577,7 +577,12 @@ onBeforeUnmount(() => {
             :class="{ 'is-editing': editingKey === row.name }"
           >
             <span class="secrets-dot" :class="`is-${row.status}`" aria-hidden="true"></span>
-            <span class="secrets-key-name" :title="rowTip">{{ row.name }}</span>
+            <span
+              class="secrets-key-name"
+              tabindex="0"
+              :data-tip="rowTip(row)"
+            >{{ row.name }}</span>
+            <span class="sr-only">{{ rowTip }}</span>
             <span class="secrets-badges">
               <span v-if="row.status === 'inherited'" class="secrets-badge is-inherited"
                 >inherited</span
