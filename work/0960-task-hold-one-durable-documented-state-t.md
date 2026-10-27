@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T10:53:23Z"
+updated_at: "2026-10-27T11:09:28Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 3
@@ -100,3 +100,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T10:53:23Z · status active→review
 - 2026-10-27T10:53:23Z · phantom runner detected: no live process, restarted
 - 2026-10-27T10:53:23Z · note: phantom runner detected: no live process, restarted
+- 2026-10-27T11:09:28Z · note: shots: failed — preview for target "default" did not start: preview server for #0960 did not become ready — $ bun scripts/build.mjs
