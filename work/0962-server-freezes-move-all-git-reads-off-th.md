@@ -2,7 +2,9 @@
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
 needs_merge: true
 priority: p0
 area: core
@@ -13,7 +15,7 @@ cli_override: codex
 model_override: gpt-6.1-sol
 review_cli_override: cursor
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T04:00:45Z"
+updated_at: "2026-10-27T04:00:46Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/agent-drivers.test.ts > crush driver > captures the session id by before/after diff and ingests usage from session show, tests/agent-review.test.ts > agent review before human sign-off (#0101) > rejects move-to-done while automatic review is still running without cancelling it, tests/areas-settings.test.ts > area-vocabulary drift advisory (#0587) > fires on a raw repoos.toml edit, not just a curated PATCH on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 1f0ad28e52decb68ce904464bd1dc13373649a02
 review_rounds: 1
@@ -140,3 +142,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T03:38:24Z · cli_override, model_override
 - 2026-10-27T04:00:45Z · engineer stopped by request
 - 2026-10-27T04:00:45Z · needs_input
+- 2026-10-27T04:00:46Z · status active→review, needs_input
