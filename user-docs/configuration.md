@@ -972,14 +972,14 @@ provider = "none"
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `maxConcurrentAgents` | number | derived from CPU count | yes | How many agent CLI processes (start/send/chat) may run at once; extras queue. Must be 1–16. The default is computed from this machine's CPU count and capped sensibly. |
-| `heavySlots` | select (1–8) | `2` | yes | Machine-wide budget for engineer builds, tests and local checks. Extra heavy jobs queue. When set, this is the shared pool (`localChecks.maxConcurrent` follows it). |
-| `vitest.maxWorkers` | select (1–16) | `2` | yes | Vitest worker cap (`VITEST_MAX_WORKERS`) for processes an engineer launches. |
+| `heavySlots` | select (1–8) | `2` | yes | Host-wide budget for engineer builds, tests and local checks in every RepoOS checkout on this machine. Extra heavy jobs queue in the shared `~/.repoos/local-check-slots` pool (`localChecks.maxConcurrent` follows it). |
+| `vitest.maxWorkers` | select (1–16) | `2` | yes | Vitest worker cap for processes an engineer launches. Exports `VITEST_MAX_WORKERS` and `REPOOS_TEST_WORKERS`, and applies `--maxWorkers` to direct and Bun package invocations. |
 | `localChecks.maxConcurrent` | select (1–8) | `2` | yes | Cross-process cap on local `repoos check` runs on this machine; extras queue with a visible position (#0836). Shares the heavy-slot pool when `heavySlots` is set. |
 | `localChecks.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long a queued local check may wait for a slot before failing with an actionable timeout (minimum 60000). |
 | `localChecks.staleAfterMs` | number | `75000` | yes | Mark a silent but live local check holder as wedged after this heartbeat age (minimum 15000). |
 | `localChecks.reclaimGraceMs` | number | `150000` | yes | Grace after marking a holder wedged before reclaiming its managed process group (minimum 15000). |
 | `playwright.maxConcurrent` | select (1–4) | `1` | yes | Shared cap on headless Playwright work (smoke, contrast audit, shots, UI verification). |
-| `playwright.workers` | select (1–8) | `2` | yes | Playwright workers inside one engineer-launched run (`PLAYWRIGHT_WORKERS`). |
+| `playwright.workers` | select (1–8) | `2` | yes | Playwright workers inside one engineer-launched run. The heavy-command shim applies `--workers` to `playwright test` and exports `PLAYWRIGHT_WORKERS`. Separate from `playwright.maxConcurrent`. |
 | `playwright.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long queued Playwright work may wait for the shared browser slot before timing out (minimum 60000). |
 | `pressureGuard.enabled` | boolean | `true` | yes | When on, delay new local checks, browser steps and engineer starts while paging, reclaimable memory, compressor size, load or idle CPU crosses a limit. Running engineers are never killed. |
 | `pressureGuard.maxLoadPerCpu` | number | `3` | yes | Block new work when the 1-minute load average per CPU exceeds this value. |

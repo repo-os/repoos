@@ -172,6 +172,7 @@ export const DEFAULT_AGENTS: Agent[] = [
       "Report the WHOLE CLASS of every bug in one pass: name its class (lifecycle/teardown ordering, unhandled spawn errors, config-key registration, import/export path rewriting, fallback handling, and the like), grep the diff and the files it touches for every other instance — sibling paths, callers, config/schema/docs/test registrations, and both sides of a fallback — and list them all in this one report instead of holding findings for later rounds. " +
       "Read the newest earlier review reports for the task first (the task's review cache, `reviews/<id>/` in the cache dir, newest pass first), verify each finding was actually fixed, and never re-report a fixed item as new. " +
       "Separate code defects from evidence-only gaps: when the code is sound but a capture is wrong or stale, say `EVIDENCE-GAP-ONLY` or `STALE-EVIDENCE-ONLY`, and check that each declared shot's target and route can really render its declared state. " +
+      "Evidence alone never blocks: when the ONLY findings are stale, missing or wrong captures, the verdict is `good to go`, and you name the affected captures under Suggestions so the human can look. A capture that shows a real visual defect is a bug, not an evidence gap. " +
       "Before `good to go`, confirm the branch merges cleanly with its base (`git merge-tree --write-tree <base> HEAD`); a conflict is `needs some work`, and name the conflicting files. " +
       "After about five `needs some work` passes on one task, open the next report with a short summary of the repeated classes and flag the task for a human. " +
       "Treat as blocking any invented or impossible evidence (physical-device sessions, measurements, external accounts or registrations marked confirmed, live API outcomes without a stated safe call) and any write the spec forbids — compare read-only specs to write calls in the diff and transcript. " +
@@ -3271,7 +3272,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: String(i + 1),
       })),
       description:
-        "Machine-wide budget for engineer builds, tests and local checks. Extra heavy jobs queue. Default 2, so several engineers share two build/test stacks.",
+        "Host-wide budget shared by engineer builds, tests and local checks in every checkout on this machine. Extra heavy jobs queue. Default 2, so several engineers share two build/test stacks.",
     },
     {
       key: "vitest.maxWorkers",
@@ -3285,7 +3286,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: String(i + 1),
       })),
       description:
-        "Vitest worker cap (VITEST_MAX_WORKERS) for processes an engineer launches. Default 2.",
+        "Vitest worker cap for engineer-launched runs. Exports VITEST_MAX_WORKERS and REPOOS_TEST_WORKERS, and applies --maxWorkers to direct and Bun package invocations. Default 2.",
     },
     {
       key: "localChecks.maxConcurrent",
@@ -3313,7 +3314,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: String(i + 1),
       })),
       description:
-        "Playwright worker cap for a run an engineer launches (PLAYWRIGHT_WORKERS). Default 2. Separate from how many browser sessions may run at once.",
+        "Playwright worker cap for a run an engineer launches. The PATH shim applies --workers to playwright test and exports PLAYWRIGHT_WORKERS. Default 2; separate from browser-session concurrency.",
     },
     {
       key: "playwright.maxConcurrent",

@@ -15,8 +15,12 @@ import {
   readProjectEnvironmentBindings,
   writeProjectEnvironmentBinding,
   hasConfiguredProjectEnvironmentSecrets,
+  resolveProjectEnvironmentSource,
 } from "../../core/project-environments.js";
 import { MODEL_PROVIDERS } from "../../core/providers/spend.js";
+import { isLoopbackAddress } from "../local-token.js";
+import { spawnDetached } from "./copy-inspector.js";
+import { buildEditorSpawnArgs } from "../../core/copy-inspector.js";
 import { getCurrentUser, requireAdmin } from "./auth.js";
 import { getGitWorker } from "../git-worker.js";
 import { readBody } from "./utils.js";
@@ -133,7 +137,16 @@ export const listProjectEnvironments: RouteHandler = (ctx, req, res) => {
   if (!requireSignedIn(req, ctx.config, res)) return;
   if (!originAllowed(req)) return send(res, 403, { error: "Request origin rejected" });
   try {
-    const environments = registry(ctx.config.root).environments;
+    const environments = registry(ctx.config.root).environments.map((env) => ({
+      ...env,
+      // Whether each registered source file currently exists on disk — lets the
+      // Secrets page show its "open in editor" affordance only for real files.
+      // Existence metadata only; values are never returned (#0953).
+      sources: env.sources.map((source) => ({
+        ...source,
+        exists: resolveProjectEnvironmentSource(ctx.config.root, env, source.id)?.exists === true,
+      })),
+    }));
     return send(res, 200, {
       environments,
       enabled: hasConfiguredProjectEnvironmentSecrets(ctx.config.root),
@@ -301,4 +314,52 @@ export const putProjectEnvironmentBinding: RouteHandler = async (ctx, req, res) 
       error: error instanceof Error ? error.message : "Could not save binding",
     });
   }
+};
+
+/**
+ * "Open in editor" for a project environment source file (#0953). Values stay
+ * write-only through the UI and API; this opens the underlying dotenv file in
+ * the administrator's configured editor instead. The file is resolved from the
+ * registry and the environment id — a client may only name the environment and
+ * an optional source id, never a path — and the route only serves local
+ * (loopback, un-forwarded) requests, because it launches a process on the
+ * server machine. Reuses the general open-in-editor mechanism
+ * (`dev.inspector.editorCommand`, falling back to `editor.command`).
+ */
+export const openProjectEnvironmentSourceInEditor: RouteHandler = async (ctx, req, res, params) => {
+  res.setHeader("Cache-Control", "no-store");
+  if (!requireSignedIn(req, ctx.config, res)) return;
+  if (!originAllowed(req)) return send(res, 403, { error: "Request origin rejected" });
+  const forwarded = Boolean(
+    req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || req.headers["cf-connecting-ip"],
+  );
+  if (forwarded || !isLoopbackAddress(req.socket?.remoteAddress))
+    return send(res, 403, { error: "Only available from the machine running RepoOS" });
+  const body = (await readBody(req)) as { source?: unknown };
+  const sourceId = typeof body.source === "string" ? body.source : undefined;
+  const env = resolveEnv(ctx.config.root, params.param1 ?? "");
+  if (!env) return send(res, 404, { error: "Unknown project environment" });
+  let resolved: ReturnType<typeof resolveProjectEnvironmentSource>;
+  try {
+    resolved = resolveProjectEnvironmentSource(ctx.config.root, env, sourceId);
+  } catch {
+    resolved = null;
+  }
+  if (!resolved) return send(res, 400, { error: "Invalid environment source" });
+  if (!resolved.exists)
+    return send(res, 400, { error: "The environment source file does not exist yet" });
+  const devInspector = ctx.config.dev?.inspector;
+  const devCommand =
+    typeof devInspector?.editorCommand === "string" ? devInspector.editorCommand.trim() : "";
+  if (devCommand && devInspector?.enabled === false)
+    return send(res, 400, { error: "editor is disabled" });
+  const command =
+    devCommand ||
+    (typeof ctx.config.editor?.command === "string" ? ctx.config.editor.command.trim() : "");
+  if (!command) return send(res, 400, { error: "no editor command configured" });
+  const args = buildEditorSpawnArgs(command, resolved.source.path, null);
+  if (!args.length) return send(res, 400, { error: "invalid editor command" });
+  const launched = await spawnDetached(args, ctx.config.root);
+  if (!launched) return send(res, 500, { error: "failed to launch editor" });
+  return send(res, 200, { ok: true, path: resolved.source.path });
 };
