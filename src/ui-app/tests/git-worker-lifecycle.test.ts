@@ -41,6 +41,32 @@ const overview = {
 };
 
 describe("Git worker lifecycle", () => {
+  it("expires queued requests without interrupting the running request", async () => {
+    vi.useFakeTimers();
+    const process = child();
+    launch.mockReturnValue(process as never);
+    const instance = worker();
+    const running = instance.request("running", {}, 100);
+    const expired = instance.request("queued", {}, 10).catch((error: Error) => error.message);
+    const next = instance.request("next", {}, 100);
+
+    expect(instance.inFlight().map(({ state }) => state)).toEqual(["running", "queued", "queued"]);
+    await vi.advanceTimersByTimeAsync(10);
+    expect(await expired).toContain("queued timed out after 10ms");
+    expect(process.kill).not.toHaveBeenCalled();
+    expect(launch).toHaveBeenCalledTimes(1);
+    expect(instance.inFlight().map(({ id }) => id)).toEqual([1, 3]);
+
+    process.stdout.emit("data", JSON.stringify({ id: 1, ok: true, value: "first" }) + "\n");
+    await expect(running).resolves.toBe("first");
+    expect(instance.inFlight().map(({ id, state }) => ({ id, state }))).toEqual([
+      { id: 3, state: "running" },
+    ]);
+    process.stdout.emit("data", JSON.stringify({ id: 3, ok: true, value: "last" }) + "\n");
+    await expect(next).resolves.toBe("last");
+    expect(instance.inFlight()).toEqual([]);
+  });
+
   it.each(["close", "error", "data"])("ignores a replaced child's late %s event", async (event) => {
     vi.useFakeTimers();
     const old = child();
