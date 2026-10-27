@@ -109,7 +109,6 @@ review_model_override: gemini-3.8-flash-medium
   });
 });
 
-
 describe("hold metadata on the board contract", () => {
   it.each([
     { flag: true, tags: [], until: "2999-01-01T00:00:00Z", active: true },
@@ -120,7 +119,9 @@ describe("hold metadata on the board contract", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-board-hold-"));
     try {
       mkdirSync(join(root, "work"));
-      writeFileSync(join(root, "work/0960-held.md"), `---
+      writeFileSync(
+        join(root, "work/0960-held.md"),
+        `---
 id: "0960"
 title: Held board fixture
 status: active
@@ -132,15 +133,22 @@ hold_by: driver
 hold_at: "2026-10-27T00:00:00Z"
 ---
 Body
-`);
+`,
+      );
       const index = new LiveIndex(config(root));
       index.refreshAll();
       const board = JSON.parse(JSON.stringify(index.boardSnapshot()));
       expect(board.tasks[0]).toMatchObject({
-        isHeld: flag, tags, holdReason: "maintenance", holdUntil: until,
-        holdBy: "driver", holdAt: "2026-10-27T00:00:00Z",
+        isHeld: flag,
+        tags,
+        holdReason: "maintenance",
+        holdUntil: until,
+        holdBy: "driver",
+        holdAt: "2026-10-27T00:00:00Z",
       });
       expect(isHoldActive(board.tasks[0])).toBe(active);
-    } finally { rmSync(root, { recursive: true, force: true }); }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

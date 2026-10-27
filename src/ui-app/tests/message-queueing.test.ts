@@ -437,13 +437,14 @@ describe("message queueing", () => {
           runner.stop("0960");
           await waitFor(() => !runner.isRunning("0960"));
         }
-        runner["queuedMessages"].set("0960", [
-          { text: "still here", agent, opts: {}, queuedAt },
-        ]);
+        runner["queuedMessages"].set("0960", [{ text: "still here", agent, opts: {}, queuedAt }]);
         runner["messageQueuedAt"].set("0960", queuedAt);
         writeFileSync(
           absPath,
-          readFileSync(absPath, "utf8").replace("status: active", "status: active\nhold: true\nhold_reason: parked"),
+          readFileSync(absPath, "utf8").replace(
+            "status: active",
+            "status: active\nhold: true\nhold_reason: parked",
+          ),
         );
         const res =
           path === "start"

@@ -129,8 +129,12 @@ it.each([true, false])("expires the mounted drawer with flag=%s", async (flag) =
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-27T00:00:00Z"));
   const pinia = setup();
-  const wrapper = await mountDrawer(pinia, heldTask({ isHeld: flag, tags: flag ? [] : ["hold"], holdUntil: "2026-10-27T00:00:01Z" }));
-  const hasHeld = () => wrapper.findAll(".debug-status-detail").some((d) => d.find("strong")?.text() === "Held");
+  const wrapper = await mountDrawer(
+    pinia,
+    heldTask({ isHeld: flag, tags: flag ? [] : ["hold"], holdUntil: "2026-10-27T00:00:01Z" }),
+  );
+  const hasHeld = () =>
+    wrapper.findAll(".debug-status-detail").some((d) => d.find("strong")?.text() === "Held");
   expect(hasHeld()).toBe(true);
   await vi.advanceTimersByTimeAsync(1000);
   await nextTick();

@@ -8,10 +8,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AgentRunner, type Agent } from "../../server/agents.js";
+import { AgentRunner } from "../../server/agents.js";
 import { parseTask } from "../../core/task.js";
 import { DEFAULT_CONFIG } from "../../core/config.js";
-import type { RepoOSConfig } from "../../core/types.js";
+import type { Agent, RepoOSConfig } from "../../core/types.js";
 import { clearExpiredHoldPauses } from "../../server/hold-guard.js";
 
 const agent: Agent = { name: "engineer", cli: "qwen code", model: "default", enabled: true };
