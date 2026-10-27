@@ -6,6 +6,9 @@ status: review
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: the opencode agent timed out after 900s
+debug_tldr: "The opencode reviewer hit its 900s timeout without finishing — retry the review, or pick a different reviewer agent via `repoos override` if it times out again."
+debug_tldr_at: "2026-10-27T02:17:53Z"
+debug_tldr_key: review-failed|the opencode agent timed out after 900s
 priority: p1
 area: core
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/bound-local-load-shared-build-test-slots
 cli_override: opencode
 model_override: opencode-go/kimi-k3.1-pro
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T02:17:34Z"
+updated_at: "2026-10-27T02:17:53Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-26T20:30:15.157Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:38:45.831Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-26T20:47:01.501Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
