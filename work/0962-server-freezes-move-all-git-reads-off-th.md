@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: staleness — Stale build: src/ has changed since the last `bun run build`."
+last_handoff_failure_sha: 7eda5265e3bde5a6ac695e3cf0cbe4cd1bd6690b
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
@@ -17,8 +19,6 @@ review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-26T07:54:06Z"
 updated_at: "2026-10-27T21:17:09Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: TypeError: index.refreshAllAsync is not a function. (In 'index.refreshAllAsync()', 'index.refreshAllAsync' is undefined)"
-last_handoff_failure_sha: "020afcc6300f9e5f8647f654c0a7c41095115f60"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -195,3 +195,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T20:55:14Z · handoff failed · ui-review handoff failed at check · repoos check failed: TypeError: index.refreshAllAsync is not a function. (In 'index.refreshAllAsync()', 'index.refreshAllAsync' is undefined)
 - 2026-10-27T20:57:11Z · note: handoff requested (ui-review)
 - 2026-10-27T21:17:09Z · handoff failed · ui-review handoff failed at check · repoos check failed: staleness — Stale build: src/ has changed since the last `bun run build`.
+
