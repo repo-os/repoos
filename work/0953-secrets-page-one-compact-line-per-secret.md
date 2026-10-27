@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-27T03:59:59.344Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0953"
 title: "Secrets page: one compact line per secret with actions behind an options menu (Railway-style)"
 type: feature
@@ -135,3 +137,4 @@ Done in this task:
 - 2026-10-27T03:19:01Z · note: review pass 3: needs some work
 - 2026-10-27T03:19:03Z · status review→active
 - 2026-10-27T03:22:58Z · body
+
