@@ -66,6 +66,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0804 — a ready task flagged by the decision-model human-step check, so a
   // capture can show the flag's explanation on the card.
   "card:humanStep",
+  "card:held",
+  "drawer:held",
   // #0832 — review task with review-rounds-exhausted and a long verdict summary.
   "card:reviewRoundsExhausted",
   // #0810 — a card whose task has a pending worktree-handoff conflict, so a

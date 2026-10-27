@@ -251,6 +251,9 @@ drivers must have a documented exemption there.
 
 ### Hold / unhold a task out of ALL automation (#0960)
 
+Existing `hold: true` tasks and tasks tagged `hold` gain the same CTO/watchdog
+protection automatically; no task-format migration or new status is required.
+
 A **hold** is a single, durable, documented state that makes a task inert for
 every automation RepoOS runs — auto-dispatch, the CTO monitor (idle nudges and
 stalled-agent restarts), the watchdog's auto-resume, crash recovery, and
