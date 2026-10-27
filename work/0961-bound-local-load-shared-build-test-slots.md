@@ -3,12 +3,6 @@ id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "network problem reaching the model provider, not a code issue: Timed out waiting for response headers"
-debug_tldr: "Engineer run timed out reaching the model provider (network, not code) after a handoff check timeout — retry the engineer resume once the connection is stable."
-debug_tldr_at: "2026-10-27T05:09:27Z"
-debug_tldr_key: "dev-error|network problem reaching the model provider, not a code issue: Timed out waiting for response headers"
 priority: p1
 area: core
 assigned_to: ai
@@ -19,7 +13,7 @@ model_override: opencode-go/kimi-k3.1-pro
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-25T15:37:17Z"
-updated_at: "2026-10-27T05:52:01Z"
+updated_at: "2026-10-27T05:52:04Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T04:12:19.264Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
@@ -133,3 +127,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T03:38:30Z · body
 - 2026-10-27T04:39:17Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: Timed out waiting for response headers
 - 2026-10-27T04:39:17Z · engineer crash recovery: resuming opencode + opencode-go/kimi-k3.1-pro (1/3 crashes in 30m) · network problem reaching the model provider, not a code issue: Timed out waiting for response headers
+- 2026-10-27T05:52:04Z · needs_input
