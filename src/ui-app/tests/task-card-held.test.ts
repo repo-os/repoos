@@ -5,7 +5,7 @@
  * hold is actually active (flag or `hold` tag, not an expired `holdUntil`).
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { nextTick } from "vue";
 import TaskCard from "../src/components/TaskCard.vue";
@@ -13,6 +13,11 @@ import { useRepoStore } from "../src/stores/repo";
 import type { Task } from "../src/types";
 
 const EMPTY_COUNTS = { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 };
+
+// Unmount cards after each case (see task-drawer-landable.test.ts for why: a
+// card left mounted re-renders on the shared useNow tick and can flip pinia's
+// global active pinia for later cases).
+enableAutoUnmount(afterEach);
 
 const makeTask = (over: Partial<Task> = {}): Task => ({
   id: "0001",

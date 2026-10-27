@@ -8,7 +8,7 @@
  * ignored, never stored and dereferenced by the drawer.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { createRouter, createMemoryHistory } from "vue-router";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
@@ -20,6 +20,14 @@ import { EMPTY_COUNTS, FakeEventSource, flush, json, makeTask } from "./componen
 
 // jsdom has no Element.scrollTo; TaskDrawer calls it while streaming session output.
 (Element.prototype as unknown as { scrollTo: () => void }).scrollTo ??= () => {};
+
+// #0960: unmount mounted drawers after each case. The shared useNow clock ticks
+// the shared `now` ref every second; a drawer left mounted from an earlier case
+// would re-render on that tick and, while the later case is inside an await,
+// any late-mounted v-if child resolves its pinia stores via injection —
+// flipping pinia's global active pinia and making the next case's no-arg
+// `useUiStore()` return the previous case's store.
+enableAutoUnmount(afterEach);
 
 const reviewTask = (over: Partial<Task> = {}): Task =>
   makeTask({
