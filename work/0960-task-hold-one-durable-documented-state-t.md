@@ -2,7 +2,7 @@
 id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
-status: review
+status: active
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/task-hold-one-durable-documented-state-t
 cli_override: opencode
 model_override: opencode-go/hy3
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T00:51:03Z"
+updated_at: "2026-10-27T00:51:04Z"
 ---
 ## Problem
 
