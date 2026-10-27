@@ -6,9 +6,6 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "2026-10-27T09:07:28.467328Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out"
-debug_tldr: Engineer run (codex) died because the selected model was at capacity and model-list refresh timed out — retry the engineer later or switch to a different agent/model.
-debug_tldr_at: "2026-10-27T09:08:53Z"
-debug_tldr_key: "dev-error|2026-10-27T09:07:28.467328Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out"
 needs_merge: true
 priority: p0
 area: core
@@ -20,7 +17,7 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T09:08:53Z"
+updated_at: "2026-10-27T09:09:04Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: bedc55741a9e477fc772b91b48c18f324b8204c0
 review_rounds: 1
@@ -28,7 +25,7 @@ review_passes: 1
 handoff_signal_retry_count: 1
 dev_error_count: 10
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-27T06:41:31.905Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-27T06:41:43.908Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-27T06:41:54.173Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-27T06:43:34.731Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-27T09:08:34.603Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The RepoOS server (single Bun main thread) repeatedly freezes or becomes unusably slow (UI never loads, accepts then resets connections) because it runs blocking git child processes per task/branch on the same thread that serves HTTP. With ~910 tasks, ~100 branches, 27 worktrees, each spawn costs 0.1-0.3 s on macOS (syspolicyd). Fixed one loop at a time so far (live-index per-file git, dir-log walk cache, async ahead-count cache, GET /api/system/worktree-gc preview cache) but others remain: worktreeStatus() callers (task-watchdog.ts, indexer.ts), per-task `git rev-list --count`, per-branch `merge-base --is-ancestor` (worktree-gc.ts, task-dependencies.ts, worktree-handoff-guard.ts, done.ts), sync `git log --name-only -- work` walks (indexer.ts:76, story-definition-files.ts).
@@ -167,3 +164,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T09:07:23Z · needs_input
 - 2026-10-27T09:07:23Z · message_queued at 2026-10-27T09:07:23.457Z
 - 2026-10-27T09:08:34Z · agent exited with an error (codex) · 2026-10-27T09:07:28.467328Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-10-27T09:09:04Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/12 crashes in 30m) · 2026-10-27T09:07:28.467328Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
