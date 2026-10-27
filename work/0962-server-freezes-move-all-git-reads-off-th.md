@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: bedc55741a9e477fc772b91b48c18f324b8204c0
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
@@ -16,8 +18,6 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 created_at: "2026-10-26T07:54:06Z"
 updated_at: "2026-10-27T04:34:07Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/agent-drivers.test.ts > crush driver > captures the session id by before/after diff and ingests usage from session show, tests/agent-review.test.ts > agent review before human sign-off (#0101) > rejects move-to-done while automatic review is still running without cancelling it, tests/areas-settings.test.ts > area-vocabulary drift advisory (#0587) > fires on a raw repoos.toml edit, not just a curated PATCH on thinkpad — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 1f0ad28e52decb68ce904464bd1dc13373649a02
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -145,3 +145,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T04:00:46Z · status active→review, needs_input
 - 2026-10-27T04:00:46Z · note: handoff requested (cli)
 - 2026-10-27T04:34:07Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
