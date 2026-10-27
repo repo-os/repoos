@@ -5,11 +5,11 @@ type: feature
 status: inbox
 priority: p1
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-27T12:02:49Z"
-updated_at: "2026-10-27T12:02:49Z"
+updated_at: "2026-10-27T13:20:02Z"
 ---
 ## Problem
 Split from #0962. When the server stalls there is no record of which request or git call was slow, so every freeze is diagnosed by guesswork.
