@@ -48,7 +48,10 @@ describe("getBoard readies behind the boot index build (#0285)", () => {
     let snapshotCalls = 0;
     const ctx = {
       indexReady,
+      // getBoard reads tasks and git state through the git worker (#0962).
+      config: { root: process.cwd(), stories: { enabled: false } },
       index: {
+        getTasks: () => [],
         boardSnapshot: () => {
           snapshotCalls++;
           return EMPTY_BOARD;
@@ -77,7 +80,10 @@ describe("getBoard readies behind the boot index build (#0285)", () => {
   it("answers immediately when the index is already ready", async () => {
     const ctx = {
       indexReady: Promise.resolve(),
+      // getBoard reads tasks and git state through the git worker (#0962).
+      config: { root: process.cwd(), stories: { enabled: false } },
       index: {
+        getTasks: () => [],
         boardSnapshot: () => EMPTY_BOARD,
       },
       reviews: { isRunning: () => false, enabled: () => false },
