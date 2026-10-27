@@ -27,6 +27,8 @@ last_check_failure: "repoos check at 2026-10-27T14:46:39.664Z: repoos check fail
 review_passes: 4
 review_rounds: 2
 dev_error_count: 7
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-27T21:39:17.853Z\",\"kind\":\"usage-limit\"}]"
+engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
 
@@ -175,3 +177,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T21:17:38Z · note: handoff requested (ui-review)
 - 2026-10-27T21:39:11Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — timed out — timed out after 900s
 - 2026-10-27T21:39:11Z · message_delivered: 1 message(s)
+- 2026-10-27T21:39:17Z · engineer crash recovery: switched codex + gpt-6.1-sol → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 8:23 AM.
