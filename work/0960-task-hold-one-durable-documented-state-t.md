@@ -180,3 +180,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T22:30:41Z · note: handoff requested (ui-review)
 - 2026-10-27T22:56:32Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — globalVersion: 2626,
 - 2026-10-27T23:47:16Z · body: Acceptance criteria (added 6, removed 6)
+- 2026-10-27T23:47:16Z · message_queued at 2026-10-27T23:47:16.354Z
