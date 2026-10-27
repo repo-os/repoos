@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "2026-10-27T09:07:28.467328Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out"
+debug_tldr: Engineer run (codex) died because the selected model was at capacity and model-list refresh timed out — retry the engineer later or switch to a different agent/model.
+debug_tldr_at: "2026-10-27T09:08:53Z"
+debug_tldr_key: "dev-error|2026-10-27T09:07:28.467328Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out"
 needs_merge: true
 priority: p0
 area: core
@@ -17,7 +20,7 @@ model_override: gpt-6.1-sol
 review_cli_override: codex
 review_model_override: gpt-6.1-sol
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T09:08:34Z"
+updated_at: "2026-10-27T09:08:53Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: bedc55741a9e477fc772b91b48c18f324b8204c0
 review_rounds: 1
