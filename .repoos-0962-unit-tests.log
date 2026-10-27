@@ -1,0 +1,10 @@
+$ vitest run --config src/ui-app/vite.config.ts /Users/nick/code/nick/repoos-worktrees/feat/server-freezes-move-all-git-reads-off-th/src/ui-app/tests/git-worker-lifecycle.test.ts /Users/nick/code/nick/repoos-worktrees/feat/server-freezes-move-all-git-reads-off-th/src/ui-app/tests/review-completion.test.ts /Users/nick/code/nick/repoos-worktrees/feat/server-freezes-move-all-git-reads-off-th/src/ui-app/tests/tasks-list-payload.test.ts /Users/nick/code/nick/repoos-worktrees/feat/server-freezes-move-all-git-reads-off-th/src/ui-app/tests/git-ref-watcher.test.ts /Users/nick/code/nick/repoos-worktrees/feat/server-freezes-move-all-git-reads-off-th/src/ui-app/tests/git-worker-context-pack.test.ts /Users/nick/code/nick/repoos-worktrees/feat/server-freezes-move-all-git-reads-off-th/src/ui-app/tests/indexer-metadata.test.ts "--maxWorkers=1"
+
+ RUN  v4.1.10 /Users/nick/code/nick/repoos-worktrees/feat/server-freezes-move-all-git-reads-off-th/src/ui-app
+
+
+ Test Files  6 passed (6)
+      Tests  25 passed (25)
+   Start at  03:24:32
+   Duration  9.77s (transform 6.09s, setup 309ms, import 7.75s, tests 1.96s, environment 6.13s)
+
