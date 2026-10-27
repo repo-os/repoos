@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-27T12:02:49Z"
-updated_at: "2026-10-27T14:20:50Z"
+updated_at: "2026-10-27T20:23:22Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-27T14:15:32.454Z\",\"kind\":\"dev-error\"}]"
 ---
