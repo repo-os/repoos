@@ -13,7 +13,7 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T20:48:31Z"
+updated_at: "2026-10-27T20:50:22Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-27T14:46:39.664Z: repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]"
 review_passes: 4
@@ -54,28 +54,23 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 ```json
 [
 {
-"label": "Held task badge and expanded Held group",
-"target": "default",
-"route": "/work",
-"highlight": ".tc-held, .held-toggle, .held-rows",
-"steps": [
-{
-  "click": ".held-toggle"
-}
-],
-"state": "card:held"
+  "label": "Held task badge and expanded Held group",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".tc-held, .held-toggle, .held-rows",
+  "steps": [
+    {
+      "click": ".held-toggle"
+    }
+  ],
+  "state": "card:held"
 },
 {
-"label": "Hold reason and automatic release in task status details",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".debug-status-detail",
-"steps": [
-{
-  "click": "[data-test-id=debug-tab-status]"
-}
-],
-"state": "drawer:held"
+  "label": "Hold reason and automatic release in task status details",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": ".debug-status-detail",
+  "state": "drawer:held"
 }
 ]
 ```
@@ -169,3 +164,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T20:44:59Z · body
 - 2026-10-27T20:48:31Z · note: click [data-test-id=debug-tab-status]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=debug
 - 2026-10-27T20:48:31Z · note: highlight .debug-status-detail matched nothing on /work?task=9999&tab=debug
+- 2026-10-27T20:50:22Z · body
