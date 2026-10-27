@@ -213,14 +213,14 @@ describe("notifyEngineerOfRequirementsChange", () => {
     return { runner: { send }, send };
   }
 
-  it("messages the engineer once, with the same summary, for an active task", () => {
+  it("messages the engineer once, with the same summary, for an active task", async () => {
     const { root } = setupTask("active");
     const { runner: r, send } = makeRunner();
     const next = BODY.replace(
       "- Do not touch the worktree copy\n",
       "- Do not touch the worktree copy\n- Report the change\n",
     );
-    const result = notifyEngineerOfRequirementsChange(
+    const result = await notifyEngineerOfRequirementsChange(
       { config: config(root), runner: r },
       task(next),
       BODY,
@@ -235,11 +235,11 @@ describe("notifyEngineerOfRequirementsChange", () => {
     expect(text).toContain("worktree");
   });
 
-  it("reports a queued delivery when the engineer's turn is live", () => {
+  it("reports a queued delivery when the engineer's turn is live", async () => {
     const { root } = setupTask("active");
     const { runner: r } = makeRunner({ ok: true, queued: true });
     const next = BODY.replace("- Keep the notice short\n", "- Keep the notice very short\n");
-    const result = notifyEngineerOfRequirementsChange(
+    const result = await notifyEngineerOfRequirementsChange(
       { config: config(root), runner: r },
       task(next),
       BODY,
@@ -247,11 +247,11 @@ describe("notifyEngineerOfRequirementsChange", () => {
     expect(result).toMatchObject({ sent: true, queued: true });
   });
 
-  it("reports (does not start a session) when the runner has no engineer session", () => {
+  it("reports (does not start a session) when the runner has no engineer session", async () => {
     const { root } = setupTask("active");
     const { runner: r, send } = makeRunner({ ok: false, reason: "no session for this task" });
     const next = BODY.replace("- Keep the notice short\n", "- Keep the notice very short\n");
-    const result = notifyEngineerOfRequirementsChange(
+    const result = await notifyEngineerOfRequirementsChange(
       { config: config(root), runner: r },
       task(next),
       BODY,
@@ -262,11 +262,11 @@ describe("notifyEngineerOfRequirementsChange", () => {
     expect(result.reason).toBe("no session for this task");
   });
 
-  it("never messages on a task that is not active", () => {
+  it("never messages on a task that is not active", async () => {
     const { root } = setupTask("review");
     const { runner: r, send } = makeRunner();
     const next = BODY.replace("- Keep the notice short\n", "- Keep the notice very short\n");
-    const result = notifyEngineerOfRequirementsChange(
+    const result = await notifyEngineerOfRequirementsChange(
       { config: config(root), runner: r },
       task(next, { status: "review" }),
       BODY,
@@ -277,10 +277,10 @@ describe("notifyEngineerOfRequirementsChange", () => {
     expect(send).not.toHaveBeenCalled();
   });
 
-  it("does nothing when no requirement section changed", () => {
+  it("does nothing when no requirement section changed", async () => {
     const { root } = setupTask("active");
     const { runner: r, send } = makeRunner();
-    const result = notifyEngineerOfRequirementsChange(
+    const result = await notifyEngineerOfRequirementsChange(
       { config: config(root), runner: r },
       task(BODY),
       BODY,
@@ -291,7 +291,7 @@ describe("notifyEngineerOfRequirementsChange", () => {
 });
 
 describe("LiveIndex requirements-change hook", () => {
-  it("records one activity entry and sends one engineer message (patch + index hook)", () => {
+  it("records one activity entry and sends one engineer message (patch + index hook)", async () => {
     const { root, absPath } = setupTask("active");
     const cfg = config(root);
     const index = new LiveIndex(cfg);
@@ -300,16 +300,16 @@ describe("LiveIndex requirements-change hook", () => {
       void text;
       return { ok: true };
     });
-    index.setBodyChangeNotifier((applied, prev) => {
-      notifyEngineerOfRequirementsChange({ config: cfg, runner: { send } }, applied, prev.body);
-    });
+    index.setBodyChangeNotifier((applied, prev) =>
+      notifyEngineerOfRequirementsChange({ config: cfg, runner: { send } }, applied, prev.body),
+    );
 
     const next = BODY.replace(
       "- Do not touch the worktree copy\n",
       "- Do not touch the worktree copy\n- Report the change\n",
     );
     patchTaskFile(cfg, absPath, { body: next, force: true });
-    index.applyFileChange(absPath);
+    await index.applyFileChange(absPath);
 
     const activity = readFileSync(absPath, "utf8")
       .split("\n")
@@ -322,7 +322,7 @@ describe("LiveIndex requirements-change hook", () => {
     expect(text).toContain("Acceptance criteria");
   });
 
-  it("stores the notice result for PATCH responses", () => {
+  it("stores the notice result for PATCH responses", async () => {
     const { root, absPath } = setupTask("active");
     const index = new LiveIndex(config(root));
     index.refreshAll();
@@ -334,7 +334,7 @@ describe("LiveIndex requirements-change hook", () => {
 
     const next = BODY.replace("- Do not touch the worktree copy\n", "- Report the change\n");
     patchTaskFile(config(root), absPath, { body: next, force: true });
-    index.applyFileChange(absPath);
+    await index.applyFileChange(absPath);
 
     expect(index.consumeRequirementsNotice("0817")).toMatchObject({
       sent: false,
@@ -343,7 +343,7 @@ describe("LiveIndex requirements-change hook", () => {
     expect(index.consumeRequirementsNotice("0817")).toBeNull();
   });
 
-  it("fires on a body change applied through a file write (the CLI path)", () => {
+  it("fires on a body change applied through a file write (the CLI path)", async () => {
     const { root, absPath } = setupTask("active");
     const index = new LiveIndex(config(root));
     index.refreshAll();
@@ -357,7 +357,7 @@ describe("LiveIndex requirements-change hook", () => {
     // The CLI writes with `patchTaskFile` and never touches the index; the
     // server's watcher calls `applyFileChange`, which is what fires the hook.
     patchTaskFile(config(root), absPath, { body: next, force: true });
-    index.applyFileChange(absPath);
+    await index.applyFileChange(absPath);
 
     expect(spy).toHaveBeenCalledTimes(1);
     const [applied, prev] = spy.mock.calls[0] as [Task, Task];
@@ -477,7 +477,7 @@ describe("spec-form save notifies the engineer (#0819)", () => {
 });
 
 describe("hand edit notifies the engineer via the watcher (#0819)", () => {
-  it("sends one requirements notice when the task file is edited by hand", () => {
+  it("sends one requirements notice when the task file is edited by hand", async () => {
     const { root, absPath } = setupTask("active");
     const cfg = config(root);
     const index = new LiveIndex(cfg);
@@ -498,7 +498,7 @@ describe("hand edit notifies the engineer via the watcher (#0819)", () => {
       writeFileSync(absPath, taskFile("active", next));
       const future = new Date(Date.now() + 5000);
       utimesSync(absPath, future, future);
-      (watcher as unknown as { reconcile: () => void }).reconcile();
+      await (watcher as unknown as { reconcile: () => Promise<void> }).reconcile();
 
       expect(send).toHaveBeenCalledTimes(1);
       const [id, text] = send.mock.calls[0] as [string, string];

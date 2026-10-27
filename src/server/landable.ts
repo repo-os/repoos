@@ -7,7 +7,6 @@
  * read-only: `git merge-tree`, `git status`, `git diff` and file reads.
  */
 import { bookkeepingDirs } from "../core/config.js";
-import { branchCommit } from "../core/git.js";
 import {
   evaluateLandable,
   reviewPredatesLatestHandoff,
@@ -21,6 +20,7 @@ import { parseReviewVerdict } from "../core/review-verdict.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { ReviewReport } from "./review.js";
 import { gatherApprovalPreflight } from "./request-close-out.js";
+import { getGitWorker } from "./git-worker.js";
 
 /** Normalize a repo-relative task path to forward slashes. */
 function taskFilePath(task: Task): string {
@@ -40,7 +40,9 @@ export async function gatherLandable(
   // unreadable task worktree.
   const headSha =
     preflight.headSha ??
-    (task.hotfix === true && task.branch ? branchCommit(config.root, task.branch) : null);
+    (task.hotfix === true && task.branch
+      ? await getGitWorker(config.root).branchCommit(task.branch)
+      : null);
 
   return evaluateLandable({
     taskId: task.id,

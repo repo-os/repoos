@@ -107,6 +107,11 @@ export interface ContextPack {
   };
 }
 
+export interface ContextPackGitFacts {
+  headHash: string;
+  worktreeState: { dirty: boolean; untracked: string[]; diffSummary: string };
+}
+
 /** A single file entry in the repo map. */
 export interface MapEntry {
   /** Repo-relative path. */
@@ -872,12 +877,13 @@ export function generateContextPack(
   branch: string,
   cwd: string,
   bootstrapResult: BootstrapResult | null,
+  gitFacts?: ContextPackGitFacts,
 ): ContextPack {
   const start = Date.now();
-  const head = headHash(config.root);
+  const head = gitFacts?.headHash ?? headHash(config.root);
 
   // Worktree state
-  const wtState = worktreeState(config, branch, cwd);
+  const wtState = gitFacts?.worktreeState ?? worktreeState(config, branch, cwd);
 
   // Build cache inputs
   const inputs = buildCacheInputs(
@@ -989,8 +995,9 @@ export function resumePreamble(
   _task: Task,
   branch: string,
   cwd: string,
+  gitFacts?: ContextPackGitFacts,
 ): string {
-  const wtState = worktreeState(config, branch, cwd);
+  const wtState = gitFacts?.worktreeState ?? worktreeState(config, branch, cwd);
   if (!wtState.dirty) return "";
 
   const lines: string[] = [];

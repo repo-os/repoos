@@ -80,7 +80,6 @@ import {
   nextBundleItemId,
   type BundleMutationInput,
 } from "../../core/easter-eggs-bundle.js";
-import { ensureCanaryReadyForTask } from "../../core/canary-repo.js";
 import { listInputs } from "../../core/input.js";
 import {
   commitTaskFile,
@@ -88,12 +87,10 @@ import {
   mainDirtyFilesForCloseOut,
   uncommittedWorkFiles,
   workFileFilter,
-  worktreePathForBranch,
   ensureWorktree,
   resetWorktree,
   getDiffStatsAsync,
   getDiff,
-  runGit,
   GitDirtyCheckError,
   ensureHotfix,
   agentTouchedFiles,
@@ -101,19 +98,17 @@ import {
   removeWorktree,
   deleteBranch,
   pruneWorktrees,
-  shortHeadOf,
-  currentBranch,
-  branchCommit,
 } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { gatherLandable } from "../landable.js";
 import { REVIEW_RUN_TRIGGERS } from "../review-automation.js";
 import { checkGenericStatusPatch, checkHumanTaskStatusPatch } from "../task-transitions.js";
 import { readFileSync, existsSync, statSync, unlinkSync, mkdirSync, writeFileSync } from "node:fs";
+import { once } from "node:events";
 import { join, relative } from "node:path";
 import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-release.js";
 import { bootstrap } from "../../core/bootstrap.js";
-import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
+import { generateServerContext, serverResumePreamble } from "../context-pack.js";
 import { listReviewPasses } from "../../core/review-passes.js";
 import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
 import { taskAttachmentCloudStates } from "../../core/attachment-resilience.js";
@@ -154,7 +149,6 @@ import {
 import {
   DependencyValidationError,
   normalizeTaskDependencies,
-  taskDependencyBlockers,
 } from "../../core/task-dependencies.js";
 import { TaskFieldValidationError } from "../../core/task-fields.js";
 import type { UsageRange } from "../../core/db.js";
@@ -169,7 +163,10 @@ import { resolvePipelineCheckPlan } from "../check-plan-info.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
 import { computeMergeConflict } from "../merge-conflict.js";
 import { previewTargetOptions, type PreviewTargetOption } from "../preview.js";
-import { findStoryDefinitionByKey } from "../../core/story-definition-files.js";
+import {
+  listStoryDefinitionsFromCommits,
+  storiesDirOf,
+} from "../../core/story-definition-files.js";
 import { storyKey } from "../../core/stories.js";
 import {
   PM_FLESH_OUT_MESSAGE,
@@ -220,8 +217,8 @@ function withReviewStatus<T extends { id: string }>(
 function withPreviewTargets<T extends Task>(
   task: T,
   config: RepoOSConfig,
+  changedPaths: string[] = [],
 ): T & { previewTargets: PreviewTargetOption[] } {
-  const changedPaths = computeTaskShotContext(config, task).changedPaths;
   return { ...task, previewTargets: previewTargetOptions(config, task, changedPaths) };
 }
 
@@ -296,13 +293,19 @@ export const getTasks: RouteHandler = async (ctx, req, res) => {
       nextCursor: filtered.length > limit ? (page.at(-1)?.id ?? null) : null,
     });
   }
+  res.writeHead(200, {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET,POST,PATCH,PUT,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  });
+  res.write("[");
   const blockers = await getGitWorker(config.root).dependencyBlockers(config.root, allTasks);
-  const detailed: Task[] = [];
-  const fullTasks = full ? filtered : page;
-  for (let start = 0; start < fullTasks.length; start += 100) {
-    const batch = fullTasks.slice(start, start + 100);
-    detailed.push(
-      ...batch.map((task) =>
+  let hasWritten = false;
+  for (let start = 0; start < filtered.length; start += 25) {
+    const batch = filtered
+      .slice(start, start + 25)
+      .map((task) =>
         withCheckpointRecovery(
           withPmWorking(
             withPendingHandoff(
@@ -315,16 +318,15 @@ export const getTasks: RouteHandler = async (ctx, req, res) => {
           ),
           config,
         )!,
-      ),
-    );
-    if (start + 100 < fullTasks.length) await new Promise((resolve) => setTimeout(resolve, 0));
+      );
+    const serialized = JSON.stringify(batch).slice(1, -1);
+    if (serialized) {
+      if (!res.write(`${hasWritten ? "," : ""}${serialized}`)) await once(res, "drain");
+      hasWritten = true;
+    }
+    if (start + 25 < filtered.length) await new Promise<void>((resolve) => setImmediate(resolve));
   }
-  return full
-    ? json(res, 200, detailed)
-    : json(res, 200, {
-        tasks: detailed,
-        nextCursor: filtered.length > limit ? (page.at(-1)?.id ?? null) : null,
-      });
+  res.end("]");
 };
 
 export const createTask: RouteHandler = async (ctx, req, res) => {
@@ -601,8 +603,9 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
     return json(res, 400, { error: "explanation is required" });
   }
   if (isCanaryTaskExplanation(explanation)) {
-    const ready = ensureCanaryReadyForTask(config, (detail) => logger.system("warn", detail));
-    if (!ready) {
+    const canary = await getGitWorker(config.root).ensureCanaryReady(config);
+    if (canary.detail) logger.system("warn", canary.detail);
+    if (!canary.ok) {
       return json(res, 500, {
         error:
           "Could not prepare the canary counter on main — fix .gitignore / branch and try again",
@@ -899,10 +902,14 @@ export const getTask: RouteHandler = async (ctx, _req, res, params) => {
     config.root,
     index.getTasks(),
   );
+  const shotContext = await computeTaskShotContext(config, t);
   return json(res, 200, {
     ...withCheckpointRecovery(
       withPmWorking(
-        withPendingHandoff(withReviewStatus(withPreviewTargets(t, config), reviews), runner),
+        withPendingHandoff(
+          withReviewStatus(withPreviewTargets(t, config, shotContext.changedPaths), reviews),
+          runner,
+        ),
       ),
       config,
     ),
@@ -941,7 +948,11 @@ export const getTaskContext: RouteHandler = async (ctx, _req, res, params) => {
     .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""))
     .slice(0, 12)
     .map(summary);
-  const enriched = withReviewStatus(withPreviewTargets(task, ctx.config), ctx.reviews);
+  const shotContext = await computeTaskShotContext(ctx.config, task);
+  const enriched = withReviewStatus(
+    withPreviewTargets(task, ctx.config, shotContext.changedPaths),
+    ctx.reviews,
+  );
   const blockers = await getGitWorker(ctx.config.root).dependencyBlockers(ctx.config.root, tasks);
   const passes = listReviewPasses(ctx.config, task.id);
   const latest = passes.length > 0 ? passes[passes.length - 1] : null;
@@ -1109,6 +1120,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
       try {
         updated = patchTaskFile(config, existing.absPath, rest, {
           onStatusChange: onServerStatusChange,
+          validationTasks: index.getTasks(),
         });
       } catch (error) {
         if (error instanceof DependencyValidationError)
@@ -1147,6 +1159,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     updated = patchTaskFile(config, existing.absPath, body, {
       onStatusChange: onServerStatusChange,
       actor: getCurrentUser(req, config)?.email ?? "human",
+      validationTasks: index.getTasks(),
     });
   } catch (error) {
     if (error instanceof DependencyValidationError) return json(res, 400, { error: error.message });
@@ -1157,7 +1170,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   // to engineering must mirror `active` there so a later handoff does not see
   // "already finalized" while the board copy is active (#0737).
   if (prevStatus === "review" && updated.status === "active" && updated.branch) {
-    const wtRoot = worktreePathForBranch(config.root, updated.branch);
+    const wtRoot = await getGitWorker(config.root).worktreePath(updated.branch);
     if (wtRoot) {
       const wtAbs = join(wtRoot, updated.path);
       if (existsSync(wtAbs)) {
@@ -1178,7 +1191,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   }
 
   // Guarded: the #0210 gate already ran above for transitions into review.
-  index.applyFileChange(updated.absPath, { guarded: true });
+  await index.applyFileChange(updated.absPath, { guarded: true });
 
   // Re-run the underspecified check on every body change (#0613) — not only
   // draft promotion. If the body becomes well-specified again the flag clears;
@@ -1284,7 +1297,7 @@ export const uploadScreenshot: RouteHandler = async (ctx, req, res, params) => {
 
 // Captured preview shots (#0582). Separate from the uploaded screenshots above:
 // written under `shots/`, never referenced from the task body, listed from disk.
-export const listTaskShots: RouteHandler = (ctx, _req, res, params) => {
+export const listTaskShots: RouteHandler = async (ctx, _req, res, params) => {
   const { config, index } = ctx;
   const taskId = params.param1;
   const task = index.getTask(taskId);
@@ -1292,7 +1305,7 @@ export const listTaskShots: RouteHandler = (ctx, _req, res, params) => {
     return json(res, 404, { error: `Task #${taskId} not found` });
   }
   const shots = localShotStore(config, taskId).list();
-  const shotContext = computeTaskShotContext(config, task);
+  const shotContext = await computeTaskShotContext(config, task);
   return json(res, 200, { ok: true, shots, ...shotContext });
 };
 
@@ -1310,8 +1323,8 @@ export const getTaskUiVerification: RouteHandler = async (ctx, _req, res, params
   // the branch HEAD now, and `stale` says whether they differ. A stale capture
   // is shown as such and never as verification — except for HEAD movement that
   // is pure task bookkeeping (#0766), which does not change what captures show.
-  const reviewedHead = branchHeadForTask(config, task);
-  const worktree = worktreeEvidenceSource(config, task);
+  const reviewedHead = await branchHeadForTask(config, task);
+  const worktree = await worktreeEvidenceSource(config, task);
   const status = await effectiveHandoffTreeStatus(worktree, evidence, reviewedHead, config);
   if (!evidence) return json(res, 200, { ok: true, evidence: null });
   return json(res, 200, {
@@ -1338,13 +1351,19 @@ export const getTaskUiVerification: RouteHandler = async (ctx, _req, res, params
 export async function postCaptureWorktreeGuard(
   worktree: string,
   headBefore: string | null,
+  root = worktree,
 ): Promise<
   | { ok: true; headAfter: string; restored: string[] }
   | { ok: false; error: string; restored: string[] }
 > {
-  const status = await runGit(worktree, ["status", "--porcelain"], 10_000);
+  const status = await getGitWorker(root).runGit(worktree, ["status", "--porcelain"], 10_000);
   const dirt = status.status === 0 ? status.stdout.trim() : null;
-  const headAfter = shortHeadOf(worktree);
+  const headResult = await getGitWorker(root).runGit(
+    worktree,
+    ["rev-parse", "--short", "HEAD"],
+    4000,
+  );
+  const headAfter = headResult.status === 0 ? headResult.stdout.trim() : null;
   const headMoved = headBefore === null || headAfter === null || headAfter !== headBefore;
   if (dirt === null) {
     return {
@@ -1396,7 +1415,12 @@ export async function guardedForceRefreshCapture(
   log: TaskLog,
   remoteTransport?: import("../browser-capture-policy.js").BrowserEvidenceTransport,
 ): Promise<GuardedForceRefreshCaptureResult> {
-  const headBefore = shortHeadOf(worktree);
+  const headResult = await getGitWorker(config.root).runGit(
+    worktree,
+    ["rev-parse", "--short", "HEAD"],
+    4000,
+  );
+  const headBefore = headResult.status === 0 ? headResult.stdout.trim() : null;
   const result = await runUiHandoffGate(config, task, previews, log, {
     forceRefresh: true,
     recordTaskNotes: false,
@@ -1411,7 +1435,7 @@ export async function guardedForceRefreshCapture(
       restored: [],
     };
   }
-  const guarded = await postCaptureWorktreeGuard(worktree, headBefore);
+  const guarded = await postCaptureWorktreeGuard(worktree, headBefore, config.root);
   for (const line of guarded.restored) {
     log(task.id, "warn", `evidence refresh for #${task.id}: ${line}`);
   }
@@ -1507,11 +1531,11 @@ export async function automaticStaleEvidenceRefresh(
 ): Promise<boolean> {
   const { config, previews, rootLock, closingOut, log } = deps;
   if (!task.branch) return false;
-  const worktree = worktreePathForBranch(config.root, task.branch);
-  if (!worktree) return false;
 
   const locked = await withEvidenceRefreshLock(task.id, async () => {
     if (closingOut()) return false;
+    const worktree = await getGitWorker(config.root).worktreePath(task.branch!);
+    if (!worktree) return false;
     if (!rootLock.acquire(task.id, "close-out")) return false;
     try {
       // Revalidate under both locks against the live server state: the review
@@ -1522,14 +1546,22 @@ export async function automaticStaleEvidenceRefresh(
       if (deps.isAgentRunning(task.id) || deps.isReviewRunning(task.id)) return false;
       if (closingOut()) return false;
 
-      const headResult = await runGit(worktree, ["rev-parse", "--short", "HEAD"], 10_000);
+      const headResult = await getGitWorker(config.root).runGit(
+        worktree,
+        ["rev-parse", "--short", "HEAD"],
+        10_000,
+      );
       const head = headResult.status === 0 ? headResult.stdout.trim() : "";
       if (!head) return false;
       const currentEvidence = readUiHandoffGateEvidence(config, task.id);
       if ((await effectiveHandoffTreeStatus(worktree, currentEvidence, head, config)) !== "stale") {
         return false;
       }
-      const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
+      const dirty = await getGitWorker(config.root).runGit(
+        worktree,
+        ["status", "--porcelain"],
+        10_000,
+      );
       if (dirty.status !== 0 || dirty.stdout.trim()) return false;
       // Once per reviewed HEAD: a capture that does not clear the stale marker
       // must not loop the reviewer forever.
@@ -1568,11 +1600,11 @@ export async function automaticEvidenceGapRepair(
 ): Promise<boolean> {
   const { config, previews, rootLock, closingOut, log } = deps;
   if (!task.branch) return false;
-  const worktree = worktreePathForBranch(config.root, task.branch);
-  if (!worktree) return false;
 
   const locked = await withEvidenceRefreshLock(task.id, async () => {
     if (closingOut()) return false;
+    const worktree = await getGitWorker(config.root).worktreePath(task.branch!);
+    if (!worktree) return false;
     if (!rootLock.acquire(task.id, "close-out")) return false;
     try {
       const current = deps.getReviewTask(task.id) ?? task;
@@ -1580,7 +1612,11 @@ export async function automaticEvidenceGapRepair(
       if (deps.isAgentRunning(task.id) || deps.isReviewRunning(task.id)) return false;
       if (closingOut()) return false;
 
-      const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
+      const dirty = await getGitWorker(config.root).runGit(
+        worktree,
+        ["status", "--porcelain"],
+        10_000,
+      );
       if (dirty.status !== 0 || dirty.stdout.trim()) return false;
 
       const captured = await guardedForceRefreshCapture(
@@ -1595,7 +1631,11 @@ export async function automaticEvidenceGapRepair(
         log(task.id, "warn", `automatic evidence-gap repair failed: ${captured.error}`);
       }
       if (captured.skipped || captured.error || !captured.gateOk) return false;
-      const headResult = await runGit(worktree, ["rev-parse", "--short", "HEAD"], 10_000);
+      const headResult = await getGitWorker(config.root).runGit(
+        worktree,
+        ["rev-parse", "--short", "HEAD"],
+        10_000,
+      );
       const head = headResult.status === 0 ? headResult.stdout.trim() : "";
       return Boolean(head && captured.headIdentity === head);
     } finally {
@@ -1637,11 +1677,15 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
     if (runner.isRunning(id) || reviews.isRunning(id)) {
       return json(res, 409, { error: `Task #${id} has an agent run in progress` });
     }
-    const worktree = worktreePathForBranch(config.root, task.branch);
+    const worktree = await getGitWorker(config.root).worktreePath(task.branch);
     if (!worktree) {
       return json(res, 409, { error: `Task #${id}'s worktree is unavailable` });
     }
-    const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
+    const dirty = await getGitWorker(config.root).runGit(
+      worktree,
+      ["status", "--porcelain"],
+      10_000,
+    );
     if (dirty.status !== 0) {
       return json(res, 409, { error: "Could not verify the task worktree is clean" });
     }
@@ -1650,7 +1694,11 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
         error: `Task #${id}'s worktree is dirty; commit or discard changes before refreshing evidence`,
       });
     }
-    const headResult = await runGit(worktree, ["rev-parse", "--short", "HEAD"], 10_000);
+    const headResult = await getGitWorker(config.root).runGit(
+      worktree,
+      ["rev-parse", "--short", "HEAD"],
+      10_000,
+    );
     const currentHead = headResult.status === 0 ? headResult.stdout.trim() : "";
     const existingEvidence = readUiHandoffGateEvidence(config, id);
     if (await isEvidenceCurrent(worktree, existingEvidence?.sourceIdentity, currentHead, config)) {
@@ -1705,12 +1753,25 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
  * Null when neither resolves (no branch, no worktree, git unavailable) — the
  * caller then treats the tree as unknown rather than claiming a match.
  */
-function branchHeadForTask(config: RepoOSConfig, task: Task): string | null {
-  const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
-  if (worktree) return shortHeadOf(worktree);
+async function branchHeadForTask(config: RepoOSConfig, task: Task): Promise<string | null> {
+  const worktree = task.branch ? await getGitWorker(config.root).worktreePath(task.branch) : null;
+  if (worktree) {
+    const result = await getGitWorker(config.root).runGit(
+      worktree,
+      ["rev-parse", "--short", "HEAD"],
+      4000,
+    );
+    return result.status === 0 ? result.stdout.trim() : null;
+  }
   if (!task.branch) return null;
-  const current = currentBranch(config.root);
-  return current === task.branch ? shortHeadOf(config.root) : null;
+  const current = await getGitWorker(config.root).currentBranch();
+  if (current !== task.branch) return null;
+  const result = await getGitWorker(config.root).runGit(
+    config.root,
+    ["rev-parse", "--short", "HEAD"],
+    4000,
+  );
+  return result.status === 0 ? result.stdout.trim() : null;
 }
 
 /**
@@ -1720,8 +1781,8 @@ function branchHeadForTask(config: RepoOSConfig, task: Task): string | null {
  * context. That fallback always yields a tree, so the staleness helper's
  * fail-closed null path never applies here.
  */
-function worktreeEvidenceSource(config: RepoOSConfig, task: Task): string | null {
-  const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+async function worktreeEvidenceSource(config: RepoOSConfig, task: Task): Promise<string | null> {
+  const worktree = task.branch ? await getGitWorker(config.root).worktreePath(task.branch) : null;
   return worktree ?? config.root;
 }
 
@@ -1866,7 +1927,7 @@ export const captureTaskShot: RouteHandler = async (ctx, req, res, params) => {
     rawEntry.highlights.every((value) => typeof value === "string" && value)
       ? (rawEntry.highlights as string[])
       : undefined;
-  const shotContext = computeTaskShotContext(config, task);
+  const shotContext = await computeTaskShotContext(config, task);
   const resolution = resolveShotTargets(
     config.preview,
     task.area,
@@ -2034,7 +2095,7 @@ async function declareTaskShot(
   // Resolve the target the way the capture would (changed paths, then area,
   // then the default command), so an unresolvable pick fails HERE, in the
   // modal, instead of as a capture failure after the declaration was written.
-  const shotContext = computeTaskShotContext(config, task);
+  const shotContext = await computeTaskShotContext(config, task);
   // The drawer offers every configured target (#0379), not just the ones the
   // diff or the task's area resolve to — an explicit pick must be honored
   // through `resolveShotTargets`' override path, or an offered out-of-area
@@ -2570,7 +2631,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // #0684: refuse overrides this route will not apply rather than accepting
     // (200) and silently dropping them — see rejectIgnoredOverrides.
     if (rejectIgnoredOverrides(res, id, body)) return;
-    const blockers = taskDependencyBlockers(config.root, existing, index.getTasks());
+    const blockers =
+      (await getGitWorker(config.root).dependencyBlockers(config.root, index.getTasks())).get(
+        existing.id,
+      ) ?? [];
     if (blockers.length && body?.overrideDependencies !== true) {
       const reason = blockers
         .map((blocker) =>
@@ -2775,7 +2839,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       ? { ok: true, path: config.root, created: false }
       : ensureWorktree(config.root, branch);
     index.applyFileChange(updated.absPath);
-    index.refreshBranches();
+    await index.refreshBranchesAsync();
 
     // #0613: surface the underspecified flag at start — the task is now live,
     // so a stub body must be visible to the engineer, not silently carried.
@@ -2820,9 +2884,14 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       });
     }
 
-    const pack = generateContextPack(config, taskForLaunch, branch, cwd, bootResult);
-    const resumeContext =
-      clean || !existing.branch ? undefined : resumePreamble(config, taskForLaunch, branch, cwd);
+    const { pack, resumePreamble: contextResumePreamble } = await generateServerContext(
+      config,
+      taskForLaunch,
+      branch,
+      cwd,
+      bootResult,
+    );
+    const resumeContext = clean || !existing.branch ? undefined : contextResumePreamble;
     const preamble = [resumeContext, instruction].filter(Boolean).join("\n\n") || undefined;
 
     const spawnRes = runner.start(taskForLaunch, branch, agent, {
@@ -3003,7 +3072,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // "Commit & continue"), and its close-out removes no worktree at all.
     const branch = taskStillExists.branch;
     const worktree =
-      taskStillExists.hotfix === true ? null : worktreePathForBranch(config.root, branch);
+      taskStillExists.hotfix === true ? null : await getGitWorker(config.root).worktreePath(branch);
     let worktreeDirty: string[] = [];
     if (worktree) {
       try {
@@ -3169,7 +3238,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // while the pipeline owns the task file (#0886).
     writeWorktreeReviewLock(config.root, config.cacheDir, id, {
       status: "closing-out",
-      sha: handoffSha ?? branchCommit(config.root, branch) ?? "",
+      sha: handoffSha ?? (await getGitWorker(config.root).branchCommit(branch)) ?? "",
       at: new Date().toISOString(),
     });
 
@@ -3220,7 +3289,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       });
     }
     const sync = await syncTaskBranch(existing);
-    index.refreshBranches();
+    await index.refreshBranchesAsync();
     return json(res, sync.ok ? 200 : 409, {
       ok: sync.ok,
       conflicts: sync.conflicts,
@@ -3298,9 +3367,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     }
     let preamble: string | undefined;
     if (existing.branch) {
-      const wtPath = worktreePathForBranch(config.root, existing.branch);
+      const wtPath = await getGitWorker(config.root).worktreePath(existing.branch);
       if (wtPath) {
-        preamble = resumePreamble(config, existing, existing.branch, wtPath) || undefined;
+        preamble =
+          (await serverResumePreamble(config, existing, existing.branch, wtPath)) || undefined;
       }
     }
     // #0760: --now steers a busy agent. Interrupt the running turn through the
@@ -3617,7 +3687,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       throw err;
     }
     index.applyFileChange(updated.absPath);
-    index.refreshBranches();
+    await index.refreshBranchesAsync();
 
     return json(res, 200, {
       ok: true,
@@ -3800,7 +3870,7 @@ export const reviewAgain: RouteHandler = async (ctx, req, res, params) => {
       error: `Task #${id} has an agent turn in progress — wait for it to finish`,
     });
   }
-  const gate = reviews.canRun(existing);
+  const gate = await reviews.canRun(existing);
   if (!gate.ok) {
     return json(res, 400, {
       error: gate.reason ?? "could not start the review",
@@ -3861,7 +3931,7 @@ export const reviewMessage: RouteHandler = async (ctx, req, res, params) => {
   if (!text) {
     return json(res, 400, { error: "message text is required" });
   }
-  const gate = reviews.canSend(existing);
+  const gate = await reviews.canSend(existing);
   if (!gate.ok) {
     return json(res, 400, {
       error: gate.reason ?? "could not send to the reviewer",
@@ -3978,14 +4048,20 @@ export function buildPmShotContext(incoming: ReadonlyArray<unknown>): string {
 }
 
 /** Story name + definition path (when a `stories/*.md` exists) for a task's `story` tag. */
-function storyContextFor(
-  config: RepoOSConfig,
+async function storyContextFor(
+  ctx: RouteContext,
   story: string | undefined,
-): { name: string; path?: string } | undefined {
+): Promise<{ name: string; path?: string } | undefined> {
   const name = story?.trim();
   if (!name) return undefined;
   try {
-    const def = findStoryDefinitionByKey(config, storyKey(name));
+    const commits = await getGitWorker(ctx.config.root).directoryCommits(
+      ctx.config.root,
+      storiesDirOf(ctx.config),
+    );
+    const def = listStoryDefinitionsFromCommits(ctx.config, commits).find(
+      (candidate) => candidate.key === storyKey(name),
+    );
     return def ? { name: def.name, path: def.path } : { name };
   } catch {
     return { name };
@@ -4038,7 +4114,7 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
   // the underspecified check requires so one pass satisfies it.
   const messageText =
     text === PM_FLESH_OUT_MESSAGE
-      ? `${baseMessageText}\n\n${fleshOutRequirementsPrompt(storyContextFor(config, existing.story), existing.area)}`
+      ? `${baseMessageText}\n\n${fleshOutRequirementsPrompt(await storyContextFor(ctx, existing.story), existing.area)}`
       : text === PM_SPLIT_HUMAN_STEP_MESSAGE
         ? `${baseMessageText}\n\n${splitHumanStepRequirementsPrompt()}`
         : baseMessageText;
@@ -4107,7 +4183,7 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
         error: "Antigravity PM chat requires a managed task worktree",
       });
     }
-    pmCwd = worktreePathForBranch(config.root, existing.branch) ?? undefined;
+    pmCwd = (await getGitWorker(config.root).worktreePath(existing.branch)) ?? undefined;
     if (!pmCwd) {
       return json(res, 400, {
         error: `No managed worktree exists for task #${id}; start the task before using Antigravity PM chat`,
@@ -4536,7 +4612,7 @@ export const getDiffStatsForTask: RouteHandler = async (ctx, _req, res, params) 
       noBranch: true,
     });
   }
-  const worktreePath = worktreePathForBranch(config.root, task.branch);
+  const worktreePath = await getGitWorker(config.root).worktreePath(task.branch);
   if (!worktreePath) {
     const snapshot =
       task.status === "done" ? loadDiffSnapshot(config.root, config.cacheDir, task.id) : null;
@@ -4579,7 +4655,7 @@ export const getWorktreeDirtyForTask: RouteHandler = async (ctx, _req, res, para
   if (!task.branch) {
     return json(res, 200, { ok: true, path: null, files: [] });
   }
-  const path = worktreePathForBranch(config.root, task.branch);
+  const path = await getGitWorker(config.root).worktreePath(task.branch);
   if (!path) {
     return json(res, 200, { ok: true, path: null, files: [] });
   }
@@ -4615,7 +4691,7 @@ export const getDiffForTask: RouteHandler = async (ctx, _req, res, params) => {
       noBranch: true,
     });
   }
-  const worktreePath = worktreePathForBranch(config.root, task.branch);
+  const worktreePath = await getGitWorker(config.root).worktreePath(task.branch);
   if (!worktreePath) {
     const snapshot =
       task.status === "done" ? loadDiffSnapshot(config.root, config.cacheDir, task.id) : null;
@@ -4698,12 +4774,16 @@ export const getTaskFile: RouteHandler = async (ctx, req, res, params) => {
     return json(res, 400, { error: "Invalid file path" });
   }
 
-  const worktreePath = worktreePathForBranch(config.root, task.branch);
+  const worktreePath = await getGitWorker(config.root).worktreePath(task.branch);
   if (!worktreePath) {
     return json(res, 200, { ok: true, content: "", exists: false, noWorktree: true });
   }
   const ref = version === "before" ? "main" : "HEAD";
-  const result = await runGit(worktreePath, ["show", `${ref}:${path}`], 10_000);
+  const result = await getGitWorker(config.root).runGit(
+    worktreePath,
+    ["show", `${ref}:${path}`],
+    10_000,
+  );
   if (result.status !== 0) {
     return json(res, 200, { ok: true, content: "", exists: false });
   }

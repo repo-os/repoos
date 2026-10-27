@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { bootstrap } from "../core/bootstrap.js";
-import { generateContextPack } from "../core/context-pack.js";
+import { generateServerContext } from "./context-pack.js";
 import { ensureWorktree } from "../core/git.js";
 import { deriveBranch } from "./agents.js";
 import { parseTask } from "../core/task.js";
@@ -59,7 +59,7 @@ export async function maybeAutoStartScheduledTask(
     onStatusChange: deps.onServerStatusChange,
   });
   deps.index.applyFileChange(updated.absPath);
-  deps.index.refreshBranches();
+  await deps.index.refreshBranchesAsync();
 
   const taskForLaunch = parseTask({
     content: readFileSync(updated.absPath, "utf8"),
@@ -82,7 +82,7 @@ export async function maybeAutoStartScheduledTask(
     });
     return;
   }
-  const pack = generateContextPack(deps.config, taskForLaunch, branch, cwd, bootResult);
+  const { pack } = await generateServerContext(deps.config, taskForLaunch, branch, cwd, bootResult);
   const spawnRes = deps.runner.start(taskForLaunch, branch, agent, {
     cwd,
     contextPack: pack.content,

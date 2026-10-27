@@ -23,14 +23,9 @@
 import { existsSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
-import {
-  runGit,
-  worktreePathForBranch,
-  branchChangesSinceBase,
-  currentBranch,
-  agentTouchedFiles,
-} from "../core/git.js";
+import { runGit, agentTouchedFiles } from "../core/git.js";
 import { REPOOS_TOML_REL, taskDeclaresRepoosTomlWork } from "../core/repoos-toml-branch-guard.js";
+import { getGitWorker } from "./git-worker.js";
 
 export interface ReviewGuardResult {
   ok: boolean;
@@ -65,7 +60,7 @@ export async function guardReviewTransition(
   if (!task.branch) {
     return { ok: false, detail: `task #${task.id} has no branch to finalize from` };
   }
-  const registered = worktreePathForBranch(config.root, task.branch);
+  const registered = await getGitWorker(config.root).worktreePath(task.branch);
   const isHotfix = task.hotfix === true;
 
   if (!registered || (!isHotfix && samePath(registered, config.root)) || !existsSync(registered)) {
@@ -190,8 +185,9 @@ export async function guardReviewTransition(
   // idempotent: work already committed (by a previous guard run, the handoff
   // path, or the agent) keeps the transition valid. Only non-generated, non
   // -task paths count as evidence of implementation.
-  const baseBranch = currentBranch(config.root) ?? "main";
-  const changes = branchChangesSinceBase(registered, baseBranch);
+  const worker = getGitWorker(config.root);
+  const baseBranch = (await worker.currentBranch()) ?? "main";
+  const changes = await worker.branchChangesSinceBase(registered, baseBranch);
   const realChange = changes.paths.some((p) => !isGeneratedOrTask(p, task.path));
   if (!realChange && !task.noSourceChange) {
     return {

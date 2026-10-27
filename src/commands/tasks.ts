@@ -138,10 +138,14 @@ async function listTasksViaApi(
       tasks.push(...body.tasks);
       cursor = body.nextCursor ?? null;
       if (!cursor) break;
+      if (page === 39) throw new Error("pagination exceeded 20,000 tasks");
     }
     const { root } = boardRoot();
     return { rootName: root.split("/").pop() ?? "repo", tasks };
-  } catch {
+  } catch (error) {
+    console.warn(
+      `[repoos] task API unavailable; falling back to the local index: ${error instanceof Error ? error.message : String(error)}`,
+    );
     return null;
   }
 }
@@ -217,9 +221,6 @@ export async function cmdList(statusArg?: string): Promise<void> {
     return;
   }
 
-  // `repoos list archived` shows only shelved tasks (#0657); every other view
-  // hides them, because archived work is parked, not in any column. The count
-  // footer keeps them discoverable instead of silently missing.
   const archived = idx.tasks.filter((t) => t.isArchived);
   if (statusArg === "archived") {
     console.log(
@@ -243,7 +244,6 @@ export async function cmdList(statusArg?: string): Promise<void> {
     return;
   }
 
-  // Default view excludes drafts; explicit `repoos list draft` shows them.
   const cols =
     statusArg && (STATUSES as readonly string[]).includes(statusArg)
       ? [statusArg as Status]

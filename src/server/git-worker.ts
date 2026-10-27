@@ -4,12 +4,17 @@ import { join } from "node:path";
 import type { DependencyBlocker, RepoIndex, RepoOSConfig, Task } from "../core/types.js";
 import type {
   RepoGitOverview,
+  LastCommit,
   WorktreeDirtyCache,
   WorktreeDirtyEntry,
   WorktreeEntry,
   WorktreeStatus,
+  GitRun,
 } from "../core/git.js";
 import type { GcMode, GcReport } from "../core/worktree-gc.js";
+import { onGitMutation } from "../core/git-activity.js";
+import type { PressureSnapshot } from "../core/pressure-guard.js";
+import type { ContextPackGitFacts } from "../core/context-pack.js";
 
 interface OverviewWire {
   useGit: boolean;
@@ -39,6 +44,12 @@ export interface GitWorkerTaskFacts {
   branchExists: boolean;
   worktreeExists: boolean;
   status: WorktreeStatus;
+}
+
+export interface GitWorkerResourceSnapshot {
+  availableMemBytes: number;
+  pressure: PressureSnapshot;
+  heavyJobs: { running: number; queued: number };
 }
 
 interface QueueJob {
@@ -95,6 +106,8 @@ export class GitWorker {
   private childGitCalls = new Map<number, { id: number; label: string; startedAt: number }>();
   private blockerKey = "";
   private blockerValue: Map<string, DependencyBlocker[]> | null = null;
+  private cachedBaseBranch: string | null = null;
+  private overviewCache: OverviewWire | null = null;
 
   constructor(private readonly root: string) {}
 
@@ -128,7 +141,78 @@ export class GitWorker {
       { config, fastWorktreeStatus },
       150_000,
     );
+    this.overviewCache = result.git;
+    this.cachedBaseBranch = result.git.baseBranch;
     return { index: result.index, git: overviewFromWire(result.git) };
+  }
+
+  async gitOverview(): Promise<RepoGitOverview> {
+    if (this.overviewCache) return overviewFromWire(this.overviewCache);
+    const result = await this.request<OverviewWire>("git-overview", { root: this.root }, 150_000);
+    this.overviewCache = result;
+    this.cachedBaseBranch = result.baseBranch;
+    return overviewFromWire(result);
+  }
+
+  baseBranchFromCache(): string | null {
+    return this.cachedBaseBranch;
+  }
+
+  async currentBranch(cwd = this.root): Promise<string | null> {
+    const result = await this.runGit(cwd, ["rev-parse", "--abbrev-ref", "HEAD"], 4000);
+    return result.status === 0 ? result.stdout.trim() || null : null;
+  }
+
+  async branchCommit(branch: string): Promise<string | null> {
+    return (await this.gitOverview()).heads.get(branch) ?? null;
+  }
+
+  async isAncestor(cwd: string, ancestor: string, descendant: string): Promise<boolean | null> {
+    const result = await this.runGit(
+      cwd,
+      ["merge-base", "--is-ancestor", ancestor, descendant],
+      4000,
+    );
+    if (result.status === 0) return true;
+    if (result.status === 1) return false;
+    return null;
+  }
+
+  async worktreePath(branch: string): Promise<string | null> {
+    return (await this.gitOverview()).worktrees.get(branch)?.path ?? null;
+  }
+
+  async branchChangesSinceBase(
+    cwd: string,
+    baseBranch: string,
+  ): Promise<{
+    base: string | null;
+    paths: string[];
+  }> {
+    return this.request("branch-changes", { cwd, baseBranch }, 30_000);
+  }
+
+  async changedPathsVsBase(cwd: string, baseBranch: string): Promise<string[] | null> {
+    return this.request("changed-paths", { cwd, baseBranch }, 30_000);
+  }
+
+  async directoryCommits(root: string, directory: string): Promise<Map<string, LastCommit>> {
+    const rows = await this.request<Array<[string, LastCommit]>>(
+      "directory-commits",
+      { root, directory },
+      150_000,
+    );
+    return new Map(rows);
+  }
+
+  async runGit(cwd: string, args: string[], timeoutMs = 30_000): Promise<GitRun> {
+    const result = await this.request<GitRun>(
+      "git-command",
+      { cwd, args, timeoutMs },
+      timeoutMs + 5_000,
+    );
+    if (result.status === 0 && mayMutateGitRefs(args)) this.invalidate();
+    return result;
   }
 
   async reconcile(
@@ -136,6 +220,7 @@ export class GitWorker {
     branches: string[],
     cache: WorktreeDirtyCache,
     skipStatus = false,
+    forceStatus = false,
   ): Promise<{
     git: RepoGitOverview;
     statuses: Map<string, WorktreeStatus>;
@@ -144,7 +229,7 @@ export class GitWorker {
   }> {
     const result = await this.request<ReconcileWire>(
       "reconcile",
-      { config, branches, cache: [...cache], skipStatus },
+      { config, branches, cache: [...cache], skipStatus, forceStatus },
       150_000,
     );
     return {
@@ -163,7 +248,45 @@ export class GitWorker {
     return this.request<GitWorkerTaskFacts>("task-facts", { config, relPath, branch }, 150_000);
   }
 
+  async contextPackFacts(root: string, cwd: string): Promise<ContextPackGitFacts> {
+    return this.request<ContextPackGitFacts>("context-pack-facts", { root, cwd }, 20_000);
+  }
+
+  async ensureCanaryReady(config: RepoOSConfig): Promise<{ ok: boolean; detail: string | null }> {
+    return this.request<{ ok: boolean; detail: string | null }>(
+      "ensure-canary-ready",
+      { config },
+      30_000,
+    );
+  }
+
+  async writeProjectEnvironmentValue(
+    root: string,
+    sourcePath: string,
+    key: string,
+    value: string | null,
+    expectedSha256: string,
+  ): Promise<string> {
+    return this.request(
+      "write-project-environment-value",
+      { root, sourcePath, key, value, expectedSha256 },
+      20_000,
+    );
+  }
+
+  async resourceSnapshot(
+    config: RepoOSConfig | undefined,
+    lockRoot: string,
+  ): Promise<GitWorkerResourceSnapshot> {
+    return this.request<GitWorkerResourceSnapshot>(
+      "resource-snapshot",
+      { config, lockRoot },
+      20_000,
+    );
+  }
+
   async dependencyBlockers(root: string, tasks: Task[]): Promise<Map<string, DependencyBlocker[]>> {
+    if (!tasks.some((task) => task.dependsOn?.length)) return new Map();
     const key = tasks
       .map(
         (task) =>
@@ -191,7 +314,7 @@ export class GitWorker {
       includeCount?: boolean;
     },
   ): Promise<{ report: GcReport; worktreeCount: number | null }> {
-    return this.request<{ report: GcReport; worktreeCount: number | null }>(
+    const result = await this.request<{ report: GcReport; worktreeCount: number | null }>(
       "sweep",
       {
         config,
@@ -203,11 +326,17 @@ export class GitWorker {
       },
       150_000,
     );
+    if (!opts.dryRun) this.invalidate();
+    return result;
   }
 
   /** Invalidate worker-side ref caches after the watcher observes a ref/HEAD write. */
   invalidate(): void {
     if (this.closed) return;
+    this.blockerKey = "";
+    this.blockerValue = null;
+    this.overviewCache = null;
+    this.cachedBaseBranch = null;
     void this.request("invalidate", { root: this.root }, 5000).catch(() => {
       // A later query can still recompute from git; diagnostics must not throw.
     });
@@ -392,6 +521,33 @@ export class GitWorker {
 
 const workers = new Map<string, GitWorker>();
 
+function mayMutateGitRefs(args: string[]): boolean {
+  const command = args[0];
+  if (
+    command === "checkout" ||
+    command === "switch" ||
+    command === "commit" ||
+    command === "merge" ||
+    command === "reset" ||
+    command === "rebase" ||
+    command === "cherry-pick" ||
+    command === "update-ref" ||
+    (command === "worktree" && ["add", "remove", "prune", "move", "repair"].includes(args[1] ?? ""))
+  ) {
+    return true;
+  }
+  if (command === "branch") {
+    return !args.some((arg) =>
+      ["--list", "--merged", "--no-merged", "--contains", "--show-current", "-a", "-r"].includes(
+        arg,
+      ),
+    );
+  }
+  return false;
+}
+
+onGitMutation((root) => workers.get(root)?.invalidate());
+
 export function getGitWorker(root: string): GitWorker {
   let worker = workers.get(root);
   if (!worker) {
@@ -399,6 +555,39 @@ export function getGitWorker(root: string): GitWorker {
     workers.set(root, worker);
   }
   return worker;
+}
+
+export async function sweepAndWarnAsync(
+  config: RepoOSConfig,
+  opts: {
+    activeJobIds?: Set<string>;
+    threshold?: number;
+    log: (level: "info" | "warn", msg: string, meta?: Record<string, unknown>) => void;
+  },
+): Promise<void> {
+  try {
+    const threshold = opts.threshold ?? 20;
+    const { report, worktreeCount } = await getGitWorker(config.root).sweep(config, {
+      mode: "integrate-only",
+      activeJobIds: opts.activeJobIds,
+      includeCount: threshold > 0,
+    });
+    if (report.removedWorktrees.length || report.errors.length) {
+      opts.log("info", "worktree gc", {
+        removed: report.removedWorktrees.map((worktree) => worktree.branch || worktree.path),
+        errors: report.errors,
+      });
+    }
+    if (threshold > 0 && worktreeCount !== null && worktreeCount > threshold) {
+      opts.log(
+        "warn",
+        `${worktreeCount} git worktrees registered (advisory ceiling ${threshold}) — run \`repoos gc\` to reclaim leftovers from done/abandoned tasks`,
+        { worktrees: worktreeCount, threshold },
+      );
+    }
+  } catch (error) {
+    opts.log("warn", `worktree gc failed: ${(error as Error).message}`);
+  }
 }
 
 export function gitWorkerInFlight(root: string): GitWorkerJobInfo[] {

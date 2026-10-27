@@ -15,7 +15,7 @@ import type { AttentionEventStore } from "./attention-events.js";
 import type { CloseOutEnqueueDeps } from "./request-close-out.js";
 import { enqueueCloseOutForTask, gatherApprovalPreflight } from "./request-close-out.js";
 import type { LiveIndex } from "./live-index.js";
-import { localBranches } from "../core/git.js";
+import { getGitWorker } from "./git-worker.js";
 
 export type ApprovalPolicyRunnerDeps = CloseOutEnqueueDeps & {
   /** Durable attention bell (#0687) — a policy auto-approval must be visible there. */
@@ -44,7 +44,8 @@ export async function evaluateAutoApprove(
   let mainDirty = false;
   let changedPaths: string[] | null = null;
 
-  if (branch && localBranches(config.root).has(branch)) {
+  const branches = branch ? (await getGitWorker(config.root).gitOverview()).branches : null;
+  if (branch && branches?.has(branch)) {
     const preflight = await gatherApprovalPreflight(config, task);
     branchMissing = preflight.branchMissing;
     mergePreflightFailed = preflight.mergePreflightFailed;

@@ -12,7 +12,7 @@
  * Never touches the job queue or the repository lock — there is no merge to
  * serialize against other close-outs, so those mechanisms don't apply.
  */
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
@@ -27,7 +27,7 @@ export interface CheckResult {
 }
 
 /** Real check runner: prefers the local build's own CLI, same preference order as the close-out pipeline. */
-export function runCheckOnRoot(root: string): CheckResult {
+export async function runCheckOnRoot(root: string): Promise<CheckResult> {
   const cfg = loadConfig(root);
   const checkArgs = spawnedRepoosCheckArgs(cfg, { kind: "skip" });
   const localCli = join(root, "dist", "cli", "index.js");
@@ -40,10 +40,25 @@ export function runCheckOnRoot(root: string): CheckResult {
         ["repoos", "check", ...checkArgs],
         ["bun", "run", "repoos", "check", ...checkArgs],
       ];
-  let last: ReturnType<typeof spawnSync> | null = null;
+  let last: { stdout: string; stderr: string } | null = null;
   for (const [cmd, ...args] of candidates) {
-    const r = spawnSync(cmd, args, { cwd: root, encoding: "utf8", timeout: 600_000 });
-    last = r;
+    const r = await new Promise<{ status: number | null; stdout: string; stderr: string }>(
+      (resolve) => {
+        execFile(
+          cmd,
+          args,
+          { cwd: root, encoding: "utf8", timeout: 600_000, maxBuffer: 10 * 1024 * 1024 },
+          (error, stdout, stderr) => {
+            resolve({
+              status: error ? (typeof error.code === "number" ? error.code : null) : 0,
+              stdout,
+              stderr,
+            });
+          },
+        );
+      },
+    );
+    last = { stdout: r.stdout, stderr: r.stderr };
     if (r.status === 0) return { ok: true };
   }
   const output = [last?.stdout, last?.stderr]
@@ -76,15 +91,15 @@ export function isBranchlessReleaseEligible(task: Task): boolean {
 export async function releaseBranchless(
   config: RepoOSConfig,
   task: Task,
-  runCheck: (root: string) => CheckResult = runCheckOnRoot,
+  runCheck: (root: string) => CheckResult | Promise<CheckResult> = runCheckOnRoot,
 ): Promise<ReleaseBranchlessResult> {
-  const check = runCheck(config.root);
+  const check = await runCheck(config.root);
   if (!check.ok) {
     return {
       ok: false,
       reason: `repoos check failed on main — cannot release a branch-less task until main is green: ${check.output ?? ""}`,
     };
   }
-  const task_ = markTaskReleased(config, task.absPath);
+  const task_ = await markTaskReleased(config, task.absPath);
   return { ok: true, task: task_ };
 }

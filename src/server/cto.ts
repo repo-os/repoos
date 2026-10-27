@@ -11,7 +11,7 @@
  * Zero runtime deps — node:fs / node:path only.
  */
 import type { ChildProcess } from "node:child_process";
-import { execSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -553,13 +553,18 @@ export class CTOManager {
    * Run repoos check on a task's worktree to verify it passes before
    * taking automatic actions. Returns true if check passes, false otherwise.
    */
-  runRepoosCheck(workdir: string): boolean {
-    try {
-      execSync("repoos check", { cwd: workdir, stdio: "pipe" });
-      return true;
-    } catch {
-      return false;
-    }
+  runRepoosCheck(workdir: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      let child: ChildProcess;
+      try {
+        child = spawn("repoos", ["check"], { cwd: workdir, stdio: "ignore" });
+      } catch {
+        resolve(false);
+        return;
+      }
+      child.once("error", () => resolve(false));
+      child.once("close", (code) => resolve(code === 0));
+    });
   }
 
   /**

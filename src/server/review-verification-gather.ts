@@ -5,7 +5,6 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { gitOutputAsync } from "../core/git.js";
 import type { ReviewVerificationResult } from "../core/review-verification.js";
 import {
   evaluateReviewVerification,
@@ -13,14 +12,25 @@ import {
   reviewVerificationWithoutWorktree,
 } from "../core/review-verification.js";
 import { isTestFilePath, resolvedReviewVerification } from "../core/review-verification-config.js";
-import { changedPathsVsBase } from "../core/git.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
+import { getGitWorker } from "./git-worker.js";
 import { readUiHandoffGateEvidence, taskNeedsBrowserUiVerification } from "./ui-handoff-gate.js";
 
-async function gitDiff(worktree: string, baseBranch: string, path: string): Promise<string> {
-  const base = await gitOutputAsync(worktree, ["merge-base", baseBranch, "HEAD"], 15_000);
-  if (!base) return "";
-  return (await gitOutputAsync(worktree, ["diff", base, "HEAD", "--", path], 30_000)) ?? "";
+async function gitDiff(
+  root: string,
+  worktree: string,
+  baseBranch: string,
+  path: string,
+): Promise<string> {
+  const worker = getGitWorker(root);
+  const base = await worker.runGit(worktree, ["merge-base", baseBranch, "HEAD"], 15_000);
+  if (base.status !== 0) return "";
+  const diff = await worker.runGit(
+    worktree,
+    ["diff", base.stdout.trim(), "HEAD", "--", path],
+    30_000,
+  );
+  return diff.status === 0 ? diff.stdout : "";
 }
 
 function readTestFileContents(
@@ -42,14 +52,18 @@ function readTestFileContents(
   return out;
 }
 
-async function listTrackedTestFiles(worktree: string, globs: string[]): Promise<string[]> {
+async function listTrackedTestFiles(
+  root: string,
+  worktree: string,
+  globs: string[],
+): Promise<string[]> {
   try {
     // List every tracked file, then filter with the same glob compiler used
     // elsewhere, so a Swift/Python/Go test glob means exactly what its author
     // expects (a raw git pathspec would not).
-    const out = await gitOutputAsync(worktree, ["ls-files"], 30_000);
-    if (out === null) return [];
-    return out
+    const out = await getGitWorker(root).runGit(worktree, ["ls-files"], 30_000);
+    if (out.status !== 0) return [];
+    return out.stdout
       .split("\n")
       .map((s) => s.trim())
       .filter(Boolean)
@@ -60,15 +74,15 @@ async function listTrackedTestFiles(worktree: string, globs: string[]): Promise<
 }
 
 /** Mechanical verification when the branch worktree is missing (still appends the section). */
-export function gatherReviewVerificationWithoutWorktree(
+export async function gatherReviewVerificationWithoutWorktree(
   config: RepoOSConfig,
   task: Task,
-): ReviewVerificationResult {
+): Promise<ReviewVerificationResult> {
   // #0765: only BROWSER verification has a console-error record to check. A
   // command-only task has no browser page, so the mechanical check is skipped
   // rather than `not_run` (which would falsely block approval for a file this
   // task type cannot produce).
-  const uiVerificationRequired = taskNeedsBrowserUiVerification(config, task);
+  const uiVerificationRequired = await taskNeedsBrowserUiVerification(config, task);
   const evidence = readUiHandoffGateEvidence(config, task.id);
   return reviewVerificationWithoutWorktree({ uiVerificationRequired, evidence });
 }
@@ -81,15 +95,15 @@ export async function gatherReviewVerification(
   baseBranch: string,
 ): Promise<ReviewVerificationResult> {
   // #0765: only BROWSER verification has a console-error record to check.
-  const uiVerificationRequired = taskNeedsBrowserUiVerification(config, task);
+  const uiVerificationRequired = await taskNeedsBrowserUiVerification(config, task);
   const evidence = readUiHandoffGateEvidence(config, task.id);
-  const changedPaths = changedPathsVsBase(worktree, baseBranch);
+  const changedPaths = await getGitWorker(config.root).changedPathsVsBase(worktree, baseBranch);
   const paths = changedPaths ?? [];
   const checkTsDiff = paths.includes("src/commands/check.ts")
-    ? await gitDiff(worktree, baseBranch, "src/commands/check.ts")
+    ? await gitDiff(config.root, worktree, baseBranch, "src/commands/check.ts")
     : "";
   const repoosTomlDiff = paths.includes("repoos.toml")
-    ? await gitDiff(worktree, baseBranch, "repoos.toml")
+    ? await gitDiff(config.root, worktree, baseBranch, "repoos.toml")
     : "";
 
   const { guardTestCheck, testGlobs } = resolvedReviewVerification(config);
@@ -109,7 +123,7 @@ export async function gatherReviewVerification(
       changedTestFiles = readTestFileContents(worktree, changedTestPaths, testGlobs);
       branchTestFiles = readTestFileContents(
         worktree,
-        await listTrackedTestFiles(worktree, testGlobs),
+        await listTrackedTestFiles(config.root, worktree, testGlobs),
         testGlobs,
       );
     }

@@ -33,11 +33,11 @@ describe("decideReviewAutomation (#0865)", () => {
   );
 
   for (const trigger of automaticTriggers) {
-    it(`${trigger} skips unchanged tree with open findings`, () => {
+    it(`${trigger} skips unchanged tree with open findings`, async () => {
       const expected = openFindingsSameTreeDecision(openReport, sameTree, { manual: false });
       expect(expected.action).toBe("skip");
-      vi.spyOn(reviewTreeIdentity, "decideAutomaticReview").mockReturnValue(expected);
-      const decision = decideReviewAutomation(config, task, openReport, trigger);
+      vi.spyOn(reviewTreeIdentity, "decideAutomaticReview").mockResolvedValue(expected);
+      const decision = await decideReviewAutomation(config, task, openReport, trigger);
       expect(decision.action).toBe("skip");
       expect(decision.trigger).toBe(trigger);
       expect(reviewTreeIdentity.decideAutomaticReview).toHaveBeenCalledWith(
@@ -49,11 +49,11 @@ describe("decideReviewAutomation (#0865)", () => {
     });
   }
 
-  it("explicit-again always runs on unchanged tree with open findings", () => {
+  it("explicit-again always runs on unchanged tree with open findings", async () => {
     const expected = openFindingsSameTreeDecision(openReport, sameTree, { manual: true });
     expect(expected.action).toBe("run");
-    vi.spyOn(reviewTreeIdentity, "decideAutomaticReview").mockReturnValue(expected);
-    const decision = decideReviewAutomation(
+    vi.spyOn(reviewTreeIdentity, "decideAutomaticReview").mockResolvedValue(expected);
+    const decision = await decideReviewAutomation(
       config,
       task,
       openReport,
@@ -69,11 +69,11 @@ describe("decideReviewAutomation (#0865)", () => {
     );
   });
 
-  it("status-enter-review runs when HEAD/evidence identity changed", () => {
+  it("status-enter-review runs when HEAD/evidence identity changed", async () => {
     const expected = openFindingsSameTreeDecision(openReport, "def:ev", { manual: false });
     expect(expected.action).toBe("run");
-    vi.spyOn(reviewTreeIdentity, "decideAutomaticReview").mockReturnValue(expected);
-    const decision = decideReviewAutomation(
+    vi.spyOn(reviewTreeIdentity, "decideAutomaticReview").mockResolvedValue(expected);
+    const decision = await decideReviewAutomation(
       config,
       task,
       openReport,

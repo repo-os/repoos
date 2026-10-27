@@ -5,7 +5,7 @@
  * in `core/shot-targets.ts` stays testable without git or a repo.
  */
 import type { RepoOSConfig, Task } from "../core/types.js";
-import { changedPathsVsBase, currentBranch, worktreePathForBranch } from "../core/git.js";
+import { getGitWorker } from "./git-worker.js";
 import {
   shotTargetMismatchWarning,
   shotTargetsForPaths,
@@ -26,15 +26,19 @@ export interface TaskShotContext {
  * missing worktree or an unusable git base yields an empty, warning-free
  * context rather than throwing into a route handler.
  */
-export function computeTaskShotContext(config: RepoOSConfig, task: Task): TaskShotContext {
+export async function computeTaskShotContext(
+  config: RepoOSConfig,
+  task: Task,
+): Promise<TaskShotContext> {
   const empty: TaskShotContext = { changedPaths: [], detected: [] };
   if (!task.branch) return empty;
-  const worktree = worktreePathForBranch(config.root, task.branch);
+  const worker = getGitWorker(config.root);
+  const worktree = await worker.worktreePath(task.branch);
   if (!worktree) return empty;
-  const base = currentBranch(config.root) ?? "main";
+  const base = (await worker.currentBranch()) ?? "main";
   let changedPaths: string[] = [];
   try {
-    changedPaths = changedPathsVsBase(worktree, base) ?? [];
+    changedPaths = (await worker.changedPathsVsBase(worktree, base)) ?? [];
   } catch {
     return empty;
   }

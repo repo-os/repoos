@@ -245,7 +245,7 @@ describe("ui evidence preflight (#0734)", () => {
     );
     // The plan stands down entirely (e.g. no preview target resolved) — but the
     // task REQUIRES visual assertions, so the preflight must still block.
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       reason: "the declared shots could not resolve a preview target",
     });
     const result = await preflightUiEvidence(config, t);
@@ -262,7 +262,7 @@ describe("ui evidence preflight (#0734)", () => {
 
   it("passes when no required assertions are declared", async () => {
     const { config, task: t } = task("");
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       reason: "no UI change to capture",
     });
     const result = await preflightUiEvidence(config, t);
@@ -314,7 +314,7 @@ describe("ui evidence preflight (#0734)", () => {
       },
     ];
     const fingerprint = shotPlanFingerprint(entries);
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       entries,
       errors: [],
       skips: [],

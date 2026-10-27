@@ -16,7 +16,7 @@
  *
  * Zero runtime deps: node:child_process / node:net / node:fs only.
  */
-import { spawn, execFileSync, type ChildProcess } from "node:child_process";
+import { spawn, execFile, type ChildProcess } from "node:child_process";
 import { createServer as createTcpServer } from "node:net";
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
@@ -28,12 +28,8 @@ import {
 import { parseTaskAreas } from "../core/areas.js";
 import { readPreviewOverlayKeys } from "../core/config.js";
 import { servicePortToken, expandServiceRefs } from "../core/dev-targets.js";
-import {
-  changedPathsVsBase,
-  currentBranch,
-  linkInheritedEnv,
-  worktreePathForBranch,
-} from "../core/git.js";
+import { linkInheritedEnv } from "../core/git.js";
+import { getGitWorker } from "./git-worker.js";
 import { targetsForPaths } from "../core/shot-targets.js";
 import type { RepoEvent } from "./live-index.js";
 
@@ -835,7 +831,19 @@ export async function probePreview(
  * (it was the removed `repoos serve` fallback); those are matched structurally
  * so a crash across the upgrade still reaps them.
  */
-function isPreviewProcess(info: PreviewInfo): boolean {
+function execFileOutput(
+  command: string,
+  args: string[],
+  opts: { cwd?: string; env?: NodeJS.ProcessEnv; timeout?: number } = {},
+): Promise<string | null> {
+  return new Promise((resolve) => {
+    execFile(command, args, { ...opts, encoding: "utf8" }, (error, stdout) => {
+      resolve(error ? null : stdout);
+    });
+  });
+}
+
+async function isPreviewProcess(info: PreviewInfo): Promise<boolean> {
   const { pid, port } = info;
   if (!Number.isInteger(pid) || pid <= 0) return false;
   try {
@@ -845,10 +853,10 @@ function isPreviewProcess(info: PreviewInfo): boolean {
   }
   if (process.platform === "win32") return true; // no portable cmdline inspection
   try {
-    const cmd = execFileSync("ps", ["-p", String(pid), "-o", "command="], {
-      encoding: "utf8",
+    const cmd = await execFileOutput("ps", ["-p", String(pid), "-o", "command="], {
       timeout: 4000,
     });
+    if (!cmd) return false;
     if (!info.command) {
       return (
         /cli[/\\]index\.(js|ts)/.test(cmd) &&
@@ -1096,7 +1104,7 @@ export class PreviewManager {
     if (task.hotfix) {
       return { ok: false, error: `Hotfix tasks do not support previews` };
     }
-    const root = worktreePathForBranch(this.config.root, task.branch);
+    const root = await getGitWorker(this.config.root).worktreePath(task.branch);
     if (!root) {
       return { ok: false, error: `No git worktree exists for branch "${task.branch}"` };
     }
@@ -1121,7 +1129,8 @@ export class PreviewManager {
     // "nothing configured" result instead of spawning (and failing) something.
     let changedPaths: string[] = [];
     try {
-      changedPaths = changedPathsVsBase(root, currentBranch(this.config.root) ?? "main") ?? [];
+      const base = (await getGitWorker(this.config.root).currentBranch()) ?? "main";
+      changedPaths = (await getGitWorker(this.config.root).changedPathsVsBase(root, base)) ?? [];
     } catch {
       // Best-effort path resolution falls back to the task's declared area.
     }
@@ -1200,12 +1209,15 @@ export class PreviewManager {
       if (target.native.requires) {
         const binary = target.native.requires.trim();
         try {
-          execFileSync("sh", ["-lc", `command -v '${binary.replaceAll("'", "'\\''")}'`], {
-            cwd,
-            env,
-            stdio: "ignore",
-            timeout: 5_000,
-          });
+          if (
+            (await execFileOutput(
+              "sh",
+              ["-lc", `command -v '${binary.replaceAll("'", "'\\''")}'`],
+              { cwd, env, timeout: 5_000 },
+            )) === null
+          ) {
+            throw new Error("required executable is unavailable");
+          }
         } catch {
           return {
             ok: false,
@@ -1541,9 +1553,8 @@ export class PreviewManager {
     // command (it could otherwise signal an unrelated app the human runs).
     if (info.native?.stop && !info.starting) {
       try {
-        execFileSync("sh", ["-lc", info.native.stop], {
+        await execFileOutput("sh", ["-lc", info.native.stop], {
           cwd: info.native.cwd,
-          stdio: "ignore",
           timeout: 30_000,
         });
       } catch {
@@ -1602,7 +1613,7 @@ export class PreviewManager {
       /* corrupt registry — drop it */
     }
     for (const [taskId, info] of Object.entries(payload?.previews ?? {})) {
-      if (!isPreviewProcess(info)) continue; // already gone, or PID reused
+      if (!(await isPreviewProcess(info))) continue; // already gone, or PID reused
       if (!opts.liveTaskIds?.has(taskId)) {
         await this.stopRecorded(taskId, info, stopReason(taskId, opts));
         continue;
@@ -1706,9 +1717,8 @@ export class PreviewManager {
     // command (it could otherwise signal an unrelated app the human runs).
     if (info.native?.stop && !info.starting) {
       try {
-        execFileSync("sh", ["-lc", info.native.stop], {
+        await execFileOutput("sh", ["-lc", info.native.stop], {
           cwd: info.native.cwd,
-          stdio: "ignore",
           timeout: 30_000,
         });
       } catch {

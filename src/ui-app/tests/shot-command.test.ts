@@ -461,7 +461,7 @@ describe("handoff capture plans a command target (#0761)", () => {
       area: "mac",
       body: "## Problem\nx\n",
     } as unknown as import("../../core/types").Task;
-    const plan = planAutoCapture(config, task);
+    const plan = await planAutoCapture(config, task);
     expect("entries" in plan).toBe(true);
     if (!("entries" in plan)) return;
     expect(plan.entries).toHaveLength(1);
@@ -492,7 +492,7 @@ describe("handoff capture plans a command target (#0761)", () => {
     } as unknown as import("../../core/types").Task;
     // Point the target globs away from the diff.
     config.shot = { targets: [{ name: "mac", areas: ["mac"], paths: ["Other/**"], command: "x" }] };
-    const plan = planAutoCapture(config, task);
+    const plan = await planAutoCapture(config, task);
     expect("reason" in plan).toBe(true);
     if (!("reason" in plan)) return;
     expect(plan.reason).toMatch(/touches no capture target/i);
