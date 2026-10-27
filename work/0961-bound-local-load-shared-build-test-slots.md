@@ -2,7 +2,7 @@
 id: "0961"
 title: "Bound local load: shared build/test slots for engineers, worker limits, and a pressureGuard that actually blocks starts"
 type: feature
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
@@ -132,3 +132,4 @@ Load barely moved because the children were `sleep`, not `tsc`/vitest. The cap t
 - 2026-10-27T06:03:13Z · body
 - 2026-10-27T06:05:13Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-27T06:05:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T06:05:13Z · status active→review
