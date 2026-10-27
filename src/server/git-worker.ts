@@ -10,6 +10,7 @@ import type {
   WorktreeEntry,
   WorktreeStatus,
   GitRun,
+  preflightMerge,
 } from "../core/git.js";
 import type { GcMode, GcReport } from "../core/worktree-gc.js";
 import { onGitMutation } from "../core/git-activity.js";
@@ -54,6 +55,7 @@ export interface GitWorkerResourceSnapshot {
 
 interface QueueJob {
   id: number;
+  generation: number;
   kind: string;
   payload: unknown;
   enqueuedAt: number;
@@ -100,6 +102,7 @@ export class GitWorker {
   private queue: QueueJob[] = [];
   private active: QueueJob | null = null;
   private nextId = 1;
+  private generation = 0;
   private buffered = "";
   private stderrTail = "";
   private closed = false;
@@ -109,13 +112,17 @@ export class GitWorker {
   private cachedBaseBranch: string | null = null;
   private overviewCache: OverviewWire | null = null;
 
-  constructor(private readonly root: string) {}
+  constructor(
+    private readonly root: string,
+    private readonly launch: typeof spawn = spawn,
+  ) {}
 
   request<T>(kind: string, payload: unknown, timeoutMs = 30_000): Promise<T> {
     if (this.closed) return Promise.reject(new Error("git worker is closed"));
     return new Promise<T>((resolve, reject) => {
       const job = {
         id: this.nextId++,
+        generation: this.generation,
         kind,
         payload,
         enqueuedAt: Date.now(),
@@ -136,21 +143,27 @@ export class GitWorker {
     config: RepoOSConfig,
     fastWorktreeStatus: boolean,
   ): Promise<{ index: RepoIndex; git: RepoGitOverview }> {
+    const generation = this.generation;
     const result = await this.request<IndexBuildWire>(
       "build-index",
       { config, fastWorktreeStatus },
       150_000,
     );
-    this.overviewCache = result.git;
-    this.cachedBaseBranch = result.git.baseBranch;
+    if (generation === this.generation) {
+      this.overviewCache = result.git;
+      this.cachedBaseBranch = result.git.baseBranch;
+    }
     return { index: result.index, git: overviewFromWire(result.git) };
   }
 
   async gitOverview(): Promise<RepoGitOverview> {
     if (this.overviewCache) return overviewFromWire(this.overviewCache);
+    const generation = this.generation;
     const result = await this.request<OverviewWire>("git-overview", { root: this.root }, 150_000);
-    this.overviewCache = result;
-    this.cachedBaseBranch = result.baseBranch;
+    if (generation === this.generation) {
+      this.overviewCache = result;
+      this.cachedBaseBranch = result.baseBranch;
+    }
     return overviewFromWire(result);
   }
 
@@ -161,6 +174,33 @@ export class GitWorker {
   async currentBranch(cwd = this.root): Promise<string | null> {
     const result = await this.runGit(cwd, ["rev-parse", "--abbrev-ref", "HEAD"], 4000);
     return result.status === 0 ? result.stdout.trim() || null : null;
+  }
+
+  async preflightMerge(
+    branch: string,
+    opts: { autoResolve?: string[] } = {},
+  ): Promise<Awaited<ReturnType<typeof preflightMerge>>> {
+    return this.request("preflight-merge", { root: this.root, branch, opts }, 90_000);
+  }
+
+  async removeWorktree(branch: string): Promise<boolean> {
+    const result = await this.request<boolean>(
+      "remove-worktree",
+      { root: this.root, branch },
+      90_000,
+    );
+    this.invalidate();
+    return result;
+  }
+
+  async commitTaskFile(path: string, message: string): Promise<boolean> {
+    const result = await this.request<boolean>(
+      "commit-task-file",
+      { root: this.root, path, message },
+      30_000,
+    );
+    if (result) this.invalidate();
+    return result;
   }
 
   async branchCommit(branch: string): Promise<string | null> {
@@ -294,14 +334,18 @@ export class GitWorker {
       )
       .join("\n");
     if (this.blockerValue && key === this.blockerKey) return this.blockerValue;
+    const generation = this.generation;
     const rows = await this.request<Array<[string, DependencyBlocker[]]>>(
       "dependency-blockers",
       { root, tasks },
       150_000,
     );
-    this.blockerKey = key;
-    this.blockerValue = new Map(rows);
-    return this.blockerValue;
+    const value = new Map(rows);
+    if (generation === this.generation) {
+      this.blockerKey = key;
+      this.blockerValue = value;
+    }
+    return value;
   }
 
   async sweep(
@@ -333,13 +377,11 @@ export class GitWorker {
   /** Invalidate worker-side ref caches after the watcher observes a ref/HEAD write. */
   invalidate(): void {
     if (this.closed) return;
+    this.generation++;
     this.blockerKey = "";
     this.blockerValue = null;
     this.overviewCache = null;
     this.cachedBaseBranch = null;
-    void this.request("invalidate", { root: this.root }, 5000).catch(() => {
-      // A later query can still recompute from git; diagnostics must not throw.
-    });
   }
 
   inFlight(now = Date.now()): GitWorkerJobInfo[] {
@@ -380,11 +422,12 @@ export class GitWorker {
     const job = this.queue.shift();
     if (!job) return;
     this.active = job;
+    job.generation = this.generation;
     job.startedAt = Date.now();
     try {
       const child = this.ensureChild();
       child.stdin.write(
-        `${JSON.stringify({ id: job.id, kind: job.kind, payload: job.payload })}\n`,
+        `${JSON.stringify({ id: job.id, generation: job.generation, kind: job.kind, payload: job.payload })}\n`,
       );
     } catch (error) {
       clearTimeout(job.timer);
@@ -398,7 +441,7 @@ export class GitWorker {
     if (this.child) return this.child;
     const entry = workerEntry();
     const command = entry.endsWith(".ts") && !process.versions.bun ? "bun" : process.execPath;
-    const child = spawn(command, [entry], {
+    const child = this.launch(command, [entry], {
       cwd: this.root,
       env: { ...process.env, REPOOS_GIT_WORKER: "1" },
       detached: process.platform !== "win32",
@@ -408,17 +451,23 @@ export class GitWorker {
     this.buffered = "";
     this.stderrTail = "";
     child.stdout.setEncoding("utf8");
-    child.stdout.on("data", (chunk: string) => this.onStdout(chunk));
+    child.stdout.on("data", (chunk: string) => {
+      if (this.child === child) this.onStdout(chunk);
+    });
     child.stderr.setEncoding("utf8");
     child.stderr.on("data", (chunk: string) => {
-      this.stderrTail = `${this.stderrTail}${chunk}`.slice(-4000);
+      if (this.child === child) this.stderrTail = `${this.stderrTail}${chunk}`.slice(-4000);
     });
     child.stdin.on("error", () => {
       // The exit handler rejects the active/queued request with process details.
     });
-    child.on("error", (error) => this.onExit(error));
+    child.on("error", (error) => {
+      if (this.child === child) this.onExit(error);
+    });
     child.on("close", (code, signal) => {
-      this.onExit(new Error(`git worker exited (${signal ?? `code ${code}`})`));
+      if (this.child === child) {
+        this.onExit(new Error(`git worker exited (${signal ?? `code ${code}`})`));
+      }
     });
     child.unref();
     return child;
@@ -489,6 +538,7 @@ export class GitWorker {
     const child = this.child;
     this.child = null;
     if (!child) return;
+    this.childGitCalls.clear();
     const detail = this.stderrTail.trim();
     const failure = detail ? new Error(`${error.message}: ${detail}`) : error;
     if (this.active) {
@@ -505,6 +555,7 @@ export class GitWorker {
   private killChild(): void {
     const child = this.child;
     this.child = null;
+    this.childGitCalls.clear();
     if (!child) return;
     try {
       if (process.platform !== "win32" && child.pid) process.kill(-child.pid, "SIGKILL");

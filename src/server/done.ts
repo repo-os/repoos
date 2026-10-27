@@ -27,10 +27,8 @@ import { join, relative } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import {
   mergeBranch,
-  preflightMerge,
   syncBranchWithMain,
   deleteBranch,
-  removeWorktree,
   commitTaskFile,
   runGit,
   mainDirtyFilesForCloseOut,
@@ -199,7 +197,7 @@ export async function mergeTaskBranchWithAutoSync(
   }
 
   const attempt = async (): Promise<MergeAttempt> => {
-    const preflight = await preflightMerge(root, branch, opts);
+    const preflight = await getGitWorker(root).preflightMerge(branch, opts);
     if (!preflight.ok) {
       return {
         merged: false,
@@ -717,7 +715,7 @@ async function completeTaskLocked(
     // rebuilt: only ever deletes a `dist/` git reports as untracked there, and
     // only the generated output it just untracked.
     await removeUntrackedGeneratedDist(root, task.branch);
-    if (removeWorktree(root, task.branch)) {
+    if (await getGitWorker(root).removeWorktree(task.branch)) {
       deleteBranch(root, task.branch);
     } else {
       console.warn(
