@@ -3,12 +3,6 @@ id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "2026-10-27T13:19:48.661700Z ERROR codex_core::session: failed to record rollout items: thread 01a17d81-24ce-77c0-aff3-5b60541d5650 not found"
-debug_tldr: "Codex engineer agent hit its usage limit (the rollout error is a side effect) — wait until 9:07 PM or switch the engineer to another agent, then resume task #0960."
-debug_tldr_at: "2026-10-27T13:20:04Z"
-debug_tldr_key: "dev-error|2026-10-27T13:19:48.661700Z ERROR codex_core::session: failed to record rollout items: thread 01a17d81-24ce-77c0-aff3-5b60541d5650 not found"
 priority: p2
 area: core
 assigned_to: ai
@@ -123,3 +117,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T13:21:12Z · review_cli_override, review_model_override
 - 2026-10-27T13:21:20Z · cli_override, model_override
 - 2026-10-27T13:21:33Z · message_delivered: 1 message(s)
+- 2026-10-27T13:21:33Z · needs_input
