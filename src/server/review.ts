@@ -847,6 +847,7 @@ function taskIdFromReviewKey(sessionKey: string): string {
 }
 
 export class ReviewManager {
+  private readonly completions = new Map<string, Promise<void>>();
   private readonly config: RepoOSConfig;
   private readonly emit: (e: RepoEvent) => void;
   private readonly runs = new Map<string, Run>();
@@ -926,21 +927,22 @@ export class ReviewManager {
   isRunning(taskId: string): boolean {
     // An in-flight review is tracked in the durable runner session (0288), so
     // a review re-attached after a reload still reads as running here.
-    return this.runs.has(taskId) || !!this.runner?.isRunning(this.reviewKey(taskId));
+    return (
+      this.completions.has(taskId) ||
+      this.runs.has(taskId) ||
+      !!this.runner?.isRunning(this.reviewKey(taskId))
+    );
   }
 
   /**
    * How many reviews are in flight (the server's idle check).
    *
-   * `this.runs` is the single source of truth for running reviews: fresh turns
-   * register in `run()`/`send()`, and adopted turns (re-attached after a reload)
-   * are registered by `armAdoptedTimeouts()` at boot. So counting `this.runs`
-   * already covers every in-flight review, including adopted ones — adding a
-   * separate count of `runner.running()` review sessions here would DOUBLE-count
-   * each adopted review (0288 review round 2).
+   * Count turns and completions once each, including adopted reviews whose
+   * process has exited but whose report is still being stored. Counting the
+   * runner separately would double-count adopted turns (0288 review round 2).
    */
   runningCount(): number {
-    return this.runs.size;
+    return new Set([...this.runs.keys(), ...this.completions.keys()]).size;
   }
 
   /**
@@ -1001,7 +1003,7 @@ export class ReviewManager {
     if (isEvidenceRefreshActive(task.id)) {
       return { ok: false, reason: "evidence refresh is in progress for this task" };
     }
-    if (this.runs.has(task.id)) {
+    if (this.isRunning(task.id)) {
       return { ok: false, reason: "a review is already running for this task" };
     }
     if (task.hotfix) {
@@ -1033,6 +1035,22 @@ export class ReviewManager {
     return { ok: true };
   }
 
+  /** Reserve before the first worker read, releasing skipped/failed starts. */
+  private async prepareReview(
+    taskId: string,
+    mode: "run" | "chat",
+    prepare: (run: Run) => Promise<ReviewRunResult>,
+  ): Promise<ReviewRunResult> {
+    const run: Run = { cancelled: false, mode };
+    this.runs.set(taskId, run);
+    try {
+      return await prepare(run);
+    } finally {
+      // A spawned turn owns a timeout and remains registered until completion.
+      if (!run.timer && this.runs.get(taskId) === run) this.runs.delete(taskId);
+    }
+  }
+
   /**
    * Run the review agent against a task sitting in `review`.
    *
@@ -1054,103 +1072,107 @@ export class ReviewManager {
     if (this.isRunning(task.id)) {
       return { ok: false, reason: "a review is already running for this task", trigger };
     }
-    const stored = this.read(task.id);
-    const auto = await decideReviewAutomation(
-      this.config,
-      task,
-      stored as ReviewGuardReport | null,
-      trigger,
-    );
-    if (auto.action === "skip") {
-      this.logger.task(task.id, "info", `review skipped (${trigger}) — ${auto.reason}`);
-      this.appendMarker(task.id, `review skipped (${reviewTriggerNote(trigger)}) — ${auto.reason}`);
-      if (auto.handBackToEngineer && stored) {
-        const fresh = this.index?.getTask(task.id) ?? task;
-        // Auto-bounce already moved open findings to the engineer; do not start a
-        // second engineer turn from the same tree guard (#0865).
-        if (fresh.status !== "active") {
-          void this.handBackToEngineerForOpenFindings(task, stored).catch((err) => {
-            console.error(
-              `[repoos] uncaught error handing #${task.id} back to engineer: ${(err as Error).message}`,
-            );
-          });
-        }
-      }
-      return { ok: false, skipped: true, reason: auto.reason, trigger };
-    }
-    const baseReviewer = resolveReviewerForTask(this.config, task);
-    if (!baseReviewer) {
-      this.logger.task(task.id, "info", "review skipped — agent disabled");
-      return { ok: false, skipped: true, reason: "the review agent is disabled" };
-    }
-    // Automatic model routing (#0793): choose the reviewer configuration when
-    // enabled. Off/shadow and human pins return the base reviewer unchanged,
-    // and routing can never disable the review.
-    let agent = baseReviewer;
-    const baseBranch = (await getGitWorker(this.config.root).currentBranch()) ?? "main";
-    const routed = await resolveRoutedAgent(
-      { config: this.config },
-      {
-        role: "reviewer",
+    return this.prepareReview(task.id, "run", async (run) => {
+      const stored = this.read(task.id);
+      const auto = await decideReviewAutomation(
+        this.config,
         task,
-        base: baseReviewer,
-        pinned:
-          !!task.reviewAgentOverride ||
-          !!task.reviewCliOverride ||
-          isModelOverridePinned(task.reviewModelOverride),
-        briefExtra: `Reviewing branch ${task.branch ?? "(none)"} against ${baseBranch}.`,
-      },
-    );
-    if (routed.agent) agent = routed.agent;
-    const workdir = task.branch
-      ? await getGitWorker(this.config.root).worktreePath(task.branch)
-      : null;
-    if (!workdir) {
-      this.logger.task(task.id, "info", "review skipped — no worktree", { branch: task.branch });
-      return { ok: false, skipped: true, reason: "the task has no worktree to review" };
-    }
+        stored as ReviewGuardReport | null,
+        trigger,
+      );
+      if (auto.action === "skip") {
+        this.logger.task(task.id, "info", `review skipped (${trigger}) — ${auto.reason}`);
+        this.appendMarker(
+          task.id,
+          `review skipped (${reviewTriggerNote(trigger)}) — ${auto.reason}`,
+        );
+        if (auto.handBackToEngineer && stored) {
+          const fresh = this.index?.getTask(task.id) ?? task;
+          // Auto-bounce already moved open findings to the engineer; do not start a
+          // second engineer turn from the same tree guard (#0865).
+          if (fresh.status !== "active") {
+            void this.handBackToEngineerForOpenFindings(task, stored).catch((err) => {
+              console.error(
+                `[repoos] uncaught error handing #${task.id} back to engineer: ${(err as Error).message}`,
+              );
+            });
+          }
+        }
+        return { ok: false, skipped: true, reason: auto.reason, trigger };
+      }
+      const baseReviewer = resolveReviewerForTask(this.config, task);
+      if (!baseReviewer) {
+        this.logger.task(task.id, "info", "review skipped — agent disabled");
+        return { ok: false, skipped: true, reason: "the review agent is disabled" };
+      }
+      // Automatic model routing (#0793): choose the reviewer configuration when
+      // enabled. Off/shadow and human pins return the base reviewer unchanged,
+      // and routing can never disable the review.
+      let agent = baseReviewer;
+      const baseBranch = (await getGitWorker(this.config.root).currentBranch()) ?? "main";
+      const routed = await resolveRoutedAgent(
+        { config: this.config },
+        {
+          role: "reviewer",
+          task,
+          base: baseReviewer,
+          pinned:
+            !!task.reviewAgentOverride ||
+            !!task.reviewCliOverride ||
+            isModelOverridePinned(task.reviewModelOverride),
+          briefExtra: `Reviewing branch ${task.branch ?? "(none)"} against ${baseBranch}.`,
+        },
+      );
+      if (routed.agent) agent = routed.agent;
+      const workdir = task.branch
+        ? await getGitWorker(this.config.root).worktreePath(task.branch)
+        : null;
+      if (!workdir) {
+        this.logger.task(task.id, "info", "review skipped — no worktree", { branch: task.branch });
+        return { ok: false, skipped: true, reason: "the task has no worktree to review" };
+      }
 
-    // Fresh run: drop any earlier conversation and its persisted copy so the
-    // new report reads as a new assessment, not a continuation of the old one.
-    this.resetReviewSession(task.id);
+      // Fresh run: drop any earlier conversation and its persisted copy so the
+      // new report reads as a new assessment, not a continuation of the old one.
+      this.resetReviewSession(task.id);
 
-    const run: Run = { cancelled: false, mode: "run", agent };
-    this.runs.set(task.id, run);
-    this.emit({ type: "review", id: task.id, state: "running", at: now() });
-    this.logger.task(task.id, "info", "review started", {
-      agent: agent.name,
-      cli: agent.cli,
-      model: agent.model,
+      run.agent = agent;
+      this.emit({ type: "review", id: task.id, state: "running", at: now() });
+      this.logger.task(task.id, "info", "review started", {
+        agent: agent.name,
+        cli: agent.cli,
+        model: agent.model,
+      });
+      this.appendMarker(task.id, `review started — ${agent.name} (${agent.cli})`);
+
+      const landable = await gatherLandable(this.config, task, this.read(task.id));
+      const missionBase = reviewMission(task, agent, workdir, baseBranch, this.config, {
+        handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
+        uiVerification: await taskUiVerificationMode(this.config, task),
+        landable,
+      });
+      const uiNote = await this.uiVerificationSummary(task);
+      const mission = uiNote
+        ? `${missionBase}\n\n## Handoff UI verification (recorded at handoff)\n\n${uiNote}\n`
+        : missionBase;
+      // A cancel that landed before the spawn must not still start a run.
+      if (run.cancelled) {
+        this.runs.delete(task.id);
+        this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
+        return { ok: false, skipped: true, reason: "review cancelled" };
+      }
+      this.spawnDurable(
+        task.id,
+        agent,
+        mission,
+        workdir,
+        run,
+        "run",
+        undefined,
+        this.reviewerSessionId(task),
+      );
+      return { ok: true };
     });
-    this.appendMarker(task.id, `review started — ${agent.name} (${agent.cli})`);
-
-    const landable = await gatherLandable(this.config, task, this.read(task.id));
-    const missionBase = reviewMission(task, agent, workdir, baseBranch, this.config, {
-      handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
-      uiVerification: await taskUiVerificationMode(this.config, task),
-      landable,
-    });
-    const uiNote = await this.uiVerificationSummary(task);
-    const mission = uiNote
-      ? `${missionBase}\n\n## Handoff UI verification (recorded at handoff)\n\n${uiNote}\n`
-      : missionBase;
-    // A cancel that landed before the spawn must not still start a run.
-    if (run.cancelled) {
-      this.runs.delete(task.id);
-      this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
-      return { ok: false, skipped: true, reason: "review cancelled" };
-    }
-    this.spawnDurable(
-      task.id,
-      agent,
-      mission,
-      workdir,
-      run,
-      "run",
-      undefined,
-      this.reviewerSessionId(task),
-    );
-    return { ok: true };
   }
 
   /**
@@ -1161,73 +1183,75 @@ export class ReviewManager {
     if (this.isRunning(task.id)) {
       return { ok: false, reason: "a review is already running for this task" };
     }
-    const baseReviewer = resolveReviewerForTask(this.config, task);
-    if (!baseReviewer) {
-      return { ok: false, skipped: true, reason: "the review agent is disabled" };
-    }
-    const workdir = task.branch
-      ? await getGitWorker(this.config.root).worktreePath(task.branch)
-      : null;
-    if (!workdir) {
-      return { ok: false, skipped: true, reason: "the task has no worktree to review" };
-    }
-    const baseBranch = (await getGitWorker(this.config.root).currentBranch()) ?? "main";
-    let agent = baseReviewer;
-    const routed = await resolveRoutedAgent(
-      { config: this.config },
-      {
-        role: "reviewer",
-        task,
-        base: baseReviewer,
-        pinned:
-          !!task.reviewAgentOverride ||
-          !!task.reviewCliOverride ||
-          isModelOverridePinned(task.reviewModelOverride),
-        briefExtra: `Delta review since approved handoff ${approvedSha.slice(0, 12)}.`,
-      },
-    );
-    if (routed.agent) agent = routed.agent;
+    return this.prepareReview(task.id, "run", async (run) => {
+      const baseReviewer = resolveReviewerForTask(this.config, task);
+      if (!baseReviewer) {
+        return { ok: false, skipped: true, reason: "the review agent is disabled" };
+      }
+      const workdir = task.branch
+        ? await getGitWorker(this.config.root).worktreePath(task.branch)
+        : null;
+      if (!workdir) {
+        return { ok: false, skipped: true, reason: "the task has no worktree to review" };
+      }
+      const baseBranch = (await getGitWorker(this.config.root).currentBranch()) ?? "main";
+      let agent = baseReviewer;
+      const routed = await resolveRoutedAgent(
+        { config: this.config },
+        {
+          role: "reviewer",
+          task,
+          base: baseReviewer,
+          pinned:
+            !!task.reviewAgentOverride ||
+            !!task.reviewCliOverride ||
+            isModelOverridePinned(task.reviewModelOverride),
+          briefExtra: `Delta review since approved handoff ${approvedSha.slice(0, 12)}.`,
+        },
+      );
+      if (routed.agent) agent = routed.agent;
 
-    this.resetReviewSession(task.id);
-    const run: Run = { cancelled: false, mode: "run", agent, checkpointDelta: true };
-    this.runs.set(task.id, run);
-    this.emit({ type: "review", id: task.id, state: "running", at: now() });
-    this.logger.task(task.id, "info", "checkpoint delta review started", {
-      approvedSha,
-      agent: agent.name,
-    });
-    this.appendMarker(
-      task.id,
-      `checkpoint delta review started — since ${approvedSha.slice(0, 8)}`,
-    );
+      this.resetReviewSession(task.id);
+      run.agent = agent;
+      run.checkpointDelta = true;
+      this.emit({ type: "review", id: task.id, state: "running", at: now() });
+      this.logger.task(task.id, "info", "checkpoint delta review started", {
+        approvedSha,
+        agent: agent.name,
+      });
+      this.appendMarker(
+        task.id,
+        `checkpoint delta review started — since ${approvedSha.slice(0, 8)}`,
+      );
 
-    const landable = await gatherLandable(this.config, task, this.read(task.id));
-    const missionBase = reviewMission(task, agent, workdir, baseBranch, this.config, {
-      handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
-      uiVerification: await taskUiVerificationMode(this.config, task),
-      deltaSinceApprovedSha: approvedSha,
-      landable,
+      const landable = await gatherLandable(this.config, task, this.read(task.id));
+      const missionBase = reviewMission(task, agent, workdir, baseBranch, this.config, {
+        handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
+        uiVerification: await taskUiVerificationMode(this.config, task),
+        deltaSinceApprovedSha: approvedSha,
+        landable,
+      });
+      const uiNote = await this.uiVerificationSummary(task);
+      const mission = uiNote
+        ? `${missionBase}\n\n## Handoff UI verification (recorded at handoff)\n\n${uiNote}\n`
+        : missionBase;
+      if (run.cancelled) {
+        this.runs.delete(task.id);
+        this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
+        return { ok: false, skipped: true, reason: "review cancelled" };
+      }
+      this.spawnDurable(
+        task.id,
+        agent,
+        mission,
+        workdir,
+        run,
+        "run",
+        undefined,
+        `${this.reviewerSessionId(task)}-checkpoint-delta`,
+      );
+      return { ok: true };
     });
-    const uiNote = await this.uiVerificationSummary(task);
-    const mission = uiNote
-      ? `${missionBase}\n\n## Handoff UI verification (recorded at handoff)\n\n${uiNote}\n`
-      : missionBase;
-    if (run.cancelled) {
-      this.runs.delete(task.id);
-      this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
-      return { ok: false, skipped: true, reason: "review cancelled" };
-    }
-    this.spawnDurable(
-      task.id,
-      agent,
-      mission,
-      workdir,
-      run,
-      "run",
-      undefined,
-      `${this.reviewerSessionId(task)}-checkpoint-delta`,
-    );
-    return { ok: true };
   }
 
   /**
@@ -1400,9 +1424,45 @@ export class ReviewManager {
   }
 
   /** Durable review-turn completion hook (0288). */
-  async handleReviewDone(
+  handleReviewDone(
     sessionKey: string,
     exitedCleanly = false,
+    reviewKind?: "run" | "chat",
+  ): Promise<void> {
+    const taskId = taskIdFromReviewKey(sessionKey);
+    const existing = this.completions.get(taskId);
+    if (existing) return existing;
+    // Publish the completion fence before any async work begins. This also
+    // covers adopted turns that have no in-memory Run after a server reload.
+    let resolve!: () => void;
+    let reject!: (error: unknown) => void;
+    const completion = new Promise<void>((done, failed) => {
+      resolve = done;
+      reject = failed;
+    });
+    this.completions.set(taskId, completion);
+    const release = () => {
+      this.runs.delete(taskId);
+      this.completions.delete(taskId);
+    };
+    // Start immediately so synchronous cancellation/chat bookkeeping keeps its
+    // ordering; the fence stays registered across every awaited worker read.
+    void this.finalizeReviewDone(sessionKey, exitedCleanly, reviewKind).then(
+      () => {
+        release();
+        resolve();
+      },
+      (error) => {
+        release();
+        reject(error);
+      },
+    );
+    return completion;
+  }
+
+  private async finalizeReviewDone(
+    sessionKey: string,
+    exitedCleanly: boolean,
     reviewKind?: "run" | "chat",
   ): Promise<void> {
     const taskId = taskIdFromReviewKey(sessionKey);
@@ -1417,7 +1477,6 @@ export class ReviewManager {
     const checkpointDelta = run?.checkpointDelta ?? false;
     if (run) {
       if (run.timer) clearTimeout(run.timer);
-      this.runs.delete(taskId);
     }
 
     if (cancelled) {
@@ -1451,7 +1510,7 @@ export class ReviewManager {
     if (mode === "run") {
       await this.finalizeRun(task, agent, lines, session, timedOut, checkpointDelta);
     } else {
-      this.finalizeChat(task, agent, lines, session, timedOut);
+      await this.finalizeChat(task, agent, lines, session, timedOut);
     }
   }
 
@@ -1640,7 +1699,9 @@ export class ReviewManager {
     if (state === "ok" && verdict && !environmentOnly) {
       if (verdict !== "good to go") {
         if (checkpointDelta) {
-          void this.onCheckpointDeltaReviewVerdict?.(task, report, verdict);
+          this.afterCompletion(task.id, () =>
+            this.onCheckpointDeltaReviewVerdict?.(task, report, verdict),
+          );
         }
         if (!isStaleEvidenceOnlyReview(reportText, verdict) && !evidenceGapOnly) {
           this.autoBounce(task, report, verdict, session?.createdAt).catch((err) => {
@@ -1652,9 +1713,11 @@ export class ReviewManager {
       } else {
         clearEvidenceGapRepairAttempts(this.config, task.id);
         if (checkpointDelta) {
-          void this.onCheckpointDeltaReviewVerdict?.(task, report, verdict);
+          this.afterCompletion(task.id, () =>
+            this.onCheckpointDeltaReviewVerdict?.(task, report, verdict),
+          );
         } else {
-          void this.onCleanReviewVerdict?.(task, report);
+          this.afterCompletion(task.id, () => this.onCleanReviewVerdict?.(task, report));
         }
       }
     }
@@ -1684,6 +1747,13 @@ export class ReviewManager {
         void this.repairEvidenceGapAndMaybeRereview(task, reportText);
       }, 0).unref?.();
     }
+  }
+
+  /** Close-out callbacks must observe the stored report and a released review fence. */
+  private afterCompletion(taskId: string, callback: () => void): void {
+    void (this.completions.get(taskId) ?? Promise.resolve()).then(callback).catch((err) => {
+      this.logger.task(taskId, "error", `Review follow-up failed: ${(err as Error).message}`);
+    });
   }
 
   private async repairEvidenceGapAndMaybeRereview(task: Task, reportText: string): Promise<void> {
@@ -1840,43 +1910,44 @@ export class ReviewManager {
     if (this.isRunning(task.id)) {
       return { ok: false, reason: "a review is already running for this task" };
     }
-    const agent = resolveReviewerForTask(this.config, task);
-    if (!agent) {
-      return { ok: false, reason: "the review agent is disabled" };
-    }
-    const workdir = task.branch
-      ? await getGitWorker(this.config.root).worktreePath(task.branch)
-      : null;
-    if (!workdir) {
-      return { ok: false, reason: "the task has no worktree to review" };
-    }
-    const baseBranch = (await getGitWorker(this.config.root).currentBranch()) ?? "main";
+    return this.prepareReview(task.id, "chat", async (run) => {
+      const agent = resolveReviewerForTask(this.config, task);
+      if (!agent) {
+        return { ok: false, reason: "the review agent is disabled" };
+      }
+      const workdir = task.branch
+        ? await getGitWorker(this.config.root).worktreePath(task.branch)
+        : null;
+      if (!workdir) {
+        return { ok: false, reason: "the task has no worktree to review" };
+      }
+      const baseBranch = (await getGitWorker(this.config.root).currentBranch()) ?? "main";
 
-    // The human's message starts the turn and streams into the reviewer
-    // conversation under `review:<taskId>`.
-    this.emitHumanEntry(task.id, { type: "human", text });
+      // The human's message starts the turn and streams into the reviewer
+      // conversation under `review:<taskId>`.
+      this.emitHumanEntry(task.id, { type: "human", text });
 
-    const run: Run = { cancelled: false, mode: "chat", agent };
-    this.runs.set(task.id, run);
-    this.emit({ type: "review", id: task.id, state: "running", at: now() });
+      run.agent = agent;
+      this.emit({ type: "review", id: task.id, state: "running", at: now() });
 
-    const mission = reviewFollowupMission(
-      task,
-      agent,
-      workdir,
-      baseBranch,
-      text,
-      this.read(task.id),
-      this.config,
-    );
-    if (run.cancelled) {
-      this.runs.delete(task.id);
-      this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
-      return { ok: false, skipped: true, reason: "review cancelled" };
-    }
-    const humanEntry: AgentOutputEntry = { type: "human", text };
-    this.spawnDurable(task.id, agent, mission, workdir, run, "chat", humanEntry);
-    return { ok: true };
+      const mission = reviewFollowupMission(
+        task,
+        agent,
+        workdir,
+        baseBranch,
+        text,
+        this.read(task.id),
+        this.config,
+      );
+      if (run.cancelled) {
+        this.runs.delete(task.id);
+        this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
+        return { ok: false, skipped: true, reason: "review cancelled" };
+      }
+      const humanEntry: AgentOutputEntry = { type: "human", text };
+      this.spawnDurable(task.id, agent, mission, workdir, run, "chat", humanEntry);
+      return { ok: true };
+    });
   }
 
   /** Finalize a follow-up chat turn from its durable session transcript. */

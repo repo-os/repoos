@@ -2079,14 +2079,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // session rather than a post-`runPrompt` continuation that would have died
       // with the old process. `reviews` is assigned below but the callback only
       // fires asynchronously after completion, so the closure is safe.
-      onReviewDone: (sessionKey, exitedCleanly, reviewKind) => {
-        if (!reviews) return;
-        try {
-          void reviews.handleReviewDone(sessionKey, exitedCleanly, reviewKind);
-        } catch (err) {
-          console.error(`[repoos] review completion handler threw: ${(err as Error).message}`);
-        }
-      },
+      onReviewDone: (sessionKey, exitedCleanly, reviewKind) =>
+        reviews?.handleReviewDone(sessionKey, exitedCleanly, reviewKind),
     },
   );
   const stopProviderUsageLimitProbes = startProviderUsageLimitProbes(config, logger);

@@ -59,11 +59,12 @@ function statusRank(s: Status): number {
   return STATUSES.indexOf(s);
 }
 
-export function buildIndex(config: RepoOSConfig): RepoIndex {
+/** `skipGit` is for metadata consumers; returned Git fields stay empty. */
+export function buildIndex(config: RepoOSConfig, opts: { skipGit?: boolean } = {}): RepoIndex {
   const workPath = join(config.root, config.workDir);
   const files = walkFiles(workPath, config.taskExtensions);
 
-  const useGit = isGitRepo(config.root);
+  const useGit = !opts.skipGit && isGitRepo(config.root);
   const branches = useGit ? localBranches(config.root) : new Set<string>();
   const worktrees = useGit ? worktreePaths(config.root) : new Map<string, string>();
   // Fetched once and passed to every `worktreeStatus` call below — otherwise

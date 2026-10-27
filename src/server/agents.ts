@@ -317,6 +317,8 @@ export interface FinishedAgentInfo {
 }
 
 interface Entry {
+  /** Process exit observed; session capture is still being finalized. */
+  finalizing?: boolean;
   /** Undefined for an entry adopted after this server process started. */
   proc?: ChildProcess;
   startedAt: string;
@@ -5249,7 +5251,7 @@ export class AgentRunner {
     sessionKey: string,
     exitedCleanly: boolean,
     reviewKind?: "run" | "chat",
-  ) => void;
+  ) => void | Promise<void>;
   /** See the constructor opts — the failure tl;dr trigger (#0570). */
   private readonly onDiagnosableFailure?: (taskId: string, reason: string) => void;
 
@@ -5316,7 +5318,7 @@ export class AgentRunner {
         sessionKey: string,
         exitedCleanly: boolean,
         reviewKind?: "run" | "chat",
-      ) => void;
+      ) => void | Promise<void>;
       /**
        * A diagnosable failure just escalated the task to `needs_input` (#0570):
        * the failure tl;dr pass schedules its one-shot Debugger diagnosis off
@@ -5499,11 +5501,15 @@ export class AgentRunner {
       this.removeRegistryEntry(rec.taskId);
       session.accumulatedMs = Date.now() - Date.parse(session.turnStartedAt ?? now());
       setTimeout(() => {
-        try {
-          this.onReviewDone?.(rec.taskId, false, rec.reviewKind);
-        } catch {
-          /* best-effort */
-        }
+        void Promise.resolve()
+          .then(() => this.onReviewDone?.(rec.taskId, false, rec.reviewKind))
+          .catch((err) => {
+            this.logger?.agent(
+              rec.taskId,
+              "error",
+              `Review completion handler failed: ${(err as Error).message}`,
+            );
+          });
       }, 0);
       return false;
     }
@@ -5912,7 +5918,7 @@ export class AgentRunner {
       if (cwdGone || !processAlive) stale.add(rec.taskId);
     }
     for (const [taskId, entry] of this.entries) {
-      if (entry.review) continue;
+      if (entry.review || entry.finalizing) continue;
       const cwdGone = Boolean(entry.workdir && !existsSync(entry.workdir));
       const pid = entry.proc?.pid ?? entry.adoptedPid;
       const processAlive =
@@ -8660,7 +8666,21 @@ export class AgentRunner {
   /** Drop the registry entry for a task (idempotent) and announce it. */
   private cleanup(taskId: string, exitedCleanly: boolean, exitCode: number | null = null): void {
     const entry = this.entries.get(taskId);
-    if (!entry) return;
+    if (!entry || entry.finalizing) return;
+    entry.finalizing = true;
+    void this.finalizeTurn(taskId, entry, exitedCleanly, exitCode).catch((err) => {
+      this.logger?.agent(taskId, "error", `Turn completion failed: ${(err as Error).message}`);
+      if (this.entries.get(taskId) === entry) this.entries.delete(taskId);
+      this.drainQueue();
+    });
+  }
+
+  private async finalizeTurn(
+    taskId: string,
+    entry: Entry,
+    exitedCleanly: boolean,
+    exitCode: number | null,
+  ): Promise<void> {
     const groupLeader = entry.processGroupLeader ?? entry.proc?.pid ?? entry.adoptedPid;
     // Capture before the entry is deleted below so the review-completion hook
     // can still be fired and its DB recording skipped (0288).
@@ -8791,6 +8811,23 @@ export class AgentRunner {
       session.turnStartedAt = undefined;
     }
     if (session) session.stalledEmitted = false;
+    // Session discovery and usage capture belong to this turn. Keep it running
+    // until these bounded async probes finish, before publishing exit, recording
+    // usage, or allowing a queued turn to reuse the session.
+    try {
+      if (session?.engine === "kiro" && !session.sessionId && entry.workdir) {
+        await this.captureKiroSessionId(taskId, session, entry.workdir);
+      }
+      if (session?.engine === "crush" && entry.workdir) {
+        await this.captureCrushSession(session, entry.workdir, entry.crushSessionsBefore);
+      }
+    } catch (error) {
+      this.logger?.agent(
+        taskId,
+        "warn",
+        `Failed to capture session usage: ${(error as Error).message}`,
+      );
+    }
     this.entries.delete(taskId);
     this.drainQueue();
     // Deliver any message queued during this turn now that it has ended (#0821),
@@ -8836,32 +8873,6 @@ export class AgentRunner {
       !crashRecoveryWillResume
     ) {
       queueMicrotask(() => this.deliverQueuedMessages(taskId));
-    }
-    // Kiro CLI does not print a session ID during the run. Capture it now by
-    // querying the CLI's session list in the same cwd. Best-effort: if the
-    // probe fails, sessionId stays undefined and the next turn falls back to
-    // `-r` (most-recent resume). The lookup is synchronous-in-practice because
-    // cleanup() is called from proc.on("close") — we fire-and-update so the
-    // emit below is not delayed waiting for a CLI round-trip.
-    if (session?.engine === "kiro" && !session.sessionId && entry.workdir) {
-      void this.captureKiroSessionId(taskId, session, entry.workdir);
-    }
-    // Crush, like kiro, prints no session id during a run. Capture its id and
-    // usage asynchronously so a local CLI probe cannot stall the server thread.
-    // On the first turn a diff against the pre-spawn listing names exactly this
-    // turn's session; later turns reuse the captured id and refresh usage.
-    if (session?.engine === "crush" && entry.workdir) {
-      void this.captureCrushSession(session, entry.workdir, entry.crushSessionsBefore)
-        .then(() => {
-          if (session.sessionId) this.schedulePersist(taskId);
-        })
-        .catch((error) => {
-          this.logger?.agent(
-            taskId,
-            "warn",
-            `Failed to capture Crush session usage: ${(error as Error).message}`,
-          );
-        });
     }
     const logStem = entry.runId ?? taskId;
     const logPath = join(this.cacheDir, "agent-logs", `${logStem}.out.log`);
@@ -9131,7 +9142,7 @@ export class AgentRunner {
     // completion is only observed here (0288).
     if (wasReview) {
       try {
-        this.onReviewDone?.(taskId, exitedCleanly, entry.reviewKind);
+        await this.onReviewDone?.(taskId, exitedCleanly, entry.reviewKind);
       } catch (err) {
         this.logger?.agent(
           taskId,
@@ -9360,7 +9371,7 @@ export class AgentRunner {
   private loadHotSessions(): void {
     try {
       const hot = new Set(
-        buildIndex(this.config)
+        buildIndex(this.config, { skipGit: true })
           .tasks.filter((task) => task.status === "active" || task.status === "review")
           .map((task) => task.id),
       );

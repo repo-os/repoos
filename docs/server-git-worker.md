@@ -26,6 +26,12 @@ offline local-index fallback.
 
 ## Remaining verification and migration
 
+The scope of #0962 was narrowed on 2026-10-27 to the worker boundary for migrated
+calls, the paged Tasks API, and the asynchronous lifecycle regressions. Remaining
+blocking calls and the transitive guard belong to #0965; board query batching and
+cache coverage to #0966; request-duration/STUCK diagnostics to #0967; reload
+handover to #0968; and the one-hour latency measurement to #0969.
+
 A source-text check of server imports alone cannot prove that every request or
 timer is free of blocking processes. In particular, an async function can call
 a synchronous helper before its first await. A TypeScript call-graph audit on
@@ -37,6 +43,15 @@ browser-slot acquisition. These require following the actual runtime path;
 context-pack supplied-facts fallbacks and CLI-only `refreshAll` paths also show
 up in a conservative call graph but are not evidence of a server invocation.
 Do not describe the existing text guard as a complete transitive process guard.
+
+Confirmed remaining paths include `patchTaskFile` in `server/write.ts` calling
+`commitTaskFile` → `commitFiles` → synchronous Git status/add/commit, and
+`AgentRunner.healBoardDivergence` calling synchronous `fileCommittedClean`.
+Process-group inspection also shells out synchronously through
+`core/process-group.ts`. These are outside the current guard's helper list;
+passing that guard does not establish the absence of blocking server calls. Session loading and the dependency
+validation fallback now use a metadata-only index, so those two reads no
+longer need synchronous Git enrichment.
 
 The one-hour responsiveness run with 900 tasks, 100 branches and two live
 engineers has not been observed in this worktree. It needs a human-controlled

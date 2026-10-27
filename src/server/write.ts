@@ -491,7 +491,7 @@ export function patchTaskFile(
     validateTaskDependencies(
       current.id,
       dependsOn,
-      opts.validationTasks ?? buildIndex(config).tasks,
+      opts.validationTasks ?? buildIndex(config, { skipGit: true }).tasks,
     );
     if (dependsOn.join("\0") !== (current.dependsOn ?? []).join("\0")) {
       changes.push("depends_on");

@@ -107,9 +107,14 @@ describe("Git worker lifecycle", () => {
     const queued = instance.request("second", {});
     instance.invalidate();
     process.stdout.emit("data", JSON.stringify({ id: 1, ok: true, value: null }) + "\n");
-    const lines = process.stdin
-      .read()
-      .toString()
+    // A stream read may return one write at a time (notably under Bun).
+    // Drain all available chunks without assuming how writes are coalesced.
+    const chunks: string[] = [];
+    for (let chunk = process.stdin.read(); chunk !== null; chunk = process.stdin.read()) {
+      chunks.push(chunk.toString());
+    }
+    const lines = chunks
+      .join("")
       .trim()
       .split("\n")
       .map((line: string) => JSON.parse(line));
