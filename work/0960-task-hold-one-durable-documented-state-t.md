@@ -13,7 +13,7 @@ model_override: opencode-go/hy3
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T06:25:56Z"
+updated_at: "2026-10-27T06:25:57Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 1
@@ -78,3 +78,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T06:22:00Z · handoff failed · remote validation failed: test failure: tests/cli-control-api.test.ts > control API CLI > agents pause/resume writes the allowlist config (#0850), tests/refresh-evidence-route.test.ts > POST /api/tasks/:id/verify guards > refuses engineer start while evidence refresh is in progress, tests/refresh-evidence-route.test.ts > automatic stale-evidence refresh serialization (#0772) > blocks an engineer start while the automatic refresh holds the lock on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-27T06:25:56Z · message_delivered: 1 message(s)
 - 2026-10-27T06:25:56Z · needs_input
+- 2026-10-27T06:25:57Z · message_queued at 2026-10-27T06:25:57.295Z
