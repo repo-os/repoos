@@ -19,7 +19,7 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T23:47:16Z"
+updated_at: "2026-10-27T23:47:24Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — globalVersion: 2626,"
 last_handoff_failure_sha: 8c25505fcf2efec1adde3bc6530fbbedd2a6736c
 check_retry_count: 1
@@ -181,3 +181,4 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T22:56:32Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — globalVersion: 2626,
 - 2026-10-27T23:47:16Z · body: Acceptance criteria (added 6, removed 6)
 - 2026-10-27T23:47:16Z · message_queued at 2026-10-27T23:47:16.354Z
+- 2026-10-27T23:47:24Z · handoff_deferred: 1 queued message(s) must be read before review
