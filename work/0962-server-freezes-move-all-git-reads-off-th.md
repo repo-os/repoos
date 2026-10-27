@@ -143,3 +143,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T04:00:45Z · engineer stopped by request
 - 2026-10-27T04:00:45Z · needs_input
 - 2026-10-27T04:00:46Z · status active→review, needs_input
+- 2026-10-27T04:00:46Z · note: handoff requested (cli)
