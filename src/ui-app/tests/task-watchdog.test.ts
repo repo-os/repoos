@@ -38,6 +38,7 @@ import {
   handoffSinceLastCommit,
 } from "../../server/task-watchdog";
 import { parseTask } from "../../core/task";
+import { writeQueueMarker, type LocalQueueKind } from "../../core/local-queue-marker";
 import { worktreePathForBranch } from "../../core/git";
 import { createRepoOS } from "../../core/repoos";
 import {
@@ -1392,4 +1393,110 @@ describe("identical handoff failure loop (#0693)", () => {
       fx.clean();
     }
   }, 15_000);
+});
+
+describe("watchdog check-wait escalation (#0974)", () => {
+  function marker(
+    fx: Fx,
+    kind: LocalQueueKind,
+    sinceMsAgo: number,
+    message = "waiting for a local check slot",
+  ): void {
+    writeQueueMarker(fx.root, fx.config.cacheDir ?? ".repoos", {
+      taskId: "0001",
+      kind,
+      ahead: 0,
+      position: 1,
+      message,
+      since: new Date(Date.now() - sinceMsAgo).toISOString(),
+    });
+  }
+
+  it("surfaces a check that has waited past ten minutes instead of hanging silently", async () => {
+    const fx = makeFx(500); // fresh task: the stuck-agent path must NOT fire
+    marker(fx, "pressure", 26 * 60_000, "machine is under memory pressure");
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    const runner = new AgentRunner(fx.config, () => {});
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+    await watchdog.checkNow();
+
+    const task = parseTaskAt(fx);
+    expect(task.needsInput).toBe(true);
+    expect(task.needsInputReason).toBe("check-wait");
+    expect(task.needsInputDetail).toContain("waiting: machine is under memory pressure for 26m");
+    expect(readFileSync(fx.taskPath, "utf8")).toContain("watchdog: check wait escalated");
+    runner.dispose();
+    fx.clean();
+  });
+
+  it("does not escalate a wait under ten minutes", async () => {
+    const fx = makeFx(500);
+    marker(fx, "local-check", 4 * 60_000);
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    const runner = new AgentRunner(fx.config, () => {});
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+    await watchdog.checkNow();
+
+    const task = parseTaskAt(fx);
+    expect(task.needsInput).toBe(false);
+    runner.dispose();
+    fx.clean();
+  });
+
+  it("clears the flag once the wait has ended and the check is running", async () => {
+    const fx = makeFx(500);
+    marker(fx, "local-check", 12 * 60_000);
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    const runner = new AgentRunner(fx.config, () => {});
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+    await watchdog.checkNow();
+    expect(parseTaskAt(fx).needsInput).toBe(true);
+
+    // The gate acquired its slot: markers are gone. The escalation was
+    // informational — it must clear itself, not linger for a human.
+    rmSync(
+      join(fx.root, fx.config.cacheDir ?? ".repoos", "queue-markers", "0001-local-check.json"),
+    );
+    writeQueueMarker(fx.root, fx.config.cacheDir ?? ".repoos", {
+      taskId: "9999",
+      kind: "local-check",
+      ahead: 0,
+      position: 1,
+      message: "another task's wait",
+      since: new Date().toISOString(),
+    });
+    await watchdog.checkNow();
+
+    const task = parseTaskAt(fx);
+    expect(task.needsInput).toBe(false);
+    expect(task.needsInputReason).toBeUndefined();
+    expect(readFileSync(fx.taskPath, "utf8")).toContain("watchdog: check wait ended");
+    runner.dispose();
+    fx.clean();
+  });
+
+  it("leaves an already-flagged task alone", async () => {
+    const fx = makeFx(500);
+    marker(fx, "local-check", 15 * 60_000);
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    const runner = new AgentRunner(fx.config, () => {});
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+    // First scan escalates; the flag carries needsInput so a later scan
+    // (still waiting, note already present) must not duplicate the entry.
+    await watchdog.checkNow();
+    const bodyOnce = readFileSync(fx.taskPath, "utf8");
+    await watchdog.checkNow();
+    const bodyTwice = readFileSync(fx.taskPath, "utf8");
+    expect(bodyTwice).toBe(bodyOnce);
+    runner.dispose();
+    fx.clean();
+  });
 });

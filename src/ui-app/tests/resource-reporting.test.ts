@@ -81,6 +81,34 @@ describe("heavy-job and pressure reporting (#0961)", () => {
     expect(output).toContain("heavy jobs: 2 running, 3 queued");
   });
 
+  it("prints in-flight git jobs with queue wait vs run time (#0974)", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    printSystemSummary({
+      gitJobs: [
+        {
+          label: "git-worker build-index",
+          lane: "bulk",
+          state: "running",
+          queueWaitMs: 2000,
+          runMs: 45_000,
+        },
+        {
+          label: "git-command status",
+          lane: "fast",
+          state: "queued",
+          queueWaitMs: 500,
+          runMs: 0,
+        },
+      ],
+    });
+    const output = log.mock.calls.map((call) => call.join(" ")).join("\n");
+    expect(output).toContain("git jobs (2)");
+    expect(output).toContain("build-index");
+    expect(output).toContain("2s queue");
+    expect(output).toContain("45s run");
+    expect(output).toContain("fast");
+  });
+
   it("samples heavy jobs from another checkout through the shared host pool", async () => {
     const rootA = mkdtempSync(join(tmpdir(), "repoos-heavy-report-a-"));
     const rootB = mkdtempSync(join(tmpdir(), "repoos-heavy-report-b-"));

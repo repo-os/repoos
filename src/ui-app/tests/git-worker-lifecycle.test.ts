@@ -48,10 +48,16 @@ describe("Git worker lifecycle", () => {
     const instance = worker(50);
     const running = instance.request("running", {}, 1_000);
     const expired = instance.request("queued", {}, 10).catch((error: Error) => error.message);
-    const next = instance.request("next", {}, 1_000);
+    const next = instance.request("next", {}, 1_000).catch((error: Error) => error.message);
 
     expect(instance.inFlight().map(({ state }) => state)).toEqual(["running", "queued", "queued"]);
-    await vi.advanceTimersByTimeAsync(50);
+    await vi.advanceTimersByTimeAsync(25);
+    expect(instance.inFlight()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ state: "queued", queueWaitMs: 25, runMs: 0 }),
+      ]),
+    );
+    await vi.advanceTimersByTimeAsync(25);
     expect(await expired).toContain("queued waited 50ms in the queue without starting");
     expect(process.kill).not.toHaveBeenCalled();
     expect(launch).toHaveBeenCalledTimes(1);
@@ -59,7 +65,7 @@ describe("Git worker lifecycle", () => {
 
     process.stdout.emit("data", JSON.stringify({ id: 1, ok: true, value: "first" }) + "\n");
     await expect(running).resolves.toBe("first");
-    await expect(next).rejects.toThrow(/waited 50ms in the queue/);
+    expect(await next).toContain("waited 50ms in the queue");
     expect(instance.inFlight()).toEqual([]);
   });
 
@@ -68,8 +74,8 @@ describe("Git worker lifecycle", () => {
     const process = child();
     launch.mockReturnValue(process as never);
     const instance = worker(60_000);
-    const slow = instance.request("git-overview", {}, 30_000);
-    const quick = instance.request("git-command", {}, 9_000);
+    const slow = instance.request("first-bulk", {}, 30_000);
+    const quick = instance.request("second-bulk", {}, 9_000);
 
     // The slow scan takes 20 s: longer than the quick command's 9 s budget.
     await vi.advanceTimersByTimeAsync(20_000);
@@ -81,6 +87,38 @@ describe("Git worker lifecycle", () => {
     await vi.advanceTimersByTimeAsync(1_000);
     process.stdout.emit("data", JSON.stringify({ id: 2, ok: true, value: "done" }) + "\n");
     await expect(quick).resolves.toBe("done");
+  });
+
+  it.each(
+    ["git-overview", "build-index", "task-facts", "dependency-blockers"].flatMap((kind) =>
+      ["git-command", "run-git", "worktree-path", "changed-paths"].map((quickKind) => [
+        kind,
+        quickKind,
+      ]),
+    ),
+  )("%s cannot block %s, and its timeout cannot kill the fast lane", async (kind, quickKind) => {
+    vi.useFakeTimers();
+    const bulk = child();
+    const fast = child();
+    launch.mockReturnValueOnce(bulk as never).mockReturnValueOnce(fast as never);
+    const instance = worker();
+    const slow = instance.request(kind, {}, 100).catch((error: Error) => error.message);
+    const quick = instance.request(quickKind, {}, 1_000);
+    await vi.advanceTimersByTimeAsync(25);
+    expect(instance.inFlight()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ lane: "bulk", runMs: 25, queueWaitMs: 0 }),
+        expect.objectContaining({ lane: "fast", runMs: 25, queueWaitMs: 0 }),
+      ]),
+    );
+    fast.stdout.emit("data", JSON.stringify({ id: 1, ok: true, value: "quick" }) + "\n");
+    await expect(quick).resolves.toBe("quick");
+    const next = instance.request("git-command", {}, 1_000);
+    await vi.advanceTimersByTimeAsync(75);
+    expect(await slow).toContain("timed out");
+    expect(fast.kill).not.toHaveBeenCalled();
+    fast.stdout.emit("data", JSON.stringify({ id: 2, ok: true, value: "alive" }) + "\n");
+    await expect(next).resolves.toBe("alive");
   });
 
   it.each(["close", "error", "data"])("ignores a replaced child's late %s event", async (event) => {
