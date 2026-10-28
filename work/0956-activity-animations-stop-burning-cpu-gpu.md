@@ -11,7 +11,7 @@ branch: feat/activity-animations-stop-burning-cpu-gpu
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T03:58:48Z"
-updated_at: "2026-10-28T16:46:40Z"
+updated_at: "2026-10-28T16:48:34Z"
 ---
 ## Problem
 
@@ -42,6 +42,24 @@ The activity indicators (RGB keystorm and the other styles in `components/activi
 ## Desired UX
 Animated indicators stay fun and visible, but they cost almost nothing: they only move while on screen in a visible tab, respect reduced-motion, never exceed a small configurable number at once, and a busy board with many working tasks no longer makes the browser's GPU process or the machine fans work hard. See Desired behavior below for the specifics.
 
+## Shots
+```json
+[
+{
+  "label": "Activity animation settings and preview",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation",
+  "highlight": "#setting-activityAnimationConcurrency"
+},
+{
+  "label": "Board with working task indicators",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".tc-moving"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-25T03:58:48Z · created · njachowski@gmail.com
@@ -51,3 +69,4 @@ Animated indicators stay fun and visible, but they cost almost nothing: they onl
 - 2026-10-26T18:55:20Z · status inbox→ready
 - 2026-10-28T16:46:38Z · cli_override, model_override
 - 2026-10-28T16:46:40Z · status ready→active, branch
+- 2026-10-28T16:48:34Z · body
