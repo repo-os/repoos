@@ -1481,6 +1481,46 @@ describe("watchdog check-wait escalation (#0974)", () => {
     fx.clean();
   });
 
+  it("deletes a queue marker left by a dead process instead of flagging the task", async () => {
+    // 2026-10-28: a 7-day-old pressure marker flagged done task #0001.
+    const fx = makeFx(500);
+    marker(fx, "pressure", 7 * 24 * 60 * 60_000, "memory compressor is holding 40% of RAM");
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    const runner = new AgentRunner(fx.config, () => {});
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+    await watchdog.checkNow();
+
+    expect(parseTaskAt(fx).needsInput).toBe(false);
+    expect(
+      existsSync(
+        join(fx.root, fx.config.cacheDir ?? ".repoos", "queue-markers", "0001-pressure.json"),
+      ),
+    ).toBe(false);
+    runner.dispose();
+    fx.clean();
+  });
+
+  it("never flags a task that is not active or in review", async () => {
+    const fx = makeFx(500);
+    writeFileSync(
+      fx.taskPath,
+      readFileSync(fx.taskPath, "utf8").replace(/^status: \w+/m, "status: done"),
+    );
+    marker(fx, "local-check", 20 * 60_000);
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    const runner = new AgentRunner(fx.config, () => {});
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+    await watchdog.checkNow();
+
+    expect(parseTaskAt(fx).needsInput).toBe(false);
+    runner.dispose();
+    fx.clean();
+  });
+
   it("leaves an already-flagged task alone", async () => {
     const fx = makeFx(500);
     marker(fx, "local-check", 15 * 60_000);
