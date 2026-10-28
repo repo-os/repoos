@@ -638,6 +638,37 @@ const drawerHeaderChip = computed(() => {
   };
 });
 
+function scopeWhere(scope: string | null | undefined, machine: string | null | undefined): string {
+  let what = "Full check";
+  if (scope && scope !== "full") {
+    const base = scope.startsWith("changed:") ? scope.slice("changed:".length) : scope;
+    const short = base.length > 12 ? base.slice(0, 7) : base;
+    what = `Changed-path vs ${short}`;
+  }
+  return machine ? `${what} · on ${machine}` : what;
+}
+
+/** Line 3 of the status card. Unknown step is "Starting…", never "step —". */
+function cardProgressLine(run: {
+  currentStep?: number | null;
+  stepsDone?: number | null;
+  stepsTotal?: number | null;
+  testsDone?: number | null;
+  testsTotal?: number | null;
+}): string {
+  const stepNumber = run.currentStep ?? run.stepsDone;
+  if (stepNumber == null) return "Starting…";
+  const step =
+    run.stepsTotal == null ? `Step ${stepNumber}` : `Step ${stepNumber} of ${run.stepsTotal}`;
+  if (run.testsDone == null || run.testsTotal == null || run.testsTotal <= 0) return step;
+  return `${step} · tests ${run.testsDone}/${run.testsTotal} files`;
+}
+
+function openStatusDetails(): void {
+  ui.activeTab = "debug";
+  ui.debugView = "status";
+}
+
 /** One compact, priority-ordered status model for the drawer header and status region. */
 const drawerStatusSummary = computed(() => {
   const task = ui.active;
@@ -720,12 +751,44 @@ const drawerStatusSummary = computed(() => {
     "handoffFailed",
     "checksFailedAfterRetries",
   ].includes(key);
+  const checkRun = activeCheckRun.value ?? lastCheckRun.value;
+  const where = scopeWhere(checkRun?.scope, checkMachine.value ?? checkRun?.machine);
+  const tone = isError ? "fail" : key === "checksRunning" ? "running" : "neutral";
+  let lines: [string, string, string];
+  if (key === "checksRunning" && activeCheckRun.value) {
+    lines = ["Checks running", where, cardProgressLine(activeCheckRun.value)];
+  } else if (key === "checksFailedAfterRetries") {
+    const reason =
+      checkRun?.output
+        ?.split("\n")
+        .map((line) => line.trim())
+        .find(Boolean) ||
+      checkChip.value?.title ||
+      "After retries";
+    lines = ["Checks failed", where, reason];
+  } else if (key === "confirmingHandoff") {
+    lines = ["Confirming handoff", "Handoff", handoffStepLabel.value || "Starting…"];
+  } else if (key === "reviewerRunning") {
+    lines = ["Reviewer running", "Review", "Reviewer is working…"];
+  } else if (key === "workRunning") {
+    lines = ["Work running", "This task", "Work is running…"];
+  } else if (key === "reviewFailed") {
+    lines = ["Review failed", "Review report", shortDetails.reviewFailed || "No complete report"];
+  } else if (key === "notLandable") {
+    lines = ["Not landable", "Landing checks", shortDetails.notLandable];
+  } else if (key === "handoffFailed") {
+    lines = ["Handoff failed", "Handoff", shortDetails.handoffFailed];
+  } else {
+    lines = [labels[key], shortDetails[key] || "Status", "Open Status details"];
+  }
   return {
     key,
     label: labels[key],
     detail: shortDetails[key],
     guidance: guidance[key],
     isError,
+    tone,
+    lines,
   };
 });
 
@@ -5210,59 +5273,35 @@ watch(
               {{ shotWarning }}
             </p>
           </div>
-          <section
+          <button
             v-if="
               drawerStatusSummary &&
               drawerStatusSummary.key !== 'waitingForYou' &&
               (drawerStatusSummary.key !== 'handoffFailed' || !repo.doneErrorFor(ui.active.id))
             "
+            type="button"
             class="drawer-status-summary"
-            :class="{ 'is-error': drawerStatusSummary.isError }"
-            aria-label="Task status"
+            :class="{
+              'is-error': drawerStatusSummary.isError,
+              'is-running': drawerStatusSummary.tone === 'running',
+              'is-fail': drawerStatusSummary.tone === 'fail',
+            }"
+            aria-label="Task status. Open Status details."
+            @click="openStatusDetails"
+            @keydown.enter.prevent="openStatusDetails"
+            @keydown.space.prevent="openStatusDetails"
           >
-            <div class="drawer-status-summary-copy">
-              <strong>{{ drawerStatusSummary.label }}</strong>
-              <span v-if="drawerStatusSummary.detail">{{ drawerStatusSummary.detail }}</span>
-            </div>
-            <span
-              v-if="
-                ['checksRunning', 'confirmingHandoff', 'reviewerRunning', 'workRunning'].includes(
-                  drawerStatusSummary.key,
-                )
-              "
-              class="drawer-status-line"
-              role="status"
-            >
-              <ActivityIndicator />
-              {{
-                drawerStatusSummary.key === "checksRunning"
-                  ? "Running checks…"
-                  : drawerStatusSummary.key === "confirmingHandoff"
-                    ? handoffStepLabel
-                    : drawerStatusSummary.key === "reviewerRunning"
-                      ? "Reviewer is working…"
-                      : "Work is running…"
-              }}
-              <span v-if="activeCheckRun" class="check-progress-inline">{{
-                `${checkMachine ? `on ${checkMachine} · ` : ""}${checkProgressLabel(activeCheckRun)}`
-              }}</span>
+            <span class="drawer-status-row drawer-status-l1">
+              <span class="drawer-status-mark" aria-hidden="true" />
+              {{ drawerStatusSummary.lines[0] }}
             </span>
-            <details class="drawer-info-popover">
-              <summary aria-label="Help for this task status"><Info class="size-3.5" /></summary>
-              <div class="drawer-info-content" role="note">
-                <p>{{ drawerStatusSummary.guidance }}</p>
-                <button
-                  type="button"
-                  @click="
-                    ui.activeTab = 'debug';
-                    ui.debugView = 'status';
-                  "
-                >
-                  Open Status details
-                </button>
-              </div>
-            </details>
-          </section>
+            <span class="drawer-status-row drawer-status-l2">{{
+              drawerStatusSummary.lines[1]
+            }}</span>
+            <span class="drawer-status-row drawer-status-l3">{{
+              drawerStatusSummary.lines[2]
+            }}</span>
+          </button>
           <DoneErrorCard
             v-if="
               ui.active.status === 'review' &&
@@ -7331,46 +7370,67 @@ watch(
 
 .drawer-status-summary {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px 12px;
-  align-items: start;
+  grid-template-rows: 1.35em 1.35em 1.35em;
+  gap: 2px;
+  align-content: center;
+  width: 100%;
   margin: 8px 0;
-  padding: 10px 12px;
+  padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--surface-2);
   color: var(--txt);
+  font: inherit;
   font-size: 12px;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
 }
 
-.drawer-status-summary.is-error {
+.drawer-status-summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.drawer-status-summary.is-error,
+.drawer-status-summary.is-fail {
   border-color: var(--red-border-tint, var(--border));
   background: var(--red-tint);
 }
 
-.drawer-status-summary-copy {
-  display: grid;
-  gap: 3px;
+.drawer-status-row {
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.drawer-status-summary-copy span {
-  color: var(--txt-dim);
-  line-height: 1.4;
-}
-
-.drawer-status-line {
-  grid-column: 1 / -1;
+.drawer-status-l1 {
   display: flex;
   align-items: center;
-  gap: 7px;
-  color: var(--txt-dim);
-  font-size: 11px;
+  gap: 6px;
+  font-weight: 650;
 }
 
-.check-progress-inline {
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
+.drawer-status-mark {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--txt-dim);
+}
+
+.drawer-status-summary.is-running .drawer-status-mark {
+  background: var(--cyan);
+}
+
+.drawer-status-summary.is-fail .drawer-status-mark {
+  background: var(--red);
+}
+
+.drawer-status-l2,
+.drawer-status-l3 {
+  color: var(--txt-dim);
 }
 
 .drawer-info-popover {
@@ -7473,11 +7533,5 @@ watch(
   color: var(--accent);
   font: inherit;
   cursor: pointer;
-}
-
-@media (max-width: 560px) {
-  .drawer-status-summary {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
 }
 </style>
