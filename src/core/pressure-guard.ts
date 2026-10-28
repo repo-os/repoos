@@ -3,8 +3,9 @@
  *
  * The guard holds new work when the machine is paying a memory or CPU cost:
  * sustained swap I/O or pageout rates, low reclaimable memory, macOS
- * memory-pressure critical, Linux PSI, a compressor pool above the byte cap,
- * load above the per-CPU limit, or CPU idle below the floor (#0961). Swap-used
+ * memory-pressure critical, Linux PSI, a compressor pool above the byte cap
+ * (only when no macOS memory_pressure level is available), load above the
+ * per-CPU limit, or CPU idle below the floor (#0961). Swap-used
  * ratio and compressor *ratio* stay advisory — a quiet pool under the byte cap
  * must not block. Running engineers are never killed.
  *
@@ -260,7 +261,21 @@ export function evaluatePressure(
     }
   }
 
-  if (compressorBytes !== null && compressorBytes >= thresholds.maxCompressorBytes) {
+  // When macOS reports its own pressure level, that level is the authority:
+  // the compressor keeps idle apps' pages for hours on a quiet Mac, so a big
+  // pool under a non-critical level is advisory. Without a level reading (other
+  // platforms, a failed probe) the byte cap still holds new work.
+  const compressorCapBlocks = memoryPressureLevel === null;
+  if (
+    compressorBytes !== null &&
+    compressorBytes >= thresholds.maxCompressorBytes &&
+    !compressorCapBlocks
+  ) {
+    warnings.push(
+      `memory compressor is holding ${fmtBytes(compressorBytes)} (limit ` +
+        `${fmtBytes(thresholds.maxCompressorBytes)}) — advisory while macOS memory_pressure is not critical`,
+    );
+  } else if (compressorBytes !== null && compressorBytes >= thresholds.maxCompressorBytes) {
     reasons.push(
       `memory compressor is holding ${fmtBytes(compressorBytes)} (limit ` +
         `${fmtBytes(thresholds.maxCompressorBytes)}) — holding new work until the compressor shrinks`,

@@ -986,7 +986,7 @@ provider = "none"
 | `pressureGuard.minAvailableMemRatio` | number | `0.08` | yes | Block starts when reclaimable memory falls below this fraction of total RAM. |
 | `pressureGuard.maxSwapUsedRatio` | number | `0.5` | yes | Warn when swap in use exceeds this fraction of total swap (occupancy alone does not block — see activity rates below). |
 | `pressureGuard.maxCompressorRatio` | number | `0.35` | yes | Warn when the macOS memory compressor holds more than this fraction of total RAM. The fraction alone does not block. |
-| `pressureGuard.maxCompressorBytes` | number | `8589934592` | yes | Block when the memory compressor holds at least this many bytes (default 8 GiB). |
+| `pressureGuard.maxCompressorBytes` | number | `8589934592` | yes | Block when the memory compressor holds at least this many bytes (default 8 GiB). On macOS this only warns: the system's own memory-pressure level decides, and only "critical" blocks. |
 | `pressureGuard.minIdleCpuPercent` | number | `5` | yes | Block when sampled CPU idle falls below this percentage. |
 | `pressureGuard.activityWindowSec` | number | `30` | yes | Rolling window for swap I/O and pageout rates from `vm_stat` (macOS) or `/proc/vmstat` (Linux). |
 | `pressureGuard.maxSwapIoBytesPerSec` | number | `1048576` | yes | Block when sustained swap in+out over the activity window exceeds this rate (bytes/s). Default 1 MiB/s. |
