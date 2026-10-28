@@ -120,6 +120,7 @@ model_routing.humanStepCheck = true
 remoteValidation.browserCaptureMode = "runner-available"
 pressureGuard.enabled = true
 remoteValidation.offloadBrowserSteps = true
+pressureGuard.maxCompressorBytes = 12884901888
 [[remoteValidation.tailscaleHosts]]
 host = "thinkpad"
 user = "nick"
