@@ -3,6 +3,9 @@ id: "0974"
 title: "Git worker hardening: fresh commit-graph, fast lane for short calls, cache survives restarts"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:43 PM."
 priority: p0
 area: core
 assigned_to: ai
@@ -11,7 +14,10 @@ branch: feat/git-worker-hardening-fresh-commit-graph-
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-28T11:30:32Z"
-updated_at: "2026-10-28T11:52:53Z"
+updated_at: "2026-10-28T12:17:18Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-28T12:17:18.885Z\",\"kind\":\"usage-limit\"}]"
+engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
 On 2026-10-28 RepoOS was unusable for hours because of git:
@@ -42,3 +48,5 @@ Files: `src/server/git-worker.ts` (queue, timeouts), `src/server/git-worker-entr
 - 2026-10-28T11:51:45Z · status ready→active, branch
 - 2026-10-28T11:52:52Z · body: Acceptance criteria (added 1)
 - 2026-10-28T11:52:53Z · message_queued at 2026-10-28T11:52:53.229Z
+- 2026-10-28T12:17:18Z · agent exited with an error (codex) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:43 PM.
+- 2026-10-28T12:17:18Z · engineer crash recovery: switched codex + gpt-6.1-sol → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:43 PM.
