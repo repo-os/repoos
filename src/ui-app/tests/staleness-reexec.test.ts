@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
@@ -36,6 +36,8 @@ function fixture(initiallyStale: boolean): string {
       `import { join } from "node:path";\n` +
       `import { buildSourceHash } from ${JSON.stringify(buildSrc)};\n` +
       `appendFileSync(join(process.cwd(), "builds"), "build\\n");\n` +
+      `const hold = Number(process.env.TEST_BUILD_HOLD_MS || 0);\n` +
+      `if (hold > 0) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, hold);\n` +
       `if (process.env.TEST_BUILD_FAIL === "1") process.exit(4);\n` +
       `if (process.env.TEST_BUILD_NOOP !== "1") writeFileSync(join(process.cwd(), "dist", ".build-info.json"), JSON.stringify({hash: buildSourceHash(process.cwd())}));\n`,
   );
@@ -100,6 +102,28 @@ describe.runIf(!!bun)("stale build bootstrap", () => {
     expect(result.output.guard).toBeNull();
     expect(result.starts).toBe(2);
     expect(result.builds).toBe(1);
+  });
+
+  it("shares one build across concurrent stale CLIs", async () => {
+    const root = fixture(true);
+    const runOne = () =>
+      new Promise<{ status: number | null; err: string }>((resolvePromise, reject) => {
+        const child = spawn(bun!, [join(root, "cli.ts"), "check"], {
+          cwd: root,
+          env: { ...process.env, REPOOS_STALENESS_REEXEC: "", TEST_BUILD_HOLD_MS: "1500" },
+        });
+        let err = "";
+        child.stderr?.on("data", (chunk) => {
+          err += String(chunk);
+        });
+        child.on("error", reject);
+        child.on("exit", (status) => resolvePromise({ status, err }));
+      });
+    const [a, b] = await Promise.all([runOne(), runOne()]);
+    expect(a.status, a.err).toBe(7);
+    expect(b.status, b.err).toBe(7);
+    const builds = readFileSync(join(root, "builds"), "utf8").trim().split("\n");
+    expect(builds, `${a.err}\n---\n${b.err}`).toHaveLength(1);
   });
 
   it("preserves the existing failure when the build fails", () => {

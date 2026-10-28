@@ -3,13 +3,16 @@
  * installed, or the repo isn't a git repo, callers get safe empty values.
  * We shell out rather than depend on a git library (zero deps).
  */
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { execFile, execFileSync, spawn, spawnSync } from "node:child_process";
 import {
   copyFileSync,
   existsSync,
   lstatSync,
   mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
   realpathSync,
   rmSync,
   symlinkSync,
@@ -447,6 +450,63 @@ const FULL_DIR_LOG_TIMEOUT_MS = 120_000;
 const dirLogCache = new Map<string, { head: string; map: Map<string, LastCommit> }>();
 const dirLogInflight = new Map<string, Promise<Map<string, LastCommit>>>();
 
+type DirLogEntry = { head: string; map: Map<string, LastCommit> };
+
+function dirLogCachePath(root: string, relDir: string): string {
+  const key = createHash("sha256").update(relDir).digest("hex");
+  return join(root, ".repoos", "cache", `dir-log-${key}.json`);
+}
+
+function loadDirLogCache(root: string, relDir: string): DirLogEntry | undefined {
+  try {
+    const data = JSON.parse(readFileSync(dirLogCachePath(root, relDir), "utf8"));
+    if (data.version !== 1 || typeof data.head !== "string" || !Array.isArray(data.rows)) return;
+    if (
+      !data.rows.every(
+        (row: unknown) =>
+          Array.isArray(row) &&
+          row.length === 2 &&
+          typeof row[0] === "string" &&
+          row[1] &&
+          (row[1].subject === null || typeof row[1].subject === "string") &&
+          (row[1].date === null || typeof row[1].date === "string"),
+      )
+    )
+      return;
+    return { head: data.head, map: new Map(data.rows) };
+  } catch {
+    return undefined;
+  }
+}
+
+function saveDirLogCache(root: string, relDir: string, entry: DirLogEntry): void {
+  const path = dirLogCachePath(root, relDir);
+  const temporary = `${path}.${randomUUID()}.tmp`;
+  try {
+    mkdirSync(dirname(path), { recursive: true });
+    // Cache creation must not dirty a checkout that has no RepoOS ignore rules.
+    // Preserve any existing owner-supplied ignore file.
+    try {
+      writeFileSync(join(dirname(path), ".gitignore"), "*\n", { flag: "wx" });
+    } catch {
+      /* exists/read-only */
+    }
+    writeFileSync(
+      temporary,
+      JSON.stringify({ version: 1, head: entry.head, rows: [...entry.map] }),
+    );
+    renameSync(temporary, path);
+  } catch {
+    // Cache persistence is best effort (read-only repos still work).
+  } finally {
+    try {
+      rmSync(temporary, { force: true });
+    } catch {
+      /* best effort */
+    }
+  }
+}
+
 function mergeDirLog(
   cached: Map<string, LastCommit>,
   newer: Map<string, LastCommit>,
@@ -469,7 +529,8 @@ export function lastCommitsForDir(root: string, relDir: string): Map<string, Las
   const head = git(root, ["rev-parse", "HEAD"]);
   if (!head) return parseDirLog(git(root, dirLogArgs(relDir)));
   const key = `${root}\0${relDir}`;
-  const cached = dirLogCache.get(key);
+  const cached = dirLogCache.get(key) ?? loadDirLogCache(root, relDir);
+  if (cached) dirLogCache.set(key, cached);
   if (cached && cached.head === head) return new Map(cached.map);
   let map: Map<string, LastCommit> | null = null;
   if (cached && git(root, ["merge-base", "--is-ancestor", cached.head, head]) !== null) {
@@ -477,11 +538,12 @@ export function lastCommitsForDir(root: string, relDir: string): Map<string, Las
     if (out !== null) map = mergeDirLog(cached.map, parseDirLog(out));
   }
   if (!map) {
-    const out = git(root, dirLogArgs(relDir), FULL_DIR_LOG_TIMEOUT_MS);
+    const out = git(root, dirLogArgs(relDir, head), FULL_DIR_LOG_TIMEOUT_MS);
     if (out === null) return new Map();
     map = parseDirLog(out);
   }
   dirLogCache.set(key, { head, map });
+  saveDirLogCache(root, relDir, { head, map });
   return new Map(map);
 }
 
@@ -511,7 +573,8 @@ async function lastCommitsForDirAsyncUncoalesced(
   const head = await gitAsync(root, ["rev-parse", "HEAD"]);
   if (!head) return parseDirLog(await gitAsync(root, dirLogArgs(relDir)));
   const key = `${root}\0${relDir}`;
-  const cached = dirLogCache.get(key);
+  const cached = dirLogCache.get(key) ?? loadDirLogCache(root, relDir);
+  if (cached) dirLogCache.set(key, cached);
   if (cached && cached.head === head) return new Map(cached.map);
   let map: Map<string, LastCommit> | null = null;
   if (
@@ -522,11 +585,12 @@ async function lastCommitsForDirAsyncUncoalesced(
     if (out !== null) map = mergeDirLog(cached.map, parseDirLog(out));
   }
   if (!map) {
-    const out = await gitAsync(root, dirLogArgs(relDir), FULL_DIR_LOG_TIMEOUT_MS);
+    const out = await gitAsync(root, dirLogArgs(relDir, head), FULL_DIR_LOG_TIMEOUT_MS);
     if (out === null) return new Map();
     map = parseDirLog(out);
   }
   dirLogCache.set(key, { head, map });
+  saveDirLogCache(root, relDir, { head, map });
   return new Map(map);
 }
 

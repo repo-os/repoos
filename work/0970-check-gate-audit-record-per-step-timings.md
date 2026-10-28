@@ -91,7 +91,6 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T09:26:21Z · note: handoff requested (ui-review)
 - 2026-10-28T09:33:19Z · handoff failed · ui-review handoff failed at validate · unexpected error: git worker git-overview waited 180000ms in the queue without starting
 - 2026-10-28T11:23:55Z · note: handoff requested (ui-review)
-<<<<<<< HEAD
 - 2026-10-28T11:51:10Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-10-28T11:51:36Z · note: handoff requested (ui-review)
 - 2026-10-28T12:17:17Z · status active→review
@@ -106,9 +105,6 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T12:27:20Z · body: Acceptance criteria (added 1, removed 1)
 - 2026-10-28T12:27:20Z · message_queued at 2026-10-28T12:27:20.367Z
 - 2026-10-28T12:27:33Z · title
-=======
-- 2026-10-28T12:17:17Z · status active→review
->>>>>>> feat/check-gate-audit-record-per-step-timings
 - 2026-10-28T12:27:43Z · message_queued at 2026-10-28T12:27:43.231Z
 - 2026-10-28T12:27:43Z · status review→active
 - 2026-10-28T12:27:48Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (1baa712e1) during finalization (#0734)
