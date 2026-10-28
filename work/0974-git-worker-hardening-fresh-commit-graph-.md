@@ -3,9 +3,6 @@ id: "0974"
 title: "Git worker hardening: fresh commit-graph, fast lane for short calls, cache survives restarts"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: Reading additional input from stdin...
 priority: p0
 area: core
 assigned_to: ai
@@ -63,3 +60,4 @@ Files: `src/server/git-worker.ts` (queue, timeouts), `src/server/git-worker-entr
 - 2026-10-28T13:29:58Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-28T13:30:07Z · cli_override, model_override
 - 2026-10-28T13:30:08Z · engineer stopped by request
+- 2026-10-28T13:30:08Z · needs_input
