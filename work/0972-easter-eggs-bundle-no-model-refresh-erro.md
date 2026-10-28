@@ -11,7 +11,7 @@ branch: ""
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T08:00:32Z"
-updated_at: "2026-10-28T08:33:06Z"
+updated_at: "2026-10-28T08:33:07Z"
 ---
 ## Items
 
@@ -59,9 +59,15 @@ Truncate each line with an ellipsis rather than wrapping.
 ### Notes for AI
 The card lives in `src/ui-app/src/components/TaskDrawer.vue` ("Open Status details" text; see also `DoneErrorCard.vue`). Status details is in `src/ui-app/src/components/DebugPanel.vue`. Use the shared tokens and classes in `style.css`; no hard-coded colors (the `hardcoded-colors` guard). Both screenshots are attached.
 
+## Screenshots
+
+![6](/api/tasks/0972/attachments/att_3546c1e8-226d-4a09-aff5-fa37f8185073.png)
+![7](/api/tasks/0972/attachments/att_8f0fd187-e38e-45b7-b42f-0c84b0a82baa.png)
+
 ## Activity
 
 - 2026-10-28T08:00:32Z · created · njachowski@gmail.com
 - 2026-10-28T08:23:04Z · review_cli_override
 - 2026-10-28T08:23:07Z · review_model_override
 - 2026-10-28T08:33:06Z · title, body: Items (added 1); E2 · Task drawer status card: 3 lines, click to Debug › Status details (added)
+- 2026-10-28T08:33:07Z · screenshots
