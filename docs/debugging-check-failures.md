@@ -303,3 +303,43 @@ For a wedged managed close-out, release it explicitly with
 `repoos checks slots --release <slot> --confirm <pid>` after checking the holder
 shown by the listing. The PID confirmation prevents releasing a slot whose
 owner changed between inspection and action.
+
+
+## Step timing audit (#0970, 2026-10-28)
+
+Checks → Runs now reports median, nearest-rank p90, failures / executed samples,
+and skipped counts per step over the latest 300 runs. Expand **any measured
+run**, including a pass, for its step outcomes and durations. Local CLI runs
+also print a timing summary. `check_runs.step_timings` is an additive nullable
+JSON column: old rows have unknown timings, never zero-duration samples.
+Remote install/build/tests emit the same structured records; browser-only
+passes cannot overwrite earlier measured build/test results with skips.
+
+The initial audit used this task worktree's declared commands, sequentially,
+with RepoOS's local heavy-check slot. The retained audit database and log from
+the earlier task turn contained one run; the resumed turn measured the five
+non-browser candidates again, including the previously unmeasured Telegram
+tests. These are **small local samples**, not a historical per-step failure
+rate or a runner benchmark. The old 1,000-run aggregate in the task cannot
+supply timings that were never recorded.
+
+| Step | Executed samples | Median | p90 | Failures |
+| --- | ---: | ---: | ---: | ---: |
+| rendered-contrast | 1 | 1,065.995s | 1,065.995s | 1/1 timeout |
+| user-docs-build | 2 | 260.069s | 505.452s | 0/2 |
+| macos-hub-icon-transparency | 2 | 28.054s | 53.811s | 0/2 |
+| landing-build | 2 | 5.288s | 6.560s | 0/2 |
+| telegram-manager-build | 2 | 2.538s | 2.829s | 0/2 |
+| telegram-manager-test | 1 | 3.753s | 3.753s | 0/1 |
+
+These samples were taken on a loaded laptop. On an idle machine the same steps
+measured far less: rendered contrast **17.6s** and the docs build **6–7s** (driver
+runs, 2026-10-28). The contrast sample above was a browser timeout, not a
+completed audit. Step cost depends heavily on machine load; read the report's
+medians over many runs before moving any step out of close-out.
+
+The test suite is the dominant cost: 6½–8 minutes scoped, and most of a ~57
+minute full close-out. Handoff now passes the default profile instead of
+`--profile full`; with no profile-restricted steps in `repoos.toml` the two
+select the same steps. Narrowing which tests close-out runs is a follow-up task.
+The runner host needs the updated `validate.sh` to report remote step timings.

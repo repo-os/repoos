@@ -1,3 +1,4 @@
+import { STEP_TIMING_MARKER, type CheckStepTiming } from "../core/check-timings.js";
 /**
  * `repoos check` — the definition-of-done gate.
  *
@@ -1212,10 +1213,29 @@ async function runScript(
 
 // ── Built-in step kinds ─────────────────────────────────────────────────
 
-async function stepStaleness(ctx: StepContext): Promise<BuiltinOutcome> {
-  const stale = checkBuildForRoot(ctx.repoRoot);
+export async function stepStaleness(ctx: StepContext): Promise<BuiltinOutcome> {
+  let stale = checkBuildForRoot(ctx.repoRoot);
   if (stale.stale && stale.applicable) {
-    return { status: "failed", detail: stale.message ?? "build is stale" };
+    // A stale build only ever means "run the build" (AGENTS.md). Failing here
+    // cost a whole extra handoff round each time: on 2026-10-28, 4 of 11
+    // handoff checks waited 12-23 min for a slot, then failed this first step.
+    console.log(c.dim("  · build is stale — running `bun run build` before the check"));
+    const res = await runCommand({
+      command: "bun run build",
+      cwd: ctx.repoRoot,
+      timeoutMs: 600_000,
+      env: ctx.env,
+      echo: false,
+    });
+    stale = checkBuildForRoot(ctx.repoRoot);
+    if (res.status !== "passed" || (stale.stale && stale.applicable)) {
+      const out = res.output.trim().split("\n").slice(-20).join("\n");
+      return {
+        status: "failed",
+        detail: `${stale.message ?? "build is stale"}\nAutomatic \`bun run build\` ${res.status}${out ? `:\n${out}` : ""}`,
+      };
+    }
+    return { status: "passed", detail: "rebuilt a stale build" };
   }
   if (stale.code === "fresh") return { status: "passed" };
   // Not a RepoOS-style build — an explicit skip, not a pass, and not a
@@ -2351,6 +2371,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
           taskId,
           taskAbsPath,
           changedRef,
+          checkProfile: profile,
           onChunk: (chunk) => {
             remoteOutput += chunk;
             process.stdout.write(chunk);
@@ -2392,6 +2413,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
               worktreePath: repoRoot,
               taskId,
               phase: runPhase,
+              checkProfile: profile,
               changedRef,
               onChunk: (chunk) => {
                 remoteOutput += chunk;
@@ -2451,6 +2473,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     taskId: preflightContext.taskId,
     phase: preflightContext.phase,
   });
+  const completedSteps: CheckStepTiming[] = [];
   let results: StepRunResult[];
   let finalProgress: { stepsDone: number; stepsTotal: number } | undefined;
   try {
@@ -2478,6 +2501,9 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         if (progress) console.log(`::repoos-check-progress::${JSON.stringify(progress)}`);
       },
       onResult: (r, progress) => {
+        const timing = { name: r.name, status: r.status, durationMs: r.durationMs };
+        completedSteps.push(timing);
+        console.log(`${STEP_TIMING_MARKER}${JSON.stringify(timing)}`);
         finalProgress = progress;
         if (progress) console.log(`::repoos-check-progress::${JSON.stringify(progress)}`);
         const secs = r.durationMs >= 1000 ? ` (${(r.durationMs / 1000).toFixed(1)}s)` : "";
@@ -2509,6 +2535,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       outcome: "fail",
       failedStep: "check",
       skippedSteps: [],
+      steps: completedSteps,
       detail: `check crashed before completing: ${(e as Error).message}`,
     });
     throw e;
@@ -2524,6 +2551,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   const optionalFailures = results.filter(
     (r) => !r.required && r.status !== "passed" && r.status !== "skipped",
   );
+  console.log(c.bold(c.cyan("\n  ── Step timings ──")));
+  for (const r of results) console.log(`  ${r.name}: ${r.durationMs}ms · ${r.status}`);
   console.log(c.bold(c.cyan("\n  ── Results ──")));
   for (const r of results) {
     const icon = !r.required && STATUS_ICON[r.status] === "✗" ? "⚠" : STATUS_ICON[r.status];
@@ -2650,6 +2679,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     outcome: gatingFailures.length === 0 ? "pass" : "fail",
     failedStep: gatingFailures[0]?.name ?? null,
     skippedSteps: results.filter((r) => r.status === "skipped").map((r) => r.name),
+    steps: completedSteps,
     stepsDone: finalProgress?.stepsDone ?? null,
     stepsTotal: finalProgress?.stepsTotal ?? null,
     testFileTimings: fileTimings,
@@ -2733,6 +2763,7 @@ function recordRunHistoryRow(row: {
   stepsTotal?: number | null;
   testsDone?: number | null;
   testsTotal?: number | null;
+  steps?: CheckStepTiming[];
   testFileTimings?: TestFileTiming[];
 }): void {
   try {
@@ -2756,6 +2787,7 @@ function recordRunHistoryRow(row: {
       stepsTotal: row.stepsTotal,
       testsDone: row.testsDone,
       testsTotal: row.testsTotal,
+      steps: row.steps,
       testFileTimings: row.testFileTimings,
     });
   } catch {

@@ -207,7 +207,7 @@ async function runCheck(
    */
   changedBase?: string | null,
 ): Promise<RunResult> {
-  const checkArgs = spawnedRepoosCheckArgs(config, remoteGateOutcome);
+  const checkArgs = spawnedRepoosCheckArgs(config, remoteGateOutcome, "pre-review");
   // Prefer the assigned worktree's compiled CLI. A globally linked `repoos`
   // resolves build freshness relative to its own package checkout, which can
   // falsely pass or fail when finalizing a different linked worktree.

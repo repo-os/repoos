@@ -304,7 +304,7 @@ completion, and keep merging and status changes in the close-out pipeline.
 Before a task moves to review, `repoos check` must pass. It runs the check plan
 this repo declares in `repoos.toml` (`[[check.steps]]`, #0446) — for RepoOS
 that is:
-- Build staleness check (`src/` vs `dist/`)
+- Build staleness check (`src/` vs `dist/`); a stale build is rebuilt automatically (`bun run build`) and fails only if that build fails
 - Lockfile sync (`bun.lock` vs `package.json`) and the zero-runtime-dependency guard
 - Formatting & lint (`oxfmt --check` + `oxlint`) — **if this fails, run `repoos check --fix` (or `bun run fmt`), re-stage, and re-run `repoos check`**; build, tests and smoke are skipped until formatting is clean (they `dependsOn` it). The close-out gate never auto-formats, so an unformatted committed tree still fails there
 - Full build (`tsc` + asset copy), CSS layering and theme-contrast guards, hard-coded-color source guard (`hardcoded-colors`), bare-`require()` guard, task-asset guard

@@ -178,6 +178,7 @@ export async function runEngineerRemoteSelfCheckGate(params: {
   taskId: string;
   taskAbsPath?: string;
   changedRef?: string;
+  checkProfile?: string;
   onChunk?: (chunk: string) => void;
 }): Promise<RemotePreReviewOutcome> {
   const boardRoot = boardRootForEngineerRemote(params.worktreePath);
@@ -202,6 +203,7 @@ export async function runEngineerRemoteSelfCheckGate(params: {
       phase: "pre-review",
       kind: "self-check",
       changedRef: params.changedRef,
+      checkProfile: params.checkProfile,
       onChunk: params.onChunk,
     });
     await remoteValidator.dispose().catch(() => {});

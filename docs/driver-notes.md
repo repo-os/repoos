@@ -159,3 +159,66 @@ difference. Fix: `preferAppleGit()` in `src/core/runtime.ts` (called from
 remaining +5 s `syspolicyd` per run is still unexplained (bun/node suspected).
 Do not benchmark with `git --version`: it is cheap and does not reproduce the
 signature-validation cost. Measure real git commands during the workload.
+
+## 2026-10-28 — "running" is not progress: check every wait for movement
+
+Twice in one day a task sat for 25+ minutes while the driver assumed it was
+working. #0970's handoff check ran at 0% CPU with no children: the check runs
+the task branch's own `dist/`, and that branch predated the macOS pressure-guard
+hotfix, so its local guard silently waited for the compressor to drop below
+8 GB. #0972 would have done the same. Earlier the same day the git worker's
+full `work/` history walk took 2–5 minutes (stale commit-graph), every short
+git call queued behind it timed out, and the server crash-looped at boot.
+
+Rules for the driver:
+- A watcher must check for **movement**, not just a status. Every 5–10 minutes,
+  for each running check or engineer, confirm at least one of: a new session
+  line, `check_runs.steps_done` / `tests_done` rising, or real CPU on the check
+  process and its children. No movement for 10 minutes means investigate now:
+  `ps -o etime,%cpu`, `pgrep -P <pid>`, `sample <pid> 2` (an idle `kevent64`
+  loop with no children is a wait, not work), `repoos checks slots`,
+  `repoos stats`.
+- After any hotfix on main that changes how checks, guards or git run, merge
+  main into every active task branch and rebuild before its next check. A task
+  check runs the branch's code, not main's.
+- When `git log -- work` or the board is slow, time it directly and check the
+  commit-graph (`ls -la .git/objects/info/commit-graphs/`); rebuild with
+  `git commit-graph write --reachable --changed-paths`. #0974 automates this.
+- Silent waits are bugs. A check held by the pressure guard, a slot or a queue
+  must say so on the task card; #0974 tracks surfacing it.
+
+## 2026-10-28 — pace Codex across its 5-hour window; read the real usage numbers
+
+Codex has two limits: a 5-hour window and a weekly one, shared by every model
+on the account (Sol and Luna run out together). Three Sol engineers used a whole
+5-hour window in about 35 minutes (11:43Z start, limit hit 12:17Z), then every
+Codex task sat idle for 4.5 hours. One full window cost about 16% of the weekly
+limit.
+
+The live numbers are in Codex's own session logs:
+`~/.codex/sessions/**/*.jsonl` carry `"primary"` (5-hour, `window_minutes: 300`)
+and `"secondary"` (weekly, `10080`) objects with `used_percent` and
+`resets_at` (Unix seconds). Read the newest one before choosing how many Codex
+engineers to run and on which model.
+
+Rules:
+- Pace to the window: by minute M of 300, use about M/3 percent. Over pace,
+  drop to one engineer on the cheaper model; under pace with weekly headroom,
+  add an engineer or move one machinery task to the stronger model.
+- Default to the cheaper model (Luna) so a window lasts its full 5 hours; keep
+  the stronger model for one task at a time that needs it.
+- When a weekly limit is about to reset with headroom left, run more Codex
+  engineers in its last windows: unused weekly allowance is lost.
+
+## 2026-10-28 — a src/ commit on main can start a build storm
+
+Every `repoos` command rebuilds a stale `dist/` before it runs. After a hotfix
+commit changed `src/` on main, several commands started at once (a driver
+watcher polling `repoos show` every minute, engineers' `repoos` calls, driver
+messages) and each began its own full `tsc` + Vite build. Load average hit 320
+and the server stopped answering health checks for minutes. Rules: run
+`bun run build` in the main checkout immediately after committing `src/`
+changes there, before any other `repoos` command; and poll task state from the
+files (`work/<id>-*.md`, `.repoos/sessions/<id>.json`, `.repoos/checks.db`), not
+by looping the CLI. #0974 tracks a build lock so concurrent CLIs share one
+build.
