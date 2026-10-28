@@ -173,9 +173,26 @@ export async function handleEnquiry(request: Request, env: LandingEnv): Promise<
   }
 }
 
+/**
+ * Agent entry points. An agent's very first step reads these, and on
+ * 2026-10-21 Cloudflare kept serving a cached 404 for hours after a deploy.
+ * A miss is never cacheable; a hit is cached briefly and revalidated, so a new
+ * deploy shows up within minutes without a manual purge.
+ */
+const AGENT_TEXT_PATHS = new Set(["/llms.txt", "/llms-full.txt"]);
+export const AGENT_TEXT_CACHE_CONTROL = "public, max-age=300, must-revalidate";
+
+export async function serveAgentText(request: Request, env: LandingEnv): Promise<Response> {
+  const asset = await env.ASSETS.fetch(request);
+  const headers = new Headers(asset.headers);
+  headers.set("Cache-Control", asset.ok ? AGENT_TEXT_CACHE_CONTROL : "no-store");
+  return new Response(asset.body, { status: asset.status, statusText: asset.statusText, headers });
+}
+
 export default {
   async fetch(request: Request, env: LandingEnv): Promise<Response> {
     const url = new URL(request.url);
+    if (AGENT_TEXT_PATHS.has(url.pathname)) return serveAgentText(request, env);
     if (url.pathname === "/api/enquiry") return handleEnquiry(request, env);
     if (url.pathname.startsWith("/api/")) return json(404, false);
     if (/^\/for-clients\/?$/.test(url.pathname)) {
