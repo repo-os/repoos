@@ -1,8 +1,7 @@
 /**
  * #0952 — the task drawer shows at most one dynamic chip in the header and one
- * status card + one status line between the preview row and the tabs. Canned
- * guidance lives in the info popover; the full text is also in Debug → Status
- * details.
+ * status card between the preview row and the tabs. The card is three lines
+ * and opens Debug → Status details.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
@@ -145,11 +144,12 @@ describe("task drawer status summary (#0952)", () => {
 
     const summary = wrapper.find(".drawer-status-summary");
     expect(summary.exists()).toBe(true);
-    expect(summary.find(".drawer-status-summary-copy").text()).toContain("Review failed");
-    expect(summary.find(".drawer-status-summary-copy").text()).toContain("No complete report");
+    expect(summary.find(".drawer-status-l1").text()).toContain("Review failed");
+    expect(summary.find(".drawer-status-l3").text()).toContain("No complete report");
+    expect(summary.findAll(".drawer-status-row")).toHaveLength(3);
   });
 
-  it("places the landable checklist behind the info popover, not in the card", async () => {
+  it("keeps the landable checklist off the card and opens Status details", async () => {
     const pinia = setup();
     const repo = useRepoStore();
     repo.seedLandable("0001", {
@@ -172,17 +172,16 @@ describe("task drawer status summary (#0952)", () => {
     const wrapper = await mountDrawer(pinia, reviewTask());
 
     const summary = wrapper.find(".drawer-status-summary");
-    const copy = summary.find(".drawer-status-summary-copy");
-    expect(copy.text()).toContain("Not landable");
-    expect(copy.text()).toContain("1 landing check failing");
-    expect(copy.text()).not.toContain("Merge with main");
+    expect(summary.find(".drawer-status-l1").text()).toContain("Not landable");
+    expect(summary.find(".drawer-status-l3").text()).toContain("1 landing check failing");
+    expect(summary.text()).not.toContain("Merge with main");
+    expect(summary.find(".drawer-info-popover").exists()).toBe(false);
+    expect(summary.findAll(".drawer-status-row")).toHaveLength(3);
 
-    // The full checklist is in the popover content (rendered in the DOM because
-    // teleport is stubbed in tests).
-    const popover = summary.find(".drawer-info-content");
-    expect(popover.exists()).toBe(true);
-    expect(popover.text()).toContain("Merge with main");
-    expect(popover.text()).toContain("src/core/types.ts conflicts with main");
+    await summary.trigger("keydown", { key: "Enter" });
+    await flush();
+    expect(useUiStore().activeTab).toBe("debug");
+    expect(useUiStore().debugView).toBe("status");
   });
 
   it("shows one status line for running checks and no long detail in the card", async () => {
@@ -225,18 +224,86 @@ describe("task drawer status summary (#0952)", () => {
     const wrapper = await mountDrawer(pinia, task);
 
     const summary = wrapper.find(".drawer-status-summary");
-    expect(summary.text()).toContain("Checks running");
-    expect(summary.text()).toContain("Changed-path (changed:main)");
-    expect(summary.text()).not.toContain("Tests 24/72");
+    expect(summary.find(".drawer-status-l1").text()).toContain("Checks running");
+    expect(summary.find(".drawer-status-l2").text()).toContain("Changed-path vs main");
+    expect(summary.find(".drawer-status-l2").text()).toContain("on macbook");
+    expect(summary.find(".drawer-status-l3").text()).toContain("Step 4 of 8 · tests 24/72 files");
+    expect(summary.findAll(".drawer-status-row")).toHaveLength(3);
+    expect(summary.find(".drawer-info-popover").exists()).toBe(false);
 
-    const statusLine = summary.find(".drawer-status-line");
-    expect(statusLine.exists()).toBe(true);
-    expect(statusLine.text()).toContain("Running checks…");
-    expect(statusLine.text()).toContain("on macbook");
-    expect(statusLine.text()).toContain("tests 24/72 files");
+    await summary.trigger("click");
+    await flush();
+    expect(useUiStore().activeTab).toBe("debug");
+    expect(useUiStore().debugView).toBe("status");
 
     // No header chip for a routine running state.
     expect(wrapper.find(".drawer-status-chip").exists()).toBe(false);
+  });
+
+  it("uses Starting… and three lines before a step number exists", async () => {
+    const pinia = setup();
+    const repo = useRepoStore();
+    const task = makeTask({ status: "active", branch: "feat/status-summary" });
+    repo.taskChecks["0001"] = [
+      {
+        id: "0001-merge-gate-1",
+        taskId: "0001",
+        kind: "merge-gate",
+        startedAt: new Date().toISOString(),
+        finishedAt: null,
+        durationMs: null,
+        running: true,
+        passed: null,
+        code: null,
+        output: "",
+        scope: "full",
+        machine: "thinkpad",
+      },
+    ];
+    const wrapper = await mountDrawer(pinia, task);
+    const summary = wrapper.find(".drawer-status-summary");
+    expect(summary.findAll(".drawer-status-row")).toHaveLength(3);
+    expect(summary.find(".drawer-status-l2").text()).toContain("Full check");
+    expect(summary.find(".drawer-status-l2").text()).toContain("on thinkpad");
+    expect(summary.find(".drawer-status-l3").text()).toBe("Starting…");
+    expect(summary.text()).not.toContain("step —");
+  });
+
+  it("renders three lines for a failed check and opens Status details", async () => {
+    const pinia = setup();
+    const repo = useRepoStore();
+    const task = makeTask({
+      status: "active",
+      branch: "feat/status-summary",
+      checkRetryCount: 2,
+    });
+    repo.taskChecks["0001"] = [
+      {
+        id: "0001-merge-gate-1",
+        taskId: "0001",
+        kind: "merge-gate",
+        startedAt: new Date(Date.now() - 20_000).toISOString(),
+        finishedAt: new Date().toISOString(),
+        durationMs: 20_000,
+        running: false,
+        passed: false,
+        code: 1,
+        output: "tests failed after retries",
+        scope: "changed:9f3f0ca",
+        machine: "thinkpad",
+      },
+    ];
+    const wrapper = await mountDrawer(pinia, task);
+    const summary = wrapper.find(".drawer-status-summary");
+    expect(summary.findAll(".drawer-status-row")).toHaveLength(3);
+    expect(summary.find(".drawer-status-l1").text()).toContain("Checks failed");
+    expect(summary.find(".drawer-status-l2").text()).toContain("Changed-path vs 9f3f0ca");
+    expect(summary.find(".drawer-status-l2").text()).toContain("on thinkpad");
+    expect(summary.find(".drawer-status-l3").text()).toContain("tests failed after retries");
+    await summary.trigger("keydown", { key: " " });
+    await flush();
+    expect(useUiStore().activeTab).toBe("debug");
+    expect(useUiStore().debugView).toBe("status");
   });
 
   it("shows a red Slow chip with the elapsed time when the running check is over-long", async () => {

@@ -328,8 +328,9 @@ describe("opencode adapter", () => {
     try {
       const res = await listModelSources({ cwd: tmpDir() });
       expect(res.opencode.models).toEqual(["default"]);
-      // The reason travels with the empty list instead of a bare [] (#0593).
-      expect(res.opencode.error).toBe("opencode not found on PATH");
+      // Missing binary is not a failed probe (#0972).
+      expect(res.opencode.error).toBeUndefined();
+      expect(res.opencode.notInstalled).toBe(true);
     } finally {
       process.env.PATH = old;
     }

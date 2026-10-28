@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useRepoStore } from "./stores/repo";
 import { useDocsStore } from "./stores/docs";
@@ -19,6 +19,8 @@ import UiRecoveryBanner from "./components/UiRecoveryBanner.vue";
 import CopyInspectorOverlay from "./components/CopyInspectorOverlay.vue";
 import ReleaseUpdateNotification from "./components/ReleaseUpdateNotification.vue";
 import DependencyOverrideDialog from "./components/DependencyOverrideDialog.vue";
+import PageSkeleton from "./components/PageSkeleton.vue";
+import { loadingSkeletonKind } from "./lib/loading-skeleton";
 import { configureUiRecovery, checkUiBuild, showOffline } from "./lib/uiRecovery";
 import {
   applyShotPreviewConfigFixture,
@@ -40,6 +42,7 @@ const notices = useNoticesStore();
 // full-viewport screen with no app chrome — the visitor isn't authenticated
 // yet, and the sidebar/topbar assume a signed-in session.
 const isPublicRoute = computed(() => route.meta.public === true || route.meta.fullscreen === true);
+const loadingKind = computed(() => loadingSkeletonKind(route.path));
 
 const onApiTimeout = (event: Event): void => {
   const detail = (event as CustomEvent<string>).detail;
@@ -107,10 +110,18 @@ function applyShotFixturesFromLocation(opts: { config?: boolean } = {}): void {
 
 // Re-apply after navigation so `?task=` is on the URL before drawer fixtures
 // run (a cold load can mount before the route query is visible to the fixture).
+// Opening the task resets the drawer to its status default, so the Status
+// details shot has to win that reset or the highlight never mounts (#0972).
 watch(
   () => route.fullPath,
-  () => {
+  async () => {
     applyShotFixturesFromLocation();
+    await nextTick();
+    const shotFixture = readShotPreviewFixtureFromLocation(window.location);
+    if (shotFixture === "drawer:statusDetails" || shotFixture === "drawer:held") {
+      ui.activeTab = "debug";
+      ui.debugView = "status";
+    }
   },
 );
 
@@ -132,7 +143,7 @@ onUnmounted(() => {
         <Sidebar />
 
         <div class="main">
-          <div v-if="repo.loading" class="spin"></div>
+          <PageSkeleton v-if="repo.loading" :kind="loadingKind" class="main-route" />
           <RouterView v-else class="main-route" />
         </div>
       </div>

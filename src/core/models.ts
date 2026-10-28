@@ -38,11 +38,14 @@ export interface ModelSourceResult {
   /** True when the source supports a cache-refreshing re-probe. */
   refreshable: boolean;
   /**
-   * Why the list is empty or incomplete, when the probe failed: binary not
-   * found on PATH, timed out, spawn failed, non-zero exit (often "not signed
-   * in"), or a JSON-RPC error from the CLI. Absent on success (#0593).
+   * Why the list is empty or incomplete, when the probe failed: timed out,
+   * spawn failed, non-zero exit (often "not signed in"), or a JSON-RPC error
+   * from the CLI. Absent on success (#0593). A missing binary is `notInstalled`,
+   * not an error — uninstalling an agent is not a failed refresh.
    */
   error?: string;
+  /** The CLI binary is not on PATH. Distinct from `error` (#0972). */
+  notInstalled?: boolean;
   /** True when `models` is the last successful list, served because this probe failed. */
   stale?: boolean;
 }
@@ -159,6 +162,16 @@ const MODELS_STDERR_MAX_BYTES = 4 * 1024;
  * The stderr first line is included because CLIs say "Not signed in" /
  * "Authentication required" there — exactly the reason the dropdown needs.
  */
+/** A supported CLI whose binary is absent. Not a probe failure (#0972). */
+function notOnPath(refreshable: boolean): ModelSourceResult {
+  return {
+    supported: true,
+    models: ["default"],
+    refreshable,
+    notInstalled: true,
+  };
+}
+
 function probeError(bin: string, out: SpawnOutcome, timeoutMs: number): string | undefined {
   if (out.spawnError) return `failed to run ${bin}`;
   if (out.timedOut) return `${bin} timed out after ${Math.round(timeoutMs / 1000)}s`;
@@ -345,13 +358,7 @@ const opencodeAdapter: ModelSourceAdapter = {
   async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
     // "default" (the coding agent's own default) is always offered first.
     const bin = resolveBinary("opencode", process.env.PATH ?? "");
-    if (!bin)
-      return {
-        supported: true,
-        models: ["default"],
-        refreshable: true,
-        error: "opencode not found on PATH",
-      };
+    if (!bin) return notOnPath(true);
     const args = opts.refresh ? ["models", "--refresh"] : ["models"];
     const timeoutMs = opts.timeoutMs ?? MODELS_TIMEOUT_MS;
     let out = await spawnModels(bin, args, {
@@ -380,13 +387,7 @@ const codexAdapter: ModelSourceAdapter = {
   supported: true,
   async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
     const bin = resolveBinary("codex", process.env.PATH ?? "");
-    if (!bin)
-      return {
-        supported: true,
-        models: ["default"],
-        refreshable: true,
-        error: "codex not found on PATH",
-      };
+    if (!bin) return notOnPath(true);
     const probe = await listCodexModels(bin, opts);
     return {
       supported: true,
@@ -448,13 +449,7 @@ const kiroAdapter: ModelSourceAdapter = {
   supported: true,
   async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
     const bin = resolveBinary("kiro-cli", process.env.PATH ?? "");
-    if (!bin)
-      return {
-        supported: true,
-        models: ["default"],
-        refreshable: true,
-        error: "kiro-cli not found on PATH",
-      };
+    if (!bin) return notOnPath(true);
     const out = await spawnModels(bin, ["chat", "--list-models"], {
       timeoutMs: opts.timeoutMs ?? MODELS_TIMEOUT_MS,
       cwd: opts.cwd,
@@ -497,13 +492,7 @@ const cursorAdapter: ModelSourceAdapter = {
   supported: true,
   async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
     const bin = resolveBinary("cursor-agent", process.env.PATH ?? "");
-    if (!bin)
-      return {
-        supported: true,
-        models: ["default"],
-        refreshable: true,
-        error: "cursor-agent not found on PATH",
-      };
+    if (!bin) return notOnPath(true);
     const out = await spawnModels(bin, ["--list-models"], {
       timeoutMs: opts.timeoutMs ?? MODELS_TIMEOUT_MS,
       cwd: opts.cwd,
@@ -524,13 +513,7 @@ const antigravityAdapter: ModelSourceAdapter = {
   supported: true,
   async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
     const bin = resolveBinary("agy", process.env.PATH ?? "");
-    if (!bin)
-      return {
-        supported: true,
-        models: ["default"],
-        refreshable: false,
-        error: "agy not found on PATH",
-      };
+    if (!bin) return notOnPath(false);
     const out = await spawnModels(bin, ["models"], {
       timeoutMs: opts.timeoutMs ?? MODELS_TIMEOUT_MS,
       cwd: opts.cwd,
@@ -560,13 +543,7 @@ const crushAdapter: ModelSourceAdapter = {
   supported: true,
   async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
     const bin = resolveBinary("crush", process.env.PATH ?? "");
-    if (!bin)
-      return {
-        supported: true,
-        models: ["default"],
-        refreshable: false,
-        error: "crush not found on PATH",
-      };
+    if (!bin) return notOnPath(false);
     const out = await spawnModels(bin, ["models"], {
       timeoutMs: opts.timeoutMs ?? MODELS_TIMEOUT_MS,
       cwd: opts.cwd,
@@ -594,13 +571,7 @@ const piAdapter: ModelSourceAdapter = {
   supported: true,
   async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
     const bin = resolveBinary("pi", process.env.PATH ?? "");
-    if (!bin)
-      return {
-        supported: true,
-        models: ["default"],
-        refreshable: false,
-        error: "pi not found on PATH",
-      };
+    if (!bin) return notOnPath(false);
     const out = await spawnModels(bin, ["--list-models"], {
       timeoutMs: opts.timeoutMs ?? MODELS_TIMEOUT_MS,
       cwd: opts.cwd,
@@ -733,6 +704,10 @@ function isGoodResult(result: ModelSourceResult): boolean {
  */
 function withLastGood(key: string, cwd: string, result: ModelSourceResult): ModelSourceResult {
   loadLastGood(cwd);
+  // An uninstalled CLI is not a failed refresh. Do not resurrect the last
+  // good list as a stale error — that is what painted "Couldn't refresh
+  // models (kiro-cli not found on PATH)" after Kiro was removed (#0972).
+  if (result.notInstalled) return { ...result, error: undefined, stale: undefined };
   if (isGoodResult(result)) {
     lastGoodModels.set(key, result.models);
     saveLastGood(cwd);
