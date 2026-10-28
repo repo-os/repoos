@@ -2750,24 +2750,74 @@
   box-shadow: 0 0 6px var(--red);
   animation: tcpulse 1.1s ease-in-out infinite;
 }
-/* #0960: the "Held" badge — a deliberate, durable state that parks the task
-   out of ALL automation. Violet distinguishes it from the amber "paused" pill:
-   a pause is a transient stop, a hold is an intentional, documented block. */
+/* #0975: warm warning cue for a durable hold, distinct from the violet Human chip. */
 .tc-held {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  color: var(--violet);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  gap: 3px;
+  color: var(--amber);
+  font-size: 9.5px;
+  font-weight: 600;
   font-family: "JetBrains Mono", monospace;
-  padding: 2px 8px;
+  line-height: 1.3;
+  padding: 2px 6px;
   border-radius: 6px;
-  border: 1px solid var(--violet-border-tint);
-  background: var(--violet-dim);
+  border: 1px solid var(--amber-border-tint);
+  background: var(--amber-tint);
   cursor: help;
+}
+.tc-held-icon {
+  width: 10px;
+  height: 10px;
+  flex: none;
+}
+.held-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 10px 0;
+  padding: 11px 12px;
+  border: 1px solid var(--amber-border-tint);
+  border-radius: 10px;
+  background: var(--amber-tint);
+  color: var(--foreground);
+}
+.held-panel-copy {
+  min-width: 0;
+}
+.held-panel-copy strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--amber);
+  font-size: 12px;
+}
+.held-panel-copy strong svg {
+  width: 14px;
+  height: 14px;
+}
+.held-panel-copy p {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+.held-panel-copy small {
+  display: block;
+  margin-top: 4px;
+  color: var(--txt-dim);
+  font-size: 10px;
+}
+.held-panel-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+@media (max-width: 560px) {
+  .held-panel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 .tc-held-until {
   opacity: 0.75;
