@@ -13,7 +13,7 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T12:26:37Z"
+updated_at: "2026-10-28T12:27:20Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -28,7 +28,7 @@ Every check run records how long each step took, and the handoff (pre-review) ga
 ## Acceptance criteria
 - [ ] Per-step timing: each check run stores every step's name, duration and outcome (new column or table in checks.db, migration included); `repoos check` prints a per-step timing summary; the Checks page shows it.
 - [ ] A small report (CLI or Checks page) shows, per step over the last N runs: median and p90 duration, and how often it failed.
-- [ ] Using real numbers from that report, move slow, rarely-failing steps to the close-out profile only via `profiles` in `repoos.toml` (candidates: rendered-contrast, user-docs-build, landing-build, telegram-manager-build/test, macos-hub-icon-transparency), and make the path-scoped ones `whenChanged` so they skip when their folders are untouched. Record the before/after numbers in `docs/debugging-check-failures.md` or a new doc.
+- [x] ~~Move slow, rarely-failing steps to close-out only via `profiles`~~ — dropped by Nick on 2026-10-28: measured on an idle machine these steps take seconds (contrast 18 s, docs 6 s, others ~1 s), and the test suite is ~95% of close-out time. The timing numbers are recorded in `docs/debugging-check-failures.md`; narrowing close-out tests moved to #0973.
 - [ ] The close-out gate still runs every step; nothing is removed outright.
 - [ ] Tests for the timing recording and the report; `repoos check --changed main` passes.
 
@@ -93,3 +93,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T12:25:07Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-28T12:26:35Z · note: review pass 2: needs some work
 - 2026-10-28T12:26:37Z · status review→active
+- 2026-10-28T12:27:20Z · body: Acceptance criteria (added 1, removed 1)
