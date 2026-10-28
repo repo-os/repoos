@@ -11,7 +11,7 @@ branch: feat/activity-animations-stop-burning-cpu-gpu
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T03:58:48Z"
-updated_at: "2026-10-28T18:26:53Z"
+updated_at: "2026-10-28T22:10:02Z"
 ---
 ## Problem
 
@@ -72,3 +72,4 @@ Animated indicators stay fun and visible, but they cost almost nothing: they onl
 - 2026-10-28T16:48:34Z · body
 - 2026-10-28T16:49:12Z · message_queued at 2026-10-28T16:49:12.187Z
 - 2026-10-28T18:26:53Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-28T22:10:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
