@@ -2,7 +2,7 @@
 id: "0974"
 title: "Git worker hardening: fresh commit-graph, fast lane for short calls, cache survives restarts"
 type: bug
-status: active
+status: done
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
@@ -16,7 +16,7 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T11:30:32Z"
-updated_at: "2026-10-28T16:15:39Z"
+updated_at: "2026-10-28T16:15:58Z"
 dev_error_count: 4
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-28T15:20:16.639Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
@@ -75,3 +75,4 @@ Files: `src/server/git-worker.ts` (queue, timeouts), `src/server/git-worker-entr
 - 2026-10-28T15:47:31Z · engineer stopped by request
 - 2026-10-28T15:47:32Z · held, held-reason, held-by, held-at
 - 2026-10-28T16:15:39Z · released
+- 2026-10-28T16:15:58Z · status active→done
