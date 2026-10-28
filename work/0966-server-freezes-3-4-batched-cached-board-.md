@@ -12,7 +12,7 @@ branch: feat/server-freezes-3-4-batched-cached-board-
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T12:02:34Z"
-updated_at: "2026-10-28T18:25:38Z"
+updated_at: "2026-10-28T18:26:59Z"
 ---
 ## Problem
 Split from #0962. The board computes git state per task/branch (ahead counts, merged checks, work-file history), spawning hundreds of git processes on ~900 tasks and ~100 branches.
@@ -35,3 +35,4 @@ Depends on #0962. Same rules as the other split tasks: no server restarts, no pr
 - 2026-10-28T18:25:05Z · cli_override, model_override
 - 2026-10-28T18:25:28Z · status inbox→ready
 - 2026-10-28T18:25:38Z · status ready→active, branch
+- 2026-10-28T18:26:59Z · message_queued at 2026-10-28T18:26:59.158Z
