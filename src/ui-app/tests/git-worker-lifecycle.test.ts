@@ -17,8 +17,8 @@ function child() {
 
 const workers: GitWorker[] = [];
 const launch = vi.fn<typeof spawn>();
-function worker() {
-  const instance = new GitWorker("/tmp", launch as unknown as typeof spawn);
+function worker(queueWaitMs?: number) {
+  const instance = new GitWorker("/tmp", launch as unknown as typeof spawn, queueWaitMs);
   workers.push(instance);
   return instance;
 }
@@ -41,30 +41,46 @@ const overview = {
 };
 
 describe("Git worker lifecycle", () => {
-  it("expires queued requests without interrupting the running request", async () => {
+  it("expires a request that waits too long in the queue without interrupting the running one", async () => {
     vi.useFakeTimers();
     const process = child();
     launch.mockReturnValue(process as never);
-    const instance = worker();
-    const running = instance.request("running", {}, 100);
+    const instance = worker(50);
+    const running = instance.request("running", {}, 1_000);
     const expired = instance.request("queued", {}, 10).catch((error: Error) => error.message);
-    const next = instance.request("next", {}, 100);
+    const next = instance.request("next", {}, 1_000);
 
     expect(instance.inFlight().map(({ state }) => state)).toEqual(["running", "queued", "queued"]);
-    await vi.advanceTimersByTimeAsync(10);
-    expect(await expired).toContain("queued timed out after 10ms");
+    await vi.advanceTimersByTimeAsync(50);
+    expect(await expired).toContain("queued waited 50ms in the queue without starting");
     expect(process.kill).not.toHaveBeenCalled();
     expect(launch).toHaveBeenCalledTimes(1);
-    expect(instance.inFlight().map(({ id }) => id)).toEqual([1, 3]);
+    expect(instance.inFlight().map(({ id }) => id)).toEqual([1]);
 
     process.stdout.emit("data", JSON.stringify({ id: 1, ok: true, value: "first" }) + "\n");
     await expect(running).resolves.toBe("first");
-    expect(instance.inFlight().map(({ id, state }) => ({ id, state }))).toEqual([
-      { id: 3, state: "running" },
-    ]);
-    process.stdout.emit("data", JSON.stringify({ id: 3, ok: true, value: "last" }) + "\n");
-    await expect(next).resolves.toBe("last");
+    await expect(next).rejects.toThrow(/waited 50ms in the queue/);
     expect(instance.inFlight()).toEqual([]);
+  });
+
+  it("starts a request's own timeout when it runs, not while it waits behind a slow call", async () => {
+    vi.useFakeTimers();
+    const process = child();
+    launch.mockReturnValue(process as never);
+    const instance = worker(60_000);
+    const slow = instance.request("git-overview", {}, 30_000);
+    const quick = instance.request("git-command", {}, 9_000);
+
+    // The slow scan takes 20 s: longer than the quick command's 9 s budget.
+    await vi.advanceTimersByTimeAsync(20_000);
+    process.stdout.emit("data", JSON.stringify({ id: 1, ok: true, value: "scan" }) + "\n");
+    await expect(slow).resolves.toBe("scan");
+    expect(instance.inFlight().map(({ id, state }) => ({ id, state }))).toEqual([
+      { id: 2, state: "running" },
+    ]);
+    await vi.advanceTimersByTimeAsync(1_000);
+    process.stdout.emit("data", JSON.stringify({ id: 2, ok: true, value: "done" }) + "\n");
+    await expect(quick).resolves.toBe("done");
   });
 
   it.each(["close", "error", "data"])("ignores a replaced child's late %s event", async (event) => {
