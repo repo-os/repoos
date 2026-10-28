@@ -237,9 +237,10 @@ whenChanged = ["src/ui-app/**"]
 # Playwright/WebKit is not installed.
 [[check.steps]]
 name = "rendered-contrast"
+profiles = ["full"] # #0970: expensive rendered audit runs on the merged candidate
 command = "bun run contrast:audit"
 requires = ["bun"]
-whenChanged = ["src/ui-app/**"]
+whenChanged = ["src/ui-app/**", "scripts/ui-contrast-audit.mjs"]
 dependsOn = ["check-fmt:check", "check-lint", "build"]
 
 [[check.steps]]
@@ -266,6 +267,7 @@ dependsOn = ["check-fmt:check", "check-lint", "build"]
 
 [[check.steps]]
 name = "user-docs-build"
+profiles = ["full"] # #0970: avoid a second VitePress build before close-out
 command = "bun install --frozen-lockfile && bun run build"
 cwd = "user-docs"
 requires = ["bun"]

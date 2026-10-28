@@ -303,3 +303,57 @@ For a wedged managed close-out, release it explicitly with
 `repoos checks slots --release <slot> --confirm <pid>` after checking the holder
 shown by the listing. The PID confirmation prevents releasing a slot whose
 owner changed between inspection and action.
+
+
+## Step timing audit and handoff profile (#0970, 2026-10-28)
+
+Checks → Runs now reports median, nearest-rank p90, failures / executed samples,
+and skipped counts per step over the latest 300 runs. Expand **any measured
+run**, including a pass, for its step outcomes and durations. Local CLI runs
+also print a timing summary. `check_runs.step_timings` is an additive nullable
+JSON column: old rows have unknown timings, never zero-duration samples.
+Remote install/build/tests emit the same structured records; browser-only
+passes cannot overwrite earlier measured build/test results with skips.
+
+The initial audit used this task worktree's declared commands, sequentially,
+with RepoOS's local heavy-check slot. The retained audit database and log from
+the earlier task turn contained one run; the resumed turn measured the five
+non-browser candidates again, including the previously unmeasured Telegram
+tests. These are **small local samples**, not a historical per-step failure
+rate or a runner benchmark. The old 1,000-run aggregate in the task cannot
+supply timings that were never recorded.
+
+| Step | Executed samples | Median | p90 | Failures | Default handoff after audit |
+| --- | ---: | ---: | ---: | ---: | --- |
+| rendered-contrast | 1 | 1,065.995s | 1,065.995s | 1/1 timeout | deferred to full |
+| user-docs-build | 2 | 260.069s | 505.452s | 0/2 | deferred to full |
+| macos-hub-icon-transparency | 2 | 28.054s | 53.811s | 0/2 | retained, path-scoped |
+| landing-build | 2 | 5.288s | 6.560s | 0/2 | retained, path-scoped |
+| telegram-manager-build | 2 | 2.538s | 2.829s | 0/2 | retained, path-scoped |
+| telegram-manager-test | 1 | 3.753s | 3.753s | 0/1 | retained, path-scoped |
+
+Fresh measurements in the resumed turn were docs **14.685s**, landing
+**4.016s**, Telegram build **2.247s**, Telegram tests **3.753s**, and icon check
+**2.297s**, all passing. The earlier contrast log recorded zero screen states
+and browser timeouts, not a successful accessibility audit. Its printed
+“passed” line was followed by the runner's `timeout` outcome; the report uses
+the outcome. There is no evidence yet to call contrast rarely failing. It is
+deferred because it dominates the observed cost and still gates close-out;
+the cheap CSS/theme/colour guards and UI smoke remain in handoff. Keep
+collecting samples before deferring the other, now-fast checks.
+
+Before, handoff explicitly requested `--profile full`, repeating these expensive
+steps before review. It now uses the default profile; only contrast and docs
+have `profiles = ["full"]`. For an otherwise identical unscoped selection,
+the initial measured contrast+docs cost removed from handoff is **1,571.447s**;
+with the fresh docs sample and the retained contrast sample it is **1,080.680s**.
+These are sums of measured step times, **not observed end-to-end handoff speedups**.
+For `--changed main`, docs was already excluded when untouched; a UI change
+additionally saves the contrast invocation. A non-UI change already skipped it.
+
+All 19 steps remain in the full profile used by close-out/release, and every
+candidate retains its `whenChanged` scope for explicit changed-path runs.
+The contrast scope also watches its audit script. Runner browser invocations
+receive the selected CLI profile, or the phase's default/full profile, so
+handoff cannot silently reintroduce contrast remotely. The runner host needs
+the updated `validate.sh` to use this profile forwarding and timing wrapper.

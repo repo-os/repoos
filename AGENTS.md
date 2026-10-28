@@ -301,8 +301,10 @@ completion, and keep merging and status changes in the close-out pipeline.
 ## Definition of done
 
 Before a task moves to review, `repoos check` must pass. It runs the check plan
-this repo declares in `repoos.toml` (`[[check.steps]]`, #0446) — for RepoOS
-that is:
+this repo declares in `repoos.toml` (`[[check.steps]]`, #0446). Handoff uses
+the default profile; rendered contrast and the user-docs build run only in the
+full close-out/release profile (#0970). Fast static contrast guards and UI smoke
+still run before review. No steps are removed; the full plan for RepoOS is:
 - Build staleness check (`src/` vs `dist/`)
 - Lockfile sync (`bun.lock` vs `package.json`) and the zero-runtime-dependency guard
 - Formatting & lint (`oxfmt --check` + `oxlint`) — **if this fails, run `repoos check --fix` (or `bun run fmt`), re-stage, and re-run `repoos check`**; build, tests and smoke are skipped until formatting is clean (they `dependsOn` it). The close-out gate never auto-formats, so an unformatted committed tree still fails there

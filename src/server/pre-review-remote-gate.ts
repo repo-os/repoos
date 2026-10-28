@@ -169,14 +169,13 @@ export const shouldRunEngineerRemoteSelfCheck = shouldRunCliRemotePreReviewGate;
 export function spawnedRepoosCheckArgs(
   config: RepoOSConfig,
   remoteGateOutcome: RemotePreReviewOutcome | { kind: "skip" },
+  phase: "pre-review" | "close-out" | "release" = "close-out",
 ): readonly string[] {
-  if (remoteGateOutcome.kind !== "skip") {
-    return CLOSEOUT_CHECK_ARGS;
+  const profileArgs = phase === "pre-review" ? [] : CLOSEOUT_CHECK_ARGS;
+  if (remoteGateOutcome.kind === "skip" && remotePreReviewEnabled(config)) {
+    return ["--local-tests", ...profileArgs];
   }
-  if (remotePreReviewEnabled(config)) {
-    return ["--local-tests", ...CLOSEOUT_CHECK_ARGS];
-  }
-  return CLOSEOUT_CHECK_ARGS;
+  return profileArgs;
 }
 
 /**
@@ -201,6 +200,7 @@ export async function runRemotePreReviewGate(params: {
   taskId: string;
   /** Which gate is calling — recorded in the check-run history (#0564). */
   phase?: CheckRunPhase;
+  checkProfile?: string;
   /**
    * What this job belongs to for the runner queue display (#0897). Falls back
    * to the check-run phase when omitted.
@@ -272,6 +272,7 @@ export async function runRemotePreReviewGate(params: {
     worktreePath: params.worktreePath,
     candidateSha,
     phase: params.phase ?? "pre-review",
+    ...(params.checkProfile ? { checkProfile: params.checkProfile } : {}),
     ...(params.kind ? { kind: params.kind } : {}),
     onChunk: params.onChunk,
     ...(capabilities.length ? { capabilities } : {}),
