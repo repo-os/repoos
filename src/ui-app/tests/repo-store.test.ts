@@ -1829,3 +1829,58 @@ describe("board refresh keeps the open drawer current", () => {
     expect(ui.active?.needsInput).toBe(false);
   });
 });
+
+describe("heldTasks computed (#0960)", () => {
+  it("includes held non-archived tasks and excludes expired/archived ones", async () => {
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    es.emit("task.created", {
+      type: "task.created",
+      task: makeTask({
+        id: "0001",
+        isHeld: true,
+        holdReason: "design sign-off",
+        holdUntil: "2030-01-01T00:00:00Z",
+        updated_at: "2026-10-01T00:00:00Z",
+      }),
+    });
+    es.emit("task.created", {
+      type: "task.created",
+      // Expired hold: auto-released, so not held anymore.
+      task: makeTask({
+        id: "0002",
+        isHeld: true,
+        holdUntil: "2000-01-01T00:00:00Z",
+        updated_at: "2026-10-02T00:00:00Z",
+      }),
+    });
+    es.emit("task.created", {
+      type: "task.created",
+      // Held but archived: parked, not surfaced as a live hold.
+      task: makeTask({
+        id: "0003",
+        isHeld: true,
+        isArchived: true,
+        updated_at: "2026-10-03T00:00:00Z",
+      }),
+    });
+    es.emit("task.created", {
+      type: "task.created",
+      task: makeTask({ id: "0004", isHeld: false, updated_at: "2026-10-04T00:00:00Z" }),
+    });
+    es.emit("task.created", {
+      type: "task.created",
+      // Held only by a `hold` tag (no flag) — must still appear (#0960: a tag
+      // is an equivalent spelling of the hold flag, so the Held list shows it).
+      task: makeTask({
+        id: "0005",
+        isHeld: false,
+        tags: ["hold"],
+        updated_at: "2026-10-05T00:00:00Z",
+      }),
+    });
+
+    expect(repo.heldTasks.map((t) => t.id)).toEqual(["0005", "0001"]);
+  });
+});

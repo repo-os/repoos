@@ -42,6 +42,8 @@ import {
 } from "../core/git.js";
 import { getGitWorker } from "./git-worker.js";
 import { parseTask } from "../core/task.js";
+import { isHoldActive } from "../core/task-selection.js";
+import { taskWithLiveHold } from "./hold-guard.js";
 import { assessTaskUnderspecified } from "../core/task-underspecified.js";
 import { notifyGitMutation } from "../core/git-activity.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
@@ -318,6 +320,17 @@ export interface ReviewHandoffOptions extends HandoffSink {
    * is re-reviewed before close-out resumes.
    */
   checkpointRecovery?: { approvedSha: string };
+  /**
+   * #0960 round-3 TOCTOU guard: only the agent handoff path (an automatic or
+   * recovered engineer handoff) passes this. When set, `runHandoffFinalization`
+   * re-reads the live task file at entry and refuses to move a held task to
+   * review — closing the window between the `onHandoff` pre-check (which runs
+   * before `consumeHandoff`) and the awaited finalization, where a hold that
+   * lands mid-finalization would otherwise slip through. Human-initiated review
+   * (`finalizeReviewHandoff`) never sets this, so a human may still move a held
+   * task to review deliberately.
+   */
+  holdGuard?: boolean;
 }
 
 /** The worktree-side facts the finalization body needs, once resolved. */
@@ -514,6 +527,20 @@ async function runHandoffFinalization(
   const { workdir, isHotfix, worktreeTaskPath, worktreeTask } = resolved;
   const onProgress = opts.onProgress;
   const onStatusChange = opts.onStatusChange;
+  // #0960: agent handoff must not reach review if a hold lands during the
+  // awaited check. Re-read the task file at each commit point; a human review
+  // leaves `holdGuard` unset.
+  const heldHandoff = (step: HandoffStep): HandoffResult | null => {
+    if (!opts.holdGuard) return null;
+    const live = taskWithLiveHold(config, task);
+    if (!isHoldActive(live)) return null;
+    return fail(
+      step,
+      `task #${task.id} is held — release it with "repoos unhold ${task.id}" before it can move to review`,
+    );
+  };
+  const heldAtEntry = heldHandoff("validate");
+  if (heldAtEntry) return heldAtEntry;
   // Mirrors `withHandoffDeadline` (armed moments before this body runs): a remote
   // run still QUEUED at that point cancels itself and releases its host slot
   // instead of orphaning it (#0521).
@@ -753,6 +780,8 @@ async function runHandoffFinalization(
     !opts.checkpointRecovery &&
     (worktreeTask.status !== "review" || worktreeTask.branch !== task.branch)
   ) {
+    const heldBeforeWorktree = heldHandoff("review");
+    if (heldBeforeWorktree) return heldBeforeWorktree;
     try {
       patchTaskFile({ ...config, root: workdir }, worktreeTaskPath, {
         status: "review",
@@ -784,6 +813,8 @@ async function runHandoffFinalization(
         // indicator directly rather than waiting for a watcher event (#0584).
         notifyGitMutation(config.root, "checkout");
         try {
+          const heldBeforeCanonical = heldHandoff("main");
+          if (heldBeforeCanonical) return heldBeforeCanonical;
           patchTaskFile(
             config,
             join(config.root, task.path),
@@ -806,6 +837,8 @@ async function runHandoffFinalization(
           notifyGitMutation(config.root, "checkout");
         }
       } else {
+        const heldBeforeCanonical = heldHandoff("main");
+        if (heldBeforeCanonical) return heldBeforeCanonical;
         patchTaskFile(
           config,
           task.absPath,
@@ -913,6 +946,8 @@ export async function handoffTask(
   remoteValidator?: RemoteValidator,
   previews?: PreviewManager,
   onTaskLog?: (taskId: string, level: LogLevel, message: string) => void,
+  /** #0960 round-3: when true, refuse to finalize a held task (agent handoff only). */
+  holdGuard?: boolean,
 ): Promise<HandoffResult> {
   return withHandoffDeadline(async (markSettled) => {
     try {
@@ -933,6 +968,7 @@ export async function handoffTask(
         remoteValidator,
         previews,
         onTaskLog,
+        holdGuard,
       });
     } catch (err) {
       markSettled();

@@ -413,6 +413,84 @@ describe("message queueing", () => {
       fx.clean();
     }
   });
+
+  it.each(["start", "send"] as const)(
+    "keeps queued messages when a hold refuses %s (#0960)",
+    async (path) => {
+      const fx = makeFixture();
+      const oldPath = withFakePath(fx);
+      const absPath = setupTaskFile(fx.root, "0960", "active");
+      const live = {
+        ...task("0960"),
+        status: "active" as const,
+        absPath,
+        path: "work/0960-test.md",
+        isHeld: false,
+      };
+      const runner = new AgentRunner(config(fx.root), () => {}, {
+        getTask: () => parseFile(fx.root, absPath),
+      });
+      try {
+        const queuedAt = new Date().toISOString();
+        if (path === "send") {
+          expect(runner.start(live, "feat/0960", agent, { cwd: fx.bin }).ok).toBe(true);
+          runner.stop("0960");
+          await waitFor(() => !runner.isRunning("0960"));
+        }
+        runner["queuedMessages"].set("0960", [{ text: "still here", agent, opts: {}, queuedAt }]);
+        runner["messageQueuedAt"].set("0960", queuedAt);
+        writeFileSync(
+          absPath,
+          readFileSync(absPath, "utf8").replace(
+            "status: active",
+            "status: active\nhold: true\nhold_reason: parked",
+          ),
+        );
+        const res =
+          path === "start"
+            ? runner.start({ ...live, isHeld: true, holdReason: "parked" }, "feat/0960", agent, {
+                cwd: fx.bin,
+              })
+            : runner.send("0960", "and this too", agent);
+        expect(res.ok).toBe(false);
+        expect(res.reason).toContain("held");
+        expect(runner["queuedMessages"].get("0960")?.map((m) => m.text)).toEqual(["still here"]);
+        const transcript = (runner.output("0960")?.lines ?? [])
+          .filter((l) => "text" in l && l.type === "human")
+          .map((l) => (l as { text: string }).text);
+        expect(transcript).not.toContain("and this too");
+        expect(transcript).not.toContain("still here");
+      } finally {
+        runner.dispose();
+        process.env.PATH = oldPath;
+        fx.clean();
+      }
+    },
+  );
+});
+
+describe("hold pause ownership (#0960)", () => {
+  it.each(["pause then hold", "hold then pause"] as const)(
+    "leaves a human pause in place after unhold (%s)",
+    (order) => {
+      const fx = makeFixture();
+      const runner = new AgentRunner(config(fx.root), () => {});
+      try {
+        if (order === "pause then hold") {
+          runner.markPaused("0960");
+          runner.markHoldPause("0960");
+        } else {
+          runner.markHoldPause("0960");
+          runner.markPaused("0960");
+        }
+        runner.clearHoldPause("0960");
+        expect(runner.isPaused("0960")).toBe(true);
+      } finally {
+        runner.dispose();
+        fx.clean();
+      }
+    },
+  );
 });
 
 describe("handoff deferral while messages are queued (#0865)", () => {

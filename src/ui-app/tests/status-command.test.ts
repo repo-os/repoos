@@ -686,6 +686,11 @@ describe("status --json shape", () => {
     ]);
   });
 
+  // #0960 gate note: this case is deliberately end-to-end over the LIVE board
+  // (cmdStatus resolves boardRoot() to the main checkout), so its runtime grows
+  // with the machine's real board and worktree count — it measured ~42s here
+  // and tripped the 30s default. Same bump rationale as any live-environment
+  // test: keep the timeout well above the measured wall clock.
   it("cmdStatus --json prints exactly one JSON document (end-to-end over the live board)", async () => {
     const lines: string[] = [];
     const errLines: string[] = [];
@@ -710,5 +715,5 @@ describe("status --json shape", () => {
       "tunnel",
       "worktrees",
     ]);
-  });
+  }, 120_000);
 });

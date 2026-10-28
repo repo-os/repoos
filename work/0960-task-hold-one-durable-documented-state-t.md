@@ -2,13 +2,7 @@
 id: "0960"
 title: "Task hold: one durable, documented state that makes a task inert for ALL automation (repoos hold / unhold)"
 type: feature
-status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 8:23 AM."
-debug_tldr: "Engineer agent hit its ChatGPT/Codex usage limit mid-gate — pick a different engineer agent (or retry after 8:23 AM) and resume #0960."
-debug_tldr_at: "2026-10-27T21:01:26Z"
-debug_tldr_key: "dev-error|error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 8:23 AM."
+status: done
 priority: p2
 area: core
 assigned_to: ai
@@ -19,15 +13,11 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-25T14:23:48Z"
-updated_at: "2026-10-27T21:39:17Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — timed out — timed out after 900s"
-last_handoff_failure_sha: 4712736a654159c3e2264af2b94bc7716b8f6413
-check_retry_count: 1
+updated_at: "2026-10-28T00:31:11Z"
 last_check_failure: "repoos check at 2026-10-27T14:46:39.664Z: repoos check failed: AssertionError: expected [ { model: 'big pickle' } ] to match object [ { model: 'big pickle', …(1) } ]"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 7
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-27T21:39:17.853Z\",\"kind\":\"usage-limit\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
@@ -45,13 +35,12 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 5. Existing `hold: true` tasks (for example the human-gated ones) keep working; they simply become fully inert for the CTO/watchdog too, which is what the flag was always understood to mean. Document that in the migration note. No new status column and no task-format migration.
 
 ## Acceptance criteria
-
-- [ ] A held task is skipped by auto-dispatch, the CTO monitor, the watchdog auto-resume, crash recovery and auto-handoff, each proven by a test that fails without the check.
-- [ ] `repoos hold` / `repoos unhold` exist with `--reason`, `--until` (auto-release when the date passes, shown in the badge), CLI/API parity entry, user-docs/cli.md and AGENTS.md ("Driving the board") updated.
-- [ ] UI badge, filter, drawer reason, driver-brief line, and the `maxActiveTasks` exemption, each with a test; Settings copy where a setting is involved.
-- [ ] `repoos pause` help text updated; tests unchanged in behavior.
-- [ ] A manual `repoos start <id>` on a held task refuses with a clear message naming the reason, unless `--force` or after `unhold`.
-- [ ] Run every test touching the CTO monitor, watchdog, crash recovery, dispatch and the task drawer in small groups, then `repoos check --changed main`.
+- [x] A held task is skipped by auto-dispatch, the CTO monitor, the watchdog auto-resume, crash recovery and auto-handoff, each proven by a test that fails without the check.
+- [x] `repoos hold` / `repoos unhold` exist with `--reason`, `--until` (auto-release when the date passes, shown in the badge), CLI/API parity entry, user-docs/cli.md and AGENTS.md ("Driving the board") updated.
+- [x] UI badge, filter, drawer reason, driver-brief line, and the `maxActiveTasks` exemption, each with a test; Settings copy where a setting is involved.
+- [x] `repoos pause` help text updated; tests unchanged in behavior.
+- [x] A manual `repoos start <id>` on a held task refuses with a clear message naming the reason, unless `--force` or after `unhold`.
+- [x] Run every test touching the CTO monitor, watchdog, crash recovery, dispatch and the task drawer in small groups, then `repoos check --changed main` (green 2026-10-28: 474/474 files, UI smoke, rendered contrast audit).
 
 ## Notes for AI
 
@@ -178,3 +167,17 @@ One explicit state, named **hold**, meaning "a person deliberately parked this; 
 - 2026-10-27T21:39:11Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — timed out — timed out after 900s
 - 2026-10-27T21:39:11Z · message_delivered: 1 message(s)
 - 2026-10-27T21:39:17Z · engineer crash recovery: switched codex + gpt-6.1-sol → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 8:23 AM.
+- 2026-10-27T22:30:41Z · note: handoff requested (ui-review)
+- 2026-10-27T22:56:32Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — globalVersion: 2626,
+- 2026-10-27T23:47:16Z · body: Acceptance criteria (added 6, removed 6)
+- 2026-10-27T23:47:16Z · message_queued at 2026-10-27T23:47:16.354Z
+- 2026-10-27T23:47:24Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-27T23:47:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-27T23:47:24Z · needs_input
+- 2026-10-27T23:47:24Z · needs_input
+- 2026-10-27T23:47:25Z · message_delivered: 1 message(s)
+- 2026-10-27T23:47:30Z · needs_input
+- 2026-10-28T00:20:34Z · status active→review
+- 2026-10-28T00:20:35Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-28T00:22:06Z · note: review pass 6: good to go
+- 2026-10-28T00:31:11Z · status review→done

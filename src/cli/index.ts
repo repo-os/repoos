@@ -58,6 +58,8 @@ import {
   cmdApi,
   cmdIntegration,
   cmdAttention,
+  cmdHold,
+  cmdUnhold,
 } from "../commands/control-api.js";
 import { cmdWatch } from "../commands/watch.js";
 import { cmdDriver } from "../commands/driver.js";
@@ -290,6 +292,16 @@ function main(): void {
       break;
     case "pause":
       void cmdPause(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "hold":
+      void cmdHold(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "unhold":
+      void cmdUnhold(rest).then((code) => {
         if (code !== 0) process.exitCode = code;
       });
       break;

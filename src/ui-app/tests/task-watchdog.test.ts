@@ -495,6 +495,32 @@ describe("TaskWatchdog", () => {
     fx.clean();
   });
 
+  it("never surfaces a held active task, even when stale (#0960)", async () => {
+    const fx = makeFx(10_000);
+    // A held active task: parked out of ALL automation, including the watchdog's
+    // auto-resume. The same stale shape the test above surfaces, but inert.
+    writeFileSync(
+      fx.taskPath,
+      readFileSync(fx.taskPath, "utf8").replace(
+        "branch: feat/x\n",
+        "branch: feat/x\nhold: true\nhold_reason: waiting on design\n",
+      ),
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+    await watchdog.checkNow();
+
+    const task = parseTaskAt(fx);
+    expect(task.status).toBe("active");
+    expect(task.isHeld).toBe(true);
+    expect(task.holdReason).toBe("waiting on design");
+    expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog:");
+    fx.clean();
+  });
+
   it("surfaces an active task whose agent never started → ready, with the reason recorded (acceptance 2)", async () => {
     const fx = makeFx(10_000); // went active 10s ago, past the 1s threshold
     const index = new LiveIndex(fx.config);

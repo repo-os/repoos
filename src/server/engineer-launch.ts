@@ -11,6 +11,8 @@ import { parseTask } from "../core/task.js";
 import type { LiveIndex } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";
 import { resolveAgentForTask, noAgentAvailableMessage, pausedAgentFallbackNote } from "./agents.js";
+import { isHoldActive } from "../core/task-selection.js";
+import { holdBlocksEngineer } from "./hold-guard.js";
 import type { Logger } from "../core/logger.js";
 export type EngineerLaunchResult =
   | {
@@ -39,7 +41,7 @@ export async function relaunchEngineerOnActiveTask(
   deps: EngineerLaunchDeps,
   task: Task,
   instruction: string,
-  opts: { freshSession?: boolean; fromCrashRecovery?: boolean } = {},
+  opts: { freshSession?: boolean; fromCrashRecovery?: boolean; force?: boolean } = {},
 ): Promise<EngineerLaunchResult> {
   const { config, index, runner, logger } = deps;
   const id = task.id;
@@ -50,9 +52,29 @@ export async function relaunchEngineerOnActiveTask(
   if (task.status !== "active") {
     return { ok: false, reason: `Task #${id} is not active` };
   }
+  // #0960: a held task is inert for ALL automation. Only an explicit human/driver
+  // command that clears the hold (or `repoos start --force`) may start it. This
+  // is the single chokepoint shared by /start, the CTO monitor, the watchdog and
+  // crash recovery, so a held task cannot be started by any of them.
+  if (isHoldActive(task) && !opts.force) {
+    const reason = task.holdReason ? `: ${task.holdReason}` : "";
+    const until = task.holdUntil ? ` (auto-releases ${task.holdUntil})` : "";
+    return {
+      ok: false,
+      reason: `Task #${id} is held${reason}${until} — use "repoos unhold ${id}" to release it${
+        opts.fromCrashRecovery ? "" : ", or " + `"repoos start ${id} --force"`
+      }`,
+    };
+  }
   runner.releasePhantomForStart(id);
   if (runner.isRunning(id)) {
     return { ok: false, reason: `Task #${id} already has a running agent` };
+  }
+  // A hold that stopped a live engineer recorded its own pause. Once the hold
+  // is gone or `hold_until` has passed, that pause must not keep blocking
+  // relaunch. A human pause (markPaused, not markHoldPause) stays.
+  if ((opts.force || !isHoldActive(task)) && typeof runner.clearHoldPause === "function") {
+    runner.clearHoldPause(id);
   }
   if (runner.isPaused(id)) {
     return { ok: false, reason: `Task #${id} is paused` };
@@ -98,21 +120,34 @@ export async function relaunchEngineerOnActiveTask(
     return { ok: false, reason: `Bootstrap failed: ${bootResult.reason ?? "unknown error"}` };
   }
 
+  // #0960: the hold check above ran before the awaited bootstrap. Re-read the
+  // task file (not the request snapshot) and refuse before spawn. spawnTurn
+  // checks again, including after a slot/pressure queue.
+  const liveBeforeSpawn = index.getTask?.(id) ?? fresh;
+  const heldNow = !opts.force ? holdBlocksEngineer(config, liveBeforeSpawn) : null;
+  if (heldNow) {
+    return {
+      ok: false,
+      reason: opts.fromCrashRecovery ? heldNow : `${heldNow}, or "repoos start ${id} --force"`,
+    };
+  }
+
   const { pack, resumePreamble: resumeContext } = await generateServerContext(
     config,
-    fresh,
+    liveBeforeSpawn,
     branch,
     cwd,
     bootResult,
   );
   const preamble = [resumeContext, instruction.trim()].filter(Boolean).join("\n\n") || undefined;
 
-  const spawnRes = runner.start(fresh, branch, agent, {
+  const spawnRes = runner.start(liveBeforeSpawn, branch, agent, {
     cwd,
     contextPack: pack.content,
     resumePreamble: preamble,
     freshSession: opts.freshSession === true,
     ...(opts.fromCrashRecovery ? { fromCrashRecovery: true } : {}),
+    ...(opts.force ? { bypassHold: true } : {}),
   });
 
   if (!spawnRes.ok) {
