@@ -13,13 +13,14 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T08:00:32Z"
-updated_at: "2026-10-28T09:09:17Z"
+updated_at: "2026-10-28T09:18:37Z"
 handoff_signal_retry_count: 2
 ---
 ## Items
 
 - E1 · Agents page: no model-refresh error for an agent that is not installed (reported by Nick, 2026-10-28)
 - E2 · Task drawer status card: fix padding, drop the info tooltip, open Debug › Status details on click, keep it to 3 lines; cap the Status details cards at 250px (reported by Nick, 2026-10-28)
+- E3 · App-wide loading: replace the centered spinner with a page skeleton (reported by Nick, 2026-10-28)
 
 ## E1 · No model-refresh error for an uninstalled agent
 
@@ -62,10 +63,21 @@ Truncate each line with an ellipsis rather than wrapping.
 ### Notes for AI
 The card lives in `src/ui-app/src/components/TaskDrawer.vue` ("Open Status details" text; see also `DoneErrorCard.vue`). Status details is in `src/ui-app/src/components/DebugPanel.vue`. Use the shared tokens and classes in `style.css`; no hard-coded colors (the `hardcoded-colors` guard). Both screenshots are attached.
 
-## Screenshots
+## E3 · App-wide loading shows a spinner, not a skeleton
 
-![6](/api/tasks/0972/attachments/att_3546c1e8-226d-4a09-aff5-fa37f8185073.png)
-![7](/api/tasks/0972/attachments/att_8f0fd187-e38e-45b7-b42f-0c84b0a82baa.png)
+### Problem
+After a server restart, /work shows a lone spinner in an empty main pane. The pages were moved to skeleton loaders, but `App.vue` still renders `<div v-if="repo.loading" class="spin">` in `.main` while the repo loads, so every route shows the spinner before its own skeleton.
+
+### Desired UX
+While the repo loads, `.main` shows a skeleton shaped like the route being opened: board columns for /work, rows for list pages, using `PageSkeleton.vue` (add a `board` kind if needed). No spinner anywhere in the main pane.
+
+### Acceptance criteria
+- `App.vue` no longer renders `.spin` for `repo.loading`; it renders a skeleton, picked per route.
+- /work during loading shows column-shaped skeleton cards.
+- Test: with `repo.loading` true, the main pane contains `.page-skeleton` and no `.spin`.
+
+### Notes for AI
+`src/ui-app/src/App.vue` around line 135; `src/ui-app/src/components/PageSkeleton.vue`. Use the shared tokens; no hard-coded colors.
 
 ## Shots
 ```json
@@ -87,6 +99,11 @@ The card lives in `src/ui-app/src/components/TaskDrawer.vue` ("Open Status detai
 ]
 ```
 
+## Screenshots
+
+![6](/api/tasks/0972/attachments/att_3546c1e8-226d-4a09-aff5-fa37f8185073.png)
+![7](/api/tasks/0972/attachments/att_8f0fd187-e38e-45b7-b42f-0c84b0a82baa.png)
+
 ## Activity
 
 - 2026-10-28T08:00:32Z · created · njachowski@gmail.com
@@ -102,3 +119,4 @@ The card lives in `src/ui-app/src/components/TaskDrawer.vue` ("Open Status detai
 - 2026-10-28T08:56:29Z · message_queued at 2026-10-28T08:56:29.011Z
 - 2026-10-28T09:01:44Z · message_queued at 2026-10-28T09:01:44.058Z
 - 2026-10-28T09:09:17Z · body
+- 2026-10-28T09:18:37Z · body: Items (added 1); E3 · App-wide loading shows a spinner, not a skeleton (added)
