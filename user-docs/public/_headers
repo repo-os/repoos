@@ -1,0 +1,7 @@
+# Agent entry points: an agent's first step reads these. On 2026-10-21 a 404
+# cached before a deploy finished kept being served for hours. Cache briefly
+# and revalidate, so even a cached miss clears within five minutes.
+/llms.txt
+  Cache-Control: public, max-age=300, must-revalidate
+/llms-full.txt
+  Cache-Control: public, max-age=300, must-revalidate

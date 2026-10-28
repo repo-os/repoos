@@ -6,7 +6,8 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/api/*"]
+    // llms*.txt go through the worker so a miss is never cached (worker.ts).
+    "run_worker_first": ["/api/*", "/llms.txt", "/llms-full.txt"]
   },
   // Both limiters are required. Missing bindings fail closed without sending mail.
   // Namespace IDs are account-wide; reserve these for landing enquiries.

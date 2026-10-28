@@ -107,7 +107,7 @@ describe.runIf(!!bun)("stale build bootstrap", () => {
   it("shares one build across concurrent stale CLIs", async () => {
     const root = fixture(true);
     const runOne = () =>
-      new Promise<{ status: number | null }>((resolvePromise, reject) => {
+      new Promise<{ status: number | null; err: string }>((resolvePromise, reject) => {
         const child = spawn(bun!, [join(root, "cli.ts"), "check"], {
           cwd: root,
           env: { ...process.env, REPOOS_STALENESS_REEXEC: "", TEST_BUILD_HOLD_MS: "1500" },
