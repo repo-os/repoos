@@ -417,6 +417,35 @@ watchdog (#0678), so a laptop suspend does not count as a slow run. History
 comes from `.repoos/checks.db`; see `docs/check-slowness.md` for how the
 server assembles running jobs and medians.
 
+### When a check is waiting (#0974)
+
+Before its first step a check can sit still for a while — the pressure guard
+(`waitForPressureRelief`), a cross-process heavy slot, or a Playwright slot.
+A waiting check says so, in three places:
+
+- **The run's own output** prints `waiting: <reason>` when the wait starts,
+  repeats as `waiting: <reason> for Nm` every minute, and at ten minutes adds
+  "… this wait is being surfaced as needs input". A handoff check's output
+  streams into the task transcript, so the wait is readable there, live.
+- **The task card** shows a `waiting · Nm` chip (with queue position) whose
+  tooltip reads `waiting: <reason> for Nm`. It replaces the old silent `queued`
+  chip. The drawer shows the same hint next to the check chip.
+- **The run record** stores the wait (`waited: { reason, ms }`) alongside the
+  steps, so a finished run still says "this one sat 26 minutes before it
+  started".
+
+A wait that passes **ten minutes** is escalated to `needs_input` by the task
+watchdog, with the wait reason and duration in the detail — the #0970
+incident was a handoff check that sat 26 minutes at 0% CPU behind a stale
+pressure guard with nothing on the card. The escalation is informational and
+clears itself: once the wait ends (the gate acquired its slot) or the next
+engineer run starts, the flag goes away without human action.
+
+Separately, git-queue waits are visible per job: `repoos stats` lists each
+in-flight git worker job with its lane (bulk/fast), queue wait and run time,
+and the `STUCK` request log carries the same fields.
+
+
 ## Bootstrapping a plan with `repoos init`
 
 When a repo has no check plan yet, `repoos init` inspects its durable signals

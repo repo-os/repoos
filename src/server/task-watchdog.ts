@@ -72,6 +72,8 @@ import {
   worktreeStatusAsync,
 } from "../core/git.js";
 import { getGitWorker } from "./git-worker.js";
+import { readQueueMarkers } from "../core/local-queue-marker.js";
+import { CHECK_WAIT_ESCALATION_MS, formatWaitDuration } from "../core/check-wait.js";
 import { scheduleHandoffSignalRetry } from "./handoff.js";
 import { isTaskClosingOut } from "./close-out-lock.js";
 import {
@@ -98,6 +100,9 @@ import {
 
 const DEFAULT_STALENESS_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 const WATCHDOG_INTERVAL_MS = 15 * 1000; // Reconcile agent liveness and scan tasks every 15 seconds
+
+/** Activity-log marker the watchdog writes when a check wait is escalated. */
+const CHECK_WAIT_ESCALATED = /watchdog: check wait escalated/;
 
 /** Activity-log marker the watchdog writes/reads to bound surfacing once. */
 const SURFACED_ACTIVITY = /watchdog: auto-surfaced stuck task/;
@@ -553,6 +558,7 @@ export class TaskWatchdog {
           }
         }
       }
+      this.escalateStaleQueueWaits();
     } finally {
       this.scanning = false;
     }
@@ -937,6 +943,89 @@ export class TaskWatchdog {
       defaultStatus: this.config.defaultStatus,
       defaultAssignee: this.config.defaultAssignee,
     });
+  }
+
+  /**
+   * #0974: a check that is still waiting — pressure guard, a heavy slot, the
+   * git queue — after ten minutes is surfaced as needs_input instead of
+   * hanging silently (the #0970 incident: 26 minutes behind a stale pressure
+   * guard with nothing on the card). The gates write queue markers while they
+   * wait; this scan reads them. The flag clears itself once the marker is
+   * gone (the wait ended and the check is actually running) or on the next
+   * engineer run — it is informational, not a permanent failure.
+   */
+  private escalateStaleQueueWaits(): void {
+    let markers;
+    try {
+      markers = readQueueMarkers(this.config.root, this.config.cacheDir ?? ".repoos");
+    } catch {
+      return;
+    }
+    const waiting = new Set<string>();
+    const now = Date.now();
+    for (const marker of markers) {
+      const since = Date.parse(marker.since);
+      if (!Number.isFinite(since)) continue;
+      const waitedMs = now - since;
+      if (waitedMs < CHECK_WAIT_ESCALATION_MS) continue;
+      waiting.add(marker.taskId);
+      const task = this.index.getTask(marker.taskId);
+      if (!task || task.isArchived || task.needsInput) continue;
+      if (isHoldActive(task)) continue;
+      this.escalateCheckWait(task, marker.message, waitedMs);
+    }
+    // A wait that ended — the gate acquired its slot — clears the flag again.
+    for (const status of ["active", "review"] as const) {
+      for (const task of this.index.getTasks(status)) {
+        if (!task.needsInput || task.needsInputReason !== "check-wait") continue;
+        if (!waiting.has(task.id)) this.clearCheckWaitEscalation(task);
+      }
+    }
+  }
+
+  private escalateCheckWait(task: Task, message: string, waitedMs: number): void {
+    if (CHECK_WAIT_ESCALATED.test(task.body)) return; // surfaced once per episode
+    let current: Task;
+    try {
+      current = this.readCurrent(task);
+    } catch (err) {
+      console.error(`[repoos] watchdog: failed to escalate #${task.id}: ${(err as Error).message}`);
+      return;
+    }
+    if (current.needsInput || CHECK_WAIT_ESCALATED.test(current.body)) return;
+    const detail = `waiting: ${message || "for a free slot"} for ${formatWaitDuration(waitedMs)}`;
+    const note = `watchdog: check wait escalated · ${detail} · next step: let it finish — the wait clears itself when the check starts running; investigate only if it persists`;
+    try {
+      current.needsInput = true;
+      current.needsInputReason = "check-wait";
+      current.needsInputDetail = detail;
+      recordChange(current, note);
+      this.writeTask(current);
+      console.error(`[repoos] watchdog: #${task.id} ${detail}`);
+    } catch (err) {
+      console.error(
+        `[repoos] watchdog: failed to write check-wait escalation for #${task.id}: ${(err as Error).message}`,
+      );
+    }
+  }
+
+  private clearCheckWaitEscalation(task: Task): void {
+    let current: Task;
+    try {
+      current = this.readCurrent(task);
+    } catch {
+      return;
+    }
+    if (!current.needsInput || current.needsInputReason !== "check-wait") return;
+    try {
+      current.needsInput = false;
+      current.needsInputReason = undefined;
+      current.needsInputDetail = undefined;
+      recordChange(current, "watchdog: check wait ended — cleared needs_input");
+      this.writeTask(current);
+    } catch {
+      /* visibility only */
+    }
   }
 
   private writeTask(task: Task): void {
