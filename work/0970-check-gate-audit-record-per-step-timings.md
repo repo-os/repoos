@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0970"
 title: "Check gate: per-step/test timings; close-out runs changed + high-risk tests, full suite at release"
 type: chore
@@ -12,7 +11,8 @@ branch: feat/check-gate-audit-record-per-step-timings
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T08:01:10Z"
+updated_at: "2026-10-28T08:06:37Z"
+handoff_signal_retry_count: 1
 check_retry_count: 1
 last_check_failure: "repoos check (exit 1) at 2026-10-28T06:01:43.510Z: repoos check failed: tests — command failed (exit 1)"
 ---
@@ -66,4 +66,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T05:45:00Z · title
 - 2026-10-28T06:01:43Z · message_delivered: 1 message(s)
 - 2026-10-28T08:01:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-
+- 2026-10-28T08:06:37Z · message_queued at 2026-10-28T08:06:37.627Z
