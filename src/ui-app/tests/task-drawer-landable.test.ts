@@ -146,8 +146,8 @@ describe("task drawer landing pre-checks (#0867)", () => {
 
     const summary = wrapper.find(".drawer-status-summary");
     expect(summary.exists()).toBe(true);
-    expect(summary.find(".drawer-status-summary-copy").text()).toContain("Not landable");
-    expect(summary.find(".drawer-status-summary-copy").text()).toContain("1 landing check failing");
+    expect(summary.find(".drawer-status-l1").text()).toContain("Not landable");
+    expect(summary.find(".drawer-status-l3").text()).toContain("1 landing check failing");
     expect(wrapper.findAll(".drawer-status-summary")).toHaveLength(1);
     expect(wrapper.find(".landable-checks").exists()).toBe(false);
 
@@ -213,9 +213,8 @@ describe("task drawer landing pre-checks (#0867)", () => {
 
     const checks = wrapper.find(".landable-checks");
     expect(wrapper.find(".drawer-status-summary").exists(), "the status card renders").toBe(true);
-    expect(
-      wrapper.find(".drawer-status-summary-copy").text(),
-      "the status card copy is short",
-    ).toContain("Not landable");
+    expect(wrapper.find(".drawer-status-l1").text(), "the status card copy is short").toContain(
+      "Not landable",
+    );
   });
 });

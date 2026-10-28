@@ -136,8 +136,8 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
     // One short status card and one live status line sit above the tabs.
     const working = wrapper.find(".drawer-status-summary");
     expect(working.exists()).toBe(true);
-    expect(working.text()).toContain("Reviewer running");
-    expect(wrapper.find(".drawer-status-line").text()).toContain("Reviewer is working…");
+    expect(working.find(".drawer-status-l1").text()).toContain("Reviewer running");
+    expect(working.find(".drawer-status-l3").text()).toContain("Reviewer is working…");
     expect(wrapper.findAll(".drawer-status-summary")).toHaveLength(1);
     expect(wrapper.findAll(".tab-btn .ai")).toHaveLength(0);
     expect(wrapper.text().match(/Reviewer is working…/g)).toHaveLength(1);
@@ -192,7 +192,7 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
     await repo.init();
 
     const wrapper = await mountDrawer(pinia, task);
-    expect(wrapper.find(".drawer-status-line").exists()).toBe(true);
+    expect(wrapper.find(".drawer-status-l3").text()).toContain("Reviewer is working…");
 
     // The review finishes: SSE marks it ready and the report is loaded.
     FakeEventSource.instances[0].emit("review", {
@@ -205,7 +205,7 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
     await flush();
 
     expect(repo.reviewFor("0001")?.running).toBe(false);
-    expect(wrapper.find(".drawer-status-line").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Reviewer is working…");
     expect(wrapper.find(".review-running").exists()).toBe(false);
     expect(wrapper.find(".review-thinking").exists()).toBe(false);
     // The report now appears as usual.

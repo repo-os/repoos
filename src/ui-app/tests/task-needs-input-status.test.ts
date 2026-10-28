@@ -272,8 +272,8 @@ describe("needs_input status surfaces in the task drawer (#0511)", () => {
     const wrapper = await mountDrawer(pinia, task);
     const status = wrapper.find(".drawer-status-summary");
     expect(status.exists()).toBe(true);
-    expect(status.text()).toContain("Reviewer running");
-    expect(wrapper.find(".drawer-status-line").exists()).toBe(true);
+    expect(status.find(".drawer-status-l1").text()).toContain("Reviewer running");
+    expect(status.find(".drawer-status-l3").text()).toContain("Reviewer is working…");
     expect(wrapper.find(".rs-needs-input").exists()).toBe(false);
   });
 });

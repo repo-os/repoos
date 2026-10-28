@@ -47,10 +47,12 @@ export type ModelListStatus = "loading" | "loaded" | "failed";
 export interface ModelListState {
   status: ModelListStatus;
   /**
-   * Why the probe failed — the server-reported reason (binary not found on
-   * PATH, timed out, not signed in) or the transport error.
+   * Why the probe failed — the server-reported reason (timed out, not signed
+   * in) or the transport error. A CLI that is not installed is not a failure.
    */
   error?: string;
+  /** The CLI binary is not on PATH (#0972). */
+  notInstalled?: boolean;
   /** The visible list is the persisted/previous one, kept after a failure. */
   stale?: boolean;
 }
@@ -223,6 +225,15 @@ export const useConfigStore = defineStore("config", () => {
   /** Merge one probe result into the lists + states, keeping a good old list. */
   function applyModelSource(cli: string, source: ModelSourceResult): void {
     const hadList = Object.prototype.hasOwnProperty.call(liveModelsByCli.value, cli);
+    const missing = source.notInstalled === true || /not found on PATH/i.test(source.error ?? "");
+    if (missing) {
+      // Keep any saved list, but do not call the absence a failed refresh.
+      modelStatesByCli.value = {
+        ...modelStatesByCli.value,
+        [cli]: { status: "loaded", notInstalled: true },
+      };
+      return;
+    }
     if (source.error) {
       // Don't blank a good previous list with the failed probe's minimal
       // answer — keep it (marked stale) and surface the reason instead.
@@ -317,7 +328,8 @@ export const useConfigStore = defineStore("config", () => {
     if (!state) return null;
     if (state.status === "loading")
       return { kind: "loading", text: "Loading models…", stale: false };
-    if (state.status !== "failed") return null;
+    if (state.status !== "failed" || state.notInstalled) return null;
+    if (state.error && /not found on PATH/i.test(state.error)) return null;
     const reason = state.error ? ` (${state.error})` : "";
     return state.stale
       ? {
