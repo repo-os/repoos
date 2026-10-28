@@ -6,11 +6,11 @@ status: inbox
 priority: p1
 area: core
 depends_on: ["0962"]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-27T12:02:34Z"
-updated_at: "2026-10-27T12:02:34Z"
+updated_at: "2026-10-28T18:25:01Z"
 ---
 ## Problem
 Split from #0962. The board computes git state per task/branch (ahead counts, merged checks, work-file history), spawning hundreds of git processes on ~900 tasks and ~100 branches.
