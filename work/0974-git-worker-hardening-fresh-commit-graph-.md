@@ -11,7 +11,7 @@ branch: feat/git-worker-hardening-fresh-commit-graph-
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-28T11:30:32Z"
-updated_at: "2026-10-28T11:52:52Z"
+updated_at: "2026-10-28T11:52:53Z"
 ---
 ## Problem
 On 2026-10-28 RepoOS was unusable for hours because of git:
@@ -41,3 +41,4 @@ Files: `src/server/git-worker.ts` (queue, timeouts), `src/server/git-worker-entr
 - 2026-10-28T11:51:37Z · status inbox→ready
 - 2026-10-28T11:51:45Z · status ready→active, branch
 - 2026-10-28T11:52:52Z · body: Acceptance criteria (added 1)
+- 2026-10-28T11:52:53Z · message_queued at 2026-10-28T11:52:53.229Z
