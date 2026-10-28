@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 review_cli_override: cursor
+review_model_override: composer-2.5
 created_at: "2026-10-28T08:00:32Z"
-updated_at: "2026-10-28T08:23:04Z"
+updated_at: "2026-10-28T08:23:07Z"
 ---
 ## Items
 
@@ -36,3 +37,4 @@ The string comes from `modelNoticeFor` (`stores/config.ts`, around line 325). Th
 
 - 2026-10-28T08:00:32Z · created · njachowski@gmail.com
 - 2026-10-28T08:23:04Z · review_cli_override
+- 2026-10-28T08:23:07Z · review_model_override
