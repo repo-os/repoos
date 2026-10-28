@@ -454,8 +454,8 @@ onBeforeUnmount(() => {
         <p class="page-desc">Manage the keys this project expects. Saved values stay hidden.</p>
       </div>
       <div class="secrets-env-control">
-        <span class="secrets-label">Viewing environment</span>
         <div class="secrets-picker-wrap">
+          <span class="secrets-label">Environment</span>
           <Select
             :model-value="selected"
             :disabled="!environments.length"
@@ -482,7 +482,7 @@ onBeforeUnmount(() => {
             variant="outline"
             class="secrets-create-inline"
             @click="createOpen = true"
-            >Create environment</Button
+            >New environment</Button
           >
         </div>
         <span class="secrets-view-note">Changes here do not switch running processes.</span>
