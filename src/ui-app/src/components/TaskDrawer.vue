@@ -60,6 +60,7 @@ import { checkRunSkipped } from "../../../core/check-skip.js";
 import { PRIORITIES, TASK_TYPES } from "../../../core/types.js";
 import { useNow } from "../composables/useNow";
 import { isHoldActive } from "../../../core/task-selection.js";
+import { Clock3 } from "lucide-vue-next";
 import {
   needsInputBannerText,
   formatNeedsInputDetailForDisplay,
@@ -133,6 +134,7 @@ import type { DiffFile } from "../lib/diff-files";
 import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
 import DeleteTaskDialog from "./DeleteTaskDialog.vue";
 import ArchiveTaskDialog from "./ArchiveTaskDialog.vue";
+import HoldTaskDialog from "./HoldTaskDialog.vue";
 import { storyDeepLinkRef, storyOpenLabel } from "../lib/story-deep-link";
 import { normalizeStoryName } from "../../../core/stories.js";
 import { insertTextAtCursor } from "../utils/text-insertion";
@@ -1711,6 +1713,42 @@ const deleteTaskTarget = ref<{ id: string; title: string } | null>(null);
 const archiveTaskTarget = ref<{ id: string; title: string } | null>(null);
 const archiveBusy = ref(false);
 const unarchiveBusy = ref(false);
+const holdDialogOpen = ref(false);
+const holdBusy = ref(false);
+const holdActive = computed(() => !!ui.active && isHoldActive(ui.active, holdNow.value));
+async function placeHold(value: { reason: string; until?: string }): Promise<void> {
+  const task = ui.active;
+  if (!task) return;
+  holdBusy.value = true;
+  try {
+    const result = await api<{ task: Task }>(
+      `/api/tasks/${task.id}/hold`,
+      JSON_OPTS("POST", value),
+    );
+    Object.assign(task, result.task);
+    holdDialogOpen.value = false;
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    holdBusy.value = false;
+  }
+}
+async function releaseHold(start = false): Promise<void> {
+  const task = ui.active;
+  if (!task) return;
+  holdBusy.value = true;
+  try {
+    const result = await api<{ task: Task }>(
+      `/api/tasks/${task.id}/unhold`,
+      JSON_OPTS("POST", start ? { start: true } : {}),
+    );
+    Object.assign(task, result.task);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    holdBusy.value = false;
+  }
+}
 const confirmHotfix = ref(false);
 // Stop work confirmation modal state
 const confirmStopWork = ref(false);
@@ -4817,7 +4855,35 @@ watch(
               </Button>
             </div>
           </div>
-          <div v-else class="drawer-quickbar">
+          <section v-if="holdActive" class="held-panel" role="status" aria-label="Task hold">
+            <div class="held-panel-copy">
+              <strong><Clock3 aria-hidden="true" />Held — automation won't start this task</strong>
+              <p v-if="ui.active.holdReason">{{ ui.active.holdReason }}</p>
+              <small>
+                <span v-if="ui.active.holdBy">By {{ ui.active.holdBy }}</span>
+                <span v-if="ui.active.holdAt"
+                  >{{ ui.active.holdBy ? " · " : "" }}{{ fmtTime(ui.active.holdAt) }}</span
+                >
+                <span v-if="ui.active.holdUntil">
+                  · Auto-releases {{ new Date(ui.active.holdUntil).toLocaleString() }}</span
+                >
+              </small>
+            </div>
+            <div class="held-panel-actions">
+              <Button variant="outline" size="sm" :disabled="holdBusy" @click="releaseHold()">{{
+                holdBusy ? "Releasing…" : "Release hold"
+              }}</Button>
+              <Button
+                v-if="['active', 'ready'].includes(ui.active.status)"
+                variant="default"
+                size="sm"
+                :disabled="holdBusy"
+                @click="releaseHold(true)"
+                >Release and start</Button
+              >
+            </div>
+          </section>
+          <div v-if="!ui.active.isArchived" class="drawer-quickbar">
             <div v-if="isHumanTask" class="ff-notice drawer-human-task" role="status">
               <strong>Human task: no AI will work on this.</strong>
               <span>Move it between board columns as the human work progresses.</span>
@@ -5809,6 +5875,23 @@ watch(
             </div>
           </div>
           <div class="delete-zone">
+            <Button
+              v-if="holdActive"
+              variant="outline"
+              size="sm"
+              :disabled="holdBusy"
+              @click="releaseHold()"
+              >Release hold</Button
+            >
+            <Button
+              v-else
+              variant="outline"
+              size="sm"
+              data-test-id="hold-task"
+              :disabled="ui.saving"
+              @click="holdDialogOpen = true"
+              >Hold</Button
+            >
             <Button
               variant="destructive"
               size="sm"
@@ -7036,6 +7119,12 @@ watch(
     :busy="archiveBusy"
     @update:open="(v) => !v && cancelArchive()"
     @confirm="confirmArchive"
+  />
+  <HoldTaskDialog
+    :open="holdDialogOpen"
+    :busy="holdBusy"
+    @update:open="(v) => (holdDialogOpen = v)"
+    @hold="placeHold"
   />
 
   <AddShotModal
