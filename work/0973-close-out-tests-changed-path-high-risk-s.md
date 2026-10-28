@@ -5,7 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "2026-10-28T13:29:13.963926Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out"
+needs_input_detail: "crash recovery could not start the engineer: Task #0973 is paused. The task stayed active with its worktree intact."
 priority: p1
 area: core
 assigned_to: ai
@@ -16,7 +16,7 @@ model_override: gpt-6-luna
 review_cli_override: cursor
 review_model_override: grok-4.7-low
 created_at: "2026-10-28T09:17:44Z"
-updated_at: "2026-10-28T13:30:10Z"
+updated_at: "2026-10-28T13:30:11Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-28T11:49:16.051Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 2
@@ -81,3 +81,4 @@ Builds on #0970 (step_timings in check_runs, the timings report). Do not edit re
 - 2026-10-28T13:28:58Z · needs_input
 - 2026-10-28T13:29:40Z · agent exited with an error (codex) · 2026-10-28T13:29:13.963926Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
 - 2026-10-28T13:30:10Z · engineer crash recovery: resuming codex + gpt-6-luna (1/12 crashes in 30m) · 2026-10-28T13:29:13.963926Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-10-28T13:30:11Z · engineer crash recovery: start failed — Task #0973 is paused
