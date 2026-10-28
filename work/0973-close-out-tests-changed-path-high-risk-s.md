@@ -11,8 +11,9 @@ branch: feat/close-out-tests-changed-path-high-risk-s
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-28T09:17:44Z"
-updated_at: "2026-10-28T11:44:07Z"
+updated_at: "2026-10-28T11:49:16Z"
 handoff_signal_retry_count: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-10-28T11:49:16.051Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 Move to done runs the full test suite: about 95% of a ~57 minute close-out on this laptop, and slower when engineers run at the same time. Close-outs time out, so tasks get hand-merged. The other gate steps take seconds when the machine is idle (contrast audit 18s, docs build 6s); #0970 measured them, and now records per-step timings.
@@ -45,3 +46,4 @@ Builds on #0970 (step_timings in check_runs, the timings report). Do not edit re
 - 2026-10-28T11:33:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T11:38:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T11:44:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-28T11:49:16Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
