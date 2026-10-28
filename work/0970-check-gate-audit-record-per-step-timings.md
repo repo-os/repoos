@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: a7faee07a7fe0da9f4cf7aab267566da66f57e11
 id: "0970"
 title: "Check gate: per-step/test timings; close-out runs changed + high-risk tests, full suite at release"
 type: chore
@@ -13,7 +11,9 @@ branch: feat/check-gate-audit-record-per-step-timings
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T08:50:19Z"
+updated_at: "2026-10-28T08:50:44Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: a7faee07a7fe0da9f4cf7aab267566da66f57e11
 handoff_signal_retry_count: 2
 check_retry_count: 1
 last_check_failure: "repoos check (exit 1) at 2026-10-28T06:01:43.510Z: repoos check failed: tests — command failed (exit 1)"
@@ -72,4 +72,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T08:11:51Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-28T08:11:51Z · note: handoff requested (cli)
 - 2026-10-28T08:50:19Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
-
+- 2026-10-28T08:50:44Z · message_queued at 2026-10-28T08:50:44.383Z
