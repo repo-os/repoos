@@ -70,7 +70,7 @@ or a JS build:
 
 | Kind | What it checks | Skips when |
 | --- | --- | --- |
-| `staleness` | `src/` matches the last `dist/.build-info.json` build | Your repo doesn't use RepoOS's build contract |
+| `staleness` | `src/` matches the last `dist/.build-info.json` build; a stale build is rebuilt with `bun run build` first | Your repo doesn't use RepoOS's build contract |
 | `lockfile-sync` | `bun.lock` matches `package.json` | There is no `bun.lock` |
 | `zero-runtime-deps` | `package.json` has empty `dependencies` | The package isn't named `repoos` (this is RepoOS's own invariant, not a rule for your repo) |
 | `format` | Runs your `fmt:check` script; with `--fix`, runs the `fmt` script (or the step's `fix`) first | No such script |
