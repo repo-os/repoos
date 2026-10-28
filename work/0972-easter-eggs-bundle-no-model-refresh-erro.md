@@ -3,12 +3,6 @@ id: "0972"
 title: "Easter eggs bundle: uninstalled-agent model notice, task status card"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Connection failed repeatedly"
-debug_tldr: "The agent's connection dropped repeatedly while `repoos check` was still running under memory pressure (compressor above its 8 GB limit), so free memory and resume the task."
-debug_tldr_at: "2026-10-28T11:43:07Z"
-debug_tldr_key: "dev-error|RetriableError: Connection failed repeatedly"
 priority: p3
 area: [web, core]
 assigned_to: ai
@@ -19,7 +13,7 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T08:00:32Z"
-updated_at: "2026-10-28T11:44:32Z"
+updated_at: "2026-10-28T11:51:19Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-28T11:42:24.479Z\",\"kind\":\"dev-error\"}]"
@@ -91,18 +85,18 @@ While the repo loads, `.main` shows a skeleton shaped like the route being opene
 ```json
 [
 {
-  "label": "Task drawer status card stays three lines while checks run",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunning"
+"label": "Task drawer status card stays three lines while checks run",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning"
 },
 {
-  "label": "Debug Status details cards scroll inside a 250px cap",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".debug-status-detail",
-  "state": "drawer:statusDetails"
+"label": "Debug Status details cards scroll inside a 250px cap",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".debug-status-detail",
+"state": "drawer:statusDetails"
 }
 ]
 ```
@@ -138,3 +132,4 @@ While the repo loads, `.main` shows a skeleton shaped like the route being opene
 - 2026-10-28T11:42:24Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
 - 2026-10-28T11:42:24Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
 - 2026-10-28T11:44:32Z · body
+- 2026-10-28T11:51:19Z · needs_input
