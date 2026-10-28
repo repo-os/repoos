@@ -11,7 +11,7 @@ branch: feat/auto-reload-handover-keeps-failing-readi
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-27T12:03:03Z"
-updated_at: "2026-10-28T18:29:20Z"
+updated_at: "2026-10-28T19:04:26Z"
 ---
 ## Problem
 The server's build-change auto-reload repeatedly failed: on 2026-10-27 the replacement process was killed by the 30 s handshake timeout 9 times in a row while the old process kept serving the old build, and each attempt dropped UI connections ("server connection issue"). Replacements need ~27-60 s to become ready on this machine. As a stopgap the launchd server now runs with REPOOS_NO_AUTO_RELOAD=1 (commit 4da413c4f) and drivers restart with `just revive`.
@@ -40,3 +40,4 @@ src/server/reload.ts and server.ts (reloadEnabled). No server restarts, no previ
 - 2026-10-28T18:26:52Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-28T18:29:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T18:29:20Z · message_delivered: 1 message(s)
+- 2026-10-28T19:04:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
