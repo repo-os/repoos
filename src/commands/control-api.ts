@@ -1519,12 +1519,39 @@ interface StatsSystemView {
   topProcesses?: { byCpu: StatsTopProcess[]; byMemory: StatsTopProcess[] };
   globalEngineers?: { own: number; others: number; servers: unknown[] } | null;
   heavyJobs?: { running: number; queued: number };
+  gitJobs?: StatsGitJobView[];
 }
 
 function fmtStatBytes(bytes: number): string {
   if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
   if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(0)} MB`;
   return `${(bytes / 1024).toFixed(0)} KB`;
+}
+
+interface StatsGitJobView {
+  label: string;
+  lane?: "bulk" | "fast";
+  state?: "running" | "queued";
+  queueWaitMs?: number;
+  runMs?: number;
+  ageMs?: number;
+}
+
+/**
+ * #0974: `repoos stats` shows each in-flight git job's queue wait vs run time,
+ * so "the board is slow" names the job instead of vague slowness. The STUCK
+ * request log carries the same fields.
+ */
+function printGitJobs(jobs: StatsGitJobView[] | undefined): void {
+  if (!jobs?.length) return;
+  console.log(c.bold(`  git jobs (${jobs.length})`));
+  for (const job of jobs.slice(0, 12)) {
+    const lane = job.lane ? ` ${job.lane}` : "";
+    const state = job.state === "queued" ? c.yellow("queued") : c.green("running");
+    const wait = `${Math.round((job.queueWaitMs ?? 0) / 1000)}s queue`;
+    const run = job.state === "queued" ? "" : ` · ${Math.round((job.runMs ?? 0) / 1000)}s run`;
+    console.log(`    ${state}${lane}  ${job.label}  ${c.dim(`${wait}${run}`)}`);
+  }
 }
 
 function fmtRatio(ratio: number | null | undefined): string {
@@ -1565,6 +1592,7 @@ export function printSystemSummary(system: StatsSystemView): void {
   if (heavy) {
     console.log(c.dim(`  heavy jobs: ${heavy.running} running, ${heavy.queued} queued`));
   }
+  printGitJobs(system.gitJobs);
   const g = system.globalEngineers;
   if (g) {
     console.log(

@@ -1,10 +1,38 @@
 # Server Git worker (#0962)
 
-`src/server/git-worker.ts` owns one child per repository and a serialized
-request queue. `git-worker-entry.ts` runs the Git/index queries outside the
-HTTP process. Deadlines include queue time; a running request that times out
-kills its child process group. Late output, errors and close events from that
-child must not affect its replacement.
+`src/server/git-worker.ts` owns two lazy children per repository: a bulk lane
+for overview/index/history/task/dependency reads and a fast lane for short Git
+commands, context facts and small diff reads. Each lane serializes its own jobs;
+a bulk scan or timeout cannot block or kill the fast child. Generic Git commands
+share the fast lane, so a caller-supplied long command can still queue other
+commands in that lane. `git-worker-entry.ts` runs the queries outside the HTTP
+process. A job's run deadline starts at dispatch; queue wait is capped separately
+at three minutes. A running timeout kills only that lane's child process group.
+Late events from that child cannot affect its replacement. STUCK request logs
+include each job's lane, `queueWaitMs` and `runMs` alongside its current age.
+
+Successful directory-history walks are atomically saved under
+`.repoos/cache/dir-log-<directory hash>.json`, including their HEAD and a format
+version. The cache directory ignores its generated files even in repositories
+without RepoOS ignore rules. A replacement child loads the saved result: equal HEAD needs no walk,
+a descendant needs only the incremental range, and a rewritten HEAD requires a
+full walk. Failed walks never replace a good saved cache; corrupt, missing or
+incompatible files are cache misses. Full walks are pinned to the sampled HEAD
+so concurrent commits cannot poison the cache's identity.
+
+Commit-graph maintenance runs asynchronously in the parent, independently of
+both queues. It checks at startup and every five minutes, and debounces observed
+Git mutations for five seconds. Missing graphs, changed HEADs and graphs older
+than one hour trigger `git commit-graph write --reachable --changed-paths --split`.
+The successful HEAD/time marker lives beside the graph in Git's objects/info,
+shared by linked worktrees. Failures warn and retry on a later tick; they do not
+fail board requests or server startup. Closing the worker cancels future ticks.
+The boot index build retains its three-attempt retry.
+`repoos stats` lists each in-flight git job per lane with its queue wait and
+run time (via `/api/system`'s `gitJobs`), and the STUCK request log appends the
+same list. A check that waits — pressure guard, heavy slot, git queue — is
+surfaced on the task card and in the run record; past ten minutes the watchdog
+escalates it to `needs_input` (#0974, `user-docs/check.md`).
 
 Board facts use the batched ref/ahead-count and worktree queries in
 `repoGitOverviewAsync`, plus the incremental directory-commit cache. Ref state
@@ -29,7 +57,7 @@ offline local-index fallback.
 The scope of #0962 was narrowed on 2026-10-27 to the worker boundary for migrated
 calls, the paged Tasks API, and the asynchronous lifecycle regressions. Remaining
 blocking calls and the transitive guard belong to #0965; board query batching and
-cache coverage to #0966; request-duration/STUCK diagnostics to #0967; reload
+cache coverage to #0966 (partially covered by #0974's durable directory cache; route/spawn-count verification remains); request-duration/STUCK diagnostics to #0967; reload
 handover to #0968; and the one-hour latency measurement to #0969.
 
 A source-text check of server imports alone cannot prove that every request or

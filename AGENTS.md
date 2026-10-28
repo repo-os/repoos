@@ -362,7 +362,9 @@ cannot tell from the code alone:
   it compares a hash of `src/` with `dist/.build-info.json`. When a marked
   build is stale, it runs `bun run build` and re-execs the same command so the
   command uses fresh compiled code. This applies to `repoos check` and `serve`
-  too. The re-exec is attempted once; a failed build or still-stale marker
+  too. Concurrent CLIs share that build through `dist/.repoos-build.lock`:
+  later callers wait for the one already running instead of starting another
+  `tsc` + Vite. The re-exec is attempted once; a failed build or still-stale marker
   falls through to the existing warning or `check` staleness failure. A
   manual `bun run build` is still useful before using the compiled CLI after
   changing build scripts or package metadata, which the `src/` hash does not

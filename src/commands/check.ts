@@ -35,7 +35,11 @@ import { checkBuildForRoot } from "../core/build.js";
 import { findRepoRoot, loadConfig } from "../core/config.js";
 import type { CheckContrastPair, CheckThemeScope, RepoOSConfig } from "../core/types.js";
 import { availableMemBytes } from "../core/sysmem.js";
-import { preferBunForDevTasks } from "../core/runtime.js";
+import {
+  claimOrWaitForSharedBuild,
+  preferBunForDevTasks,
+  releaseSharedBuild,
+} from "../core/runtime.js";
 import {
   blockingFailures,
   DEFAULT_PROFILE,
@@ -92,6 +96,7 @@ import {
   REPOOS_CHECK_GATE_NOTE,
 } from "../server/pre-review-remote-gate.js";
 import { acquireLocalCheckSlot, SlotQueueTimeoutError } from "../core/local-gates.js";
+import { createCheckWaitRecorder, type CheckWait } from "../core/check-wait.js";
 import { applyEngineerResourceEnv } from "../core/engineer-resources.js";
 import { inspectCrossProcessSlots, localCheckLockRoot } from "../core/cross-process-slots.js";
 import { remoteLocalFallbackMode } from "../core/resource-limits.js";
@@ -1211,6 +1216,16 @@ export async function stepStaleness(ctx: StepContext): Promise<BuiltinOutcome> {
     // A stale build only ever means "run the build" (AGENTS.md). Failing here
     // cost a whole extra handoff round each time: on 2026-10-28, 4 of 11
     // handoff checks waited 12-23 min for a slot, then failed this first step.
+    // Share the CLI's build lock so a check does not start a second tsc+Vite
+    // while another repoos process is already rebuilding.
+    const claim = claimOrWaitForSharedBuild(ctx.repoRoot);
+    if (claim === "fresh") return { status: "passed", detail: "rebuilt a stale build" };
+    if (claim === "gave-up") {
+      return {
+        status: "failed",
+        detail: "timed out waiting for another repoos process to finish the build",
+      };
+    }
     console.log(c.dim("  · build is stale — running `bun run build` before the check"));
     const res = await runCommand({
       command: "bun run build",
@@ -1218,6 +1233,8 @@ export async function stepStaleness(ctx: StepContext): Promise<BuiltinOutcome> {
       timeoutMs: 600_000,
       env: ctx.env,
       echo: false,
+    }).finally(() => {
+      if (claim === "run") releaseSharedBuild(ctx.repoRoot);
     });
     stale = checkBuildForRoot(ctx.repoRoot);
     if (res.status !== "passed" || (stale.stale && stale.applicable)) {
@@ -2404,14 +2421,19 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   }
 
   let releaseLocalCheck: (() => void) | undefined;
+  let waitRecord: CheckWait | null = null;
+  // #0974: a check waiting on the pressure guard or a heavy slot must say so —
+  // on stdout (the handoff transcript captures it) and in the run record below.
+  const waits = createCheckWaitRecorder((line) => console.log(c.dim(`  ${line}`)));
   try {
     releaseLocalCheck = await acquireLocalCheckSlot({
       repoRoot,
       config: cfg,
       env: process.env,
-      onStatusLine: (line) => console.log(c.dim(`  ${line}`)),
+      onStatusLine: waits.onStatusLine,
     });
   } catch (e) {
+    waitRecord = waits.finish();
     const msg =
       e instanceof SlotQueueTimeoutError ? e.message : e instanceof Error ? e.message : String(e);
     console.log(c.red(`\n  ✗ ${msg}\n`));
@@ -2427,6 +2449,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     }
     process.exit(1);
   }
+  waitRecord = waits.finish();
 
   const runStartedAt = new Date();
   // Failed-first ordering (#0655): only interactive/CLI and pre-review runs
@@ -2610,6 +2633,11 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       startedAt: runStartedAt.toISOString(),
       finishedAt: finishedAt.toISOString(),
       durationMs: finishedAt.getTime() - runStartedAt.getTime(),
+      // #0974: what this run waited on before its first step, so "the check
+      // sat 26 minutes" is recorded, not just remembered anecdotally.
+      waited: waitRecord
+        ? { reason: waitRecord.reason, ms: waitRecord.endedAt! - waitRecord.startedAt }
+        : undefined,
       passed: gatingFailures.length === 0,
       results: results.map((r) => ({
         name: r.name,

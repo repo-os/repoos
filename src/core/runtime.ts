@@ -29,10 +29,88 @@
  * signal relay everywhere else.
  */
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, symlinkSync, readlinkSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  symlinkSync,
+  readlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { checkBuild, checkBuildForRoot, findPackageRoot } from "./build.js";
+
+/** How long a later CLI waits for the CLI that already holds the stale-build lock. */
+const SHARED_BUILD_WAIT_MS = 15 * 60 * 1000;
+const SHARED_BUILD_POLL_MS = 200;
+
+function sleepSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function pidAlive(pid: number): boolean {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * One stale-build at a time. Concurrent `repoos` CLIs used to each spawn
+ * `tsc` + Vite (2026-10-28, load average 320). The first caller creates
+ * `dist/.repoos-build.lock`; the rest wait until that build finishes or the
+ * holder's pid is gone, then continue only if the marker is fresh.
+ */
+export function claimOrWaitForSharedBuild(
+  packageRoot: string,
+): "run" | "fresh" | "gave-up" | "unlocked" {
+  const lock = join(packageRoot, "dist", ".repoos-build.lock");
+  const deadline = Date.now() + SHARED_BUILD_WAIT_MS;
+  let announced = false;
+  while (Date.now() <= deadline) {
+    if (!checkBuildForRoot(packageRoot).stale) return "fresh";
+    try {
+      mkdirSync(join(packageRoot, "dist"), { recursive: true });
+      writeFileSync(lock, JSON.stringify({ pid: process.pid, at: Date.now() }), { flag: "wx" });
+      return "run";
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "EEXIST") return "unlocked";
+      let holder = 0;
+      try {
+        holder = Number(JSON.parse(readFileSync(lock, "utf8")).pid);
+      } catch {
+        holder = 0;
+      }
+      if (!pidAlive(holder)) {
+        try {
+          unlinkSync(lock);
+        } catch {
+          /* the holder released it between the read and the unlink */
+        }
+        continue;
+      }
+      if (!announced) {
+        announced = true;
+        process.stderr.write("[repoos] Waiting for another repoos process to finish the build.\n");
+      }
+      sleepSync(Math.min(SHARED_BUILD_POLL_MS, Math.max(0, deadline - Date.now())));
+    }
+  }
+  return checkBuildForRoot(packageRoot).stale ? "gave-up" : "fresh";
+}
+
+export function releaseSharedBuild(packageRoot: string): void {
+  try {
+    unlinkSync(join(packageRoot, "dist", ".repoos-build.lock"));
+  } catch {
+    /* already released */
+  }
+}
 
 /** True when this process is Bun rather than Node. */
 export function isBun(): boolean {
@@ -197,9 +275,18 @@ export function reexecAfterStaleBuild(root?: string): boolean {
   const script = process.argv[1];
   if (!bun || !script) return false;
 
-  process.stderr.write("[repoos] Build is stale; running `bun run build` before continuing.\n");
-  const built = spawnSync(bun, ["run", "build"], { cwd: packageRoot, stdio: "inherit" });
-  if (built.status !== 0) return false; // Preserve the existing warning/check failure.
+  const claim = claimOrWaitForSharedBuild(packageRoot);
+  if (claim === "gave-up") return false;
+  if (claim === "run") {
+    process.stderr.write("[repoos] Build is stale; running `bun run build` before continuing.\n");
+    let built: ReturnType<typeof spawnSync>;
+    try {
+      built = spawnSync(bun, ["run", "build"], { cwd: packageRoot, stdio: "inherit" });
+    } finally {
+      releaseSharedBuild(packageRoot);
+    }
+    if (built.status !== 0) return false; // Preserve the existing warning/check failure.
+  }
 
   const argv = [script, ...process.argv.slice(2)];
   const env: NodeJS.ProcessEnv = { ...process.env, REPOOS_STALENESS_REEXEC: "1" };

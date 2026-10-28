@@ -36,14 +36,15 @@ describe("staleness step rebuilds instead of failing (2026-10-28)", () => {
   });
 
   it("runs the build and passes when the build was stale", async () => {
-    build.stale = [true, false];
+    // The shared-build claim re-reads staleness before the step does.
+    build.stale = [true, true, false];
     const out = await stepStaleness(ctx);
     expect(run.calls).toEqual(["bun run build"]);
     expect(out.status).toBe("passed");
   });
 
   it("fails with the build output when the rebuild fails", async () => {
-    build.stale = [true, true];
+    build.stale = [true, true, true];
     run.status = "failed";
     const out = await stepStaleness(ctx);
     expect(out.status).toBe("failed");
