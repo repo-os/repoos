@@ -720,6 +720,26 @@ const opts = (taskId: string, extra: Record<string, unknown> = {}) => ({
   ...extra,
 });
 
+describe("remote gate profiles (#0970)", () => {
+  it.each([
+    ["pre-review", undefined, "default"],
+    ["close-out", undefined, "full"],
+    ["release", undefined, "full"],
+    ["cli", "full", "full"],
+    ["pre-review", "integration", "integration"],
+  ])(
+    "sends phase %s and explicit profile %s to the browser gate",
+    async (phase, checkProfile, expected) => {
+      const f = poolFixture({ hosts: [{ host: "a" }] });
+      const job = f.runner.validate(opts("0970", { phase, checkProfile }));
+      await tick();
+      f.release();
+      expect((await job).ok).toBe(true);
+      expect(f.cmds.a![0]).toContain(`REPOOS_CHECK_PROFILE='${expected}'`);
+    },
+  );
+});
+
 describe("background host probing (#0683)", () => {
   it("probes every configured host when the runner starts, without dispatch", async () => {
     const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });

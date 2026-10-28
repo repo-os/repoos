@@ -224,7 +224,7 @@ A profile is a named subset of the plan. Steps with no `profiles` belong to
 every profile; a step listed only in `["full"]` stays out of a routine run:
 
 ```bash
-repoos check                 # default profile
+repoos check                 # default profile (also used at handoff)
 repoos check --profile full  # every step, including the slow ones
 ```
 
@@ -365,6 +365,15 @@ does a full suite take on bee vs mini?" and "was that failure a fluke?" are
 questions the table answers, not archaeology in log files. A run whose caller's
 deadline passed mid-dispatch is recorded as **cancelled**, not failed, so a
 give-up never reads as a gate the branch failed.
+
+Each completed step records its name, outcome, and duration. The CLI prints a
+**Step timings** summary. On **Runs**, expand a successful or failed run to see
+its steps. The step report covers the latest 300 runs and shows median and p90
+duration, failures out of executed samples, and skips. Skipped steps and older
+runs without timings do not contribute duration or failure samples. The report
+combines machines and scopes; compare individual runs before changing a gate
+based on a small or mixed sample. Remote install, build, tests, and offloaded
+browser steps supply timings when the runner uses the current validation script.
 
 When the test suite fails, the run also records the name of every failing test
 (`file > suite > test`) in a `failed_tests` column, and the Runs tab shows the
