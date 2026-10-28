@@ -15,11 +15,11 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/git-worker-hardening-fresh-commit-graph-
 cli_override: codex
-model_override: gpt-6.1-sol
+model_override: gpt-6-luna
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T11:30:32Z"
-updated_at: "2026-10-28T12:25:57Z"
+updated_at: "2026-10-28T13:28:52Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-28T12:17:18.885Z\",\"kind\":\"usage-limit\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
@@ -58,3 +58,4 @@ Files: `src/server/git-worker.ts` (queue, timeouts), `src/server/git-worker-entr
 - 2026-10-28T12:17:24Z · message_delivered: 1 message(s)
 - 2026-10-28T12:25:55Z · review_cli_override
 - 2026-10-28T12:25:57Z · review_model_override
+- 2026-10-28T13:28:52Z · model_override
