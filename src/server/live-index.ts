@@ -317,6 +317,31 @@ function statusRank(s: Status): number {
   return STATUSES.indexOf(s);
 }
 
+/**
+ * The boot-time index build, retried. On a loaded machine the first full git
+ * walk can outlast the worker's 150 s budget; a timeout kills the worker, and
+ * rejecting here made `repoos serve` exit, so launchd restarted it straight
+ * into the same cold walk (2026-10-28: ten failed starts in a row). Retrying
+ * keeps one server up while the walk finishes.
+ */
+const BOOT_INDEX_ATTEMPTS = 3;
+async function buildIndexWithRetry(
+  config: RepoOSConfig,
+): ReturnType<ReturnType<typeof getGitWorker>["buildIndex"]> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= BOOT_INDEX_ATTEMPTS; attempt++) {
+    try {
+      return await getGitWorker(config.root).buildIndex(config, true);
+    } catch (error) {
+      lastError = error;
+      console.error(
+        `[repoos] index build attempt ${attempt}/${BOOT_INDEX_ATTEMPTS} failed: ${(error as Error).message}`,
+      );
+    }
+  }
+  throw lastError;
+}
+
 export class LiveIndex {
   private config: RepoOSConfig;
   /** task id -> Task */
@@ -419,7 +444,7 @@ export class LiveIndex {
    * it.
    */
   async refreshAllAsync(opts: { indexBuildGate?: () => void | Promise<void> } = {}): Promise<void> {
-    const built = await getGitWorker(this.config.root).buildIndex(this.config, true);
+    const built = await buildIndexWithRetry(this.config);
     const idx = built.index;
     // `indexBuildGate` parks the build HERE — after the git-heavy work, before
     // the swap. Note what that does and does not prove: it proves the build's

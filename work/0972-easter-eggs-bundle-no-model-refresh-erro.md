@@ -13,12 +13,15 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T08:00:32Z"
-updated_at: "2026-10-28T08:34:47Z"
+updated_at: "2026-10-28T12:17:10Z"
+handoff_signal_retry_count: 2
+dev_error_count: 1
 ---
 ## Items
 
 - E1 · Agents page: no model-refresh error for an agent that is not installed (reported by Nick, 2026-10-28)
 - E2 · Task drawer status card: fix padding, drop the info tooltip, open Debug › Status details on click, keep it to 3 lines; cap the Status details cards at 250px (reported by Nick, 2026-10-28)
+- E3 · App-wide loading: replace the centered spinner with a page skeleton (reported by Nick, 2026-10-28)
 
 ## E1 · No model-refresh error for an uninstalled agent
 
@@ -61,6 +64,42 @@ Truncate each line with an ellipsis rather than wrapping.
 ### Notes for AI
 The card lives in `src/ui-app/src/components/TaskDrawer.vue` ("Open Status details" text; see also `DoneErrorCard.vue`). Status details is in `src/ui-app/src/components/DebugPanel.vue`. Use the shared tokens and classes in `style.css`; no hard-coded colors (the `hardcoded-colors` guard). Both screenshots are attached.
 
+## E3 · App-wide loading shows a spinner, not a skeleton
+
+### Problem
+After a server restart, /work shows a lone spinner in an empty main pane. The pages were moved to skeleton loaders, but `App.vue` still renders `<div v-if="repo.loading" class="spin">` in `.main` while the repo loads, so every route shows the spinner before its own skeleton.
+
+### Desired UX
+While the repo loads, `.main` shows a skeleton shaped like the route being opened: board columns for /work, rows for list pages, using `PageSkeleton.vue` (add a `board` kind if needed). No spinner anywhere in the main pane.
+
+### Acceptance criteria
+- `App.vue` no longer renders `.spin` for `repo.loading`; it renders a skeleton, picked per route.
+- /work during loading shows column-shaped skeleton cards.
+- Test: with `repo.loading` true, the main pane contains `.page-skeleton` and no `.spin`.
+
+### Notes for AI
+`src/ui-app/src/App.vue` around line 135; `src/ui-app/src/components/PageSkeleton.vue`. Use the shared tokens; no hard-coded colors.
+
+## Shots
+```json
+[
+{
+"label": "Task drawer status card stays three lines while checks run",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning"
+},
+{
+"label": "Debug Status details cards scroll inside a 250px cap",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".debug-status-detail",
+"state": "drawer:statusDetails"
+}
+]
+```
+
 ## Screenshots
 
 ![6](/api/tasks/0972/attachments/att_3546c1e8-226d-4a09-aff5-fa37f8185073.png)
@@ -76,3 +115,23 @@ The card lives in `src/ui-app/src/components/TaskDrawer.vue` ("Open Status detai
 - 2026-10-28T08:33:32Z · cli_override, model_override
 - 2026-10-28T08:34:02Z · status inbox→ready
 - 2026-10-28T08:34:47Z · status ready→active, branch
+- 2026-10-28T08:49:57Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-28T08:51:19Z · status ready→active
+- 2026-10-28T08:56:29Z · message_queued at 2026-10-28T08:56:29.011Z
+- 2026-10-28T09:01:44Z · message_queued at 2026-10-28T09:01:44.058Z
+- 2026-10-28T09:09:17Z · body
+- 2026-10-28T09:18:37Z · body: Items (added 1); E3 · App-wide loading shows a spinner, not a skeleton (added)
+- 2026-10-28T09:18:42Z · message_queued at 2026-10-28T09:18:42.265Z
+- 2026-10-28T09:18:43Z · message_queued at 2026-10-28T09:18:43.824Z
+- 2026-10-28T09:48:45Z · phantom runner detected: no live process, restarted
+- 2026-10-28T09:48:45Z · note: phantom runner detected: no live process, restarted
+- 2026-10-28T09:48:54Z · message_delivered: 4 message(s)
+- 2026-10-28T11:10:20Z · note: adopted orphaned engineer pid 29103
+- 2026-10-28T11:25:55Z · body
+- 2026-10-28T11:42:24Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
+- 2026-10-28T11:42:24Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
+- 2026-10-28T11:44:32Z · body
+- 2026-10-28T11:51:19Z · needs_input
+- 2026-10-28T11:51:20Z · message_queued at 2026-10-28T11:51:20.133Z
+- 2026-10-28T12:17:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-28T12:17:10Z · message_delivered: 1 message(s)

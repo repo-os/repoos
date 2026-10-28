@@ -432,8 +432,10 @@ cannot tell from the code alone:
   capacity, not a pressure signal; the OS may retain swap during normal
   operation, so swap used or free swap alone does not prove thrashing. Swap-used
   ratio stays advisory. Blocking signals are paging activity, reclaimable
-  memory, compressor bytes above `pressureGuard.maxCompressorBytes` (default
-  8 GiB), load above `pressureGuard.maxLoadPerCpu` (default 3× per CPU), idle
+  memory, macOS `memory_pressure` critical, compressor bytes above
+  `pressureGuard.maxCompressorBytes` (default 8 GiB; only where no macOS
+  pressure level is available — on macOS a big compressor pool is normal and
+  advisory), load above `pressureGuard.maxLoadPerCpu` (default 3× per CPU), idle
   CPU below `pressureGuard.minIdleCpuPercent` (default 5%), and the other
   configured limits above. Heavy builds and tests across every checkout on the
   host share `heavySlots` (default 2, `~/.repoos/local-check-slots`) and
