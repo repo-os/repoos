@@ -14,7 +14,7 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-27T23:11:08Z"
+updated_at: "2026-10-28T00:12:54Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component."
 last_handoff_failure_sha: 10cb5cd1e550223aa114ba2c37236cbda9e18775
 review_rounds: 1
@@ -200,3 +200,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T23:11:04Z · cli_override, model_override
 - 2026-10-27T23:11:08Z · needs_input
 - 2026-10-27T23:11:08Z · message_queued at 2026-10-27T23:11:08.364Z
+- 2026-10-28T00:12:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
