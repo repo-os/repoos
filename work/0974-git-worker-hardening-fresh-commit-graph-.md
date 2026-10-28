@@ -3,6 +3,9 @@ id: "0974"
 title: "Git worker hardening: fresh commit-graph, fast lane for short calls, cache survives restarts"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p0
 area: core
 assigned_to: ai
@@ -13,9 +16,9 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T11:30:32Z"
-updated_at: "2026-10-28T14:49:07Z"
-dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:29:29.421Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:29:58.011Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-10-28T15:20:16Z"
+dev_error_count: 4
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-28T15:20:16.639Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
@@ -66,3 +69,5 @@ Files: `src/server/git-worker.ts` (queue, timeouts), `src/server/git-worker-entr
 - 2026-10-28T14:48:07Z · message_queued at 2026-10-28T14:48:07.769Z
 - 2026-10-28T14:48:57Z · body: Acceptance criteria (added 1)
 - 2026-10-28T14:49:07Z · message_queued at 2026-10-28T14:49:07.215Z
+- 2026-10-28T15:20:16Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-28T15:20:16Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
