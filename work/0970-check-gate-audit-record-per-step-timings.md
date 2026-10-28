@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0970"
 title: "Check gate: per-step/test timings; close-out runs changed + high-risk tests, full suite at release"
 type: chore
@@ -65,3 +66,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T05:45:00Z · title
 - 2026-10-28T06:01:43Z · message_delivered: 1 message(s)
 - 2026-10-28T08:01:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
