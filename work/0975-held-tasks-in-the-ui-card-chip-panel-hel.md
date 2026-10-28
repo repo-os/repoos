@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0975"
 title: "Held tasks in the UI: card chip, panel held card with release, Hold button"
 type: feature
@@ -88,3 +89,4 @@ updated_at: "2026-10-28T20:22:08Z"
 - 2026-10-28T18:28:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T18:28:46Z · message_delivered: 1 message(s)
 - 2026-10-28T20:22:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
