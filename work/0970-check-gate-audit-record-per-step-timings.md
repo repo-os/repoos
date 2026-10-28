@@ -11,7 +11,7 @@ branch: feat/check-gate-audit-record-per-step-timings
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T12:17:32Z"
+updated_at: "2026-10-28T12:17:35Z"
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check (exit 1) at 2026-10-28T06:01:43.510Z: repoos check failed: tests — command failed (exit 1)"
 ---
@@ -82,3 +82,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T11:51:36Z · note: handoff requested (ui-review)
 - 2026-10-28T12:17:17Z · status active→review
 - 2026-10-28T12:17:32Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (1baa712e1) during finalization (#0734)
+- 2026-10-28T12:17:35Z · note: review pass 1: failed — no usable report
