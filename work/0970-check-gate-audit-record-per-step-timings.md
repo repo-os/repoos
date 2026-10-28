@@ -13,7 +13,7 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T12:27:48Z"
+updated_at: "2026-10-28T12:28:19Z"
 review_rounds: 1
 review_passes: 1
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
@@ -105,3 +105,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T12:27:43Z · message_queued at 2026-10-28T12:27:43.231Z
 - 2026-10-28T12:27:43Z · status review→active
 - 2026-10-28T12:27:48Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (1baa712e1) during finalization (#0734)
+- 2026-10-28T12:28:19Z · handoff failed · task-file handoff failed at commit · no implementation found since the branch diverged; use no_source_change: true to force a no-op handoff
