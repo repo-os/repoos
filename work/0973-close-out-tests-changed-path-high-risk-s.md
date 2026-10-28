@@ -3,9 +3,6 @@ id: "0973"
 title: "Close-out tests: changed-path + high-risk suites, full suite at release"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "2026-10-28T12:12:05.482501Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out"
 priority: p1
 area: core
 assigned_to: ai
@@ -78,3 +75,4 @@ Builds on #0970 (step_timings in check_runs, the timings report). Do not edit re
 - 2026-10-28T12:26:05Z · review_model_override
 - 2026-10-28T13:28:51Z · model_override
 - 2026-10-28T13:28:58Z · engineer stopped by request
+- 2026-10-28T13:28:58Z · needs_input
