@@ -1,9 +1,8 @@
 ---
-handoff_signal_retry_count: 2
 id: "0966"
 title: "Server freezes (3/4): batched, cached board git queries"
 type: refactor
-status: active
+status: ready
 priority: p1
 area: core
 depends_on: ["0962"]
@@ -13,7 +12,8 @@ branch: feat/server-freezes-3-4-batched-cached-board-
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T12:02:34Z"
-updated_at: "2026-10-28T18:34:45Z"
+updated_at: "2026-10-28T18:39:57Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 Split from #0962. The board computes git state per task/branch (ahead counts, merged checks, work-file history), spawning hundreds of git processes on ~900 tasks and ~100 branches.
@@ -41,4 +41,4 @@ Depends on #0962. Same rules as the other split tasks: no server restarts, no pr
 - 2026-10-28T18:29:04Z · message_delivered: 1 message(s)
 - 2026-10-28T18:29:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T18:34:45Z · message_queued at 2026-10-28T18:34:45.344Z
-
+- 2026-10-28T18:39:57Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
