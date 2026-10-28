@@ -3,17 +3,13 @@ id: "0959"
 title: "Server-down UI: distinguish refused from busy, show the project's restart command, and watch per-project servers"
 type: feature
 status: active
-hold: true
-hold_reason: "Driver doing this by hand (Nick, 2026-10-28)"
-hold_by: driver
-hold_at: "2026-10-28T16:40:25.921Z"
 priority: p1
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-down-ui-distinguish-refused-from-
 created_at: "2026-10-25T12:30:39Z"
-updated_at: "2026-10-28T16:43:49Z"
+updated_at: "2026-10-28T16:53:27Z"
 ---
 ## Problem
 
@@ -56,3 +52,4 @@ Decision (driver, 2026-10-28): do not extend `repoos-watchdog` to every project'
 - 2026-10-28T16:40:25Z · engineer stopped by request
 - 2026-10-28T16:40:26Z · held, held-reason, held-by, held-at
 - 2026-10-28T16:43:49Z · body: Decision (added)
+- 2026-10-28T16:53:27Z · released
