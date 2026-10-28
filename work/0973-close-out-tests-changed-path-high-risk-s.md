@@ -3,12 +3,6 @@ id: "0973"
 title: "Close-out tests: changed-path + high-risk suites, full suite at release"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
-debug_tldr: "Codex agent hit its ChatGPT usage limit (resets 11:43 PM) — switch the engineer to Cursor or another allowed agent and resume, and clear the leftover debug probes from integration-orchestrator.ts."
-debug_tldr_at: "2026-10-28T13:31:07Z"
-debug_tldr_key: dev-error|Reading additional input from stdin...
 priority: p1
 area: core
 assigned_to: ai
@@ -19,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: cursor
 review_model_override: grok-4.7-low
 created_at: "2026-10-28T09:17:44Z"
-updated_at: "2026-10-28T13:31:19Z"
+updated_at: "2026-10-28T13:31:31Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-28T11:49:16.051Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 4
@@ -87,3 +81,4 @@ Builds on #0970 (step_timings in check_runs, the timings report). Do not edit re
 - 2026-10-28T13:30:11Z · engineer crash recovery: start failed — Task #0973 is paused
 - 2026-10-28T13:30:43Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-28T13:31:19Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-28T13:31:31Z · needs_input
