@@ -1154,6 +1154,15 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "drawer:statusDetails":
       applyShotPreviewFixture(repo, "drawer:statusReviewFailed");
       setShotPreviewAppliedAttr("drawer:statusDetails");
+      {
+        // Opening the drawer resets to the review tab. Put Status details
+        // back so the capture's highlight is mounted (#0972).
+        const ui = useUiStore();
+        const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+        if (task) ui.open(task);
+        ui.activeTab = "debug";
+        ui.debugView = "status";
+      }
       break;
     case "drawer:landableNarrow":
       applyShotPreviewFixture(repo, "drawer:landable");
