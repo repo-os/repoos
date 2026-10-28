@@ -23,6 +23,7 @@ import { getGitWorker } from "./git-worker.js";
 import {
   selectReadyTasks,
   shouldRunPmVeto,
+  isHoldActive,
   type SelectionResult,
   type TaskConflict,
 } from "../core/task-selection.js";
@@ -245,7 +246,7 @@ export class AutoEngineeringOrchestrator {
     // Archived tasks are parked (#0657): they hold no slot and are never
     // picked up, even if their underlying status is `active`.
     const activeCount = allTasks.filter(
-      (t) => t.status === "active" && !t.isArchived && t.assignee !== "human",
+      (t) => t.status === "active" && !t.isArchived && t.assignee !== "human" && !isHoldActive(t),
     ).length;
     const availableSlots = Math.max(0, maxActiveTasks - activeCount);
 

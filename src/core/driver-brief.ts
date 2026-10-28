@@ -42,6 +42,19 @@ export interface BriefStatusGroup {
   tasks: BriefTaskEntry[];
 }
 
+/** A task parked out of ALL automation (#0960), for the brief's held section. */
+export interface BriefHeldTask {
+  id: string;
+  title: string;
+  status: Status;
+  /** Free-text reason the hold was placed, when given. */
+  reason: string | null;
+  /** Who placed the hold, when recorded. */
+  by: string | null;
+  /** ISO-8601 UTC auto-release time, when set. */
+  until: string | null;
+}
+
 export interface BriefRunningAgent {
   taskId: string;
   role: string;
@@ -187,6 +200,9 @@ export interface DriverBrief {
   hosts: BriefHostHealth[];
   /** Validations queued longer than two minutes, with their blocker (#0897). */
   blockedValidations: BriefBlockedValidation[];
+  /** #0960: tasks held out of ALL automation, with their hold reason. A hold
+   *  whose auto-release time has passed is excluded (it is no longer active). */
+  heldTasks: BriefHeldTask[];
   /** Hosts currently over the memory-pressure thresholds (#0901). */
   pressuredHosts: BriefPressuredHost[];
   runs: BriefRunSummary;
@@ -227,6 +243,16 @@ export interface DriverBriefInput {
     assignee: string;
     isArchived: boolean;
     updatedAt: string | null;
+    /** #0960: true when the task is held out of ALL automation. */
+    isHeld?: boolean;
+    /** Free-text reason a human gave when placing the hold (#0960). */
+    holdReason?: string;
+    /** Optional ISO-8601 UTC auto-release time (#0960). */
+    holdUntil?: string;
+    /** Who placed the hold (#0960). */
+    holdBy?: string;
+    /** When the hold was placed (#0960). */
+    holdAt?: string;
   }[];
   runningAgents: BriefRunningAgent[];
   closeOutJobs: BriefCloseOutJob[];
@@ -456,6 +482,24 @@ export function buildDriverBrief(input: DriverBriefInput): DriverBrief {
     recentCloseOutOutcomes: input.closeOutOutcomes,
     hosts: input.hosts,
     blockedValidations: input.blockedValidations ?? [],
+    heldTasks: input.tasks
+      .filter((t) => {
+        if (!t.isHeld || t.isArchived) return false;
+        if (t.holdUntil) {
+          const until = Date.parse(t.holdUntil);
+          if (Number.isFinite(until) && until <= Date.now()) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        status: t.status,
+        reason: t.holdReason ?? null,
+        by: t.holdBy ?? null,
+        until: t.holdUntil ?? null,
+      })),
     pressuredHosts: input.hosts
       .filter((h) => h.pressureState === "pressured")
       .map((h) => ({

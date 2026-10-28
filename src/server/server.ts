@@ -104,6 +104,7 @@ import {
 } from "../core/cross-process-slots.js";
 import { readQueueMarkers } from "../core/local-queue-marker.js";
 import { STATUSES } from "../core/types.js";
+import { isHoldActive } from "../core/task-selection.js";
 import { shouldRunAutomaticTaskLifecycle } from "./task-transitions.js";
 import { readBuildMeta } from "../core/build.js";
 import { injectBuildHashIntoUiIndex } from "../core/ui-index.js";
@@ -113,6 +114,7 @@ import { ensureStoryNumbers } from "../core/story-definition-files.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
 import { listModelSources, type ModelSourceResult } from "../core/models.js";
 import { createLogger, type Logger } from "../core/logger.js";
+import { watchHttpRequest } from "./request-timing.js";
 import {
   AGENT_CLIS,
   AGENT_MODELS,
@@ -1743,7 +1745,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             "dependency-merged",
           );
           if (result.triggered) {
-            const activeCount = index.getTasks().filter((task) => task.status === "active").length;
+            const activeCount = index
+              .getTasks()
+              .filter((task) => task.status === "active" && !isHoldActive(task)).length;
             const maxActiveTasks = config.maxActiveTasks ?? 3;
             emitEvent({
               type: "auto-engineering.state",
@@ -1956,6 +1960,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       onHandoff: async (request) => {
         let reachedFinalization = false;
         try {
+          // #0960: a held task is inert for ALL automation, including engineer
+          // handoff finalization. Refuse to move a held task to review even when
+          // a handoff capability was minted (e.g. a crash-recovery replay, or an
+          // auto-handoff requested before the hold landed) — the human/driver who
+          // placed the hold must release it first with `repoos unhold`.
+          const preCheck = index.getTask(request.taskId);
+          if (preCheck && isHoldActive(preCheck)) {
+            runner.system(
+              request.taskId,
+              '✗ server-side handoff rejected: task is held — release it with "repoos unhold ' +
+                request.taskId +
+                '" before it can move to review',
+            );
+            return;
+          }
           if (!runner.consumeHandoff(request)) {
             runner.system(
               request.taskId,
@@ -1999,6 +2018,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             remoteValidator,
             previews,
             (id, level, message) => logger.task(id, level, message),
+            true,
           );
           if (result.ok) {
             index.applyFileChange(task.absPath, { guarded: true });
@@ -3745,7 +3765,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   );
   router.register(
     "POST",
-    /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen|archive|unarchive|split)$/,
+    /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen|archive|unarchive|split|hold|unhold)$/,
     taskAction,
   );
   router.register("POST", /^\/api\/tasks\/([^/]+)\/(send-back)$/, taskAction);
@@ -3967,16 +3987,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const method = req.method ?? "GET";
     const url = new URL(req.url ?? "/", "http://localhost");
     const path = url.pathname;
-    const requestStartedAt = Date.now();
-    const stuckTimer = setTimeout(() => {
-      const gitCalls = gitWorkerInFlight(config.root);
-      logger.system("warn", `STUCK ${method} ${path}`, {
-        method,
-        route: path,
-        ageMs: Date.now() - requestStartedAt,
-        gitCalls,
-      });
-    }, 10_000);
+    // Duration for every request; STUCK after 10s names the route and age (#0967).
+    // The event stream is supposed to stay open, so it only logs duration.
+    watchHttpRequest({
+      method,
+      path,
+      res,
+      skipStuck: path === "/api/events",
+      log: (level, message) => logger.system(level, message),
+      stuckDetail: () => {
+        const gitCalls = gitWorkerInFlight(config.root);
+        return gitCalls.length ? ` git=${JSON.stringify(gitCalls)}` : "";
+      },
+    });
 
     try {
       if (method === "OPTIONS") {
@@ -4249,13 +4272,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         });
       }
       return json(res, code, { error: msg });
-    } finally {
-      clearTimeout(stuckTimer);
-      logger.system("info", "HTTP request complete", {
-        method,
-        route: path,
-        durationMs: Date.now() - requestStartedAt,
-      });
     }
   });
 

@@ -191,6 +191,14 @@ export interface TaskPatch {
    * by hand; the auto-engineering picker just skips it.
    */
   hold?: boolean;
+  /** Free-text reason for the hold (#0960); null/empty clears it. */
+  holdReason?: string | null;
+  /** Optional ISO-8601 UTC auto-release time (#0960); null/empty clears it. */
+  holdUntil?: string | null;
+  /** Who placed the hold (#0960); null/empty clears it. */
+  holdBy?: string | null;
+  /** When the hold was placed (#0960); null/empty clears it. */
+  holdAt?: string | null;
   /** Repo-relative files this task expects to touch; null/empty clears them. */
   paths?: string[] | null;
   /** Per-task agent name override, or null to clear. */
@@ -451,6 +459,41 @@ export function patchTaskFile(
   if (patch.hold !== undefined) {
     if (patch.hold !== Boolean(current.isHeld)) changes.push(patch.hold ? "held" : "released");
     current.isHeld = patch.hold;
+    // #0960: releasing the hold clears its reason/until/by/at; placing one
+    // leaves them for the dedicated hold fields below to set.
+    if (!patch.hold) {
+      current.holdReason = undefined;
+      current.holdUntil = undefined;
+      current.holdBy = undefined;
+      current.holdAt = undefined;
+      // A `hold` tag is an equivalent spelling of the hold flag (parking
+      // without editing frontmatter). Releasing must clear the tag too, or a
+      // task held only by a tag would stay held forever. Case-insensitive
+      // compare; only exact `hold` tags are dropped so unrelated tags survive.
+      const before = current.tags.length;
+      current.tags = current.tags.filter((tag) => tag.trim().toLowerCase() !== "hold");
+      if (current.tags.length !== before) changes.push("released-tag");
+    }
+  }
+  if (patch.holdReason !== undefined) {
+    const next = patch.holdReason ? String(patch.holdReason) : undefined;
+    if (next !== current.holdReason) changes.push("held-reason");
+    current.holdReason = next;
+  }
+  if (patch.holdUntil !== undefined) {
+    const next = patch.holdUntil ? String(patch.holdUntil) : undefined;
+    if (next !== current.holdUntil) changes.push("held-until");
+    current.holdUntil = next;
+  }
+  if (patch.holdBy !== undefined) {
+    const next = patch.holdBy ? String(patch.holdBy) : undefined;
+    if (next !== current.holdBy) changes.push("held-by");
+    current.holdBy = next;
+  }
+  if (patch.holdAt !== undefined) {
+    const next = patch.holdAt ? String(patch.holdAt) : undefined;
+    if (next !== current.holdAt) changes.push("held-at");
+    current.holdAt = next;
   }
   if (patch.paths !== undefined) {
     const next = patch.paths

@@ -2,7 +2,7 @@
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_merge: true
@@ -11,16 +11,14 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-freezes-move-all-git-reads-off-th
-cli_override: codex
-model_override: gpt-6.1-sol
+cli_override: cursor
+model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-26T07:54:06Z"
-updated_at: "2026-10-28T01:15:17Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: staleness — Stale build: src/ has changed since the last `bun run build`."
-last_handoff_failure_sha: 7eda5265e3bde5a6ac695e3cf0cbe4cd1bd6690b
-review_rounds: 1
-review_passes: 1
+updated_at: "2026-10-28T01:16:20Z"
+review_rounds: 2
+review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 10
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
@@ -196,4 +194,18 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-27T20:57:11Z · note: handoff requested (ui-review)
 - 2026-10-27T21:17:09Z · handoff failed · ui-review handoff failed at check · repoos check failed: staleness — Stale build: src/ has changed since the last `bun run build`.
 - 2026-10-27T21:39:28Z · note: handoff requested (ui-review)
+- 2026-10-27T22:07:46Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — version: 0,
+- 2026-10-27T22:07:54Z · note: handoff requested (ui-review)
+- 2026-10-27T22:30:40Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+- 2026-10-27T23:11:04Z · cli_override, model_override
+- 2026-10-27T23:11:08Z · needs_input
+- 2026-10-27T23:11:08Z · message_queued at 2026-10-27T23:11:08.364Z
+- 2026-10-28T00:12:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-28T00:12:55Z · needs_input
+- 2026-10-28T00:12:55Z · message_delivered: 1 message(s)
+- 2026-10-28T00:58:35Z · needs_input
+- 2026-10-28T00:58:35Z · needs_input
 - 2026-10-28T01:15:17Z · status active→review
+- 2026-10-28T01:15:18Z · note: shots: skipped — the diff (112 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-28T01:16:20Z · note: review pass 3: needs some work
+- 2026-10-28T01:16:20Z · status review→active

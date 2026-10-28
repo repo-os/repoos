@@ -239,12 +239,22 @@ export interface Task {
   /** Optional free-text reason the task was archived; absent when none was given. */
   archiveDetail?: string;
   /**
-   * True when the task is held out of auto-start (#0690). Orthogonal to
-   * `status`: the task stays `ready` and fully startable by hand, but the
-   * auto-engineering picker skips it. A `hold` tag is an equivalent label —
-   * see `taskIsHeld` in `src/core/task-selection.ts`.
+   * True when the task is held out of auto-start (#0690, extended by #0960).
+   * Orthogonal to `status`: a held task is inert for ALL automation — dispatch,
+   * the CTO monitor, the watchdog, crash recovery, auto-handoff and queued
+   * message delivery. A `hold` tag is an equivalent label — see `taskIsHeld` in
+   * `src/core/task-selection.ts`. `holdUntil` (when set) auto-releases the hold
+   * once the date passes.
    */
   isHeld?: boolean;
+  /** Free-text reason a human gave when placing the hold (#0960). */
+  holdReason?: string;
+  /** Optional ISO-8601 UTC auto-release time (#0960). Once past, the hold is inactive. */
+  holdUntil?: string;
+  /** Who placed the hold (#0960) — email or CLI actor. */
+  holdBy?: string;
+  /** When the hold was placed (#0960), ISO-8601 UTC. */
+  holdAt?: string;
   /**
    * Repo-relative files this task expects to touch (#0690). Declared by the
    * planner so the auto-engineering picker can hold two candidates that would
@@ -2309,6 +2319,11 @@ export interface BoardTask {
   title: string;
   type: string;
   status: Status;
+  isHeld?: boolean;
+  holdReason?: string;
+  holdUntil?: string;
+  holdBy?: string;
+  holdAt?: string;
   needsInput: boolean;
   /** Specific human-decisions blocking implementation until answered. */
   questions?: string[];

@@ -43,7 +43,10 @@ import {
 } from "../lib/integration-pipeline-ui";
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
+import { useNow } from "../composables/useNow";
+import { isHoldActive } from "../../../core/task-selection.js";
 
+const holdNow = useNow();
 const props = withDefaults(
   defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(),
   {
@@ -69,6 +72,15 @@ const taskAreaChips = computed<string[]>(() => {
   if (Array.isArray(props.task.areas) && props.task.areas.length) return props.task.areas;
   return props.task.area ? props.task.area.split(",").map((s) => s.trim()) : [];
 });
+
+/**
+ * The task is held out of ALL automation (#0960): the `hold` flag is set OR a
+ * `hold` tag is present, and any optional auto-release time has not yet passed.
+ * Drives the card's "Held" badge and status hint. Uses `isHoldActive` so a held
+ * task is shown whether parked by flag or by tag, and vanishes once the hold
+ * auto-releases — mirroring the server's single predicate.
+ */
+const held = computed(() => (isHoldActive(props.task, holdNow.value) ? props.task : null));
 
 /**
  * Effective per-task agent/model assignments shown by the card's robot toggle.
@@ -534,6 +546,22 @@ const worktreeFrozen = computed(
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
   const pmWorking = repo.pmWorkingFor(t.id);
+  // #0960: a held task is inert for ALL automation — say so on the card rather
+  // than letting it read as idle. Held review/done tasks (close-out is
+  // human/driver-invoked) keep their normal status cue, so only the
+  // dispatch-affected states get the held hint.
+  if (
+    held.value &&
+    (t.status === "ready" || t.status === "inbox" || t.status === "active" || t.status === "draft")
+  ) {
+    return {
+      label: t.holdUntil ? "held · auto-releases" : "held",
+      title: `This task is held — automation will not start it.${
+        t.holdReason ? ` Reason: ${t.holdReason}.` : ""
+      } Release with "repoos unhold ${t.id}"${t.holdUntil ? ` or after ${t.holdUntil}` : ""}.`,
+      cls: "tc-held",
+    };
+  }
   // The freeform-create PM agent is fleshing this draft out right now
   // (0335) — a draft otherwise looks identical to an idle one. Guarded on
   // `draft` so the indicator disappears the moment the promotion lands,
@@ -1097,6 +1125,19 @@ async function openDebuggerFromError(): Promise<void> {
           >needs merge</span
         >
         <HotfixBadge v-if="task.hotfix" :target="task.hotfixTarget" :branch="task.branch" />
+        <span
+          v-if="held"
+          class="tc-held"
+          tabindex="0"
+          role="img"
+          aria-label="Task held — automation will not start it"
+          :data-tip="`Held${task.holdReason ? ` — ${task.holdReason}` : ''}${
+            task.holdBy ? ` by ${task.holdBy}` : ''
+          }${task.holdUntil ? ` · auto-releases ${task.holdUntil}` : ''}. Release with &quot;repoos unhold ${task.id}&quot;.`"
+          @click.stop
+        >
+          Held<span v-if="task.holdUntil" class="tc-held-until"> · auto</span>
+        </span>
         <span
           class="ml-auto rounded-[5px] px-[6px] py-[2px] font-mono text-[9px] font-bold"
           :class="task.priority"

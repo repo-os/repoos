@@ -900,6 +900,17 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "board:withReviewTask":
       ensureFixtureTask(repo, "review");
       break;
+    case "card:held":
+    case "drawer:held":
+      ensureFixtureTask(repo, "active", {
+        title: "Parked while machine capacity recovers",
+        isHeld: true,
+        holdReason: "Waiting for machine capacity before resuming automation",
+        holdBy: "driver",
+        holdAt: nowIso(),
+        holdUntil: new Date(Date.now() + 86_400_000).toISOString(),
+      });
+      break;
     case "card:humanStep":
       // #0804 / #0909 — needs-human-step: card and drawer show the quoted
       // criterion plus the model's bounded explanation.
