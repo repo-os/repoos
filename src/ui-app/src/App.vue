@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useRepoStore } from "./stores/repo";
 import { useDocsStore } from "./stores/docs";
@@ -110,10 +110,18 @@ function applyShotFixturesFromLocation(opts: { config?: boolean } = {}): void {
 
 // Re-apply after navigation so `?task=` is on the URL before drawer fixtures
 // run (a cold load can mount before the route query is visible to the fixture).
+// Opening the task resets the drawer to its status default, so the Status
+// details shot has to win that reset or the highlight never mounts (#0972).
 watch(
   () => route.fullPath,
-  () => {
+  async () => {
     applyShotFixturesFromLocation();
+    await nextTick();
+    const shotFixture = readShotPreviewFixtureFromLocation(window.location);
+    if (shotFixture === "drawer:statusDetails" || shotFixture === "drawer:held") {
+      ui.activeTab = "debug";
+      ui.debugView = "status";
+    }
   },
 );
 
