@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0968"
 title: "Auto-reload handover keeps failing: readiness-based handshake, give up after N, Settings toggle"
 type: bug
@@ -41,3 +42,4 @@ src/server/reload.ts and server.ts (reloadEnabled). No server restarts, no previ
 - 2026-10-28T18:29:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T18:29:20Z · message_delivered: 1 message(s)
 - 2026-10-28T19:04:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
