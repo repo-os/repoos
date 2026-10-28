@@ -95,7 +95,7 @@ describe("GET /api/tasks default payload", () => {
       mkdirSync(join(root, ".repoos", "reviews", "0001"), { recursive: true });
       writeFileSync(
         join(root, ".repoos", "reviews", "0001", "2.md"),
-        `---\nat: "2026-10-26T00:00:00Z"\nstate: ok\n---\n## Verdict\nGood to go\n`,
+        `---\nat: "2026-10-26T00:00:00Z"\nstate: ok\n---\n## Verdict\nGood to go — the branch matches the spec.\n\n## Bugs\nNone.\n`,
       );
       const current = task("0001", "body");
       const cap = capture();
@@ -109,6 +109,7 @@ describe("GET /api/tasks default payload", () => {
       });
       expect(JSON.parse(cap.text())).toMatchObject({
         latestReviewVerdict: "good to go",
+        latestReviewVerdictText: "Good to go — the branch matches the spec.",
         dependencies: [],
         dependents: [],
       });

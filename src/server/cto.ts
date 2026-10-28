@@ -24,7 +24,7 @@ import {
 import { dirname, join } from "node:path";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
-import { commitTaskFile, currentBranch, worktreePathForBranch } from "../core/git.js";
+import { commitTaskFile } from "../core/git.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import type { RepoEvent } from "./live-index.js";
 import {

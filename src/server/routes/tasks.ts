@@ -959,6 +959,7 @@ export const getTaskContext: RouteHandler = async (ctx, _req, res, params) => {
   return json(res, 200, {
     task: enriched,
     latestReviewVerdict: latest?.verdict ?? null,
+    latestReviewVerdictText: latest?.verdictText ?? null,
     dependencies: (task.dependsOn ?? []).flatMap((id): Record<string, unknown>[] => {
       const dependency = byId.get(id);
       return dependency ? [summary(dependency)] : [{ id, missing: true }];

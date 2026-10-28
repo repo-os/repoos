@@ -993,6 +993,7 @@ export function ensureWorktree(
         }
         if (taskRelPath) healMissingTaskFile(root, path, taskRelPath);
         linkInheritedEnv(root, path);
+        notifyGitMutation(root, "checkout");
         return { ok: true, path, created: true };
       }
       failure = worktreeAddFailure(retry);
@@ -1014,6 +1015,7 @@ export function ensureWorktree(
   }
   if (taskRelPath) healMissingTaskFile(root, path, taskRelPath);
   linkInheritedEnv(root, path);
+  notifyGitMutation(root, "checkout");
   return { ok: true, path, created: true };
 }
 
