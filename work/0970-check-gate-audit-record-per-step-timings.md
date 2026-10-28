@@ -2,7 +2,7 @@
 id: "0970"
 title: "Check gate: per-step/test timings; close-out runs changed + high-risk tests, full suite at release"
 type: chore
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/check-gate-audit-record-per-step-timings
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T11:23:55Z"
+updated_at: "2026-10-28T12:17:17Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: a7faee07a7fe0da9f4cf7aab267566da66f57e11
 handoff_signal_retry_count: 2
@@ -81,3 +81,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T09:26:21Z · note: handoff requested (ui-review)
 - 2026-10-28T09:33:19Z · handoff failed · ui-review handoff failed at validate · unexpected error: git worker git-overview waited 180000ms in the queue without starting
 - 2026-10-28T11:23:55Z · note: handoff requested (ui-review)
+- 2026-10-28T12:17:17Z · status active→review
