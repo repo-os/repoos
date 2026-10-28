@@ -1,3 +1,4 @@
+import { DEFAULT_ALWAYS_RUN } from "./check-plan.js";
 /**
  * Config resolution. Zero-config by default; `repoos.toml` at the repo root
  * can override any field. We parse only the flat subset of TOML we need, again
@@ -1807,6 +1808,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // [[check.steps]] rows. When a repo declares steps, `repoos check` runs
     // exactly those, for any stack; without them it falls back to the legacy
     // per-step keys and then to inference (see core/check-plan.ts).
+    const alwaysRun = parsed["check.alwaysRun"];
+    if (Array.isArray(alwaysRun) && alwaysRun.every((v) => typeof v === "string")) {
+      cfg.check = { ...cfg.check, alwaysRun };
+    }
     const plan = parseCheckPlanConfig(parsed);
     if (plan) cfg.check = { ...cfg.check, ...plan };
 
@@ -3063,12 +3068,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         { value: "full", label: "Always run the full suite" },
       ],
       description:
-        "How much of the merge gate a Move-to-done re-runs. The candidate already passed the " +
-        "identical full gate at handoff; this re-checks only the part main's advance could have " +
-        "invalidated. 'Scoped' reuses the handoff result when the candidate tree is identical to " +
-        "what was tested, otherwise runs the tests affected by the task's and main's changes " +
-        "(`repoos check --changed`). 'Full' always runs the whole suite. Releases and paths under " +
-        "[check] fullSuitePaths always run the full suite.",
+        "Scoped close-out runs changed-path tests plus always-run safety suites against the " +
+        "merged candidate's base with current main. Reuse can skip tests when the handoff tree " +
+        "is identical. Full runs every test. Releases and [check] fullSuitePaths always run every test.",
     },
     {
       key: "closeOut.candidate",
@@ -3861,6 +3863,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "green, because passing alone does not prove a flake under load. 0 disables it.",
     },
     {
+      key: "check.alwaysRun",
+      label: "Always-run test suites",
+      type: "array",
+      tier: "guarded",
+      restartRequired: false,
+      default: DEFAULT_ALWAYS_RUN,
+      description:
+        "Test-file globs added to changed-path tests, including close-out. A tests step can override these with alwaysRun. Release runs every test.",
+    },
+    {
       key: "check.fullSuitePaths",
       label: "Always-full-suite paths",
       type: "array",
@@ -4322,6 +4334,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "check.bareRequireExcludes",
   "check.hardcodedColorDirs",
   "check.contrastExempts",
+  "check.alwaysRun",
   "check.fullSuitePaths",
   "check.themeScopes.selector",
   "check.themeScopes.name",

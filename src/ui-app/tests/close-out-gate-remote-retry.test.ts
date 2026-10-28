@@ -3,8 +3,10 @@
  *
  * A SCOPED run that fails is not proof the branch is broken: it only says the
  * affected tests failed. The close-out re-runs the identical full suite once
- * before failing — locally (drop REPOOS_CHECK_CHANGED) and on the remote runner
- * (drop `changedRef`). The remote half matters most: the runner fails before
+ * before failing — locally (drop changed filters) and on the remote runner
+ * (drop `changedRef`). Default scoped close-out passes the candidate merge base
+ * (current main), not the handoff-tested SHA. The remote half matters most: the
+ * runner fails before
  * the local check ever runs, so a scoped remote failure used to fail the
  * close-out without the retry (review round 1).
  */
@@ -69,9 +71,9 @@ describe("close-out remote scoped failure → full retry (#0724)", () => {
       const featureWt = ensureWorktree(root, "feat/r1").path!;
       commitFile(featureWt, "src/app.ts", "export const a = 2;\n", "feature work");
       const testedSha = git(featureWt, ["rev-parse", "HEAD"]);
-      // Main advances with REAL code (a different src path) → the candidate tree
-      // differs from the tested tree and main's drift is not bookkeeping → scoped.
+      // Main advances with REAL code (a different src path) → scoped against main.
       commitFile(root, "src/other.ts", "export const o = 1;\n", "main work");
+      const mainSha = git(root, ["rev-parse", "main"]);
 
       const store = getCheckStore(root, ".repoos");
       store.record({
@@ -140,7 +142,7 @@ describe("close-out remote scoped failure → full retry (#0724)", () => {
       ).validateCandidate(coordinator.getJob(taskId));
 
       expect(validatorCalls).toHaveLength(2);
-      expect(validatorCalls[0]!["changedRef"]).toBe(testedSha);
+      expect(validatorCalls[0]!["changedRef"]).toBe(mainSha);
       expect(validatorCalls[1]!["changedRef"]).toBeUndefined();
       // The retry ran the whole suite and passed, so the close-out is not
       // failed by the scoped miss.

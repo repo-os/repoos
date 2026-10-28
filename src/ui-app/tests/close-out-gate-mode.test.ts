@@ -195,7 +195,7 @@ describe("planCloseOutGateFromGit (#0724)", () => {
       ...(gate ? { closeOut: { timeoutMs: 360_000, gate } } : {}),
     }) as RepoOSConfig;
 
-  it("reuses when the candidate tree is identical to the tested tree", async () => {
+  it("runs safety suites when the candidate tree is identical to the tested tree", async () => {
     const { root, clean } = makeRepo();
     try {
       const testedSha = git(root, ["rev-parse", "HEAD"]);
@@ -209,13 +209,13 @@ describe("planCloseOutGateFromGit (#0724)", () => {
         currentMainSha: git(root, ["rev-parse", "main"]),
         config: config(root),
       });
-      expect(plan.mode).toBe("reuse");
+      expect(plan.mode).toBe("scoped");
     } finally {
       clean();
     }
   });
 
-  it("reuses when main advanced with bookkeeping only", async () => {
+  it("runs safety suites when main advanced with bookkeeping only", async () => {
     const { root, clean } = makeRepo();
     try {
       const testedSha = git(root, ["rev-parse", "HEAD"]);
@@ -229,8 +229,8 @@ describe("planCloseOutGateFromGit (#0724)", () => {
         currentMainSha: git(root, ["rev-parse", "main"]),
         config: config(root),
       });
-      expect(plan.mode).toBe("reuse");
-      expect(plan.reason).toMatch(/bookkeeping/i);
+      expect(plan.mode).toBe("scoped");
+      expect(plan.reason).toMatch(/always-run/i);
     } finally {
       clean();
     }
@@ -250,8 +250,8 @@ describe("planCloseOutGateFromGit (#0724)", () => {
         config: config(root),
       });
       expect(plan.mode).toBe("scoped");
-      expect(plan.changedRef).toBe(testedSha);
-      expect(plan.reason).toMatch(/scoped to changed vs/);
+      expect(plan.changedRef).toBe(git(root, ["rev-parse", "main"]));
+      expect(plan.reason).toMatch(/merge base/);
     } finally {
       clean();
     }
@@ -280,7 +280,7 @@ describe("planCloseOutGateFromGit (#0724)", () => {
     }
   });
 
-  it("runs full when no tested tree was recorded", async () => {
+  it("scopes against current main when no tested tree was recorded", async () => {
     const { root, clean } = makeRepo();
     try {
       const plan = await planCloseOutGateFromGit({
@@ -289,7 +289,7 @@ describe("planCloseOutGateFromGit (#0724)", () => {
         currentMainSha: git(root, ["rev-parse", "main"]),
         config: config(root),
       });
-      expect(plan.mode).toBe("full");
+      expect(plan.mode).toBe("scoped");
     } finally {
       clean();
     }

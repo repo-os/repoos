@@ -18,8 +18,8 @@
  * makes no wall-clock claim, so it is safe (and useful) anywhere it runs.
  *
  * Extra args (e.g. `--changed <ref>` from `repoos check` re-verification) are
- * forwarded to BOTH passes; vitest's own change graph then decides whether the
- * isolated suites actually run.
+ * resolved to changed tests plus always-run safety suites before the two
+ * passes. The isolated pass runs only selected latency-sensitive files.
  *
  * ── Runtime: always Bun when available, Node otherwise — never a mix ──────
  * package.json's "test" script is literally `node scripts/run-tests.mjs`, so
@@ -46,6 +46,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveTestSelection } from "./select-test-files.mjs";
 
 if (
   typeof process.versions.bun !== "string" &&
@@ -91,9 +92,36 @@ const ISOLATED = ["boot-timing.test.ts"];
 
 // `bun run test -- <args>` / `npm test -- <args>` can leak the bare `--`.
 const passthrough = process.argv.slice(2).filter((a) => a !== "--");
-const scoped = passthrough.includes("--changed");
+let scoped = passthrough.includes("--changed");
 const coverageRequested = passthrough.includes("--coverage");
-const vitestArgs = passthrough.filter((a) => a !== "--coverage");
+let vitestArgs = passthrough.filter((a) => a !== "--coverage");
+let selectedFiles = null;
+if (scoped) {
+  const index = vitestArgs.indexOf("--changed");
+  const ref = vitestArgs[index + 1];
+  let alwaysRun;
+  try {
+    // Remote runners invoke this wrapper directly after building the checkout.
+    const { loadConfig } = await import("../dist/core/config.js");
+    const check = loadConfig(process.cwd()).check;
+    alwaysRun = check?.steps?.find((step) => step.kind === "tests")?.alwaysRun ?? check?.alwaysRun;
+  } catch {
+    /* defaults also work before the first build */
+  }
+  if (process.env.REPOOS_TEST_ALWAYS_RUN)
+    alwaysRun = JSON.parse(process.env.REPOOS_TEST_ALWAYS_RUN);
+  const selection = resolveTestSelection(process.execPath, VITEST, CONFIG, ref, alwaysRun);
+  vitestArgs.splice(index, 2);
+  if (selection.warning) console.error(`[run-tests] ${selection.warning}`);
+  selectedFiles = selection.files;
+  scoped = selectedFiles !== null;
+  if (selectedFiles?.length === 0) {
+    console.log("[run-tests] No changed or always-run test files");
+    process.exit(0);
+  }
+  if (selectedFiles)
+    console.log(`[run-tests] ${selectedFiles.length} changed + always-run test files`);
+}
 // Coverage is opt-in so routine full test runs keep their normal cost. Never
 // report coverage for a changed-path subset; it would be misleading.
 const coverageArgs = coverageRequested && !scoped ? ["--coverage"] : [];
@@ -159,6 +187,7 @@ const sharedProgressEnv = { REPOOS_TEST_PROGRESS_STATE: progressStateFile };
 const bulk = vitest(
   [
     ...vitestArgs,
+    ...(selectedFiles ?? []),
     ...coverageArgs,
     ...(scoped ? ["--passWithNoTests"] : []),
     ...ISOLATED.flatMap((f) => ["--exclude", `**/${f}`]),
@@ -172,14 +201,19 @@ const afterBulk = readProgressState(progressStateFile);
 // basenames are positional name filters (substring-matched against the path).
 // `--passWithNoTests` because a `--changed` run may touch none of them.
 // File totals accumulate across passes so the check UI never jumps backward.
-const isolated = vitest([...vitestArgs, "--passWithNoTests", "--retry", "2", ...ISOLATED], {
-  ...sharedProgressEnv,
-  REPOOS_TEST_WORKERS: "1",
-  REPOOS_STRICT_TIMING: "1",
-  REPOOS_TEST_PASS: "2",
-  REPOOS_TEST_BASE_DONE: String(afterBulk.testsDone),
-  REPOOS_TEST_BASE_TOTAL: String(afterBulk.testsTotal),
-});
+const isolatedFiles =
+  selectedFiles?.filter((f) => ISOLATED.some((name) => f.endsWith(`/${name}`))) ?? ISOLATED;
+const isolated =
+  isolatedFiles.length === 0
+    ? 0
+    : vitest([...vitestArgs, "--passWithNoTests", "--retry", "2", ...isolatedFiles], {
+        ...sharedProgressEnv,
+        REPOOS_TEST_WORKERS: "1",
+        REPOOS_STRICT_TIMING: "1",
+        REPOOS_TEST_PASS: "2",
+        REPOOS_TEST_BASE_DONE: String(afterBulk.testsDone),
+        REPOOS_TEST_BASE_TOTAL: String(afterBulk.testsTotal),
+      });
 
 try {
   rmSync(progressDir, { recursive: true, force: true });

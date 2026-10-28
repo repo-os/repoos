@@ -17,6 +17,7 @@
  * fail an otherwise-green gate — the store is for visibility, not for gating.
  */
 
+import { testFileTimings, type TestFileTiming } from "./test-file-timings.js";
 import { createRequire } from "node:module";
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { hostname } from "node:os";
@@ -164,6 +165,7 @@ export interface CheckRunRow {
   testsDone: number | null;
   testsTotal: number | null;
   steps?: CheckStepTiming[];
+  testFileTimings?: TestFileTiming[];
 }
 
 export interface RecordCheckRunInput {
@@ -188,6 +190,7 @@ export interface RecordCheckRunInput {
   testsDone?: number | null;
   testsTotal?: number | null;
   steps?: CheckStepTiming[];
+  testFileTimings?: TestFileTiming[];
 }
 
 export interface ListCheckRunsOptions {
@@ -270,6 +273,9 @@ export class CheckStore {
     if (!cols.some((c) => c.name === "step_timings")) {
       this.db.exec("ALTER TABLE check_runs ADD COLUMN step_timings TEXT");
     }
+    if (!cols.some((c) => c.name === "test_file_timings")) {
+      this.db.exec("ALTER TABLE check_runs ADD COLUMN test_file_timings TEXT");
+    }
     for (const name of ["steps_done", "steps_total", "tests_done", "tests_total"]) {
       if (!cols.some((c) => c.name === name))
         this.db.exec(`ALTER TABLE check_runs ADD COLUMN ${name} INTEGER`);
@@ -289,8 +295,8 @@ export class CheckStore {
           `INSERT INTO check_runs
              (task_id, phase, worktree, candidate_sha, machine, remote, scope, started_at, duration_ms,
               outcome, failed_step, skipped_steps, detail, failed_tests, isolation_note,
-              steps_done, steps_total, tests_done, tests_total, step_timings)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              steps_done, steps_total, tests_done, tests_total, step_timings, test_file_timings)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           input.taskId ?? null,
@@ -317,6 +323,7 @@ export class CheckStore {
           input.testsDone ?? null,
           input.testsTotal ?? null,
           input.steps ? JSON.stringify(readStepTimings(input.steps)) : null,
+          JSON.stringify(input.testFileTimings ?? []),
         );
       // Retention: delete everything older than the newest MAX_ROWS rows.
       this.db
@@ -409,6 +416,16 @@ export class CheckStore {
       stepsTotal: r.steps_total == null ? null : Number(r.steps_total),
       testsDone: r.tests_done == null ? null : Number(r.tests_done),
       testsTotal: r.tests_total == null ? null : Number(r.tests_total),
+      testFileTimings: (() => {
+        try {
+          const files = JSON.parse(r.test_file_timings ?? "[]");
+          return testFileTimings(
+            files.map((f: TestFileTiming) => `::repoos-test-file::${JSON.stringify(f)}`).join("\n"),
+          );
+        } catch {
+          return [];
+        }
+      })(),
     };
   }
 }

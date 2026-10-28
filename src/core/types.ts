@@ -1389,6 +1389,8 @@ export interface CheckConfig {
    * Defaults to `default`.
    */
   defaultProfile?: string;
+  /** Safety suite globs for changed-path tests; a tests step may override these. */
+  alwaysRun?: string[];
   /**
    * The project's declarative check plan (#0446) — one row per gate step, run
    * in declaration order. Presence of at least one usable row replaces every
@@ -1508,6 +1510,8 @@ export type CheckStepKind =
  * on a typo.
  */
 export interface CheckStepConfig {
+  /** Test-file globs unioned with changed tests. Omitted uses the safety defaults. */
+  alwaysRun?: string[];
   /**
    * Stable step name, shown in `repoos check`'s results and used by
    * `dependsOn`. Must be unique within the plan and match

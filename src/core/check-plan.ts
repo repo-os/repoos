@@ -49,6 +49,15 @@ export const CHECK_PLAN_VERSION = 1;
 /** Profile used when neither `defaultProfile` nor `--profile` is set. */
 export const DEFAULT_PROFILE = "default";
 
+/** Default safety suites, also used by the repo's direct test wrapper. */
+export const DEFAULT_ALWAYS_RUN = [
+  "**/close-out-gate-mode.test.ts",
+  "**/handoff.test.ts",
+  "**/git-worker-lifecycle.test.ts",
+  "**/boot-timing.test.ts",
+  "**/frontmatter.test.ts",
+];
+
 /**
  * The profile that includes every declared step, including ones deliberately
  * held back from a routine run (`profiles = ["full"]`). Close-out runs this —
@@ -63,8 +72,8 @@ export const DEFAULT_STEP_TIMEOUT_MS = 600_000;
  * Arguments the merge/close-out gate passes to `repoos check` (#0446): the
  * FULL profile, so a step a project deliberately holds back from a routine
  * run (`profiles = ["full"]`) still runs before anything merges. Close-out
- * never passes `--changed`: that is a fast pre-review mode, and the merge gate
- * is about the merged candidate, not a branch diff.
+ * may scope tests against the merged candidate base, adding always-run
+ * safety suites. The release profile runs every test.
  */
 export const CLOSEOUT_CHECK_ARGS: readonly string[] = ["--profile", FULL_PROFILE];
 
@@ -96,6 +105,7 @@ export function isBuiltinCheckKind(v: string): v is BuiltinCheckKind {
 
 /** A fully resolved step: defaults applied, ready to select and run. */
 export interface CheckStep {
+  alwaysRun?: string[];
   name: string;
   /** Built-in guard to run; absent for a raw `command` step. */
   kind?: BuiltinCheckKind;
@@ -200,6 +210,9 @@ function parseStepRow(raw: unknown): CheckStepConfig | null {
   if (typeof r.required === "boolean") step.required = r.required;
   const profiles = strList(r.profiles);
   if (profiles) step.profiles = profiles;
+  const alwaysRun = strList(r.alwaysRun);
+  if (alwaysRun || (Array.isArray(r.alwaysRun) && r.alwaysRun.length === 0))
+    step.alwaysRun = alwaysRun ?? [];
   const whenChanged = strList(r.whenChanged ?? r.when_changed);
   if (whenChanged) step.whenChanged = whenChanged;
   const requires = strList(r.requires);
@@ -281,6 +294,7 @@ function resolveStep(row: CheckStepConfig, index: number, warnings: string[]): C
     kind: command ? undefined : kind,
     command,
     fix: row.fix,
+    alwaysRun: row.alwaysRun,
     cwd: row.cwd,
     timeoutMs: row.timeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
     required: row.required !== false,
@@ -728,7 +742,7 @@ export interface SelectOptions {
 
 /** Whether a step belongs to `profile`. `full` includes everything. */
 export function stepInProfile(step: CheckStep, profile: string): boolean {
-  if (profile === FULL_PROFILE) return true;
+  if (profile === FULL_PROFILE || profile === "release") return true;
   if (step.profiles.length === 0) return true;
   return step.profiles.includes(profile);
 }
@@ -937,6 +951,7 @@ export function formatPlanToml(plan: CheckPlan, check?: CheckConfig): string {
   }
   if (check?.uiSmoke) lines.push(`uiSmoke = ${tomlString(check.uiSmoke)}`);
 
+  if (check?.alwaysRun) lines.push(`alwaysRun = ${tomlList(check.alwaysRun)}`);
   for (const s of plan.steps) {
     lines.push("", "[[check.steps]]", `name = ${tomlString(s.name)}`);
     if (s.kind) lines.push(`kind = ${tomlString(s.kind)}`);
@@ -946,6 +961,7 @@ export function formatPlanToml(plan: CheckPlan, check?: CheckConfig): string {
     if (s.timeoutMs !== DEFAULT_STEP_TIMEOUT_MS) lines.push(`timeoutMs = ${s.timeoutMs}`);
     if (!s.required) lines.push("required = false");
     if (s.profiles.length) lines.push(`profiles = ${tomlList(s.profiles)}`);
+    if (s.alwaysRun) lines.push(`alwaysRun = ${tomlList(s.alwaysRun)}`);
     if (s.whenChanged.length) lines.push(`whenChanged = ${tomlList(s.whenChanged)}`);
     if (s.requires.length) lines.push(`requires = ${tomlList(s.requires)}`);
     if (s.runsOn.length) lines.push(`runsOn = ${tomlList(s.runsOn)}`);

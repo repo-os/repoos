@@ -39,6 +39,7 @@ import { markTaskReleased } from "./write.js";
 import { getGitWorker } from "./git-worker.js";
 
 export interface CheckSummary {
+  testFileTimings?: import("../core/test-file-timings.js").TestFileTiming[];
   ok: boolean;
   /** Failing close-out stage — "build" | "check". */
   stage?: string;
