@@ -38,9 +38,9 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 "route": "/checks?tab=runs",
 "highlight": ".cr-step-report",
 "steps": [
-  {
-    "click": "tr.cr-expandable"
-  }
+{
+  "click": "tr.cr-expandable"
+}
 ],
 "state": "checks:timings"
 }
