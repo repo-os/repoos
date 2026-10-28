@@ -68,3 +68,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T08:01:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T08:06:37Z · message_queued at 2026-10-28T08:06:37.627Z
 - 2026-10-28T08:11:51Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-28T08:11:51Z · note: handoff requested (cli)
