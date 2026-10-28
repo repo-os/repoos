@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0972"
 title: "Easter eggs bundle: uninstalled-agent model notice, task status card"
 type: bug
@@ -79,3 +80,4 @@ The card lives in `src/ui-app/src/components/TaskDrawer.vue` ("Open Status detai
 - 2026-10-28T08:49:57Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-28T08:51:19Z · status ready→active
 - 2026-10-28T08:56:29Z · message_queued at 2026-10-28T08:56:29.011Z
+
