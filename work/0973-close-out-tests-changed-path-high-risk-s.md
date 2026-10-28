@@ -3,6 +3,9 @@ id: "0973"
 title: "Close-out tests: changed-path + high-risk suites, full suite at release"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: Reading additional input from stdin...
 priority: p1
 area: core
 assigned_to: ai
@@ -13,11 +16,11 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: grok-4.7-low
 created_at: "2026-10-28T09:17:44Z"
-updated_at: "2026-10-28T13:31:37Z"
+updated_at: "2026-10-28T14:38:54Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-28T11:49:16.051Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:29:40.969Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:30:43.349Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:31:19.699Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 5
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-10-28T14:38:54.990Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Move to done runs the full test suite: about 95% of a ~57 minute close-out on this laptop, and slower when engineers run at the same time. Close-outs time out, so tasks get hand-merged. The other gate steps take seconds when the machine is idle (contrast audit 18s, docs build 6s); #0970 measured them, and now records per-step timings.
@@ -83,3 +86,5 @@ Builds on #0970 (step_timings in check_runs, the timings report). Do not edit re
 - 2026-10-28T13:31:19Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-28T13:31:31Z · needs_input
 - 2026-10-28T13:31:31Z · cli_override, model_override
+- 2026-10-28T14:38:54Z · agent exited with an error (cursor) · Reading additional input from stdin...
+- 2026-10-28T14:38:54Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · Reading additional input from stdin...
