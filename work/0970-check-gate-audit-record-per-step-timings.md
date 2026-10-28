@@ -2,7 +2,7 @@
 id: "0970"
 title: "Check gate: per-step/test timings; close-out runs changed + high-risk tests, full suite at release"
 type: chore
-status: review
+status: active
 priority: p1
 area: core
 assigned_to: ai
