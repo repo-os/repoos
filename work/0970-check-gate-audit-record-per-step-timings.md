@@ -3,6 +3,9 @@ id: "0970"
 title: "Check gate: per-step/test timings; close-out runs changed + high-risk tests, full suite at release"
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the opencode agent exited without output: error: Go usage limit exceeded"
 priority: p1
 area: core
 assigned_to: ai
@@ -83,3 +86,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T12:17:17Z · status active→review
 - 2026-10-28T12:17:32Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (1baa712e1) during finalization (#0734)
 - 2026-10-28T12:17:35Z · note: review pass 1: failed — no usable report
+- 2026-10-28T12:17:35Z · needs_input
