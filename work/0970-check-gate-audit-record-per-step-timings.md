@@ -11,7 +11,7 @@ branch: feat/check-gate-audit-record-per-step-timings
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T03:37:47Z"
+updated_at: "2026-10-28T03:41:48Z"
 ---
 ## Problem
 Handoff checks are slow (full local gate 10-20 min under load; one #0961 run 17 min) and RepoOS cannot say which step costs the time: `.repoos/checks.db` `check_runs` stores only total `duration_ms`, `failed_step` and counts. Of the last 1,000 runs (2026-10-20 to 2026-10-27) only 266 passed; 553 failed on remote-validation infrastructure, 92 on tests, 49 on staleness, 13 on formatting, 7 on contrast/smoke/docs. The gate has 19 steps in `repoos.toml` `[[check.steps]]`, including 610 test files, a 224-screen rendered contrast audit (16 themes x 14 states), the UI smoke test, and separate installs+builds for user-docs, landing and telegram-manager plus a macOS icon check.
@@ -29,6 +29,24 @@ Every check run records how long each step took, and the handoff (pre-review) ga
 ## Notes for AI
 Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definition of done"), not src/commands/check.ts, except for the timing recording itself. The repoos.toml step changes are explicitly authorized for this task by Nick (2026-10-27). Run only affected test files, never the full suite as a self-check. Never restart the RepoOS server, never run `repoos serve`, never request a preview.
 
+## Shots
+```json
+[
+{
+  "label": "Step timing report and successful run details",
+  "target": "default",
+  "route": "/checks?tab=runs",
+  "highlight": ".cr-step-report",
+  "steps": [
+    {
+      "click": "tr.cr-expandable"
+    }
+  ],
+  "state": "checks:timings"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-27T14:50:38Z · created · njachowski@gmail.com
@@ -36,3 +54,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T03:36:36Z · status inbox→ready
 - 2026-10-28T03:37:01Z · status ready→active, branch
 - 2026-10-28T03:37:47Z · message_queued at 2026-10-28T03:37:47.102Z
+- 2026-10-28T03:41:48Z · body
