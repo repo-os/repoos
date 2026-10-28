@@ -14,8 +14,9 @@ branch: feat/close-out-tests-changed-path-high-risk-s
 cli_override: codex
 model_override: gpt-6.1-sol
 review_cli_override: cursor
+review_model_override: grok-4.7-low
 created_at: "2026-10-28T09:17:44Z"
-updated_at: "2026-10-28T12:26:02Z"
+updated_at: "2026-10-28T12:26:05Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-28T11:49:16.051Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 1
@@ -74,3 +75,4 @@ Builds on #0970 (step_timings in check_runs, the timings report). Do not edit re
 - 2026-10-28T12:16:50Z · agent exited with an error (codex) · 2026-10-28T12:12:05.482501Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
 - 2026-10-28T12:17:25Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/12 crashes in 30m) · 2026-10-28T12:12:05.482501Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
 - 2026-10-28T12:26:02Z · review_cli_override
+- 2026-10-28T12:26:05Z · review_model_override
