@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "0972"
 title: "Easter eggs bundle: uninstalled-agent model notice, task status card"
 type: bug
@@ -14,7 +15,6 @@ review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T08:00:32Z"
 updated_at: "2026-10-28T09:01:44Z"
-handoff_signal_retry_count: 1
 ---
 ## Items
 
@@ -81,3 +81,4 @@ The card lives in `src/ui-app/src/components/TaskDrawer.vue` ("Open Status detai
 - 2026-10-28T08:51:19Z · status ready→active
 - 2026-10-28T08:56:29Z · message_queued at 2026-10-28T08:56:29.011Z
 - 2026-10-28T09:01:44Z · message_queued at 2026-10-28T09:01:44.058Z
+
