@@ -143,12 +143,33 @@ describe("per-CLI loading states", () => {
     expect(config.modelNoticeFor("gemini")).toBeNull();
   });
 
-  it("carries a server-reported probe reason (binary missing) as a failure", async () => {
-    stubFetch(() => ok({ codex: source(["default"], { error: "codex not found on PATH" }) }));
-    const config = makeStore(["codex"]);
+  it("does not notice a not-installed CLI, even over a saved list", async () => {
+    seedCache({ kiro: { models: ["claude-sonnet-4.5"], at: 1 } });
+    const config = makeStore(["kiro"]);
+    stubFetch(() =>
+      ok({
+        kiro: source(["default"], { notInstalled: true }),
+      }),
+    );
     await config.loadModels();
-    expect(config.modelStatesByCli.codex.status).toBe("failed");
-    expect(config.modelNoticeFor("codex")?.text).toContain("codex not found on PATH");
+    expect(config.liveModelsByCli.kiro).toEqual(["claude-sonnet-4.5"]);
+    expect(config.modelNoticeFor("kiro")).toBeNull();
+    expect(config.modelStatesByCli.kiro).toEqual({ status: "loaded", notInstalled: true });
+  });
+
+  it("still notices a real probe failure for an installed CLI", async () => {
+    seedCache({ opencode: { models: ["cached/model-a"], at: 1 } });
+    const config = makeStore(["opencode"]);
+    stubFetch(() =>
+      ok({
+        opencode: source(["default"], { error: "opencode timed out after 12s" }),
+      }),
+    );
+    await config.loadModels();
+    const notice = config.modelNoticeFor("opencode");
+    expect(notice?.text).toContain("Couldn't refresh models");
+    expect(notice?.text).toContain("timed out");
+    expect(notice?.text).not.toContain("not found on PATH");
   });
 });
 
