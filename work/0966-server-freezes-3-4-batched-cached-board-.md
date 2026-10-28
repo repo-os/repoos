@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0966"
 title: "Server freezes (3/4): batched, cached board git queries"
 type: refactor
@@ -39,3 +40,4 @@ Depends on #0962. Same rules as the other split tasks: no server restarts, no pr
 - 2026-10-28T18:28:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T18:29:04Z · message_delivered: 1 message(s)
 - 2026-10-28T18:29:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
