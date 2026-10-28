@@ -11,7 +11,7 @@ branch: feat/close-out-tests-changed-path-high-risk-s
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-28T09:17:44Z"
-updated_at: "2026-10-28T11:49:16Z"
+updated_at: "2026-10-28T12:00:35Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-28T11:49:16.051Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -37,6 +37,23 @@ New goal: cut test time at close-out without losing real safety.
 ## Notes for AI
 Builds on #0970 (step_timings in check_runs, the timings report). Do not edit repoos.toml; landing refuses it. Put any needed repoos.toml entry in your final message and the driver applies it on main.
 
+## Shots
+```json
+[
+{
+  "label": "Always-run test suite globs in Advanced settings",
+  "target": "default",
+  "route": "/settings?tab=advanced&focus=check.alwaysRun",
+  "highlight": "[data-config-key=\"check.alwaysRun\"]",
+  "steps": [
+    {
+      "waitFor": "[data-config-key=\"check.alwaysRun\"]"
+    }
+  ]
+}
+]
+```
+
 ## Activity
 
 - 2026-10-28T09:17:44Z · created · njachowski@gmail.com
@@ -47,3 +64,4 @@ Builds on #0970 (step_timings in check_runs, the timings report). Do not edit re
 - 2026-10-28T11:38:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T11:44:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T11:49:16Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-28T12:00:35Z · body
