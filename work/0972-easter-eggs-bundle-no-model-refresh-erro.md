@@ -8,10 +8,12 @@ area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: cursor
+model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T08:00:32Z"
-updated_at: "2026-10-28T08:33:07Z"
+updated_at: "2026-10-28T08:33:32Z"
 ---
 ## Items
 
@@ -71,3 +73,4 @@ The card lives in `src/ui-app/src/components/TaskDrawer.vue` ("Open Status detai
 - 2026-10-28T08:23:07Z · review_model_override
 - 2026-10-28T08:33:06Z · title, body: Items (added 1); E2 · Task drawer status card: 3 lines, click to Debug › Status details (added)
 - 2026-10-28T08:33:07Z · screenshots
+- 2026-10-28T08:33:32Z · cli_override, model_override
