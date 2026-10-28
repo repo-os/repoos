@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T08:00:32Z"
-updated_at: "2026-10-28T09:18:43Z"
+updated_at: "2026-10-28T09:48:45Z"
 handoff_signal_retry_count: 2
 ---
 ## Items
@@ -122,3 +122,4 @@ While the repo loads, `.main` shows a skeleton shaped like the route being opene
 - 2026-10-28T09:18:37Z · body: Items (added 1); E3 · App-wide loading shows a spinner, not a skeleton (added)
 - 2026-10-28T09:18:42Z · message_queued at 2026-10-28T09:18:42.265Z
 - 2026-10-28T09:18:43Z · message_queued at 2026-10-28T09:18:43.824Z
+- 2026-10-28T09:48:45Z · phantom runner detected: no live process, restarted
