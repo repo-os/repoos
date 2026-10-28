@@ -19,7 +19,7 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T08:00:32Z"
-updated_at: "2026-10-28T11:43:07Z"
+updated_at: "2026-10-28T11:44:32Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-28T11:42:24.479Z\",\"kind\":\"dev-error\"}]"
@@ -91,18 +91,18 @@ While the repo loads, `.main` shows a skeleton shaped like the route being opene
 ```json
 [
 {
-"label": "Task drawer status card is three lines while checks run",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:statusChecksRunning"
+  "label": "Task drawer status card stays three lines while checks run",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusChecksRunning"
 },
 {
-"label": "Debug status details cards scroll inside a 250px cap",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".debug-status-detail",
-"state": "drawer:statusDetails"
+  "label": "Debug Status details cards scroll inside a 250px cap",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": ".debug-status-detail",
+  "state": "drawer:statusDetails"
 }
 ]
 ```
@@ -137,3 +137,4 @@ While the repo loads, `.main` shows a skeleton shaped like the route being opene
 - 2026-10-28T11:25:55Z · body
 - 2026-10-28T11:42:24Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
 - 2026-10-28T11:42:24Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
+- 2026-10-28T11:44:32Z · body
