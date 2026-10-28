@@ -14,11 +14,20 @@ import {
 } from "../../core/cto-actions.js";
 import { createCtoActionRateStore } from "../../server/cto-action-rates.js";
 import { createAttentionEventStore } from "../../server/attention-events.js";
-import { runCtoSafeAction } from "../../server/cto-actions.js";
+import { runCtoSafeAction, runCtoMonitorSafeActions } from "../../server/cto-actions.js";
 import { buildAttentionFeed } from "../../core/attention.js";
 import { DEFAULT_CONFIG, loadConfig } from "../../core/config.js";
 import { getConfigSchema, SUPPORTED_TOML_KEYS } from "../../core/config.js";
 import { writeFileSync } from "node:fs";
+
+// #0960: isolate the CTO restart loop's hold guard. The mocked relaunch always
+// "fails" so the test never touches the filesystem; what we assert is WHICH
+// tasks the loop reaches it for.
+vi.mock("../../server/engineer-launch.js", () => ({
+  relaunchEngineerOnActiveTask: vi.fn(async () => ({ ok: false, reason: "test blocked" })),
+}));
+
+import { relaunchEngineerOnActiveTask } from "../../server/engineer-launch.js";
 
 describe("cto.actions config (#0688)", () => {
   it("parses allowlist from repoos.toml", () => {
@@ -322,5 +331,96 @@ describe("automation kill switch (#0727)", () => {
       getConfigSchema().find((f) => f.key === "approval.autoApprove.machineryPaths"),
     ).toBeDefined();
     expect(getConfigSchema().find((f) => f.key === "approval.autoApprove.allowP0")).toBeDefined();
+  });
+});
+
+describe("CTO restart skips held tasks (#0960)", () => {
+  const STALLED_BODY = `## Activity
+
+- 2000-01-01T00:00:00Z · status inbox→active
+`;
+
+  function stalledTask(id: string, isHeld: boolean) {
+    return {
+      id,
+      title: `Stalled ${id}`,
+      type: "feature" as const,
+      status: "active" as const,
+      needsInput: false,
+      needsMerge: false,
+      priority: "p2" as const,
+      area: "core",
+      assignee: "ai",
+      assignedTo: "ai",
+      createdBy: "test",
+      branch: "feat/x",
+      tags: [],
+      created_at: null,
+      updated_at: null,
+      body: STALLED_BODY,
+      isHeld,
+      holdReason: isHeld ? "blocked on human decision" : undefined,
+      holdUntil: undefined,
+      holdBy: undefined,
+      holdAt: undefined,
+      path: `work/${id}.md`,
+      absPath: `/tmp/${id}.md`,
+      extra: {},
+      agentOverride: null,
+      cliOverride: null,
+      modelOverride: null,
+      git: {
+        branchExists: false,
+        worktreeExists: false,
+        lastCommit: null,
+        lastCommitAt: null,
+        worktreePath: null,
+        dirty: false,
+      },
+    };
+  }
+
+  it("does not restart a held task, even when it is stalled", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-cto-hold-"));
+    const held = stalledTask("0001", true);
+    const free = stalledTask("0002", false);
+    const tasks = [held, free];
+    const config = {
+      ...DEFAULT_CONFIG,
+      root,
+      cto: { actions: ["restart-stalled-agent"] },
+    };
+    const deps = {
+      config,
+      index: {
+        getTask: (id: string) => tasks.find((t) => t.id === id) ?? null,
+        getTasks: () => tasks,
+        applyFileChange: () => {},
+      } as never,
+      runner: {
+        isRunning: () => false,
+        isPaused: () => false,
+        isHandoffInFlight: () => false,
+        hasPendingHandoff: () => false,
+        output: vi.fn(() => null),
+      } as never,
+      jobCoordinator: { allJobs: () => [], getJob: () => null, enqueue: () => null } as never,
+      attentionEvents: createAttentionEventStore(root),
+      rates: createCtoActionRateStore(root),
+      logger: { agent: vi.fn(), task: vi.fn() } as never,
+      emitEvent: vi.fn(),
+      triggerJobProcessing: vi.fn(),
+      reportedStages: {},
+      reportedStageAt: {},
+    };
+
+    await runCtoMonitorSafeActions(deps as never);
+
+    // Only the un-held, stalled task reached the launch chokepoint; the held one
+    // was skipped by the #0960 guard in the loop.
+    expect(relaunchEngineerOnActiveTask).toHaveBeenCalledTimes(1);
+    const launchedTask = (relaunchEngineerOnActiveTask as unknown as ReturnType<typeof vi.fn>).mock
+      .calls[0][1] as { id: string };
+    expect(launchedTask.id).toBe("0002");
   });
 });

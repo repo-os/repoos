@@ -36,6 +36,7 @@ import { pendingCloseOutJobs, type JobCoordinator } from "./integration-job.js";
 import type { CloseOutOutcomeStore } from "./close-out-outcome.js";
 import type { LiveIndex } from "./live-index.js";
 import type { RemoteValidator } from "./remote-validation.js";
+import { taskIsHeld } from "../core/task-selection.js";
 import {
   computeSlowRunFlags,
   type AwakeClock,
@@ -367,6 +368,15 @@ export async function assembleDriverBrief(deps: DriverBriefDeps): Promise<Driver
     assignee: t.assignee,
     isArchived: t.isArchived === true,
     updatedAt: t.updated_at ?? null,
+    // #0960: a `hold` tag is an equivalent spelling of the hold flag, so the
+    // brief's Held section must surface tag-held tasks too — not just those
+    // with the flag set. `taskIsHeld` is tag-aware; the core builder still
+    // excludes an expired `holdUntil` on its own.
+    isHeld: taskIsHeld(t),
+    holdReason: t.holdReason,
+    holdUntil: t.holdUntil,
+    holdBy: t.holdBy,
+    holdAt: t.holdAt,
   }));
 
   const tasksById = new Map(tasks.map((t) => [t.id, t]));

@@ -22,6 +22,22 @@ import { shotProblems } from "../src/lib/shot-rows";
 import { isDocsShotSkip, shotVerdict } from "../src/lib/handoff-verification";
 
 describe("shot preview board fixtures (#0743)", () => {
+  it.each(["card:held", "drawer:held"] as const)("seeds an intentional hold for %s", (fixture) => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, fixture);
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID)!;
+    expect(task).toMatchObject({
+      status: "active",
+      isHeld: true,
+      holdReason: "Waiting for machine capacity before resuming automation",
+      holdBy: "driver",
+      branch: "",
+    });
+    expect(Date.parse(task.holdUntil!)).toBeGreaterThan(Date.now());
+    expect(repo.heldTasks.map((t) => t.id)).toContain(task.id);
+  });
+
   it("populates repeatable Work and Stories scroll captures", () => {
     setActivePinia(createPinia());
     const repo = useRepoStore();

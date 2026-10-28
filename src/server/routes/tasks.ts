@@ -68,6 +68,9 @@ import { humanStepOverrideSuppresses } from "../../core/human-step-override.js";
 import { humanStepFlagDetail } from "../../core/human-step-decision.js";
 import { runHumanStepDecisionCheck } from "../human-step-decision.js";
 import { HumanStepSplitError, splitHumanStepTask } from "../human-step-split.js";
+import { isHoldActive } from "../../core/task-selection.js";
+import { holdBlocksEngineer } from "../hold-guard.js";
+import { relaunchEngineerOnActiveTask } from "../engineer-launch.js";
 import {
   answeringQuestionsMatchTask,
   wrapPmMessageWithQuestionContext,
@@ -2320,7 +2323,13 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   if (!existing) {
     return json(res, 404, { error: `Task #${id} not found` });
   }
-  if (existing.assignee === "human" && action !== "archive" && action !== "unarchive") {
+  if (
+    existing.assignee === "human" &&
+    action !== "archive" &&
+    action !== "unarchive" &&
+    action !== "hold" &&
+    action !== "unhold"
+  ) {
     return json(res, 400, {
       error: `Task #${id} is assigned to a human; change its board status directly`,
     });
@@ -2451,6 +2460,8 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: `Task #${id} is archived — unarchive it before starting work`,
       });
     }
+    // Refuse a locked start before consuming the request stream. Keep the
+    // post-read check too: a refresh can acquire the lock during that await.
     if (isEvidenceRefreshActive(id)) {
       return json(res, 409, {
         error: `Evidence refresh is in progress for #${id}; wait for it to finish before starting the engineer`,
@@ -2460,8 +2471,29 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       mode?: unknown;
       instruction?: unknown;
       overrideDependencies?: unknown;
+      force?: unknown;
       [key: string]: unknown;
     };
+    // #0960: a held task is inert for ALL automation — only `repoos unhold`
+    // (which clears the hold) or `repoos start --force` may start it. This is an
+    // explicit human/driver command, so `--force` is honored here.
+    const force = body.force === true;
+    if (isHoldActive(existing) && !force) {
+      const reason = existing.holdReason ? `: ${existing.holdReason}` : "";
+      const until = existing.holdUntil ? ` (auto-releases ${existing.holdUntil})` : "";
+      return json(res, 409, {
+        ok: false,
+        held: true,
+        reason: existing.holdReason,
+        until: existing.holdUntil,
+        error: `Task #${id} is held${reason}${until} — use "repoos unhold ${id}" to release it, or "repoos start ${id} --force"`,
+      });
+    }
+    if (isEvidenceRefreshActive(id)) {
+      return json(res, 409, {
+        error: `Evidence refresh is in progress for #${id}; wait for it to finish before starting the engineer`,
+      });
+    }
     // #0684: refuse overrides this route will not apply rather than accepting
     // (200) and silently dropping them — see rejectIgnoredOverrides.
     if (rejectIgnoredOverrides(res, id, body)) return;
@@ -2720,11 +2752,26 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       clean || !existing.branch ? undefined : resumePreamble(config, taskForLaunch, branch, cwd);
     const preamble = [resumeContext, instruction].filter(Boolean).join("\n\n") || undefined;
 
-    const spawnRes = runner.start(taskForLaunch, branch, agent, {
+    // #0960: the early hold check ran before bootstrap. Re-read the task file
+    // here, and spawnTurn checks again if this start waits on a slot.
+    const liveBeforeSpawn = index.getTask(id) ?? taskForLaunch;
+    const heldNow = !force ? holdBlocksEngineer(config, liveBeforeSpawn) : null;
+    if (heldNow) {
+      return json(res, 409, {
+        ok: false,
+        held: true,
+        reason: liveBeforeSpawn.holdReason,
+        until: liveBeforeSpawn.holdUntil,
+        error: `${heldNow}, or "repoos start ${id} --force"`,
+      });
+    }
+
+    const spawnRes = runner.start(liveBeforeSpawn, branch, agent, {
       cwd,
       contextPack: pack.content,
       resumePreamble: preamble,
       freshSession,
+      ...(force ? { bypassHold: true } : {}),
     });
     return json(res, 200, {
       ok: true,
@@ -3301,6 +3348,134 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       stopped: stopRes.stopped,
       reason: stopRes.reason,
     });
+  }
+
+  // Hold / unhold (#0960): a single durable, documented state that makes a task
+  // inert for ALL automation. Unlike `pause`, which only stops the current run
+  // (and the CTO monitor could restart it), a hold blocks every auto-start path
+  // — dispatch, CTO restart/nudge, watchdog resume, crash recovery, and
+  // queued-message delivery — until a human/driver explicitly releases it.
+  // Held tasks keep their status (a held `active` task stops its engineer but
+  // stays `active`; a held `ready` one simply never auto-dispatches).
+  //
+  // Allowed on human-assigned tasks too (like archive/unarchive): a hold is
+  // about automation inertness, and there is no other action that expresses it.
+  if (action === "hold") {
+    const body = (await readBody(req)) as {
+      reason?: unknown;
+      until?: unknown;
+      by?: unknown;
+      [key: string]: unknown;
+    };
+    const reason = typeof body?.reason === "string" ? body.reason.trim() || undefined : undefined;
+    const untilRaw = typeof body?.until === "string" ? body.until.trim() || undefined : undefined;
+    const by = typeof body?.by === "string" ? body.by.trim() || undefined : undefined;
+    const at = new Date().toISOString();
+    // #0960 input validation: the reason documents why the task was parked, and
+    // `--until` is an optional auto-release. An empty reason is refused (a hold
+    // with no reason is invisible on the board); an unparseable `--until` is
+    // refused because it would never expire and silently create a PERMANENT
+    // hold — a typo must not be able to do that.
+    if (!reason) {
+      return json(res, 400, {
+        ok: false,
+        error: `hold requires a reason — pass --reason "…" (or a "reason" body field)`,
+      });
+    }
+    let until: string | null = null;
+    if (untilRaw !== undefined) {
+      const parsed = Date.parse(untilRaw);
+      if (!Number.isFinite(parsed)) {
+        return json(res, 400, {
+          ok: false,
+          error: `invalid --until "${untilRaw}": must be an ISO-8601 date (e.g. 2026-12-01T00:00:00Z); an unparseable date would never auto-release`,
+        });
+      }
+      until = untilRaw;
+    }
+    // Stop any live engineer run — a held task must not have automation in
+    // flight. (Review runs and close-out are human/driver-invoked machinery, so
+    // they are left to their own guards.)
+    //
+    // Stopping a live engineer also records a hold-scoped pause so the watchdog
+    // does not treat the stop as a crash. That pause is cleared by unhold and
+    // by hold_until expiry (`clearHoldPause` / `clearExpiredHoldPauses`). It is
+    // not a human pause: `markPaused` is left for `repoos pause`.
+    const wasRunning = runner.isRunning(id);
+    const stopRes = runner.stop(id);
+    if (wasRunning) runner.markHoldPause(id);
+    const updated = patchTaskFile(
+      config,
+      existing.absPath,
+      {
+        hold: true,
+        holdReason: reason ?? null,
+        holdUntil: until ?? null,
+        holdBy: by ?? getCurrentUser(req, config)?.email ?? null,
+        holdAt: at,
+      },
+      { onStatusChange: onServerStatusChange },
+    );
+    index.applyFileChange(updated.absPath);
+    return json(res, 200, {
+      ok: true,
+      task: index.getTask(updated.id),
+      stopped: stopRes.stopped,
+      reason: stopRes.reason,
+    });
+  }
+
+  if (action === "unhold") {
+    const body = (await readBody(req)) as {
+      start?: unknown;
+      [key: string]: unknown;
+    };
+    const wantStart = body?.start === true;
+    // Drop the pause this hold recorded before any relaunch. A human pause is
+    // a different set and is left in place.
+    runner.clearHoldPause(id);
+    const updated = patchTaskFile(
+      config,
+      existing.absPath,
+      {
+        hold: false,
+        holdReason: null,
+        holdUntil: null,
+        holdBy: null,
+        holdAt: null,
+      },
+      { onStatusChange: onServerStatusChange },
+    );
+    index.applyFileChange(updated.absPath);
+    // Use the normal start route for both ready and active tasks: it owns
+    // ready-to-active activation, bootstrap, dependency checks and launch guards.
+    if (wantStart) {
+      const startReq = Readable.from([
+        Buffer.from("{}"),
+      ]) as unknown as import("node:http").IncomingMessage;
+      startReq.headers = req.headers;
+      const captured = {
+        statusCode: 200,
+        body: {} as Record<string, any>,
+        writeHead(code: number) {
+          this.statusCode = code;
+        },
+        end(data?: string) {
+          if (data) this.body = JSON.parse(data);
+        },
+      };
+      await taskAction(ctx, startReq, captured as unknown as ServerResponse, {
+        param1: id,
+        param2: "start",
+      });
+      return json(res, captured.statusCode, {
+        ...captured.body,
+        released: true,
+        started: captured.body.spawn?.ok ?? false,
+        pid: captured.body.spawn?.pid,
+      });
+    }
+    return json(res, 200, { ok: true, task: index.getTask(updated.id), started: false });
   }
 
   // Abandon (lifecycle audit, task-transitions.ts): active or review -> ready,

@@ -64,6 +64,8 @@ import type { ReviewReport, ReviewRunResult } from "./review.js";
 import { REVIEW_RUN_TRIGGERS } from "./review-automation.js";
 import { effectiveStalenessNow } from "../core/agent-run-health.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
+import { isHoldActive } from "../core/task-selection.js";
+import { clearExpiredHoldPauses } from "./hold-guard.js";
 import { commitTaskFile, worktreeStatus, worktreePathForBranch } from "../core/git.js";
 import { scheduleHandoffSignalRetry } from "./handoff.js";
 import { isTaskClosingOut } from "./close-out-lock.js";
@@ -530,6 +532,12 @@ export class TaskWatchdog {
     this.lastWatchdogTickMs = wallNow;
     try {
       this.runner.reconcileDeadAgents?.();
+      // A hold that stopped an engineer left a pause. Once hold_until passes,
+      // that pause must not keep this scan from resuming the task.
+      clearExpiredHoldPauses(
+        [...this.index.getTasks("active"), ...this.index.getTasks("review")],
+        this.runner,
+      );
       // The `active` status is scanned for the dead/stalled ENGINEER shape
       // (#0180). The `review` status is scanned too (#0286): a task whose
       // REVIEWER session died silently sits in `review` forever with no report
@@ -537,6 +545,9 @@ export class TaskWatchdog {
       // on the review side where the watchdog never looked before.
       for (const status of ["active", "review"] as const) {
         for (const task of this.index.getTasks(status)) {
+          // #0960: a held task is inert for all automation, including the
+          // watchdog's stuck detection, auto-resume and auto-escalation.
+          if (isHoldActive(task)) continue;
           if (this.isStuck(task, stalenessNow)) {
             this.handleStuck(task);
           }

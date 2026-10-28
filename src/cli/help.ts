@@ -109,15 +109,27 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "start",
-        usage: "start <id> [--fresh] [--json] [--port N]",
-        desc: "Start or resume the engineer on a task (POST /api/tasks/:id/start)",
-        flags: "--fresh · --json · --port",
+        usage: "start <id> [--fresh] [--force] [--json] [--port N]",
+        desc: "Start or resume the engineer on a task (POST /api/tasks/:id/start). --force starts a held task (see hold below)",
+        flags: "--fresh · --force · --json · --port",
       },
       {
         name: "pause",
         usage: "pause <id> [--json] [--port N]",
-        desc: "Pause the running agent (POST /api/tasks/:id/pause)",
+        desc: "Pause the running agent (POST /api/tasks/:id/pause). To keep a task out of ALL automation — not just stop the current run — use hold instead",
         flags: "--json · --port",
+      },
+      {
+        name: "hold",
+        usage: 'hold <id> --reason "…" [--until <date>] [--by <who>] [--json] [--port N]',
+        desc: "Park a task out of ALL automation: stop any running engineer and block auto-dispatch, CTO nudges/restarts, watchdog resume, crash recovery and queued messages (POST /api/tasks/:id/hold)",
+        flags: "--reason · --until · --by · --json · --port",
+      },
+      {
+        name: "unhold",
+        usage: "unhold <id> [--start] [--json] [--port N]",
+        desc: "Release a hold: clear the flag, its reason/until, and any `hold` tag, re-enabling automation. --start also re-launches the engineer (POST /api/tasks/:id/unhold)",
+        flags: "--start · --json · --port",
       },
       {
         name: "message",
