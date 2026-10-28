@@ -123,3 +123,4 @@ While the repo loads, `.main` shows a skeleton shaped like the route being opene
 - 2026-10-28T09:18:42Z · message_queued at 2026-10-28T09:18:42.265Z
 - 2026-10-28T09:18:43Z · message_queued at 2026-10-28T09:18:43.824Z
 - 2026-10-28T09:48:45Z · phantom runner detected: no live process, restarted
+- 2026-10-28T09:48:45Z · note: phantom runner detected: no live process, restarted
