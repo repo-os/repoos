@@ -11,7 +11,7 @@ branch: feat/check-gate-audit-record-per-step-timings
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T09:17:22Z"
+updated_at: "2026-10-28T09:18:03Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: a7faee07a7fe0da9f4cf7aab267566da66f57e11
 handoff_signal_retry_count: 2
@@ -77,3 +77,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T09:03:50Z · message_delivered: 2 message(s)
 - 2026-10-28T09:04:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T09:17:22Z · note: handoff requested (ui-review)
+- 2026-10-28T09:18:03Z · handoff failed · ui-review handoff failed at validate · unexpected error: git worker git-command timed out after 9000ms
