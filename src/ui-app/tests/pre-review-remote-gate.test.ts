@@ -114,9 +114,12 @@ describe("runRemotePreReviewGate", () => {
       worktreePath: root,
       taskId: "0564",
       phase: "close-out",
+      checkProfile: "integration",
     });
     expect(out).toEqual({ kind: "local-only", skipTests: true });
-    expect(validate).toHaveBeenCalledWith(expect.objectContaining({ phase: "close-out" }));
+    expect(validate).toHaveBeenCalledWith(
+      expect.objectContaining({ phase: "close-out", checkProfile: "integration" }),
+    );
   });
 
   it("treats a red remote gate as non-retryable", async () => {
@@ -333,6 +336,22 @@ describe("shouldRunCliRemotePreReviewGate", () => {
 });
 
 describe("spawnedRepoosCheckArgs", () => {
+  it("uses the default profile at handoff, full at close-out and release", () => {
+    const config = makeConfig("/tmp", { enabled: true });
+    expect(spawnedRepoosCheckArgs(config, { kind: "skip" }, "pre-review")).toEqual([
+      "--local-tests",
+    ]);
+    expect(
+      spawnedRepoosCheckArgs(config, { kind: "local-only", skipTests: true }, "pre-review"),
+    ).toEqual([]);
+    for (const phase of ["close-out", "release"] as const) {
+      expect(spawnedRepoosCheckArgs(config, { kind: "skip" }, phase)).toEqual([
+        "--local-tests",
+        ...CLOSEOUT_CHECK_ARGS,
+      ]);
+    }
+  });
+
   const enabled = makeConfig("/tmp", { enabled: true });
 
   it("adds --local-tests when remote is enabled but the parent skipped remote", () => {

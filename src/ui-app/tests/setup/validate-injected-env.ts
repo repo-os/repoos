@@ -18,6 +18,7 @@
 export const VALIDATE_INJECTED_ENV_KEYS = [
   "REPOOS_ROOT",
   "REPOOS_OFFLOAD_BROWSER_STEPS",
+  "REPOOS_CHECK_PROFILE",
   // Set on a spawned local check by the parent after remote browser steps ran.
   // A child check spawned by a test must not inherit it either.
   "REPOOS_BROWSER_STEPS_REMOTE",
