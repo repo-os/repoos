@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: grok-4.7-low
 created_at: "2026-10-28T09:17:44Z"
-updated_at: "2026-10-28T14:47:47Z"
+updated_at: "2026-10-28T15:47:30Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-28T11:49:16.051Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 5
@@ -87,3 +87,4 @@ Builds on #0970 (step_timings in check_runs, the timings report). Do not edit re
 - 2026-10-28T14:38:54Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-28T14:47:31Z · needs_input
 - 2026-10-28T14:47:47Z · message_queued at 2026-10-28T14:47:47.752Z
+- 2026-10-28T15:47:30Z · engineer stopped by request
