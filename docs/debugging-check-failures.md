@@ -305,7 +305,7 @@ shown by the listing. The PID confirmation prevents releasing a slot whose
 owner changed between inspection and action.
 
 
-## Step timing audit and handoff profile (#0970, 2026-10-28)
+## Step timing audit (#0970, 2026-10-28)
 
 Checks → Runs now reports median, nearest-rank p90, failures / executed samples,
 and skipped counts per step over the latest 300 runs. Expand **any measured
@@ -323,37 +323,23 @@ tests. These are **small local samples**, not a historical per-step failure
 rate or a runner benchmark. The old 1,000-run aggregate in the task cannot
 supply timings that were never recorded.
 
-| Step | Executed samples | Median | p90 | Failures | Default handoff after audit |
-| --- | ---: | ---: | ---: | ---: | --- |
-| rendered-contrast | 1 | 1,065.995s | 1,065.995s | 1/1 timeout | deferred to full |
-| user-docs-build | 2 | 260.069s | 505.452s | 0/2 | deferred to full |
-| macos-hub-icon-transparency | 2 | 28.054s | 53.811s | 0/2 | retained, path-scoped |
-| landing-build | 2 | 5.288s | 6.560s | 0/2 | retained, path-scoped |
-| telegram-manager-build | 2 | 2.538s | 2.829s | 0/2 | retained, path-scoped |
-| telegram-manager-test | 1 | 3.753s | 3.753s | 0/1 | retained, path-scoped |
+| Step | Executed samples | Median | p90 | Failures |
+| --- | ---: | ---: | ---: | ---: |
+| rendered-contrast | 1 | 1,065.995s | 1,065.995s | 1/1 timeout |
+| user-docs-build | 2 | 260.069s | 505.452s | 0/2 |
+| macos-hub-icon-transparency | 2 | 28.054s | 53.811s | 0/2 |
+| landing-build | 2 | 5.288s | 6.560s | 0/2 |
+| telegram-manager-build | 2 | 2.538s | 2.829s | 0/2 |
+| telegram-manager-test | 1 | 3.753s | 3.753s | 0/1 |
 
-Fresh measurements in the resumed turn were docs **14.685s**, landing
-**4.016s**, Telegram build **2.247s**, Telegram tests **3.753s**, and icon check
-**2.297s**, all passing. The earlier contrast log recorded zero screen states
-and browser timeouts, not a successful accessibility audit. Its printed
-“passed” line was followed by the runner's `timeout` outcome; the report uses
-the outcome. There is no evidence yet to call contrast rarely failing. It is
-deferred because it dominates the observed cost and still gates close-out;
-the cheap CSS/theme/colour guards and UI smoke remain in handoff. Keep
-collecting samples before deferring the other, now-fast checks.
+These samples were taken on a loaded laptop. On an idle machine the same steps
+measured far less: rendered contrast **17.6s** and the docs build **6–7s** (driver
+runs, 2026-10-28). The contrast sample above was a browser timeout, not a
+completed audit. Step cost depends heavily on machine load; read the report's
+medians over many runs before moving any step out of close-out.
 
-Before, handoff explicitly requested `--profile full`, repeating these expensive
-steps before review. It now uses the default profile; only contrast and docs
-have `profiles = ["full"]`. For an otherwise identical unscoped selection,
-the initial measured contrast+docs cost removed from handoff is **1,571.447s**;
-with the fresh docs sample and the retained contrast sample it is **1,080.680s**.
-These are sums of measured step times, **not observed end-to-end handoff speedups**.
-For `--changed main`, docs was already excluded when untouched; a UI change
-additionally saves the contrast invocation. A non-UI change already skipped it.
-
-All 19 steps remain in the full profile used by close-out/release, and every
-candidate retains its `whenChanged` scope for explicit changed-path runs.
-The contrast scope also watches its audit script. Runner browser invocations
-receive the selected CLI profile, or the phase's default/full profile, so
-handoff cannot silently reintroduce contrast remotely. The runner host needs
-the updated `validate.sh` to use this profile forwarding and timing wrapper.
+The test suite is the dominant cost: 6½–8 minutes scoped, and most of a ~57
+minute full close-out. Handoff now passes the default profile instead of
+`--profile full`; with no profile-restricted steps in `repoos.toml` the two
+select the same steps. Narrowing which tests close-out runs is a follow-up task.
+The runner host needs the updated `validate.sh` to report remote step timings.
