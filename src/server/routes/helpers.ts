@@ -1,7 +1,6 @@
 import { extname, resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync, readFileSync, statSync, readdirSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { connect } from "node:net";
 import type { RepoOSConfig, Task } from "../../core/types.js";

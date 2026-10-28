@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { bootstrap } from "../core/bootstrap.js";
-import { generateContextPack, resumePreamble } from "../core/context-pack.js";
+import { generateServerContext } from "./context-pack.js";
 import { ensureWorktree } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import type { LiveIndex } from "./live-index.js";
@@ -132,8 +132,13 @@ export async function relaunchEngineerOnActiveTask(
     };
   }
 
-  const pack = generateContextPack(config, liveBeforeSpawn, branch, cwd, bootResult);
-  const resumeContext = resumePreamble(config, liveBeforeSpawn, branch, cwd);
+  const { pack, resumePreamble: resumeContext } = await generateServerContext(
+    config,
+    liveBeforeSpawn,
+    branch,
+    cwd,
+    bootResult,
+  );
   const preamble = [resumeContext, instruction.trim()].filter(Boolean).join("\n\n") || undefined;
 
   const spawnRes = runner.start(liveBeforeSpawn, branch, agent, {
@@ -149,7 +154,7 @@ export async function relaunchEngineerOnActiveTask(
     return { ok: false, reason: spawnRes.reason ?? "could not start engineer" };
   }
 
-  index.refreshBranches();
+  await index.refreshBranchesAsync();
   return {
     ok: true,
     pid: spawnRes.pid,

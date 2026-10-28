@@ -34,7 +34,7 @@ async function patch(
   const ctx = {
     config: { root, cacheDir: cfg.cacheDir, workDir: cfg.workDir },
     repoos: { config: cfg },
-    index: { refreshAll() {} },
+    index: { refreshAll() {}, async refreshAllAsync() {} },
     logger: { system() {} },
   } as never;
   await patchConfig(ctx, req as never, res as never, {});
@@ -55,6 +55,7 @@ function contextWith(root: string, warnings: string[], taskArea = "web") {
     repoos: { config: cfg },
     index: {
       refreshAll() {},
+      async refreshAllAsync() {},
       getTasks: () => [{ id: "0587", area: taskArea }],
     },
     logger: {
@@ -253,7 +254,11 @@ describe("area-vocabulary drift advisory (#0587)", () => {
       const ctx = {
         config: { root, cacheDir: cfg.cacheDir, workDir: cfg.workDir },
         repoos,
-        index: { refreshAll() {}, getTasks: () => [{ id: "0587", area: "web" }] },
+        index: {
+          refreshAll() {},
+          async refreshAllAsync() {},
+          getTasks: () => [{ id: "0587", area: "web" }],
+        },
         logger: {
           system(level: string, message: string) {
             if (level === "warn") warnings.push(message);

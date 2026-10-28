@@ -3,7 +3,7 @@
  * the story panel's PM chat (#0515) and the verbatim create/update paths agents
  * and scripts use to write a story exactly as given (#0696).
  */
-import type { RouteHandler } from "./types.js";
+import type { RouteContext, RouteHandler } from "./types.js";
 import type { Agent } from "../../core/types.js";
 import { json, readBody } from "./utils.js";
 import { join } from "node:path";
@@ -26,8 +26,8 @@ import {
 } from "../../core/story-display.js";
 import {
   fallbackStoryName,
-  findStoryDefinitionByKey,
-  listStoryDefinitions,
+  storiesDirOf,
+  listStoryDefinitionsFromCommits,
   markStoryPmChat,
   rewriteStoryDefinition,
   writeStoryDefinition,
@@ -35,6 +35,7 @@ import {
 import { deleteStoryFile, PathGuardError, WriteError } from "../write.js";
 import { dropPmImages, queuePmImages, type IncomingPmImage } from "../pm-attachments.js";
 import { fleshOutStory } from "../story-pm.js";
+import { getGitWorker } from "../git-worker.js";
 
 function pmWithOverrides(base: Agent, body: Record<string, unknown>): Agent {
   const cli =
@@ -48,11 +49,20 @@ function storiesFeatureEnabled(config: { stories?: { enabled?: boolean } }): boo
   return config.stories?.enabled === true;
 }
 
-export const getStoryDefinitions: RouteHandler = (ctx, _req, res) => {
+async function storyCommits(ctx: RouteContext) {
+  return getGitWorker(ctx.config.root).directoryCommits(ctx.config.root, storiesDirOf(ctx.config));
+}
+
+async function storyDefinitions(ctx: RouteContext) {
+  const commits = await storyCommits(ctx);
+  return listStoryDefinitionsFromCommits(ctx.config, commits);
+}
+
+export const getStoryDefinitions: RouteHandler = async (ctx, _req, res) => {
   if (!storiesFeatureEnabled(ctx.config)) {
     return json(res, 404, { error: "stories are not enabled" });
   }
-  return json(res, 200, listStoryDefinitions(ctx.config));
+  return json(res, 200, await storyDefinitions(ctx));
 };
 
 /**
@@ -88,13 +98,18 @@ export const createFreeformStory: RouteHandler = async (ctx, req, res) => {
     : null;
   const pm = pmBase ? pmWithOverrides(pmBase, body) : null;
 
+  const commits = await storyCommits(ctx);
   let definition;
   try {
-    definition = writeStoryDefinition(config, {
-      name: humanName || fallbackStoryName(description),
-      body: description,
-      createdBy,
-    });
+    definition = writeStoryDefinition(
+      config,
+      {
+        name: humanName || fallbackStoryName(description),
+        body: description,
+        createdBy,
+      },
+      commits,
+    );
   } catch (err) {
     const message = (err as Error).message;
     const status = message.includes("already exists") ? 409 : 400;
@@ -143,13 +158,18 @@ export const createStoryDefinition: RouteHandler = async (ctx, req, res) => {
   const name = normalizeStoryName(typeof body?.name === "string" ? body.name : "");
   const createdBy = resolveApiCreator(getCurrentUser(req, config)?.email);
 
+  const commits = await storyCommits(ctx);
   let definition: StoryDefinition;
   try {
-    definition = writeStoryDefinition(config, {
-      name: name || fallbackStoryName(text),
-      body: text,
-      createdBy,
-    });
+    definition = writeStoryDefinition(
+      config,
+      {
+        name: name || fallbackStoryName(text),
+        body: text,
+        createdBy,
+      },
+      commits,
+    );
   } catch (err) {
     const message = (err as Error).message;
     const status = message.includes("already exists") ? 409 : 400;
@@ -190,7 +210,10 @@ export const updateStoryDefinition: RouteHandler = async (ctx, req, res, params)
   } catch {
     // Same lenient decoding as `deleteStory`.
   }
-  const existing = findStoryDefinitionByKey(config, key.trim().toLowerCase());
+  const commits = await storyCommits(ctx);
+  const existing = listStoryDefinitionsFromCommits(config, commits).find(
+    (definition) => definition.key === key.trim().toLowerCase(),
+  );
   if (!existing) {
     return json(res, 404, { ok: false, reason: `story not found: ${params.param1}` });
   }
@@ -203,10 +226,15 @@ export const updateStoryDefinition: RouteHandler = async (ctx, req, res, params)
 
   let rewritten;
   try {
-    rewritten = rewriteStoryDefinition(config, existing.path, {
-      name: name ?? existing.name,
-      body: text ?? existing.body,
-    });
+    rewritten = rewriteStoryDefinition(
+      config,
+      existing.path,
+      {
+        name: name ?? existing.name,
+        body: text ?? existing.body,
+      },
+      commits,
+    );
   } catch (err) {
     const message = (err as Error).message;
     const status = message.includes("already exists") ? 409 : 400;
@@ -234,10 +262,10 @@ export const updateStoryDefinition: RouteHandler = async (ctx, req, res, params)
  * no file but is still a story the panel can open and talk about — it just has
  * no number, so its PM session falls back to a slug.
  */
-function resolveStory(
-  ctx: Parameters<RouteHandler>[0],
+async function resolveStory(
+  ctx: RouteContext,
   rawKey: string,
-): MergedStoryGroup<{ id: string; title: string; status: string; body: string }> | null {
+): Promise<MergedStoryGroup<{ id: string; title: string; status: string; body: string }> | null> {
   let key = rawKey;
   try {
     key = decodeURIComponent(rawKey);
@@ -246,7 +274,7 @@ function resolveStory(
   }
   const wanted = key.trim().toLowerCase();
   if (!wanted) return null;
-  const groups = mergeStoriesForDisplay(ctx.index.getTasks(), listStoryDefinitions(ctx.config));
+  const groups = mergeStoriesForDisplay(ctx.index.getTasks(), await storyDefinitions(ctx));
   return groups.find((g) => g.key === wanted) ?? null;
 }
 
@@ -285,7 +313,7 @@ export const pmStoryMessage: RouteHandler = async (ctx, req, res, params) => {
   if (!storiesFeatureEnabled(config)) {
     return json(res, 404, { error: "stories are not enabled" });
   }
-  const story = resolveStory(ctx, params.param1);
+  const story = await resolveStory(ctx, params.param1);
   if (!story) {
     return json(res, 404, { error: "Story not found" });
   }
@@ -396,12 +424,14 @@ export const deleteStory: RouteHandler = async (ctx, _req, res, params) => {
   } catch {
     // Same lenient decoding as `resolveStory`.
   }
-  const definition = findStoryDefinitionByKey(config, key.trim().toLowerCase());
+  const definition = (await storyDefinitions(ctx)).find(
+    (candidate) => candidate.key === key.trim().toLowerCase(),
+  );
   if (!definition) {
     return json(res, 404, { error: `story not found: ${params.param1}` });
   }
   try {
-    deleteStoryFile(
+    await deleteStoryFile(
       config,
       join(config.root, definition.path),
       `stories(${definition.number || definition.key}): delete`,
@@ -422,12 +452,12 @@ export const deleteStory: RouteHandler = async (ctx, _req, res, params) => {
  * Interrupt a running PM response about a story. Resolves the same per-user
  * session id as `pmStoryMessage` and stops the in-flight turn. Idempotent.
  */
-export const pmStoryInterrupt: RouteHandler = (ctx, req, res, params) => {
+export const pmStoryInterrupt: RouteHandler = async (ctx, req, res, params) => {
   const { config, runner } = ctx;
   if (!storiesFeatureEnabled(config)) {
     return json(res, 404, { error: "stories are not enabled" });
   }
-  const story = resolveStory(ctx, params.param1);
+  const story = await resolveStory(ctx, params.param1);
   if (!story) {
     return json(res, 404, { error: "Story not found" });
   }
@@ -441,12 +471,12 @@ export const pmStoryInterrupt: RouteHandler = (ctx, req, res, params) => {
  * `getTaskOutput` returns, resolved from the story key so the client never has
  * to know the session-key scheme.
  */
-export const getStoryPmOutput: RouteHandler = (ctx, req, res, params) => {
+export const getStoryPmOutput: RouteHandler = async (ctx, req, res, params) => {
   const { config, runner } = ctx;
   if (!storiesFeatureEnabled(config)) {
     return json(res, 404, { error: "stories are not enabled" });
   }
-  const story = resolveStory(ctx, params.param1);
+  const story = await resolveStory(ctx, params.param1);
   if (!story) {
     return json(res, 404, { error: "Story not found" });
   }

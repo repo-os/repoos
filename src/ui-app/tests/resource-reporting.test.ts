@@ -106,7 +106,7 @@ describe("heavy-job and pressure reporting (#0961)", () => {
       },
     );
     try {
-      const stats = sampleSystem({
+      const stats = await sampleSystem({
         serverPid: process.pid,
         cacheDir: rootB,
         runningAgents: [],

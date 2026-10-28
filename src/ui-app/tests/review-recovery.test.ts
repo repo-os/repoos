@@ -88,34 +88,34 @@ function writeReport(atISO: string): void {
 
 describe("ReviewManager.recoverInterruptedReviews", () => {
   it("re-reviews a review task with no stored report", async () => {
-    reviews.recoverInterruptedReviews([reviewTask()]);
+    await reviews.recoverInterruptedReviews([reviewTask()]);
     await vi.advanceTimersByTimeAsync(100);
     expect(reviews.run).toHaveBeenCalledOnce();
   });
 
   it("does NOT re-review an archived review task (#0657)", async () => {
     const archived = { ...reviewTask(), isArchived: true };
-    reviews.recoverInterruptedReviews([archived]);
+    await reviews.recoverInterruptedReviews([archived]);
     await vi.advanceTimersByTimeAsync(5000);
     expect(reviews.run).not.toHaveBeenCalled();
   });
 
   it("re-reviews when the report predates the branch HEAD commit", async () => {
     writeReport("2000-01-01T00:00:00.000Z"); // ancient — older than the commit
-    reviews.recoverInterruptedReviews([reviewTask()]);
+    await reviews.recoverInterruptedReviews([reviewTask()]);
     await vi.advanceTimersByTimeAsync(100);
     expect(reviews.run).toHaveBeenCalledOnce();
   });
 
   it("does NOT re-review when the report is newer than the branch HEAD", async () => {
     writeReport(new Date(Date.now() + 60_000).toISOString());
-    reviews.recoverInterruptedReviews([reviewTask()]);
+    await reviews.recoverInterruptedReviews([reviewTask()]);
     await vi.advanceTimersByTimeAsync(5000);
     expect(reviews.run).not.toHaveBeenCalled();
   });
 
   it("skips tasks that are not in review", async () => {
-    reviews.recoverInterruptedReviews([
+    await reviews.recoverInterruptedReviews([
       parseTask({
         content: `---\nid: "0002"\ntitle: Done\ntype: feature\nstatus: done\npriority: p1\narea: server\nbranch: ${branch}\n---\nbody\n`,
         absPath: join(root, "work", "0002.md"),
@@ -133,7 +133,7 @@ describe("ReviewManager.recoverInterruptedReviews", () => {
       join(root, ".repoos", "reviews", ".cancelled.json"),
       JSON.stringify({ taskIds: ["0001"] }),
     );
-    reviews.recoverInterruptedReviews([reviewTask()]);
+    await reviews.recoverInterruptedReviews([reviewTask()]);
     await vi.advanceTimersByTimeAsync(5000);
     expect(reviews.run).not.toHaveBeenCalled();
   });

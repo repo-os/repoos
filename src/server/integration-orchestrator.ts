@@ -26,11 +26,7 @@ import type { CloseOutOutcome, CloseOutOutcomeEvent } from "./close-out-outcome.
 import type { RepositoryLock, RootLock } from "./repo-lock.js";
 import type { Logger } from "../core/logger.js";
 import {
-  currentBranch,
-  branchCommit,
-  isAncestor,
   runGit,
-  worktreePathForBranch,
   ensureWorktree,
   removeWorktree,
   deleteBranch,
@@ -57,7 +53,7 @@ import {
   retryOnGitLock,
   type MergeBranchResult,
 } from "../core/git.js";
-import { sweepAndWarn } from "../core/worktree-gc.js";
+import { getGitWorker, sweepAndWarnAsync } from "./git-worker.js";
 import {
   candidateMissingDependenciesAdvice,
   hasDependencyInputChange,
@@ -1308,7 +1304,7 @@ export class CloseOutOrchestrator {
    * is always checked first everywhere below, so a stopped job never gets a
    * failure badge.
    */
-  private timeoutJob(job: IntegrationJob): { ok: boolean; reason?: string } {
+  private async timeoutJob(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
     const timeoutMs = closeOutTimeoutMs(this.config);
     const reason = closeOutTimeoutReason(timeoutMs);
     this.logger?.integration(job.taskId, "error", "close-out hit its pipeline timeout", {
@@ -1317,7 +1313,7 @@ export class CloseOutOrchestrator {
       startedAt: job.startedAt,
       timeoutMs,
     });
-    return this.failOrReconcile(job, job.phase, reason);
+    return await this.failOrReconcile(job, job.phase, reason);
   }
 
   /** The `{ ok: false, timedOut: true }` phase result for an expired budget (#0573). */
@@ -1365,12 +1361,12 @@ export class CloseOutOrchestrator {
     return { ok: false, reason: CANCEL_REASON };
   }
 
-  private failOrReconcile(
+  private async failOrReconcile(
     job: IntegrationJob,
     failedPhase: JobPhase,
     reason: string | undefined,
     onRecorded?: () => void,
-  ): { ok: boolean; reason?: string } {
+  ): Promise<{ ok: boolean; reason?: string }> {
     // Ownership guard (#0736): a superseded run's failure belongs to the old
     // attempt, whose record is gone. Never tear down the replacement's
     // candidate or overwrite its job with `failed`.
@@ -1417,7 +1413,7 @@ export class CloseOutOrchestrator {
       this.config.cacheDir ?? ".repoos",
       job.taskId,
     );
-    preserveClosingTaskReviewStatusOnMain(this.config, job.taskId, this.getTask);
+    await preserveClosingTaskReviewStatusOnMain(this.config, job.taskId, this.getTask);
     // A budget-exhausted close-out is recorded as a `failed` job (so it stays
     // retryable) but reported as a distinct `timedOut` outcome (#0640): the
     // bell's advice differs from a real gate failure.
@@ -1765,7 +1761,7 @@ export class CloseOutOrchestrator {
 
     // No worktree to run against: let the normal flow report the real failure
     // ("feature branch … worktree not found") rather than guessing here.
-    const featureWtPath = worktreePathForBranch(root, featureBranch);
+    const featureWtPath = await getGitWorker(root).worktreePath(featureBranch);
     if (!featureWtPath) return null;
 
     const task = this.getTask?.(job.taskId);
@@ -2207,7 +2203,7 @@ export class CloseOutOrchestrator {
           })
         : true;
     const featureBranch = job.branch ?? job.taskId;
-    const featureWt = worktreePathForBranch(root, featureBranch);
+    const featureWt = await getGitWorker(root).worktreePath(featureBranch);
     let worktreeDirty = false;
     if (featureWt) {
       const por = await runGit(featureWt, ["status", "--porcelain"], 5_000);
@@ -2267,7 +2263,7 @@ export class CloseOutOrchestrator {
 
     const taskRecord = this.getTask?.(job.taskId);
     const featureBranch = job.branch ?? job.taskId;
-    const featureWtForToml = worktreePathForBranch(root, featureBranch);
+    const featureWtForToml = await getGitWorker(root).worktreePath(featureBranch);
     if (taskRecord && featureWtForToml) {
       const tomlGuard = await guardStrayRepoosTomlOnTaskBranch(
         featureWtForToml,
@@ -2346,7 +2342,7 @@ export class CloseOutOrchestrator {
 
     // Validate and record the feature branch SHA.
     const taskBranch = job.branch ?? job.taskId;
-    const taskWtPath = worktreePathForBranch(root, taskBranch);
+    const taskWtPath = await getGitWorker(root).worktreePath(taskBranch);
     let branchSha: string | null = null;
     if (taskWtPath) {
       const branchShaRes = await runGit(taskWtPath, ["rev-parse", "HEAD"], 4000);
@@ -2360,7 +2356,7 @@ export class CloseOutOrchestrator {
       // still needs its feature worktree and still fails with the actionable
       // "worktree not found" when it is genuinely missing, so non-hotfix
       // close-out behaviour is unchanged.
-      branchSha = branchCommit(root, taskBranch);
+      branchSha = await getGitWorker(root).branchCommit(taskBranch);
     }
     if (!branchSha) {
       return { ok: false, reason: `feature branch ${taskBranch} worktree not found` };
@@ -2500,7 +2496,7 @@ export class CloseOutOrchestrator {
   }> {
     const root = this.config.root;
     const branch = candidateBranchName(job.taskId);
-    const wtPath = worktreePathForBranch(root, branch);
+    const wtPath = await getGitWorker(root).worktreePath(branch);
     if (!wtPath) {
       return { ok: false, reason: "candidate worktree not found" };
     }
@@ -3455,7 +3451,7 @@ export class CloseOutOrchestrator {
         persistedJob?.branchSha ??
         job.handoffSha ??
         persistedJob?.handoffSha ??
-        branchCommit(root, featureBranch);
+        (await getGitWorker(root).branchCommit(featureBranch));
       const stamped = stampTaskDoneOnPublish(this.config, absPath, mergedCommit);
       if (!stamped?.changed) return;
       const rel = relative(root, absPath).split("\\").join("/");
@@ -3528,7 +3524,7 @@ export class CloseOutOrchestrator {
     const mainBranch = await resolveDefaultBranch(root);
 
     const branch = candidateBranchName(job.taskId);
-    const wtPath = worktreePathForBranch(root, branch);
+    const wtPath = await getGitWorker(root).worktreePath(branch);
     if (!wtPath) {
       return {
         ok: false,
@@ -3670,7 +3666,7 @@ export class CloseOutOrchestrator {
       // leaves main unchanged and blocks hotfix-branch cleanup. Switch to
       // main first so the merge, dirty check, and subsequent branch deletion
       // all target the correct branch.
-      const currentHead = currentBranch(root);
+      const currentHead = await getGitWorker(root).currentBranch();
       if (currentHead && currentHead !== mainBranch) {
         restoreBranch = currentHead;
         // A checkout writes the index, so it can lose the same race as the
@@ -3720,7 +3716,7 @@ export class CloseOutOrchestrator {
       }
       const publishTask = this.getTask?.(job.taskId);
       const publishFeatureBranch = job.branch ?? job.taskId;
-      const publishFeatureWt = worktreePathForBranch(root, publishFeatureBranch);
+      const publishFeatureWt = await getGitWorker(root).worktreePath(publishFeatureBranch);
       if (publishTask && publishFeatureWt) {
         const mainBranchAtPublish = await resolveDefaultBranch(root);
         const tomlGuard = await guardStrayRepoosTomlOnTaskBranch(
@@ -4078,7 +4074,11 @@ export class CloseOutOrchestrator {
       // reuses the same bounded retry. Fail-soft: the publish failure reason is
       // what the user sees either way.
       const branchToRestore = restoreBranch;
-      if (!mergedIntoMain && branchToRestore && currentBranch(root) === mainBranch) {
+      if (
+        !mergedIntoMain &&
+        branchToRestore &&
+        (await getGitWorker(root).currentBranch()) === mainBranch
+      ) {
         const restore = await retryOnGitLock(
           () => runGit(root, ["checkout", branchToRestore], 10_000),
           gitRunLockContention,
@@ -4108,7 +4108,7 @@ export class CloseOutOrchestrator {
       persistedJob?.branchSha ??
       job.handoffSha ??
       persistedJob?.handoffSha ??
-      branchCommit(root, featureBranch);
+      (await getGitWorker(root).branchCommit(featureBranch));
 
     // Candidate worktree + throwaway branch.
     this.removeCandidate(job.taskId);
@@ -4124,9 +4124,9 @@ export class CloseOutOrchestrator {
     // branch's COMMITS, so a refusal here means real bytes on disk that the
     // merge did not deliver. Keep the worktree, name the files, and ask a
     // human instead of deleting them silently.
-    const mainBranch = currentBranch(root) ?? "main";
+    const mainBranch = (await getGitWorker(root).currentBranch()) ?? "main";
     let removed = removeWorktree(root, featureBranch);
-    let stuck = removed ? null : worktreePathForBranch(root, featureBranch);
+    let stuck = removed ? null : await getGitWorker(root).worktreePath(featureBranch);
     let keptDirtyFiles: string[] = [];
     let couldNotReadWorktreeDirty = false;
     if (stuck) {
@@ -4151,7 +4151,7 @@ export class CloseOutOrchestrator {
       if (
         !couldNotReadWorktreeDirty &&
         keptDirtyFiles.length === 0 &&
-        isAncestor(root, featureBranch, mainBranch) === true &&
+        (await getGitWorker(root).isAncestor(root, featureBranch, mainBranch)) === true &&
         removeWorktree(root, featureBranch, { force: true })
       ) {
         stuck = null;
@@ -4192,7 +4192,7 @@ export class CloseOutOrchestrator {
         this.getTask?.(job.taskId)?.absPath ??
         findTaskFileById(root, this.config.workDir, job.taskId);
       if (absPath) {
-        markTaskReleased(this.config, absPath, mergedCommit);
+        await markTaskReleased(this.config, absPath, mergedCommit);
         // A worktree kept above holds uncommitted work the merge did NOT carry
         // (#0512). The close-out itself succeeded, so this is not a failure to
         // retry — it is a decision for a human, and the flag is how the board
@@ -4223,8 +4223,9 @@ export class CloseOutOrchestrator {
     // `repoos/integrate/*` candidates that failed jobs left behind (this
     // task's own were just removed above). Conservative — never touches
     // `feat/*`. Also logs a "run `repoos gc`" warning if the worktree count is
-    // over the advisory ceiling. Fail-soft and not awaited-critical.
-    sweepAndWarn(this.config, {
+    // over the advisory ceiling. The worker keeps its Git reads off the HTTP
+    // thread; the result remains fail-soft and not awaited-critical.
+    void sweepAndWarnAsync(this.config, {
       activeJobIds: new Set(
         this.coordinator
           .allJobs()

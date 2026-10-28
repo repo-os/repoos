@@ -6,16 +6,16 @@
  * Orphan detection: a live process not in the AgentRunner registry, or whose
  * ppid is no longer the server's pid, is marked orphaned.
  */
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { existsSync, readFileSync, realpathSync, writeFileSync, mkdirSync } from "node:fs";
 import { basename, join } from "node:path";
 import { cpus, totalmem, freemem, loadavg, platform } from "node:os";
-import { availableMemBytes } from "../core/sysmem.js";
-import { pressureSnapshotForDisplay, type PressureSnapshot } from "../core/pressure-guard.js";
-import { heavyJobCounts, localCheckLockRoot } from "../core/cross-process-slots.js";
+import { type PressureSnapshot } from "../core/pressure-guard.js";
+import { localCheckLockRoot } from "../core/cross-process-slots.js";
 import { registeredEngineerCount, type GlobalEngineerCount } from "../core/global-engineers.js";
 import type { RepoOSConfig } from "../core/types.js";
 import type { RunningAgentInfo } from "./agents.js";
+import { getGitWorker } from "./git-worker.js";
 
 export interface MachineInfo {
   cpuCount: number;
@@ -169,16 +169,12 @@ export interface OwnershipRecord {
 const OWNERSHIP_FILE = "repoos-ownership.json";
 const KB = 1024;
 
-function safeExecFileSync(cmd: string, args: string[]): string | null {
-  try {
-    return execFileSync(cmd, args, {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-      timeout: 5000,
-    });
-  } catch {
-    return null;
-  }
+function safeExecFile(cmd: string, args: string[]): Promise<string | null> {
+  return new Promise((resolve) => {
+    execFile(cmd, args, { encoding: "utf8", timeout: 5000 }, (error, stdout) =>
+      resolve(error ? null : stdout),
+    );
+  });
 }
 
 function parsePsLine(line: string): PsRecord | null {
@@ -290,12 +286,12 @@ export function classifyTopProcesses(
   return { byCpu, byMemory };
 }
 
-function sampleProcessListing(): ProcessListingRecord[] {
-  const output = safeExecFileSync("ps", ["ax", "-o", "pid=,ppid=,%cpu=,%mem=,rss=,comm="]);
+async function sampleProcessListing(): Promise<ProcessListingRecord[]> {
+  const output = await safeExecFile("ps", ["ax", "-o", "pid=,ppid=,%cpu=,%mem=,rss=,comm="]);
   return output ? parseProcessListing(output) : [];
 }
 
-function machineInfo(): MachineInfo {
+function machineInfo(availableMemBytes: number): MachineInfo {
   const freeMem = freemem();
   return {
     cpuCount: cpus().length,
@@ -304,7 +300,7 @@ function machineInfo(): MachineInfo {
     // Reclaimable memory includes free memory by definition, but the two are
     // sampled a moment apart (and on Linux libuv's freemem() is itself
     // MemAvailable), so a busy box can read available < free. Clamp.
-    availableMem: Math.max(availableMemBytes(), freeMem),
+    availableMem: Math.max(availableMemBytes, freeMem),
     loadavg: loadavg(),
     platform: platform(),
   };
@@ -319,7 +315,10 @@ const REPO_STATS_TTL_MS = 30_000;
  * the SSE loop calls this every 5s and these numbers change on the order of
  * commits, not seconds. Returns the last good value (or null) on git failure.
  */
-export function sampleRepoStats(root: string, worktreeWarnThreshold = 20): RepoStats | null {
+export async function sampleRepoStats(
+  root: string,
+  worktreeWarnThreshold = 20,
+): Promise<RepoStats | null> {
   const now = Date.now();
   if (
     repoStatsCache &&
@@ -328,9 +327,13 @@ export function sampleRepoStats(root: string, worktreeWarnThreshold = 20): RepoS
   ) {
     return { ...repoStatsCache.stats, worktreeWarnThreshold };
   }
-  const worktreeOut = safeExecFileSync("git", ["-C", root, "worktree", "list", "--porcelain"]);
-  const filesOut = safeExecFileSync("git", ["-C", root, "ls-files"]);
-  if (worktreeOut === null || filesOut === null) {
+  const worker = getGitWorker(root);
+  const [overview, filesRun, locRun] = await Promise.all([
+    worker.gitOverview(),
+    worker.runGit(root, ["ls-files"]),
+    worker.runGit(root, ["grep", "-I", "--count", "-e", ""]),
+  ]);
+  if (!overview.useGit || filesRun.status !== 0 || (locRun.status !== 0 && locRun.status !== 1)) {
     // Git unavailable or not a repo: keep serving a stale value for THIS root,
     // never another root's.
     return repoStatsCache?.root === root
@@ -340,18 +343,15 @@ export function sampleRepoStats(root: string, worktreeWarnThreshold = 20): RepoS
 
   // Empty pattern matches every line; -I skips binary files. One spawn yields
   // `path:<linecount>` per text file.
-  const locOut = safeExecFileSync("git", ["-C", root, "grep", "-I", "--count", "-e", ""]);
   let linesOfCode = 0;
-  if (locOut !== null) {
-    for (const line of locOut.split("\n")) {
-      const m = line.match(/:(\d+)$/);
-      if (m) linesOfCode += Number(m[1]);
-    }
+  for (const line of locRun.stdout.split("\n")) {
+    const m = line.match(/:(\d+)$/);
+    if (m) linesOfCode += Number(m[1]);
   }
 
   const stats: RepoStats = {
-    worktrees: (worktreeOut.match(/^worktree /gm) ?? []).length,
-    trackedFiles: filesOut.split("\n").filter(Boolean).length,
+    worktrees: overview.worktrees.size,
+    trackedFiles: filesRun.stdout.split("\n").filter(Boolean).length,
     linesOfCode,
     worktreeWarnThreshold,
   };
@@ -359,10 +359,10 @@ export function sampleRepoStats(root: string, worktreeWarnThreshold = 20): RepoS
   return stats;
 }
 
-function sampleProcesses(pids: number[]): PsRecord[] {
+async function sampleProcesses(pids: number[]): Promise<PsRecord[]> {
   if (pids.length === 0) return [];
   const pidArgs = pids.map(String);
-  const output = safeExecFileSync("ps", [
+  const output = await safeExecFile("ps", [
     "-o",
     "pid=,ppid=,%cpu=,%mem=,rss=,etime=",
     "-p",
@@ -546,14 +546,14 @@ const SERVE_SCAN_TTL_MS = 20_000;
  * Census live `repoos serve` processes. Cached — `ps ax` lists every process on
  * the machine, which is much heavier than the targeted per-PID sample.
  */
-export function scanServeProcesses(
+export async function scanServeProcesses(
   serverPid: number,
   knownPids: Set<number>,
   ownRoot?: string,
-): ServeScan | null {
+): Promise<ServeScan | null> {
   const now = Date.now();
   if (serveScanCache && now - serveScanCache.at < SERVE_SCAN_TTL_MS) return serveScanCache.scan;
-  const output = safeExecFileSync("ps", ["ax", "-o", "pid=,ppid=,command="]);
+  const output = await safeExecFile("ps", ["ax", "-o", "pid=,ppid=,command="]);
   if (output === null) return serveScanCache?.scan ?? null;
   const scan = parseServeScan(
     output,
@@ -588,20 +588,23 @@ export function resetServeScanCache(): void {
  * the process-group fix in reload.ts is the more targeted root-cause fix,
  * tracked separately.
  */
-export function reapStrayServeProcesses(
+export async function reapStrayServeProcesses(
   serverPid: number,
   knownPids: Set<number>,
   kill: (pid: number, signal: string) => void = process.kill.bind(process),
-  scan?: (serverPid: number, knownPids: Set<number>) => ServeScan | null,
+  scan?: (
+    serverPid: number,
+    knownPids: Set<number>,
+  ) => ServeScan | null | Promise<ServeScan | null>,
   ownRoot?: string,
-): number {
+): Promise<number> {
   const doScan =
     scan ??
-    ((p: number, k: Set<number>) => {
+    (async (p: number, k: Set<number>) => {
       resetServeScanCache();
-      return scanServeProcesses(p, k, ownRoot);
+      return await scanServeProcesses(p, k, ownRoot);
     });
-  const result = doScan(serverPid, knownPids);
+  const result = await doScan(serverPid, knownPids);
   if (!result) return 0;
   let reaped = 0;
   for (const p of result.processes) {
@@ -664,9 +667,9 @@ export interface SampleSystemOptions {
  * Sample the system: machine facts, RepoOS process totals, and a per-process
  * breakdown with orphan detection. One `ps` call covers all tracked + agent PIDs.
  */
-export function sampleSystem(opts: SampleSystemOptions): SystemStats {
-  const machine = machineInfo();
+export async function sampleSystem(opts: SampleSystemOptions): Promise<SystemStats> {
   const serverPid = opts.serverPid;
+  const workerRoot = opts.root ?? opts.config?.root ?? process.cwd();
 
   const agentPids = new Set(opts.runningAgents.map((a) => a.pid).filter((p) => p > 0));
   const idByPid = new Map<number, string>();
@@ -679,7 +682,19 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
   const ownershipByPid = new Map<number, OwnershipRecord>();
   for (const o of ownership) ownershipByPid.set(o.pid, o);
 
-  const records = sampleProcesses(allPids);
+  const knownPids = new Set(allPids);
+  const orphanPids = [...ownershipByPid.keys()].filter((pid) => !knownPids.has(pid));
+  const [records, listing, serve, repo, resources] = await Promise.all([
+    sampleProcesses([...allPids, ...orphanPids]),
+    sampleProcessListing(),
+    scanServeProcesses(serverPid, new Set(opts.knownServePids ?? []), opts.root),
+    opts.root ? sampleRepoStats(opts.root, opts.worktreeWarnThreshold) : Promise.resolve(null),
+    getGitWorker(workerRoot).resourceSnapshot(
+      opts.config,
+      localCheckLockRoot(workerRoot, opts.config?.cacheDir ?? ".repoos"),
+    ),
+  ]);
+  const machine = machineInfo(resources.availableMemBytes);
   const psByPid = new Map<number, PsRecord>();
   for (const r of records) psByPid.set(r.pid, r);
 
@@ -712,12 +727,10 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
   // Discover orphaned RepoOS processes: PIDs that are NOT in the current
   // running registry but WERE persisted as RepoOS-owned. Also include
   // REGISTERED agents whose ppid is no longer the server.
-  const seenPids = new Set(allPids);
-  for (const [pid, owned] of ownershipByPid) {
-    if (seenPids.has(pid)) continue;
-    if (!isProcessAlive(pid)) continue;
-    const ps = sampleSingleProcess(pid);
-    if (!ps) continue;
+  for (const pid of orphanPids) {
+    const ps = psByPid.get(pid);
+    const owned = ownershipByPid.get(pid);
+    if (!ps || !owned) continue;
     const memBytes = ps.rssKB * KB;
     totalCpu += ps.cpuPercent;
     totalMem += memBytes;
@@ -739,13 +752,12 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
     return b.cpuPercent - a.cpuPercent;
   });
 
-  const serve = scanServeProcesses(serverPid, new Set(opts.knownServePids ?? []), opts.root);
-  const knownPids = new Set<number>([serverPid, ...agentPids]);
-  for (const o of ownershipByPid.keys()) knownPids.add(o);
-  for (const p of serve?.processes ?? []) knownPids.add(p.pid);
+  const processOwners = new Set<number>([serverPid, ...agentPids]);
+  for (const pid of ownershipByPid.keys()) processOwners.add(pid);
+  for (const p of serve?.processes ?? []) processOwners.add(p.pid);
   const topProcesses = classifyTopProcesses(
-    sampleProcessListing(),
-    knownPids,
+    listing,
+    processOwners,
     Math.max(1, Math.min(50, opts.topLimit ?? 10)),
   );
 
@@ -758,11 +770,9 @@ export function sampleSystem(opts: SampleSystemOptions): SystemStats {
     },
     processes,
     serve,
-    repo: opts.root ? sampleRepoStats(opts.root, opts.worktreeWarnThreshold) : null,
-    pressure: pressureSnapshotForDisplay(opts.config),
-    heavyJobs: heavyJobCounts(
-      localCheckLockRoot(opts.root ?? opts.config?.root ?? ".", opts.config?.cacheDir ?? ".repoos"),
-    ),
+    repo,
+    pressure: resources.pressure,
+    heavyJobs: resources.heavyJobs,
     topProcesses,
     globalEngineers: opts.root ? registeredEngineerCount(opts.root) : null,
     serverPid,
@@ -779,24 +789,12 @@ function isProcessAlive(pid: number): boolean {
   }
 }
 
-function sampleSingleProcess(pid: number): PsRecord | null {
-  const output = safeExecFileSync("ps", [
-    "-o",
-    "pid=,ppid=,%cpu=,%mem=,rss=,etime=",
-    "-p",
-    String(pid),
-  ]);
-  if (!output) return null;
-  const records = parsePsOutput(output);
-  return records[0] ?? null;
-}
-
 /**
  * True when the current platform can run the `ps` command with the expected
  * flags (pid=,ppid=,%cpu=,%mem=,rss=,etime=). Windows `ps` (PowerShell alias)
  * does not support these flags, so per-process stats are unavailable there.
  */
-export function psAvailable(): boolean {
+export async function psAvailable(): Promise<boolean> {
   if (platform() === "win32") return false;
-  return safeExecFileSync("ps", ["-o", "pid=", "-p", String(process.pid)]) !== null;
+  return (await safeExecFile("ps", ["-o", "pid=", "-p", String(process.pid)])) !== null;
 }

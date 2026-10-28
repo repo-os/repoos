@@ -43,7 +43,7 @@ describe("UI handoff verification gate (#0680)", () => {
     for (const t of temps.splice(0)) rmSync(t, { recursive: true, force: true });
   });
 
-  it("uses an existing manual shot as the refresh plan when no declaration or path plan exists", () => {
+  it("uses an existing manual shot as the refresh plan when no declaration or path plan exists", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-uigate-manual-refresh-"));
     temps.push(root);
     const config = {
@@ -77,7 +77,7 @@ describe("UI handoff verification gate (#0680)", () => {
         },
       ],
     } as ReturnType<typeof shotStore.localShotStore>);
-    const plan = shotCapture.planAutoCapture(config, task, { forceRefresh: true });
+    const plan = await shotCapture.planAutoCapture(config, task, { forceRefresh: true });
     expect(plan).toMatchObject({
       entries: [{ target: "web", route: "/settings?tab=general", label: "Settings view" }],
     });
@@ -396,7 +396,7 @@ describe("UI handoff verification gate (#0680)", () => {
     } as ReturnType<typeof shotStore.localShotStore>);
     const planSpy = vi
       .spyOn(shotCapture, "planAutoCapture")
-      .mockImplementation((_config, _task, opts) =>
+      .mockImplementation(async (_config, _task, opts) =>
         opts?.forceRefresh
           ? {
               entries: [
@@ -503,7 +503,7 @@ describe("UI handoff verification gate (#0680)", () => {
       body: "",
     } as Task;
     writeFileSync(task.absPath, "tracked task contents\n");
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       entries: [
         {
           target: "web",
@@ -578,7 +578,7 @@ describe("UI handoff verification gate (#0680)", () => {
       area: "web",
       body: "",
     } as Task;
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       entries: [
         {
           target: "web",
@@ -636,7 +636,7 @@ describe("UI handoff verification gate (#0680)", () => {
       area: "web",
       body: "",
     } as Task;
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       entries: [
         {
           target: "web",
@@ -704,7 +704,7 @@ describe("UI handoff verification gate (#0680)", () => {
       steps: [{ waitFor: ".agent-row" }],
       provenance: { kind: "declared" as const, label: "Agents tab" },
     };
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       entries: [entry],
       errors: [],
       skips: [],
@@ -770,7 +770,7 @@ describe("UI handoff verification gate (#0680)", () => {
       area: "web",
       body: "",
     } as Task;
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       entries: [
         {
           target: "web",
@@ -827,7 +827,7 @@ describe("UI handoff verification gate (#0680)", () => {
       area: "web",
       body: "",
     } as Task;
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       entries: [
         {
           target: "web",
@@ -919,7 +919,7 @@ describe("UI handoff verification gate (#0680)", () => {
           `shot #${i + 3}: "${entry.label}" — the declared shot could not be captured: ` +
           'preview for target "web" did not start: port busy',
       );
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       entries: shots,
       errors: uncapturable,
       skips: [],
@@ -988,7 +988,7 @@ describe("UI handoff verification gate (#0680)", () => {
       area: "web",
       body: "",
     } as Task;
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       entries: [
         {
           target: "web",
@@ -1109,7 +1109,7 @@ describe("UI handoff verification gate (#0680)", () => {
       area: "web",
       body: "",
     } as Task;
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       entries: [
         {
           target: "web",
@@ -1181,7 +1181,7 @@ describe("UI handoff verification gate (#0680)", () => {
       area: "web",
       body: "",
     } as Task;
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       entries: [
         {
           target: "web",
@@ -1416,7 +1416,7 @@ describe("handoff tree identity (#0755)", () => {
       area: "web",
       body: "",
     } as Task;
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       entries: [
         {
           target: "web",
@@ -1538,9 +1538,9 @@ describe("command-target capture evidence (#0765)", () => {
     expect(cmd?.shots[0]?.size).toBeGreaterThan(0);
   });
 
-  it("classifies browser, command, and none", () => {
+  it("classifies browser, command, and none", async () => {
     const { config, task } = commandRepo();
-    expect(taskUiVerificationMode(config, task)).toBe("command");
+    expect(await taskUiVerificationMode(config, task)).toBe("command");
 
     // A web declaration resolves the web target.
     const webConfig = {
@@ -1558,10 +1558,10 @@ describe("command-target capture evidence (#0765)", () => {
       area: "web",
       body: '## Shots\n\n```json\n[{"target":"web","route":"/","label":"Home"}]\n```\n',
     } as Task;
-    expect(taskUiVerificationMode(webConfig, webTask)).toBe("browser");
+    expect(await taskUiVerificationMode(webConfig, webTask)).toBe("browser");
 
     const noneTask = { ...task, id: "0765none", body: "## Problem\n\nprose only" } as Task;
-    expect(taskUiVerificationMode(config, noneTask)).toBe("none");
+    expect(await taskUiVerificationMode(config, noneTask)).toBe("none");
   });
 });
 
@@ -1616,7 +1616,7 @@ describe("docs shot skip copy and help link (#0819)", () => {
       body: "",
     } as Task;
 
-    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+    vi.spyOn(shotCapture, "planAutoCapture").mockResolvedValue({
       entries: [{ target: "web", route: "/", label: "Board", provenance: { kind: "auto" } }],
       errors: [],
       skips: ["Docs site skipped: no docs shot declared"],

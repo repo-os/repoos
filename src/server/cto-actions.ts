@@ -110,7 +110,7 @@ function taskFromIndex(deps: CtoActionDeps, taskId: string): Task | null {
   return deps.index.getTask(taskId) ?? null;
 }
 
-function isRestartCandidate(deps: CtoActionDeps, task: Task): string | null {
+async function isRestartCandidate(deps: CtoActionDeps, task: Task): Promise<string | null> {
   if (task.status !== "active") return "task is not active";
   if (task.needsInput) return "task needs human input";
   if (deps.runner.isRunning(task.id)) return "agent is running";
@@ -119,7 +119,7 @@ function isRestartCandidate(deps: CtoActionDeps, task: Task): string | null {
     return "handoff is in progress";
   }
   const now = Date.now();
-  if (hasRecentWorktreeActivity(deps.config.root, task.branch, STALENESS_MS, now)) {
+  if (await hasRecentWorktreeActivity(deps.config.root, task.branch, STALENESS_MS, now)) {
     return "worktree still has recent activity";
   }
   if (!isStuckActiveTask(task.body, STALENESS_MS, now)) {
@@ -174,7 +174,7 @@ export async function runCtoSafeAction(
 
   if (action === "restart-stalled-agent") {
     clearExpiredHoldPauses([task], deps.runner);
-    const block = isRestartCandidate(deps, task);
+    const block = await isRestartCandidate(deps, task);
     if (block) {
       return { ok: false, reason: `Cannot restart engineer: ${block}` };
     }
@@ -284,7 +284,7 @@ export async function runCtoMonitorSafeActions(deps: CtoActionDeps): Promise<voi
       if (task.isArchived || task.needsInput) continue;
       // #0960: a held task is inert for all automation — never restart it.
       if (isHoldActive(task)) continue;
-      if (isRestartCandidate(deps, task) !== null) continue;
+      if ((await isRestartCandidate(deps, task)) !== null) continue;
       const gate = checkAllowlistAndRate(deps, "restart-stalled-agent", task.id);
       if (gate) continue;
       const result = await runCtoSafeAction(deps, "restart-stalled-agent", {

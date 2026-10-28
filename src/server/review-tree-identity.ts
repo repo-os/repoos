@@ -4,8 +4,8 @@
  * bookkeeping-aware evidence model from #0861 / #0734.
  */
 import type { RepoOSConfig, Task } from "../core/types.js";
-import { shortHeadOf, worktreePathForBranch } from "../core/git.js";
 import { parseReviewVerdict, type ReviewVerdict } from "../core/review-verdict.js";
+import { getGitWorker } from "./git-worker.js";
 import { readUiHandoffGateEvidence } from "./ui-handoff-gate.js";
 
 export function hasOpenReviewFindings(verdict: ReviewVerdict | null): boolean {
@@ -30,9 +30,14 @@ export function formatReviewTreeIdentity(
 }
 
 /** Current tree identity for a task's worktree + recorded handoff evidence. */
-export function reviewTreeIdentityForTask(config: RepoOSConfig, task: Task): string | null {
-  const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
-  const head = shortHeadOf(worktree ?? config.root);
+export async function reviewTreeIdentityForTask(
+  config: RepoOSConfig,
+  task: Task,
+): Promise<string | null> {
+  const worker = getGitWorker(config.root);
+  const worktree = task.branch ? await worker.worktreePath(task.branch) : null;
+  const headResult = await worker.runGit(worktree ?? config.root, ["rev-parse", "--short", "HEAD"]);
+  const head = headResult.status === 0 ? headResult.stdout.trim() : null;
   const evidence = readUiHandoffGateEvidence(config, task.id);
   return formatReviewTreeIdentity(head, evidence?.sourceIdentity ?? null);
 }
@@ -67,13 +72,13 @@ export function openFindingsSameTreeDecision(
   return { action: "run" };
 }
 
-export function decideAutomaticReview(
+export async function decideAutomaticReview(
   config: RepoOSConfig,
   task: Task,
   report: ReviewGuardReport | null,
   opts: { manual?: boolean },
-): AutomaticReviewDecision {
-  return openFindingsSameTreeDecision(report, reviewTreeIdentityForTask(config, task), opts);
+): Promise<AutomaticReviewDecision> {
+  return openFindingsSameTreeDecision(report, await reviewTreeIdentityForTask(config, task), opts);
 }
 
 export function openFindingsVerdict(markdown: string): ReviewVerdict | null {

@@ -144,7 +144,7 @@ function makeCtx(
       getTasks: () => [readTaskFile(fx)],
       applyFileChange: () => {},
       consumeRequirementsNotice: () => null,
-      refreshBranches: () => {},
+      refreshBranchesAsync: async () => {},
     } as any,
     indexReady: Promise.resolve(),
     reviews: { isRunning: () => false, cancel: vi.fn() } as any,

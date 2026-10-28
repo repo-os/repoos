@@ -12,7 +12,11 @@ import { previewTargetOptions } from "../preview.js";
 import { canaryRelPath } from "../../core/canary.js";
 import { readCanaryCounter } from "../../core/canary-repo.js";
 import { projectDisplayName, projectDisplayBranch } from "../../core/config.js";
-import { taskDependencyBlockers } from "../../core/task-dependencies.js";
+import {
+  storiesDirOf,
+  listStoryDefinitionsFromCommits,
+} from "../../core/story-definition-files.js";
+import { getGitWorker } from "../git-worker.js";
 
 // These will be passed via context in server.ts during integration
 let loadedHash: string;
@@ -91,6 +95,7 @@ export const getIndex: RouteHandler = async (ctx, _req, res) => {
   const { config, index, reviews, indexReady } = ctx;
   await indexReady;
   const snapshot = index.snapshot();
+  const blockers = await getGitWorker(config.root).dependencyBlockers(config.root, snapshot.tasks);
   const withReviewStatus = (t: any) => ({
     ...withPmWorking(t),
     automaticReview: {
@@ -106,7 +111,7 @@ export const getIndex: RouteHandler = async (ctx, _req, res) => {
     ...snapshot,
     tasks: snapshot.tasks.map((task) => ({
       ...withReviewStatus(task),
-      blockedBy: taskDependencyBlockers(config.root, task, snapshot.tasks),
+      blockedBy: blockers.get(task.id) ?? [],
     })),
   });
 };
@@ -119,7 +124,17 @@ export const getBoard: RouteHandler = async (ctx, _req, res) => {
   // boot readiness so a sharp reconnect can never be answered from a stale or
   // partially-built index — the snap must reflect disk before it is served.
   await indexReady;
-  const snapshot = index.boardSnapshot();
+  const tasks = index.getTasks();
+  const worker = getGitWorker(config.root);
+  const [blockers, storyDefinitions] = await Promise.all([
+    worker.dependencyBlockers(config.root, tasks),
+    config.stories?.enabled === true
+      ? worker
+          .directoryCommits(config.root, storiesDirOf(config))
+          .then((commits) => listStoryDefinitionsFromCommits(config, commits))
+      : Promise.resolve(undefined),
+  ]);
+  const snapshot = index.boardSnapshot({ blockers, storyDefinitions });
   const withReviewStatus = (t: any) => ({
     ...withPmWorking(t),
     automaticReview: {
@@ -148,9 +163,9 @@ export const getSkills: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, listSkills(config));
 };
 
-export const getSystem: RouteHandler = (ctx, _req, res) => {
+export const getSystem: RouteHandler = async (ctx, _req, res) => {
   const { config, runner } = ctx;
-  const stats = sampleSystem({
+  const stats = await sampleSystem({
     serverPid: process.pid,
     cacheDir: join(config.root, config.cacheDir),
     runningAgents: runner.running(),

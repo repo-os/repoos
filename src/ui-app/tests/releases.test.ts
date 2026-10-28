@@ -129,7 +129,7 @@ describe("feature releases", () => {
     expect(nextReleaseVersion("not-a-version")).toBeNull();
   });
 
-  it("persists a release marker only through successful completion", () => {
+  it("persists a release marker only through successful completion", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-release-"));
     try {
       const work = join(root, "work");
@@ -140,30 +140,32 @@ describe("feature releases", () => {
       expect(ordinaryDone.releasedAt).toBeNull();
 
       patchTaskFile(config(root), pending.absPath, { status: "review" });
-      const released = markTaskReleased(config(root), pending.absPath);
+      const released = await markTaskReleased(config(root), pending.absPath);
       expect(released.status).toBe("done");
       expect(released.releasedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       expect(releasedAtFromActivity(readFileSync(pending.absPath, "utf8"))).toBe(
         released.releasedAt,
       );
-      expect(markTaskReleased(config(root), pending.absPath).releasedAt).toBe(released.releasedAt);
+      expect((await markTaskReleased(config(root), pending.absPath)).releasedAt).toBe(
+        released.releasedAt,
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
 
-  it("backfills merged_commit on an already-done task when proof is supplied (#0711)", () => {
+  it("backfills merged_commit on an already-done task when proof is supplied (#0711)", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-release-merged-"));
     try {
       const work = join(root, "work");
       mkdirSync(work);
       const pending = task(root, "0001");
       patchTaskFile(config(root), pending.absPath, { status: "review" });
-      markTaskReleased(config(root), pending.absPath);
+      await markTaskReleased(config(root), pending.absPath);
       expect(readFileSync(pending.absPath, "utf8")).not.toContain("merged_commit:");
 
       const proof = "a".repeat(40);
-      const backfilled = markTaskReleased(config(root), pending.absPath, proof);
+      const backfilled = await markTaskReleased(config(root), pending.absPath, proof);
       expect(backfilled.mergedCommit).toBe(proof);
       expect(readFileSync(pending.absPath, "utf8")).toContain(`merged_commit: ${proof}`);
       expect((readFileSync(pending.absPath, "utf8").match(/release:success/g) ?? []).length).toBe(
@@ -174,7 +176,7 @@ describe("feature releases", () => {
     }
   });
 
-  it("releases again after a task is legitimately reopened post-release (#0195)", () => {
+  it("releases again after a task is legitimately reopened post-release (#0195)", async () => {
     // A task that goes `done` with no real work, then gets manually reopened
     // (done→ready, a real workflow — see docs/close-out-pipeline.md) and
     // redone, must release cleanly a second time. The Activity log is
@@ -187,7 +189,7 @@ describe("feature releases", () => {
       const pending = task(root, "0001");
 
       patchTaskFile(config(root), pending.absPath, { status: "review" });
-      const firstRelease = markTaskReleased(config(root), pending.absPath);
+      const firstRelease = await markTaskReleased(config(root), pending.absPath);
       expect(firstRelease.status).toBe("done");
 
       // Reopened: done→ready→active→review, real work happens, close-out runs
@@ -207,7 +209,7 @@ describe("feature releases", () => {
       // truthy even though the task is not currently done.
       expect(reopened.releasedAt).toBeTruthy();
 
-      const secondRelease = markTaskReleased(config(root), pending.absPath);
+      const secondRelease = await markTaskReleased(config(root), pending.absPath);
       expect(secondRelease.status).toBe("done");
       // ISO timestamps are second-precision, so same-second releases in a
       // fast test can collide — assert on the write itself instead: a SECOND

@@ -46,9 +46,8 @@ import {
   linkInheritedEnv,
   mainCheckoutRoot,
   removeDetachedWorktree,
-  runGit,
-  worktreePathForBranch,
 } from "../core/git.js";
+import { getGitWorker } from "./git-worker.js";
 import { isEvidenceCurrent } from "./evidence-current.js";
 import { isShotCaptureUnavailable } from "../commands/shot.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/ui-harness.js";
@@ -264,10 +263,13 @@ export function readUiHandoffGateEvidence(
 }
 
 /** Whether this task should run the gate during handoff. */
-export function taskNeedsUiHandoffVerification(config: RepoOSConfig, task: Task): boolean {
+export async function taskNeedsUiHandoffVerification(
+  config: RepoOSConfig,
+  task: Task,
+): Promise<boolean> {
   const policy = resolvedUiVerification(config);
   if (!policy.enabled) return false;
-  const plan = planAutoCapture(config, task);
+  const plan = await planAutoCapture(config, task);
   if ("reason" in plan) {
     // #0866: a declared shot that cannot render on its target is missing
     // evidence, so the gate MUST run and report it — not skip as "no plan".
@@ -289,10 +291,13 @@ export function taskNeedsUiHandoffVerification(config: RepoOSConfig, task: Task)
  */
 export type UiVerificationMode = "browser" | "command" | "none";
 
-export function taskUiVerificationMode(config: RepoOSConfig, task: Task): UiVerificationMode {
+export async function taskUiVerificationMode(
+  config: RepoOSConfig,
+  task: Task,
+): Promise<UiVerificationMode> {
   const policy = resolvedUiVerification(config);
   if (!policy.enabled) return "none";
-  const plan = planAutoCapture(config, task);
+  const plan = await planAutoCapture(config, task);
   if ("reason" in plan) return "none";
   const commandTargets = new Set((config.shot?.targets ?? []).map((t) => t.name));
   let hasWeb = false;
@@ -306,8 +311,11 @@ export function taskUiVerificationMode(config: RepoOSConfig, task: Task): UiVeri
 }
 
 /** True when browser page verification applies — the mechanical console check's trigger. */
-export function taskNeedsBrowserUiVerification(config: RepoOSConfig, task: Task): boolean {
-  return taskUiVerificationMode(config, task) === "browser";
+export async function taskNeedsBrowserUiVerification(
+  config: RepoOSConfig,
+  task: Task,
+): Promise<boolean> {
+  return (await taskUiVerificationMode(config, task)) === "browser";
 }
 
 /** A preflight outcome: ok (go ahead), block (fail with detail), or skip. */
@@ -363,7 +371,7 @@ export async function preflightUiEvidence(
       detail: `ui evidence preflight: declared assertions are malformed — ${assertParseErrors.join("; ")}`,
     };
   }
-  const plan = planAutoCapture(config, task);
+  const plan = await planAutoCapture(config, task);
   if ("reason" in plan) {
     if (plan.blockingErrors?.length) {
       return {
@@ -407,9 +415,11 @@ export async function preflightUiEvidence(
   }
   // Stale-evidence note (never blocking): the capture below will refresh it.
   const planFingerprint = shotPlanFingerprint(plan.entries);
-  const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+  const worktree = task.branch ? await getGitWorker(config.root).worktreePath(task.branch) : null;
   const sourceIdentity = worktree
-    ? (await runGit(worktree, ["rev-parse", "--short", "HEAD"], 10_000)).stdout.trim()
+    ? (
+        await getGitWorker(config.root).runGit(worktree, ["rev-parse", "--short", "HEAD"], 10_000)
+      ).stdout.trim()
     : "";
   const prior = localShotStore(config, task.id)
     .list()
@@ -646,7 +656,7 @@ export async function runUiHandoffGate(
   // not pre-empt it. Still honor the repository-wide disabled policy.
   if (
     !resolvedUiVerification(config).enabled ||
-    (!deps.forceRefresh && !taskNeedsUiHandoffVerification(config, task))
+    (!deps.forceRefresh && !(await taskNeedsUiHandoffVerification(config, task)))
   ) {
     return { ok: true, skipped: true, detail: "ui verification not required for this task" };
   }
@@ -656,7 +666,8 @@ export async function runUiHandoffGate(
   // detached checkout cannot re-diff changed paths, so a runner-planned
   // verification could differ from — or skip — what local capture does (#0854).
   const plan: CanonicalCapturePlan | { reason: string; blockingErrors?: string[] } =
-    deps.canonicalPlan ?? planAutoCapture(config, task, { forceRefresh: deps.forceRefresh });
+    deps.canonicalPlan ??
+    (await planAutoCapture(config, task, { forceRefresh: deps.forceRefresh }));
   if ("reason" in plan) {
     if (plan.blockingErrors?.length) {
       const detail = `ui verification failed: declared shot cannot render — ${plan.blockingErrors.join("; ")}`;
@@ -686,8 +697,13 @@ export async function runUiHandoffGate(
     try {
       const canonical = canonicalCaptureContext(config, task, plan);
       const sourceWorktree =
-        (task.branch ? worktreePathForBranch(config.root, task.branch) : null) ?? config.root;
-      const head = await runGit(sourceWorktree, ["rev-parse", "HEAD"], 10_000);
+        (task.branch ? await getGitWorker(config.root).worktreePath(task.branch) : null) ??
+        config.root;
+      const head = await getGitWorker(config.root).runGit(
+        sourceWorktree,
+        ["rev-parse", "HEAD"],
+        10_000,
+      );
       const request =
         task.branch && head.status === 0
           ? {
@@ -809,10 +825,14 @@ export async function runUiHandoffGate(
   // and the automatic capture's reuse rule agrees with it.
   const planFingerprint = shotPlanFingerprint(plan.entries);
   const sourceWorktree =
-    (task.branch ? worktreePathForBranch(config.root, task.branch) : null) ?? config.root;
+    (task.branch ? await getGitWorker(config.root).worktreePath(task.branch) : null) ?? config.root;
   let sourceIdentity = deps.sourceIdentity ?? "";
   if (!sourceIdentity) {
-    const head = await runGit(sourceWorktree, ["rev-parse", "--short", "HEAD"], 10_000);
+    const head = await getGitWorker(config.root).runGit(
+      sourceWorktree,
+      ["rev-parse", "--short", "HEAD"],
+      10_000,
+    );
     if (head.status === 0) sourceIdentity = head.stdout.trim();
   }
   const evidenceDir = taskEvidenceDir(config, task.id);
@@ -1048,7 +1068,11 @@ export async function runUiHandoffGate(
   let commandRoot = sourceWorktree;
   let detachedCommandPath: string | undefined;
   if (deps.forceRefresh && commandEntries.length > 0) {
-    const fullHead = await runGit(sourceWorktree, ["rev-parse", "HEAD"], 10_000);
+    const fullHead = await getGitWorker(config.root).runGit(
+      sourceWorktree,
+      ["rev-parse", "HEAD"],
+      10_000,
+    );
     if (fullHead.status !== 0 || !fullHead.stdout.trim()) {
       return {
         ok: false,

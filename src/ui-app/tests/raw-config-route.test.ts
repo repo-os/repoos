@@ -50,7 +50,7 @@ function makeCtx(root: string): { ctx: RouteContext; refreshAll: ReturnType<type
   const ctx = {
     config,
     repoos: { config: {} },
-    index: { refreshAll },
+    index: { refreshAll, refreshAllAsync: refreshAll },
   } as unknown as RouteContext;
   return { ctx, refreshAll };
 }

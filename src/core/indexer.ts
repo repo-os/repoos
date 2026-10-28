@@ -29,6 +29,8 @@ import {
   currentBranch,
   emptyGitInfo,
   resolveWorktreeStatuses,
+  repoGitOverviewAsync,
+  type RepoGitOverview,
   type WorktreeDirtyCache,
 } from "./git.js";
 
@@ -57,11 +59,12 @@ function statusRank(s: Status): number {
   return STATUSES.indexOf(s);
 }
 
-export function buildIndex(config: RepoOSConfig): RepoIndex {
+/** `skipGit` is for metadata consumers; returned Git fields stay empty. */
+export function buildIndex(config: RepoOSConfig, opts: { skipGit?: boolean } = {}): RepoIndex {
   const workPath = join(config.root, config.workDir);
   const files = walkFiles(workPath, config.taskExtensions);
 
-  const useGit = isGitRepo(config.root);
+  const useGit = !opts.skipGit && isGitRepo(config.root);
   const branches = useGit ? localBranches(config.root) : new Set<string>();
   const worktrees = useGit ? worktreePaths(config.root) : new Map<string, string>();
   // Fetched once and passed to every `worktreeStatus` call below — otherwise
@@ -161,17 +164,20 @@ export function buildIndex(config: RepoOSConfig): RepoIndex {
  * `LiveIndex.reconcileWorktreeStatus()` a moment later, trading a few seconds
  * of a possibly-stale "uncommitted changes" dot for a fast first paint.
  */
-export async function buildIndexAsync(
+export interface AsyncIndexBuild {
+  index: RepoIndex;
+  git: RepoGitOverview;
+}
+
+export async function buildIndexDetailedAsync(
   config: RepoOSConfig,
   opts: { fastWorktreeStatus?: boolean } = {},
-): Promise<RepoIndex> {
+): Promise<AsyncIndexBuild> {
   const workPath = join(config.root, config.workDir);
   const files = walkFiles(workPath, config.taskExtensions);
 
-  const useGit = isGitRepo(config.root);
-  const branches = useGit ? localBranches(config.root) : new Set<string>();
-  const worktrees = useGit ? worktreePaths(config.root) : new Map<string, string>();
-  const baseBranch = useGit ? currentBranch(config.root) : null;
+  const overview = await repoGitOverviewAsync(config.root);
+  const { useGit, branches, worktrees, baseBranch } = overview;
   const lastCommits = useGit
     ? await lastCommitsForDirAsync(config.root, config.workDir)
     : new Map<string, { subject: string | null; date: string | null }>();
@@ -214,7 +220,13 @@ export async function buildIndexAsync(
     const { statuses, cache, changed } = await resolveWorktreeStatuses(
       config.root,
       branchesWithTasks,
-      { baseBranch, cache: dirtyCache, skipStatus: opts.fastWorktreeStatus },
+      {
+        baseBranch,
+        cache: dirtyCache,
+        skipStatus: opts.fastWorktreeStatus,
+        worktrees,
+        aheadCounts: overview.aheadCounts,
+      },
     );
     if (changed) writeWorktreeDirtyCache(config, cache);
 
@@ -247,7 +259,7 @@ export async function buildIndexAsync(
   // Archived tasks are parked (#0657) — see buildIndex.
   for (const t of tasks) if (!t.isArchived) counts[t.status]++;
 
-  return {
+  const index: RepoIndex = {
     version: INDEX_VERSION,
     generatedAt: new Date().toISOString(),
     root: config.root,
@@ -255,6 +267,14 @@ export async function buildIndexAsync(
     tasks,
     counts,
   };
+  return { index, git: overview };
+}
+
+export async function buildIndexAsync(
+  config: RepoOSConfig,
+  opts: { fastWorktreeStatus?: boolean } = {},
+): Promise<RepoIndex> {
+  return (await buildIndexDetailedAsync(config, opts)).index;
 }
 
 export function indexCachePath(config: RepoOSConfig): string {

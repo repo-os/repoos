@@ -67,7 +67,7 @@ Body.
       getTask: () => read(),
       getTasks: () => [read()],
       applyFileChange: () => {},
-      refreshBranches: () => {},
+      refreshBranchesAsync: async () => {},
     } as any,
     indexReady: Promise.resolve(),
     reviews: { isRunning: () => reviewRunning, cancel } as any,

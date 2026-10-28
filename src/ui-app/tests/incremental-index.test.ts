@@ -172,8 +172,8 @@ describe("worktree dirty cache persistence", () => {
   });
 });
 
-describe("LiveIndex.refreshBranches / reconcileWorktreeStatus", () => {
-  it("updates branch/worktree facts synchronously and dirty via the sweep", async () => {
+describe("LiveIndex.refreshBranchesAsync / reconcileWorktreeStatus", () => {
+  it("updates branch/worktree facts and dirty status through the Git worker", async () => {
     const { root, clean } = makeRepo();
     try {
       const { LiveIndex } = await import("../../server/live-index.js");
@@ -190,13 +190,13 @@ describe("LiveIndex.refreshBranches / reconcileWorktreeStatus", () => {
       expect(index.getTask("0001")?.git.branchExists).toBe(false);
 
       const wt = ensureWorktree(root, "feat/demo");
-      index.refreshBranches(); // synchronous: branch/worktree exist now
+      await index.refreshBranchesAsync();
       expect(index.getTask("0001")?.git.branchExists).toBe(true);
       expect(index.getTask("0001")?.git.worktreeExists).toBe(true);
       expect(index.getTask("0001")?.git.worktreePath).toBe(wt.path);
       expect(index.getTask("0001")?.git.dirty).toBe(false);
 
-      // dirty the worktree; the sweep (kicked off by refreshBranches) catches it
+      // Dirty the worktree; the sweep catches it without rebuilding the index.
       writeFileSync(join(wt.path, "wip.txt"), "draft\n");
       await index.reconcileWorktreeStatus();
       expect(index.getTask("0001")?.git.dirty).toBe(true);

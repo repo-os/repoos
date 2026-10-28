@@ -562,47 +562,47 @@ describe("planAutoCapture gates (#0594)", () => {
     return root;
   }
 
-  it("stands down when the task has no branch", () => {
+  it("stands down when the task has no branch", async () => {
     const root = repo();
-    const plan = planAutoCapture(fixtureConfig(root), fakeTask({ branch: undefined }));
+    const plan = await planAutoCapture(fixtureConfig(root), fakeTask({ branch: undefined }));
     expect(plan).toMatchObject({ reason: expect.stringContaining("no branch") });
   });
 
-  it("stands down when an engineer-made capture pre-empts it", () => {
+  it("stands down when an engineer-made capture pre-empts it", async () => {
     const root = repo();
     const config = fixtureConfig(root);
     localShotStore(config, "0594").save({ target: "default", data: "aGk=", mime: "image/png" });
-    const plan = planAutoCapture(config, fakeTask());
+    const plan = await planAutoCapture(config, fakeTask());
     expect(plan).toMatchObject({ reason: expect.stringContaining("already captured") });
   });
 
-  it("does not let an earlier automatic capture pre-empt a re-capture", () => {
+  it("does not let an earlier automatic capture pre-empt a re-capture", async () => {
     const root = repo();
     const config = fixtureConfig(root);
     const store = localShotStore(config, "0594");
     store.save({ target: "default", data: "aGk=", mime: "image/png", origin: "auto" });
-    const plan = planAutoCapture(config, fakeTask());
+    const plan = await planAutoCapture(config, fakeTask());
     expect(plan).not.toMatchObject({ reason: expect.stringContaining("already captured") });
     expect(store.removeAuto()).toBe(1);
     expect(store.list()).toEqual([]);
   });
 
-  it("stands down outside a repo: nothing matched the changed paths", () => {
+  it("stands down outside a repo: nothing matched the changed paths", async () => {
     // The fixture dir is not a git worktree, so the diff read fails soft and
     // the gate reports "touches no paths" rather than capturing blind.
     const root = repo();
-    const plan = planAutoCapture(fixtureConfig(root), fakeTask());
+    const plan = await planAutoCapture(fixtureConfig(root), fakeTask());
     expect(plan).toMatchObject({ reason: expect.stringContaining("touches no") });
   });
 
-  it("captures declared shots even when the diff matches no glob (#0603 review)", () => {
+  it("captures declared shots even when the diff matches no glob (#0603 review)", async () => {
     // Declared shots resolve targets the way the CLI does — paths, then area,
     // then the default command — so an explicit declaration is honored even
     // with an unreadable (here: non-git) diff.
     const root = repo();
     writeFileSync(join(root, "repoos.toml"), '[preview]\ncommand = "bun dev"\n');
     const config = fixtureConfig(root);
-    const plan = planAutoCapture(
+    const plan = await planAutoCapture(
       config,
       fakeTask({
         branch: "feat/x",

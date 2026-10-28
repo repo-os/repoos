@@ -3,9 +3,7 @@
  * warn at or above 2s). One still open at 10s logs `STUCK <route>` and how
  * long that request has been open.
  *
- * TODO(#0962): when the git worker lands, append its in-flight list (command
- * and age) to the STUCK line. That list is not on main yet, so this log is
- * the route and the request age only.
+ * Callers can append git-worker in-flight detail to the STUCK line.
  *
  * `/api/events` stays open for the life of the tab, so it logs duration when
  * the socket closes and does not emit STUCK.
@@ -36,6 +34,8 @@ export function watchHttpRequest(opts: {
   log: RequestLog;
   /** SSE and other deliberately long-lived routes. */
   skipStuck?: boolean;
+  /** Extra text for the STUCK line, such as in-flight git worker jobs. */
+  stuckDetail?: () => string;
   now?: () => number;
   stuckAfterMs?: number;
   slowAfterMs?: number;
@@ -59,7 +59,8 @@ export function watchHttpRequest(opts: {
     ? undefined
     : setTimeout(() => {
         if (finished) return;
-        opts.log("warn", formatStuckRequest(route, Math.max(0, now() - startedAt)));
+        const detail = opts.stuckDetail?.() ?? "";
+        opts.log("warn", `${formatStuckRequest(route, Math.max(0, now() - startedAt))}${detail}`);
       }, opts.stuckAfterMs ?? STUCK_REQUEST_MS);
   stuckTimer?.unref?.();
 

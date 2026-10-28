@@ -16,10 +16,10 @@
  * a requirements edit. A task that is not `active` is never notified.
  */
 import type { Agent, RepoOSConfig, Task } from "../core/types.js";
-import { worktreePathForBranch } from "../core/git.js";
 import { requirementsChangeMessage, summarizeRequirementsChange } from "../core/task-body-diff.js";
-import { resumePreamble } from "../core/context-pack.js";
 import { resolveAgentForTask } from "./agents.js";
+import { serverResumePreamble } from "./context-pack.js";
+import { getGitWorker } from "./git-worker.js";
 
 /** The subset of `AgentRunner` this module needs (keeps tests lightweight). */
 export interface RequirementsNoticeRunner {
@@ -48,14 +48,14 @@ export interface RequirementsNoticeResult {
 
 /**
  * Compare `prevBody` with the task's current body and, on an active task,
- * deliver the engineer one message naming the changed sections. Synchronous by
- * design so it can run from inside `LiveIndex.applyFileChange`.
+ * deliver the engineer one message naming the changed sections. Worktree
+ * resolution uses the queued Git worker.
  */
-export function notifyEngineerOfRequirementsChange(
+export async function notifyEngineerOfRequirementsChange(
   deps: RequirementsNoticeDeps,
   task: Task,
   prevBody: string,
-): RequirementsNoticeResult {
+): Promise<RequirementsNoticeResult> {
   if (task.status !== "active") return { sent: false, reason: "task is not active" };
   const change = summarizeRequirementsChange(prevBody, task.body);
   if (!change) return { sent: false, reason: "no requirement sections changed" };
@@ -65,9 +65,10 @@ export function notifyEngineerOfRequirementsChange(
   if (!agent) return { sent: false, summary, reason: "no enabled engineer agent" };
 
   const cwd = task.branch
-    ? (worktreePathForBranch(deps.config.root, task.branch) ?? deps.config.root)
+    ? ((await getGitWorker(deps.config.root).worktreePath(task.branch)) ?? deps.config.root)
     : undefined;
-  const preamble = task.branch && cwd ? resumePreamble(deps.config, task, task.branch, cwd) : "";
+  const preamble =
+    task.branch && cwd ? await serverResumePreamble(deps.config, task, task.branch, cwd) : "";
   const result = deps.runner.send(task.id, requirementsChangeMessage(task, change), agent, {
     resumePreamble: preamble || undefined,
     skipBoardDivergence: true,

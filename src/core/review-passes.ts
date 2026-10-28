@@ -5,13 +5,15 @@ import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseDocument } from "./frontmatter.js";
 import type { RepoOSConfig } from "./types.js";
-import { parseReviewVerdict } from "./review-verdict.js";
+import { parseReviewVerdict, reviewVerdictSection } from "./review-verdict.js";
 
 export interface ReviewPassSummary {
   pass: number;
   at: string;
   state: string;
   verdict: string | null;
+  /** `## Verdict` body the drawer shows, trimmed. Null when that heading is absent. */
+  verdictText: string | null;
   /** Reviewer coding agent that produced this pass (e.g. "opencode"). */
   agent: string;
   /** Reviewer CLI family for this pass. */
@@ -81,6 +83,7 @@ export function listReviewPasses(config: RepoOSConfig, taskId: string): ReviewPa
       at,
       state,
       verdict: parseReviewVerdict(markdown),
+      verdictText: reviewVerdictSection(markdown)?.trim() || null,
       agent,
       cli,
       model,

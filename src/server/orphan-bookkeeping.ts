@@ -1,15 +1,19 @@
 import { readFileSync } from "node:fs";
 import { join, sep } from "node:path";
-import { commitTaskFile, runGit } from "../core/git.js";
+import { getGitWorker } from "./git-worker.js";
+
+type Commit = (root: string, path: string, message: string) => boolean | Promise<boolean>;
+const commitTaskFile: Commit = (root, path, message) =>
+  getGitWorker(root).commitTaskFile(path, message);
 
 export async function commitStoryFileWithRetry(
   root: string,
   path: string,
   message: string,
-  commit: typeof commitTaskFile = commitTaskFile,
+  commit: Commit = commitTaskFile,
 ): Promise<boolean> {
   for (let attempt = 0; attempt < 3; attempt++) {
-    if (commit(root, path, message)) return true;
+    if (await commit(root, path, message)) return true;
     if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1)));
   }
   return false;
@@ -18,9 +22,9 @@ export async function commitStoryFileWithRetry(
 /** Commits only untracked RepoOS-created Markdown in work/ or stories/. */
 export async function sweepOrphanedBookkeeping(
   root: string,
-  commit: typeof commitTaskFile = commitTaskFile,
+  commit: Commit = commitTaskFile,
 ): Promise<string[]> {
-  const status = await runGit(
+  const status = await getGitWorker(root).runGit(
     root,
     ["-c", "core.quotepath=false", "status", "--porcelain", "--untracked-files=all"],
     10_000,
@@ -40,7 +44,7 @@ export async function sweepOrphanedBookkeeping(
       continue;
     }
     if (!/^created_by:\s*.+$/m.test(contents.split("---", 3)[1] ?? "")) continue;
-    if (commit(root, absolute, `docs: recover orphaned ${path}`))
+    if (await commit(root, absolute, `docs: recover orphaned ${path}`))
       recovered.push(path.split(sep).join("/"));
   }
   return recovered;

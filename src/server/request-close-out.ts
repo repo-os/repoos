@@ -9,14 +9,11 @@ import type { RepoOSConfig, Task } from "../core/types.js";
 import {
   mainDirtyFilesForCloseOut,
   GitDirtyCheckError,
-  localBranches,
   preflightMerge,
   runGit,
   uncommittedWorkFiles,
   workFileFilter,
-  worktreePathForBranch,
   branchChangedPaths,
-  branchCommit,
 } from "../core/git.js";
 import type { JobCoordinator } from "./integration-job.js";
 import type { ReloadManager } from "./reload.js";
@@ -26,6 +23,7 @@ import type { PreviewManager } from "./preview.js";
 import type { ReviewManager } from "./review.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
 import { resolvePipelineCheckPlan } from "./check-plan-info.js";
+import { getGitWorker } from "./git-worker.js";
 import {
   readHandoffSnapshot,
   readWorktreeReviewLock,
@@ -117,7 +115,8 @@ export async function gatherApprovalPreflight(
       worktreeDirty: null,
     };
   }
-  if (!localBranches(config.root).has(branch)) {
+  const overview = await getGitWorker(config.root).gitOverview();
+  if (!overview.branches.has(branch)) {
     return {
       branchMissing: true,
       mergePreflightFailed: false,
@@ -137,7 +136,7 @@ export async function gatherApprovalPreflight(
   const preflight = await preflightMerge(config.root, branch);
   const mergePreflightFailed = !preflight.ok;
 
-  const worktree = task.hotfix === true ? null : worktreePathForBranch(config.root, branch);
+  const worktree = task.hotfix === true ? null : (overview.worktrees.get(branch)?.path ?? null);
   const changedPaths = worktree ? await branchChangedPaths(config.root, branch) : null;
 
   let handoffDrift = false;
@@ -246,7 +245,9 @@ export async function enqueueCloseOutForTask(
   }
 
   const branch = task.branch;
-  const worktree = task.hotfix === true ? null : worktreePathForBranch(config.root, branch);
+  const overview = await getGitWorker(config.root).gitOverview();
+  const worktree =
+    task.hotfix === true || !branch ? null : (overview.worktrees.get(branch)?.path ?? null);
   if (worktree) {
     try {
       const worktreeDirty = await uncommittedWorkFiles(worktree, workFileFilter(config));
@@ -344,7 +345,7 @@ export async function enqueueCloseOutForTask(
   // handoff request, the file-watch handoff) refuse while the pipeline runs.
   writeWorktreeReviewLock(config.root, config.cacheDir, id, {
     status: "closing-out",
-    sha: handoffSha ?? branchCommit(config.root, branch) ?? "",
+    sha: handoffSha ?? (await getGitWorker(config.root).branchCommit(branch)) ?? "",
     at: new Date().toISOString(),
   });
 

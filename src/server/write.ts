@@ -13,7 +13,7 @@
  * conflict surface is concurrent writes to the SAME task — which this handles.
  */
 import { readFileSync, writeFileSync, existsSync, unlinkSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { gitOutputAsync } from "../core/git.js";
 import { join, resolve, sep, relative, basename } from "node:path";
 import type { RepoOSConfig, Task, Status } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
@@ -36,7 +36,8 @@ import { hasUnresolvedConflictMarkers } from "../core/frontmatter.js";
 import { formatTaskAreas, parseTaskAreas } from "../core/areas.js";
 import { bundleItemSectionIds, bundleItemsListIds } from "../core/easter-eggs-bundle.js";
 import { normalizeStoryName } from "../core/stories.js";
-import { branchCommit, commitTaskFile, currentBranch } from "../core/git.js";
+import { commitTaskFile } from "../core/git.js";
+import { getGitWorker } from "./git-worker.js";
 import { buildIndex } from "../core/indexer.js";
 import { normalizeTaskDependencies, validateTaskDependencies } from "../core/task-dependencies.js";
 import { taskPriorityError, taskTypeError } from "../core/task-fields.js";
@@ -260,6 +261,8 @@ export interface TaskPatch {
 }
 
 export interface PatchTaskOptions {
+  /** Current board snapshot, supplied by server handlers to avoid rebuilding the index. */
+  validationTasks?: readonly Task[];
   /**
    * Called when a patch actually changes a task's status, with the task being
    * written and the previous/new statuses. Lets the server reap preview
@@ -528,7 +531,11 @@ export function patchTaskFile(
   }
   if (patch.dependsOn !== undefined) {
     const dependsOn = normalizeTaskDependencies(patch.dependsOn);
-    validateTaskDependencies(current.id, dependsOn, buildIndex(config).tasks);
+    validateTaskDependencies(
+      current.id,
+      dependsOn,
+      opts.validationTasks ?? buildIndex(config, { skipGit: true }).tasks,
+    );
     if (dependsOn.join("\0") !== (current.dependsOn ?? []).join("\0")) {
       changes.push("depends_on");
     }
@@ -781,10 +788,31 @@ export function revertPublishDoneStamp(config: RepoOSConfig, absPath: string): T
  * append-only activity log. This is deliberately separate from TaskPatch so a
  * normal status edit cannot make an unmerged task appear in release history.
  */
-export function markTaskReleased(
+export async function markTaskReleased(
   config: RepoOSConfig,
   absPath: string,
   mergedCommit?: string | null,
+): Promise<Task> {
+  if (mergedCommit !== undefined && mergedCommit !== null) {
+    return markTaskReleasedImpl(config, absPath, mergedCommit);
+  }
+  if (!existsSync(absPath)) throw new WriteError(`Task file not found: ${absPath}`);
+  const task = parseTask({
+    content: readFileSync(absPath, "utf8"),
+    absPath,
+    root: config.root,
+    defaultStatus: config.defaultStatus,
+    defaultAssignee: config.defaultAssignee,
+  });
+  const worker = getGitWorker(config.root);
+  const branch = task.branch || (await worker.currentBranch()) || "main";
+  return markTaskReleasedImpl(config, absPath, await worker.branchCommit(branch));
+}
+
+function markTaskReleasedImpl(
+  config: RepoOSConfig,
+  absPath: string,
+  mergedCommit: string | null | undefined,
 ): Task {
   if (!existsSync(absPath)) throw new WriteError(`Task file not found: ${absPath}`);
 
@@ -806,11 +834,7 @@ export function markTaskReleased(
   // silently no-op'd every subsequent close-out (#0195, 2026-08-15): main got
   // the merge, but the task sat published-and-still-review indefinitely.
   // `status === "done"` is only true for an actually-current release.
-  const resolvedMergedCommit =
-    mergedCommit ??
-    branchCommit(config.root, task.branch || currentBranch(config.root) || "main") ??
-    task.mergedCommit ??
-    null;
+  const resolvedMergedCommit = mergedCommit ?? task.mergedCommit ?? null;
   if (task.status === "done") {
     // The publish stamp (#0886) already wrote `status: done` into the merge
     // commit, but deliberately left the release marker for this step — the
@@ -865,7 +889,7 @@ export function markTaskReleased(
  * work dir, and WriteError when the file is already gone (callers treat the
  * latter as an idempotent 404).
  */
-export function deleteTaskFile(config: RepoOSConfig, absPath: string): string {
+export async function deleteTaskFile(config: RepoOSConfig, absPath: string): Promise<string> {
   const workDir = resolve(join(config.root, config.workDir));
   const abs = resolve(absPath);
   if (!(abs.startsWith(workDir + sep) || abs === workDir)) {
@@ -878,24 +902,16 @@ export function deleteTaskFile(config: RepoOSConfig, absPath: string): string {
   // Tracked task files must not linger as staged deletions — commit the
   // removal (fail-soft) so main stays mergeable. Untracked files need nothing.
   const rel = relative(config.root, abs);
-  if (gitTracked(config.root, rel)) {
+  if (await gitTracked(config.root, rel)) {
     commitTaskFile(config.root, abs, `docs(${basename(abs).split("-")[0]}): delete task`);
   }
   return abs;
 }
 
 /** Whether git tracks a (relative) path in the given checkout. */
-function gitTracked(root: string, rel: string): boolean {
-  try {
-    execFileSync("git", ["ls-files", "--error-unmatch", "--", rel], {
-      cwd: root,
-      stdio: "ignore",
-      timeout: 4000,
-    });
-    return true;
-  } catch {
-    return false;
-  }
+async function gitTracked(root: string, rel: string): Promise<boolean> {
+  const out = await gitOutputAsync(root, ["ls-files", "--error-unmatch", "--", rel]);
+  return out !== null;
 }
 
 /**
@@ -918,11 +934,15 @@ function guardDataDir(config: RepoOSConfig, absPath: string, relDir: string): st
  * so main stays mergeable — the same contract as `deleteTaskFile`. Throws
  * WriteError when the file is already gone (callers treat that as 404).
  */
-function deleteDataFile(config: RepoOSConfig, abs: string, commitMessage: string): string {
+async function deleteDataFile(
+  config: RepoOSConfig,
+  abs: string,
+  commitMessage: string,
+): Promise<string> {
   if (!existsSync(abs)) throw new WriteError(`File not found: ${abs}`);
   unlinkSync(abs);
   const rel = relative(config.root, abs);
-  if (gitTracked(config.root, rel)) commitTaskFile(config.root, abs, commitMessage);
+  if (await gitTracked(config.root, rel)) commitTaskFile(config.root, abs, commitMessage);
   return abs;
 }
 

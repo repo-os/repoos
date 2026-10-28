@@ -21,7 +21,7 @@ import {
 import { join } from "node:path";
 import type { RepoOSConfig } from "./types.js";
 import { FM_DELIM, parseDocument, serializeDocument } from "./frontmatter.js";
-import { lastCommitsForDir } from "./git.js";
+import { lastCommitsForDir, type LastCommit } from "./git.js";
 import { normalizeStoryName, storyKey } from "./stories.js";
 import type { StoryDefinition } from "./story-display.js";
 
@@ -221,13 +221,18 @@ export function parseStoryDefinitionFile(
 }
 
 export function listStoryDefinitions(config: RepoOSConfig): StoryDefinition[] {
+  return listStoryDefinitionsFromCommits(
+    config,
+    lastCommitsForDir(config.root, storiesDirOf(config)),
+  );
+}
+
+export function listStoryDefinitionsFromCommits(
+  config: RepoOSConfig,
+  commits: ReadonlyMap<string, LastCommit>,
+): StoryDefinition[] {
   const dir = storiesRoot(config);
   if (!existsSync(dir)) return [];
-  // One git pass for the whole directory (never one walk per file) gives the
-  // durable last-modified time for older story files that have no
-  // `updated_at` frontmatter. Fail-soft: an untracked or non-git file falls
-  // back to its mtime.
-  const commits = lastCommitsForDir(config.root, storiesDirOf(config));
   return readdirSync(dir)
     .filter(isStoryFile)
     .map((file) => {
@@ -263,9 +268,9 @@ export function findStoryDefinitionByKey(
  * airtight would need a persisted high-water mark, which would then disagree
  * with the input numbering this deliberately mirrors.
  */
-function nextStoryNumber(config: RepoOSConfig): string {
+function nextStoryNumber(config: RepoOSConfig, items = listStoryDefinitions(config)): string {
   let max = 0;
-  for (const d of listStoryDefinitions(config)) {
+  for (const d of items) {
     const n = parseInt(d.number, 10);
     if (!Number.isNaN(n) && n > max) max = n;
   }
@@ -294,8 +299,13 @@ function nextStoryNumber(config: RepoOSConfig): string {
  * changed, so it stays eligible for the next run instead of being silently
  * skipped forever. See AGENTS.md — this touches the repo's own `stories/*.md`.
  */
-export function ensureStoryNumbers(config: RepoOSConfig): StoryDefinition[] {
-  const items = listStoryDefinitions(config);
+export function ensureStoryNumbers(
+  config: RepoOSConfig,
+  commits?: ReadonlyMap<string, LastCommit>,
+): StoryDefinition[] {
+  const items = commits
+    ? listStoryDefinitionsFromCommits(config, commits)
+    : listStoryDefinitions(config);
   const byAge = [...items].sort(
     (a, b) => (a.createdAt || "").localeCompare(b.createdAt || "") || a.path.localeCompare(b.path),
   );
@@ -339,12 +349,16 @@ export interface WriteStoryDefinitionInput {
 export function writeStoryDefinition(
   config: RepoOSConfig,
   input: WriteStoryDefinitionInput,
+  commits?: ReadonlyMap<string, LastCommit>,
 ): StoryDefinition {
   const name = normalizeStoryName(input.name);
   if (!name) throw new Error("story name is required");
   const body = input.body.trim();
   if (!body) throw new Error("story description is required");
-  const existing = findStoryDefinitionByKey(config, storyKey(name));
+  const items = commits
+    ? listStoryDefinitionsFromCommits(config, commits)
+    : listStoryDefinitions(config);
+  const existing = items.find((item) => item.key === storyKey(name)) ?? null;
   if (existing) {
     throw new Error(`A story named "${existing.name}" already exists`);
   }
@@ -358,7 +372,7 @@ export function writeStoryDefinition(
   // id and an input its number — so the board can render `#0001` from the
   // first read and `ensureStoryNumbers` only ever has to backfill stories
   // written before this field existed.
-  const number = nextStoryNumber(config);
+  const number = nextStoryNumber(config, items);
   const updatedAt = createdAt;
   const content = serializeDocument(
     { name, number, created_at: createdAt, updated_at: updatedAt, created_by: createdBy },
@@ -391,6 +405,7 @@ export function rewriteStoryDefinition(
   config: RepoOSConfig,
   path: string,
   input: { name: string; body: string },
+  commits?: ReadonlyMap<string, LastCommit>,
 ): { definition: StoryDefinition; previousPath?: string } {
   const absOld = join(config.root, path);
   if (!existsSync(absOld)) throw new Error(`story definition not found: ${path}`);
@@ -400,7 +415,10 @@ export function rewriteStoryDefinition(
   if (!name) throw new Error("story name is required");
   const body = input.body.trim();
   if (!body) throw new Error("story description is required");
-  const clash = findStoryDefinitionByKey(config, storyKey(name));
+  const items = commits
+    ? listStoryDefinitionsFromCommits(config, commits)
+    : listStoryDefinitions(config);
+  const clash = items.find((item) => item.key === storyKey(name)) ?? null;
   if (clash && clash.path !== path) {
     throw new Error(`A story named "${clash.name}" already exists`);
   }

@@ -48,7 +48,7 @@ function setup(): { root: string; events: RepoEvent[]; ctx: ReturnType<typeof ma
 }
 
 describe("DELETE /api/inputs/:id", () => {
-  it("removes the input file and its attachments", () => {
+  it("removes the input file and its attachments", async () => {
     const { root, ctx, events } = setup();
     try {
       const input = createInput(ctx.config, "Add a delete button", "idea", "human");
@@ -57,7 +57,7 @@ describe("DELETE /api/inputs/:id", () => {
       expect(existsSync(abs)).toBe(true);
 
       const { capture, res } = makeRes();
-      void deleteInput(ctx, {} as never, res, { param1: input.id } as never);
+      await deleteInput(ctx, {} as never, res, { param1: input.id } as never);
 
       expect(capture.status).toBe(200);
       expect(capture.body).toEqual({ ok: true });
@@ -71,11 +71,11 @@ describe("DELETE /api/inputs/:id", () => {
     }
   });
 
-  it("404s for an unknown id and for an already-deleted input", () => {
+  it("404s for an unknown id and for an already-deleted input", async () => {
     const { root, ctx } = setup();
     try {
       const { capture, res } = makeRes();
-      void deleteInput(ctx, {} as never, res, { param1: "nope" } as never);
+      await deleteInput(ctx, {} as never, res, { param1: "nope" } as never);
       expect(capture.status).toBe(404);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -84,7 +84,7 @@ describe("DELETE /api/inputs/:id", () => {
 });
 
 describe("DELETE /api/stories/:key", () => {
-  it("removes the definition file, emits definitionsChanged, leaves tasks alone", () => {
+  it("removes the definition file, emits definitionsChanged, leaves tasks alone", async () => {
     const { root, ctx, events } = setup();
     try {
       const def = writeStoryDefinition(ctx.config, {
@@ -95,7 +95,7 @@ describe("DELETE /api/stories/:key", () => {
       expect(existsSync(abs)).toBe(true);
 
       const { capture, res } = makeRes();
-      void deleteStory(ctx, {} as never, res, { param1: def.key } as never);
+      await deleteStory(ctx, {} as never, res, { param1: def.key } as never);
 
       expect(capture.status).toBe(200);
       expect(capture.body).toEqual({ ok: true });
@@ -107,18 +107,18 @@ describe("DELETE /api/stories/:key", () => {
     }
   });
 
-  it("404s for a tag-only story (no definition file) and unknown keys", () => {
+  it("404s for a tag-only story (no definition file) and unknown keys", async () => {
     const { root, ctx } = setup();
     try {
       const { capture, res } = makeRes();
-      void deleteStory(ctx, {} as never, res, { param1: "tag-only-story" } as never);
+      await deleteStory(ctx, {} as never, res, { param1: "tag-only-story" } as never);
       expect(capture.status).toBe(404);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
 
-  it("404s when stories are disabled", () => {
+  it("404s when stories are disabled", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-delete-0634-off-"));
     try {
       mkdirSync(join(root, "stories"), { recursive: true });
@@ -133,7 +133,7 @@ describe("DELETE /api/stories/:key", () => {
         emitEvent: (e: RepoEvent) => events.push(e),
       } as never as Parameters<typeof deleteStory>[0];
       const { capture, res } = makeRes();
-      void deleteStory(ctx, {} as never, res, { param1: "x" } as never);
+      await deleteStory(ctx, {} as never, res, { param1: "x" } as never);
       expect(capture.status).toBe(404);
       expect(events).toHaveLength(0);
     } finally {
