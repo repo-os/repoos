@@ -5,7 +5,7 @@ type: bug
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "Warning: No project session found with id 'repoos-0974-engineer-fmvs2xndf'; creating a new session with that id."
+needs_input_detail: Reading additional input from stdin...
 priority: p0
 area: core
 assigned_to: ai
@@ -16,9 +16,9 @@ model_override: gpt-6-luna
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T11:30:32Z"
-updated_at: "2026-10-28T13:29:29Z"
-dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:29:29.421Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-10-28T13:29:58Z"
+dev_error_count: 3
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:29:29.421Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:29:58.011Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
@@ -60,3 +60,4 @@ Files: `src/server/git-worker.ts` (queue, timeouts), `src/server/git-worker-entr
 - 2026-10-28T13:28:59Z · needs_input
 - 2026-10-28T13:29:29Z · agent exited with an error (codex) · Warning: No project session found with id 'repoos-0974-engineer-fmvs2xndf'; creating a new session with that id.
 - 2026-10-28T13:29:29Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Warning: No project session found with id 'repoos-0974-engineer-fmvs2xndf'; creating a new session with that id.
+- 2026-10-28T13:29:58Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
