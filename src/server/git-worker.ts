@@ -97,6 +97,14 @@ function workerEntry(): string {
  * JSON messages; synchronous core/CLI helpers are allowed to run in the child,
  * never on the HTTP thread. Calls are serialized and bounded end-to-end.
  */
+/**
+ * How long a request may wait in the queue before it starts. Calls are
+ * serialized, so a short git command can sit behind a slow board scan; its own
+ * timeout only starts once it runs, or a 9 s command would fail without ever
+ * running (2026-10-28: handoffs failed on "git-command timed out after 9000ms").
+ */
+export const GIT_WORKER_QUEUE_WAIT_MS = 180_000;
+
 export class GitWorker {
   private child: ChildProcessWithoutNullStreams | null = null;
   private queue: QueueJob[] = [];
@@ -115,6 +123,7 @@ export class GitWorker {
   constructor(
     private readonly root: string,
     private readonly launch: typeof spawn = spawn,
+    private readonly queueWaitMs: number = GIT_WORKER_QUEUE_WAIT_MS,
   ) {}
 
   request<T>(kind: string, payload: unknown, timeoutMs = 30_000): Promise<T> {
@@ -132,7 +141,7 @@ export class GitWorker {
         resolve: resolve as (value: unknown) => void,
         reject,
       } satisfies QueueJob;
-      job.timer = setTimeout(() => this.timeout(job), timeoutMs);
+      job.timer = setTimeout(() => this.timeout(job), this.queueWaitMs);
       job.timer.unref?.();
       this.queue.push(job);
       this.pump();
@@ -424,6 +433,9 @@ export class GitWorker {
     this.active = job;
     job.generation = this.generation;
     job.startedAt = Date.now();
+    clearTimeout(job.timer);
+    job.timer = setTimeout(() => this.timeout(job), job.timeoutMs);
+    job.timer.unref?.();
     try {
       const child = this.ensureChild();
       child.stdin.write(
@@ -522,8 +534,8 @@ export class GitWorker {
   }
 
   private timeout(job: QueueJob): void {
-    const error = new Error(`git worker ${job.kind} timed out after ${job.timeoutMs}ms`);
     if (this.active?.id === job.id) {
+      const error = new Error(`git worker ${job.kind} timed out after ${job.timeoutMs}ms`);
       this.active = null;
       job.reject(error);
       this.killChild();
@@ -533,7 +545,11 @@ export class GitWorker {
     const index = this.queue.indexOf(job);
     if (index !== -1) {
       this.queue.splice(index, 1);
-      job.reject(error);
+      job.reject(
+        new Error(
+          `git worker ${job.kind} waited ${this.queueWaitMs}ms in the queue without starting`,
+        ),
+      );
     }
   }
 
