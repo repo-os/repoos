@@ -15,7 +15,6 @@ updated_at: "2026-10-28T11:51:36Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 6aa634abaf8b9f561676f0911016b980134f5772
 handoff_signal_retry_count: 2
-check_retry_count: 1
 last_check_failure: "repoos check (exit 1) at 2026-10-28T06:01:43.510Z: repoos check failed: tests — command failed (exit 1)"
 ---
 ## Problem
@@ -83,3 +82,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T11:23:55Z · note: handoff requested (ui-review)
 - 2026-10-28T11:51:10Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-10-28T11:51:36Z · note: handoff requested (ui-review)
+
