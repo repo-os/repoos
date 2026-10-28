@@ -8,6 +8,8 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6.1-sol
 created_at: "2026-10-27T14:50:38Z"
 updated_at: "2026-10-28T03:36:13Z"
 ---
@@ -30,3 +32,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 ## Activity
 
 - 2026-10-27T14:50:38Z · created · njachowski@gmail.com
+- 2026-10-28T03:36:13Z · cli_override, model_override
