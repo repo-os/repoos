@@ -15,12 +15,20 @@ until timeouts and retries piled up.
 The guard blocks on the machine paying a memory or CPU cost: sustained
 swap-in/swap-out or pageout activity, macOS `memory_pressure` reporting
 `critical`, low reclaimable memory, Linux PSI, a compressor pool at or above
-`pressureGuard.maxCompressorBytes` (default 8 GiB), load above
+`pressureGuard.maxCompressorBytes` (default 8 GiB) when no macOS
+`memory_pressure` level is available, load above
 `pressureGuard.maxLoadPerCpu` (default 3× per CPU), or CPU idle below
 `pressureGuard.minIdleCpuPercent` (default 5%). Swap-used ratio and compressor
 *ratio* stay advisory: a quiet pool under the byte cap must not block. The
 2026-10-25 incident (compressor 10–12 GB, idle CPU near 0, load far above core
 count, guard still "normal") is what the byte, idle and load holds are for.
+
+On macOS the compressor size alone is not a pressure signal. macOS compresses
+idle apps' pages and keeps them compressed for hours on a quiet machine. On
+2026-10-28 an idle 24 GB Mac (92% CPU idle, green Memory Pressure, 43% free)
+held every start on 8.03 GB compressed. So when `memory_pressure` reports a
+level, that level decides: a pool over the byte cap is only a warning unless
+the level is `critical`. The byte cap still blocks where no level is available.
 
 ## Signals and thresholds
 
@@ -30,7 +38,7 @@ count, guard still "normal") is what the byte, idle and load holds are for.
 | --- | --- | --- |
 | macOS | `vm_stat` counter deltas over the activity window | swap-ins, swap-outs and pageouts per second |
 | macOS | `memory_pressure -Q`; `sysctl kern.memorystatus_vm_pressure_level` | free percentage and normal/warn/critical pressure level |
-| macOS | `vm.swapusage`; `vm_stat` (`Pages occupied by compressor`) | swap used / total (advisory) and compressor bytes (block at the byte cap) |
+| macOS | `vm.swapusage`; `vm_stat` (`Pages occupied by compressor`) | swap used / total and compressor bytes (both advisory while `memory_pressure` reports a level below critical) |
 | Linux | `/proc/vmstat` (`pswpin`/`pswpout` deltas) | swap I/O bytes per second |
 | Linux | `/proc/pressure/memory` | PSI `some avg10` pressure |
 | Linux | `/proc/meminfo` (`SwapTotal`/`SwapFree`) | swap used / total (advisory only) |
@@ -51,7 +59,7 @@ count, guard still "normal") is what the byte, idle and load holds are for.
 `pressureGuard.maxSwapUsedRatio` (default 0.5) and
 `pressureGuard.maxCompressorRatio` (default 0.35, macOS) only control advisory
 warnings. They never block work by themselves. `pressureGuard.maxCompressorBytes`
-(default 8 GiB) does.
+(default 8 GiB) blocks only when no macOS `memory_pressure` level is available.
 
 `pressureGuard.maxLoadPerCpu` (default 3) holds work whenever load per CPU is
 above it. `pressureGuard.minIdleCpuPercent` (default 5) holds when a CPU-time
@@ -155,8 +163,9 @@ they chose) or work around a guard hold by starting under a different limit.
   `repoos driver brief`, or a task queue marker with `reason: pressure` and the
   hold message.
 - On macOS, `vm.swapusage` "free" is unused swap capacity, not a pressure
-  signal. Quiet high swap use and compressor *ratio* are advisory; compressor
-  *bytes* still block at `pressureGuard.maxCompressorBytes`.
+  signal. Quiet high swap use and compressor size are advisory while
+  `memory_pressure` is below `critical`; compressor *bytes* block at
+  `pressureGuard.maxCompressorBytes` only when no level is available.
 - Interpret `memory_pressure -Q` free percentage and the guard's pressure
   level against the configured `pressureGuard.*` limits in Settings, not ad-hoc
   numbers.
