@@ -8,8 +8,9 @@ area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+review_cli_override: cursor
 created_at: "2026-10-28T08:00:32Z"
-updated_at: "2026-10-28T08:00:32Z"
+updated_at: "2026-10-28T08:23:04Z"
 ---
 ## Items
 
@@ -34,3 +35,4 @@ The string comes from `modelNoticeFor` (`stores/config.ts`, around line 325). Th
 ## Activity
 
 - 2026-10-28T08:00:32Z · created · njachowski@gmail.com
+- 2026-10-28T08:23:04Z · review_cli_override
