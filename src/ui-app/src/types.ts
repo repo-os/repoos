@@ -1349,6 +1349,8 @@ export interface CheckRunRecord {
    * from `passed` by callers that need the distinction.
    */
   outcome?: "passed" | "failed" | "skipped";
+  /** #0974: what the run waited on before its first step, and for how long. */
+  waited?: { reason: string; ms: number };
   results: CheckRunStepResult[];
 }
 

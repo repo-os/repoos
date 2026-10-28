@@ -15,6 +15,7 @@ import type {
 import type { GcMode, GcReport } from "../core/worktree-gc.js";
 import { onGitMutation } from "../core/git-activity.js";
 import type { PressureSnapshot } from "../core/pressure-guard.js";
+import { CommitGraphMaintenance } from "../core/git-maintenance.js";
 import type { ContextPackGitFacts } from "../core/context-pack.js";
 
 interface OverviewWire {
@@ -70,6 +71,9 @@ export interface GitWorkerJobInfo {
   id: number;
   label: string;
   ageMs: number;
+  queueWaitMs: number;
+  runMs: number;
+  lane: "bulk" | "fast";
   state: "running" | "queued";
 }
 
@@ -93,19 +97,21 @@ function workerEntry(): string {
 }
 
 /**
- * One dedicated child for RepoOS's git-heavy reads. The HTTP process only sends
+ * Dedicated bulk and fast children for RepoOS's git reads. The HTTP process only sends
  * JSON messages; synchronous core/CLI helpers are allowed to run in the child,
- * never on the HTTP thread. Calls are serialized and bounded end-to-end.
+ * never on the HTTP thread. Calls are serialized within each lane.
  */
 /**
  * How long a request may wait in the queue before it starts. Calls are
- * serialized, so a short git command can sit behind a slow board scan; its own
+ * serialized within each lane; each command's own
  * timeout only starts once it runs, or a 9 s command would fail without ever
  * running (2026-10-28: handoffs failed on "git-command timed out after 9000ms").
  */
 export const GIT_WORKER_QUEUE_WAIT_MS = 180_000;
 
 export class GitWorker {
+  private fast: GitWorker | null = null;
+  private maintenance: CommitGraphMaintenance | null = null;
   private child: ChildProcessWithoutNullStreams | null = null;
   private queue: QueueJob[] = [];
   private active: QueueJob | null = null;
@@ -124,10 +130,15 @@ export class GitWorker {
     private readonly root: string,
     private readonly launch: typeof spawn = spawn,
     private readonly queueWaitMs: number = GIT_WORKER_QUEUE_WAIT_MS,
+    private readonly lane: "bulk" | "fast" = "bulk",
   ) {}
 
   request<T>(kind: string, payload: unknown, timeoutMs = 30_000): Promise<T> {
     if (this.closed) return Promise.reject(new Error("git worker is closed"));
+    if (this.lane === "bulk" && FAST_JOBS.has(kind)) {
+      this.fast ??= new GitWorker(this.root, this.launch, this.queueWaitMs, "fast");
+      return this.fast.request<T>(kind, payload, timeoutMs);
+    }
     return new Promise<T>((resolve, reject) => {
       const job = {
         id: this.nextId++,
@@ -213,7 +224,9 @@ export class GitWorker {
   }
 
   async branchCommit(branch: string): Promise<string | null> {
-    return (await this.gitOverview()).heads.get(branch) ?? null;
+    if (this.overviewCache) return new Map(this.overviewCache.heads).get(branch) ?? null;
+    const result = await this.runGit(this.root, ["rev-parse", "--verify", branch], 4_000);
+    return result.status === 0 ? result.stdout.trim() || null : null;
   }
 
   async isAncestor(cwd: string, ancestor: string, descendant: string): Promise<boolean | null> {
@@ -228,7 +241,8 @@ export class GitWorker {
   }
 
   async worktreePath(branch: string): Promise<string | null> {
-    return (await this.gitOverview()).worktrees.get(branch)?.path ?? null;
+    if (this.overviewCache) return new Map(this.overviewCache.worktrees).get(branch)?.path ?? null;
+    return this.request("worktree-path", { root: this.root, branch }, 9_000);
   }
 
   async branchChangesSinceBase(
@@ -383,10 +397,16 @@ export class GitWorker {
     return result;
   }
 
+  startMaintenance(): void {
+    this.maintenance ??= new CommitGraphMaintenance(this.root);
+  }
+
   /** Invalidate worker-side ref caches after the watcher observes a ref/HEAD write. */
   invalidate(): void {
     if (this.closed) return;
     this.generation++;
+    this.fast?.invalidate();
+    this.maintenance?.schedule();
     this.blockerKey = "";
     this.blockerValue = null;
     this.overviewCache = null;
@@ -400,19 +420,27 @@ export class GitWorker {
       label: `git-worker ${job.kind}`,
       state: job.startedAt === null ? ("queued" as const) : ("running" as const),
       ageMs: Math.max(0, now - (job.startedAt ?? job.enqueuedAt)),
+      queueWaitMs: Math.max(0, (job.startedAt ?? now) - job.enqueuedAt),
+      runMs: job.startedAt === null ? 0 : Math.max(0, now - job.startedAt),
+      lane: this.lane,
     }));
     const calls = [...this.childGitCalls.values()].map((call) => ({
       id: call.id,
       label: call.label,
       state: "running" as const,
       ageMs: Math.max(0, now - call.startedAt),
+      queueWaitMs: 0,
+      runMs: Math.max(0, now - call.startedAt),
+      lane: this.lane,
     }));
-    return [...calls, ...queued];
+    return [...calls, ...queued, ...(this.fast?.inFlight(now) ?? [])];
   }
 
   close(): void {
     if (this.closed) return;
     this.closed = true;
+    this.fast?.close();
+    this.maintenance?.close();
     const error = new Error("git worker closed");
     if (this.active) {
       clearTimeout(this.active.timer);
@@ -589,6 +617,17 @@ export class GitWorker {
   }
 }
 
+const FAST_JOBS = new Set([
+  "git-command",
+  "run-git",
+  "worktree-path",
+  "branch-changes",
+  "changed-paths",
+  "context-pack-facts",
+  "resource-snapshot",
+  "commit-task-file",
+]);
+
 const workers = new Map<string, GitWorker>();
 
 function mayMutateGitRefs(args: string[]): boolean {
@@ -623,6 +662,7 @@ export function getGitWorker(root: string): GitWorker {
   if (!worker) {
     worker = new GitWorker(root);
     workers.set(root, worker);
+    worker.startMaintenance();
   }
   return worker;
 }
