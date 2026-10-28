@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: Reading additional input from stdin...
+debug_tldr: "Codex agent hit its ChatGPT usage limit (resets 11:43 PM) — switch the engineer to Cursor or another allowed agent and resume, and clear the leftover debug probes from integration-orchestrator.ts."
+debug_tldr_at: "2026-10-28T13:31:07Z"
+debug_tldr_key: dev-error|Reading additional input from stdin...
 priority: p1
 area: core
 assigned_to: ai
@@ -16,7 +19,7 @@ model_override: gpt-6-luna
 review_cli_override: cursor
 review_model_override: grok-4.7-low
 created_at: "2026-10-28T09:17:44Z"
-updated_at: "2026-10-28T13:30:43Z"
+updated_at: "2026-10-28T13:31:07Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-28T11:49:16.051Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 3
