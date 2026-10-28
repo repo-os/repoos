@@ -3,9 +3,6 @@ id: "0970"
 title: "Check gate: per-step/test timings; close-out runs changed + high-risk tests, full suite at release"
 type: chore
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the opencode agent exited without output: error: Go usage limit exceeded"
 priority: p1
 area: core
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T12:25:06Z"
+updated_at: "2026-10-28T12:25:07Z"
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check (exit 1) at 2026-10-28T06:01:43.510Z: repoos check failed: tests — command failed (exit 1)"
 ---
@@ -91,3 +88,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T12:17:35Z · needs_input
 - 2026-10-28T12:25:04Z · review_cli_override, review_model_override
 - 2026-10-28T12:25:06Z · review_model_override
+- 2026-10-28T12:25:07Z · needs_input (review-failed) cleared for review again by hello@repoos.org
