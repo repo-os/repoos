@@ -71,18 +71,18 @@ The card lives in `src/ui-app/src/components/TaskDrawer.vue` ("Open Status detai
 ```json
 [
 {
-  "label": "Task status card is three lines while checks run",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunning"
+"label": "Task status card is three lines while checks run",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning"
 },
 {
-  "label": "Debug Status details cards capped and scroll inside",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".debug-status-detail",
-  "state": "drawer:statusDetails"
+"label": "Debug Status details cards capped and scroll inside",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".debug-status-detail",
+"state": "drawer:statusDetails"
 }
 ]
 ```
