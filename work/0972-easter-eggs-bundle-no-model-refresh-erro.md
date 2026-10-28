@@ -1,6 +1,6 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-28T13:33:40.370Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Debug Status details cards scroll inside a 250px cap (target \"default\"): highlight .debug-status-detail matched nothing on /work?task=9999&tab=debug (http://127.0.0.1:60126/work?shotState=drawer:statusDetails)"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-28T15:28:48.538Z: repoos check failed: rendered-contrast — [pressure] swap in/out 2.0 MB/s over 18.257 s (limit 1.0 MB/s) — holding new work until paging eases. Check Activity Monitor (Memory tab), `vm_stat 1`, or `memory_pressure -Q` on macOS; `/proc/pressure/memory` and `vmstat 1` on Linux.; system load is high (3.6× per CPU, limit 3×) — waiting for headroom before starting more work"
 id: "0972"
 title: "Easter eggs bundle: uninstalled-agent model notice, task status card"
 type: bug
@@ -138,4 +138,5 @@ While the repo loads, `.main` shows a skeleton shaped like the route being opene
 - 2026-10-28T12:17:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T12:17:10Z · message_delivered: 1 message(s)
 - 2026-10-28T13:33:36Z · note: ui verification failed (1 issue(s)): [missing-target] Debug Status details cards scroll inside a 250px cap (target "default"): highlight .debug-status-detail matched nothing on /work?task=9999&tab=debug (http://127.0.0.1:60126/work?shotState=drawer:statusDetails)
+
 
