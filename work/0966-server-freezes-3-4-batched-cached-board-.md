@@ -2,7 +2,7 @@
 id: "0966"
 title: "Server freezes (3/4): batched, cached board git queries"
 type: refactor
-status: inbox
+status: ready
 priority: p1
 area: core
 depends_on: ["0962"]
@@ -12,7 +12,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T12:02:34Z"
-updated_at: "2026-10-28T18:25:05Z"
+updated_at: "2026-10-28T18:25:28Z"
 ---
 ## Problem
 Split from #0962. The board computes git state per task/branch (ahead counts, merged checks, work-file history), spawning hundreds of git processes on ~900 tasks and ~100 branches.
@@ -33,3 +33,4 @@ Depends on #0962. Same rules as the other split tasks: no server restarts, no pr
 
 - 2026-10-27T12:02:34Z · created · njachowski@gmail.com
 - 2026-10-28T18:25:05Z · cli_override, model_override
+- 2026-10-28T18:25:28Z · status inbox→ready
