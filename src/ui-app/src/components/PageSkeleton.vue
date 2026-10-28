@@ -1,16 +1,21 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ kind?: "cards" | "table" | "rows" | "targets" | "deployments" }>(), {
+import type { LoadingSkeletonKind } from "../lib/loading-skeleton";
+
+const props = withDefaults(defineProps<{ kind?: LoadingSkeletonKind }>(), {
   kind: "rows",
 });
+
+const itemCount = () => {
+  if (props.kind === "board") return 5;
+  if (props.kind === "cards" || props.kind === "deployments") return 3;
+  if (props.kind === "targets") return 2;
+  return 5;
+};
 </script>
 
 <template>
   <div class="page-skeleton" :class="`page-skeleton--${kind}`" aria-label="Loading page content">
-    <span
-      v-for="i in kind === 'cards' || kind === 'deployments' ? 3 : kind === 'targets' ? 2 : 5"
-      :key="i"
-      class="page-skeleton__item"
-    >
+    <span v-for="i in itemCount()" :key="i" class="page-skeleton__item">
       <i></i><i></i><i></i>
     </span>
     <div v-if="kind === 'deployments'" class="page-skeleton__matrix">
@@ -28,6 +33,15 @@ withDefaults(defineProps<{ kind?: "cards" | "table" | "rows" | "targets" | "depl
 .page-skeleton--cards,
 .page-skeleton--deployments {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.page-skeleton--board {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-content: start;
+  height: 100%;
+}
+.page-skeleton--board .page-skeleton__item {
+  min-height: 240px;
+  align-content: start;
 }
 .page-skeleton--table {
   gap: 1px;
@@ -85,6 +99,14 @@ withDefaults(defineProps<{ kind?: "cards" | "table" | "rows" | "targets" | "depl
 @keyframes page-skeleton-pulse {
   to {
     opacity: 0.45;
+  }
+}
+@media (max-width: 760px) {
+  .page-skeleton--board {
+    grid-template-columns: 1fr;
+  }
+  .page-skeleton--board .page-skeleton__item {
+    min-height: 96px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

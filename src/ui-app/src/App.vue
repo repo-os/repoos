@@ -19,6 +19,8 @@ import UiRecoveryBanner from "./components/UiRecoveryBanner.vue";
 import CopyInspectorOverlay from "./components/CopyInspectorOverlay.vue";
 import ReleaseUpdateNotification from "./components/ReleaseUpdateNotification.vue";
 import DependencyOverrideDialog from "./components/DependencyOverrideDialog.vue";
+import PageSkeleton from "./components/PageSkeleton.vue";
+import { loadingSkeletonKind } from "./lib/loading-skeleton";
 import { configureUiRecovery, checkUiBuild, showOffline } from "./lib/uiRecovery";
 import {
   applyShotPreviewConfigFixture,
@@ -40,6 +42,7 @@ const notices = useNoticesStore();
 // full-viewport screen with no app chrome — the visitor isn't authenticated
 // yet, and the sidebar/topbar assume a signed-in session.
 const isPublicRoute = computed(() => route.meta.public === true || route.meta.fullscreen === true);
+const loadingKind = computed(() => loadingSkeletonKind(route.path));
 
 const onApiTimeout = (event: Event): void => {
   const detail = (event as CustomEvent<string>).detail;
@@ -132,7 +135,7 @@ onUnmounted(() => {
         <Sidebar />
 
         <div class="main">
-          <div v-if="repo.loading" class="spin"></div>
+          <PageSkeleton v-if="repo.loading" :kind="loadingKind" class="main-route" />
           <RouterView v-else class="main-route" />
         </div>
       </div>
