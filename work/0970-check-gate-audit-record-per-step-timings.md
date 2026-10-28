@@ -1,6 +1,6 @@
 ---
 id: "0970"
-title: "Check gate: per-step/test timings; close-out runs changed + high-risk tests, full suite at release"
+title: "Check gate audit: record per-step timings and a timings report"
 type: chore
 status: active
 priority: p1
@@ -13,7 +13,7 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T12:27:20Z"
+updated_at: "2026-10-28T12:27:33Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -95,3 +95,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T12:26:37Z · status review→active
 - 2026-10-28T12:27:20Z · body: Acceptance criteria (added 1, removed 1)
 - 2026-10-28T12:27:20Z · message_queued at 2026-10-28T12:27:20.367Z
+- 2026-10-28T12:27:33Z · title
