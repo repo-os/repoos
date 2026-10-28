@@ -13,8 +13,11 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T08:00:32Z"
-updated_at: "2026-10-28T11:25:55Z"
+updated_at: "2026-10-28T15:42:53Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-28T15:28:48.538Z: repoos check failed: rendered-contrast — [pressure] swap in/out 2.0 MB/s over 18.257 s (limit 1.0 MB/s) — holding new work until paging eases. Check Activity Monitor (Memory tab), `vm_stat 1`, or `memory_pressure -Q` on macOS; `/proc/pressure/memory` and `vmstat 1` on Linux.; system load is high (3.6× per CPU, limit 3×) — waiting for headroom before starting more work"
 handoff_signal_retry_count: 2
+dev_error_count: 1
 ---
 ## Items
 
@@ -83,18 +86,18 @@ While the repo loads, `.main` shows a skeleton shaped like the route being opene
 ```json
 [
 {
-  "label": "Task drawer status card is three lines while checks run",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunning"
+"label": "Task drawer status card stays three lines while checks run",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning"
 },
 {
-  "label": "Debug status details cards scroll inside a 250px cap",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".debug-status-detail",
-  "state": "drawer:statusDetails"
+"label": "Debug Status details cards scroll inside a 250px cap",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".debug-status-detail",
+"state": "drawer:statusDetails"
 }
 ]
 ```
@@ -127,3 +130,13 @@ While the repo loads, `.main` shows a skeleton shaped like the route being opene
 - 2026-10-28T09:48:54Z · message_delivered: 4 message(s)
 - 2026-10-28T11:10:20Z · note: adopted orphaned engineer pid 29103
 - 2026-10-28T11:25:55Z · body
+- 2026-10-28T11:42:24Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
+- 2026-10-28T11:42:24Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
+- 2026-10-28T11:44:32Z · body
+- 2026-10-28T11:51:19Z · needs_input
+- 2026-10-28T11:51:20Z · message_queued at 2026-10-28T11:51:20.133Z
+- 2026-10-28T12:17:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-28T12:17:10Z · message_delivered: 1 message(s)
+- 2026-10-28T13:33:36Z · note: ui verification failed (1 issue(s)): [missing-target] Debug Status details cards scroll inside a 250px cap (target "default"): highlight .debug-status-detail matched nothing on /work?task=9999&tab=debug (http://127.0.0.1:60126/work?shotState=drawer:statusDetails)
+- 2026-10-28T15:42:27Z · engineer stopped by request
+- 2026-10-28T15:42:53Z · note: handoff requested (ui-review)

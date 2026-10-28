@@ -44,7 +44,9 @@ describe("spawnTurn hold recheck (#0960)", () => {
     mkdirSync(work, { recursive: true });
     const absPath = join(work, "0007-spawn.md");
     writeFileSync(absPath, taskFile(true));
-    const config: RepoOSConfig = { ...DEFAULT_CONFIG, root };
+    // This tests the last hold recheck, after queue admission. Host pressure
+    // must not divert the fixture into a pressure queue before that point.
+    const config: RepoOSConfig = { ...DEFAULT_CONFIG, root, pressureGuard: { enabled: false } };
     const read = () =>
       parseTask({
         content: readFileSync(absPath, "utf8"),

@@ -24,6 +24,8 @@ import { hostname } from "node:os";
 import { join } from "node:path";
 import { currentBranch, mainCheckoutRoot } from "./git.js";
 
+import { readStepTimings, type CheckStepTiming } from "./check-timings.js";
+
 let Database: any;
 let sqliteAvailable = false;
 let sqliteLoadAttempted = false;
@@ -162,6 +164,7 @@ export interface CheckRunRow {
   stepsTotal: number | null;
   testsDone: number | null;
   testsTotal: number | null;
+  steps?: CheckStepTiming[];
   testFileTimings?: TestFileTiming[];
 }
 
@@ -186,6 +189,7 @@ export interface RecordCheckRunInput {
   stepsTotal?: number | null;
   testsDone?: number | null;
   testsTotal?: number | null;
+  steps?: CheckStepTiming[];
   testFileTimings?: TestFileTiming[];
 }
 
@@ -266,6 +270,9 @@ export class CheckStore {
     if (!cols.some((c) => c.name === "candidate_sha")) {
       this.db.exec("ALTER TABLE check_runs ADD COLUMN candidate_sha TEXT");
     }
+    if (!cols.some((c) => c.name === "step_timings")) {
+      this.db.exec("ALTER TABLE check_runs ADD COLUMN step_timings TEXT");
+    }
     if (!cols.some((c) => c.name === "test_file_timings")) {
       this.db.exec("ALTER TABLE check_runs ADD COLUMN test_file_timings TEXT");
     }
@@ -288,8 +295,8 @@ export class CheckStore {
           `INSERT INTO check_runs
              (task_id, phase, worktree, candidate_sha, machine, remote, scope, started_at, duration_ms,
               outcome, failed_step, skipped_steps, detail, failed_tests, isolation_note,
-              steps_done, steps_total, tests_done, tests_total, test_file_timings)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              steps_done, steps_total, tests_done, tests_total, step_timings, test_file_timings)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           input.taskId ?? null,
@@ -315,6 +322,7 @@ export class CheckStore {
           input.stepsTotal ?? null,
           input.testsDone ?? null,
           input.testsTotal ?? null,
+          input.steps ? JSON.stringify(readStepTimings(input.steps)) : null,
           JSON.stringify(input.testFileTimings ?? []),
         );
       // Retention: delete everything older than the newest MAX_ROWS rows.
@@ -379,6 +387,12 @@ export class CheckStore {
       }
       return [];
     };
+    let steps: CheckStepTiming[] = [];
+    try {
+      steps = readStepTimings(JSON.parse(r.step_timings ?? "null"));
+    } catch {
+      /* corrupt row */
+    }
     const skipped = jsonList(r.skipped_steps);
     return {
       id: Number(r.id) || 0,
@@ -394,6 +408,7 @@ export class CheckStore {
       outcome: (r.outcome ?? "fail") as CheckRunOutcome,
       failedStep: r.failed_step ?? null,
       skippedSteps: skipped,
+      steps,
       detail: r.detail ?? null,
       failedTests: jsonList(r.failed_tests),
       isolationNote: r.isolation_note ?? null,
