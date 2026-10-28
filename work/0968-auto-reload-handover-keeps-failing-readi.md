@@ -2,16 +2,16 @@
 id: "0968"
 title: "Auto-reload handover keeps failing: readiness-based handshake, give up after N, Settings toggle"
 type: bug
-status: ready
+status: active
 priority: p1
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/auto-reload-handover-keeps-failing-readi
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-27T12:03:03Z"
-updated_at: "2026-10-28T16:44:25Z"
+updated_at: "2026-10-28T16:44:33Z"
 ---
 ## Problem
 The server's build-change auto-reload repeatedly failed: on 2026-10-27 the replacement process was killed by the 30 s handshake timeout 9 times in a row while the old process kept serving the old build, and each attempt dropped UI connections ("server connection issue"). Replacements need ~27-60 s to become ready on this machine. As a stopgap the launchd server now runs with REPOOS_NO_AUTO_RELOAD=1 (commit 4da413c4f) and drivers restart with `just revive`.
@@ -33,3 +33,4 @@ src/server/reload.ts and server.ts (reloadEnabled). No server restarts, no previ
 - 2026-10-27T12:03:03Z · created · njachowski@gmail.com
 - 2026-10-28T16:44:00Z · cli_override, model_override
 - 2026-10-28T16:44:25Z · status inbox→ready
+- 2026-10-28T16:44:33Z · status ready→active, branch
