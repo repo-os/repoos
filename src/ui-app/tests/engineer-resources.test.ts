@@ -38,7 +38,10 @@ function config(overrides: Partial<RepoOSConfig> = {}): RepoOSConfig {
 }
 
 const dirs: string[] = [];
+let restoreSlotHome: (() => void) | null = null;
 afterEach(() => {
+  restoreSlotHome?.();
+  restoreSlotHome = null;
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
@@ -272,6 +275,16 @@ export default class {
 
   it("shares heavySlots across five engineers from two checkouts", async () => {
     if (process.platform === "win32") return;
+    // This worker's slot home is shared with every other test in the process.
+    // A private home keeps the cap assertion about these five jobs only.
+    const slotHome = mkdtempSync(join(tmpdir(), "repoos-engineer-heavy-slots-"));
+    dirs.push(slotHome);
+    const previousSlotHome = process.env.REPOOS_LOCAL_CHECK_SLOT_HOME;
+    process.env.REPOOS_LOCAL_CHECK_SLOT_HOME = slotHome;
+    restoreSlotHome = () => {
+      if (previousSlotHome === undefined) delete process.env.REPOOS_LOCAL_CHECK_SLOT_HOME;
+      else process.env.REPOOS_LOCAL_CHECK_SLOT_HOME = previousSlotHome;
+    };
     const rootA = mkdtempSync(join(tmpdir(), "repoos-engineer-heavy-a-"));
     const rootB = mkdtempSync(join(tmpdir(), "repoos-engineer-heavy-b-"));
     dirs.push(rootA, rootB);
@@ -326,9 +339,14 @@ printf 'end %s\\n' "$$" >> "$REPOOS_TEST_RUN_LOG"
         { shim: shimB!, cwd: rootB },
       ];
       for (const engineer of engineers) {
+        const env: NodeJS.ProcessEnv = { ...process.env, REPOOS_TEST_RUN_LOG: runLog };
+        // A parent `repoos check` sets these so its own test workers do not
+        // take a second slot. These children are the jobs under test.
+        delete env.REPOOS_HEAVY_SLOT_HELD;
+        delete env.REPOOS_LOCAL_CHECK_SLOT_HELD;
         const child = spawn(join(engineer.shim, "vitest"), ["run"], {
           cwd: engineer.cwd,
-          env: { ...process.env, REPOOS_TEST_RUN_LOG: runLog },
+          env,
           stdio: "ignore",
         });
         children.push(child);

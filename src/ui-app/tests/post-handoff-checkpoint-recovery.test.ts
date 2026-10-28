@@ -255,7 +255,13 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
       vi.spyOn(
         reviews as unknown as { spawnDurable: (...a: unknown[]) => void },
         "spawnDurable",
-      ).mockImplementation(() => {});
+      ).mockImplementation((...args: unknown[]) => {
+        // prepareReview drops a run that never armed its timeout. A real spawn sets one.
+        const run = args[4] as { timer?: ReturnType<typeof setTimeout> };
+        const timer = setTimeout(() => {}, 60_000);
+        timer.unref?.();
+        run.timer = timer;
+      });
 
       const started = await reviews.runCheckpointDelta(
         task,
@@ -263,7 +269,8 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
       );
       expect(started.ok).toBe(true);
 
-      reviews.handleReviewDone("review:0001");
+      await reviews.handleReviewDone("review:0001");
+      // The delta handler is scheduled after the completion fence resolves.
       await Promise.resolve();
 
       expect(handler).toHaveBeenCalledTimes(1);
