@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T11:30:32Z"
-updated_at: "2026-10-28T14:48:07Z"
+updated_at: "2026-10-28T14:48:57Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:29:29.421Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:29:58.011Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
@@ -34,6 +34,7 @@ Git work never makes the board or a handoff hang, and the slow path cannot come 
 - The `dirLogCache` survives a worker restart (persist it under `.repoos/cache/` keyed by HEAD, or keep it in the parent), so a timeout never forces a cold full walk. Test.
 - `repoos stats` / the STUCK log shows queue wait vs run time per git job.
 - A check that is waiting (pressure guard, a heavy slot, the git queue) says so: the check run records the wait reason, the task card and handoff transcript show "waiting: <reason> for Nm", and a wait over 10 minutes is surfaced as needs-input instead of hanging silently. 2026-10-28: #0970's handoff check sat 26 min at 0% CPU behind a stale branch-local pressure guard with nothing on the card. Test.
+- Build lock: when `src/` is newer than `dist/`, concurrent `repoos` CLI invocations share one build (a lock file under `dist/` or `.repoos/`); later callers wait for it instead of each starting `tsc` + Vite. 2026-10-28: a hotfix commit on main plus several concurrent CLIs drove load average to 320 and the server stopped answering. Test.
 - Fold in #0966 (batched, cached board git queries) where it overlaps; mark #0966 superseded in its body if fully covered.
 
 ## Notes for AI
@@ -63,3 +64,4 @@ Files: `src/server/git-worker.ts` (queue, timeouts), `src/server/git-worker-entr
 - 2026-10-28T13:30:08Z · needs_input
 - 2026-10-28T13:36:24Z · model_override
 - 2026-10-28T14:48:07Z · message_queued at 2026-10-28T14:48:07.769Z
+- 2026-10-28T14:48:57Z · body: Acceptance criteria (added 1)
