@@ -11,7 +11,7 @@ branch: feat/check-gate-audit-record-per-step-timings
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T08:50:58Z"
+updated_at: "2026-10-28T09:03:50Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: a7faee07a7fe0da9f4cf7aab267566da66f57e11
 handoff_signal_retry_count: 2
@@ -73,3 +73,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T08:11:51Z · note: handoff requested (cli)
 - 2026-10-28T08:50:19Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-10-28T08:50:44Z · message_queued at 2026-10-28T08:50:44.383Z
+- 2026-10-28T09:03:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
