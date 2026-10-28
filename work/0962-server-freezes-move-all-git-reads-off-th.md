@@ -2,7 +2,7 @@
 id: "0962"
 title: "Server freezes: move all git reads off the HTTP thread, batch and cache them"
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_merge: true
@@ -207,4 +207,4 @@ Acceptance: default list <200 ms warm with 900 tasks; context endpoint <100 ms; 
 - 2026-10-28T00:12:55Z · message_delivered: 1 message(s)
 - 2026-10-28T00:58:35Z · needs_input
 - 2026-10-28T00:58:35Z · needs_input
-- 2026-10-28T01:15:17Z · note: shots: skipped — the diff (112 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-28T01:15:17Z · status active→review
