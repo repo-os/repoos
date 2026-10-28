@@ -330,6 +330,11 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--profile <name> · --changed <ref> · --print-plan · --local-tests",
       },
       {
+        name: "checks timings",
+        usage: "checks timings",
+        desc: "Show recent check durations and the slowest test files",
+      },
+      {
         name: "checks slots",
         usage: "checks slots [--release SLOT --confirm PID]",
         desc: "Inspect local check slot holders and queue; explicitly release a wedged holder",

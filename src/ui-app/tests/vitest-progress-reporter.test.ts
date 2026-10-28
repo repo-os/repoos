@@ -44,6 +44,16 @@ describe("vitest progress reporter", () => {
     };
   }
 
+  it("records Vitest module duration once and emits a relative path", () => {
+    const reporter = new RepoOSProgressReporter();
+    const module = { id: `${process.cwd()}/slow.test.ts`, diagnostic: () => ({ duration: 1234 }) };
+    reporter.onTestModuleEnd(module);
+    reporter.onTestModuleEnd(module);
+    const timingLines = lines.filter((line) => line.startsWith("::repoos-test-file::"));
+    expect(timingLines).toHaveLength(1);
+    expect(timingLines[0]).toContain('"file":"slow.test.ts","durationMs":1234');
+  });
+
   it("accumulates file counts across vitest passes via base offsets", () => {
     const pass1 = new RepoOSProgressReporter();
     pass1.onTestRunStart([{ id: "a" }, { id: "b" }, { id: "c" }]);

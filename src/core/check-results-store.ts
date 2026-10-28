@@ -27,6 +27,7 @@ const MAX_OUTPUT = 256 * 1024;
 
 /** One step's outcome, as persisted. Mirrors `StepRunResult` minus bulk. */
 export interface StoredStepResult {
+  testFileTimings?: import("./test-file-timings.js").TestFileTiming[];
   name: string;
   status: StepStatus;
   command?: string;
@@ -101,6 +102,7 @@ export function readCheckRun(root: string, cacheDir = ".repoos"): CheckRunRecord
       cwd: r.cwd,
       durationMs: Number(r.durationMs) || 0,
       output: clipOutput(r.output),
+      testFileTimings: r.testFileTimings,
       detail: r.detail,
       required: r.required !== false,
     }));
