@@ -1,16 +1,50 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { LoaderCircle, RotateCcw, WifiOff } from "lucide-vue-next";
+import { computed, ref } from "vue";
+import { Copy, LoaderCircle, RotateCcw, WifiOff } from "lucide-vue-next";
 import { dismissRecovery, reloadNow, uiRecoveryState } from "../lib/uiRecovery";
 import Button from "./ui/button.vue";
 
 const recovery = uiRecoveryState();
-const title = computed(() =>
-  recovery.kind === "stale" ? "New RepoOS build available" : "Server connection issue",
+const server = computed(() => {
+  const name = recovery.projectName ? `${recovery.projectName} server` : "RepoOS server";
+  return recovery.origin ? `${name} at ${recovery.origin}` : name;
+});
+const title = computed(() => {
+  if (recovery.kind === "stale") return "New RepoOS build available";
+  // #0959: a refused connection and a timeout are different problems.
+  if (recovery.offlineReason === "down") return `${server.value} is not running`;
+  if (recovery.offlineReason === "slow") return `${server.value} is not responding`;
+  return "Server connection issue";
+});
+const lastReached = computed(() =>
+  recovery.lastReachedAt
+    ? `Last reached at ${new Date(recovery.lastReachedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`
+    : null,
 );
+const showRestart = computed(
+  () =>
+    recovery.kind === "offline" && recovery.offlineReason !== "slow" && !!recovery.restartCommand,
+);
+const copied = ref(false);
+async function copyRestart(): Promise<void> {
+  if (!recovery.restartCommand) return;
+  try {
+    await navigator.clipboard.writeText(recovery.restartCommand);
+    copied.value = true;
+    setTimeout(() => (copied.value = false), 1500);
+  } catch {
+    /* clipboard blocked: the command stays visible to copy by hand */
+  }
+}
 const detail = computed(() => {
   if (recovery.reloading) return recovery.message;
-  if (recovery.kind !== "stale") return recovery.message;
+  if (recovery.kind !== "stale") {
+    if (recovery.offlineReason === "down")
+      return "The connection was refused: nothing is listening on this port. Restart the server, then retry.";
+    if (recovery.offlineReason === "slow")
+      return "It is running but did not answer in time. It may be busy; retry in a moment.";
+    return recovery.message;
+  }
 
   const build = recovery.newBuild ? recovery.newBuild.slice(0, 12) : "New build";
   const readyAt = recovery.newBuildAt
@@ -29,6 +63,18 @@ const detail = computed(() => {
       <div class="ui-recovery-copy">
         <strong>{{ title }}</strong>
         <small>{{ detail }}</small>
+        <small v-if="recovery.kind === 'offline' && lastReached">{{ lastReached }}</small>
+        <small
+          v-if="recovery.kind === 'offline' && recovery.probeResult"
+          data-test-id="ui-recovery-probe"
+          >{{ recovery.probeResult }}</small
+        >
+        <div v-if="showRestart" class="ui-recovery-restart" data-test-id="ui-recovery-restart">
+          <code>{{ recovery.restartCommand }}</code>
+          <Button variant="ghost" size="sm" @click="void copyRestart()">
+            <Copy class="size-3.5" />{{ copied ? "Copied" : "Copy" }}
+          </Button>
+        </div>
       </div>
       <div class="ui-recovery-actions">
         <Button variant="accent" size="sm" :disabled="recovery.reloading" @click="void reloadNow()">
@@ -86,6 +132,23 @@ const detail = computed(() => {
   color: var(--txt-muted, #b7bdd1);
   font-size: 12px;
   line-height: 1.35;
+}
+.ui-recovery-restart {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  min-width: 0;
+}
+.ui-recovery-restart code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
+  background: var(--bg-2, #0f1220);
 }
 .ui-recovery-actions {
   display: flex;
