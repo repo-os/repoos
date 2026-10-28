@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0973"
 title: "Close-out tests: changed-path + high-risk suites, full suite at release"
 type: feature
@@ -42,3 +43,4 @@ Builds on #0970 (step_timings in check_runs, the timings report). Do not edit re
 - 2026-10-28T11:30:54Z · status inbox→ready
 - 2026-10-28T11:31:01Z · status ready→active, branch
 - 2026-10-28T11:33:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
