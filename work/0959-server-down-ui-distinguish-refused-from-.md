@@ -3,13 +3,17 @@ id: "0959"
 title: "Server-down UI: distinguish refused from busy, show the project's restart command, and watch per-project servers"
 type: feature
 status: active
+hold: true
+hold_reason: "Driver doing this by hand (Nick, 2026-10-28)"
+hold_by: driver
+hold_at: "2026-10-28T16:40:25.921Z"
 priority: p1
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-down-ui-distinguish-refused-from-
 created_at: "2026-10-25T12:30:39Z"
-updated_at: "2026-10-28T16:39:48Z"
+updated_at: "2026-10-28T16:43:49Z"
 ---
 ## Problem
 
@@ -39,9 +43,16 @@ Real case (2026-10-25): the Divot project's server on `127.0.0.1:7405` had been 
 - Keep the copy plain English; see the UI copy rules in `AGENTS.md`.
 - Reproduce with the Divot server stopped (`launchctl bootout`/SIGTERM on its pid) and with a stalled server (a test hook that delays `/api/health`).
 
+## Decision
+Decision (driver, 2026-10-28): do not extend `repoos-watchdog` to every project's serve job in this task. The watchdog cannot tell an intentional stop (`repoos service stop`, `launchctl bootout`) from a crash, and an earlier respawn loop produced ~166 "bind failed" errors in an hour. Covering every job needs: (1) `repoos service stop` writing an intentional-stop marker the watchdog honors, (2) the same consecutive-miss threshold the 7171 probe uses, and (3) exponential backoff with a give-up. That is a follow-up task; until then the UI shows the exact restart command for the down project, and the RepoOS Hub is where a Restart button belongs.
+
+
 ## Activity
 
 - 2026-10-25T12:30:39Z · created · njachowski@gmail.com
 - 2026-10-28T16:39:40Z · status inbox→ready
 - 2026-10-28T16:39:48Z · status ready→active, branch
 - 2026-10-28T16:39:48Z · note: agent fallback: codex + gpt-6-luna is paused (Codex account usage limit (Sol and Luna) until 11:43 PM local) until 2026-10-28T16:43:00.000Z — using cursor + composer-2.5
+- 2026-10-28T16:40:25Z · engineer stopped by request
+- 2026-10-28T16:40:26Z · held, held-reason, held-by, held-at
+- 2026-10-28T16:43:49Z · body: Decision (added)
