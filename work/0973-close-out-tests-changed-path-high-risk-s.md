@@ -3,20 +3,23 @@ id: "0973"
 title: "Close-out tests: changed-path + high-risk suites, full suite at release"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-10-28T13:29:13.963926Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out"
 priority: p1
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-tests-changed-path-high-risk-s
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: grok-4.7-low
 created_at: "2026-10-28T09:17:44Z"
-updated_at: "2026-10-28T13:28:58Z"
+updated_at: "2026-10-28T13:30:05Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-28T11:49:16.051Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 1
+dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-28T12:16:50.517Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -76,3 +79,5 @@ Builds on #0970 (step_timings in check_runs, the timings report). Do not edit re
 - 2026-10-28T13:28:51Z · model_override
 - 2026-10-28T13:28:58Z · engineer stopped by request
 - 2026-10-28T13:28:58Z · needs_input
+- 2026-10-28T13:29:40Z · agent exited with an error (codex) · 2026-10-28T13:29:13.963926Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-10-28T13:30:05Z · cli_override, model_override
