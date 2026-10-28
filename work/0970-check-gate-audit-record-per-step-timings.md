@@ -94,3 +94,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T12:26:35Z · note: review pass 2: needs some work
 - 2026-10-28T12:26:37Z · status review→active
 - 2026-10-28T12:27:20Z · body: Acceptance criteria (added 1, removed 1)
+- 2026-10-28T12:27:20Z · message_queued at 2026-10-28T12:27:20.367Z
