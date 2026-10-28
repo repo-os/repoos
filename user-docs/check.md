@@ -57,6 +57,7 @@ definition of done. Only a step you mark `required = false` is advisory.
 | `timeoutMs` | `600000` | Kill the step after this long. |
 | `required` | `true` | `false` makes a failure advisory instead of gating. |
 | `profiles` | every profile | Which profiles include this step. `["full"]` keeps a slow step out of a routine run. |
+| `alwaysRun` | safety suites | Test-file globs unioned with changed tests for `kind = "tests"`. Overrides `[check] alwaysRun`; an empty array disables the safety set. |
 | `whenChanged` | always runs | Path globs; in changed-path mode the step runs only when one matches. |
 | `requires` | — | Binaries that must be on `PATH`. |
 | `runsOn` | any host | Host capabilities a **remote** run of this plan needs (`remoteValidation`), e.g. `runsOn = ["macos"]`. The runner routes the whole job to a host whose `os`/`labels` provide every capability; a job with no `runsOn` runs on any host, and local runs ignore the field. |
@@ -255,8 +256,8 @@ remote-validation events show bundle size and upload time for each run. The
 Remote runners tab and Settings → Remote validation show each host's
 `validate.sh` generation and a one-line install command when an update is needed. With `--changed` /
 `REPOOS_CHECK_CHANGED`, the **remote** test step is scoped the same way as locally
-(#0695); handoff runs the full suite on the runner, and close-out scopes it only
-when main moved with real code (#0724, below). Managed
+(#0695); handoff runs the full suite on the runner, and default close-out runs
+changed tests plus safety suites (below). Managed
 engineers (`REPOOS_AGENT=1`) always use the board's runner (Hetzner or Tailscale).
 Run `repoos check` once before handoff — not after every edit — to avoid WIP
 checkpoint churn. Handoff reuses a green **full** remote pass at the same commit
@@ -290,38 +291,53 @@ green:
 
 Both are disabled for close-out and release: those gates never apply the
 failed-first ordering or isolation-triage accelerators, and the remote close-out
-gate never uses them. (Close-out still runs the full suite at least once on any
-tree it must test — see "Close-out gate scope" below.) Set
+gate never uses them. (See "Close-out gate scope" below for the changed-path safety set.) Set
 `check.isolationRuns = 0` to disable isolation triage entirely. The setting is
 also available in Settings → Advanced.
 
 ### Close-out gate scope
 
-Move to done does not blindly re-run the whole suite (#0724). The candidate is
-the feature branch merged with current main, and that commit already passed the
-identical full gate at handoff, so the close-out compares the candidate tree
-against the tree the handoff gate recorded (`check_runs.candidate_sha` of the
-latest green full pre-review run) and picks a mode from `closeOut.gate`
-(`full | scoped | reuse`, default `scoped`, in Settings → General):
+Close-out no longer runs every test by default. With `closeOut.gate = "scoped"`
+(the default), Move to done runs the full check profile, but its tests step runs
+changed-path tests against the merged candidate's merge base with current main,
+**plus** a short always-run safety set. This applies even when the candidate tree
+matches the handoff-tested tree. Both local and remote runs compute the union
+before execution; passing file filters alongside Vitest's `--changed` would
+incorrectly compute an intersection.
 
-| Mode | When | What runs |
-| --- | --- | --- |
-| **reuse** | The candidate tree is identical to the handoff-tested tree, or main advanced with bookkeeping only (`work/`, `inputs/`, `stories/`, `dist/`) | Cheap steps only; the tests step records `skipped — full suite reused from the handoff gate` |
-| **scoped** | Main advanced with real code | The full profile, with the tests step scoped to `--changed <tested base>` (#0695), locally and on the runner |
-| **full** | `closeOut.gate = full`, a declared `[[check.fullSuitePaths]]` prefix changed, or a release | The whole suite, as before |
+The defaults are `close-out-gate-mode.test.ts` (landing decisions),
+`handoff.test.ts` (review handoff), `git-worker-lifecycle.test.ts` (git worker
+startup and shutdown), `boot-timing.test.ts` (server boot), and
+`frontmatter.test.ts` (task document parsing). These are `**/<filename>` globs.
+Settings → Advanced → **Always-run test suites** controls `[check] alwaysRun`.
+A tests step's `alwaysRun` array overrides that list; `[]` disables it.
 
-`[[check.fullSuitePaths]]` (Settings → Advanced) lists repo-relative path
-prefixes that always force the full suite — machinery the changed-path scoping
-cannot reason about, such as a CI pipeline or the check engine's own config.
+```toml
+[[check.steps]]
+name = "tests"
+kind = "tests"
+alwaysRun = ["**/critical.test.ts"]
+```
 
-A **scoped** run that fails is re-run once as the identical **full** suite
-before the close-out fails — on the runner (dropping the changed ref) and
-locally — so scoping can cost time but never correctness. Without a recorded
-tested tree (no remote validation, or no green full pre-review run) there is
-nothing to reuse and no base to scope against, so the close-out runs the full
-suite exactly as before. The Checks → Runs tab shows the chosen mode and why in
-the run's detail; a reused suite's tests step reads
-`skipped — full suite reused from the handoff gate`.
+If the merge base, git diff, or changed-test discovery cannot be computed, the
+test wrapper prints a warning and runs the full suite. A failing scoped gate
+also retries once with the full suite. `closeOut.gate = "full"` and matching
+`[check] fullSuitePaths` continue to force the full suite. Explicit
+`closeOut.gate = "reuse"` retains the earlier handoff reuse policy.
+
+To run every test on demand, use `repoos check --profile release` or unscoped
+`bun run test`. The release profile includes every declared step and ignores
+`--changed` and `REPOOS_CHECK_CHANGED`. Release validation still runs every test.
+
+### Test-file timings
+
+Every Vitest pass emits structured per-file durations, including failed files.
+Local and remote check history stores these in `check_runs.test_file_timings`.
+The check summary and `repoos checks timings` show the ten slowest files per run.
+Durations measure Vitest's accumulated test and hook execution time, in
+milliseconds; they exclude collection and environment setup and are not additive
+wall-clock time when files run concurrently. Older history rows show no file
+samples. Timing capture does not change whether a test passes.
 
 ### Cross-cutting steps
 

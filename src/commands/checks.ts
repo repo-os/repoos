@@ -1,3 +1,5 @@
+import { getCheckStore } from "../core/check-store.js";
+import { formatSlowestTestFiles } from "../core/test-file-timings.js";
 import { c } from "../cli/colors.js";
 import { loadConfig } from "../core/config.js";
 import {
@@ -10,8 +12,27 @@ import { mainCheckoutRoot } from "../core/git.js";
 import { heavySlotLimit } from "../core/resource-limits.js";
 
 export function cmdChecks(args: string[]): void {
+  if (args[0] === "timings") {
+    const config = loadConfig();
+    let root = config.root;
+    try {
+      root = mainCheckoutRoot(root);
+    } catch {
+      /* standalone */
+    }
+    for (const run of getCheckStore(root, config.cacheDir).list({ limit: 10 })) {
+      console.log(
+        `${run.startedAt} · ${run.phase} · ${run.machine ?? "local"} · ${run.scope} · ${((run.durationMs ?? 0) / 1000).toFixed(1)}s`,
+      );
+      if (run.testFileTimings?.length) {
+        console.log("Slowest test files (test + hook time):");
+        console.log(formatSlowestTestFiles(run.testFileTimings));
+      }
+    }
+    return;
+  }
   if (args[0] !== "slots") {
-    console.error("Usage: repoos checks slots [--release SLOT --confirm PID]");
+    console.error("Usage: repoos checks timings | slots [--release SLOT --confirm PID]");
     process.exitCode = 2;
     return;
   }

@@ -31,6 +31,12 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { cpus, totalmem } from "node:os";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { c } from "../cli/colors.js";
+import {
+  TestFileTimingCollector,
+  testFileTimings,
+  formatSlowestTestFiles,
+  type TestFileTiming,
+} from "../core/test-file-timings.js";
 import { checkBuildForRoot } from "../core/build.js";
 import { findRepoRoot, loadConfig } from "../core/config.js";
 import type { CheckContrastPair, CheckThemeScope, RepoOSConfig } from "../core/types.js";
@@ -1114,10 +1120,12 @@ interface StepContext {
   echo: boolean;
   /** Outer timeout from the check plan (`[[check.steps]].timeoutMs`). */
   stepTimeoutMs?: number;
+  alwaysRun?: string[];
 }
 
 /** What a built-in `kind` handler returns. */
 interface BuiltinOutcome {
+  testFileTimings?: TestFileTiming[];
   status: StepStatus;
   /** The command it resolved to (so the results block can name it). */
   command?: string;
@@ -1606,6 +1614,7 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
         : "skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)",
     );
   }
+  const fileTimingCollector = new TestFileTimingCollector();
   const hasTestScript = Boolean(ctx.scriptPkg.scripts?.test);
   const hasTestFiles = ["test", "__tests__", "tests"].some((d) => existsSync(join(ctx.cwd, d)));
   if (!hasTestScript && !hasTestFiles) return skipped("skipped — no test suite found");
@@ -1627,11 +1636,15 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
   if (blocked) return { ...blocked, command };
 
   const workers = hasTestScript ? testPoolSize(ctx.env) : undefined;
-  const env = workers ? { ...ctx.env, REPOOS_TEST_WORKERS: String(workers) } : ctx.env;
+  const env = {
+    ...ctx.env,
+    ...(workers ? { REPOOS_TEST_WORKERS: String(workers) } : {}),
+    ...(ctx.alwaysRun ? { REPOOS_TEST_ALWAYS_RUN: JSON.stringify(ctx.alwaysRun) } : {}),
+  };
 
   // Failed-first (#0655): re-run the files that failed last time before paying
   // for the whole suite. This is an ordering optimisation, never a skip — if
-  // they pass, the full suite below still runs to completion on this tree.
+  // they pass, the selected suite below still runs to completion on this tree.
   const testScript = ctx.scriptPkg.scripts?.test;
   const priorFiles = hasTestScript
     ? failedTestFiles(ctx.previousFailedTests ?? [], ctx.repoRoot)
@@ -1642,6 +1655,7 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
     console.log(c.dim(`  · previously-failed test file(s) first · ${priorFiles.join(", ")}`));
     const pre = await runCommand({
       command: preflight,
+      onChunk: (chunk) => fileTimingCollector.push(chunk),
       cwd: ctx.cwd,
       timeoutMs: 300_000,
       env,
@@ -1655,11 +1669,14 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
       return {
         status: pre.status === "timeout" ? "timeout" : "failed",
         command: preflight,
+        testFileTimings: fileTimingCollector.values(),
         detail: `previously-failed test file(s) still fail — ${why}`,
         output: pre.output,
       };
     }
-    console.log(c.green("  ✔ previously-failed test file(s) pass now — running the full suite"));
+    console.log(
+      c.green("  ✔ previously-failed test file(s) pass now — running the selected suite"),
+    );
   }
 
   if (workers && !changedRef) {
@@ -1674,17 +1691,27 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
   // Honor the plan's `timeoutMs` when set (repoos.toml's tests step is 15m);
   // fall back to the historical caps only when the step did not declare one.
   const timeoutMs = ctx.stepTimeoutMs ?? (changedRef ? 420_000 : 1_500_000);
-  const res = await runCommand({ command, cwd: ctx.cwd, timeoutMs, env, echo: ctx.echo });
+  const res = await runCommand({
+    command,
+    cwd: ctx.cwd,
+    timeoutMs,
+    env,
+    echo: ctx.echo,
+    onChunk: (chunk) => fileTimingCollector.push(chunk),
+  });
   if (res.status === "passed") {
     return {
       status: "passed",
       command,
-      detail: changedRef ? `scoped to changed vs ${changedRef}` : undefined,
+      testFileTimings: fileTimingCollector.values(),
+      detail: changedRef ? `scoped to changed vs ${changedRef} plus always-run suites` : undefined,
+      output: res.output,
     };
   }
   if (res.status === "timeout") {
     return {
       status: "timeout",
+      testFileTimings: fileTimingCollector.values(),
       command,
       detail: `timed out after ${timeoutLabel(timeoutMs)}`,
       output: res.output,
@@ -1695,6 +1722,7 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
   const isolationNote = await triageIsolatedFailures(ctx, base, testScript, res.output, env);
   return {
     status: "failed",
+    testFileTimings: fileTimingCollector.values(),
     command,
     detail: outputTail(res.output) ?? `Tests failed (exit ${res.exitCode})`,
     output: res.output,
@@ -1951,7 +1979,7 @@ export async function runCheckPlan(
   const pkg = readPkg(repoRoot);
   const selected = selectSteps(plan, {
     profile: opts.profile,
-    changedPaths: opts.changedPaths,
+    changedPaths: opts.profile === "release" ? undefined : opts.changedPaths,
     stepNames: opts.stepNames,
   });
   const results: StepRunResult[] = [];
@@ -2027,7 +2055,8 @@ export async function runCheckPlan(
         pkg,
         scriptPkg: readPkg(cwd),
         requires: step.requires,
-        changedRef: opts.changedRef,
+        changedRef: opts.profile === "release" ? undefined : opts.changedRef,
+        alwaysRun: step.alwaysRun ?? cfg.check?.alwaysRun,
         fixCommand: opts.fix ? (formatFixCommand(step, repoRoot) ?? undefined) : undefined,
         previousFailedTests: opts.previousFailedTests,
         isolationRuns: opts.isolationRuns,
@@ -2070,6 +2099,7 @@ export async function runCheckPlan(
       detail: outcome.detail,
       required: step.required,
       isolationNote: outcome.isolationNote,
+      testFileTimings: outcome.testFileTimings,
     });
   }
   return results;
@@ -2116,7 +2146,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   }
 
   const profile = opts.profile?.trim() || plan.defaultProfile || DEFAULT_PROFILE;
-  const changedRef = opts.changed?.trim() || changedTestRef(process.env);
+  const changedRef =
+    profile === "release" ? undefined : opts.changed?.trim() || changedTestRef(process.env);
 
   heading("Check plan");
   const scope = changedRef ? ` · changed-path mode vs ${changedRef}` : "";
@@ -2155,7 +2186,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     console.log(
       c.dim(
         `  · Changed-path mode: ${changedPaths?.length ?? 0} path(s) differ from ${changedRef} ` +
-          "(fast pre-review pass — close-out still runs the full plan)",
+          "(fast pre-review pass — close-out runs changed tests plus always-run safety suites)",
       ),
     );
   }
@@ -2453,7 +2484,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
 
   const runStartedAt = new Date();
   // Failed-first ordering (#0655): only interactive/CLI and pre-review runs
-  // reorder. Close-out and release always run the full suite from a clean
+  // reorder. Close-out and release run their selected suite from a clean
   // slate, and the remote close-out gate never reaches this point. Attribution
   // is validated against THIS project so an inherited foreign task id cannot
   // pick another project's failed-test list (#0870).
@@ -2597,6 +2628,12 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     }
   }
 
+  const fileTimings = results.flatMap((r) => r.testFileTimings ?? testFileTimings(r.output ?? ""));
+  if (fileTimings.length) {
+    heading("Slowest test files");
+    console.log(formatSlowestTestFiles(fileTimings));
+  }
+
   // Persist the run for the Checks surface (#0447) before exiting. Fail-soft:
   // visibility only, never a reason to fail an otherwise-green gate.
   const finishedAt = new Date();
@@ -2646,6 +2683,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         cwd: r.cwd,
         durationMs: r.durationMs,
         output: r.output,
+        testFileTimings: r.testFileTimings,
         detail: r.detail,
         required: r.required,
       })),
@@ -2672,6 +2710,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     steps: completedSteps,
     stepsDone: finalProgress?.stepsDone ?? null,
     stepsTotal: finalProgress?.stepsTotal ?? null,
+    testFileTimings: fileTimings,
     testsDone: testProgress?.testsDone ?? null,
     testsTotal: testProgress?.testsTotal ?? null,
     detail: (() => {
@@ -2704,7 +2743,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
  * Failing test names from this task's most recent run (#0655), or none. Only
  * when that most recent run actually failed — once a run is green, the next
  * `repoos check` starts from a clean slate. Interactive/CLI and pre-review
- * only: close-out and release always run the full suite. Fail-soft.
+ * only: close-out and release keep the normal suite ordering. Fail-soft.
  */
 export function previousFailedTestsForRun(opts: {
   root: string;
@@ -2753,6 +2792,7 @@ function recordRunHistoryRow(row: {
   testsDone?: number | null;
   testsTotal?: number | null;
   steps?: CheckStepTiming[];
+  testFileTimings?: TestFileTiming[];
 }): void {
   try {
     const { taskId, phase } = row.attribution;
@@ -2776,6 +2816,7 @@ function recordRunHistoryRow(row: {
       testsDone: row.testsDone,
       testsTotal: row.testsTotal,
       steps: row.steps,
+      testFileTimings: row.testFileTimings,
     });
   } catch {
     /* never fail the gate on a history write */

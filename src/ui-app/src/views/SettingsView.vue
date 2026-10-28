@@ -975,6 +975,7 @@ const ARRAY_PLACEHOLDERS: Record<string, string> = {
   "approval.autoApprove.types": "chore (comma-separated types)",
   "approval.autoApprove.machineryPaths": "src/server/, src/core/ (comma-separated path prefixes)",
   "check.fullSuitePaths": "src/server/close-out/, repoos.toml (comma-separated path prefixes)",
+  "check.alwaysRun": "**/close-out-gate-mode.test.ts (glob patterns)",
 };
 
 function arrayPlaceholder(key: string): string {

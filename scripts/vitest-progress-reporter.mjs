@@ -1,3 +1,4 @@
+import { relative } from "node:path";
 import { writeFileSync } from "node:fs";
 
 /** Machine-readable per-file progress consumed by RepoOS's live check stream. */
@@ -22,6 +23,11 @@ export default class RepoOSProgressReporter {
   onTestModuleEnd(module) {
     if (this.#completed.has(module.id)) return;
     this.#completed.add(module.id);
+    const durationMs = module.diagnostic?.()?.duration;
+    if (Number.isFinite(durationMs) && durationMs >= 0) {
+      const file = relative(process.cwd(), module.moduleId ?? module.id).replaceAll("\\", "/");
+      process.stdout.write(`::repoos-test-file::${JSON.stringify({ file, durationMs })}\n`);
+    }
     this.#emit();
   }
 
