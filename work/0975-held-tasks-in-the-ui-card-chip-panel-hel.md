@@ -11,7 +11,7 @@ branch: feat/held-tasks-in-the-ui-card-chip-panel-hel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-28T12:02:51Z"
-updated_at: "2026-10-28T18:28:46Z"
+updated_at: "2026-10-28T20:22:08Z"
 ---
 ## Problem
 #0960 added a durable "hold" (`repoos hold` / `unhold`, `POST /api/tasks/:id/hold` and `/unhold`) and a **Held (N)** list in the Work page footer. In the UI it is hard to tell a task is held, and a human cannot place or lift a hold from the task panel:
@@ -87,3 +87,4 @@ updated_at: "2026-10-28T18:28:46Z"
 - 2026-10-28T18:26:52Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-28T18:28:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T18:28:46Z · message_delivered: 1 message(s)
+- 2026-10-28T20:22:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
