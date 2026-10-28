@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "RetriableError: Connection failed repeatedly"
+debug_tldr: "The agent's connection dropped repeatedly while `repoos check` was still running under memory pressure (compressor above its 8 GB limit), so free memory and resume the task."
+debug_tldr_at: "2026-10-28T11:43:07Z"
+debug_tldr_key: "dev-error|RetriableError: Connection failed repeatedly"
 priority: p3
 area: [web, core]
 assigned_to: ai
@@ -16,7 +19,7 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T08:00:32Z"
-updated_at: "2026-10-28T11:42:24Z"
+updated_at: "2026-10-28T11:43:07Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-28T11:42:24.479Z\",\"kind\":\"dev-error\"}]"
