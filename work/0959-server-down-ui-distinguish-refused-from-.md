@@ -2,14 +2,14 @@
 id: "0959"
 title: "Server-down UI: distinguish refused from busy, show the project's restart command, and watch per-project servers"
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-25T12:30:39Z"
-updated_at: "2026-10-25T12:30:39Z"
+updated_at: "2026-10-28T16:39:40Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ Real case (2026-10-25): the Divot project's server on `127.0.0.1:7405` had been 
 ## Activity
 
 - 2026-10-25T12:30:39Z · created · njachowski@gmail.com
+- 2026-10-28T16:39:40Z · status inbox→ready
