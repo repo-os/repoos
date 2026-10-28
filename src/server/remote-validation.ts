@@ -1,3 +1,4 @@
+import { TestFileTimingCollector, testFileTimings } from "../core/test-file-timings.js";
 /**
  * Remote Validation Runner (#RVR).
  *
@@ -328,7 +329,8 @@ export interface ValidateOptions {
   deadlineAt?: number;
   /**
    * When set, the runner bundles this ref alongside HEAD and runs
-   * `bun run test -- --changed <ref>` (#0695). Handoff and close-out omit it.
+   * `bun run test -- --changed <ref>` (#0695). Handoff omits it (full suite);
+   * default close-out passes the candidate merge base for changed + always-run tests.
    */
   changedRef?: string;
   /**
@@ -2917,8 +2919,14 @@ export class RemoteValidationRunner implements RemoteValidator {
     const rv = this.config.remoteValidation ?? {};
     const dispatch = { taskId: opts.taskId, phase: "dispatch" as const };
     let remoteTestRef: string | null = null;
-    const withScope = (summary: CheckSummary): CheckSummary =>
-      remoteTestRef != null ? { ...summary, remoteTestScopeRef: remoteTestRef } : summary;
+    const fileTimingCollector = new TestFileTimingCollector();
+    const withScope = (summary: CheckSummary): CheckSummary => ({
+      ...summary,
+      ...(fileTimingCollector.values().length
+        ? { testFileTimings: fileTimingCollector.values() }
+        : {}),
+      ...(remoteTestRef != null ? { remoteTestScopeRef: remoteTestRef } : {}),
+    });
     if (!rv.enabled) return withScope(this.infraFail("remote validation is disabled", dispatch));
     if (!process.env.HETZNER_API_TOKEN)
       return withScope(this.infraFail("HETZNER_API_TOKEN is not set", dispatch));
@@ -2936,6 +2944,7 @@ export class RemoteValidationRunner implements RemoteValidator {
     this.clearIdleTimer();
     const startedAt = Date.now();
     const emit = (s: string): void => {
+      fileTimingCollector.push(s);
       this.appendLog(opts.taskId, s);
       opts.onChunk?.(s);
     };
@@ -5018,6 +5027,7 @@ function recordRemoteRunHistory(
       skippedSteps: [],
       detail: detail ?? null,
       failedTests: meta.failedTests,
+      testFileTimings: summary?.testFileTimings ?? testFileTimings(summary?.output ?? ""),
     });
   } catch {
     /* never fail the gate on a history write */
@@ -5543,9 +5553,16 @@ export class TailscaleRunner implements RemoteValidator {
     const hangIdleMinutes = rv.hangIdleMinutes ?? this.timings.hangIdleMinutes;
     const startedAt = Date.now();
     let remoteTestRef: string | null = null;
-    const withScope = (summary: CheckSummary): CheckSummary =>
-      remoteTestRef != null ? { ...summary, remoteTestScopeRef: remoteTestRef } : summary;
+    const fileTimingCollector = new TestFileTimingCollector();
+    const withScope = (summary: CheckSummary): CheckSummary => ({
+      ...summary,
+      ...(fileTimingCollector.values().length
+        ? { testFileTimings: fileTimingCollector.values() }
+        : {}),
+      ...(remoteTestRef != null ? { remoteTestScopeRef: remoteTestRef } : {}),
+    });
     const emit = (s: string): void => {
+      fileTimingCollector.push(s);
       this.appendLog(opts.taskId, s);
       opts.onChunk?.(s);
     };

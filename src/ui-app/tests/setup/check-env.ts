@@ -37,3 +37,6 @@ delete process.env.REPOOS_CHECK_STORE_ROOT;
 delete process.env.REPOOS_CHECK_PHASE;
 delete process.env.REPOOS_CHECK_TASK_ID;
 delete process.env.REPOOS_TASK_ID;
+
+// Step-specific safety globs must not leak into fixture projects.
+delete process.env.REPOOS_TEST_ALWAYS_RUN;

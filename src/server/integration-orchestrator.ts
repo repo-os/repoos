@@ -433,6 +433,26 @@ export async function planCloseOutGateFromGit(opts: {
   const setting = resolveCloseOutGateMode(opts.config);
   const fsp = configuredFullSuitePaths(opts.config);
 
+  if (setting === "scoped") {
+    const paths = await getChangedFilePaths(
+      opts.worktreePath,
+      opts.testedSha ?? opts.currentMainSha,
+    );
+    if (paths === null)
+      return {
+        mode: "full",
+        reuseTests: false,
+        scoped: false,
+        reason: "git could not inspect candidate paths — running the full suite",
+      };
+    return planCloseOutGate({
+      setting,
+      candidateBaseRef: opts.currentMainSha,
+      fullSuitePaths: fsp,
+      candidateChangedPaths: paths,
+    });
+  }
+
   if (!opts.testedSha) {
     // Nothing recorded what the handoff validated — no safe reuse, no base to
     // scope against. Run the full suite, same as before #0724.
@@ -2407,16 +2427,10 @@ export class CloseOutOrchestrator {
   /**
    * Decide how much of the merge gate this close-out needs to run (#0724).
    *
-   * The candidate already passed the full gate at handoff. Only a real main
-   * advance can have made that result stale, so:
-   *   - a candidate tree identical to the handoff-tested SHA → reuse (cheap
-   *     steps only, no test step),
-   *   - main advanced with real code → scope the suite to the tested base,
-   *   - a machinery path or the `full` setting → full.
-   *
-   * `testedSha` comes from the latest green FULL remote pre-review run for this
-   * task; without remote validation there is none and the decision degrades to
-   * a full suite (nothing to reuse, no tested base to scope against).
+   * Default scoped runs candidate changes against current main plus safety
+   * suites. Explicit reuse compares the handoff-tested tree; full and declared
+   * machinery paths still run every test. The wrapper fails closed to full if
+   * merge-base or test discovery fails.
    */
   private async planCloseOutGateFor(
     taskId: string,
@@ -3034,7 +3048,8 @@ export class CloseOutOrchestrator {
           remoteGateOutcome.kind === "fail" &&
           scopedRemoteRef &&
           !remoteGateOutcome.retryable &&
-          !this.pipelineTimedOut(job)
+          !this.pipelineTimedOut(job) &&
+          !this.isCancelled(job.taskId)
         ) {
           this.logger?.integration(
             job.taskId,
@@ -3330,7 +3345,12 @@ export class CloseOutOrchestrator {
         // full suite once before failing the close-out, so a scoped miss costs
         // time, never correctness. Bounded to this single retry; the pipeline
         // budget still gates it.
-        if (checkRes.status !== 0 && scopedRef && !this.pipelineTimedOut(job)) {
+        if (
+          checkRes.status !== 0 &&
+          scopedRef &&
+          !this.pipelineTimedOut(job) &&
+          !this.isCancelled(job.taskId)
+        ) {
           this.logger?.integration(
             job.taskId,
             "warn",

@@ -1,20 +1,11 @@
 /**
  * How much of the merge gate a close-out re-runs (#0724).
  *
- * The candidate a Move-to-done validates is the feature branch MERGED with
- * current main. The identical commit already passed the full gate at handoff
- * (the pre-review remote gate), so re-running the whole suite at close-out is
- * only justified when main's advance made the tested tree stale. This module
- * decides which of three modes applies:
- *
- *   reused  — the candidate tree is byte-identical to what the handoff gate
- *             tested (`check_runs.candidate_sha`), or main advanced with
- *             bookkeeping only (work/, inputs/, stories/, dist/ — see
- *             `mainDriftIsBookkeepingOnly`). Only the cheap steps run.
- *   scoped  — main advanced with real changes: run `repoos check --changed
- *             <tested base>` (the task's own diff plus main's advance).
- *   full    — the setting says so, a machinery path (`[[check.fullSuitePaths]]`)
- *             is touched, or this is a release.
+ * Default scoped close-out runs changed tests plus always-run safety suites
+ * against current main, even when the handoff-tested tree is identical.
+ * Explicit reuse retains the tree-comparison policy; full/release and declared
+ * machinery paths run every test. The test wrapper falls back to full when
+ * merge-base or test discovery fails.
  *
  * Pure: no fs, no subprocess. The caller supplies the tree comparison and the
  * changed paths, so every branch is unit-testable.
@@ -40,8 +31,8 @@ export interface CloseOutGatePlan {
   /** True when the test step should run scoped to `changedRef`. */
   scoped: boolean;
   /**
-   * Git ref for `repoos check --changed`, when `scoped` — the tested base the
-   * candidate's diff is measured against.
+   * Git ref for `repoos check --changed`: current main for default scoped
+   * close-out, or the tested base when explicit reuse degrades to scoped.
    */
   changedRef?: string;
   /** Human-readable record of why this mode was chosen (Checks tab detail). */
@@ -84,6 +75,8 @@ export function touchedFullSuitePath(
 export interface CloseOutGateInput {
   /** The `closeOut.gate` setting, already resolved. */
   setting: CloseOutGateMode;
+  /** Current main in a merged candidate: default close-out always tests its diff plus safety suites. */
+  candidateBaseRef?: string;
   /** True for a release gate — always full. */
   release?: boolean;
   /** Declared `[[check.fullSuitePaths]]`. */
@@ -118,9 +111,10 @@ export interface CloseOutGateInput {
  * larger run:
  *   1. release, or a setting of `full` → full
  *   2. a touched machinery path → full
- *   3. the candidate tree equals the tested tree, or main advanced with
+ *   3. default scoped with a candidate base → changed tests plus safety suites
+ *   4. the candidate tree equals the tested tree, or main advanced with
  *      bookkeeping only → reuse (cheap steps, no test step)
- *   4. otherwise scoped to the tested base (`setting` of `reuse` degrades to
+ *   5. otherwise scoped to the tested base (`setting` of `reuse` degrades to
  *      scoped when reuse is unsafe: we never skip the suite on an untested tree)
  */
 export function planCloseOutGate(input: CloseOutGateInput): CloseOutGatePlan {
@@ -155,6 +149,16 @@ export function planCloseOutGate(input: CloseOutGateInput): CloseOutGatePlan {
         reason: `touches machinery path "${touched}" ([check] fullSuitePaths)`,
       };
     }
+  }
+
+  if (input.setting === "scoped" && input.candidateBaseRef) {
+    return {
+      mode: "scoped",
+      reuseTests: false,
+      scoped: true,
+      changedRef: input.candidateBaseRef,
+      reason: "changed-path tests plus always-run safety suites against the candidate merge base",
+    };
   }
 
   if (input.treesIdentical === true) {

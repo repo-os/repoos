@@ -27,6 +27,7 @@ import { EMPTY_MARKERS, type RepoMarkers } from "./check-plan.js";
 export type StepStatus = "passed" | "failed" | "timeout" | "missing-prereq" | "skipped";
 
 export interface StepRunResult {
+  testFileTimings?: import("./test-file-timings.js").TestFileTiming[];
   name: string;
   status: StepStatus;
   /** The command actually run (a `kind` step fills this in once resolved). */
@@ -52,6 +53,8 @@ export interface StepRunResult {
 const MAX_OUTPUT_BYTES = 2 * 1024 * 1024;
 
 export interface RunCommandOptions {
+  /** Observe output before log truncation (for structured test timings). */
+  onChunk?: (chunk: string) => void;
   command: string;
   cwd?: string;
   timeoutMs?: number;
@@ -111,6 +114,7 @@ export function runCommand(opts: RunCommandOptions): Promise<CommandResult> {
     };
 
     const capture = (buf: Buffer): void => {
+      opts.onChunk?.(buf.toString("utf8"));
       if (chunks.length < MAX_OUTPUT_BYTES) {
         chunks += buf.toString("utf8");
         if (chunks.length > MAX_OUTPUT_BYTES) chunks = chunks.slice(0, MAX_OUTPUT_BYTES);

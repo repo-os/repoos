@@ -391,39 +391,24 @@ routine run (`profiles = ["full"]`) still runs before anything merges. A plan
 step that can't run — a missing tool, an unusable row — Fails the gate rather
 than passing; only an explicitly optional or excluded step may skip.
 
-What the close-out *re-runs* is now adaptive (#0724). The candidate is the
-feature branch merged with current main, and that same commit already passed
-the identical full gate at handoff, so re-running the whole suite is only
-justified when main's advance made the tested tree stale. `validateCandidate`
-compares the merged candidate tree against the tree the handoff gate recorded
-in `check_runs.candidate_sha` (the latest green, full, remote pre-review run)
-and picks one of three modes, driven by `closeOut.gate`
-(`full | scoped | reuse`, default `scoped`):
+Close-out uses `closeOut.gate` (`full | scoped | reuse`, default `scoped`).
+The default no longer runs every test: it runs changed-path tests against the
+merged candidate's merge base with current main, plus the always-run safety
+suites declared by the tests step's `alwaysRun` (or `[check] alwaysRun`). This
+also runs when the candidate matches the handoff-tested tree. All other steps
+still run under the full check profile.
 
-- **reuse** — the candidate tree is byte-identical to the tested tree
-  (`git diff --quiet <tested> HEAD`), or main advanced with bookkeeping only
-  (`work/`, `inputs/`, `stories/`, `reminders/`, `schedules/`, `dist/`, the
-  same non-code predicate the publish-time drift guard uses). Only the cheap
-  steps run; the tests step
-  records `skipped — test suite ran on the remote validation runner`
-  (`REPOOS_SKIP_TESTS=1`) and the run detail says
-  `candidate tree is identical to the handoff-tested tree — full suite reused`.
-- **scoped** — main advanced with real code: the suite runs as
-  `repoos check --changed <tested base>` (both locally via
-  `REPOOS_CHECK_CHANGED` and on the runner via the remote gate's `changedRef`),
-  so only the tests the task's and main's changes affect run (#0695).
-- **full** — `closeOut.gate = full`, the candidate touches a declared
-  `[[check.fullSuitePaths]]` prefix, or this is a release.
+The test wrapper computes the union before execution and fails closed to the
+full suite if merge-base, git diff or test discovery fails. A failing scoped
+gate retries once without a changed ref. `closeOut.gate = "full"`, matching
+`[check] fullSuitePaths`, and release validation still run every test. Use
+`repoos check --profile release` for an unscoped full gate on demand.
 
-Releases and branch-less releases always run the full suite. Without a recorded
-tested tree (no remote validation, or no green full pre-review run) there is
-nothing to reuse and no base to scope against, so the close-out runs the full
-suite exactly as before. A **scoped** run that fails is not proof the branch is
-broken: the close-out re-runs the identical full suite once before failing — on
-the runner (dropping `changedRef`) and locally (dropping `REPOOS_CHECK_CHANGED`)
-— so a scoped miss costs time, never correctness. The run's `detail` in the
-Checks tab records the mode and why (`REPOOS_CHECK_GATE_NOTE`), and a reused
-suite's tests step reads `skipped — full suite reused from the handoff gate`.
+Explicit `closeOut.gate = "reuse"` keeps the earlier tree comparison policy:
+byte-identical handoff trees or bookkeeping-only main drift can reuse the
+handoff tests; otherwise it scopes against the tested base, or runs the full
+suite when no tested base is available. The Checks tab records the mode and
+reason through `REPOOS_CHECK_GATE_NOTE`.
 
 **Diagnosing a `check failed: ...` reason (#0428):** the reason now leads with the
 gate's own `── Results ──` summary — which checks failed (`✗ check-fmt:check`,
