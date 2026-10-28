@@ -5,7 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: Reading additional input from stdin...
+needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 debug_tldr: "Codex agent hit its ChatGPT usage limit (resets 11:43 PM) — switch the engineer to Cursor or another allowed agent and resume, and clear the leftover debug probes from integration-orchestrator.ts."
 debug_tldr_at: "2026-10-28T13:31:07Z"
 debug_tldr_key: dev-error|Reading additional input from stdin...
@@ -19,11 +19,11 @@ model_override: gpt-6-luna
 review_cli_override: cursor
 review_model_override: grok-4.7-low
 created_at: "2026-10-28T09:17:44Z"
-updated_at: "2026-10-28T13:31:07Z"
+updated_at: "2026-10-28T13:31:19Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-28T11:49:16.051Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:29:40.969Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:30:43.349Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 4
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:29:40.969Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:30:43.349Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-28T13:31:19.699Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Move to done runs the full test suite: about 95% of a ~57 minute close-out on this laptop, and slower when engineers run at the same time. Close-outs time out, so tasks get hand-merged. The other gate steps take seconds when the machine is idle (contrast audit 18s, docs build 6s); #0970 measured them, and now records per-step timings.
@@ -86,3 +86,4 @@ Builds on #0970 (step_timings in check_runs, the timings report). Do not edit re
 - 2026-10-28T13:30:10Z · engineer crash recovery: resuming codex + gpt-6-luna (1/12 crashes in 30m) · 2026-10-28T13:29:13.963926Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
 - 2026-10-28T13:30:11Z · engineer crash recovery: start failed — Task #0973 is paused
 - 2026-10-28T13:30:43Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-28T13:31:19Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
