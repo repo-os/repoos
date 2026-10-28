@@ -1,0 +1,38 @@
+---
+id: "0973"
+title: "Close-out tests: changed-path + high-risk suites, full suite at release"
+type: feature
+status: inbox
+priority: p1
+area: core
+assigned_to: ai
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-28T09:17:44Z"
+updated_at: "2026-10-28T09:17:44Z"
+---
+## Problem
+Move to done runs the full test suite: about 95% of a ~57 minute close-out on this laptop, and slower when engineers run at the same time. Close-outs time out, so tasks get hand-merged. The other gate steps take seconds when the machine is idle (contrast audit 18s, docs build 6s); #0970 measured them, and now records per-step timings.
+
+## Desired UX
+New goal: cut test time at close-out without losing real safety.
+1. Record per-test-file durations from vitest (the JSON reporter or similar) on every tests step, and show the slowest files in the timings report.
+2. Close-out (Move to done) tests: run changed-path tests (vitest --changed against the merge base, the same mechanism `repoos check --changed` uses), PLUS a fixed "always run" set of high-risk suites. Make that set a check-plan option (for example `alwaysRun` globs on the tests step), and default it to the close-out, handoff, git-worker, server-boot and task-parser suites. Keep the list short and say in your final message why each one is on it.
+3. The full suite still runs under `repoos check --profile release` (or `--full-tests`) and on demand. Document this in user-docs/check.md, and say plainly that close-out no longer runs every test.
+4. Fail closed: if the changed-test list can't be computed (no merge base, or a git error), close-out runs the full suite.
+5. Don't edit repoos.toml. If the defaults need a repoos.toml entry, put it in your final message and the driver will apply it on main.
+
+
+## Acceptance criteria
+- Close-out runs changed-path tests plus the alwaysRun set; a test proves an unrelated suite is skipped and an alwaysRun suite still runs.
+- No merge base, or a git error: close-out runs the full suite (test).
+- `repoos check --profile release` runs every test.
+- Per-test-file durations are recorded and the slowest files show in the timings report.
+- user-docs/check.md says close-out no longer runs every test.
+
+## Notes for AI
+Builds on #0970 (step_timings in check_runs, the timings report). Do not edit repoos.toml; landing refuses it. Put any needed repoos.toml entry in your final message and the driver applies it on main.
+
+## Activity
+
+- 2026-10-28T09:17:44Z · created · njachowski@gmail.com
