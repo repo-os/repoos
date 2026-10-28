@@ -16,7 +16,6 @@ created_at: "2026-10-28T08:00:32Z"
 updated_at: "2026-10-28T12:17:10Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-28T11:42:24.479Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 
