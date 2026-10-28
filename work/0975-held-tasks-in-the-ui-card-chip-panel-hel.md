@@ -11,7 +11,7 @@ branch: feat/held-tasks-in-the-ui-card-chip-panel-hel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-28T12:02:51Z"
-updated_at: "2026-10-28T16:48:43Z"
+updated_at: "2026-10-28T16:49:11Z"
 ---
 ## Problem
 #0960 added a durable "hold" (`repoos hold` / `unhold`, `POST /api/tasks/:id/hold` and `/unhold`) and a **Held (N)** list in the Work page footer. In the UI it is hard to tell a task is held, and a human cannot place or lift a hold from the task panel:
@@ -44,30 +44,30 @@ updated_at: "2026-10-28T16:48:43Z"
 ```json
 [
 {
-  "label": "Board card with held chip",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".tc-held",
-  "state": "board:cardChips"
+"label": "Board card with held chip",
+"target": "default",
+"route": "/work",
+"highlight": ".tc-held",
+"state": "board:cardChips"
 },
 {
-  "label": "Held task panel with release controls",
-  "target": "default",
-  "route": "/work?task=0899",
-  "highlight": ".held-panel",
-  "state": "drawer:held"
+"label": "Held task panel with release controls",
+"target": "default",
+"route": "/work?task=0899",
+"highlight": ".held-panel",
+"state": "drawer:held"
 },
 {
-  "label": "Hold task dialog",
-  "target": "default",
-  "route": "/work?task=0899",
-  "highlight": "[role=dialog]",
-  "steps": [
-    {
-      "click": "button:has-text(\"Hold\")"
-    }
-  ],
-  "state": "drawer:held"
+"label": "Hold task dialog",
+"target": "default",
+"route": "/work?task=0899",
+"highlight": "[role=dialog]",
+"steps": [
+  {
+    "click": "button:has-text(\"Hold\")"
+  }
+],
+"state": "drawer:held"
 }
 ]
 ```
@@ -80,3 +80,4 @@ updated_at: "2026-10-28T16:48:43Z"
 - 2026-10-28T16:45:30Z · status inbox→ready
 - 2026-10-28T16:46:16Z · status ready→active, branch
 - 2026-10-28T16:48:43Z · body
+- 2026-10-28T16:49:11Z · message_queued at 2026-10-28T16:49:11.196Z
