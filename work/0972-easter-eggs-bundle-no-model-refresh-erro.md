@@ -2,7 +2,7 @@
 id: "0972"
 title: "Easter eggs bundle: uninstalled-agent model notice, task status card"
 type: bug
-status: ready
+status: active
 priority: p3
 area: [web, core]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T08:00:32Z"
-updated_at: "2026-10-28T08:49:57Z"
+updated_at: "2026-10-28T08:51:19Z"
 ---
 ## Items
 
@@ -77,3 +77,4 @@ The card lives in `src/ui-app/src/components/TaskDrawer.vue` ("Open Status detai
 - 2026-10-28T08:34:02Z · status inbox→ready
 - 2026-10-28T08:34:47Z · status ready→active, branch
 - 2026-10-28T08:49:57Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-28T08:51:19Z · status ready→active
