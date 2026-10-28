@@ -69,7 +69,7 @@ function activeTask(over: Partial<Task> & { id: string; absPath: string }): Task
 function deps(config: RepoOSConfig): EngineerLaunchDeps {
   return {
     config,
-    index: { refreshBranches: () => {} } as never,
+    index: { refreshBranches: () => {}, refreshBranchesAsync: async () => {} } as never,
     runner: {
       releasePhantomForStart: () => {},
       isRunning: () => false,
@@ -175,7 +175,11 @@ body
     const config: RepoOSConfig = { ...DEFAULT_CONFIG, root };
     const launchDeps: EngineerLaunchDeps = {
       config,
-      index: { refreshBranches: () => {}, getTask: () => undefined } as never,
+      index: {
+        refreshBranches: () => {},
+        refreshBranchesAsync: async () => {},
+        getTask: () => undefined,
+      } as never,
       runner: {
         releasePhantomForStart: () => {},
         isRunning: () => false,
