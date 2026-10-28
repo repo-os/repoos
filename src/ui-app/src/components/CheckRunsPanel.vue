@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { summarizeStepTimings } from "../../../core/check-timings.js";
 import { RefreshCw } from "lucide-vue-next";
 import { api } from "../api";
+import { shotFixturePinnedCheckRuns } from "../lib/shot-preview-fixtures";
 import Button from "./ui/button.vue";
 import PageSkeleton from "./PageSkeleton.vue";
 import FailedTestsList from "./FailedTestsList.vue";
@@ -29,13 +31,15 @@ const columns: { key: SortKey; label: string; cls?: string }[] = [
 ];
 
 const runs = ref<CheckRunRow[]>([]);
-/** Failed rows the user has expanded to see their failing tests / detail. */
+const stepStats = computed(() => summarizeStepTimings(runs.value));
+/** Rows expanded to show step timings or failure details. */
 const expanded = ref<Set<number>>(new Set());
 
 function isExpandable(r: CheckRunRow): boolean {
   return (
-    r.outcome === "fail" &&
-    (r.failedTests.length > 0 || !!r.isolationNote || !!r.detail || !!r.failedStep)
+    !!r.steps?.length ||
+    (r.outcome === "fail" &&
+      (r.failedTests.length > 0 || !!r.isolationNote || !!r.detail || !!r.failedStep))
   );
 }
 
@@ -54,6 +58,12 @@ const error = ref("");
  * the background. A refresh failure leaves those rows on screen.
  */
 async function load(): Promise<void> {
+  const pinned = shotFixturePinnedCheckRuns();
+  if (pinned) {
+    runs.value = pinned;
+    loading.value = false;
+    return;
+  }
   loading.value = true;
   error.value = "";
   try {
@@ -266,6 +276,46 @@ function outcomeLabel(r: CheckRunRow): string {
       </div>
     </section>
 
+    <section v-if="runs.length" class="cr-step-report" aria-label="Step timing report">
+      <h3>Step timings · last {{ runs.length }} run{{ runs.length === 1 ? "" : "s" }}</h3>
+      <p class="cr-count">
+        Skipped steps and older runs without timings are excluded from duration and failure samples.
+        Machines and scopes are combined.
+      </p>
+      <div v-if="stepStats.length" class="cr-table-wrap">
+        <table class="cr-table">
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Samples</th>
+              <th>Median</th>
+              <th>p90</th>
+              <th>Failed</th>
+              <th>Skipped</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="step in stepStats" :key="step.name">
+              <td class="mono">{{ step.name }}</td>
+              <td>{{ step.samples }}</td>
+              <td>{{ fmtDuration(step.medianMs) }}</td>
+              <td>{{ fmtDuration(step.p90Ms) }}</td>
+              <td>
+                {{ step.failures }} / {{ step.samples
+                }}<template v-if="step.samples">
+                  ({{ Math.round((step.failures / step.samples) * 100) }}%)</template
+                >
+              </td>
+              <td>{{ step.skipped }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-else class="cr-count">
+        No step timings recorded yet. Run repoos check to collect samples.
+      </p>
+    </section>
+
     <div v-if="!loading && runs.length === 0" class="cr-empty">
       No recorded runs yet. Every <code>repoos check</code> — handoff, close-out, release, or a bare
       CLI run — lands here once it finishes.
@@ -332,8 +382,24 @@ function outcomeLabel(r: CheckRunRow): string {
             </tr>
             <tr v-if="isExpandable(r) && expanded.has(r.id)" class="cr-detail-row">
               <td :colspan="columns.length">
+                <table v-if="r.steps?.length" class="cr-table" aria-label="Run step timings">
+                  <thead>
+                    <tr>
+                      <th>Step</th>
+                      <th>Outcome</th>
+                      <th>Duration</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="step in r.steps" :key="step.name">
+                      <td class="mono">{{ step.name }}</td>
+                      <td>{{ step.status }}</td>
+                      <td>{{ fmtDuration(step.durationMs) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
                 <FailedTestsList v-if="r.failedTests.length" :tests="r.failedTests" />
-                <p v-else class="cr-detail-text">
+                <p v-else-if="r.outcome === 'fail'" class="cr-detail-text">
                   Failed in <span class="mono">{{ r.failedStep }}</span
                   ><template v-if="r.detail"> — {{ r.detail }}</template
                   ><template v-else> (no individual tests were recorded).</template>
@@ -416,6 +482,15 @@ function outcomeLabel(r: CheckRunRow): string {
   line-height: 1.6;
 }
 
+.cr-step-report {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cr-step-report h3 {
+  font-size: 13px;
+  font-weight: 600;
+}
 .cr-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);

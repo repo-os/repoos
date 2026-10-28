@@ -186,3 +186,39 @@ Rules for the driver:
   `git commit-graph write --reachable --changed-paths`. #0974 automates this.
 - Silent waits are bugs. A check held by the pressure guard, a slot or a queue
   must say so on the task card; #0974 tracks surfacing it.
+
+## 2026-10-28 — pace Codex across its 5-hour window; read the real usage numbers
+
+Codex has two limits: a 5-hour window and a weekly one, shared by every model
+on the account (Sol and Luna run out together). Three Sol engineers used a whole
+5-hour window in about 35 minutes (11:43Z start, limit hit 12:17Z), then every
+Codex task sat idle for 4.5 hours. One full window cost about 16% of the weekly
+limit.
+
+The live numbers are in Codex's own session logs:
+`~/.codex/sessions/**/*.jsonl` carry `"primary"` (5-hour, `window_minutes: 300`)
+and `"secondary"` (weekly, `10080`) objects with `used_percent` and
+`resets_at` (Unix seconds). Read the newest one before choosing how many Codex
+engineers to run and on which model.
+
+Rules:
+- Pace to the window: by minute M of 300, use about M/3 percent. Over pace,
+  drop to one engineer on the cheaper model; under pace with weekly headroom,
+  add an engineer or move one machinery task to the stronger model.
+- Default to the cheaper model (Luna) so a window lasts its full 5 hours; keep
+  the stronger model for one task at a time that needs it.
+- When a weekly limit is about to reset with headroom left, run more Codex
+  engineers in its last windows: unused weekly allowance is lost.
+
+## 2026-10-28 — a src/ commit on main can start a build storm
+
+Every `repoos` command rebuilds a stale `dist/` before it runs. After a hotfix
+commit changed `src/` on main, several commands started at once (a driver
+watcher polling `repoos show` every minute, engineers' `repoos` calls, driver
+messages) and each began its own full `tsc` + Vite build. Load average hit 320
+and the server stopped answering health checks for minutes. Rules: run
+`bun run build` in the main checkout immediately after committing `src/`
+changes there, before any other `repoos` command; and poll task state from the
+files (`work/<id>-*.md`, `.repoos/sessions/<id>.json`, `.repoos/checks.db`), not
+by looping the CLI. #0974 tracks a build lock so concurrent CLIs share one
+build.

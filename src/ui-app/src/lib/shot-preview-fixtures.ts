@@ -15,6 +15,7 @@ import { useNoticesStore } from "../stores/notices";
 import { useRemindersStore } from "../stores/reminders";
 import { useUiStore } from "../stores/ui";
 import type {
+  CheckRunRow,
   CloseOutOutcomeEvent,
   DevTargetView,
   IntegrationPipelineSnapshot,
@@ -95,6 +96,13 @@ const nowIso = (): string => new Date().toISOString();
  * and that runs solely on preview builds with `?shotState=` (plus tests).
  */
 let pinnedIntegration: IntegrationPipelineSnapshot | null = null;
+
+/** Run history pinned for the step timing report capture (#0970). */
+let pinnedCheckRuns: CheckRunRow[] | null = null;
+
+export function shotFixturePinnedCheckRuns(): CheckRunRow[] | null {
+  return pinnedCheckRuns;
+}
 
 /** System resource stats pinned for the Control dashboard GC capture (#0923). */
 let pinnedSystemStats: SystemStats | null = null;
@@ -658,6 +666,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
   // pin freezing the live snapshot (#0782).
   pinnedIntegration = null;
   pinnedSystemStats = null;
+  pinnedCheckRuns = null;
   pinnedRemoteStatus = null;
   for (const key of Object.keys(pinnedTaskRemoteActivity)) delete pinnedTaskRemoteActivity[key];
   switch (fixture) {
@@ -785,6 +794,32 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         attemptReason: "previous attempt timed out after 420s",
       };
       repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [run];
+      break;
+    }
+    case "checks:timings": {
+      // Illustrative fixture data, never used in the measured audit report.
+      pinnedCheckRuns = [
+        {
+          id: 970,
+          taskId: "0970",
+          phase: "pre-review",
+          machine: "local",
+          remote: false,
+          scope: "changed:main",
+          startedAt: nowIso(),
+          durationMs: 29000,
+          outcome: "pass",
+          failedStep: null,
+          skippedSteps: ["rendered-contrast"],
+          failedTests: [],
+          detail: null,
+          steps: [
+            { name: "build", status: "passed", durationMs: 12000 },
+            { name: "tests", status: "passed", durationMs: 17000 },
+            { name: "rendered-contrast", status: "skipped", durationMs: 0 },
+          ],
+        },
+      ];
       break;
     }
     case "checks:progress": {

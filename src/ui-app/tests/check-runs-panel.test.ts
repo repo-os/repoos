@@ -135,3 +135,31 @@ describe("CheckRunsPanel loading (#0950)", () => {
     second.unmount();
   });
 });
+
+describe("CheckRunsPanel step timings (#0970)", () => {
+  it("reports measured steps and expands successful runs to show outcomes", async () => {
+    api.mockResolvedValue({
+      ok: true,
+      runs: [
+        run({
+          steps: [
+            { name: "build", status: "passed", durationMs: 2500 },
+            { name: "contrast", status: "skipped", durationMs: 0 },
+          ],
+        }),
+      ],
+    });
+    const wrapper = mount(CheckRunsPanel);
+    await flushPromises();
+    const report = wrapper.get('[aria-label="Step timing report"]');
+    expect(report.text()).toContain("last 1 run");
+    expect(report.text()).toContain("2.5s");
+    expect(report.text()).toContain("0 / 1 (0%)");
+    await wrapper.get("tr.cr-expandable").trigger("click");
+    const detail = wrapper.get('[aria-label="Run step timings"]');
+    expect(detail.text()).toContain("passed");
+    expect(detail.text()).toContain("skipped");
+    expect(wrapper.text()).not.toContain("Failed in");
+    wrapper.unmount();
+  });
+});
