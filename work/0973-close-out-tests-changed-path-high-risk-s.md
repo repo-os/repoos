@@ -8,8 +8,8 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-tests-changed-path-high-risk-s
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: grok-4.7-low
 created_at: "2026-10-28T09:17:44Z"
@@ -82,3 +82,4 @@ Builds on #0970 (step_timings in check_runs, the timings report). Do not edit re
 - 2026-10-28T13:30:43Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-28T13:31:19Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-28T13:31:31Z · needs_input
+- 2026-10-28T13:31:31Z · cli_override, model_override
