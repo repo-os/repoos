@@ -1,3 +1,4 @@
+import { stepTimingsFromOutput } from "../core/check-timings.js";
 /**
  * Remote Validation Runner (#RVR).
  *
@@ -308,6 +309,8 @@ export interface ValidateOptions {
    * history so a remote run can be told apart from the local one it precedes.
    */
   phase?: CheckRunPhase;
+  /** Explicit CLI profile; otherwise inferred from the gate phase (#0970). */
+  checkProfile?: string;
   /**
    * What this job belongs to (#0897), for the pool's queue/running display.
    * Derived from {@link phase} when omitted.
@@ -5018,6 +5021,7 @@ function recordRemoteRunHistory(
       skippedSteps: [],
       detail: detail ?? null,
       failedTests: meta.failedTests,
+      steps: stepTimingsFromOutput(summary?.output ?? ""),
     });
   } catch {
     /* never fail the gate on a history write */
@@ -5746,6 +5750,7 @@ export class TailscaleRunner implements RemoteValidator {
           `REPOOS_SLOT="$_rvslot" REPOOS_CONTAINER=${shellQuote(containerName)} ` +
           `REPOOS_CACHE_VOLUME=${shellQuote(CACHE_VOLUME_NAME)} REPOOS_CI_IMAGE=${shellQuote(image)} ` +
           `${REPOOS_OFFLOAD_BROWSER_STEPS}=${offloadBrowser} ` +
+          `REPOOS_CHECK_PROFILE=${shellQuote(opts.checkProfile ?? (opts.phase === "close-out" || opts.phase === "release" ? "full" : "default"))} ` +
           validateScriptArgs(
             remoteBundle,
             opts.candidateSha,

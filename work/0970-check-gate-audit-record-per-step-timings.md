@@ -13,9 +13,11 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T12:27:33Z"
+updated_at: "2026-10-28T12:27:43Z"
 review_rounds: 1
 review_passes: 1
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: a7faee07a7fe0da9f4cf7aab267566da66f57e11
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check (exit 1) at 2026-10-28T06:01:43.510Z: repoos check failed: tests — command failed (exit 1)"
 ---
@@ -82,6 +84,7 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T09:26:21Z · note: handoff requested (ui-review)
 - 2026-10-28T09:33:19Z · handoff failed · ui-review handoff failed at validate · unexpected error: git worker git-overview waited 180000ms in the queue without starting
 - 2026-10-28T11:23:55Z · note: handoff requested (ui-review)
+<<<<<<< HEAD
 - 2026-10-28T11:51:10Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-10-28T11:51:36Z · note: handoff requested (ui-review)
 - 2026-10-28T12:17:17Z · status active→review
@@ -96,3 +99,8 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T12:27:20Z · body: Acceptance criteria (added 1, removed 1)
 - 2026-10-28T12:27:20Z · message_queued at 2026-10-28T12:27:20.367Z
 - 2026-10-28T12:27:33Z · title
+=======
+- 2026-10-28T12:17:17Z · status active→review
+>>>>>>> feat/check-gate-audit-record-per-step-timings
+- 2026-10-28T12:27:43Z · message_queued at 2026-10-28T12:27:43.231Z
+- 2026-10-28T12:27:43Z · status review→active

@@ -181,6 +181,7 @@ docker run --rm \
   -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
   -w /repo \
   --user "$(id -u):$(id -g)" \
+  -e "REPOOS_CHECK_PROFILE=${REPOOS_CHECK_PROFILE:-full}" \
   -e "REPOOS_OFFLOAD_BROWSER_STEPS=${REPOOS_OFFLOAD_BROWSER_STEPS:-}" \
   -e "REPOOS_BROWSER_CAPTURE_MODE=${REPOOS_BROWSER_CAPTURE_MODE:-}" \
   -e "REPOOS_BROWSER_CAPTURE_TASK=${REPOOS_BROWSER_CAPTURE_TASK:-}" \
@@ -188,7 +189,7 @@ docker run --rm \
   -e "REPOOS_BROWSER_CAPTURE_ENTRY=${REPOOS_BROWSER_CAPTURE_ENTRY:-}" \
   -e "REPOOS_BROWSER_CAPTURE_CANONICAL=${REPOOS_BROWSER_CAPTURE_CANONICAL:-}" \
   "$IMAGE" \
-  "set -o pipefail; bun install --frozen-lockfile || exit 4; bun run build && printf '#!/bin/sh\nexec bun /repo/dist/cli/index.js \"\$@\"\n' > /tmp/repoos && chmod +x /tmp/repoos && export PATH=\"/tmp:\$PATH\" && if [ -n \"\${REPOOS_BROWSER_CAPTURE_MODE}\" ]; then git checkout --detach ${SHA} && mkdir -p \"/repo-worktrees/\$(dirname \"\${REPOOS_BROWSER_CAPTURE_BRANCH}\")\" && git worktree add -b \"\${REPOOS_BROWSER_CAPTURE_BRANCH}\" \"/repo-worktrees/\${REPOOS_BROWSER_CAPTURE_BRANCH}\" ${SHA} && cd \"/repo-worktrees/\${REPOOS_BROWSER_CAPTURE_BRANCH}\" && bun install --frozen-lockfile || exit 4; bun scripts/remote-runner/capture-browser.ts \"\${REPOOS_BROWSER_CAPTURE_TASK}\" \"\${REPOOS_BROWSER_CAPTURE_MODE}\" /artifacts/browser-capture; else if [ -n \"${CHANGED_REF}\" ]; then bun run test -- --changed \"${CHANGED_REF}\"; else bun run test; fi 2>&1 | tee /artifacts/test-output.log; fi && if [ \"\${REPOOS_OFFLOAD_BROWSER_STEPS}\" = \"1\" ]; then echo '[validate] running browser gate (ui-smoke + rendered-contrast)'; repoos check --step ui-smoke --step rendered-contrast 2>&1 | tee -a /artifacts/browser-gate.log || exit \$?; echo '[validate] browser gate exit 0'; fi"
+  "set -o pipefail; bun scripts/remote-runner/time-step.mjs install bun install --frozen-lockfile || exit 4; bun scripts/remote-runner/time-step.mjs build bun run build && printf '#!/bin/sh\nexec bun /repo/dist/cli/index.js \"\$@\"\n' > /tmp/repoos && chmod +x /tmp/repoos && export PATH=\"/tmp:\$PATH\" && if [ -n \"\${REPOOS_BROWSER_CAPTURE_MODE}\" ]; then git checkout --detach ${SHA} && mkdir -p \"/repo-worktrees/\$(dirname \"\${REPOOS_BROWSER_CAPTURE_BRANCH}\")\" && git worktree add -b \"\${REPOOS_BROWSER_CAPTURE_BRANCH}\" \"/repo-worktrees/\${REPOOS_BROWSER_CAPTURE_BRANCH}\" ${SHA} && cd \"/repo-worktrees/\${REPOOS_BROWSER_CAPTURE_BRANCH}\" && bun install --frozen-lockfile || exit 4; bun scripts/remote-runner/capture-browser.ts \"\${REPOOS_BROWSER_CAPTURE_TASK}\" \"\${REPOOS_BROWSER_CAPTURE_MODE}\" /artifacts/browser-capture; else if [ -n \"${CHANGED_REF}\" ]; then bun scripts/remote-runner/time-step.mjs tests bun run test -- --changed \"${CHANGED_REF}\"; else bun scripts/remote-runner/time-step.mjs tests bun run test; fi 2>&1 | tee /artifacts/test-output.log; fi && if [ \"\${REPOOS_OFFLOAD_BROWSER_STEPS}\" = \"1\" ]; then echo '[validate] running browser gate (ui-smoke + rendered-contrast)'; repoos check --profile \"\${REPOOS_CHECK_PROFILE}\" --step ui-smoke --step rendered-contrast 2>&1 | tee -a /artifacts/browser-gate.log || exit \$?; echo '[validate] browser gate exit 0'; fi"
 CODE=$?
 set -e
 
