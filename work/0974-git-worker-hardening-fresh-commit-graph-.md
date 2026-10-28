@@ -3,12 +3,6 @@ id: "0974"
 title: "Git worker hardening: fresh commit-graph, fast lane for short calls, cache survives restarts"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:43 PM."
-debug_tldr: "The engineer agent hit its usage limit (resets at 11:43 PM), so pick a different engineer agent or wait for the reset, then resume task #0974 and rerun `repoos check`."
-debug_tldr_at: "2026-10-28T12:18:31Z"
-debug_tldr_key: "dev-error|error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:43 PM."
 priority: p0
 area: core
 assigned_to: ai
@@ -60,3 +54,4 @@ Files: `src/server/git-worker.ts` (queue, timeouts), `src/server/git-worker-entr
 - 2026-10-28T12:25:57Z · review_model_override
 - 2026-10-28T13:28:52Z · model_override
 - 2026-10-28T13:28:59Z · engineer stopped by request
+- 2026-10-28T13:28:59Z · needs_input
