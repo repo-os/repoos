@@ -2,7 +2,7 @@
 id: "0970"
 title: "Check gate audit: record per-step timings, then run slow rarely-failing steps at close-out only"
 type: chore
-status: inbox
+status: ready
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T03:36:13Z"
+updated_at: "2026-10-28T03:36:36Z"
 ---
 ## Problem
 Handoff checks are slow (full local gate 10-20 min under load; one #0961 run 17 min) and RepoOS cannot say which step costs the time: `.repoos/checks.db` `check_runs` stores only total `duration_ms`, `failed_step` and counts. Of the last 1,000 runs (2026-10-20 to 2026-10-27) only 266 passed; 553 failed on remote-validation infrastructure, 92 on tests, 49 on staleness, 13 on formatting, 7 on contrast/smoke/docs. The gate has 19 steps in `repoos.toml` `[[check.steps]]`, including 610 test files, a 224-screen rendered contrast audit (16 themes x 14 states), the UI smoke test, and separate installs+builds for user-docs, landing and telegram-manager plus a macOS icon check.
@@ -33,3 +33,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 
 - 2026-10-27T14:50:38Z · created · njachowski@gmail.com
 - 2026-10-28T03:36:13Z · cli_override, model_override
+- 2026-10-28T03:36:36Z · status inbox→ready
