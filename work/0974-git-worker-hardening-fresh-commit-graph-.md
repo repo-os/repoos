@@ -14,7 +14,7 @@ branch: feat/git-worker-hardening-fresh-commit-graph-
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-28T11:30:32Z"
-updated_at: "2026-10-28T12:17:18Z"
+updated_at: "2026-10-28T12:17:24Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-28T12:17:18.885Z\",\"kind\":\"usage-limit\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
@@ -50,3 +50,4 @@ Files: `src/server/git-worker.ts` (queue, timeouts), `src/server/git-worker-entr
 - 2026-10-28T11:52:53Z · message_queued at 2026-10-28T11:52:53.229Z
 - 2026-10-28T12:17:18Z · agent exited with an error (codex) · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:43 PM.
 - 2026-10-28T12:17:18Z · engineer crash recovery: switched codex + gpt-6.1-sol → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:43 PM.
+- 2026-10-28T12:17:24Z · message_delivered: 1 message(s)
