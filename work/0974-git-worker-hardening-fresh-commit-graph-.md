@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:43 PM."
+debug_tldr: "The engineer agent hit its usage limit (resets at 11:43 PM), so pick a different engineer agent or wait for the reset, then resume task #0974 and rerun `repoos check`."
+debug_tldr_at: "2026-10-28T12:18:31Z"
+debug_tldr_key: "dev-error|error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:43 PM."
 priority: p0
 area: core
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/git-worker-hardening-fresh-commit-graph-
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-28T11:30:32Z"
-updated_at: "2026-10-28T12:17:24Z"
+updated_at: "2026-10-28T12:18:31Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-28T12:17:18.885Z\",\"kind\":\"usage-limit\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
