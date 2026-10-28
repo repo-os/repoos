@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-28T12:02:51Z"
-updated_at: "2026-10-28T12:02:56Z"
+updated_at: "2026-10-28T16:44:57Z"
 ---
 ## Problem
 #0960 added a durable "hold" (`repoos hold` / `unhold`, `POST /api/tasks/:id/hold` and `/unhold`) and a **Held (N)** list in the Work page footer. In the UI it is hard to tell a task is held, and a human cannot place or lift a hold from the task panel:
@@ -42,3 +44,4 @@ updated_at: "2026-10-28T12:02:56Z"
 
 - 2026-10-28T12:02:51Z · created · njachowski@gmail.com
 - 2026-10-28T12:02:56Z · screenshots
+- 2026-10-28T16:44:57Z · cli_override, model_override
