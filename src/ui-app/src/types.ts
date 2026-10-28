@@ -1538,11 +1538,14 @@ export interface ModelSourceResult {
   models: string[];
   refreshable: boolean;
   /**
-   * Why the list is empty or incomplete when the probe failed: binary not
-   * found on PATH, timed out, not signed in, spawn failed (#0593). Absent on
-   * success.
+   * Why the list is empty or incomplete when the probe failed: timed out,
+   * not signed in, spawn failed (#0593). Absent on success. A missing binary
+   * is `notInstalled`, not this field.
    */
   error?: string;
+  /** The CLI binary is not on PATH (#0972). */
+  notInstalled?: boolean;
+  stale?: boolean;
 }
 
 /** Response of GET /api/models, keyed by Agent.cli. */
