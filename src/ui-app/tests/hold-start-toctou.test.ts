@@ -172,6 +172,7 @@ function makeCtx(fx: Fixture): RouteContext {
       getTasks: () => [readTaskFile(fx)],
       applyFileChange: () => {},
       refreshBranches: () => {},
+      refreshBranchesAsync: async () => {},
     } as any,
     indexReady: Promise.resolve(),
     reviews: { isRunning: () => false, cancel: vi.fn() } as any,
