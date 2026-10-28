@@ -8,7 +8,7 @@ area: infra
 assigned_to: ai
 created_by: human
 branch: ""
-updated_at: "2026-10-21T04:31:02Z"
+updated_at: "2026-10-28T16:31:38Z"
 ---
 ## Problem
 
@@ -38,3 +38,5 @@ small. Read AGENTS.md before starting any task.
 - 2026-08-23T11:03:13Z · status review→done
 - 2026-10-21T04:25:58Z · body
 - 2026-10-21T04:31:02Z · body
+- 2026-10-28T16:26:50Z · watchdog: check wait escalated · waiting: the memory compressor is holding 40% of RAM (9.5 GB of RAM) — holding new work until memory pressure eases for 179h 54m · next step: let it finish — the wait clears itself when the check starts running; investigate only if it persists
+- 2026-10-28T16:31:38Z · needs_input
