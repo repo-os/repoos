@@ -2,7 +2,10 @@
 id: "0970"
 title: "Check gate: per-step/test timings; close-out runs changed + high-risk tests, full suite at release"
 type: chore
-status: active
+status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the opencode agent exited without output: error: Go usage limit exceeded"
 priority: p1
 area: core
 assigned_to: ai
@@ -11,9 +14,8 @@ branch: feat/check-gate-audit-record-per-step-timings
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T08:11:51Z"
+updated_at: "2026-10-28T12:17:35Z"
 handoff_signal_retry_count: 2
-check_retry_count: 1
 last_check_failure: "repoos check (exit 1) at 2026-10-28T06:01:43.510Z: repoos check failed: tests — command failed (exit 1)"
 ---
 ## Problem
@@ -69,3 +71,19 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T08:06:37Z · message_queued at 2026-10-28T08:06:37.627Z
 - 2026-10-28T08:11:51Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-28T08:11:51Z · note: handoff requested (cli)
+- 2026-10-28T08:50:19Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-10-28T08:50:44Z · message_queued at 2026-10-28T08:50:44.383Z
+- 2026-10-28T09:03:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-28T09:03:50Z · message_delivered: 2 message(s)
+- 2026-10-28T09:04:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-28T09:17:22Z · note: handoff requested (ui-review)
+- 2026-10-28T09:18:03Z · handoff failed · ui-review handoff failed at validate · unexpected error: git worker git-command timed out after 9000ms
+- 2026-10-28T09:26:21Z · note: handoff requested (ui-review)
+- 2026-10-28T09:33:19Z · handoff failed · ui-review handoff failed at validate · unexpected error: git worker git-overview waited 180000ms in the queue without starting
+- 2026-10-28T11:23:55Z · note: handoff requested (ui-review)
+- 2026-10-28T11:51:10Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-10-28T11:51:36Z · note: handoff requested (ui-review)
+- 2026-10-28T12:17:17Z · status active→review
+- 2026-10-28T12:17:32Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (1baa712e1) during finalization (#0734)
+- 2026-10-28T12:17:35Z · note: review pass 1: failed — no usable report
+- 2026-10-28T12:17:35Z · needs_input

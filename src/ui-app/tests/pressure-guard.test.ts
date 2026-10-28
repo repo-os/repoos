@@ -368,6 +368,34 @@ describe("evaluatePressure", () => {
     }
   });
 
+  it("treats a big compressor pool as advisory when macOS reports normal or warn", () => {
+    const gb = 1024 ** 3;
+    // 2026-10-28: an idle 24 GB Mac (92% CPU idle, green Memory Pressure,
+    // 43% free) held every start on 8.03 GB compressed.
+    for (const level of ["normal", "warn"] as const) {
+      const snapshot = evaluatePressure(
+        {
+          ...readings({ totalMemBytes: 24 * gb, compressorBytes: 8.3 * gb, memoryFreePercent: 43 }),
+          memoryPressureLevel: level,
+          cpuIdlePercent: 92,
+        },
+        pressureThresholds(),
+      );
+      expect(snapshot.level).not.toBe("critical");
+      expect(snapshot.reason).toBeNull();
+      expect(snapshot.warnings.join(" ")).toMatch(/compressor.*advisory/i);
+    }
+    const critical = evaluatePressure(
+      {
+        ...readings({ totalMemBytes: 24 * gb, compressorBytes: 8.3 * gb }),
+        memoryPressureLevel: "critical",
+        cpuIdlePercent: 92,
+      },
+      pressureThresholds(),
+    );
+    expect(critical.level).toBe("critical");
+  });
+
   it("falls back to load as a hold when memory stats are unavailable", () => {
     const snapshot = evaluatePressure(
       {
