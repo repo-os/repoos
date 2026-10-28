@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "0972"
 title: "Easter eggs bundle: uninstalled-agent model notice, task status card"
 type: bug
@@ -14,7 +13,8 @@ model_override: grok-4.7-low
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-28T08:00:32Z"
-updated_at: "2026-10-28T09:01:44Z"
+updated_at: "2026-10-28T09:09:17Z"
+handoff_signal_retry_count: 2
 ---
 ## Items
 
@@ -67,6 +67,26 @@ The card lives in `src/ui-app/src/components/TaskDrawer.vue` ("Open Status detai
 ![6](/api/tasks/0972/attachments/att_3546c1e8-226d-4a09-aff5-fa37f8185073.png)
 ![7](/api/tasks/0972/attachments/att_8f0fd187-e38e-45b7-b42f-0c84b0a82baa.png)
 
+## Shots
+```json
+[
+{
+  "label": "Task status card is three lines while checks run",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusChecksRunning"
+},
+{
+  "label": "Debug Status details cards capped and scroll inside",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".debug-status-detail",
+  "state": "drawer:statusDetails"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-28T08:00:32Z · created · njachowski@gmail.com
@@ -81,4 +101,4 @@ The card lives in `src/ui-app/src/components/TaskDrawer.vue` ("Open Status detai
 - 2026-10-28T08:51:19Z · status ready→active
 - 2026-10-28T08:56:29Z · message_queued at 2026-10-28T08:56:29.011Z
 - 2026-10-28T09:01:44Z · message_queued at 2026-10-28T09:01:44.058Z
-
+- 2026-10-28T09:09:17Z · body
