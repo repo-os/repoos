@@ -72,7 +72,7 @@ import {
   worktreeStatusAsync,
 } from "../core/git.js";
 import { getGitWorker } from "./git-worker.js";
-import { readQueueMarkers } from "../core/local-queue-marker.js";
+import { clearQueueMarker, readQueueMarkers } from "../core/local-queue-marker.js";
 import { CHECK_WAIT_ESCALATION_MS, formatWaitDuration } from "../core/check-wait.js";
 import { scheduleHandoffSignalRetry } from "./handoff.js";
 import { isTaskClosingOut } from "./close-out-lock.js";
@@ -106,6 +106,8 @@ const CHECK_WAIT_ESCALATED = /watchdog: check wait escalated/;
 
 /** Activity-log marker the watchdog writes/reads to bound surfacing once. */
 const SURFACED_ACTIVITY = /watchdog: auto-surfaced stuck task/;
+/** A queue marker older than this was left by a dead process (#0974 follow-up). */
+const STALE_QUEUE_MARKER_MS = 6 * 60 * 60_000;
 const ESCALATED_ACTIVITY = /watchdog: escalated to needs_input/;
 /** Activity-log marker the watchdog writes/reads to bound reviewer retry once. */
 const REVIEW_RETRIED_ACTIVITY = /watchdog: auto-retried dead reviewer session/;
@@ -967,16 +969,31 @@ export class TaskWatchdog {
       const since = Date.parse(marker.since);
       if (!Number.isFinite(since)) continue;
       const waitedMs = now - since;
+      // A marker is only written while a gate waits. One older than any real
+      // wait was left behind by a process that died mid-wait (2026-10-28: a
+      // 7-day-old marker flagged done task #0001); delete it, never surface it.
+      if (waitedMs > STALE_QUEUE_MARKER_MS) {
+        clearQueueMarker(
+          this.config.root,
+          this.config.cacheDir ?? ".repoos",
+          marker.taskId,
+          marker.kind,
+        );
+        continue;
+      }
       if (waitedMs < CHECK_WAIT_ESCALATION_MS) continue;
-      waiting.add(marker.taskId);
       const task = this.index.getTask(marker.taskId);
-      if (!task || task.isArchived || task.needsInput) continue;
+      // Only a task whose check can be running: never flag done or parked work.
+      if (!task || (task.status !== "active" && task.status !== "review")) continue;
+      waiting.add(marker.taskId);
+      if (task.isArchived || task.needsInput) continue;
       if (isHoldActive(task)) continue;
       this.escalateCheckWait(task, marker.message, waitedMs);
     }
-    // A wait that ended — the gate acquired its slot — clears the flag again.
-    for (const status of ["active", "review"] as const) {
-      for (const task of this.index.getTasks(status)) {
+    // A wait that ended — the gate acquired its slot — clears the flag again,
+    // whatever status the task has moved to since.
+    {
+      for (const task of this.index.getTasks()) {
         if (!task.needsInput || task.needsInputReason !== "check-wait") continue;
         if (!waiting.has(task.id)) this.clearCheckWaitEscalation(task);
       }
