@@ -2,7 +2,7 @@
 id: "0965"
 title: "Server freezes (2/4): route remaining sync git spawns through the git worker + guard test"
 type: bug
-status: inbox
+status: done
 priority: p1
 area: core
 depends_on: ["0962"]
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-27T11:47:15Z"
-updated_at: "2026-10-28T16:39:00Z"
+updated_at: "2026-10-28T16:39:15Z"
 ---
 ## Problem
 Split from #0962. Even after #0962's git worker lands, synchronous child processes (execFileSync/spawnSync/execSync) are still reachable from the server's request handlers and timers: worktreeStatus() callers (task-watchdog.ts ~323, indexer.ts ~104), the sync `git log` walk (indexer.ts ~76, story-definition-files.ts ~230), worktree-gc.ts sweep, and per-branch isAncestor checks. Each blocks the single HTTP thread for 0.1-0.3 s per call, which is what freezes the UI.
@@ -38,3 +38,4 @@ No branch: nothing left to merge.
 
 - 2026-10-27T11:47:15Z · created · njachowski@gmail.com
 - 2026-10-28T16:39:00Z · body: Resolution (added)
+- 2026-10-28T16:39:15Z · status inbox→done
