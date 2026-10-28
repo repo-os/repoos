@@ -161,6 +161,21 @@ not start agents, checks, review, worktree creation or close-out. Do not require
 `hold` to keep them out of AI dispatch. AI agents may move their status only
 when the human explicitly asked them to update that task's board status.
 
+**A `hold` makes a task inert for ALL automation** — `repoos hold <id> --reason
+"…" [--until <date>]` stops any running engineer and parks the task out of
+auto-dispatch, the CTO monitor (idle nudges and stalled-agent restarts), the
+watchdog's auto-resume, crash recovery, and queued-message delivery. It is
+broader than `pause`, which only stops the current run. A held task keeps its
+`status` and is never started by anything but an explicit human/driver command:
+`repoos start <id> --force` (the escape hatch) or `repoos unhold <id> [--start]`
+(which clears the hold and may re-launch). The hold is written into the task's
+frontmatter (`hold`, `hold_reason`, `hold_until`, `hold_by`, `hold_at`) and is
+visible on the board and in `repoos driver brief`'s **Held** section; held tasks
+do not count toward `maxActiveTasks`. A `hold` tag is equivalent to the `hold`
+flag. Every automation that might start an engineer consults `isHoldActive`
+(`src/core/task-selection.ts`) before doing so, and that predicate is the single
+chokepoint (`relaunchEngineerOnActiveTask`).
+
 ### Integration conflicts: narrow resolution vs full cycle
 
 When another task lands first and a task that already passed review now

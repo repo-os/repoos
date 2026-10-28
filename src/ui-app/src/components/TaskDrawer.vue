@@ -58,6 +58,8 @@ import { fmtTokens } from "../lib/format";
 import { api, JSON_OPTS } from "../api";
 import { checkRunSkipped } from "../../../core/check-skip.js";
 import { PRIORITIES, TASK_TYPES } from "../../../core/types.js";
+import { useNow } from "../composables/useNow";
+import { isHoldActive } from "../../../core/task-selection.js";
 import {
   needsInputBannerText,
   formatNeedsInputDetailForDisplay,
@@ -166,6 +168,7 @@ import {
   type RequirementsChange,
 } from "../../../core/task-body-diff.js";
 
+const holdNow = useNow();
 const repo = useRepoStore();
 const ui = useUiStore();
 const notices = useNoticesStore();
@@ -730,6 +733,17 @@ const drawerStatusDetails = computed(() => {
   const task = ui.active;
   if (!task) return [];
   const rows: { title: string; detail: string }[] = [];
+  // #0960: a held task is inert for ALL automation — surface the hold (and its
+  // reason/by/until) in the drawer's single status area so it is visible here
+  // too, not just on the board card. `isHoldActive` is tag-aware and
+  // expiry-aware, so a `hold` tag shows here just like the flag, and a hold that
+  // has auto-released is no longer shown.
+  if (isHoldActive(task, holdNow.value)) {
+    rows.push({
+      title: "Held",
+      detail: `This task is held — automation will not start it.${task.holdReason ? `\nReason: ${task.holdReason}` : ""}${task.holdBy ? `\nBy: ${task.holdBy}` : ""}${task.holdUntil ? `\nAuto-releases: ${task.holdUntil}` : ""}\nRelease with "repoos unhold ${task.id}".`,
+    });
+  }
   if (task.needsInput)
     rows.push({
       title: "Waiting for you",
