@@ -47,7 +47,10 @@ afterAll(() => {
 function fixture(steps: string): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-check-summary-"));
   cleanups.push(root);
-  writeFileSync(join(root, "repoos.toml"), ["[check]", "version = 1", "", steps].join("\n"));
+  writeFileSync(
+    join(root, "repoos.toml"),
+    ["[pressureGuard]", "enabled = false", "", "[check]", "version = 1", "", steps].join("\n"),
+  );
   execFileSync("git", ["init", "-q", "-b", "main", root], { stdio: "pipe" });
   return root;
 }

@@ -56,6 +56,28 @@ function row(over: Partial<Parameters<CheckStore["record"]>[0]> = {}) {
 }
 
 describe("check-run store", () => {
+  it("migrates and round-trips step timings without inventing historical samples (#0970)", () => {
+    const { s, root } = store();
+    s.record(row());
+    const require = createRequire(import.meta.url);
+    const Sqlite = (globalThis as { Bun?: unknown }).Bun
+      ? require("bun:sqlite").Database
+      : require("node:sqlite").DatabaseSync;
+    const raw = new Sqlite(join(root, ".repoos", "checks.db"));
+    raw.exec("ALTER TABLE check_runs DROP COLUMN step_timings");
+    const migrated = new CheckStore(root);
+    const steps = [
+      { name: "build", status: "passed" as const, durationMs: 1250 },
+      { name: "tests", status: "failed" as const, durationMs: 2300 },
+      { name: "contrast", status: "skipped" as const, durationMs: 0 },
+    ];
+    migrated.record(row({ steps }));
+    expect(migrated.list().map((r) => r.steps)).toEqual([steps, []]);
+    raw.exec("UPDATE check_runs SET step_timings = 'broken' WHERE id = 1");
+    expect(migrated.list()[1]!.steps).toEqual([]);
+    raw.close();
+  });
+
   it("records and lists rows newest-first", () => {
     const { s } = store();
     s.record(row({ taskId: "0501", startedAt: "2026-09-28T09:00:00Z" }));

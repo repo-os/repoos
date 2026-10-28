@@ -959,6 +959,7 @@ export interface TaskCheckRun {
 
 /** One durable check run (#0564) — a row of the Runs tab / check history. */
 export interface CheckRunRow {
+  steps?: import("../../core/check-timings.js").CheckStepTiming[];
   id: number;
   /** null for bare CLI runs. */
   taskId: string | null;
