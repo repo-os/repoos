@@ -2,7 +2,7 @@
 id: "0973"
 title: "Close-out tests: changed-path + high-risk suites, full suite at release"
 type: feature
-status: active
+status: done
 priority: p1
 area: core
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: grok-4.7-low
 created_at: "2026-10-28T09:17:44Z"
-updated_at: "2026-10-28T16:25:39Z"
+updated_at: "2026-10-28T16:26:21Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-28T11:49:16.051Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 5
@@ -90,3 +90,4 @@ Builds on #0970 (step_timings in check_runs, the timings report). Do not edit re
 - 2026-10-28T15:47:30Z · engineer stopped by request
 - 2026-10-28T15:47:31Z · held, held-reason, held-by, held-at
 - 2026-10-28T16:25:39Z · released
+- 2026-10-28T16:26:21Z · status active→done
