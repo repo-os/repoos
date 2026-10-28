@@ -746,8 +746,10 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
 }
 
 .debug-status-detail {
+  max-height: 250px;
   margin: 10px 0;
   padding: 12px;
+  overflow: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-2);

@@ -172,10 +172,10 @@ describe("task drawer check chip (#0564)", () => {
     ];
 
     const wrapper = await mountDrawer(pinia, makeTask());
-    expect(wrapper.find(".drawer-status-summary").text()).toContain("Checks running");
-    expect(wrapper.find(".drawer-status-line").text()).toContain("on macbook");
-    expect(wrapper.find(".drawer-status-line").text()).toContain(
-      "step 5 of 12 · tests 140/289 files",
+    expect(wrapper.find(".drawer-status-l1").text()).toContain("Checks running");
+    expect(wrapper.find(".drawer-status-l2").text()).toContain("on macbook");
+    expect(wrapper.find(".drawer-status-l3").text()).toContain(
+      "Step 5 of 12 · tests 140/289 files",
     );
 
     // The remote half completes mid-gate and lands in the durable history.
@@ -192,12 +192,12 @@ describe("task drawer check chip (#0564)", () => {
     // Advance past the 5s rows poll; the chip must pick the host up.
     await vi.advanceTimersByTimeAsync(5_100);
     await flush();
-    expect(wrapper.find(".drawer-status-line").text()).toContain("on mini");
+    expect(wrapper.find(".drawer-status-l2").text()).toContain("on mini");
 
-    // The status card opens the Debug status view.
-    await wrapper.find(".drawer-status-summary button").trigger("click");
+    await wrapper.find(".drawer-status-summary").trigger("click");
     await flush();
     expect(useUiStore().activeTab).toBe("debug");
+    expect(useUiStore().debugView).toBe("status");
   });
 
   it("rehydrates a mid-gate run after a page reload (0564 review)", async () => {
@@ -248,8 +248,8 @@ describe("task drawer check chip (#0564)", () => {
     );
 
     const wrapper = await mountDrawer(pinia, makeTask());
-    expect(wrapper.find(".drawer-status-summary").text()).toContain("Checks running");
-    expect(wrapper.find(".drawer-status-line").text()).toContain("on macbook");
+    expect(wrapper.find(".drawer-status-l1").text()).toContain("Checks running");
+    expect(wrapper.find(".drawer-status-l2").text()).toContain("on macbook");
   });
 
   it("shows the durable result inline when the in-memory run is gone (server restart)", async () => {
