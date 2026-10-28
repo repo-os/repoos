@@ -11,7 +11,7 @@ branch: feat/check-gate-audit-record-per-step-timings
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-28T05:21:17Z"
+updated_at: "2026-10-28T05:26:40Z"
 ---
 ## Problem
 Handoff checks are slow (full local gate 10-20 min under load; one #0961 run 17 min) and RepoOS cannot say which step costs the time: `.repoos/checks.db` `check_runs` stores only total `duration_ms`, `failed_step` and counts. Of the last 1,000 runs (2026-10-20 to 2026-10-27) only 266 passed; 553 failed on remote-validation infrastructure, 92 on tests, 49 on staleness, 13 on formatting, 7 on contrast/smoke/docs. The gate has 19 steps in `repoos.toml` `[[check.steps]]`, including 610 test files, a 224-screen rendered contrast audit (16 themes x 14 states), the UI smoke test, and separate installs+builds for user-docs, landing and telegram-manager plus a macOS icon check.
@@ -33,16 +33,16 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 ```json
 [
 {
-"label": "Step timing report and successful run details",
-"target": "default",
-"route": "/checks?tab=runs",
-"highlight": ".cr-step-report",
-"steps": [
-{
-"click": "tr.cr-expandable"
-}
-],
-"state": "checks:timings"
+  "label": "Step timing report and successful run details",
+  "target": "default",
+  "route": "/checks?tab=runs",
+  "highlight": ".cr-step-report",
+  "steps": [
+    {
+      "click": "tr.cr-expandable"
+    }
+  ],
+  "state": "checks:timings"
 }
 ]
 ```
@@ -58,3 +58,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-28T05:20:51Z · engineer stopped by request
 - 2026-10-28T05:21:17Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-28T05:21:17Z · message_delivered: 1 message(s)
+- 2026-10-28T05:26:40Z · body
