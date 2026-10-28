@@ -13,6 +13,7 @@ import {
   preflightMerge,
   removeWorktree,
   commitTaskFile,
+  worktreePathForBranchAsync,
 } from "../core/git.js";
 import { buildIndexDetailedAsync } from "../core/indexer.js";
 import { taskDependencyBlockersForAll } from "../core/task-dependencies.js";
@@ -78,8 +79,11 @@ async function respond(message: RequestMessage): Promise<unknown> {
       return branchChangesSinceBase(payload.cwd as string, payload.baseBranch as string);
     case "changed-paths":
       return changedPathsVsBase(payload.cwd as string, payload.baseBranch as string);
+    case "worktree-path":
+      return worktreePathForBranchAsync(payload.root as string, payload.branch as string);
     case "git-overview":
       return overviewToWire(await gitOverview(payload.root as string));
+    case "run-git":
     case "git-command":
       return runGit(payload.cwd as string, payload.args as string[], payload.timeoutMs as number);
     case "directory-commits":

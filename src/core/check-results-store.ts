@@ -58,6 +58,12 @@ export interface CheckRunRecord {
    * inferred from `passed` by readers that need it.
    */
   outcome?: "passed" | "failed" | "skipped";
+  /**
+   * #0974: what this run waited on before its first step — the pressure guard
+   * or a cross-process heavy slot — and for how long. Absent when the run
+   * started immediately. Optional so pre-#0974 records still read.
+   */
+  waited?: { reason: string; ms: number };
   results: StoredStepResult[];
 }
 

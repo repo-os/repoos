@@ -15,7 +15,7 @@ import { localCheckLockRoot } from "../core/cross-process-slots.js";
 import { registeredEngineerCount, type GlobalEngineerCount } from "../core/global-engineers.js";
 import type { RepoOSConfig } from "../core/types.js";
 import type { RunningAgentInfo } from "./agents.js";
-import { getGitWorker } from "./git-worker.js";
+import { getGitWorker, gitWorkerInFlight, type GitWorkerJobInfo } from "./git-worker.js";
 
 export interface MachineInfo {
   cpuCount: number;
@@ -141,6 +141,8 @@ export interface SystemStats {
   pressure: PressureSnapshot;
   /** Shared build/test slots on this host (#0961). */
   heavyJobs: { running: number; queued: number };
+  /** In-flight git worker jobs, with queue wait vs run time (#0974). */
+  gitJobs: GitWorkerJobInfo[];
   /** Top CPU and memory consumers across the whole machine, RepoOS vs other. */
   topProcesses: TopProcesses;
   /** Engineers across every registered RepoOS server on this machine (#0871). */
@@ -773,6 +775,7 @@ export async function sampleSystem(opts: SampleSystemOptions): Promise<SystemSta
     repo,
     pressure: resources.pressure,
     heavyJobs: resources.heavyJobs,
+    gitJobs: gitWorkerInFlight(workerRoot),
     topProcesses,
     globalEngineers: opts.root ? registeredEngineerCount(opts.root) : null,
     serverPid,

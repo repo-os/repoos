@@ -45,6 +45,7 @@ describe("lastCommitsForDir cache", () => {
     const first = lastCommitsForDir(root, "work");
     expect(first.get("work/a.md")?.subject).toBe("one");
     expect(first.get("work/b.md")?.subject).toBe("two");
+    expect(git(root, ["status", "--porcelain"])).toBe("");
     const second = lastCommitsForDir(root, "work");
     expect([...second.entries()]).toEqual([...first.entries()]);
     // a caller mutating its copy must not corrupt the cache
