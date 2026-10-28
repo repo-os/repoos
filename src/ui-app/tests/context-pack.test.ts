@@ -96,24 +96,24 @@ describe("detectPackageManager", () => {
     }
   });
 
-  it("returns null for empty directory", () => {
-    expect(detectPackageManager(dir)).toBeNull();
+  it("returns null for empty directory", async () => {
+    expect(await detectPackageManager(dir)).toBeNull();
   });
 
-  it("detects bun when bun.lock exists", () => {
+  it("detects bun when bun.lock exists", async () => {
     writeFile(join(dir, "package.json"), "{}");
     writeFile(join(dir, "bun.lock"), "");
-    expect(detectPackageManager(dir)).toBe("bun");
+    expect(await detectPackageManager(dir)).toBe("bun");
   });
 
-  it("detects npm when package-lock.json exists", () => {
+  it("detects npm when package-lock.json exists", async () => {
     writeFile(join(dir, "package.json"), "{}");
     writeFile(join(dir, "package-lock.json"), "");
-    expect(detectPackageManager(dir)).toBe("npm");
+    expect(await detectPackageManager(dir)).toBe("npm");
   });
 
-  it("returns null when no lockfile and no package.json", () => {
-    expect(detectPackageManager(dir)).toBeNull();
+  it("returns null when no lockfile and no package.json", async () => {
+    expect(await detectPackageManager(dir)).toBeNull();
   });
 });
 

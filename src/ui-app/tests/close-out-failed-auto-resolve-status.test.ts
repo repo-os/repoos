@@ -56,7 +56,7 @@ function readStatus(root: string, absPath: string): string {
 }
 
 describe("preserveClosingTaskReviewStatusOnMain (#0838)", () => {
-  it("restores inbox on main to review without writing inbox", () => {
+  it("restores inbox on main to review without writing inbox", async () => {
     const { root, clean } = makeRepo();
     try {
       const id = "0838";
@@ -68,7 +68,7 @@ describe("preserveClosingTaskReviewStatusOnMain (#0838)", () => {
       );
       expect(readStatus(root, absPath)).toBe("inbox");
 
-      preserveClosingTaskReviewStatusOnMain(config, id);
+      await preserveClosingTaskReviewStatusOnMain(config, id);
 
       expect(readStatus(root, absPath)).toBe("review");
       expect(readFileSync(absPath, "utf8")).not.toMatch(/^status: inbox/m);
@@ -77,13 +77,13 @@ describe("preserveClosingTaskReviewStatusOnMain (#0838)", () => {
     }
   });
 
-  it("leaves done tasks unchanged", () => {
+  it("leaves done tasks unchanged", async () => {
     const { root, clean } = makeRepo();
     try {
       const id = "0838d";
       const absPath = taskFile(root, id, "done");
       const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
-      preserveClosingTaskReviewStatusOnMain(config, id);
+      await preserveClosingTaskReviewStatusOnMain(config, id);
       expect(readStatus(root, absPath)).toBe("done");
     } finally {
       clean();

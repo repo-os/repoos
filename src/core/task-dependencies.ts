@@ -1,5 +1,12 @@
 import type { DependencyBlocker, Task } from "./types.js";
-import { branchCommit, commitExists, isAncestor, localBranches } from "./git.js";
+import {
+  branchCommit,
+  branchRefSnapshot,
+  commitExists,
+  isAncestor,
+  localBranches,
+  mergedBranches,
+} from "./git.js";
 
 export class DependencyValidationError extends Error {}
 
@@ -42,7 +49,11 @@ export function normalizeTaskDependencies(raw: unknown): string[] {
 }
 
 /** Validate dependencies against the current board, including indirect cycles. */
-export function validateTaskDependencies(taskId: string, dependsOn: string[], tasks: Task[]): void {
+export function validateTaskDependencies(
+  taskId: string,
+  dependsOn: string[],
+  tasks: readonly Task[],
+): void {
   const byId = new Map(tasks.map((task) => [task.id, task]));
   const dependencies = [...new Set(dependsOn)];
   for (const id of dependencies) {
@@ -159,4 +170,52 @@ export function taskDependencyBlockers(
     if (state !== "merged") blockers.push({ id, state });
   }
   return blockers;
+}
+
+/**
+ * Board-wide dependency resolution with two git queries, not two per upstream:
+ * one ref/object-id snapshot and one `branch --merged` snapshot. Arbitrary
+ * `mergedCommit` SHAs still need an ancestry check because they are not refs.
+ */
+export function taskDependencyBlockersForAll(
+  root: string,
+  tasks: Task[],
+): Map<string, DependencyBlocker[]> {
+  const result = new Map<string, DependencyBlocker[]>();
+  if (!tasks.some((task) => task.dependsOn?.length)) return result;
+  const byId = new Map(tasks.map((task) => [task.id, task]));
+  const refs = branchRefSnapshot(root, null);
+  const base = refs.branches.has("main") ? "main" : refs.branches.has("master") ? "master" : null;
+  const merged = base ? mergedBranches(root, base) : new Set<string>();
+  const ancestry = new Map<string, boolean | null>();
+
+  const stateFor = (upstream: Task): "merged" | "waiting" | "archived" | "cancelled" => {
+    if (wasExplicitlyAbandoned(upstream)) return "cancelled";
+    if (upstream.isArchived) return "archived";
+    if (upstream.status !== "done") return "waiting";
+    if (!base) return "cancelled";
+    if (upstream.mergedCommit) {
+      const key = `${base}\0${upstream.mergedCommit}`;
+      let state = ancestry.get(key);
+      if (state === undefined) {
+        state = isAncestor(root, upstream.mergedCommit, base);
+        ancestry.set(key, state);
+      }
+      return state === true ? "merged" : state === false ? "waiting" : "cancelled";
+    }
+    if (!upstream.branch || !refs.branches.has(upstream.branch)) return "cancelled";
+    return merged.has(upstream.branch) ? "merged" : "waiting";
+  };
+
+  for (const task of tasks) {
+    if (!task.dependsOn?.length) continue;
+    const blockers: DependencyBlocker[] = [];
+    for (const id of task.dependsOn) {
+      const upstream = byId.get(id);
+      const state = upstream ? stateFor(upstream) : "cancelled";
+      if (state !== "merged") blockers.push({ id, state });
+    }
+    result.set(task.id, blockers);
+  }
+  return result;
 }

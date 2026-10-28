@@ -54,10 +54,11 @@ Pure logic, no transport. Everything else calls into this.
 - `task.ts` — turns a file's content+path into a normalized Task, and back.
 - `indexer.ts` — walks `work/`, builds the sorted RepoIndex, manages the
   derived `.repoos/index.json` cache. `buildIndex` is synchronous (the CLI's
-  one-shot commands use it); `buildIndexAsync` runs the same per-task git
-  enrichment concurrently instead of one spawn at a time — the server uses it
-  at boot (via `live-index.ts`'s `refreshAllAsync`) so `listen()` doesn't wait
-  behind hundreds of serial git spawns (#0271: this was 20-30s at 260 tasks).
+  one-shot commands use it). The server queues `buildIndexDetailedAsync` in
+  the dedicated Git child through `live-index.ts`'s `refreshAllAsync`; batched
+  ref/worktree facts replace per-task Git queries. The listener does not wait
+  for the cold index. See [Server Git worker](server-git-worker.md) for cache
+  invalidation, the paged tasks API, and remaining migration/measurement work.
 - `repoos.ts` — the createRepoOS() facade: getTasks, getTask, counts,
   updateStatus, updateTask, createTask, reindex. The CLI and server both go
   through this; no business logic lives outside it.
@@ -169,9 +170,21 @@ Adds liveness over the one-shot core. No new business logic.
 
 - `live-index.ts` — holds the index in memory, applies incremental per-file
   updates, emits typed events (task.created / task.updated / task.deleted).
-  `refreshAllAsync` (boot only) lets `server.ts` bind the port before the
-  full rebuild finishes; `refreshAll` (synchronous) is for callers that need
-  the index populated when the call returns.
+  `refreshAllAsync` lets `server.ts` bind the port before the worker's full
+  rebuild finishes. Incremental changes request worker facts without blocking
+  HTTP; polled task-list and worktree-GC routes use the index/cache instead of
+  requesting a rebuild. The synchronous `refreshAll` remains for legacy
+  one-shot/test callers.
+  Lifecycle-session loading and dependency validation request metadata only
+  (`buildIndex` with `skipGit`), avoiding Git enrichment for those reads.
+- Turn completion includes bounded Kiro/Crush session discovery and usage
+  capture before publishing agent exit or recording spend. Review completion
+  remains in flight until its report and pass counter are stored, including
+  adopted turns after reload. Review starts reserve their run before the first
+  worker read, so concurrent starts cannot overlap during preparation. Duplicate
+  exit notifications share one completion promise; failures release the fence
+  and propagate through the completion hook. Automatic close-out callbacks run
+  after the completion fence is released.
 - `watcher.ts` — native fs.watch over `work/`, debounced; feeds live-index.
 - `write.ts` — safe single-task mutation that re-reads immediately before
   writing, so concurrent edits to the same file don't clobber.

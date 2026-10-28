@@ -109,10 +109,10 @@ describe("parseProcessListing and top-process ownership (#0871)", () => {
 });
 
 describe("sampleSystem", () => {
-  it("returns machine facts even when no processes are tracked", () => {
+  it("returns machine facts even when no processes are tracked", async () => {
     const tmp = mkdtempSync(join(tmpdir(), "repoos-system-"));
     try {
-      const result = sampleSystem({
+      const result = await sampleSystem({
         serverPid: process.pid,
         cacheDir: tmp,
         runningAgents: [],
@@ -132,10 +132,10 @@ describe("sampleSystem", () => {
     }
   });
 
-  it("includes the server process in the process list", () => {
+  it("includes the server process in the process list", async () => {
     const tmp = mkdtempSync(join(tmpdir(), "repoos-system-"));
     try {
-      const result = sampleSystem({
+      const result = await sampleSystem({
         serverPid: process.pid,
         cacheDir: tmp,
         runningAgents: [],
@@ -148,13 +148,13 @@ describe("sampleSystem", () => {
     }
   });
 
-  it("marks agents with ppid !== serverPid as orphaned", () => {
+  it("marks agents with ppid !== serverPid as orphaned", async () => {
     const tmp = mkdtempSync(join(tmpdir(), "repoos-system-"));
     try {
       const agents: RunningAgentInfo[] = [
         { id: "0099", pid: 1, startedAt: new Date().toISOString() },
       ];
-      const result = sampleSystem({
+      const result = await sampleSystem({
         serverPid: process.pid,
         cacheDir: tmp,
         runningAgents: agents,
@@ -169,21 +169,21 @@ describe("sampleSystem", () => {
     }
   });
 
-  it("includes persisted ownership records as orphaned when PID is alive but not in registry", () => {
+  it("includes persisted ownership records as orphaned when PID is alive but not in registry", async () => {
     const tmp = mkdtempSync(join(tmpdir(), "repoos-system-"));
     try {
       const agents: RunningAgentInfo[] = [
         { id: "0100", pid: process.pid, startedAt: new Date().toISOString() },
       ];
       // First call persists the ownership record
-      sampleSystem({
+      await sampleSystem({
         serverPid: process.pid,
         cacheDir: tmp,
         runningAgents: agents,
       });
 
       // Second call: remove from running but keep PID alive — should flag as orphan
-      const result = sampleSystem({
+      const result = await sampleSystem({
         serverPid: process.pid,
         cacheDir: tmp,
         runningAgents: [],
@@ -203,7 +203,7 @@ describe("sampleRepoStats", () => {
     execFileSync("git", ["-C", root, ...args], { stdio: "ignore" });
   }
 
-  it("counts worktrees, tracked files, and lines of code from git", () => {
+  it("counts worktrees, tracked files, and lines of code from git", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-reposize-"));
     try {
       git(root, ["init", "-q"]);
@@ -216,7 +216,7 @@ describe("sampleRepoStats", () => {
       git(root, ["add", "a.ts", "b.md", ".gitignore"]);
       git(root, ["commit", "-qm", "init"]);
 
-      const stats = sampleRepoStats(root);
+      const stats = await sampleRepoStats(root);
       expect(stats).not.toBeNull();
       // a.ts (3) + b.md (2) + .gitignore (1) = 6; ignored.log excluded.
       expect(stats!.linesOfCode).toBe(6);
@@ -227,16 +227,16 @@ describe("sampleRepoStats", () => {
     }
   });
 
-  it("returns null for a non-git directory", () => {
+  it("returns null for a non-git directory", async () => {
     const tmp = mkdtempSync(join(tmpdir(), "repoos-nogit-"));
     try {
-      expect(sampleRepoStats(tmp)).toBeNull();
+      expect(await sampleRepoStats(tmp)).toBeNull();
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
 
-  it("carries the worktree warning threshold through (default 20, and the cached path)", () => {
+  it("carries the worktree warning threshold through (default 20, and the cached path)", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-wtthresh-"));
     try {
       git(root, ["init", "-q"]);
@@ -246,10 +246,10 @@ describe("sampleRepoStats", () => {
       git(root, ["add", "a.ts"]);
       git(root, ["commit", "-qm", "init"]);
 
-      expect(sampleRepoStats(root)!.worktreeWarnThreshold).toBe(20);
+      expect((await sampleRepoStats(root))!.worktreeWarnThreshold).toBe(20);
       // Second call for the same root is served from the 30s cache — the
       // threshold must still reflect the new argument, not the cached one.
-      expect(sampleRepoStats(root, 5)!.worktreeWarnThreshold).toBe(5);
+      expect((await sampleRepoStats(root, 5))!.worktreeWarnThreshold).toBe(5);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -381,7 +381,7 @@ describe("parseServeScan", () => {
  * matching #0210's release-branchless pattern.
  */
 describe("reapStrayServeProcesses", () => {
-  it("kills every stray and only strays — never control-plane, known-preview, or in-flight", () => {
+  it("kills every stray and only strays — never control-plane, known-preview, or in-flight", async () => {
     const killed: number[] = [];
     const fakeKill = (pid: number) => {
       killed.push(pid);
@@ -430,13 +430,13 @@ describe("reapStrayServeProcesses", () => {
       ],
     });
 
-    const reaped = reapStrayServeProcesses(100, new Set([200]), fakeKill, fakeScan);
+    const reaped = await reapStrayServeProcesses(100, new Set([200]), fakeKill, fakeScan);
 
     expect(reaped).toBe(2);
     expect(killed.sort()).toEqual([400, 401]); // 402 (foreign) is another repo's — untouched
   });
 
-  it("counts a process that's already gone by the time of the kill attempt as not reaped", () => {
+  it("counts a process that's already gone by the time of the kill attempt as not reaped", async () => {
     const fakeKill = () => {
       throw new Error("ESRCH");
     };
@@ -451,13 +451,13 @@ describe("reapStrayServeProcesses", () => {
       ],
     });
 
-    const reaped = reapStrayServeProcesses(100, new Set(), fakeKill, fakeScan);
+    const reaped = await reapStrayServeProcesses(100, new Set(), fakeKill, fakeScan);
     expect(reaped).toBe(0); // never throws — a lost race is not an error
   });
 
-  it("returns 0 without calling kill when the underlying scan is unavailable (ps missing)", () => {
+  it("returns 0 without calling kill when the underlying scan is unavailable (ps missing)", async () => {
     let killCalled = false;
-    const reaped = reapStrayServeProcesses(
+    const reaped = await reapStrayServeProcesses(
       100,
       new Set(),
       () => {
@@ -469,7 +469,7 @@ describe("reapStrayServeProcesses", () => {
     expect(killCalled).toBe(false);
   });
 
-  it("returns 0 without calling kill when nothing is stray", () => {
+  it("returns 0 without calling kill when nothing is stray", async () => {
     let killCalled = false;
     const fakeScan = () => ({
       total: 1,
@@ -488,7 +488,7 @@ describe("reapStrayServeProcesses", () => {
         },
       ],
     });
-    const reaped = reapStrayServeProcesses(
+    const reaped = await reapStrayServeProcesses(
       100,
       new Set(),
       () => {

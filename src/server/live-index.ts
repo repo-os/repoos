@@ -20,6 +20,7 @@ import type {
   BoardTask,
   BoardIndex,
   SupervisorHeartbeat,
+  DependencyBlocker,
 } from "../core/types.js";
 import type { SystemStats } from "./system.js";
 import type { AutoEngineeringDecision } from "./auto-engineering.js";
@@ -29,27 +30,18 @@ import type { RepoStatus } from "./repo-status.js";
 import type { Input } from "../core/input.js";
 import { STATUSES, PRIORITIES } from "../core/types.js";
 import { parseTask } from "../core/task.js";
-import {
-  isGitRepo,
-  localBranches,
-  lastCommitForFile,
-  worktreeStatus,
-  worktreePaths,
-  worktreeList,
-  currentBranch,
-  emptyGitInfo,
-  resolveWorktreeStatuses,
-} from "../core/git.js";
+import { isGitRepo, localBranches, emptyGitInfo, resolveWorktreeStatuses } from "../core/git.js";
 import {
   buildIndex,
   buildIndexAsync,
   readWorktreeDirtyCache,
   writeWorktreeDirtyCache,
 } from "../core/indexer.js";
-import { isStoryPmWorking, listStoryDefinitions } from "../core/story-definition-files.js";
+import { isStoryPmWorking } from "../core/story-definition-files.js";
+import type { StoryDefinition } from "../core/story-display.js";
 import { patchTaskFile, type PatchTaskOptions } from "./write.js";
-import { taskDependencyBlockers } from "../core/task-dependencies.js";
 import type { CloseOutOutcomeEvent } from "./close-out-outcome.js";
+import { getGitWorker } from "./git-worker.js";
 
 export type RepoEvent =
   | { type: "task.created"; task: Task; at: string }
@@ -349,10 +341,16 @@ export class LiveIndex {
    * sections changed, regardless of whether the write came from the HTTP
    * route, the CLI, or a direct file edit the watcher picked up.
    */
-  private bodyChangeNotifier: ((task: Task, prev: Task) => RequirementsNoticeResult | void) | null =
-    null;
+  private bodyChangeNotifier:
+    | ((
+        task: Task,
+        prev: Task,
+      ) => RequirementsNoticeResult | void | Promise<RequirementsNoticeResult | void>)
+    | null = null;
   /** Last #0817 notice result per task, for PATCH responses (consumed once). */
   private pendingRequirementsNotice = new Map<string, RequirementsNoticeResult>();
+  /** Drops a stale taskFacts result when a newer file change won. */
+  private gitFactsGen = new Map<string, number>();
 
   /** Wire the #0210 review-transition guard. The server owns the logic. */
   setReviewGuard(fn: (task: Task, prev: Task) => Promise<boolean>): void {
@@ -360,7 +358,12 @@ export class LiveIndex {
   }
 
   /** Wire the #0817 requirements-change notifier. The server owns the logic. */
-  setBodyChangeNotifier(fn: (task: Task, prev: Task) => RequirementsNoticeResult | void): void {
+  setBodyChangeNotifier(
+    fn: (
+      task: Task,
+      prev: Task,
+    ) => RequirementsNoticeResult | void | Promise<RequirementsNoticeResult | void>,
+  ): void {
     this.bodyChangeNotifier = fn;
   }
 
@@ -416,7 +419,8 @@ export class LiveIndex {
    * it.
    */
   async refreshAllAsync(opts: { indexBuildGate?: () => void | Promise<void> } = {}): Promise<void> {
-    const idx = await buildIndexAsync(this.config, { fastWorktreeStatus: true });
+    const built = await getGitWorker(this.config.root).buildIndex(this.config, true);
+    const idx = built.index;
     // `indexBuildGate` parks the build HERE — after the git-heavy work, before
     // the swap. Note what that does and does not prove: it proves the build's
     // result has not been published, and hence that a listener which bound
@@ -426,8 +430,8 @@ export class LiveIndex {
     await opts.indexBuildGate?.();
     this.byId.clear();
     this.pathToId.clear();
-    this.useGit = isGitRepo(this.config.root);
-    this.branchCache = this.useGit ? localBranches(this.config.root) : new Set();
+    this.useGit = built.git.useGit;
+    this.branchCache = new Set(built.git.branches);
     for (const t of idx.tasks) {
       this.byId.set(t.id, t);
       this.pathToId.set(t.absPath, t.id);
@@ -453,12 +457,14 @@ export class LiveIndex {
    */
   async reconcileWorktreeStatus(): Promise<void> {
     if (!this.useGit) return;
-    const baseBranch = currentBranch(this.config.root);
     const branches = [...this.byId.values()].map((t) => t.branch).filter((b): b is string => !!b);
-    const { statuses, cache, changed } = await resolveWorktreeStatuses(this.config.root, branches, {
-      baseBranch,
-      cache: readWorktreeDirtyCache(this.config),
-    });
+    const { statuses, cache, changed } = await getGitWorker(this.config.root).reconcile(
+      this.config,
+      branches,
+      readWorktreeDirtyCache(this.config),
+      false,
+      true,
+    );
     if (changed) writeWorktreeDirtyCache(this.config, cache);
     for (const [id, t] of this.byId) {
       if (!t.branch) continue;
@@ -526,18 +532,50 @@ export class LiveIndex {
           branchExists: task.branch ? this.branchCache.has(task.branch) : false,
         };
       } else {
-        const { subject, date } = lastCommitForFile(this.config.root, task.path);
-        const wt = task.branch
-          ? worktreeStatus(this.config.root, task.branch)
-          : { path: null, dirty: false };
+        // Branch changed (or this is a new task). Keep the index update on the
+        // HTTP thread and fill git facts from the worker afterwards.
+        const cached = prior?.git ?? emptyGitInfo();
         task.git = {
+          ...cached,
           branchExists: task.branch ? this.branchCache.has(task.branch) : false,
-          worktreeExists: task.branch ? worktreePaths(this.config.root).has(task.branch) : false,
-          lastCommit: subject,
-          lastCommitAt: date,
-          worktreePath: wt.path,
-          dirty: wt.dirty,
         };
+        const gen = (this.gitFactsGen.get(task.id) ?? 0) + 1;
+        this.gitFactsGen.set(task.id, gen);
+        const id = task.id;
+        const branch = task.branch;
+        const relPath = task.path;
+        void getGitWorker(this.config.root)
+          .taskFacts(this.config, relPath, branch || null)
+          .then((facts) => {
+            if (this.gitFactsGen.get(id) !== gen) return;
+            const current = this.byId.get(id);
+            if (!current || current.branch !== branch) return;
+            const git = {
+              branchExists: facts.branchExists,
+              worktreeExists: facts.worktreeExists,
+              lastCommit: facts.lastCommit,
+              lastCommitAt: facts.lastCommitAt,
+              worktreePath: facts.status.path,
+              dirty: facts.status.dirty,
+            };
+            const prev = current.git;
+            if (
+              prev.branchExists === git.branchExists &&
+              prev.worktreeExists === git.worktreeExists &&
+              prev.lastCommit === git.lastCommit &&
+              prev.lastCommitAt === git.lastCommitAt &&
+              prev.worktreePath === git.worktreePath &&
+              prev.dirty === git.dirty
+            ) {
+              return;
+            }
+            const next = { ...current, git };
+            this.byId.set(id, next);
+            this.emit({ type: "task.updated", task: next, prev: { git: prev }, at: now() });
+          })
+          .catch(() => {
+            // The next reconcile sweep repairs a missed read.
+          });
       }
     }
 
@@ -560,11 +598,15 @@ export class LiveIndex {
       return this.runReviewGuard(absPath, task, existing);
     }
 
-    this.applyParsed(absPath, task, existing);
+    return this.applyParsed(absPath, task, existing);
   }
 
   /** Apply a fully-parsed task to the in-memory index and emit. */
-  private applyParsed(absPath: string, task: Task, existing: Task | undefined): void {
+  private applyParsed(
+    absPath: string,
+    task: Task,
+    existing: Task | undefined,
+  ): void | Promise<void> {
     this.byId.set(task.id, task);
     this.pathToId.set(absPath, task.id);
 
@@ -582,12 +624,16 @@ export class LiveIndex {
     // requirements-sections decisions. Wrapped: a failing subscriber must
     // never break the index update.
     if (existing && existing.body !== task.body && this.bodyChangeNotifier) {
-      try {
-        const notice = this.bodyChangeNotifier(task, existing);
-        if (notice) this.pendingRequirementsNotice.set(task.id, notice);
-      } catch {
-        /* best-effort — the index update already landed */
-      }
+      return Promise.resolve()
+        .then(() => this.bodyChangeNotifier?.(task, existing))
+        .then((notice) => {
+          if (notice) this.pendingRequirementsNotice.set(task.id, notice);
+        })
+        .catch((err) => {
+          console.error(
+            `[repoos] requirements-change notice failed for #${task.id}: ${(err as Error).message}`,
+          );
+        });
     }
   }
 
@@ -600,7 +646,7 @@ export class LiveIndex {
    */
   private async runReviewGuard(absPath: string, task: Task, existing: Task): Promise<void> {
     if (!this.reviewGuard) {
-      this.applyParsed(absPath, task, existing);
+      await this.applyParsed(absPath, task, existing);
       return;
     }
     let allowed: boolean;
@@ -641,7 +687,7 @@ export class LiveIndex {
       this.applyFileChange(absPath, { guarded: true });
       return;
     }
-    this.applyParsed(absPath, task, existing);
+    await this.applyParsed(absPath, task, existing);
   }
 
   /** Handle a file removal. Emits deleted if it mapped to a known task. */
@@ -659,24 +705,10 @@ export class LiveIndex {
     });
   }
 
-  /**
-   * Re-scan local branches / worktrees and re-apply the cheap git facts
-   * (`branchExists`, `worktreeExists`, `worktreePath`) to every indexed task.
-   * Called after an agent launch, branch sync, or hotfix so the UI's branch/
-   * worktree dots are right without a full rebuild.
-   *
-   * `dirty` is NOT recomputed here — that needs a `git status` per worktree,
-   * which this method used to run synchronously for every task on the event
-   * loop (~2.5s at 40 worktrees, on every task mutation). It is delegated to
-   * the batched `reconcileWorktreeStatus()` sweep, kicked off below and
-   * arriving via `task.updated` within ~100ms.
-   */
-  refreshBranches(): void {
-    this.useGit = isGitRepo(this.config.root);
-    this.branchCache = this.useGit ? localBranches(this.config.root) : new Set();
-    const worktrees = this.useGit
-      ? worktreeList(this.config.root)
-      : new Map<string, { path: string; head: string }>();
+  async refreshBranchesAsync(): Promise<void> {
+    const overview = await getGitWorker(this.config.root).gitOverview();
+    this.useGit = overview.useGit;
+    this.branchCache = new Set(overview.branches);
     let realRoot = this.config.root;
     try {
       realRoot = realpathSync(this.config.root);
@@ -684,7 +716,7 @@ export class LiveIndex {
       /* keep the configured root */
     }
     for (const [id, t] of this.byId) {
-      let worktreePath = t.branch ? (worktrees.get(t.branch)?.path ?? null) : null;
+      let worktreePath = t.branch ? (overview.worktrees.get(t.branch)?.path ?? null) : null;
       if (worktreePath) {
         let rp = worktreePath;
         try {
@@ -692,7 +724,6 @@ export class LiveIndex {
         } catch {
           /* keep the reported path */
         }
-        // git lists the main checkout as a worktree too; it is never a task one.
         if (rp === realRoot) worktreePath = null;
       }
       this.byId.set(id, {
@@ -700,12 +731,12 @@ export class LiveIndex {
         git: {
           ...t.git,
           branchExists: t.branch ? this.branchCache.has(t.branch) : false,
-          worktreeExists: t.branch ? worktrees.has(t.branch) : false,
+          worktreeExists: t.branch ? overview.worktrees.has(t.branch) : false,
           worktreePath,
         },
       });
     }
-    void this.reconcileWorktreeStatus();
+    await this.reconcileWorktreeStatus();
   }
 
   // ---- reads ----
@@ -753,7 +784,12 @@ export class LiveIndex {
   }
 
   /** Lightweight board snapshot — skips body, extra, agent overrides. */
-  boardSnapshot(): BoardIndex {
+  boardSnapshot(
+    opts: {
+      blockers?: ReadonlyMap<string, DependencyBlocker[]>;
+      storyDefinitions?: readonly StoryDefinition[];
+    } = {},
+  ): BoardIndex {
     const tasks = this.getTasks();
     const base: BoardIndex = {
       version: 1,
@@ -762,12 +798,12 @@ export class LiveIndex {
       taskCount: tasks.length,
       tasks: tasks.map((task) => ({
         ...toBoardTask(task),
-        blockedBy: taskDependencyBlockers(this.config.root, task, tasks),
+        blockedBy: opts.blockers?.get(task.id) ?? [],
       })),
       counts: this.counts(),
     };
     if (this.config.stories?.enabled === true) {
-      base.storyDefinitions = listStoryDefinitions(this.config).map((d) => ({
+      base.storyDefinitions = (opts.storyDefinitions ?? []).map((d) => ({
         key: d.key,
         name: d.name,
         number: d.number,

@@ -30,6 +30,7 @@ import {
   isEvidenceRefreshActive,
   tryBeginEvidenceRefresh,
 } from "../../server/evidence-refresh-lock.js";
+import { getGitWorker } from "../../server/git-worker.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -109,10 +110,12 @@ function automaticDeps(
 }
 
 /** Hold the automatic refresh at its HEAD lookup so its locks stay held. */
-function blockGitHeadLookup(): { release: () => void; restore: () => void } {
-  const origRunGit = git.runGit;
+function blockGitHeadLookup(root: string): { release: () => void; restore: () => void } {
+  const worker = getGitWorker(root);
+  const origRunGit = worker.runGit.bind(worker);
+  const worktreePathSpy = vi.spyOn(worker, "worktreePath").mockResolvedValue(root);
   let release!: () => void;
-  const spy = vi.spyOn(git, "runGit").mockImplementation((cwd, args, timeout) => {
+  const spy = vi.spyOn(worker, "runGit").mockImplementation((cwd, args, timeout) => {
     if (args[0] === "rev-parse" && args[1] === "--short" && args[2] === "HEAD") {
       return new Promise((resolve) => {
         release = () => {
@@ -122,7 +125,13 @@ function blockGitHeadLookup(): { release: () => void; restore: () => void } {
     }
     return origRunGit(cwd, args, timeout);
   });
-  return { release: () => release(), restore: () => spy.mockRestore() };
+  return {
+    release: () => release(),
+    restore: () => {
+      spy.mockRestore();
+      worktreePathSpy.mockRestore();
+    },
+  };
 }
 
 describe("POST /api/tasks/:id/verify guards", () => {
@@ -261,7 +270,7 @@ describe("POST /api/tasks/:id/verify guards", () => {
           getTask: () => task,
           getTasks: () => [task],
           applyFileChange: vi.fn(),
-          refreshBranches: vi.fn(),
+          refreshBranchesAsync: vi.fn(async () => {}),
         },
         runner: { isRunning: () => false, start: vi.fn(() => ({ ok: true })) },
         jobCoordinator: { getJob: () => null, enqueue: vi.fn(), allJobs: () => [] },
@@ -278,13 +287,13 @@ describe("POST /api/tasks/:id/verify guards", () => {
     expect(body.error).toContain("Evidence refresh is in progress");
   });
 
-  it("refuses review while evidence refresh holds the in-process lock", () => {
+  it("refuses review while evidence refresh holds the in-process lock", async () => {
     const root = gitRoot();
     const task = makeTask(root);
     const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
     const reviews = new ReviewManager(config, () => {});
     expect(tryBeginEvidenceRefresh(task.id)).toBe(true);
-    const gate = reviews.canRun(task);
+    const gate = await reviews.canRun(task);
     expect(gate.ok).toBe(false);
     expect(gate.reason).toContain("evidence refresh");
     endEvidenceRefresh(task.id);
@@ -300,10 +309,12 @@ describe("POST /api/tasks/:id/verify guards", () => {
       agents: [{ name: "reviewer", cli: "opencode", model: "default", enabled: true }],
     } as RepoOSConfig;
     const reviews = new ReviewManager(config, () => {});
-    const origRunGit = git.runGit;
+    const worker = getGitWorker(root);
+    const origRunGit = worker.runGit.bind(worker);
+    const worktreePathSpy = vi.spyOn(worker, "worktreePath").mockResolvedValue(root);
     let releaseStatus!: () => void;
     let holdStatus = true;
-    const statusSpy = vi.spyOn(git, "runGit").mockImplementation((cwd, args, timeout) => {
+    const statusSpy = vi.spyOn(worker, "runGit").mockImplementation((cwd, args, timeout) => {
       if (holdStatus && args[0] === "status" && args[1] === "--porcelain") {
         return new Promise((resolve) => {
           releaseStatus = () => {
@@ -322,11 +333,13 @@ describe("POST /api/tasks/:id/verify guards", () => {
     );
     await new Promise((r) => setTimeout(r, 10));
     expect(isEvidenceRefreshActive(task.id)).toBe(true);
-    expect(reviews.canRun(task).ok).toBe(false);
-    expect(reviews.canRun(task).reason).toContain("evidence refresh");
+    const gate = await reviews.canRun(task);
+    expect(gate.ok).toBe(false);
+    expect(gate.reason).toContain("evidence refresh");
     releaseStatus();
     await refreshPromise;
     statusSpy.mockRestore();
+    worktreePathSpy.mockRestore();
   });
 
   it("reports skipped verification as not refreshed", async () => {
@@ -396,7 +409,7 @@ describe("automatic stale-evidence refresh serialization (#0772)", () => {
   it("reserves the refresh lock before its first await and blocks a review start", async () => {
     const root = gitRoot();
     const task = makeTask(root, "review");
-    const { release, restore } = blockGitHeadLookup();
+    const { release, restore } = blockGitHeadLookup(root);
     const refresh = automaticStaleEvidenceRefresh(automaticDeps(root, task), task);
     // The mutex is held synchronously, before the blocked HEAD lookup resolves.
     expect(isEvidenceRefreshActive(task.id)).toBe(true);
@@ -407,8 +420,9 @@ describe("automatic stale-evidence refresh serialization (#0772)", () => {
       agents: [{ name: "reviewer", cli: "opencode", model: "default", enabled: true }],
     } as RepoOSConfig;
     const reviews = new ReviewManager(config, () => {});
-    expect(reviews.canRun(task).ok).toBe(false);
-    expect(reviews.canRun(task).reason).toContain("evidence refresh");
+    const gate = await reviews.canRun(task);
+    expect(gate.ok).toBe(false);
+    expect(gate.reason).toContain("evidence refresh");
     await expect(reviews.run(task)).resolves.toMatchObject({ ok: false });
     release();
     await refresh;
@@ -425,7 +439,7 @@ describe("automatic stale-evidence refresh serialization (#0772)", () => {
     );
     const readyTask = makeTask(root, "ready");
     const reviewTask = { ...readyTask, status: "review" } as Task;
-    const { release, restore } = blockGitHeadLookup();
+    const { release, restore } = blockGitHeadLookup(root);
     const refresh = automaticStaleEvidenceRefresh(automaticDeps(root, reviewTask), reviewTask);
     expect(isEvidenceRefreshActive(reviewTask.id)).toBe(true);
     const res = response();
@@ -443,7 +457,7 @@ describe("automatic stale-evidence refresh serialization (#0772)", () => {
           getTask: () => readyTask,
           getTasks: () => [readyTask],
           applyFileChange: vi.fn(),
-          refreshBranches: vi.fn(),
+          refreshBranchesAsync: vi.fn(async () => {}),
         },
         runner: { isRunning: () => false, start: vi.fn(() => ({ ok: true })) },
         jobCoordinator: { getJob: () => null, enqueue: vi.fn(), allJobs: () => [] },

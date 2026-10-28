@@ -86,7 +86,7 @@ describe("ServeReaper", () => {
     expect(existsSync(lockPath)).toBe(false);
   });
 
-  it("keeps the control-plane lock intact when an ephemeral harness closes", () => {
+  it("keeps the control-plane lock intact when an ephemeral harness closes", async () => {
     const lockPath = join(tmpDir, ".repoos", "serve.lock");
     reaper.register(7171, "127.0.0.1");
     const controlLock = readFileSync(lockPath, "utf8");
@@ -94,7 +94,7 @@ describe("ServeReaper", () => {
     // `startServer({ port: 0 })` is used by UI smoke tests and must never
     // claim or remove the lock for a real server rooted at the same checkout.
     const ephemeral = new ServeReaper(tmpDir, ".repoos", false);
-    ephemeral.cleanupStale();
+    await ephemeral.cleanupStale();
     ephemeral.register(49876, "127.0.0.1");
     ephemeral.unregister();
 
@@ -201,7 +201,7 @@ describe("ServeReaper", () => {
     expect(await isPortListening(0, "127.0.0.1")).toBe(false);
   });
 
-  it("cleans up stale lockfiles without removing current process lockfile", () => {
+  it("cleans up stale lockfiles without removing current process lockfile", async () => {
     // Write a stale lockfile with a fake PID
     const lockPath = join(tmpDir, ".repoos", "serve.lock");
     mkdirSync(join(tmpDir, ".repoos"), { recursive: true });
@@ -214,25 +214,25 @@ describe("ServeReaper", () => {
     };
     require("node:fs").writeFileSync(lockPath, JSON.stringify(staleLock));
 
-    reaper.cleanupStale();
+    await reaper.cleanupStale();
 
     // The stale lockfile should be removed
     expect(existsSync(lockPath)).toBe(false);
   });
 
-  it("handles corrupt lockfiles gracefully", () => {
+  it("handles corrupt lockfiles gracefully", async () => {
     const lockPath = join(tmpDir, ".repoos", "serve.lock");
     mkdirSync(join(tmpDir, ".repoos"), { recursive: true });
     require("node:fs").writeFileSync(lockPath, "invalid json");
 
-    reaper.cleanupStale();
+    await reaper.cleanupStale();
 
     // Should remove corrupt lockfile
     expect(existsSync(lockPath)).toBe(false);
   });
 
-  it("handles missing lockfiles gracefully", () => {
-    expect(() => reaper.cleanupStale()).not.toThrow();
+  it("handles missing lockfiles gracefully", async () => {
+    await expect(reaper.cleanupStale()).resolves.toBeUndefined();
   });
 
   it("idempotent unregister", () => {
@@ -241,7 +241,7 @@ describe("ServeReaper", () => {
     expect(() => reaper.unregister()).not.toThrow();
   });
 
-  it("scopes the lockfile by port so servers on different ports don't reap each other", () => {
+  it("scopes the lockfile by port so servers on different ports don't reap each other", async () => {
     mkdirSync(join(tmpDir, ".repoos"), { recursive: true });
     const lock7171 = join(tmpDir, ".repoos", "serve-7171.lock");
     const lock8765 = join(tmpDir, ".repoos", "serve-8765.lock");
@@ -252,7 +252,7 @@ describe("ServeReaper", () => {
 
     // A second control plane booting on :8765 must not touch the :7171 lock.
     const other = new ServeReaper(tmpDir, ".repoos", true, 8765);
-    other.cleanupStale();
+    await other.cleanupStale();
     expect(existsSync(lock7171)).toBe(true);
     other.register(8765, "127.0.0.1");
     expect(existsSync(lock8765)).toBe(true);
@@ -263,12 +263,12 @@ describe("ServeReaper", () => {
       lock7171,
       JSON.stringify({ pid: 999999999, port: 7171, host: "127.0.0.1", startedAt: "" }),
     );
-    new ServeReaper(tmpDir, ".repoos", true, 7171).cleanupStale();
+    await new ServeReaper(tmpDir, ".repoos", true, 7171).cleanupStale();
     expect(existsSync(lock7171)).toBe(false);
     expect(existsSync(lock8765)).toBe(true);
   });
 
-  it("skips cleanup when REPOOS_RELOAD=1 (reload replacement mode)", () => {
+  it("skips cleanup when REPOOS_RELOAD=1 (reload replacement mode)", async () => {
     // Write a stale lockfile
     const lockPath = join(tmpDir, ".repoos", "serve.lock");
     mkdirSync(join(tmpDir, ".repoos"), { recursive: true });
@@ -287,7 +287,7 @@ describe("ServeReaper", () => {
 
       // Create a reaper and call cleanupStale
       const reaperInReloadMode = new ServeReaper(tmpDir, ".repoos");
-      reaperInReloadMode.cleanupStale();
+      await reaperInReloadMode.cleanupStale();
 
       // Lockfile should still exist because cleanup is skipped in reload mode
       expect(existsSync(lockPath)).toBe(true);
@@ -379,7 +379,7 @@ describe("ServeReaper", () => {
           startedAt: new Date().toISOString(),
         }),
       );
-      preview.cleanupStale();
+      await preview.cleanupStale();
       expect(existsSync(lockPath)).toBe(true); // not reaped
 
       // detectConflict never refuses to bind (no false positive on reused ports)

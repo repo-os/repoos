@@ -88,7 +88,7 @@ function makeCtx(
 ): RouteContext {
   return {
     config: { root: ROOT } as any,
-    index: { getTask: () => task, refreshBranches: () => {} } as any,
+    index: { getTask: () => task, refreshBranchesAsync: async () => {} } as any,
     indexReady: Promise.resolve(),
     runner: { isRunning: () => opts.running ?? false, stop: () => {} } as any,
     previews: { stop: async () => {} } as any,

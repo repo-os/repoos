@@ -23,7 +23,7 @@ function makeCtx(root: string, events: RepoEvent[] = []) {
     repoos: createRepoOS(root),
     logger: createLogger(root),
     emitEvent: (e: RepoEvent) => events.push(e),
-    index: { refreshAll: () => {}, applyFileChange: () => {} },
+    index: { refreshAll: () => {}, refreshAllAsync: async () => {}, applyFileChange: () => {} },
   } as never as Parameters<typeof postSchedule>[0];
 }
 

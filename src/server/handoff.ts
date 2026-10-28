@@ -40,6 +40,7 @@ import {
   commitTaskFile,
   pathsChangedBetweenCommits,
 } from "../core/git.js";
+import { getGitWorker } from "./git-worker.js";
 import { parseTask } from "../core/task.js";
 import { isHoldActive } from "../core/task-selection.js";
 import { taskWithLiveHold } from "./hold-guard.js";
@@ -226,7 +227,12 @@ async function runCheck(
   const base =
     changedBase !== undefined
       ? changedBase
-      : branchChangesSinceBase(worktree, currentBranch(config.root) ?? "main").base;
+      : (
+          await getGitWorker(config.root).branchChangesSinceBase(
+            worktree,
+            (await getGitWorker(config.root).currentBranch()) ?? "main",
+          )
+        ).base;
   // Identify the caller to the check-run history (#0564): the child records
   // its own completed run, pointed at THIS repo's store so the history is one
   // file the server reads, not one per worktree. The scope mirrors the env
@@ -437,7 +443,7 @@ async function resolveWorktree(
     };
   }
   const isHotfix = task.hotfix === true;
-  const registered = worktreePathForBranch(config.root, task.branch);
+  const registered = await getGitWorker(config.root).worktreePath(task.branch);
   const registeredIsRoot = registered ? samePath(registered, config.root) : false;
   if (isHotfix) {
     if (!registeredIsRoot || (expectWorkdir && !samePath(config.root, expectWorkdir))) {
@@ -588,7 +594,7 @@ async function runHandoffFinalization(
 
   const tomlGuard = await guardStrayRepoosTomlOnTaskBranch(
     workdir,
-    currentBranch(config.root) ?? "main",
+    (await getGitWorker(config.root).currentBranch()) ?? "main",
     task,
   );
   if (!tomlGuard.ok) {
@@ -602,7 +608,7 @@ async function runHandoffFinalization(
   // The CANONICAL task body is used (task.body), not the worktree copy's, so a
   // `## Shots` edit on the board is honored even when the worktree's task file
   // lags (#0734; the same reason `worktreeTask` cannot be trusted for the gate).
-  if (!opts.skipChecks && taskNeedsUiHandoffVerification(config, task)) {
+  if (!opts.skipChecks && (await taskNeedsUiHandoffVerification(config, task))) {
     const pre = await preflightUiEvidence(config, task);
     if (!pre.ok) {
       return fail("verify", pre.detail);
@@ -635,7 +641,10 @@ async function runHandoffFinalization(
     let checkScope = "full";
     let changedBase: string | undefined;
     if (opts.taskChecks && opts.onTaskCheckEvent) {
-      const { base } = branchChangesSinceBase(workdir, currentBranch(config.root) ?? "main");
+      const { base } = await getGitWorker(config.root).branchChangesSinceBase(
+        workdir,
+        (await getGitWorker(config.root).currentBranch()) ?? "main",
+      );
       if (base) {
         changedBase = base;
         checkScope = `changed:${base}`;
@@ -704,7 +713,7 @@ async function runHandoffFinalization(
       return fail("check", `repoos check failed: ${buildLastCheckFailureSummary(checkOutput)}`);
     }
     if (checkRunSkipped(checkOutput)) {
-      const baseBranch = currentBranch(config.root) ?? "main";
+      const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
       if (branchAddsBuildableProjectMarker(workdir, baseBranch)) {
         return fail("check", BRANCH_ADDS_PROJECT_NO_CHECK_PLAN);
       }
@@ -734,7 +743,7 @@ async function runHandoffFinalization(
       // honored without breaking branch source validation (which still runs
       // against the worktree).
       const uiTask = { ...task };
-      if (taskNeedsUiHandoffVerification(config, uiTask)) {
+      if (await taskNeedsUiHandoffVerification(config, uiTask)) {
         onProgress?.("verify");
         const ui = await runUiHandoffGate(
           config,
@@ -750,7 +759,7 @@ async function runHandoffFinalization(
         // watchdog-only `review` transition) must not reach review while the
         // mechanical console check still expects `.repoos/ui-verification/*.json`.
         if (
-          taskNeedsBrowserUiVerification(config, uiTask) &&
+          (await taskNeedsBrowserUiVerification(config, uiTask)) &&
           !readUiHandoffGateEvidence(config, task.id)
         ) {
           const detail = ui.skipped

@@ -100,11 +100,11 @@ branch: feat/orphan
       );
       const verifySpy = vi
         .spyOn(orphanEngineers, "verifyRecordedHarnessPid")
-        .mockReturnValue(false);
+        .mockResolvedValue(false);
       const stopSpy = vi
         .spyOn(orphanEngineers, "stopRecordedEngineerPid")
         .mockImplementation(() => {});
-      runner.reconcileOrphanedEngineers([
+      await runner.reconcileOrphanedEngineers([
         {
           id: "0001",
           title: "Orphan verify",
@@ -169,8 +169,8 @@ describe("AgentRunner orphan reconcile (#0837)", () => {
         () => {},
         { onOrphanEngineerNote: (_id, note) => notes.push(note) },
       );
-      vi.spyOn(orphanEngineers, "verifyRecordedHarnessPid").mockReturnValue(true);
-      runner.adoptRunningAgents();
+      vi.spyOn(orphanEngineers, "verifyRecordedHarnessPid").mockResolvedValue(true);
+      await runner.adoptRunningAgents();
       expect(runner.isRunning("0001")).toBe(true);
       expect(notes).toEqual([`adopted orphaned engineer pid ${process.pid}`]);
       vi.restoreAllMocks();
@@ -233,8 +233,8 @@ cli_override: opencode
         agents: [{ name: "engineer", cli: "opencode", model: "default", enabled: true }],
       };
       const runner = new AgentRunner(config as any, () => {});
-      vi.spyOn(orphanEngineers, "verifyRecordedHarnessPid").mockReturnValue(true);
-      runner.adoptRunningAgents();
+      vi.spyOn(orphanEngineers, "verifyRecordedHarnessPid").mockResolvedValue(true);
+      await runner.adoptRunningAgents();
       expect(runner.isRunning("0001")).toBe(true);
       expect(pidAlive(process.pid)).toBe(true);
 
@@ -312,8 +312,8 @@ branch: feat/note
         () => {},
         { onOrphanEngineerNote: (_id, note) => notes.push(note) },
       );
-      vi.spyOn(orphanEngineers, "verifyRecordedHarnessPid").mockReturnValue(true);
-      runner.reconcileOrphanedEngineers([
+      vi.spyOn(orphanEngineers, "verifyRecordedHarnessPid").mockResolvedValue(true);
+      await runner.reconcileOrphanedEngineers([
         {
           id: "0001",
           title: "Note",

@@ -19,7 +19,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
 import { resolvePmAgent, runPrompt, recordOneShotSession } from "./agents.js";
-import { taskDependencyBlockers } from "../core/task-dependencies.js";
+import { getGitWorker } from "./git-worker.js";
 import {
   selectReadyTasks,
   shouldRunPmVeto,
@@ -272,10 +272,9 @@ export class AutoEngineeringOrchestrator {
 
     // Eligibility lives in the pure selector; the git-aware blocker check is
     // the only impure input, computed once here.
+    const blockers = await getGitWorker(config.root).dependencyBlockers(config.root, allTasks);
     const blockedIds = new Set(
-      allTasks
-        .filter((task) => taskDependencyBlockers(config.root, task, allTasks).length > 0)
-        .map((task) => task.id),
+      allTasks.filter((task) => (blockers.get(task.id)?.length ?? 0) > 0).map((task) => task.id),
     );
     const selection = selectReadyTasks(
       allTasks.filter((task) => task.assignee !== "human"),

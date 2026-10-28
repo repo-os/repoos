@@ -42,6 +42,7 @@ export class WorkWatcher {
   private gitSignal: (() => void) | null = null;
   private gitSignalTimer: ReturnType<typeof setTimeout> | null = null;
   private gitStateWatched = new Set<string>();
+  private gitRefDirs = new Set<string>();
 
   constructor(config: RepoOSConfig, index: LiveIndex) {
     this.config = config;
@@ -74,8 +75,12 @@ export class WorkWatcher {
     // restart (the UI's "server did not respond in time" popup). The boot index
     // build reads the files after this point, so nothing changed since is missed:
     // a later edit shows up as an mtime difference.
-    if (existsSync(workPath)) this.scanDirectory(workPath, new Set(), false);
-    this.pollTimer = setInterval(() => this.reconcile(), DEFAULT_POLL_MS);
+    if (existsSync(workPath)) this.seedDirectory(workPath);
+    this.pollTimer = setInterval(() => {
+      void this.reconcile().catch((error) => {
+        console.error(`[repoos] work watcher reconcile failed: ${(error as Error).message}`);
+      });
+    }, DEFAULT_POLL_MS);
     this.pollTimer.unref?.();
   }
 
@@ -96,6 +101,7 @@ export class WorkWatcher {
       this.gitSignalTimer = null;
     }
     this.gitStateWatched.clear();
+    this.gitRefDirs.clear();
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
       this.pollTimer = null;
@@ -146,8 +152,34 @@ export class WorkWatcher {
     this.watchGitPath(join(gitDir, "logs", "HEAD"));
     this.watchGitPath(join(gitDir, "refs"));
     this.watchGitPath(join(gitDir, "refs", "heads"));
+    // Linked worktrees keep refs and packed-refs in the shared directory.
+    let commonDir = gitDir;
+    try {
+      const pointer = readFileSync(join(gitDir, "commondir"), "utf8").trim();
+      commonDir = resolve(gitDir, pointer);
+    } catch {
+      // Ordinary checkout: gitDir is already the common directory.
+    }
+    this.watchGitPath(commonDir);
+    this.watchGitPath(join(commonDir, "packed-refs"));
+    this.watchGitRefTree(join(commonDir, "refs"));
+    this.watchGitRefTree(join(commonDir, "worktrees"));
     // The `.git` directory itself: catches creates/removes not listed above.
     this.watchGitPath(gitDir);
+  }
+
+  /** Watch nested branch refs and linked-worktree HEADs, including new dirs. */
+  private watchGitRefTree(path: string): void {
+    if (!existsSync(path)) return;
+    this.gitRefDirs.add(path);
+    this.watchGitPath(path);
+    try {
+      for (const entry of readdirSync(path, { withFileTypes: true })) {
+        if (entry.isDirectory()) this.watchGitRefTree(join(path, entry.name));
+      }
+    } catch {
+      // A concurrent git operation may remove a worktree directory.
+    }
   }
 
   private watchGitPath(path: string): void {
@@ -155,7 +187,17 @@ export class WorkWatcher {
     if (!existsSync(path)) return;
     this.gitStateWatched.add(path);
     try {
-      const w = watch(path, () => this.scheduleGitSignal());
+      const w = watch(path, () => {
+        this.scheduleGitSignal();
+        // A newly created branch namespace needs its own non-recursive watch.
+        try {
+          if (this.gitRefDirs.has(path) && statSync(path).isDirectory()) {
+            this.watchGitRefTree(path);
+          }
+        } catch {
+          // Atomic replacement/removal is already covered by the parent watch.
+        }
+      });
       this.watchers.push(w);
     } catch {
       /* not watchable on this platform — the poll/interval backstops cover it */
@@ -241,7 +283,9 @@ export class WorkWatcher {
           this.index.notifyStoryDefinitionsChanged();
           return;
         }
-        this.index.applyFileChange(absPath);
+        void Promise.resolve(this.index.applyFileChange(absPath)).catch((error) => {
+          console.error(`[repoos] work watcher file update failed: ${(error as Error).message}`);
+        });
       }, DEBOUNCE_MS),
     );
   }
@@ -259,12 +303,12 @@ export class WorkWatcher {
     }
   }
 
-  private reconcile(): void {
+  private async reconcile(): Promise<void> {
     const workPath = join(this.config.root, this.config.workDir);
     if (!existsSync(workPath)) return;
 
     const seenPaths = new Set<string>();
-    this.scanDirectory(workPath, seenPaths);
+    await this.scanDirectoryAsync(workPath, seenPaths);
 
     // Check for deletions: tracked files that no longer exist
     for (const [path] of this.pathToMtime) {
@@ -277,7 +321,25 @@ export class WorkWatcher {
   }
 
   /** `apply: false` only records mtimes (boot seeding); true re-applies new/changed files. */
-  private scanDirectory(dir: string, seenPaths: Set<string>, apply = true): void {
+  private seedDirectory(dir: string): void {
+    try {
+      for (const entry of readdirSync(dir)) {
+        if (entry.startsWith(".")) continue;
+        const fullPath = join(dir, entry);
+        try {
+          const stat = statSync(fullPath);
+          if (stat.isDirectory()) this.seedDirectory(fullPath);
+          else if (this.isTaskFile(fullPath)) this.pathToMtime.set(fullPath, stat.mtimeMs);
+        } catch {
+          /* ignore stat errors on individual entries */
+        }
+      }
+    } catch {
+      /* ignore directory read errors */
+    }
+  }
+
+  private async scanDirectoryAsync(dir: string, seenPaths: Set<string>): Promise<void> {
     try {
       for (const entry of readdirSync(dir)) {
         if (entry.startsWith(".")) continue;
@@ -285,7 +347,7 @@ export class WorkWatcher {
         try {
           const stat = statSync(fullPath);
           if (stat.isDirectory()) {
-            this.scanDirectory(fullPath, seenPaths, apply);
+            await this.scanDirectoryAsync(fullPath, seenPaths);
           } else if (this.isTaskFile(fullPath)) {
             seenPaths.add(fullPath);
             const currentMtime = stat.mtimeMs;
@@ -294,11 +356,11 @@ export class WorkWatcher {
             if (cachedMtime === undefined) {
               // New file not yet tracked
               this.pathToMtime.set(fullPath, currentMtime);
-              if (apply) this.index.applyFileChange(fullPath);
+              await this.index.applyFileChange(fullPath);
             } else if (cachedMtime !== currentMtime) {
               // Content changed (mtime differs)
               this.pathToMtime.set(fullPath, currentMtime);
-              if (apply) this.index.applyFileChange(fullPath);
+              await this.index.applyFileChange(fullPath);
             }
           }
         } catch {

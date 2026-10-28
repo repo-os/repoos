@@ -38,6 +38,7 @@ import {
   handoffSinceLastCommit,
 } from "../../server/task-watchdog";
 import { parseTask } from "../../core/task";
+import { worktreePathForBranch } from "../../core/git";
 import { createRepoOS } from "../../core/repoos";
 import {
   ENGINEER_STALL_RESUME_LOG_KEY,
@@ -305,7 +306,7 @@ describe("stuck detection", () => {
 });
 
 describe("hasRecentWorktreeActivity (#0203)", () => {
-  it("is true when a worktree file was modified within the staleness window", () => {
+  it("is true when a worktree file was modified within the staleness window", async () => {
     const fx = makeGitFx(600_000, { committedWork: true });
     try {
       // Uncommitted, freshly-written — the exact shape of a live agent
@@ -314,42 +315,46 @@ describe("hasRecentWorktreeActivity (#0203)", () => {
         join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x", "live.txt"),
         "editing now\n",
       );
-      expect(hasRecentWorktreeActivity(fx.root, "feat/x", 5 * 60_000, Date.now())).toBe(true);
+      expect(await hasRecentWorktreeActivity(fx.root, "feat/x", 5 * 60_000, Date.now())).toBe(true);
     } finally {
       fx.clean();
     }
   });
 
-  it("is false once nothing in the worktree has changed within the window", () => {
+  it("is false once nothing in the worktree has changed within the window", async () => {
     const fx = makeGitFx(600_000, { committedWork: true });
     try {
       const now = Date.now();
       // committedWork's file was written well before "now" in wall-clock
       // terms, but to make the boundary deterministic, use a threshold of 0.
-      expect(hasRecentWorktreeActivity(fx.root, "feat/x", 0, now)).toBe(false);
+      expect(await hasRecentWorktreeActivity(fx.root, "feat/x", 0, now)).toBe(false);
     } finally {
       fx.clean();
     }
   });
 
-  it("is false when the task has no branch, or the branch has no worktree", () => {
+  it("is false when the task has no branch, or the branch has no worktree", async () => {
     const fx = makeGitFx(600_000);
     try {
-      expect(hasRecentWorktreeActivity(fx.root, undefined, 5 * 60_000, Date.now())).toBe(false);
-      expect(hasRecentWorktreeActivity(fx.root, "feat/x", 5 * 60_000, Date.now())).toBe(false);
+      expect(await hasRecentWorktreeActivity(fx.root, undefined, 5 * 60_000, Date.now())).toBe(
+        false,
+      );
+      expect(await hasRecentWorktreeActivity(fx.root, "feat/x", 5 * 60_000, Date.now())).toBe(
+        false,
+      );
     } finally {
       fx.clean();
     }
   });
 
-  it("ignores node_modules and .git so a scan never pays for their size", () => {
+  it("ignores node_modules and .git so a scan never pays for their size", async () => {
     const fx = makeGitFx(600_000, { committedWork: true });
     try {
       const wt = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x");
       const nm = join(wt, "node_modules", "pkg");
       mkdirSync(nm, { recursive: true });
       writeFileSync(join(nm, "index.js"), "module.exports = {};\n");
-      expect(hasRecentWorktreeActivity(fx.root, "feat/x", 0, Date.now())).toBe(false);
+      expect(await hasRecentWorktreeActivity(fx.root, "feat/x", 0, Date.now())).toBe(false);
     } finally {
       fx.clean();
     }
@@ -397,22 +402,22 @@ describe("classifyDeadAgentReason", () => {
 });
 
 describe("autoTransitionTarget", () => {
-  it("returns ready for a task with no branch", () => {
+  it("returns ready for a task with no branch", async () => {
     const fx = makeFx(1000);
     const task = { ...parseTaskAt(fx), branch: "" };
-    expect(autoTransitionTarget(fx.config, task)).toBe("ready");
+    expect(await autoTransitionTarget(fx.config, task)).toBe("ready");
     fx.clean();
   });
 
-  it("returns ready when the branch has no worktree holding work", () => {
+  it("returns ready when the branch has no worktree holding work", async () => {
     const fx = makeGitFx(1000);
-    expect(autoTransitionTarget(fx.config, parseTaskAt(fx))).toBe("ready");
+    expect(await autoTransitionTarget(fx.config, parseTaskAt(fx))).toBe("ready");
     fx.clean();
   });
 
-  it("returns review when the branch worktree holds committed work (#0172 never-commit shape)", () => {
+  it("returns review when the branch worktree holds committed work (#0172 never-commit shape)", async () => {
     const fx = makeGitFx(1000, { committedWork: true });
-    expect(autoTransitionTarget(fx.config, parseTaskAt(fx))).toBe("review");
+    expect(await autoTransitionTarget(fx.config, parseTaskAt(fx))).toBe("review");
     fx.clean();
   });
 });
@@ -867,7 +872,9 @@ Stuck twice.
     // reason — backdate every file so the worktree is genuinely stale too.
     const fx = makeGitFx(600_000, { committedWork: true });
     try {
-      const wt = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x");
+      const wt =
+        worktreePathForBranch(fx.root, "feat/x") ??
+        join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x");
       backdateTree(wt, new Date(Date.now() - 600_000));
 
       const index = new LiveIndex(fx.config);
@@ -1284,7 +1291,7 @@ Findings to address.
 - 2026-10-21T11:20:00Z · status review→active
 `,
     );
-    expect(handoffSinceLastCommit(fx.config, parseTaskAt(fx))).toBe(false);
+    expect(await handoffSinceLastCommit(fx.config, parseTaskAt(fx))).toBe(false);
     fx.clean();
   });
 });

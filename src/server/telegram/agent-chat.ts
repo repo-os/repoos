@@ -34,10 +34,10 @@
  * trigger rules still apply upstream), and needs no shared or expiring state.
  */
 import type { RepoOSConfig, Task } from "../../core/types.js";
-import { worktreePathForBranch } from "../../core/git.js";
-import { resumePreamble } from "../../core/context-pack.js";
+import { getGitWorker } from "../git-worker.js";
 import type { Logger } from "../../core/logger.js";
 import { getAuthStore } from "../../core/auth-store.js";
+import { serverResumePreamble } from "../context-pack.js";
 import { TELEGRAM_AUDIT } from "../../core/telegram-identity.js";
 import { resolveAgentForTask, type AgentRunner } from "../agents.js";
 import { dismissNeedsInputOnTask } from "../needs-input-dismiss.js";
@@ -266,8 +266,9 @@ export function createTelegramAgentChatHandler(
 
     let preamble: string | undefined;
     if (task.branch) {
-      const wtPath = worktreePathForBranch(config.root, task.branch);
-      if (wtPath) preamble = resumePreamble(config, task, task.branch, wtPath) || undefined;
+      const wtPath = await getGitWorker(config.root).worktreePath(task.branch);
+      if (wtPath)
+        preamble = (await serverResumePreamble(config, task, task.branch, wtPath)) || undefined;
     }
 
     const sent = runner.send(task.id, parsed.message, agent, { resumePreamble: preamble });

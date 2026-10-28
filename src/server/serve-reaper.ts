@@ -22,7 +22,7 @@ import {
   mkdirSync,
 } from "node:fs";
 import { join, dirname, sep } from "node:path";
-import { execFile, execSync, execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { tmpdir } from "node:os";
 import net from "node:net";
 
@@ -127,7 +127,7 @@ export class ServeReaper {
    * expected serve characteristics (the repoos CLI binary in the command line).
    * On Windows, the check is limited to existence (kill -0).
    */
-  private isProcessAlive(pid: number, port: number): boolean {
+  private async isProcessAlive(pid: number, port: number): Promise<boolean> {
     if (!Number.isInteger(pid) || pid <= 0) return false;
 
     // For the current process, trust it's valid without checking
@@ -135,7 +135,7 @@ export class ServeReaper {
 
     try {
       // Check if process exists (works on Unix and Windows)
-      execSync(`kill -0 ${pid}`, { stdio: "ignore", timeout: 2000 });
+      await execFileAsync("kill", ["-0", String(pid)], 2000);
     } catch {
       return false;
     }
@@ -145,11 +145,7 @@ export class ServeReaper {
 
     // On Unix/Mac, verify it's a repoos serve process on the expected port
     try {
-      const cmdline = execSync(`ps -p ${pid} -o command=`, {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"],
-        timeout: 2000,
-      });
+      const cmdline = await execFileAsync("ps", ["-p", String(pid), "-o", "command="], 2000);
       return cmdline.includes("serve") && cmdline.includes(`--port ${port}`);
     } catch {
       return false;
@@ -162,7 +158,7 @@ export class ServeReaper {
    * parent process can exit gracefully without being killed mid-shutdown.
    * This is safe to call multiple times and always succeeds (best-effort).
    */
-  cleanupStale(): void {
+  async cleanupStale(): Promise<void> {
     if (!this.enabled) return;
     // A preview child must never reap other processes (see `previewChild`).
     if (this.previewChild) return;
@@ -195,7 +191,7 @@ export class ServeReaper {
     }
 
     // If there's a stale process, try to reap it
-    if (!this.isProcessAlive(old.pid, old.port)) {
+    if (!(await this.isProcessAlive(old.pid, old.port))) {
       this.removeLock();
       return;
     }
@@ -294,7 +290,12 @@ export class ServeReaper {
 
     // A lockfile that names a live process for this exact port/host is the most
     // specific conflict: we can point the user at the offending PID.
-    if (info && info.port === port && info.host === host && this.isProcessAlive(info.pid, port)) {
+    if (
+      info &&
+      info.port === port &&
+      info.host === host &&
+      (await this.isProcessAlive(info.pid, port))
+    ) {
       return (
         `Port ${port} is already bound by another repoos serve process (PID ${info.pid} started at ${info.startedAt}). ` +
         `Use 'kill ${info.pid}' to stop it, or choose a different port with --port.`

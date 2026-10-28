@@ -79,6 +79,7 @@
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { gitWorkerInFlight, getGitWorker, sweepAndWarnAsync } from "./git-worker.js";
 import {
   existsSync,
   mkdirSync,
@@ -89,7 +90,7 @@ import {
   constants,
   writeFileSync,
 } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { homedir } from "node:os";
 import { extname, join, dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -134,12 +135,11 @@ import {
   commitFiles,
   resetWorktree,
   syncBranchWithMain,
-  worktreePathForBranch,
   shouldTuneRepoForScaleAtStartup,
   tuneRepoForScale,
   runGit,
 } from "../core/git.js";
-import { sweepAndWarn, sweepStaleWorktrees } from "../core/worktree-gc.js";
+import { sweepStaleWorktrees } from "../core/worktree-gc.js";
 import {
   checkServerRegistryPortConflict,
   logServerRegistryError,
@@ -283,7 +283,6 @@ import {
   stopDevTargetHolder,
 } from "./routes/dev.js";
 import { bootstrap } from "../core/bootstrap.js";
-import { generateContextPack, resumePreamble } from "../core/context-pack.js";
 import {
   sampleSystem,
   psAvailable,
@@ -381,6 +380,7 @@ import {
   pmStoryInterrupt,
   // Tasks routes
   getTasks,
+  getTaskContext,
   createTask,
   createFreeformTask,
   finalizeFreeformRun,
@@ -555,31 +555,28 @@ function findCloudflared(): string | null {
   return null;
 }
 
-function storedCloudflareToken(): boolean {
+function execFileOutput(command: string, args: string[], timeout: number): Promise<string | null> {
+  return new Promise((resolve) => {
+    execFile(command, args, { encoding: "utf8", timeout }, (error, stdout) => {
+      resolve(error ? null : stdout);
+    });
+  });
+}
+
+async function storedCloudflareToken(): Promise<boolean> {
   if (process.env.CLOUDFLARE_API_TOKEN?.trim()) return true;
-  try {
-    if (process.platform === "darwin") {
-      return (
-        execFileSync(
+  const command: [string, string[]] | null =
+    process.platform === "darwin"
+      ? [
           "security",
           ["find-generic-password", "-a", "repoos", "-s", "repoos:cloudflare-token", "-w"],
-          { encoding: "utf8", timeout: 2000 },
-        ).trim().length > 0
-      );
-    }
-    if (process.platform === "linux") {
-      return (
-        execFileSync(
-          "secret-tool",
-          ["lookup", "service", "repoos:cloudflare-token", "user", "repoos"],
-          { encoding: "utf8", timeout: 2000 },
-        ).trim().length > 0
-      );
-    }
-  } catch {
-    /* unavailable or not stored */
-  }
-  return false;
+        ]
+      : process.platform === "linux"
+        ? ["secret-tool", ["lookup", "service", "repoos:cloudflare-token", "user", "repoos"]]
+        : null;
+  if (!command) return false;
+  const output = await execFileOutput(command[0], command[1], 2000);
+  return (output?.trim().length ?? 0) > 0;
 }
 
 /** Compact live context for the guide; detailed answers can read the listed files. */
@@ -601,17 +598,8 @@ function repoGuideContext(config: RepoOSConfig, tasks: Task[]): string {
   return `Repository: ${projectDisplayName(config.root)}\nRoot: ${config.root}\nTask counts: ${statusSummary}\n\nTasks:\n${taskSummary || "- none"}\n\nContext documents:\n${docs || "- none"}`;
 }
 
-function tunnelProcessRunning(): boolean {
-  try {
-    return (
-      execFileSync("pgrep", ["-f", "cloudflared.*tunnel.*run"], {
-        encoding: "utf8",
-        timeout: 2000,
-      }).trim() !== ""
-    );
-  } catch {
-    return false;
-  }
+async function tunnelProcessRunning(): Promise<boolean> {
+  return (await execFileOutput("pgrep", ["-f", "cloudflared.*tunnel.*run"], 2000))?.trim() !== "";
 }
 
 function usableOriginCertificate(path: string): boolean {
@@ -624,26 +612,18 @@ function usableOriginCertificate(path: string): boolean {
   }
 }
 
-function serviceRunning(): boolean {
-  try {
-    if (process.platform === "darwin") {
-      const out = execFileSync("launchctl", ["list"], {
-        encoding: "utf8",
-        timeout: 2000,
-      });
-      return out
-        .split("\n")
-        .some((line) => line.includes("com.cloudflare.cloudflared") && /^\s*\d+\s+/.test(line));
-    }
-    if (process.platform === "linux")
-      return (
-        execFileSync("systemctl", ["is-active", "cloudflared"], {
-          encoding: "utf8",
-          timeout: 2000,
-        }).trim() === "active"
-      );
-  } catch {
-    /* service manager unavailable */
+async function serviceRunning(): Promise<boolean> {
+  if (process.platform === "darwin") {
+    const out = await execFileOutput("launchctl", ["list"], 2000);
+    if (!out) return false;
+    return out
+      .split("\n")
+      .some((line) => line.includes("com.cloudflare.cloudflared") && /^\s*\d+\s+/.test(line));
+  }
+  if (process.platform === "linux") {
+    return (
+      (await execFileOutput("systemctl", ["is-active", "cloudflared"], 2000))?.trim() === "active"
+    );
   }
   return false;
 }
@@ -663,10 +643,7 @@ async function tunnelReadiness(root: string, port?: number) {
   let version: string | null = null;
   if (bin) {
     try {
-      version =
-        execFileSync(bin, ["--version"], { encoding: "utf8", timeout: 3000 })
-          .trim()
-          .split("\n")[0] || null;
+      version = (await execFileOutput(bin, ["--version"], 3000))?.trim().split("\n")[0] || null;
     } catch {
       /* installed but unavailable */
     }
@@ -681,7 +658,7 @@ async function tunnelReadiness(root: string, port?: number) {
   return {
     cloudflared: { installed: !!bin, version },
     originCertificate,
-    apiTokenStored: storedCloudflareToken(),
+    apiTokenStored: await storedCloudflareToken(),
     configured: {
       tunnelName: tunnel.tunnelId ? tunnel.name : null,
       tunnelId: tunnel.tunnelId || null,
@@ -689,7 +666,7 @@ async function tunnelReadiness(root: string, port?: number) {
     },
     localOrigin: { port: port ?? null, listening: originListening },
     serveDefaultPort: resolveServePort(root, loadConfig(root)),
-    running: tunnelProcessRunning() || serviceRunning(),
+    running: (await tunnelProcessRunning()) || (await serviceRunning()),
     publishedHostnames: Object.values(allApps)
       .map((app) => app.hostname)
       .sort(),
@@ -1248,7 +1225,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // deep-link `#0001` from the first paint. Existing unique numbers stay stable;
   // duplicate claimants receive new numbers in deterministic age/path order.
   try {
-    const numbered = ensureStoryNumbers(config);
+    // Numbering is ordered by created_at; use filesystem mtime only for legacy
+    // stories missing that field rather than running a synchronous Git log here.
+    const numbered = ensureStoryNumbers(config, new Map());
     if (numbered.length) {
       logger.system("info", `story numbering migration: assigned ${numbered.length} number(s)`);
       if (isControlPlane) {
@@ -1393,19 +1372,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // off `server.listen()`'s critical path (same shape as the remote-validation
   // reconcile above). Control-plane only, and opt-out via env.
   if (isControlPlane && process.env.REPOOS_NO_WORKTREE_GC !== "1") {
-    // Wait for the async index build to settle first — the sweep's git spawns
-    // are synchronous, and running them during boot would compete with the
-    // health handshake / first paint.
+    // Wait for the async index build to settle first. The sweep itself runs in
+    // the dedicated Git worker so it cannot block the HTTP event loop.
     void indexReady
       .catch(() => {})
-      .then(() => {
+      .then(async () => {
         const activeJobIds = new Set(
           jobCoordinator
             .allJobs()
             .filter((j) => j.phase !== "done" && j.phase !== "failed")
             .map((j) => j.taskId),
         );
-        sweepAndWarn(config, {
+        await sweepAndWarnAsync(config, {
           activeJobIds,
           threshold: config.worktreeWarnThreshold,
           log: (level, msg, meta) => logger.system(level, `boot ${msg}`, meta),
@@ -1503,7 +1481,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             fresh.cacheDir !== prev.cacheDir ||
             fresh.taskExtensions !== prev.taskExtensions
           ) {
-            index.refreshAll();
+            void index.refreshAllAsync().catch((error) => {
+              logger.system("warn", "index refresh failed after config change", {
+                error: error instanceof Error ? error.message : String(error),
+              });
+            });
           }
           if (runningServerRegistry && registerInServerRegistry) {
             try {
@@ -1530,11 +1512,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     root: config.root,
     emit: (status) => emitEvent({ type: "repo.status", status, at: status.computedAt }),
   });
-  watcher.setGitSignal(() => repoStatusNotifier.notify());
+  watcher.setGitSignal(() => {
+    getGitWorker(config.root).invalidate();
+    repoStatusNotifier.notify();
+  });
   const offGitMutation = onGitMutation((mutatedRoot) => {
     // A worktree commit shares `.git` with the root checkout but must not be
     // read as "the main checkout changed" — only a mutation of this checkout.
-    if (isSameCheckout(mutatedRoot, config.root)) repoStatusNotifier.notify();
+    if (isSameCheckout(mutatedRoot, config.root)) {
+      repoStatusNotifier.notify();
+      getGitWorker(config.root).invalidate();
+    }
   });
 
   // Per-task `repoos check` run tracking for the Debug tab (0310): the
@@ -1745,7 +1733,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           const doneTask = index.getTask(jobBefore.taskId);
           if (doneTask) index.applyFileChange(doneTask.absPath);
         }
-        index.refreshBranches();
+        await index.refreshBranchesAsync();
         if (
           jobBefore &&
           jobCoordinator.getJob(jobBefore.taskId)?.phase === "done" &&
@@ -1831,7 +1819,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // the real control-plane lock. They are deliberately short-lived and are
   // not valid evidence about who owns 7171.
   const reaper = new ServeReaper(config.root, config.cacheDir, isControlPlane, requestedPort);
-  reaper.cleanupStale();
   // Boot-time sweep for historical orphans whose deleted root took their
   // lockfile with it. Deliberately fire-and-forget: the sweep is async and
   // bounded, so serve startup never blocks on it even with hundreds of
@@ -2118,14 +2105,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // session rather than a post-`runPrompt` continuation that would have died
       // with the old process. `reviews` is assigned below but the callback only
       // fires asynchronously after completion, so the closure is safe.
-      onReviewDone: (sessionKey, exitedCleanly, reviewKind) => {
-        if (!reviews) return;
-        try {
-          reviews.handleReviewDone(sessionKey, exitedCleanly, reviewKind);
-        } catch (err) {
-          console.error(`[repoos] review completion handler threw: ${(err as Error).message}`);
-        }
-      },
+      onReviewDone: (sessionKey, exitedCleanly, reviewKind) =>
+        reviews?.handleReviewDone(sessionKey, exitedCleanly, reviewKind),
     },
   );
   const stopProviderUsageLimitProbes = startProviderUsageLimitProbes(config, logger);
@@ -2133,7 +2114,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Adopt any agent children that survived a server restart (0214).
   // Reads the durable registry, checks PID aliveness, and re-attaches
   // to still-running children so isRunning() reports true immediately.
-  if (!isPreviewChild) runner.adoptRunningAgents();
+  const runnerAdoption = isPreviewChild ? Promise.resolve() : runner.adoptRunningAgents();
 
   // Recover any pending handoff requests from a previous interrupted turn (#0235).
   // Validates each request (task still exists, active, branch matches) and
@@ -2143,16 +2124,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // until `refreshAllAsync` resolves — a fast boot used to run recovery first
   // and silently drop valid requests (`if (!task) clearPendingHandoff()`),
   // leaving the task stuck `active` with its work uncommitted.
+  const startupRecoveryReady = Promise.allSettled([indexReady, runnerAdoption]);
   const runHandoffRecovery = (): void => runner.recoverPendingHandoffs();
   if (!isPreviewChild) {
-    void indexReady.then(runHandoffRecovery, runHandoffRecovery).catch(() => {});
+    void startupRecoveryReady.then(runHandoffRecovery).catch(() => {});
   }
 
-  const runOrphanEngineerReconcile = (): void => {
-    runner.reconcileOrphanedEngineers(index.getTasks());
+  const runOrphanEngineerReconcile = async (): Promise<void> => {
+    await runner.reconcileOrphanedEngineers(index.getTasks());
   };
   if (!isPreviewChild) {
-    void indexReady.then(runOrphanEngineerReconcile, runOrphanEngineerReconcile).catch(() => {});
+    void startupRecoveryReady.then(runOrphanEngineerReconcile).catch((error) => {
+      logger.system("warn", "Could not reconcile orphaned engineers", {
+        error: (error as Error).message,
+      });
+    });
   }
 
   // The one-time area-format migration (#0583) runs once AFTER the index has
@@ -2167,7 +2153,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // derived copy; a vitest boot skips outright (the VITEST guard below stops
   // any test-spawned server from touching the live board, ports aside), and
   // a non-test tool boot can opt out with REPOOS_SKIP_AREA_MIGRATION=1.
-  const runAreaMigration = (): void => {
+  const runAreaMigration = async (): Promise<void> => {
     try {
       if (!isControlPlane) return;
       // A vitest process must never rewrite the live board, full stop — any
@@ -2201,12 +2187,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
       // The index holds pre-migration parses; refresh so boards and searches
       // see the canonical `areas` values right away.
-      index.refreshAll();
-    } catch {
-      /* best-effort: the tolerant reader keeps legacy files working anyway */
+      await index.refreshAllAsync();
+    } catch (error) {
+      logger.system("warn", "area-format migration failed; legacy values remain readable", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
-  const runTaskBodyMigration = (): void => {
+  const runTaskBodyMigration = async (): Promise<void> => {
     try {
       if (!isControlPlane) return;
       if (process.env.VITEST === "true") return;
@@ -2234,15 +2222,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           retried: outcome.retried,
         });
       }
-      index.refreshAll();
-    } catch {
-      /* best-effort */
+      await index.refreshAllAsync();
+    } catch (error) {
+      logger.system("warn", "task-body normalization failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
   void indexReady.then(
-    () => {
-      runAreaMigration();
-      runTaskBodyMigration();
+    async () => {
+      await runAreaMigration();
+      await runTaskBodyMigration();
     },
     () => {},
   );
@@ -2268,7 +2258,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           "docs: flag underspecified tasks (#0668)",
         );
         // The index holds pre-sweep parses; refresh so boards see needs_input now.
-        index.refreshAll();
+        await index.refreshAllAsync();
         logger.system("info", `underspecified sweep: flagged ${changed.length} task(s)`);
       } catch {
         /* best-effort: a failed sweep must never block boot */
@@ -2337,9 +2327,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // `reviews.cancelAll()` on SIGTERM/SIGINT, so a manual restart (or a crash)
   // leaves tasks stuck in `review` with a stale/missing report and nothing
   // adopts them. Deferred until `indexReady` — it reads `index.getTasks()`.
-  const runReviewRecovery = (): void => reviews.recoverInterruptedReviews(index.getTasks());
+  const runReviewRecovery = (): Promise<void> =>
+    reviews.recoverInterruptedReviews(index.getTasks());
   if (!isPreviewChild) {
-    void indexReady.then(runReviewRecovery, runReviewRecovery).catch(() => {});
+    void indexReady.then(runReviewRecovery, runReviewRecovery).catch((err) => {
+      console.error(`[repoos] review recovery failed: ${(err as Error).message}`);
+    });
   }
 
   reviews.bindCleanReviewHandler((task, report) => {
@@ -2520,10 +2513,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // listening (a headless server should not burn cycles measuring itself for
   // nobody). Graceful: skips sampling entirely when `ps` is unavailable.
   const SYSTEM_SAMPLE_INTERVAL_MS = 5000;
+  let systemSampleInFlight = false;
   const systemSampleTimer = setInterval(() => {
-    if (clients.size === 0 || !psAvailable()) return;
-    try {
-      const stats = sampleSystem({
+    if (clients.size === 0 || systemSampleInFlight) return;
+    systemSampleInFlight = true;
+    void (async () => {
+      if (!(await psAvailable())) return;
+      const stats = await sampleSystem({
         serverPid: process.pid,
         cacheDir: join(config.root, config.cacheDir),
         runningAgents: runner.running(),
@@ -2533,9 +2529,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         config,
       });
       emitEvent({ type: "system.stats", stats });
-    } catch {
-      /* sampling is best-effort — never crash the poll loop */
-    }
+    })()
+      .catch(() => {
+        /* sampling is best-effort — never crash the poll loop */
+      })
+      .finally(() => {
+        systemSampleInFlight = false;
+      });
   }, SYSTEM_SAMPLE_INTERVAL_MS);
 
   // Stray serve-process reaping (#0216): orphaned repoos serve processes
@@ -2549,9 +2549,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const REAP_INTERVAL_MS = 30_000;
   const reapTimer = shouldReapStrayServeProcesses(opts)
     ? setInterval(() => {
-        if (!psAvailable()) return;
-        try {
-          const reaped = reapStrayServeProcesses(
+        void (async () => {
+          if (!(await psAvailable())) return;
+          const reaped = await reapStrayServeProcesses(
             process.pid,
             new Set(previews.knownPids()),
             undefined,
@@ -2565,10 +2565,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // The PPID-based pass above cannot see every deleted-root orphan;
           // repeat the narrower root sweep so leaks created after boot do not
           // wait until the next control-plane restart.
-          void reaper.cleanupOrphanedRoots();
-        } catch {
+          await reaper.cleanupOrphanedRoots();
+        })().catch(() => {
           /* reaping is best-effort — never crash the server over it */
-        }
+        });
       }, REAP_INTERVAL_MS)
     : null;
 
@@ -2630,7 +2630,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         })
         .finally(() => {
           builtInRun.inFlight = false;
-          index.refreshAll();
+          void index.refreshAllAsync().catch((error) => {
+            logger.system("warn", "index refresh failed after built-in run", {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          });
         });
       break; // one built-in agent per tick
     }
@@ -2878,10 +2882,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
    * is no runner capability to re-adopt. A reload mid-handoff simply leaves the
    * task `active`, and asking again is one click.
    */
-  const startUnifiedHandoff = (
+  const startUnifiedHandoff = async (
     task: Task,
     opts: { origin: HandoffOrigin; skipChecks?: boolean; actor?: string } = { origin: "api" },
-  ): { started: boolean; reason?: string } => {
+  ): Promise<{ started: boolean; reason?: string }> => {
     // #0886: once Move to done owns the task, no handoff may start — and in
     // particular nothing here may write the task file. The old path wrote a
     // "handoff requested" note unconditionally, which re-serialized a task file
@@ -2898,7 +2902,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (!runner.markHandoffInFlight(task.id)) {
       return { started: false, reason: "a handoff is already running for this task" };
     }
-    const branchHead = readTaskBranchHead(config, task);
+    const branchHead = await readTaskBranchHead(config, task);
     if (shouldParkForIdenticalHandoffFailures(task, branchHead)) {
       runner.releaseHandoffInFlight(task.id);
       const last = lastHandoffFailureFromBody(task.body);
@@ -3040,7 +3044,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       );
       return false;
     }
-    startUnifiedHandoff(prev, { origin: "task-file" });
+    void startUnifiedHandoff(prev, { origin: "task-file" });
     return false;
   });
 
@@ -3049,8 +3053,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // task's engineer which requirement sections changed, so nothing depends on
   // a human remembering to pass them along. The notice never writes the
   // engineer's worktree copy; it only reports what moved.
-  index.setBodyChangeNotifier((task: Task, prev: Task) => {
-    const result = notifyEngineerOfRequirementsChange({ config, runner }, task, prev.body);
+  index.setBodyChangeNotifier(async (task: Task, prev: Task) => {
+    const result = await notifyEngineerOfRequirementsChange({ config, runner }, task, prev.body);
     if (result.sent) {
       logger.task(task.id, "info", `requirements changed — notified engineer: ${result.summary}`, {
         queued: result.queued === true,
@@ -3181,7 +3185,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const result = await syncBranchWithMain(config.root, task.branch, {
       autoResolve: [rel],
     });
-    const wtPath = worktreePathForBranch(config.root, task.branch);
+    const wtPath = await getGitWorker(config.root).worktreePath(task.branch);
 
     const setNeedsMerge = async (value: boolean): Promise<void> => {
       const mainUpdated = patchTaskFile(
@@ -3364,7 +3368,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       blocked: closeOutLock.closingOut() || jobs.length > 0,
     });
   });
-  router.register("POST", "/api/system/worktree-gc", (_ctx, _req, res) => {
+  router.register("POST", "/api/system/worktree-gc", async (_ctx, _req, res) => {
     const jobs = jobCoordinator.allJobs().filter((j) => j.phase !== "done" && j.phase !== "failed");
     if (closeOutLock.closingOut() || jobs.length > 0) {
       const ids = jobs.map((j) => `#${j.taskId}`);
@@ -3372,8 +3376,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         error: `Worktree cleanup is paused while a close-out is active${ids.length ? `: ${ids.join(", ")}` : ""}.`,
       });
     }
-    worktreeGcPreview = null;
-    return json(res, 200, sweepStaleWorktrees(config, { mode: "full" }));
+    const result = await getGitWorker(config.root).sweep(config, { mode: "full" });
+    worktreeGcPreview = { at: Date.now(), report: result.report };
+    return json(res, 200, result.report);
   });
   router.register("POST", "/api/system/kill-process", async (_ctx, req, res) => {
     const body = (await readBody(req)) as { pid?: unknown };
@@ -3389,7 +3394,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // Only ever kill a PID RepoOS itself is currently tracking — a fresh
     // sample, not the client's say-so, is what authorizes the kill. This is
     // the same trust boundary reapStrayServeProcesses already uses.
-    const stats = sampleSystem({
+    const stats = await sampleSystem({
       serverPid: process.pid,
       cacheDir: join(config.root, config.cacheDir),
       runningAgents: runner.running(),
@@ -3481,6 +3486,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Task routes
   router.register("GET", "/api/tasks", getTasks);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/context$/, getTaskContext);
   router.register("POST", "/api/tasks", createTask);
   router.register("POST", "/api/tasks/freeform", createFreeformTask);
   // Durable freeform PM run state (#0403): in-flight record and/or persisted
@@ -3868,7 +3874,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             error: `Unknown built-in agent: ${agentName}`,
           });
         }
-        ctx.index.refreshAll();
+        await ctx.index.refreshAllAsync();
         emitBuiltInRunEvent(agentName, result);
         return json(res, 200, {
           ok: true,
@@ -3989,6 +3995,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       res,
       skipStuck: path === "/api/events",
       log: (level, message) => logger.system(level, message),
+      stuckDetail: () => {
+        const gitCalls = gitWorkerInFlight(config.root);
+        return gitCalls.length ? ` git=${JSON.stringify(gitCalls)}` : "";
+      },
     });
 
     try {
@@ -4300,6 +4310,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   return new Promise((resolve, reject) => {
     void (async () => {
       try {
+        await reaper.cleanupStale();
         if (opts.reloadReplacement) {
           // Replacement (REPOOS_RELOAD=1): first try SO_REUSEPORT so the new
           // process can share the port with the old one (zero-downtime on
@@ -4770,7 +4781,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // The same unified handoff the PATCH /api/tasks/:id review branch
           // starts (commit + validate gate); the actor is the presser, so the
           // activity entry never falls back to "human".
-          const result = startUnifiedHandoff(task, {
+          const result = await startUnifiedHandoff(task, {
             origin: "ui-review",
             actor: actor.email,
           });

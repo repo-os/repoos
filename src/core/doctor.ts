@@ -1525,12 +1525,12 @@ export function findTargetInstallProblems(
   return problems;
 }
 
-function checkRuntime(
+async function checkRuntime(
   root: string,
   config: RepoOSConfig,
   hasBin: (t: string) => boolean,
   plan: CheckPlan,
-): DoctorFinding[] {
+): Promise<DoctorFinding[]> {
   const out: DoctorFinding[] = [];
 
   const bun = hasBin("bun");
@@ -1630,7 +1630,7 @@ function checkRuntime(
       ),
     );
   } else {
-    const pm = detectPackageManager(root);
+    const pm = await detectPackageManager(root);
     out.push(
       pm
         ? finding("runtime.package-manager", "runtime", "pass", "Package manager detected", pm)

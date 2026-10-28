@@ -54,7 +54,6 @@
  *   set is only a fast path).
  */
 import { writeFileSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";
@@ -66,7 +65,13 @@ import { effectiveStalenessNow } from "../core/agent-run-health.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { isHoldActive } from "../core/task-selection.js";
 import { clearExpiredHoldPauses } from "./hold-guard.js";
-import { commitTaskFile, worktreeStatus, worktreePathForBranch } from "../core/git.js";
+import {
+  commitTaskFile,
+  gitOutputAsync,
+  worktreeListAsync,
+  worktreeStatusAsync,
+} from "../core/git.js";
+import { getGitWorker } from "./git-worker.js";
 import { scheduleHandoffSignalRetry } from "./handoff.js";
 import { isTaskClosingOut } from "./close-out-lock.js";
 import {
@@ -231,14 +236,14 @@ function hasRecentMtime(
  * mtimes are a signal that survives a restart because they live on disk, not
  * in server memory.
  */
-export function hasRecentWorktreeActivity(
+export async function hasRecentWorktreeActivity(
   root: string,
   branch: string | undefined,
   stalenessMs: number,
   now: number,
-): boolean {
+): Promise<boolean> {
   if (!branch) return false;
-  const path = worktreePathForBranch(root, branch);
+  const path = await getGitWorker(root).worktreePath(branch);
   if (!path) return false;
   return hasRecentMtime(path, stalenessMs, now, { left: ACTIVITY_SCAN_FILE_LIMIT });
 }
@@ -308,21 +313,16 @@ export function classifyDeadAgentReason(task: Task, runner: AgentRunner): DeadAg
  * else `ready` to go back in the pile. Without a branch/worktree there is no
  * work to look at, so `ready`.
  */
-export function autoTransitionTarget(config: RepoOSConfig, task: Task): "ready" | "review" {
+export async function autoTransitionTarget(
+  config: RepoOSConfig,
+  task: Task,
+): Promise<"ready" | "review"> {
   if (!task.branch) return "ready";
   if (task.hotfix) {
-    try {
-      const out = execFileSync("git", ["status", "--porcelain"], {
-        cwd: config.root,
-        encoding: "utf8",
-        timeout: 4000,
-      });
-      return out.trim() ? "review" : "ready";
-    } catch {
-      return "ready";
-    }
+    const out = await gitOutputAsync(config.root, ["status", "--porcelain"]);
+    return out ? "review" : "ready";
   }
-  const status = worktreeStatus(config.root, task.branch);
+  const status = await worktreeStatusAsync(config.root, task.branch);
   return status.dirty ? "review" : "ready";
 }
 
@@ -548,8 +548,8 @@ export class TaskWatchdog {
           // #0960: a held task is inert for all automation, including the
           // watchdog's stuck detection, auto-resume and auto-escalation.
           if (isHoldActive(task)) continue;
-          if (this.isStuck(task, stalenessNow)) {
-            this.handleStuck(task);
+          if (await this.isStuck(task, stalenessNow)) {
+            await this.handleStuck(task);
           }
         }
       }
@@ -558,7 +558,7 @@ export class TaskWatchdog {
     }
   }
 
-  private isStuck(task: Task, now: number = Date.now()): boolean {
+  private async isStuck(task: Task, now: number = Date.now()): Promise<boolean> {
     // An archived task is parked (#0657): it is never surfaced or escalated,
     // even if its underlying status is active/review. The human set it aside
     // on purpose; unarchiving restores the stuck-detection window.
@@ -595,7 +595,9 @@ export class TaskWatchdog {
     // check the worktree's own file mtimes — durable, on-disk evidence a
     // registry reset can't erase. Skips the scan entirely once the log
     // already proves recent activity, so the common case pays nothing extra.
-    if (hasRecentWorktreeActivity(this.config.root, task.branch, this.stalenessThresholdMs, now)) {
+    if (
+      await hasRecentWorktreeActivity(this.config.root, task.branch, this.stalenessThresholdMs, now)
+    ) {
       return false;
     }
     return true;
@@ -610,7 +612,7 @@ export class TaskWatchdog {
    * is not stuck even if it "failed"; only a round that produced nothing at all
    * needs the watchdog.
    */
-  private isStuckReview(task: Task, now: number): boolean {
+  private async isStuckReview(task: Task, now: number): Promise<boolean> {
     if (!this.reviews) return false; // no review manager wired — nothing to do
     if (this.reviews.isRunning(task.id)) return false;
     // A report post-dating this episode's →review transition means this round's
@@ -624,13 +626,15 @@ export class TaskWatchdog {
     // active; a registry reset can't erase mtimes (#0214/#0203). The
     // completed-review `reviews.read` check above already ruled out the
     // finished case, so this is only a false-suppression guard, never a mask.
-    if (hasRecentWorktreeActivity(this.config.root, task.branch, this.stalenessThresholdMs, now)) {
+    if (
+      await hasRecentWorktreeActivity(this.config.root, task.branch, this.stalenessThresholdMs, now)
+    ) {
       return false;
     }
     return true;
   }
 
-  private handleStuck(task: Task): void {
+  private async handleStuck(task: Task): Promise<void> {
     // Re-read fresh from disk (the index copy can lag the canonical board) and
     // re-check the guards against the on-disk reality.
     const current = this.readCurrent(task);
@@ -649,7 +653,7 @@ export class TaskWatchdog {
       return;
     }
 
-    if (this.handleIdenticalHandoffFailureLoop(current)) return;
+    if (await this.handleIdenticalHandoffFailureLoop(current)) return;
 
     // #0888: a clean turn that never asked for review leaves the task silently
     // `active`. A deferred handoff must always resume the engineer so it reads
@@ -664,7 +668,7 @@ export class TaskWatchdog {
     const stoppedByPerson = readEngineerCleanExitSignal(current.body).stoppedByPerson;
     if (kind === "exited-without-handoff" && !assignedToHuman && !stoppedByPerson) {
       if (readEngineerCleanExitSignal(current.body).deferred > 0) {
-        if (this.handleStalledCleanExit(current)) return;
+        if (await this.handleStalledCleanExit(current)) return;
       }
       if (
         scheduleHandoffSignalRetry(this.config, current, this.runner, (absPath) =>
@@ -673,12 +677,12 @@ export class TaskWatchdog {
       ) {
         return;
       }
-      if (this.handleStalledCleanExit(current)) return;
-    } else if (!stoppedByPerson && this.handleStalledCleanExit(current)) {
+      if (await this.handleStalledCleanExit(current)) return;
+    } else if (!stoppedByPerson && (await this.handleStalledCleanExit(current))) {
       return;
     }
     if (this.autoTransition) {
-      this.surfaceTask(current, autoTransitionTarget(this.config, current), reason);
+      await this.surfaceTask(current, await autoTransitionTarget(this.config, current), reason);
       return;
     }
     // Fallback (#0156): keep the task active but flag it for the human.
@@ -695,13 +699,13 @@ export class TaskWatchdog {
    * cap surfaced it); false means "not a clean-exit stall — use the existing
    * dead-session handling".
    */
-  private handleStalledCleanExit(task: Task): boolean {
+  private async handleStalledCleanExit(task: Task): Promise<boolean> {
     const signal = readEngineerCleanExitSignal(task.body);
     const classification = classifyDeadAgentReason(task, this.runner);
     const exitKind =
       signal.clean || classification.kind === "exited-without-handoff" ? "clean" : "unknown";
     const closingOut = isTaskClosingOut(this.config.root, this.config.cacheDir, task.id);
-    const handedOff = handoffSinceLastCommit(this.config, task);
+    const handedOff = await handoffSinceLastCommit(this.config, task);
     const plan = planEngineerStallResume({
       status: task.status,
       isArchived: task.isArchived,
@@ -831,8 +835,8 @@ export class TaskWatchdog {
    * do not auto-surface into `review` (that only re-runs validation). Park at
    * the cap, or restart the engineer once with the failure text (#0693).
    */
-  private handleIdenticalHandoffFailureLoop(task: Task): boolean {
-    const head = readTaskBranchHead(this.config, task);
+  private async handleIdenticalHandoffFailureLoop(task: Task): Promise<boolean> {
+    const head = await readTaskBranchHead(this.config, task);
     const state = assessHandoffFailureLoop(task, head);
     if (!state.lastFailureIsCheck || !state.branchUnchanged) return false;
 
@@ -847,13 +851,13 @@ export class TaskWatchdog {
     if (
       !this.runner.isRunning(task.id) &&
       state.lastFailure &&
-      scheduleIdenticalCheckFailureEngineerRestart(
+      (await scheduleIdenticalCheckFailureEngineerRestart(
         this.config,
         task,
         state.lastFailure,
         this.runner,
         (absPath) => this.index.applyFileChange(absPath),
-      )
+      ))
     ) {
       return true;
     }
@@ -863,11 +867,11 @@ export class TaskWatchdog {
     return true;
   }
 
-  private surfaceTask(task: Task, target: "ready" | "review", reason: string): void {
+  private async surfaceTask(task: Task, target: "ready" | "review", reason: string): Promise<void> {
     const current = this.readCurrent(task);
     if (current.status !== "active") return;
     if (alreadySurfaced(current.body)) return;
-    if (target === "review" && this.handleIdenticalHandoffFailureLoop(current)) return;
+    if (target === "review" && (await this.handleIdenticalHandoffFailureLoop(current))) return;
     try {
       const note = `watchdog: auto-surfaced stuck task · status active→${target} · ${reason} · next step: ${suggestNextStep(reason)}`;
       current.status = target;
@@ -968,19 +972,16 @@ function lastStatusTransitionTime(body: string, status: string): number | null {
  * review from an earlier episode was already bounced back to active (review
  * findings are unfinished work), so it must not suppress this episode's resume.
  */
-export function handoffSinceLastCommit(config: RepoOSConfig, task: Task): boolean {
+export async function handoffSinceLastCommit(config: RepoOSConfig, task: Task): Promise<boolean> {
   const activeAt = lastStatusTransitionTime(task.body, "active");
   if (activeAt === null) return false;
   const handoffAt = lastStatusTransitionTime(task.body, "review");
   if (handoffAt === null || handoffAt <= activeAt || !task.branch) return false;
-  const workdir = worktreePathForBranch(config.root, task.branch);
+  const worktrees = await worktreeListAsync(config.root);
+  const workdir = worktrees.get(task.branch)?.path ?? null;
   if (!workdir) return false;
   try {
-    const raw = execFileSync("git", ["log", "-1", "--format=%ct"], {
-      cwd: workdir,
-      encoding: "utf8",
-      timeout: 4000,
-    }).trim();
+    const raw = (await gitOutputAsync(workdir, ["log", "-1", "--format=%ct"])) ?? "";
     const seconds = Number(raw);
     if (!Number.isFinite(seconds) || seconds <= 0) return false;
     return handoffAt >= seconds * 1000;

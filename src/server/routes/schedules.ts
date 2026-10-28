@@ -39,7 +39,7 @@ export const postSchedule: RouteHandler = async (ctx, req, res) => {
     const created = createSchedule(ctx.config, input);
     commitSchedule(ctx.config.root, created.path, "create", created.id);
     ctx.emitEvent({ type: "schedule.changed", at: new Date().toISOString() });
-    ctx.index.refreshAll();
+    await ctx.index.refreshAllAsync();
     return json(res, 201, created);
   } catch (e) {
     return json(res, 400, { error: e instanceof Error ? e.message : String(e) });
@@ -55,7 +55,7 @@ export const patchSchedule: RouteHandler = async (ctx, req, res, p) => {
     const updated = updateSchedule(ctx.config, id, patch);
     commitSchedule(ctx.config.root, updated.path, "update", id);
     ctx.emitEvent({ type: "schedule.changed", at: new Date().toISOString() });
-    ctx.index.refreshAll();
+    await ctx.index.refreshAllAsync();
     return json(res, 200, updated);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -64,13 +64,13 @@ export const patchSchedule: RouteHandler = async (ctx, req, res, p) => {
   }
 };
 
-export const deleteSchedule: RouteHandler = (ctx, _req, res, p) => {
+export const deleteSchedule: RouteHandler = async (ctx, _req, res, p) => {
   const id = p.param1;
   if (!id) return json(res, 400, { error: "id required" });
   const existing = getSchedule(ctx.config, id);
   if (!existing) return json(res, 404, { error: "schedule not found" });
   try {
-    deleteScheduleDataFile(
+    await deleteScheduleDataFile(
       ctx.config,
       join(ctx.config.root, existing.path),
       `schedules(${id}): delete`,
@@ -81,7 +81,7 @@ export const deleteSchedule: RouteHandler = (ctx, _req, res, p) => {
     throw err;
   }
   ctx.emitEvent({ type: "schedule.changed", at: new Date().toISOString() });
-  ctx.index.refreshAll();
+  await ctx.index.refreshAllAsync();
   return json(res, 200, { ok: true });
 };
 
@@ -123,7 +123,7 @@ export const postScheduleRun: RouteHandler = async (ctx, req, res, p) => {
         outcome.taskId,
       );
     }
-    ctx.index.refreshAll();
+    await ctx.index.refreshAllAsync();
     ctx.emitEvent({
       type: "schedule.run",
       scheduleId: outcome.scheduleId,
