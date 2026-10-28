@@ -2,7 +2,7 @@
 id: "0974"
 title: "Git worker hardening: fresh commit-graph, fast lane for short calls, cache survives restarts"
 type: bug
-status: inbox
+status: ready
 priority: p0
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-28T11:30:32Z"
-updated_at: "2026-10-28T11:51:20Z"
+updated_at: "2026-10-28T11:51:37Z"
 ---
 ## Problem
 On 2026-10-28 RepoOS was unusable for hours because of git:
@@ -37,3 +37,4 @@ Files: `src/server/git-worker.ts` (queue, timeouts), `src/server/git-worker-entr
 
 - 2026-10-28T11:30:32Z · created · njachowski@gmail.com
 - 2026-10-28T11:51:20Z · cli_override, model_override
+- 2026-10-28T11:51:37Z · status inbox→ready
