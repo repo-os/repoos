@@ -209,3 +209,16 @@ Rules:
   the stronger model for one task at a time that needs it.
 - When a weekly limit is about to reset with headroom left, run more Codex
   engineers in its last windows: unused weekly allowance is lost.
+
+## 2026-10-28 — a src/ commit on main can start a build storm
+
+Every `repoos` command rebuilds a stale `dist/` before it runs. After a hotfix
+commit changed `src/` on main, several commands started at once (a driver
+watcher polling `repoos show` every minute, engineers' `repoos` calls, driver
+messages) and each began its own full `tsc` + Vite build. Load average hit 320
+and the server stopped answering health checks for minutes. Rules: run
+`bun run build` in the main checkout immediately after committing `src/`
+changes there, before any other `repoos` command; and poll task state from the
+files (`work/<id>-*.md`, `.repoos/sessions/<id>.json`, `.repoos/checks.db`), not
+by looping the CLI. #0974 tracks a build lock so concurrent CLIs share one
+build.
