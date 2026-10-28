@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-25T03:58:48Z"
-updated_at: "2026-10-26T18:55:20Z"
+updated_at: "2026-10-28T16:46:38Z"
 ---
 ## Problem
 
@@ -47,3 +49,4 @@ Animated indicators stay fun and visible, but they cost almost nothing: they onl
 - 2026-10-25T03:59:21Z · body: Desired UX (added)
 - 2026-10-25T11:12:35Z · needs_input
 - 2026-10-26T18:55:20Z · status inbox→ready
+- 2026-10-28T16:46:38Z · cli_override, model_override
