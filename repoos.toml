@@ -743,7 +743,8 @@ command = "just macos-build && exec env LLVM_PROFILE_FILE=/dev/null 'macos/.deri
 [[budget.allowlist]]
 cli = "opencode"
 models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash", "opencode-go/kimi-k2.7-code", "opencode-go/kimi-k3.1-pro", "opencode-go/deepseek-v4-pro", "opencode-go/glm-5.3"]
-pausedReason = "Go usage limit exceeded (429) on 2026-10-22; resume when the opencode-go quota resets"
+paused = true
+pausedReason = "Go usage limit exceeded (2026-10-28 review of #0970 failed)"
 [[budget.allowlist]]
 cli = "github copilot"
 models = ["default"]
@@ -753,7 +754,7 @@ models = ["composer-2.5", "grok-4.7-low"]
 [[budget.allowlist]]
 cli = "codex"
 models = ["gpt-6-luna", "gpt-6.1-sol"]
-pausedModels = [{ model = "gpt-6.1-sol", pausedUntil = "2026-10-28T01:23:00.000Z", pausedReason = "out of usage since 2026-10-27T21:39:17.853Z: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 8:23 AM." }]
+pausedModels = [{ model = "gpt-6.1-sol", pausedUntil = "2026-10-28T16:43:00.000Z", pausedReason = "out of usage since 2026-10-28T12:17:18.885Z: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:43 PM." }]
 [[budget.allowlist]]
 cli = "antigravity"
 models = ["gemini-3.8-flash-medium", "gemini-3.8-flash-high"]
