@@ -159,3 +159,30 @@ difference. Fix: `preferAppleGit()` in `src/core/runtime.ts` (called from
 remaining +5 s `syspolicyd` per run is still unexplained (bun/node suspected).
 Do not benchmark with `git --version`: it is cheap and does not reproduce the
 signature-validation cost. Measure real git commands during the workload.
+
+## 2026-10-28 — "running" is not progress: check every wait for movement
+
+Twice in one day a task sat for 25+ minutes while the driver assumed it was
+working. #0970's handoff check ran at 0% CPU with no children: the check runs
+the task branch's own `dist/`, and that branch predated the macOS pressure-guard
+hotfix, so its local guard silently waited for the compressor to drop below
+8 GB. #0972 would have done the same. Earlier the same day the git worker's
+full `work/` history walk took 2–5 minutes (stale commit-graph), every short
+git call queued behind it timed out, and the server crash-looped at boot.
+
+Rules for the driver:
+- A watcher must check for **movement**, not just a status. Every 5–10 minutes,
+  for each running check or engineer, confirm at least one of: a new session
+  line, `check_runs.steps_done` / `tests_done` rising, or real CPU on the check
+  process and its children. No movement for 10 minutes means investigate now:
+  `ps -o etime,%cpu`, `pgrep -P <pid>`, `sample <pid> 2` (an idle `kevent64`
+  loop with no children is a wait, not work), `repoos checks slots`,
+  `repoos stats`.
+- After any hotfix on main that changes how checks, guards or git run, merge
+  main into every active task branch and rebuild before its next check. A task
+  check runs the branch's code, not main's.
+- When `git log -- work` or the board is slow, time it directly and check the
+  commit-graph (`ls -la .git/objects/info/commit-graphs/`); rebuild with
+  `git commit-graph write --reachable --changed-paths`. #0974 automates this.
+- Silent waits are bugs. A check held by the pressure guard, a slot or a queue
+  must say so on the task card; #0974 tracks surfacing it.
