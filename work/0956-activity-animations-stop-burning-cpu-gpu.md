@@ -3,10 +3,6 @@ id: "0956"
 title: "Activity animations: stop burning CPU/GPU (pause when hidden or off screen, reduced motion, cap concurrent, cheaper rendering)"
 type: feature
 status: active
-hold: true
-hold_reason: "Driver taking over to land by hand (Nick, 2026-10-29)"
-hold_by: driver
-hold_at: "2026-10-29T03:35:55.064Z"
 priority: p2
 area: web
 assigned_to: ai
@@ -15,7 +11,7 @@ branch: feat/activity-animations-stop-burning-cpu-gpu
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T03:58:48Z"
-updated_at: "2026-10-29T03:35:55Z"
+updated_at: "2026-10-29T04:27:48Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:10:27.670Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -88,3 +84,4 @@ Animated indicators stay fun and visible, but they cost almost nothing: they onl
 - 2026-10-29T03:10:27Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-29T03:35:55Z · engineer stopped by request
 - 2026-10-29T03:35:55Z · held, held-reason, held-by, held-at
+- 2026-10-29T04:27:48Z · released
