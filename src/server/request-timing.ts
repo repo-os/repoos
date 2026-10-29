@@ -9,6 +9,7 @@
  * the socket closes and does not emit STUCK.
  */
 import type { ServerResponse } from "node:http";
+import type { GitWorkerJobInfo } from "./git-worker.js";
 
 export const SLOW_REQUEST_MS = 2_000;
 export const STUCK_REQUEST_MS = 10_000;
@@ -23,8 +24,15 @@ export function formatRequestDuration(route: string, durationMs: number): string
   return `${route} ${durationMs}ms`;
 }
 
-export function formatStuckRequest(route: string, ageMs: number): string {
-  return `STUCK ${route} ${ageMs}ms`;
+export function formatStuckRequest(
+  route: string,
+  ageMs: number,
+  gitCalls: readonly GitWorkerJobInfo[] = [],
+): string {
+  const gitDetail = gitCalls.length
+    ? ` git=${gitCalls.map((call) => `${call.label} ${call.ageMs}ms`).join(",")}`
+    : "";
+  return `STUCK ${route} ${ageMs}ms${gitDetail}`;
 }
 
 export function watchHttpRequest(opts: {
@@ -34,8 +42,8 @@ export function watchHttpRequest(opts: {
   log: RequestLog;
   /** SSE and other deliberately long-lived routes. */
   skipStuck?: boolean;
-  /** Extra text for the STUCK line, such as in-flight git worker jobs. */
-  stuckDetail?: () => string;
+  /** In-flight git worker calls to include on the STUCK line. */
+  gitInFlight?: () => readonly GitWorkerJobInfo[];
   now?: () => number;
   stuckAfterMs?: number;
   slowAfterMs?: number;
@@ -59,8 +67,10 @@ export function watchHttpRequest(opts: {
     ? undefined
     : setTimeout(() => {
         if (finished) return;
-        const detail = opts.stuckDetail?.() ?? "";
-        opts.log("warn", `${formatStuckRequest(route, Math.max(0, now() - startedAt))}${detail}`);
+        opts.log(
+          "warn",
+          formatStuckRequest(route, Math.max(0, now() - startedAt), opts.gitInFlight?.()),
+        );
       }, opts.stuckAfterMs ?? STUCK_REQUEST_MS);
   stuckTimer?.unref?.();
 

@@ -110,7 +110,12 @@ export async function relaunchEngineerOnActiveTask(
   const wtRes = fresh.hotfix
     ? { ok: true as const, path: config.root, created: false }
     : ensureWorktree(config.root, branch);
-  const cwd = wtRes.ok ? wtRes.path : config.root;
+  // Never fall back to the main checkout: an engineer started there either
+  // edits main or refuses and stalls (2026-10-28: #0966 sat 10 h on main).
+  if (!wtRes.ok) {
+    return { ok: false, reason: `Could not create the task worktree: ${wtRes.reason}` };
+  }
+  const cwd = wtRes.path;
 
   const bootResult = await bootstrap(config, fresh, branch, cwd);
   if (!bootResult.ok) {

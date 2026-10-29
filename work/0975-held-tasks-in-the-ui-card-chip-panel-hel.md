@@ -2,7 +2,7 @@
 id: "0975"
 title: "Held tasks in the UI: card chip, panel held card with release, Hold button"
 type: feature
-status: active
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,9 @@ branch: feat/held-tasks-in-the-ui-card-chip-panel-hel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-28T12:02:51Z"
-updated_at: "2026-10-28T16:49:13Z"
+updated_at: "2026-10-29T04:14:52Z"
+handoff_signal_retry_count: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-29T03:27:28.111Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 #0960 added a durable "hold" (`repoos hold` / `unhold`, `POST /api/tasks/:id/hold` and `/unhold`) and a **Held (N)** list in the Work page footer. In the UI it is hard to tell a task is held, and a human cannot place or lift a hold from the task panel:
@@ -44,30 +46,39 @@ updated_at: "2026-10-28T16:49:13Z"
 ```json
 [
 {
-  "label": "Board card with held chip",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".tc-held",
-  "state": "board:cardChips"
+"label": "Board card with held chip",
+"target": "default",
+"route": "/work",
+"highlight": ".tc-held",
+"state": "card:held"
 },
 {
-  "label": "Held task panel with release controls",
-  "target": "default",
-  "route": "/work?task=0899",
-  "highlight": ".held-panel",
-  "state": "drawer:held"
+"label": "Held task panel and release actions",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".held-panel",
+"state": "drawer:held"
 },
 {
-  "label": "Hold task dialog",
-  "target": "default",
-  "route": "/work?task=0899",
-  "highlight": "[role=dialog]",
-  "steps": [
-    {
-      "click": "button[data-test-id=\"hold-task\"]"
-    }
-  ],
-  "state": "drawer:statusDetails"
+"label": "Hold dialog open",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".cc-modal",
+"steps": [
+{
+"click": ".held-panel-actions button"
+},
+{
+"waitMs": 300
+},
+{
+"click": "[data-test-id=\"hold-task\"]"
+},
+{
+"waitMs": 300
+}
+],
+"state": "drawer:held"
 }
 ]
 ```
@@ -82,3 +93,34 @@ updated_at: "2026-10-28T16:49:13Z"
 - 2026-10-28T16:48:43Z · body
 - 2026-10-28T16:49:11Z · message_queued at 2026-10-28T16:49:11.196Z
 - 2026-10-28T16:49:13Z · body
+- 2026-10-28T17:09:07Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0956 check (pid 47788, alive), #0968 check (pid 41069, alive) for 14m · next step: let it finish — the wait clears itself when the check starts running; investigate only if it persists
+- 2026-10-28T17:28:41Z · watchdog: check wait ended — cleared needs_input
+- 2026-10-28T18:26:52Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-28T18:28:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-28T18:28:46Z · message_delivered: 1 message(s)
+- 2026-10-28T20:22:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-28T23:47:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T00:55:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T01:00:28Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-29T01:03:07Z · body
+- 2026-10-29T01:39:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T01:44:47Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-29T01:53:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T01:58:17Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-10-29T02:00:22Z · body
+- 2026-10-29T02:19:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T02:24:33Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-10-29T02:25:41Z · body
+- 2026-10-29T02:32:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T02:37:18Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-10-29T02:38:44Z · body
+- 2026-10-29T03:04:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T03:09:58Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-29T03:11:57Z · body
+- 2026-10-29T03:22:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T03:27:28Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-10-29T03:28:46Z · body
+- 2026-10-29T03:35:57Z · engineer stopped by request
+- 2026-10-29T03:35:57Z · held, held-reason, held-by, held-at
+- 2026-10-29T04:14:31Z · released
+- 2026-10-29T04:14:52Z · status active→done

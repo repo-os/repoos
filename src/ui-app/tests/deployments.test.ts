@@ -242,6 +242,32 @@ describe("getDeploymentsStatus", () => {
     expect(calls.filter((c) => c.startsWith("log "))).toHaveLength(4);
   });
 
+  it("coalesces identical git reads across concurrent status requests", async () => {
+    const { exec, calls } = mockGit(BASE_SPEC);
+    const delayed: DeployCommandRunner = async (...args) => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      return exec(...args);
+    };
+    const root = tmpDir();
+    const statuses = await Promise.all([
+      getDeploymentsStatus(config(root, TWO_BRANCH_ROWS), delayed),
+      getDeploymentsStatus(config(root, TWO_BRANCH_ROWS), delayed),
+    ]);
+    expect(statuses[0]).toEqual(statuses[1]);
+    expect(calls.filter((call) => call === "status --porcelain")).toHaveLength(1);
+  });
+
+  it("drops coalesced results after completion so later reads see changed state", async () => {
+    const spec = { ...BASE_SPEC, dirty: "" };
+    const { exec } = mockGit(spec);
+    const root = tmpDir();
+    const first = await getDeploymentsStatus(config(root, TWO_BRANCH_ROWS), exec);
+    spec.dirty = " M changed.ts";
+    const next = await getDeploymentsStatus(config(root, TWO_BRANCH_ROWS), exec);
+    expect(first.dirty).toBe(false);
+    expect(next.dirty).toBe(true);
+  });
+
   it("reports ahead/behind against each branch's own origin ref", async () => {
     const { exec } = mockGit(BASE_SPEC);
     const status = await getDeploymentsStatus(config(tmpDir(), TWO_BRANCH_ROWS), exec);

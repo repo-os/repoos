@@ -222,3 +222,15 @@ changes there, before any other `repoos` command; and poll task state from the
 files (`work/<id>-*.md`, `.repoos/sessions/<id>.json`, `.repoos/checks.db`), not
 by looping the CLI. #0974 tracks a build lock so concurrent CLIs share one
 build.
+
+## 2026-10-29 — a Codex resume can fail when a fresh start works
+
+After a Codex usage-limit reset, restarting #0966 and #0976 with a plain
+`repoos start` resumed their old Codex sessions, and every attempt failed with
+`error: workspace routing discovery failed` after five reconnects. Codex itself
+was fine (`codex exec "Reply with OK only."` answered). `repoos start <id>
+--fresh` started a new session and both engineers worked at once. When an
+engineer's first lines are Codex connection errors on resume, restart it with
+`--fresh` before anything else. Separately: pinning a model with
+`repoos override` stops crash recovery from switching engines, so a usage-limit
+crash loop on a pinned task just stops (3/3 crashes) until a driver acts.
