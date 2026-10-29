@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0956"
 title: "Activity animations: stop burning CPU/GPU (pause when hidden or off screen, reduced motion, cap concurrent, cheaper rendering)"
 type: feature
@@ -75,3 +76,4 @@ Animated indicators stay fun and visible, but they cost almost nothing: they onl
 - 2026-10-28T22:10:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T22:10:02Z · message_delivered: 1 message(s)
 - 2026-10-29T00:34:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
