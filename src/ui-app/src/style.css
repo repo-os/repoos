@@ -3855,11 +3855,13 @@
   font-size: 11px;
   font-weight: 500;
   opacity: 0.35;
-  animation: ai-code-rise calc(1.667s * var(--ai-art-mult)) linear infinite;
+  /* The keystorm is pixel art; stepping its motion avoids continuous SVG
+     repainting while keeping the typing/rising rhythm legible (~5–9 updates/s). */
+  animation: ai-code-rise calc(1.667s * var(--ai-art-mult)) steps(8, end) infinite;
 }
 .ai-key {
   opacity: 0.85;
-  animation: ai-key-wave calc(0.9s * var(--ai-art-mult)) ease-in-out infinite;
+  animation: ai-key-wave calc(0.9s * var(--ai-art-mult)) steps(8, end) infinite;
 }
 .ai-kbd-underline {
   fill: none;
@@ -3867,7 +3869,7 @@
   stroke-linecap: round;
 }
 .ai-finger {
-  animation: ai-finger-tap calc(0.571s * var(--ai-art-mult)) ease-in-out infinite;
+  animation: ai-finger-tap calc(0.571s * var(--ai-art-mult)) steps(6, end) infinite;
 }
 @keyframes ai-key-wave {
   0%,
