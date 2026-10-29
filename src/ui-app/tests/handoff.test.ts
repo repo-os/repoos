@@ -228,9 +228,12 @@ describe("trusted server-side handoff", { timeout: 15_000 }, () => {
       fx.config.check = { steps: [{ name: "check-fmt:check", kind: "format" }] };
       // A fixer that leaves a visible artifact, so the assertion proves the
       // formatted tree was what got committed.
+      // Fake only `bun run fmt`; anything else (the git worker also starts
+      // through \`bun\`) goes to the real binary, or the worker exits at once.
+      const realBun = execFileSync("sh", ["-c", "command -v bun"], { encoding: "utf8" }).trim();
       writeFileSync(
         join(fx.bin, "bun"),
-        `#!/bin/sh\ncd "${fx.worktree}" || exit 1\nprintf "formatted\\n" > formatted.txt\n`,
+        `#!/bin/sh\nif [ "$1" = run ] && [ "$2" = fmt ]; then\n  cd "${fx.worktree}" || exit 1\n  printf "formatted\\n" > formatted.txt\n  exit 0\nfi\nexec "${realBun}" "$@"\n`,
         { mode: 0o755 },
       );
 
