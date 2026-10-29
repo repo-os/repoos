@@ -3,6 +3,9 @@ id: "0978"
 title: Recover from a stale .git/index.lock; keep the handoff format test out of the real checkout
 type: bug
 status: active
+needs_input: true
+needs_input_reason: check-wait
+needs_input_detail: "waiting: system load is high (6.8× per CPU, limit 3×) — waiting for headroom before starting more work; additional signals: memory compressor use is high (32%, limit 35%) for 12m"
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/recover-from-a-stale-git-index-lock-keep
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-29T11:48:54Z"
-updated_at: "2026-10-29T13:34:16Z"
+updated_at: "2026-10-29T17:38:31Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -42,3 +45,5 @@ The task-file commit path is fail-soft (`commitTaskFile`); keep it fail-soft but
 - 2026-10-29T13:33:02Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-29T13:34:10Z · note: review pass 1: needs some work
 - 2026-10-29T13:34:16Z · status review→active
+- 2026-10-29T16:46:22Z · watchdog: check wait escalated · waiting: system load is high (6.8× per CPU, limit 3×) — waiting for headroom before starting more work; additional signals: memory compressor use is high (32%, limit 35%) for 12m · next step: let it finish — the wait clears itself when the check starts running; investigate only if it persists
+- 2026-10-29T17:38:31Z · engineer stopped by request
