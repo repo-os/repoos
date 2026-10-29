@@ -142,7 +142,7 @@ describe("handoff self-check reuse", () => {
       git(f.root, "add", "-A");
       git(f.root, "commit", "-qm", "check fixture");
       const cli = join(findRepoRoot(), "src", "cli", "index.ts");
-      const env = {
+      const env: NodeJS.ProcessEnv = {
         ...process.env,
         REPOOS_CHECK_TASK_ID: "0976",
         REPOOS_CHECK_PHASE: "cli",
