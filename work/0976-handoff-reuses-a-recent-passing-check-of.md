@@ -3,6 +3,9 @@ id: "0976"
 title: Handoff reuses a recent passing check of the same tree instead of re-running tests
 type: feature
 status: active
+needs_input: true
+needs_input_reason: check-wait
+needs_input_detail: "waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0966 check (pid 4593, alive), #0977 check (pid 11929, alive) for 10m"
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +14,8 @@ branch: feat/handoff-reuses-a-recent-passing-check-of
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-29T05:51:30Z"
-updated_at: "2026-10-29T05:52:13Z"
+updated_at: "2026-10-29T08:39:13Z"
+dev_error_count: 9
 ---
 ## Problem
 The server's handoff check re-runs the test suite even when the engineer's own `repoos check --changed main` just passed on the exact same commit. Under load the repeat run is what fails: on 2026-10-29 #0971's handoff check timed out at the 40-minute test limit and #0955's sat 40 minutes behind a stuck typecheck, although both engineers' own checks had passed in minutes (check_runs 9822, 9823). The driver had to land both by hand.
@@ -28,9 +32,41 @@ Handoff reuses a recent passing check of the same tree instead of repeating it, 
 ## Notes for AI
 `src/server/handoff.ts` (runCheck), `src/core/check-store.ts` (check_runs has worktree, candidate_sha, scope, outcome). Engineers' self-check runs may not record candidate_sha today; record it. Do not edit repoos.toml.
 
+## Shots
+```json
+[
+{
+"label": "Passing handoff check shows the reused self-check ID",
+"target": "default",
+"route": "/checks?tab=runs",
+"highlight": "[data-test-id=\"reused-check\"]",
+"state": "checks:reuse"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-29T05:51:30Z · created · njachowski@gmail.com
 - 2026-10-29T05:51:43Z · cli_override, model_override
 - 2026-10-29T05:52:02Z · status inbox→ready
 - 2026-10-29T05:52:13Z · status ready→active, branch
+- 2026-10-29T05:52:53Z · agent exited with an error (codex) · Reading additional input from stdin...
+- 2026-10-29T05:52:53Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-29T05:53:04Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-29T05:53:15Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-29T07:22:31Z · needs_input
+- 2026-10-29T07:22:43Z · agent exited with an error (codex) · Reading additional input from stdin...
+- 2026-10-29T07:22:43Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-29T07:22:53Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · Reading additional input from stdin...
+- 2026-10-29T07:23:03Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-29T08:11:12Z · needs_input
+- 2026-10-29T08:11:48Z · agent exited with an error (codex) · 2026-10-29T08:11:37.171767Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-10-29T08:11:48Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · 2026-10-29T08:11:37.171767Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-10-29T08:12:46Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · 2026-10-29T08:12:32.353699Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-10-29T08:13:14Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-29T08:16:36Z · needs_input
+- 2026-10-29T08:31:00Z · body
+- 2026-10-29T08:34:12Z · body
+- 2026-10-29T08:38:17Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0966 check (pid 4593, alive), #0977 check (pid 11929, alive) for 10m · next step: let it finish — the wait clears itself when the check starts running; investigate only if it persists
+- 2026-10-29T08:39:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review

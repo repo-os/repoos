@@ -3,9 +3,6 @@ id: "0966"
 title: "Server freezes (3/4): batched, cached board git queries"
 type: refactor
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p1
 area: core
 depends_on: ["0962"]
@@ -13,12 +10,12 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-freezes-3-4-batched-cached-board-
 cli_override: codex
-model_override: gpt-6.1-sol
+model_override: gpt-6-luna
 created_at: "2026-10-27T12:02:34Z"
-updated_at: "2026-10-29T05:51:21Z"
+updated_at: "2026-10-29T08:56:47Z"
 handoff_signal_retry_count: 2
-dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T05:51:00.721Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T05:51:11.888Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T05:51:21.316Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 6
+engineer_stall_resume_log: "[{\"at\":\"2026-10-29T08:56:47.889Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 Split from #0962. The board computes git state per task/branch (ahead counts, merged checks, work-file history), spawning hundreds of git processes on ~900 tasks and ~100 branches.
@@ -57,3 +54,12 @@ Depends on #0962. Same rules as the other split tasks: no server restarts, no pr
 - 2026-10-29T05:51:00Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · 2026-10-29T05:51:00.122235Z ERROR codex_core::session: failed to record rollout items: thread 01a183c5-418c-7f12-8fd8-474ebb286d77 not found
 - 2026-10-29T05:51:11Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-29T05:51:21Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-29T08:11:00Z · model_override
+- 2026-10-29T08:11:27Z · needs_input
+- 2026-10-29T08:12:49Z · agent exited with an error (codex) · 2026-10-29T08:12:32.353699Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-10-29T08:12:49Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-29T08:12:32.353699Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-10-29T08:13:15Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · 2026-10-29T08:13:03.471327Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-10-29T08:13:43Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-10-29T08:16:51Z · needs_input
+- 2026-10-29T08:51:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T08:56:47Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
