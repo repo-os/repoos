@@ -4,10 +4,11 @@ import { c } from "../cli/colors.js";
 import { loadConfig } from "../core/config.js";
 import {
   inspectCrossProcessSlots,
+  listSlotWaiterPids,
   localCheckLockRoot,
   releaseLocalCheckSlot,
 } from "../core/cross-process-slots.js";
-import { readQueueMarkers } from "../core/local-queue-marker.js";
+import { currentQueueMarkers, readQueueMarkers } from "../core/local-queue-marker.js";
 import { mainCheckoutRoot } from "../core/git.js";
 import { heavySlotLimit } from "../core/resource-limits.js";
 
@@ -90,12 +91,14 @@ export function cmdChecks(args: string[]): void {
         : `slot ${holder.slot}: free`,
     );
   }
-  for (const marker of readQueueMarkers(boardRoot, cacheDir)
-    .filter((entry) => entry.kind === "local-check")
-    .sort((a, b) => a.position - b.position)) {
+  const queue = currentQueueMarkers(
+    readQueueMarkers(boardRoot, cacheDir).filter((entry) => entry.kind === "local-check"),
+    listSlotWaiterPids(root),
+  );
+  queue.forEach((marker) => {
     const waitingMs = Math.max(0, Date.now() - Date.parse(marker.since));
     console.log(
       `queue position ${marker.position}: #${marker.taskId}, waiting ${Math.round(waitingMs / 1000)}s`,
     );
-  }
+  });
 }
