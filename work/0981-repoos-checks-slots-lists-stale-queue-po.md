@@ -6,6 +6,10 @@ status: active
 needs_input: true
 needs_input_reason: check-wait
 needs_input_detail: "waiting: system load is high (6.8× per CPU, limit 3×) — waiting for headroom before starting more work; additional signals: memory compressor use is high (32%, limit 35%) for 12m"
+hold: true
+hold_reason: "Driver landing by hand (Nick, 2026-10-30)"
+hold_by: driver
+hold_at: "2026-10-29T17:38:32.174Z"
 priority: p2
 area: core
 assigned_to: ai
@@ -40,3 +44,4 @@ The slots listing shows only real, current waiters, with true positions.
 - 2026-10-29T15:06:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T16:46:22Z · watchdog: check wait escalated · waiting: system load is high (6.8× per CPU, limit 3×) — waiting for headroom before starting more work; additional signals: memory compressor use is high (32%, limit 35%) for 12m · next step: let it finish — the wait clears itself when the check starts running; investigate only if it persists
 - 2026-10-29T17:38:32Z · engineer stopped by request
+- 2026-10-29T17:38:32Z · held, held-reason, held-by, held-at
