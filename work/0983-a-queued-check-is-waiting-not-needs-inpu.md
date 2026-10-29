@@ -1,10 +1,8 @@
 ---
-last_check_failure: "repoos check at 2026-10-29T22:14:27.382Z: repoos check failed: tests — stderr | tests/freeform-submit-ack.test.ts > new task screenshot draft persistence (0510) > keeps pending screenshots across close and reopen"
-handoff_signal_retry_count: 1
 id: "0983"
 title: "A queued check is 'waiting', not 'needs input', so engineers keep going"
 type: bug
-status: active
+status: review
 priority: p1
 area: [core, web]
 assigned_to: ai
@@ -13,7 +11,9 @@ branch: feat/a-queued-check-is-waiting-not-needs-inpu
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-29T15:23:58Z"
-updated_at: "2026-10-29T21:21:46Z"
+updated_at: "2026-10-29T22:40:13Z"
+last_check_failure: "repoos check at 2026-10-29T22:14:27.382Z: repoos check failed: tests — stderr | tests/freeform-submit-ack.test.ts > new task screenshot draft persistence (0510) > keeps pending screenshots across close and reopen"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 #0974's check-wait escalation sets `needs_input` (reason `check-wait`) when a check has waited 10 minutes for a slot or the pressure guard. Engineers read "needs input" as blocked and end their turn: on 2026-10-29 #0980 and #0982 finished their code, waited for a check slot, were flagged, and stopped, so the driver had to land both by hand. A queued check is normal and expected; it is not a request for human input.
@@ -58,6 +58,4 @@ A long queue wait is visible but does not stop the engineer. The task card shows
 - 2026-10-29T17:38:37Z · status ready→active, branch
 - 2026-10-29T18:26:16Z · body
 - 2026-10-29T21:21:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-
-
-
+- 2026-10-29T22:40:13Z · status active→review
