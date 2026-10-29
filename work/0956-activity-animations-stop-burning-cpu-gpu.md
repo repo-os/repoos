@@ -3,6 +3,10 @@ id: "0956"
 title: "Activity animations: stop burning CPU/GPU (pause when hidden or off screen, reduced motion, cap concurrent, cheaper rendering)"
 type: feature
 status: active
+hold: true
+hold_reason: "Driver taking over to land by hand (Nick, 2026-10-29)"
+hold_by: driver
+hold_at: "2026-10-29T03:35:55.064Z"
 priority: p2
 area: web
 assigned_to: ai
@@ -83,3 +87,4 @@ Animated indicators stay fun and visible, but they cost almost nothing: they onl
 - 2026-10-29T03:05:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T03:10:27Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-29T03:35:55Z · engineer stopped by request
+- 2026-10-29T03:35:55Z · held, held-reason, held-by, held-at
