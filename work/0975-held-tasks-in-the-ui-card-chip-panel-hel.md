@@ -2,7 +2,7 @@
 id: "0975"
 title: "Held tasks in the UI: card chip, panel held card with release, Hold button"
 type: feature
-status: active
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/held-tasks-in-the-ui-card-chip-panel-hel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-28T12:02:51Z"
-updated_at: "2026-10-29T04:14:31Z"
+updated_at: "2026-10-29T04:14:52Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-29T03:27:28.111Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -123,3 +123,4 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"c
 - 2026-10-29T03:35:57Z · engineer stopped by request
 - 2026-10-29T03:35:57Z · held, held-reason, held-by, held-at
 - 2026-10-29T04:14:31Z · released
+- 2026-10-29T04:14:52Z · status active→done
