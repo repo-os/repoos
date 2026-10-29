@@ -11,9 +11,9 @@ branch: feat/held-tasks-in-the-ui-card-chip-panel-hel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-28T12:02:51Z"
-updated_at: "2026-10-29T03:22:22Z"
+updated_at: "2026-10-29T03:27:28Z"
 handoff_signal_retry_count: 2
-engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-29T03:27:28.111Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 #0960 added a durable "hold" (`repoos hold` / `unhold`, `POST /api/tasks/:id/hold` and `/unhold`) and a **Held (N)** list in the Work page footer. In the UI it is hard to tell a task is held, and a human cannot place or lift a hold from the task panel:
@@ -65,15 +65,15 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"c
 "route": "/work?task=shot-0975",
 "highlight": ".cc-modal",
 "steps": [
-  {
-    "click": ".held-panel button"
-  },
-  {
-    "waitMs": 250
-  },
-  {
-    "click": "[data-test-id=\"hold-task\"]"
-  }
+{
+  "click": ".held-panel button"
+},
+{
+  "waitMs": 250
+},
+{
+  "click": "[data-test-id=\"hold-task\"]"
+}
 ],
 "state": "drawer:held"
 }
@@ -115,3 +115,4 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"c
 - 2026-10-29T03:09:58Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-29T03:11:57Z · body
 - 2026-10-29T03:22:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T03:27:28Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
