@@ -571,6 +571,9 @@ const activityAnimationField = computed(() =>
 const activityAnimationSizeField = computed(() =>
   config.schema.find((f) => f.key === "activityAnimationSize"),
 );
+const activityAnimationConcurrencyField = computed(() =>
+  config.schema.find((f) => f.key === "activityAnimationConcurrency"),
+);
 
 const ctoActionsField = computed(() => config.schema.find((f) => f.key === "cto.actions"));
 
@@ -1346,6 +1349,42 @@ onUnmounted(() => {
                         activityAnimationSizeValueText
                       }}</span>
                     </div>
+                  </div>
+                </div>
+                <div
+                  v-if="activityAnimationConcurrencyField"
+                  id="setting-activityAnimationConcurrency"
+                  class="setting-row"
+                >
+                  <div class="setting-info">
+                    <div class="setting-label">{{ activityAnimationConcurrencyField.label }}</div>
+                    <div class="setting-desc">
+                      {{ activityAnimationConcurrencyField.description }}
+                    </div>
+                  </div>
+                  <div class="setting-input">
+                    <input
+                      class="input"
+                      type="number"
+                      min="0"
+                      max="24"
+                      step="1"
+                      :value="
+                        form.activityAnimationConcurrency ??
+                        activityAnimationConcurrencyField.default
+                      "
+                      :disabled="config.saving"
+                      aria-label="Animated indicators at once"
+                      @input="
+                        form.activityAnimationConcurrency = Math.max(
+                          0,
+                          Math.min(
+                            24,
+                            Math.round(Number(($event.target as HTMLInputElement).value) || 0),
+                          ),
+                        )
+                      "
+                    />
                   </div>
                 </div>
                 <div class="activity-animation-preview" aria-hidden="true">
