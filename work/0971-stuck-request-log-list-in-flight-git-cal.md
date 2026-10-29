@@ -3,10 +3,6 @@ id: "0971"
 title: "STUCK request log: list in-flight git calls and their age"
 type: feature
 status: active
-hold: true
-hold_reason: "Driver landing by hand: handoff check timed out under load (Nick, 2026-10-29)"
-hold_by: driver
-hold_at: "2026-10-29T05:44:27.053Z"
 priority: p2
 area: core
 depends_on: ["0962", "0967"]
@@ -16,7 +12,7 @@ branch: feat/stuck-request-log-list-in-flight-git-cal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-27T22:11:30Z"
-updated_at: "2026-10-29T05:44:27Z"
+updated_at: "2026-10-29T05:49:28Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-29T05:43:49.958Z: repoos check failed: tests — timed out — timed out after 2400s"
 handoff_signal_retry_count: 1
@@ -47,3 +43,4 @@ Small. Run only the affected tests; never restart the RepoOS server or request a
 - 2026-10-29T04:48:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T05:44:27Z · engineer stopped by request
 - 2026-10-29T05:44:27Z · held, held-reason, held-by, held-at
+- 2026-10-29T05:49:28Z · released
