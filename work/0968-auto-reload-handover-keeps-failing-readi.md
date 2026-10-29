@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-29T03:15:31.071Z: repoos check failed: tests — timed out — timed out after 2400s"
 id: "0968"
 title: "Auto-reload handover keeps failing: readiness-based handshake, give up after N, Settings toggle"
 type: bug
@@ -13,7 +11,9 @@ branch: feat/auto-reload-handover-keeps-failing-readi
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-27T12:03:03Z"
-updated_at: "2026-10-29T00:33:55Z"
+updated_at: "2026-10-29T03:35:56Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-29T03:15:31.071Z: repoos check failed: tests — timed out — timed out after 2400s"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-28T23:14:19.787Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -36,10 +36,10 @@ src/server/reload.ts and server.ts (reloadEnabled). No server restarts, no previ
 ```json
 [
 {
-  "label": "Automatic server reload setting",
-  "target": "default",
-  "route": "/settings?tab=general&section=general",
-  "highlight": "#setting-autoReload"
+"label": "Automatic server reload setting",
+"target": "default",
+"route": "/settings?tab=general&section=general",
+"highlight": "#setting-autoReload"
 }
 ]
 ```
@@ -61,4 +61,4 @@ src/server/reload.ts and server.ts (reloadEnabled). No server restarts, no previ
 - 2026-10-28T23:08:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T23:14:19Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-29T00:33:55Z · body
-
+- 2026-10-29T03:35:56Z · engineer stopped by request
