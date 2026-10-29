@@ -329,6 +329,8 @@ export interface Health {
   canaryCounter: number;
   /** Repo-relative path to the canary counter file (respects `cacheDir`). */
   canaryPath: string;
+  /** Command that restarts this project's server, shown when it is down (#0959). */
+  restartCommand?: string;
 }
 
 declare global {

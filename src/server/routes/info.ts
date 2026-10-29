@@ -17,6 +17,7 @@ import {
   listStoryDefinitionsFromCommits,
 } from "../../core/story-definition-files.js";
 import { getGitWorker } from "../git-worker.js";
+import { restartCommand } from "../../core/service-manager.js";
 
 // These will be passed via context in server.ts during integration
 let loadedHash: string;
@@ -71,6 +72,8 @@ export const health: RouteHandler = (ctx, req, res) => {
     copyInspectorAvailable: copyInspectorApiEnabled(ctx.config.root),
     canaryCounter: readCanaryCounter(ctx.config.root, ctx.config.cacheDir),
     canaryPath: canaryRelPath(ctx.config.cacheDir),
+    // Shown by the UI when this server stops answering (#0959).
+    restartCommand: restartCommand(ctx.config.root, req.socket?.localPort ?? null),
     ...(handshake ? { reloadHandshake: true } : {}),
   });
 };
