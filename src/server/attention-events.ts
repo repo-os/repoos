@@ -9,6 +9,7 @@ import type { RecordedAttentionEvent } from "../core/attention.js";
 export interface AttentionEventStore {
   record(event: Omit<RecordedAttentionEvent, "id"> & { id?: string }): RecordedAttentionEvent;
   list(): RecordedAttentionEvent[];
+  remove(id: string): void;
 }
 
 const FILE = "attention-events.json";
@@ -96,6 +97,12 @@ export function createAttentionEventStore(
       events = next.slice(-MAX_EVENTS);
       persist(events);
       return full;
+    },
+    remove(id) {
+      const next = load().filter((event) => event.id !== id);
+      if (next.length === load().length) return;
+      events = next;
+      persist(events);
     },
     list() {
       return [...load()].sort((a, b) => b.at.localeCompare(a.at));

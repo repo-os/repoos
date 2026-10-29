@@ -36,7 +36,8 @@ export type NotificationType =
   | "awaitingVisualCheck"
   | "remoteFallback"
   | "remoteHostDegraded"
-  | "ctoAction";
+  | "ctoAction"
+  | "gitLock";
 
 /** Every monitorable type, in Settings display order. */
 export const NOTIFICATION_TYPES: NotificationType[] = [
@@ -61,6 +62,7 @@ export const NOTIFICATION_TYPES: NotificationType[] = [
   "remoteFallback",
   "remoteHostDegraded",
   "ctoAction",
+  "gitLock",
 ];
 
 const STORAGE_KEY = "repoos.notifications";
@@ -254,6 +256,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   remoteFallback: "Ran locally (remote enabled)",
   remoteHostDegraded: "Remote runner degraded",
   ctoAction: "CTO safe action",
+  gitLock: "Git index lock left open",
 };
 
 /** One-line Settings description per type; keyed like the labels. */
@@ -283,6 +286,7 @@ export const NOTIFICATION_TYPE_DESCRIPTIONS: Record<NotificationType, string> = 
     "A tailnet runner host failed an infra check and is skipped until its health probe passes.",
   ctoAction:
     "The CTO or you ran an allowlisted recovery action (restart, refresh install, re-queue).",
+  gitLock: "A live Git process is holding an old index lock and may block Git writes.",
 };
 
 export const useNotificationsStore = defineStore("notifications", () => {

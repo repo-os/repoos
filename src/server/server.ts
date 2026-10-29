@@ -138,7 +138,9 @@ import {
   shouldTuneRepoForScaleAtStartup,
   tuneRepoForScale,
   runGit,
+  setGitLockFailureSink,
 } from "../core/git.js";
+import { setGitMaintenanceLockSink } from "../core/git-maintenance.js";
 import { sweepStaleWorktrees } from "../core/worktree-gc.js";
 import {
   checkServerRegistryPortConflict,
@@ -1136,6 +1138,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     bindHost = "127.0.0.1";
   }
   const logger = createLogger(config.root);
+  setGitLockFailureSink((root, commitMessage, detail) => {
+    const context = { root, commitMessage, detail };
+    logger.system("warn", `git write failed because index.lock is present: ${detail}`, context);
+    const taskId = commitMessage.match(/\b(?:docs|inputs|schedules|stories)\(([^)]+)\)/)?.[1];
+    if (taskId)
+      logger.task(
+        taskId,
+        "warn",
+        `git bookkeeping write failed because index.lock is present: ${detail}`,
+        context,
+      );
+  });
   // Best-effort: enable git's fsmonitor + untracked-cache on the main checkout
   // only — preview/shot servers and linked task worktrees share `.git/config`
   // and must not re-enable watchers or spawn another daemon per start (#0958).
@@ -1438,6 +1452,27 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const bumpAttention = (): void => {
     emitEvent({ type: "attention.updated", at: new Date().toISOString() });
   };
+  setGitMaintenanceLockSink(({ path, state, ageMs }) => {
+    const id = `gitLock:${path}`;
+    if (state === "live") {
+      logger.system("warn", "Live git process still holds stale git index.lock", { path, ageMs });
+      attentionEvents.record({
+        id,
+        kind: "gitLock",
+        taskId: null,
+        message: "Git is still holding a stale index lock",
+        detail: `${path} has been present for ${Math.floor(ageMs / 60_000)} minutes. Git writes may be blocked until the process releases it.`,
+        at: new Date().toISOString(),
+      });
+      bumpAttention();
+      return;
+    }
+    if (state === "removed") logger.system("info", "Removed stale git index.lock", { path, ageMs });
+    if (state === "cleared") {
+      attentionEvents.remove(id);
+      bumpAttention();
+    }
+  });
   wireAttentionNotifications(attentionEvents, bumpAttention);
   const recordRemoteFallbackAttention = (taskId: string, detail: string): void => {
     const at = new Date().toISOString();
