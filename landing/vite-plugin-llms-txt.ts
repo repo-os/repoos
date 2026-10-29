@@ -278,6 +278,61 @@ export interface LlmsTxtPluginOptions {
  * canonical prompt, install list, docs pages, and skill — failing the landing
  * build itself, not a separate check step.
  */
+/**
+ * Static, agent-readable HTML for the homepage. The landing is a client-rendered
+ * Vue app, so a fetch without JavaScript (most AI agents and crawlers) used to
+ * get an empty `<div id="app">`. The same text as llms.txt is rendered into
+ * that div at build time; Vue replaces it on mount, so people see the app.
+ */
+export function renderAgentHtml(markdown: string = renderLlmsTxt()): string {
+  const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const inline = (t: string) =>
+    esc(t)
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\[([^\]]+)\]\((https?:[^)\s]+|\/[^)\s]*)\)/g, '<a href="$2">$1</a>');
+  const out: string[] = [];
+  let list = false;
+  let code: string[] | null = null;
+  const closeList = () => {
+    if (list) out.push("</ul>");
+    list = false;
+  };
+  for (const line of markdown.split("\n")) {
+    if (code) {
+      if (line.startsWith("```")) {
+        out.push(`<pre><code>${esc(code.join("\n"))}</code></pre>`);
+        code = null;
+      } else code.push(line);
+      continue;
+    }
+    if (line.startsWith("```")) {
+      closeList();
+      code = [];
+    } else if (line.startsWith("# ")) {
+      closeList();
+      out.push(`<h1>${inline(line.slice(2))}</h1>`);
+    } else if (line.startsWith("## ")) {
+      closeList();
+      out.push(`<h2>${inline(line.slice(3))}</h2>`);
+    } else if (line.startsWith("### ")) {
+      closeList();
+      out.push(`<h3>${inline(line.slice(4))}</h3>`);
+    } else if (/^\s*[-*] /.test(line)) {
+      if (!list) out.push("<ul>");
+      list = true;
+      out.push(`<li>${inline(line.replace(/^\s*[-*] /, ""))}</li>`);
+    } else if (line.trim() === "") {
+      closeList();
+    } else {
+      closeList();
+      out.push(`<p>${inline(line.replace(/^> ?/, ""))}</p>`);
+    }
+  }
+  closeList();
+  if (code) out.push(`<pre><code>${esc(code.join("\n"))}</code></pre>`);
+  return `<main data-agent-fallback>${out.join("\n")}</main>`;
+}
+
 export function llmsTxtPlugin(options: LlmsTxtPluginOptions = {}): Plugin {
   return {
     name: "repoos:llms-txt",
@@ -291,6 +346,16 @@ export function llmsTxtPlugin(options: LlmsTxtPluginOptions = {}): Plugin {
         response.setHeader("Cache-Control", "no-cache");
         response.end(body);
       });
+    },
+    transformIndexHtml(html, ctx) {
+      // Homepage only: /for-clients has its own page.
+      if (ctx.filename && !/(^|[\\/])landing[\\/]index\.html$/.test(ctx.filename)) return html;
+      return html
+        .replace(
+          "</head>",
+          '    <link rel="alternate" type="text/markdown" href="/llms.txt" title="RepoOS for AI agents (llms.txt)" />\n  </head>',
+        )
+        .replace('<div id="app"></div>', `<div id="app">${renderAgentHtml()}</div>`);
     },
     generateBundle() {
       this.emitFile({

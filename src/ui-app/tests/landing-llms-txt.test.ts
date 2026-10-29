@@ -59,3 +59,16 @@ describe("landing llms.txt", () => {
     for (const command of INSTALL_COMMANDS) expect(gettingStarted).toContain(command);
   });
 });
+
+describe("landing homepage is readable without JavaScript", () => {
+  it("renders the llms.txt content as static HTML for agents", async () => {
+    const { renderAgentHtml } = await import("../../../landing/vite-plugin-llms-txt.js");
+    const html = renderAgentHtml(
+      "# RepoOS\n\n> Tasks are Markdown.\n\n## Install\n\n- one\n- two\n\n```bash\nrepoos init\n```\n",
+    );
+    expect(html).toContain("<h1>RepoOS</h1>");
+    expect(html).toContain("<p>Tasks are Markdown.</p>");
+    expect(html).toContain("<ul>\n<li>one</li>\n<li>two</li>\n</ul>");
+    expect(html).toContain("<pre><code>repoos init</code></pre>");
+  });
+});
