@@ -2,7 +2,7 @@
 id: "0968"
 title: "Auto-reload handover keeps failing: readiness-based handshake, give up after N, Settings toggle"
 type: bug
-status: active
+status: done
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/auto-reload-handover-keeps-failing-readi
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-27T12:03:03Z"
-updated_at: "2026-10-29T04:28:15Z"
+updated_at: "2026-10-29T04:28:33Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-29T03:15:31.071Z: repoos check failed: tests — timed out — timed out after 2400s"
 handoff_signal_retry_count: 2
@@ -64,3 +64,4 @@ src/server/reload.ts and server.ts (reloadEnabled). No server restarts, no previ
 - 2026-10-29T03:35:56Z · engineer stopped by request
 - 2026-10-29T03:35:56Z · held, held-reason, held-by, held-at
 - 2026-10-29T04:28:15Z · released
+- 2026-10-29T04:28:33Z · status active→done
