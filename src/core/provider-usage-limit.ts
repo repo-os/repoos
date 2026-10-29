@@ -40,6 +40,21 @@ function parseTryAgainAt(text: string, now: number): number | null {
   return at.getTime();
 }
 
+/**
+ * A recorded usage-limit probe whose error only restates a known quota pause.
+ * Mission Control's recent-failures list omits these so they do not bury
+ * real session failures.
+ */
+export function isUsageLimitProbeConfirmation(session: {
+  sessionType: string;
+  errorReason?: string | null;
+}): boolean {
+  return (
+    session.sessionType === "usage-limit-probe" &&
+    detectProviderUsageLimit(session.errorReason ?? "") !== null
+  );
+}
+
 /** Classify explicit quota and HTTP 429 output across supported CLIs. */
 export function detectProviderUsageLimit(output: string): ProviderUsageLimit | null {
   const text = output.replace(/\u0000/g, " ").trim();
