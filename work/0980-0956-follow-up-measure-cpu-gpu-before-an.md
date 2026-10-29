@@ -6,6 +6,10 @@ status: active
 needs_input: true
 needs_input_reason: check-wait
 needs_input_detail: "waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0981 check (pid 66147, alive), #0978 check (pid 67065, alive) for 10m"
+hold: true
+hold_reason: "Driver landing by hand: code done, stuck behind the check queue (Nick, 2026-10-29)"
+hold_by: driver
+hold_at: "2026-10-29T15:17:30.486Z"
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +18,7 @@ branch: feat/0956-follow-up-measure-cpu-gpu-before-an
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-29T14:44:34Z"
-updated_at: "2026-10-29T15:03:03Z"
+updated_at: "2026-10-29T15:17:30Z"
 ---
 ## Problem
 #0956 (activity animations: pause when hidden, off screen, reduced motion, or over a concurrency cap) landed on 2026-10-29 without three of its acceptance criteria: a before/after CPU/GPU measurement, a reduced-motion test for every style, and screenshots of the Settings preview and a board with several working cards.
@@ -60,3 +64,4 @@ Evidence that the change actually cut CPU/GPU use, and that every animation styl
 - 2026-10-29T14:47:36Z · body
 - 2026-10-29T15:01:35Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0981 check (pid 66147, alive), #0978 check (pid 67065, alive) for 10m · next step: let it finish — the wait clears itself when the check starts running; investigate only if it persists
 - 2026-10-29T15:03:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T15:17:30Z · held, held-reason, held-by, held-at
