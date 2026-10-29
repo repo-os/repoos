@@ -1013,6 +1013,19 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         [SHOT_PREVIEW_FIXTURE_TASK_ID]: nowIso(),
       };
       break;
+    case "board:severalWorkingCards":
+      for (let i = 0; i < 6; i++) {
+        const taskId = `0980-${i + 1}`;
+        ensureFixtureTask(
+          repo,
+          "active",
+          { title: `Working task ${i + 1}: activity preview fixture` },
+          taskId,
+        );
+        if (!repo.runningIds.includes(taskId)) repo.runningIds.push(taskId);
+        repo.agentActivityAt = { ...repo.agentActivityAt, [taskId]: nowIso() };
+      }
+      break;
     case "board:startWorkPending":
       ensureFixtureTask(repo, "ready");
       repo.seedStartWorkPending(SHOT_PREVIEW_FIXTURE_TASK_ID);
