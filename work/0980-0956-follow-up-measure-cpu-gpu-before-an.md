@@ -2,16 +2,16 @@
 id: "0980"
 title: "#0956 follow-up: measure CPU/GPU before and after, reduced-motion test, screenshots"
 type: chore
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/0956-follow-up-measure-cpu-gpu-before-an
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-29T14:44:34Z"
-updated_at: "2026-10-29T14:44:49Z"
+updated_at: "2026-10-29T14:44:51Z"
 ---
 ## Problem
 #0956 (activity animations: pause when hidden, off screen, reduced motion, or over a concurrency cap) landed on 2026-10-29 without three of its acceptance criteria: a before/after CPU/GPU measurement, a reduced-motion test for every style, and screenshots of the Settings preview and a board with several working cards.
@@ -33,3 +33,4 @@ Evidence that the change actually cut CPU/GPU use, and that every animation styl
 - 2026-10-29T14:44:34Z · created · njachowski@gmail.com
 - 2026-10-29T14:44:45Z · cli_override, model_override
 - 2026-10-29T14:44:49Z · status inbox→ready
+- 2026-10-29T14:44:51Z · status ready→active, branch
