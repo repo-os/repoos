@@ -29,7 +29,7 @@ servePort = 7171
 # machine (10 cores: floor(10/2), capped at 8) — bump it up if the machine
 # still looks idle under load, or down if it's straining. See
 # src/core/config.ts defaultMaxConcurrentAgents() for the formula and why.
-maxConcurrentAgents = 4
+maxConcurrentAgents = 2
 
 # CTO agent (0174) monitor interval in milliseconds (default 5 minutes)
 ctoMonitorIntervalMs = 300000
@@ -759,9 +759,8 @@ models = ["gpt-6-luna", "gpt-6.1-sol"]
 paused = true
 pausedUntil = "2026-10-28T16:43:00.000Z"
 pausedReason = "Codex account usage limit (Sol and Luna) until 11:43 PM local"
-pausedModels = [{ model = "gpt-6.1-sol", pausedUntil = "2026-10-28T16:43:00.000Z", pausedReason = "out of usage since 2026-10-28T12:17:18.885Z: error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 11:43 PM." }]
 [[budget.allowlist]]
 cli = "antigravity"
 models = ["gemini-3.8-flash-medium", "gemini-3.8-flash-high"]
 paused = true
-pausedModels = [{ model = "gemini-3.8-flash-medium", pausedReason = "out of usage since 2026-10-26T12:27:45.440Z: AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryabl" }, { model = "gemini-3.8-flash-high", pausedReason = "out of usage since 2026-10-26T14:45:37.315Z: AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 164h31m2s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryable" }]
+pausedModels = [{ model = "gemini-3.8-flash-medium", pausedUntil = "2026-11-05T14:04:44.904Z", pausedReason = "out of usage since 2026-10-26T12:27:45.440Z: AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 166h48m54s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryabl" }, { model = "gemini-3.8-flash-high", pausedUntil = "2026-11-05T11:46:52.927Z", pausedReason = "out of usage since 2026-10-26T14:45:37.315Z: AGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 164h31m2s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryable" }]
