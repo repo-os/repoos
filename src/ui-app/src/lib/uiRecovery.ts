@@ -3,6 +3,11 @@ import { api } from "../api";
 import type { Health } from "../types";
 
 export type UiRecoveryKind = "stale" | "offline" | null;
+/**
+ * Why the server is unreachable (#0959): `down` — the connection was refused,
+ * so nothing is listening; `slow` — it is running but did not answer in time.
+ */
+export type OfflineReason = "down" | "slow" | null;
 
 export interface UiRecoveryState {
   kind: UiRecoveryKind;
@@ -12,6 +17,17 @@ export interface UiRecoveryState {
   currentBuild: string | null;
   newBuild: string | null;
   newBuildAt: string | null;
+  offlineReason: OfflineReason;
+  /** Project name from the last good /api/health. */
+  projectName: string | null;
+  /** Host and port this page talks to, e.g. `127.0.0.1:7405`. */
+  origin: string | null;
+  /** Epoch ms of the last successful /api/health, or null if never reached. */
+  lastReachedAt: number | null;
+  /** Restart command from the last good /api/health. */
+  restartCommand: string | null;
+  /** What the last Retry probed and found, in plain words. */
+  probeResult: string | null;
 }
 
 const INTENT_KEY = "repoos.route-intent";
@@ -23,7 +39,27 @@ const state = reactive<UiRecoveryState>({
   currentBuild: null,
   newBuild: null,
   newBuildAt: null,
+  offlineReason: null,
+  projectName: null,
+  origin: typeof window !== "undefined" ? window.location.host : null,
+  lastReachedAt: null,
+  restartCommand: null,
+  probeResult: null,
 });
+
+/** Classify an api() failure: refused (nothing listening) vs timed out (stalled). */
+export function offlineReasonFor(message: string): OfflineReason {
+  if (/did not respond in time|timed out/i.test(message)) return "slow";
+  if (/can't reach/i.test(message)) return "down";
+  return null;
+}
+
+/** Remember the last good health answer: who we talked to and how to restart it. */
+export function noteServerReached(health: Partial<Health>, at = Date.now()): void {
+  state.lastReachedAt = at;
+  if (health.projectName) state.projectName = health.projectName;
+  if (health.restartCommand) state.restartCommand = health.restartCommand;
+}
 
 // Set to the server build hash that was shown when the user dismissed the banner.
 // Suppresses router.onError and health-check triggers for the same build; cleared
@@ -136,6 +172,8 @@ export function showOffline(
   clearNewVersion();
   state.kind = "offline";
   state.message = message;
+  state.offlineReason = offlineReasonFor(message);
+  state.probeResult = null;
 }
 
 export function dismissRecovery(): void {
@@ -155,6 +193,8 @@ export function dismissRecovery(): void {
   state.currentBuild = null;
   state.newBuild = null;
   state.newBuildAt = null;
+  state.offlineReason = null;
+  state.probeResult = null;
 }
 
 /**
@@ -176,16 +216,27 @@ export async function reloadNow(): Promise<void> {
   if (wasOffline) {
     state.message = "Waiting for the RepoOS server… this can take up to 30 seconds.";
     const deadline = Date.now() + 30_000;
+    let lastError = "";
+    let reached = false;
     while (Date.now() < deadline) {
       try {
-        await api<Health>("/api/health", { timeoutMs: 3_000 });
+        noteServerReached(await api<Health>("/api/health", { timeoutMs: 3_000 }));
+        reached = true;
         break;
-      } catch {
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : String(err);
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
-    if (Date.now() >= deadline) {
+    if (!reached) {
       state.reloading = false;
+      const reason = offlineReasonFor(lastError) ?? state.offlineReason;
+      if (reason) state.offlineReason = reason;
+      const where = `${state.origin ?? "this server"}/api/health`;
+      state.probeResult =
+        reason === "slow"
+          ? `Checked ${where} for 30 s: the server is running but did not answer within 3 s.`
+          : `Checked ${where} for 30 s: the connection was refused, so the server is not running.`;
       state.message = "The server is still unavailable. Try again when it is ready.";
       return;
     }
@@ -208,7 +259,9 @@ export async function checkUiBuild(): Promise<void> {
   if (healthCheckInFlight) return healthCheckInFlight;
   healthCheckInFlight = (async () => {
     try {
-      const health = await api<Health>("/api/health");
+      // A bounded probe: without a timeout a stalled server is never reported.
+      const health = await api<Health>("/api/health", { timeoutMs: 10_000 });
+      noteServerReached(health);
       const local = clientBuild();
       if (
         local &&
