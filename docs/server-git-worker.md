@@ -105,3 +105,22 @@ longer need synchronous Git enrichment.
 The one-hour responsiveness run with 900 tasks, 100 branches and two live
 engineers has not been observed in this worktree. It needs a human-controlled
 server rollout and recorded timings; finite fixture tests are not that proof.
+
+## Measured latency after #0962–#0966 (#0969, 2026-10-29)
+
+Live server on the RepoOS repo itself: 931 task files, ~50 local branches,
+2–3 engineers running throughout. A script restarted the server with
+`just revive`, then every 30 s for 60 min (12:36–13:36Z) timed
+`GET /api/auth/session` and the paged `GET /api/tasks?limit=50` over loopback
+with the local CLI token (no CLI start-up cost in the numbers).
+
+| Request | Samples | Median | p95 | Max | Over 200 ms | Errors |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `/api/auth/session` | 120 | 4.0 ms | 14.7 ms | 55 ms | 0 | 0 |
+| `/api/tasks?limit=50` | 120 | 3.6 ms | 11.9 ms | 173 ms | 0 | 0 |
+
+Boot: both requests answered 7.5 s after `just revive` started. That figure
+includes stopping the old process and launchd's restart, so the server's own
+time from start to first answer is shorter, but the 5 s target was not
+measured directly and should not be claimed. The warm target (<200 ms) held
+for the whole hour. The branch count was about half the ~100 the task assumed.
