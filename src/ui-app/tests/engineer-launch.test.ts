@@ -210,3 +210,27 @@ body
     else expect(start).toHaveBeenCalled();
   });
 });
+
+describe("relaunchEngineerOnActiveTask worktree guard (2026-10-29)", () => {
+  it("refuses to start in the main checkout when the task worktree cannot be created", async () => {
+    // #0966 sat 10 hours: its worktree was never created, the engineer was
+    // launched in the main checkout, and it rightly refused to edit main.
+    const root = mkdtempSync(join(tmpdir(), "repoos-no-worktree-")); // not a git repo
+    roots.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const absPath = join(root, "work", "0003-no-wt.md");
+    writeFileSync(
+      absPath,
+      '---\nid: "0003"\ntitle: t\ntype: feature\nstatus: active\npriority: p2\narea: core\nassigned_to: ai\nbranch: feat/x\n---\nbody\n',
+    );
+    const config: RepoOSConfig = { ...DEFAULT_CONFIG, root };
+    const d = deps(config);
+    const start = vi.fn(() => ({ ok: true, pid: 1 }));
+    (d.runner as unknown as { start: typeof start }).start = start;
+    const result = await relaunchEngineerOnActiveTask(d, activeTask({ id: "0003", absPath }), "");
+
+    expect(result.ok).toBe(false);
+    expect(result.ok === false && result.reason).toMatch(/Could not create the task worktree/);
+    expect(start).not.toHaveBeenCalled();
+  });
+});
