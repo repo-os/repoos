@@ -1298,11 +1298,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const uiBuildHash = loadedHash ?? serverBuildHash;
   const readUiIndex = (indexPath: string): string =>
     injectBuildHashIntoUiIndex(readFileSync(indexPath, "utf8"), uiBuildHash ?? "");
-  // REPOOS_NO_AUTO_RELOAD=1 turns the build-change auto-reload off; new builds
-  // are then picked up only by an explicit restart (`just revive`).
+  // The Settings toggle is the normal control; retain the env var as an
+  // emergency deployment override for operators.
   const reloadEnabled =
     !isDevBuild() &&
     process.env.REPOOS_PREVIEW_CHILD !== "1" &&
+    config.autoReload !== false &&
     process.env.REPOOS_NO_AUTO_RELOAD !== "1" &&
     opts.port !== 0;
   let reload: ReloadManager | null = null;
@@ -4612,6 +4613,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           emitEvent({
             type: "reload.failed",
             reason,
+            restartNeeded: reload?.needsRestart ?? false,
             at: new Date().toISOString(),
           });
         },

@@ -278,6 +278,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   activityAnimationStyle: "orbital-pixel",
   activityAnimationSize: DEFAULT_ACTIVITY_ANIMATION_SIZE,
   tunnelEnabled: false,
+  autoReload: true,
   ntfyEnabled: false,
   ntfyTopic: "",
   ntfyBaseUrl: "https://ntfy.sh",
@@ -1455,6 +1456,7 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof get("defaultAssignee") === "string")
       cfg.defaultAssignee = get("defaultAssignee") as Assignee;
     if (typeof get("strictBuild") === "boolean") cfg.strictBuild = get("strictBuild") as boolean;
+    if (typeof get("autoReload") === "boolean") cfg.autoReload = get("autoReload") as boolean;
     const tunnelEnabled = parsed["tunnel.enabled"];
     if (typeof tunnelEnabled === "boolean") cfg.tunnelEnabled = tunnelEnabled;
     // Optional release surface. No [release] block means no Releases navigation
@@ -2561,6 +2563,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: DEFAULT_CONFIG.tunnelEnabled,
       description: "Publish local apps securely through Cloudflare Tunnel + Access",
+    },
+    {
+      key: "autoReload",
+      label: "Automatic server reload",
+      type: "boolean",
+      tier: "restart",
+      restartRequired: true,
+      default: DEFAULT_CONFIG.autoReload,
+      description:
+        "Hand over to a new server process automatically when a newer build is available. After three failed handovers, restart the server manually.",
     },
     {
       key: "areas",
@@ -4204,6 +4216,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   // Server and UI
   "servePort",
   "strictBuild",
+  "autoReload",
   // Worktrees
   "worktrees.inheritEnv",
   // Agents
