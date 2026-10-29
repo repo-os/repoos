@@ -2,7 +2,7 @@
 id: "0980"
 title: "#0956 follow-up: measure CPU/GPU before and after, reduced-motion test, screenshots"
 type: chore
-status: active
+status: done
 needs_input: true
 needs_input_reason: check-wait
 needs_input_detail: "waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0981 check (pid 66147, alive), #0978 check (pid 67065, alive) for 10m"
@@ -14,7 +14,7 @@ branch: feat/0956-follow-up-measure-cpu-gpu-before-an
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-29T14:44:34Z"
-updated_at: "2026-10-29T15:40:51Z"
+updated_at: "2026-10-29T15:40:57Z"
 ---
 ## Problem
 #0956 (activity animations: pause when hidden, off screen, reduced motion, or over a concurrency cap) landed on 2026-10-29 without three of its acceptance criteria: a before/after CPU/GPU measurement, a reduced-motion test for every style, and screenshots of the Settings preview and a board with several working cards.
@@ -62,3 +62,4 @@ Evidence that the change actually cut CPU/GPU use, and that every animation styl
 - 2026-10-29T15:03:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T15:17:30Z · held, held-reason, held-by, held-at
 - 2026-10-29T15:40:51Z · released
+- 2026-10-29T15:40:57Z · status active→done
