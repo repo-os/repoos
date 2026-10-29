@@ -3,6 +3,10 @@ id: "0975"
 title: "Held tasks in the UI: card chip, panel held card with release, Hold button"
 type: feature
 status: active
+hold: true
+hold_reason: "Driver taking over to land by hand (Nick, 2026-10-29)"
+hold_by: driver
+hold_at: "2026-10-29T03:35:57.019Z"
 priority: p2
 area: web
 assigned_to: ai
@@ -65,18 +69,18 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"c
 "route": "/work?task=9999",
 "highlight": ".cc-modal",
 "steps": [
-  {
-    "click": ".held-panel-actions button"
-  },
-  {
-    "waitMs": 300
-  },
-  {
-    "click": "[data-test-id=\"hold-task\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": ".held-panel-actions button"
+},
+{
+  "waitMs": 300
+},
+{
+  "click": "[data-test-id=\"hold-task\"]"
+},
+{
+  "waitMs": 300
+}
 ],
 "state": "drawer:held"
 }
@@ -121,3 +125,4 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"c
 - 2026-10-29T03:27:28Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
 - 2026-10-29T03:28:46Z · body
 - 2026-10-29T03:35:57Z · engineer stopped by request
+- 2026-10-29T03:35:57Z · held, held-reason, held-by, held-at
