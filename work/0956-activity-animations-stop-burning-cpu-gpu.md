@@ -2,7 +2,7 @@
 id: "0956"
 title: "Activity animations: stop burning CPU/GPU (pause when hidden or off screen, reduced motion, cap concurrent, cheaper rendering)"
 type: feature
-status: active
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/activity-animations-stop-burning-cpu-gpu
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T03:58:48Z"
-updated_at: "2026-10-29T04:27:48Z"
+updated_at: "2026-10-29T04:28:09Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:10:27.670Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -85,3 +85,4 @@ Animated indicators stay fun and visible, but they cost almost nothing: they onl
 - 2026-10-29T03:35:55Z · engineer stopped by request
 - 2026-10-29T03:35:55Z · held, held-reason, held-by, held-at
 - 2026-10-29T04:27:48Z · released
+- 2026-10-29T04:28:09Z · status active→done
