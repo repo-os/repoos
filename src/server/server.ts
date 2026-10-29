@@ -138,7 +138,9 @@ import {
   shouldTuneRepoForScaleAtStartup,
   tuneRepoForScale,
   runGit,
+  setGitLockFailureSink,
 } from "../core/git.js";
+import { setGitMaintenanceLockSink } from "../core/git-maintenance.js";
 import { sweepStaleWorktrees } from "../core/worktree-gc.js";
 import {
   checkServerRegistryPortConflict,
@@ -1136,6 +1138,27 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     bindHost = "127.0.0.1";
   }
   const logger = createLogger(config.root);
+  setGitLockFailureSink((root, commitMessage, detail) => {
+    const context = { root, commitMessage, detail };
+    logger.system("warn", `git write failed because index.lock is present: ${detail}`, context);
+    const taskId = commitMessage.match(/\b(?:docs|inputs|schedules|stories)\(([^)]+)\)/)?.[1];
+    if (taskId)
+      logger.task(
+        taskId,
+        "warn",
+        `git bookkeeping write failed because index.lock is present: ${detail}`,
+        context,
+      );
+  });
+  setGitMaintenanceLockSink(({ path, state, ageMs }) => {
+    logger.system(
+      state === "removed" ? "info" : "warn",
+      state === "removed"
+        ? "Removed stale git index.lock"
+        : "Live git process still holds stale index.lock",
+      { path, ageMs },
+    );
+  });
   // Best-effort: enable git's fsmonitor + untracked-cache on the main checkout
   // only — preview/shot servers and linked task worktrees share `.git/config`
   // and must not re-enable watchers or spawn another daemon per start (#0958).

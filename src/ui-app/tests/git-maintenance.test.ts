@@ -1,11 +1,24 @@
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, utimesSync, readFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+  utimesSync,
+  readFileSync,
+  existsSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { execFileSync } from "node:child_process";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CommitGraphMaintenance } from "../../core/git-maintenance.js";
+import { commitTaskFile, setGitLockFailureSink } from "../../core/git.js";
 
 const roots: string[] = [];
 const jobs: CommitGraphMaintenance[] = [];
+function gitSync(cwd: string, args: string[]): void {
+  execFileSync("git", args, { cwd, stdio: "ignore" });
+}
 afterEach(() => {
   for (const job of jobs.splice(0)) job.close();
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
@@ -19,6 +32,8 @@ function fixture() {
   let head = "first";
   let fail = false;
   const git = vi.fn(async (_root: string, args: string[]) => {
+    if (args[0] === "worktree" && args[1] === "list") return "";
+    if (args[0] === "rev-parse" && args[1] === "--absolute-git-dir") return join(root, ".git");
     if (args.join(" ") === "rev-parse HEAD") return head;
     if (args.includes("--git-path")) return ".git/objects";
     if (fail) return null;
@@ -45,6 +60,66 @@ function fixture() {
 }
 
 describe("commit-graph maintenance", () => {
+  it("removes stale index locks and keeps locks held by a live git process", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-lock-"));
+    roots.push(root);
+    mkdirSync(join(root, ".git"), { recursive: true });
+    const lock = join(root, ".git", "index.lock");
+    writeFileSync(lock, "");
+    const old = new Date(1_000);
+    utimesSync(lock, old, old);
+    const git = vi.fn(async (_repo: string, args: string[]) => {
+      if (args[0] === "worktree") return `worktree ${root}`;
+      if (args[0] === "rev-parse" && args[1] === "--absolute-git-dir") return join(root, ".git");
+      return null;
+    });
+    const now = () => 200_000;
+    const onLock = vi.fn();
+    const stale = new CommitGraphMaintenance(root, git, vi.fn(), {
+      now,
+      processHasLockOpen: () => false,
+      onLock,
+    });
+    jobs.push(stale);
+    await stale.check();
+    expect(existsSync(lock)).toBe(false);
+    expect(onLock).toHaveBeenCalledWith(expect.objectContaining({ state: "removed" }));
+
+    writeFileSync(lock, "");
+    utimesSync(lock, old, old);
+    const live = new CommitGraphMaintenance(root, git, vi.fn(), {
+      now,
+      processHasLockOpen: () => true,
+      onLock,
+    });
+    jobs.push(live);
+    await live.check();
+    expect(existsSync(lock)).toBe(true);
+    expect(onLock).toHaveBeenCalledWith(expect.objectContaining({ state: "live" }));
+  });
+
+  it("surfaces fail-soft task-file commits blocked by index.lock", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-commit-lock-"));
+    roots.push(root);
+    gitSync(root, ["init", "-q"]);
+    gitSync(root, ["config", "user.email", "test@example.com"]);
+    gitSync(root, ["config", "user.name", "Test"]);
+    const file = join(root, "task.md");
+    writeFileSync(file, "task\n");
+    writeFileSync(join(root, ".git", "index.lock"), "");
+    const sink = vi.fn();
+    setGitLockFailureSink(sink);
+    try {
+      expect(commitTaskFile(root, file, "docs(0978): test lock handling")).toBe(false);
+      expect(sink).toHaveBeenCalledWith(
+        root,
+        "docs(0978): test lock handling",
+        expect.stringMatching(/index\.lock/),
+      );
+    } finally {
+      setGitLockFailureSink(null);
+    }
+  });
   it("rebuilds missing/stale graphs and changed HEADs, but skips fresh graphs", async () => {
     const f = fixture();
     await f.job.check();
