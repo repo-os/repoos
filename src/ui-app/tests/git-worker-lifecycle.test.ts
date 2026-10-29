@@ -32,10 +32,12 @@ afterEach(() => {
 
 const overview = {
   useGit: true,
+  head: "old",
   baseBranch: "main",
   branches: ["main"],
   heads: [["main", "old"]],
   aheadCounts: [],
+  mergedBranches: [],
   worktrees: [],
   fingerprint: "old",
 };

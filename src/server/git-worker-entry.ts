@@ -8,15 +8,15 @@ import {
   changedPathsVsBase,
   type RepoGitOverview,
   type WorktreeDirtyEntry,
-  type WorktreeStatus,
   runGit,
   preflightMerge,
   removeWorktree,
   commitTaskFile,
   worktreePathForBranchAsync,
+  listWorktreesAsync,
 } from "../core/git.js";
 import { buildIndexDetailedAsync } from "../core/indexer.js";
-import { taskDependencyBlockersForAll } from "../core/task-dependencies.js";
+import { taskDependencyBlockersForAllAsync } from "../core/task-dependencies.js";
 import { countWorktrees, sweepStaleWorktrees, type GcMode } from "../core/worktree-gc.js";
 import { setGitCallSink } from "../core/git-inflight.js";
 import { availableMemBytes } from "../core/sysmem.js";
@@ -46,13 +46,22 @@ async function gitOverview(root: string): Promise<RepoGitOverview> {
   return overview;
 }
 
+async function worktreeFingerprint(root: string): Promise<string> {
+  return (await listWorktreesAsync(root))
+    .map((info) => `${info.branch ?? ""}:${info.head}`)
+    .sort()
+    .join(",");
+}
+
 function overviewToWire(overview: RepoGitOverview): Record<string, unknown> {
   return {
     useGit: overview.useGit,
+    head: overview.head,
     baseBranch: overview.baseBranch,
     branches: [...overview.branches],
     heads: [...overview.heads],
     aheadCounts: [...overview.aheadCounts],
+    mergedBranches: [...overview.mergedBranches],
     worktrees: [...overview.worktrees],
     fingerprint: overview.fingerprint,
   };
@@ -93,6 +102,7 @@ async function respond(message: RequestMessage): Promise<unknown> {
     case "build-index": {
       const result = await buildIndexDetailedAsync(payload.config as RepoOSConfig, {
         fastWorktreeStatus: payload.fastWorktreeStatus === true,
+        overview: await gitOverview((payload.config as RepoOSConfig).root),
       });
       overviewCache.set((payload.config as RepoOSConfig).root, result.git);
       return { index: result.index, git: overviewToWire(result.git) };
@@ -119,19 +129,18 @@ async function respond(message: RequestMessage): Promise<unknown> {
       const config = payload.config as RepoOSConfig;
       const relPath = payload.relPath as string;
       const branch = typeof payload.branch === "string" ? payload.branch : null;
-      const [commits, overview] = await Promise.all([
-        lastCommitsForDirAsync(config.root, config.workDir),
-        gitOverview(config.root),
-      ]);
-      let status: WorktreeStatus = { path: null, dirty: false };
-      if (branch) {
-        const resolved = await resolveWorktreeStatuses(config.root, [branch], {
-          baseBranch: overview.baseBranch,
-          worktrees: overview.worktrees,
-          aheadCounts: overview.aheadCounts,
-        });
-        status = resolved.statuses.get(branch) ?? status;
-      }
+      const overview = await gitOverview(config.root);
+      const commits = overview.useGit
+        ? await lastCommitsForDirAsync(config.root, config.workDir, overview.head || undefined)
+        : new Map();
+      // Per-file watcher updates must never start a per-branch `git status`.
+      // The periodic batched reconciliation fills uncommitted dirtiness; here
+      // use the already sampled worktree path and ahead count only.
+      const entry = branch ? overview.worktrees.get(branch) : undefined;
+      const status = {
+        path: entry?.path ?? null,
+        dirty: !!branch && (overview.aheadCounts.get(branch) ?? 0) > 0,
+      };
       const last = commits.get(relPath);
       return {
         lastCommit: last?.subject ?? null,
@@ -199,7 +208,14 @@ async function respond(message: RequestMessage): Promise<unknown> {
     case "dependency-blockers": {
       const root = payload.root as string;
       const tasks = payload.tasks as Task[];
-      return [...taskDependencyBlockersForAll(root, tasks)];
+      // Dependency state gates which tasks may start, so it must not rely on
+      // the watcher having invalidated the shared overview: one `worktree
+      // list` (fixed cost) confirms no worktree HEAD moved, e.g. a merge into
+      // main, before the cached overview is trusted.
+      const cached = overviewCache.get(root);
+      if (cached && (await worktreeFingerprint(root)) !== cached.fingerprint)
+        overviewCache.delete(root);
+      return [...(await taskDependencyBlockersForAllAsync(root, tasks, await gitOverview(root)))];
     }
     case "sweep": {
       const config = payload.config as RepoOSConfig;
@@ -246,8 +262,9 @@ process.stdin.on("data", (chunk: string) => {
           generation = message.generation;
           // Invalidation travels with the next queued request: it cannot expire
           // behind a slow history walk and leave the child serving stale facts.
+          // The child starts in its installation directory, not the queried repo.
+          for (const root of overviewCache.keys()) invalidateGitReadCaches(root);
           overviewCache.clear();
-          invalidateGitReadCaches(process.cwd());
         }
         const value = await respond(message);
         process.stdout.write(`${JSON.stringify({ id: message.id, ok: true, value })}\n`);
