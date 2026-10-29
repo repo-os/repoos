@@ -560,7 +560,7 @@ const hint = computed<CardHint | null>(() => {
       title: `This task is held — automation will not start it.${
         t.holdReason ? ` Reason: ${t.holdReason}.` : ""
       } Release with "repoos unhold ${t.id}"${t.holdUntil ? ` or after ${t.holdUntil}` : ""}.`,
-      cls: "tc-held",
+      cls: "tc-held-hint",
     };
   }
   // The freeform-create PM agent is fleshing this draft out right now

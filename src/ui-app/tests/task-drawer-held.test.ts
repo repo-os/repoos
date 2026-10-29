@@ -82,6 +82,69 @@ afterEach(() => {
 });
 
 describe("task drawer Held reason (#0960)", () => {
+  it("shows the hold card above the tabs and releases through the unhold API", async () => {
+    const pinia = setup();
+    useRepoStore();
+    const task = heldTask();
+    const wrapper = await mountDrawer(pinia, task);
+
+    const panel = wrapper.find(".held-panel");
+    expect(panel.exists()).toBe(true);
+    expect(panel.text()).toContain("Held — automation won't start this task");
+    expect(panel.text()).toContain("waiting on design sign-off");
+    expect(panel.text()).toContain("njachowski@gmail.com");
+    expect(panel.text()).toContain("2030");
+    expect(
+      panel.element.compareDocumentPosition(wrapper.find(".drawer-tabs").element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    const fetchMock = vi.fn(async () => json({ ok: true, task: heldTask({ isHeld: false }) }));
+    vi.stubGlobal("fetch", fetchMock);
+    await panel
+      .findAll("button")
+      .find((button) => button.text().includes("Release hold"))!
+      .trigger("click");
+    await flush();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/tasks/0001/unhold",
+      expect.objectContaining({ method: "POST", body: "{}" }),
+    );
+  });
+
+  it("opens the shared Hold dialog and submits its required reason to the hold API", async () => {
+    const pinia = setup();
+    useRepoStore();
+    const task = heldTask({ isHeld: false, holdReason: undefined, holdUntil: undefined });
+    const wrapper = await mountDrawer(pinia, task);
+    useUiStore().activeTab = "details";
+    await flush();
+
+    const fetchMock = vi.fn(async () => json({ ok: true, task: heldTask() }));
+    vi.stubGlobal("fetch", fetchMock);
+    await wrapper.find('[data-test-id="hold-task"]').trigger("click");
+    await flush();
+
+    const dialog = wrapper.find(".cc-modal");
+    const reason = dialog.find("textarea");
+    expect(reason.exists()).toBe(true);
+    const submit = dialog.findAll("button").find((button) => button.text().includes("Hold task"))!;
+    expect(submit.attributes("disabled")).toBeDefined();
+    await reason.setValue("Waiting for the release window");
+    expect(submit.attributes("disabled")).toBeUndefined();
+    await submit.trigger("click");
+    await flush();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/tasks/0001/hold",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ reason: "Waiting for the release window" }),
+      }),
+    );
+  });
+
   it("shows the Held status detail with reason/by/until for a flag-held task", async () => {
     const pinia = setup();
     useRepoStore();
