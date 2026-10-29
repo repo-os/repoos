@@ -121,6 +121,7 @@ export interface SlotAcquireOptions {
   /** Written into the slot dir for debugging and stale recovery. */
   meta?: Record<string, unknown>;
   onQueued?: (ahead: number, position: number) => void;
+  onWaiterCleared?: () => void;
   onHeartbeat?: () => void;
   staleAfterMs?: number;
   reclaimGraceMs?: number;
@@ -423,6 +424,7 @@ export async function acquireCrossProcessSlot(opts: SlotAcquireOptions): Promise
       /* already gone */
     }
     waiterPath = null;
+    opts.onWaiterCleared?.();
   };
   const markWaiting = (): void => {
     if (waiterPath) return;
@@ -433,6 +435,16 @@ export async function acquireCrossProcessSlot(opts: SlotAcquireOptions): Promise
   };
   let heartbeat: ReturnType<typeof setInterval> | undefined;
   const signalHandlers = new Map<NodeJS.Signals, () => void>();
+
+  for (const signal of ["SIGTERM", "SIGINT"] as const) {
+    const handler = () => {
+      clearWaiter();
+      process.off(signal, handler);
+      process.kill(process.pid, signal);
+    };
+    signalHandlers.set(signal, handler);
+    process.once(signal, handler);
+  }
 
   const release = (): void => {
     if (heartbeat) clearInterval(heartbeat);
@@ -452,6 +464,8 @@ export async function acquireCrossProcessSlot(opts: SlotAcquireOptions): Promise
     held = tryTakeSlot(opts.lockRoot, slots, opts.meta, opts.staleAfterMs, opts.reclaimGraceMs);
     if (held) {
       clearWaiter();
+      for (const [signal, handler] of signalHandlers) process.off(signal, handler);
+      signalHandlers.clear();
       for (const signal of ["SIGTERM", "SIGINT"] as const) {
         const handler = () => {
           release();
@@ -498,24 +512,29 @@ export async function acquireCrossProcessSlot(opts: SlotAcquireOptions): Promise
 
 /** Live waiters parked on this slot root (dead pids are ignored). */
 export function countSlotWaiters(lockRoot: string): number {
+  return listSlotWaiterPids(lockRoot).length;
+}
+
+/** PIDs that still have a live waiter entry in this slot queue. */
+export function listSlotWaiterPids(lockRoot: string): number[] {
   const dir = join(lockRoot, ".queue");
   let names: string[] = [];
   try {
     names = readdirSync(dir);
   } catch {
-    return 0;
+    return [];
   }
-  let n = 0;
+  const pids: number[] = [];
   for (const name of names) {
     try {
       const pid = Number(readFileSync(join(dir, name), "utf8").trim());
-      if (processIsAlive(pid)) n++;
+      if (processIsAlive(pid)) pids.push(pid);
       else rmSync(join(dir, name), { force: true });
     } catch {
       /* raced */
     }
   }
-  return n;
+  return pids;
 }
 
 export function heavyJobCounts(lockRoot: string): { running: number; queued: number } {

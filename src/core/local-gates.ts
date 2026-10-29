@@ -59,6 +59,7 @@ function markQueue(
     position,
     message,
     since: since ?? new Date().toISOString(),
+    pid: process.pid,
   });
 }
 
@@ -162,6 +163,7 @@ export async function acquireLocalCheckSlot(opts: AcquireLocalCheckSlotOpts): Pr
         emit(`[queue] ${label}`);
         markQueue(board, cacheDir, opts.env, "local-check", ahead, position, title);
       },
+      onWaiterCleared: () => unmarkQueue(board, cacheDir, opts.env, "local-check"),
     });
 
     unmarkQueue(board, cacheDir, opts.env, "local-check");

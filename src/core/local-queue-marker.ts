@@ -5,6 +5,7 @@ export type LocalQueueKind = "local-check" | "playwright" | "pressure";
 
 export interface LocalQueueMarker {
   taskId: string;
+  pid?: number;
   kind: LocalQueueKind;
   position: number;
   ahead: number;
@@ -59,4 +60,17 @@ export function readQueueMarkers(repoRoot: string, cacheDir: string): LocalQueue
   } catch {
     return [];
   }
+}
+
+export function currentQueueMarkers(
+  markers: LocalQueueMarker[],
+  liveWaiterPids: Iterable<number>,
+): LocalQueueMarker[] {
+  const live = new Set(liveWaiterPids);
+  return markers
+    .filter((marker) => marker.kind !== "local-check" || (marker.pid && live.has(marker.pid)))
+    .sort((a, b) => Date.parse(a.since) - Date.parse(b.since))
+    .map((marker, index) =>
+      marker.kind === "local-check" ? { ...marker, ahead: index, position: index + 1 } : marker,
+    );
 }
