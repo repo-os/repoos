@@ -96,6 +96,11 @@ describe("commit-graph maintenance", () => {
     await live.check();
     expect(existsSync(lock)).toBe(true);
     expect(onLock).toHaveBeenCalledWith(expect.objectContaining({ state: "live" }));
+    await live.check();
+    expect(onLock.mock.calls.filter(([event]) => event.state === "live")).toHaveLength(1);
+    rmSync(lock);
+    await live.check();
+    expect(onLock).toHaveBeenCalledWith(expect.objectContaining({ state: "cleared" }));
   });
 
   it("surfaces fail-soft task-file commits blocked by index.lock", () => {

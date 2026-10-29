@@ -13,7 +13,7 @@ const STALE_INDEX_LOCK_MS = 2 * 60_000;
 export interface GitLockMaintenanceOptions {
   now?: () => number;
   processHasLockOpen?: (path: string) => boolean | Promise<boolean>;
-  onLock?: (event: { path: string; state: "live" | "removed"; ageMs: number }) => void;
+  onLock?: (event: { path: string; state: "live" | "removed" | "cleared"; ageMs: number }) => void;
 }
 
 let lockEventSink: GitLockMaintenanceOptions["onLock"] = undefined;
@@ -44,6 +44,7 @@ export class CommitGraphMaintenance {
   private lockTick: ReturnType<typeof setInterval>;
   private running: Promise<void> | null = null;
   private closed = false;
+  private liveLocks = new Set<string>();
 
   constructor(
     private readonly root: string,
@@ -138,7 +139,11 @@ export class CommitGraphMaintenance {
       if (!gitDir) continue;
       const path = join(gitDir, "index.lock");
       const lock = await stat(path).catch(() => null);
-      if (!lock) continue;
+      if (!lock) {
+        if (this.liveLocks.delete(path))
+          (this.lockOptions.onLock ?? lockEventSink)?.({ path, state: "cleared", ageMs: 0 });
+        continue;
+      }
       const ageMs = Math.max(0, now() - lock.mtimeMs);
       if (ageMs <= STALE_INDEX_LOCK_MS) continue;
       let live = true;
@@ -148,10 +153,14 @@ export class CommitGraphMaintenance {
         live = true;
       }
       if (live) {
-        (this.lockOptions.onLock ?? lockEventSink)?.({ path, state: "live", ageMs });
+        if (!this.liveLocks.has(path)) {
+          this.liveLocks.add(path);
+          (this.lockOptions.onLock ?? lockEventSink)?.({ path, state: "live", ageMs });
+        }
         continue;
       }
       await rm(path, { force: true });
+      this.liveLocks.delete(path);
       (this.lockOptions.onLock ?? lockEventSink)?.({ path, state: "removed", ageMs });
     }
   }

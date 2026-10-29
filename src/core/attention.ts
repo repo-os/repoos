@@ -38,6 +38,7 @@ export type AttentionKind =
   | "remoteFallback"
   | "remoteHostDegraded"
   | "ctoAction"
+  | "gitLock"
   | "ctoSilent";
 
 export interface AttentionItem {
@@ -62,7 +63,7 @@ export interface AttentionFeed {
 /** Durable attention events recorded on the server (provider failures, remote fallback). */
 export interface RecordedAttentionEvent {
   id: string;
-  kind: "providerFailure" | "providerUsageLimit" | "remoteFallback" | "ctoAction";
+  kind: "providerFailure" | "providerUsageLimit" | "remoteFallback" | "ctoAction" | "gitLock";
   taskId: string | null;
   message: string;
   detail: string;
@@ -143,6 +144,7 @@ const SEVERITY: Record<AttentionKind, AttentionSeverity> = {
   remoteFallback: "warning",
   remoteHostDegraded: "warning",
   ctoAction: "info",
+  gitLock: "warning",
   ctoSilent: "warning",
 };
 
