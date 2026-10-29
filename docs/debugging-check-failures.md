@@ -283,11 +283,15 @@ resume it there when usage is available, or run
 `repoos agents resume <cli> --model <model>`. If no allowed pair remains, add
 an allowed alternative or resume an existing pair before restarting work.
 
-When the provider gives no reset time, RepoOS sends a low-token availability
-probe every 10 minutes. Probe usage is recorded with session type
-`usage-limit-probe`; a successful reply resumes the pair, while another error
-leaves it paused. The bell records one item for each exhaustion event and
-includes the exact resume command.
+RepoOS does not send a usage-limit probe while that pause is still before
+its reset time, or while the pause has no date (resume those by hand). After
+the reset time, a low-token probe runs at most once per backoff interval,
+starting at 10 minutes and doubling up to 6 hours. Probe usage is recorded
+with session type `usage-limit-probe`. A successful reply resumes the pair.
+Another usage-limit reply extends `pausedUntil` from the reset time in the
+error when one is given, and that confirmation is omitted from Mission
+Control's recent failures. The bell records one item for each exhaustion
+event and includes the exact resume command.
 
 The detector recognizes explicit usage/quota limit and HTTP 429 wording from
 the supported CLI output. Generic network errors are still handled by ordinary
