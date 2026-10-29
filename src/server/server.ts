@@ -2018,7 +2018,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             onTaskCheckEvent,
             remoteValidator,
             previews,
-            (id, level, message) => logger.task(id, level, message),
+            (id, level, message) => {
+              logger.task(id, level, message);
+              if (message.startsWith("reused check ")) runner.system(id, message);
+            },
             true,
           );
           if (result.ok) {
@@ -2962,7 +2965,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       onTaskCheckEvent,
       remoteValidator,
       previews,
-      onTaskLog: (id, level, message) => logger.task(id, level, message),
+      onTaskLog: (id, level, message) => {
+        logger.task(id, level, message);
+        if (message.startsWith("reused check ")) runner.system(id, message);
+      },
       onProgress: (step) => {
         if (step === "validate") return;
         progress(step, undefined);

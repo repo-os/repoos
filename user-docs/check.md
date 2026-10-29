@@ -256,13 +256,26 @@ remote-validation events show bundle size and upload time for each run. The
 Remote runners tab and Settings → Remote validation show each host's
 `validate.sh` generation and a one-line install command when an update is needed. With `--changed` /
 `REPOOS_CHECK_CHANGED`, the **remote** test step is scoped the same way as locally
-(#0695); handoff runs the full suite on the runner, and default close-out runs
+(#0695); handoff runs the full suite on the runner unless it reuses a recent
+self-check as described below, and default close-out runs
 changed tests plus safety suites (below). Managed
 engineers (`REPOOS_AGENT=1`) always use the board's runner (Hetzner or Tailscale).
 Run `repoos check` once before handoff — not after every edit — to avoid WIP
-checkpoint churn. Handoff reuses a green **full** remote pass at the same commit
-when `remoteValidation.engineerSelfCheckRemote` is on (default); a scoped
-self-check does not skip handoff's full runner pass. The link probe separates
+checkpoint churn. Handoff reuses a passing local or remote-backed self-check for
+that task when it proves the same commit, a clean worktree, unchanged source on
+main, and the same merge base (task bookkeeping on main may advance). Full and
+`changed:main` coverage qualify; partial `--step` runs, skipped suites, older
+records without this evidence, and lookup errors do not.
+Any new commit, dirty file, or source change on main runs the normal handoff gate.
+Format, lint, build staleness, task assets and the remaining local guards still
+run. The transcript and Checks detail say `reused check <id>`.
+
+The internal server environment variable `REPOOS_HANDOFF_CHECK_MAX_AGE_MS`
+limits reuse age (default one hour; zero disables it; invalid values disable
+reuse). This deployment knob is deliberately not a `repoos.toml` feature key.
+Close-out keeps its own combined-tree validation policy.
+
+The link probe separates
 SSH setup latency from payload throughput and retries once before skipping a
 host, so checks from high-latency networks can use a runner when the actual
 transfer rate meets `remoteValidation.linkThroughputFloorBps`. Its sample size
