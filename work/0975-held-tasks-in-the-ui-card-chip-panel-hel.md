@@ -11,7 +11,7 @@ branch: feat/held-tasks-in-the-ui-card-chip-panel-hel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-28T12:02:51Z"
-updated_at: "2026-10-29T02:38:44Z"
+updated_at: "2026-10-29T03:04:54Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-29T02:24:33.457Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-29T02:37:18.689Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -46,33 +46,33 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T02:24:33.457Z\",\"reason\":\"c
 ```json
 [
 {
-  "label": "Board card with the Held chip",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".tc-held",
-  "state": "card:held"
+"label": "Board card with the Held chip",
+"target": "default",
+"route": "/work",
+"highlight": ".tc-held",
+"state": "card:held"
 },
 {
-  "label": "Held task panel with release controls",
-  "target": "default",
-  "route": "/work?task=0975&tab=changes",
-  "highlight": ".held-panel",
-  "state": "drawer:held"
+"label": "Held task panel with release controls",
+"target": "default",
+"route": "/work?task=0975&tab=changes",
+"highlight": ".held-panel",
+"state": "drawer:held"
 },
 {
-  "label": "Hold dialog with reason and auto-release date",
-  "target": "default",
-  "route": "/work?task=0975&tab=changes",
-  "highlight": ".cc-modal",
-  "steps": [
-    {
-      "click": "button[data-test-id=\"hold-task\"]"
-    },
-    {
-      "waitMs": 250
-    }
-  ],
-  "state": "drawer:held"
+"label": "Hold dialog with reason and auto-release date",
+"target": "default",
+"route": "/work?task=0975&tab=changes",
+"highlight": ".cc-modal",
+"steps": [
+  {
+    "click": "button[data-test-id=\"hold-task\"]"
+  },
+  {
+    "waitMs": 250
+  }
+],
+"state": "drawer:held"
 }
 ]
 ```
@@ -108,3 +108,4 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T02:24:33.457Z\",\"reason\":\"c
 - 2026-10-29T02:32:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T02:37:18Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
 - 2026-10-29T02:38:44Z · body
+- 2026-10-29T03:04:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
