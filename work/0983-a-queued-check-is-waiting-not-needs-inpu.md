@@ -11,7 +11,7 @@ branch: feat/a-queued-check-is-waiting-not-needs-inpu
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-29T15:23:58Z"
-updated_at: "2026-10-29T18:26:16Z"
+updated_at: "2026-10-29T21:21:46Z"
 ---
 ## Problem
 #0974's check-wait escalation sets `needs_input` (reason `check-wait`) when a check has waited 10 minutes for a slot or the pressure guard. Engineers read "needs input" as blocked and end their turn: on 2026-10-29 #0980 and #0982 finished their code, waited for a check slot, were flagged, and stopped, so the driver had to land both by hand. A queued check is normal and expected; it is not a request for human input.
@@ -32,18 +32,18 @@ A long queue wait is visible but does not stop the engineer. The task card shows
 ```json
 [
 {
-  "label": "Normal 15-minute check wait stays non-blocking on the card",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".tc-queued",
-  "state": "checks:waiting"
+"label": "Normal 15-minute check wait stays non-blocking on the card",
+"target": "default",
+"route": "/work",
+"highlight": ".tc-queued",
+"state": "checks:waiting"
 },
 {
-  "label": "Drawer shows check slot waiting reason and elapsed time",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-chip",
-  "state": "checks:waiting"
+"label": "Drawer shows check slot waiting reason and elapsed time",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-chip",
+"state": "checks:waiting"
 }
 ]
 ```
@@ -55,3 +55,4 @@ A long queue wait is visible but does not stop the engineer. The task card shows
 - 2026-10-29T15:24:07Z · status inbox→ready
 - 2026-10-29T17:38:37Z · status ready→active, branch
 - 2026-10-29T18:26:16Z · body
+- 2026-10-29T21:21:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
