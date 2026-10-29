@@ -11,7 +11,7 @@ branch: feat/held-tasks-in-the-ui-card-chip-panel-hel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-28T12:02:51Z"
-updated_at: "2026-10-29T03:28:46Z"
+updated_at: "2026-10-29T03:35:57Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-29T03:27:28.111Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -46,39 +46,39 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"c
 ```json
 [
 {
-  "label": "Board card with held chip",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".tc-held",
-  "state": "card:held"
+"label": "Board card with held chip",
+"target": "default",
+"route": "/work",
+"highlight": ".tc-held",
+"state": "card:held"
 },
 {
-  "label": "Held task panel and release actions",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".held-panel",
-  "state": "drawer:held"
+"label": "Held task panel and release actions",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".held-panel",
+"state": "drawer:held"
 },
 {
-  "label": "Hold dialog open",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".cc-modal",
-  "steps": [
-    {
-      "click": ".held-panel-actions button"
-    },
-    {
-      "waitMs": 300
-    },
-    {
-      "click": "[data-test-id=\"hold-task\"]"
-    },
-    {
-      "waitMs": 300
-    }
-  ],
-  "state": "drawer:held"
+"label": "Hold dialog open",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".cc-modal",
+"steps": [
+  {
+    "click": ".held-panel-actions button"
+  },
+  {
+    "waitMs": 300
+  },
+  {
+    "click": "[data-test-id=\"hold-task\"]"
+  },
+  {
+    "waitMs": 300
+  }
+],
+"state": "drawer:held"
 }
 ]
 ```
@@ -120,3 +120,4 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"c
 - 2026-10-29T03:22:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T03:27:28Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
 - 2026-10-29T03:28:46Z · body
+- 2026-10-29T03:35:57Z · engineer stopped by request
