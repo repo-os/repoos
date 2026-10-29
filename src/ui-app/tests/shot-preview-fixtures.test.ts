@@ -52,6 +52,16 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(config.data.stories).toEqual({ enabled: true });
   });
 
+  it("seeds six working task cards for activity captures", () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "board:severalWorkingCards");
+    const cards = repo.tasks.filter((task) => task.id.startsWith("0980-"));
+    expect(cards).toHaveLength(6);
+    expect(cards.every((task) => task.status === "active")).toBe(true);
+    expect(repo.runningIds).toEqual(expect.arrayContaining(cards.map((task) => task.id)));
+  });
+
   it("reads shotState from the location query", () => {
     expect(readShotPreviewFixtureFromLocation({ search: "?shotState=closeOut%3Aactive" })).toBe(
       "closeOut:active",
