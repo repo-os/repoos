@@ -11,7 +11,7 @@ branch: feat/held-tasks-in-the-ui-card-chip-panel-hel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-28T12:02:51Z"
-updated_at: "2026-10-29T01:00:28Z"
+updated_at: "2026-10-29T01:03:07Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-29T01:00:28.679Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -46,30 +46,32 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T01:00:28.679Z\",\"reason\":\"c
 ```json
 [
 {
-"label": "Board card with held chip",
-"target": "default",
-"route": "/work",
-"highlight": ".tc-held",
-"state": "board:cardChips"
+  "label": "Board card with the Held chip",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".tc-held",
+  "state": "card:held"
 },
 {
-"label": "Held task panel with release controls",
-"target": "default",
-"route": "/work?task=0899",
-"highlight": ".held-panel",
-"state": "drawer:held"
+  "label": "Held task panel with release controls",
+  "target": "default",
+  "route": "/work?task=0000",
+  "highlight": ".held-panel",
+  "state": "drawer:held"
 },
 {
-"label": "Hold task dialog",
-"target": "default",
-"route": "/work?task=0899",
-"highlight": "[role=dialog]",
-"steps": [
-{
-"click": "button[data-test-id=\"hold-task\"]"
-}
-],
-"state": "drawer:statusDetails"
+  "label": "Hold dialog with the required reason field",
+  "target": "default",
+  "route": "/work?task=0975",
+  "highlight": ".cc-modal",
+  "steps": [
+    {
+      "click": "[data-test-id=\"hold-task\"]"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
 }
 ]
 ```
@@ -93,3 +95,4 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T01:00:28.679Z\",\"reason\":\"c
 - 2026-10-28T23:47:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T00:55:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T01:00:28Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-29T01:03:07Z · body
