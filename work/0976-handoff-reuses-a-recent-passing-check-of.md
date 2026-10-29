@@ -2,10 +2,7 @@
 id: "0976"
 title: Handoff reuses a recent passing check of the same tree instead of re-running tests
 type: feature
-status: active
-needs_input: true
-needs_input_reason: check-wait
-needs_input_detail: "waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0966 check (pid 4593, alive), #0977 check (pid 11929, alive) for 10m"
+status: done
 priority: p1
 area: core
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/handoff-reuses-a-recent-passing-check-of
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-29T05:51:30Z"
-updated_at: "2026-10-29T12:11:42Z"
+updated_at: "2026-10-29T12:12:29Z"
 dev_error_count: 9
 ---
 ## Problem
@@ -72,3 +69,5 @@ Handoff reuses a recent passing check of the same tree instead of repeating it, 
 - 2026-10-29T08:39:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T11:44:14Z · held, held-reason, held-by, held-at
 - 2026-10-29T12:11:42Z · released
+- 2026-10-29T12:12:25Z · status active→done
+- 2026-10-29T12:12:29Z · watchdog: check wait ended — cleared needs_input
