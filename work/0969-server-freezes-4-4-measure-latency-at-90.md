@@ -2,7 +2,7 @@
 id: "0969"
 title: "Server freezes (4/4): measure latency at 900 tasks for 1 h"
 type: chore
-status: inbox
+status: done
 priority: p2
 area: core
 depends_on: ["0965", "0966", "0967"]
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-27T12:03:17Z"
-updated_at: "2026-10-29T13:36:09Z"
+updated_at: "2026-10-29T13:36:13Z"
 ---
 ## Problem
 Split from #0962: the original acceptance criterion 6 needs a measurement once the git work has landed.
@@ -31,3 +31,4 @@ Measured by the driver on 2026-10-29 (12:36–13:36Z, 931 tasks, ~50 branches, 2
 
 - 2026-10-27T12:03:17Z · created · njachowski@gmail.com
 - 2026-10-29T13:36:09Z · body: Resolution (added)
+- 2026-10-29T13:36:13Z · status inbox→done
