@@ -1,11 +1,15 @@
 import type { DependencyBlocker, Task } from "./types.js";
 import {
   branchCommit,
+  commitAncestrySnapshotAsync,
+  repoGitOverviewAsync,
+  type RepoGitOverview,
   branchRefSnapshot,
   commitExists,
   isAncestor,
   localBranches,
   mergedBranches,
+  mergedBranchesAsync,
 } from "./git.js";
 
 export class DependencyValidationError extends Error {}
@@ -180,14 +184,16 @@ export function taskDependencyBlockers(
 export function taskDependencyBlockersForAll(
   root: string,
   tasks: Task[],
+  facts?: { overview: RepoGitOverview; ancestry: Map<string, boolean | null> },
 ): Map<string, DependencyBlocker[]> {
   const result = new Map<string, DependencyBlocker[]>();
   if (!tasks.some((task) => task.dependsOn?.length)) return result;
   const byId = new Map(tasks.map((task) => [task.id, task]));
-  const refs = branchRefSnapshot(root, null);
+  const refs = facts?.overview ?? branchRefSnapshot(root, null);
   const base = refs.branches.has("main") ? "main" : refs.branches.has("master") ? "master" : null;
-  const merged = base ? mergedBranches(root, base) : new Set<string>();
-  const ancestry = new Map<string, boolean | null>();
+  const merged =
+    facts?.overview.mergedBranches ?? (base ? mergedBranches(root, base) : new Set<string>());
+  const ancestry = facts?.ancestry ?? new Map<string, boolean | null>();
 
   const stateFor = (upstream: Task): "merged" | "waiting" | "archived" | "cancelled" => {
     if (wasExplicitlyAbandoned(upstream)) return "cancelled";
@@ -195,9 +201,9 @@ export function taskDependencyBlockersForAll(
     if (upstream.status !== "done") return "waiting";
     if (!base) return "cancelled";
     if (upstream.mergedCommit) {
-      const key = `${base}\0${upstream.mergedCommit}`;
+      const key = facts ? upstream.mergedCommit : `${base}\0${upstream.mergedCommit}`;
       let state = ancestry.get(key);
-      if (state === undefined) {
+      if (state === undefined && !facts) {
         state = isAncestor(root, upstream.mergedCommit, base);
         ancestry.set(key, state);
       }
@@ -218,4 +224,38 @@ export function taskDependencyBlockersForAll(
     result.set(task.id, blockers);
   }
   return result;
+}
+
+/** Server board path: share ref facts and batch stored merge-commit ancestry. */
+export async function taskDependencyBlockersForAllAsync(
+  root: string,
+  tasks: Task[],
+  overview?: RepoGitOverview,
+): Promise<Map<string, DependencyBlocker[]>> {
+  if (!tasks.some((task) => task.dependsOn?.length)) return new Map();
+  overview ??= await repoGitOverviewAsync(root);
+  const base = overview.branches.has("main")
+    ? "main"
+    : overview.branches.has("master")
+      ? "master"
+      : null;
+  if (base && base !== overview.baseBranch) {
+    overview = { ...overview, mergedBranches: await mergedBranchesAsync(root, base) };
+  }
+  const dependedOn = new Set(tasks.flatMap((task) => task.dependsOn ?? []));
+  const commits = tasks
+    .filter(
+      (task) =>
+        dependedOn.has(task.id) &&
+        task.status === "done" &&
+        !task.isArchived &&
+        !wasExplicitlyAbandoned(task) &&
+        task.mergedCommit,
+    )
+    .map((task) => task.mergedCommit!);
+  const baseCommit = base ? overview.heads.get(base) : null;
+  const ancestry = baseCommit
+    ? await commitAncestrySnapshotAsync(root, commits, baseCommit)
+    : new Map();
+  return taskDependencyBlockersForAll(root, tasks, { overview, ancestry });
 }
