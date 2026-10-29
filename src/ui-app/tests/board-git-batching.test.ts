@@ -211,6 +211,26 @@ describe("board Git queries", () => {
     expect(f.calls()).toHaveLength(4);
   });
 
+  it.each([
+    [10, 2],
+    [900, 100],
+  ])(
+    "keeps watcher git spawns constant for %i task and %i branch facts",
+    async (taskCount, branchCount) => {
+      const f = fixture(taskCount, branchCount);
+      await f.worker.buildIndex(f.config, true);
+      const coldSpawnCount = f.calls().length;
+      for (let i = 0; i < taskCount; i++) {
+        await f.worker.taskFacts(
+          f.config,
+          `work/${String(i).padStart(4, "0")}-task.md`,
+          `feat/${i % branchCount}`,
+        );
+      }
+      expect(f.calls()).toHaveLength(coldSpawnCount);
+    },
+  );
+
   it("invalidates unchecked-out refs even when all worktree HEADs stay unchanged", async () => {
     const f = fixture(10, 2);
     const { index } = await f.worker.buildIndex(f.config, true);
