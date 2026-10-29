@@ -24,3 +24,4 @@ The driver measured /api/deployments at a 2687 ms median (5 runs; 2279–3000 ms
 - 2026-10-29T04:30:56Z · status ready→active, needs_input, branch
 - 2026-10-29T04:33:19Z · message_queued at 2026-10-29T04:33:19.668Z
 - 2026-10-29T04:58:45Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-29T04:58:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
