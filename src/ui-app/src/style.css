@@ -3091,6 +3091,14 @@
      generic agent work (#0807). */
   --cycle: 1s;
 }
+.ai-motion-paused,
+.ai-motion-paused *,
+.ai-motion-paused::before,
+.ai-motion-paused::after,
+.ai-motion-paused *::before,
+.ai-motion-paused *::after {
+  animation-play-state: paused !important;
+}
 .ai-compact.ai-motion-reviewing {
   --cycle: 1.35s;
 }
