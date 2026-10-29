@@ -11,7 +11,7 @@ branch: feat/repoos-review-reports-did-not-move-to-re
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-29T14:44:40Z"
-updated_at: "2026-10-29T14:45:27Z"
+updated_at: "2026-10-29T14:54:14Z"
 ---
 ## Problem
 `repoos review <id>` printed "✗ handoff did not move task to review" several times on 2026-10-28/29 while the server's handoff was still running its check; minutes later the task reached review. The command gives up waiting and reports a failure that did not happen, so drivers re-ran handoffs or took over tasks unnecessarily.
@@ -33,3 +33,4 @@ CLI side: `src/commands/control-api.ts` (review). Server: `src/server/handoff.ts
 - 2026-10-29T14:45:19Z · cli_override, model_override
 - 2026-10-29T14:45:24Z · status inbox→ready
 - 2026-10-29T14:45:27Z · status ready→active, branch
+- 2026-10-29T14:54:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
