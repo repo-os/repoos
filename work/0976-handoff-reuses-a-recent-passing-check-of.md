@@ -16,7 +16,6 @@ model_override: gpt-6.1-sol
 created_at: "2026-10-29T05:51:30Z"
 updated_at: "2026-10-29T08:39:13Z"
 dev_error_count: 9
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T08:11:48.473Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T08:12:46.260Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T08:13:14.780Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The server's handoff check re-runs the test suite even when the engineer's own `repoos check --changed main` just passed on the exact same commit. Under load the repeat run is what fails: on 2026-10-29 #0971's handoff check timed out at the 40-minute test limit and #0955's sat 40 minutes behind a stuck typecheck, although both engineers' own checks had passed in minutes (check_runs 9822, 9823). The driver had to land both by hand.
