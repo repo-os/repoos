@@ -11,7 +11,7 @@ branch: feat/a-queued-check-is-waiting-not-needs-inpu
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-29T15:23:58Z"
-updated_at: "2026-10-29T22:40:13Z"
+updated_at: "2026-10-29T22:40:14Z"
 last_check_failure: "repoos check at 2026-10-29T22:14:27.382Z: repoos check failed: tests — stderr | tests/freeform-submit-ack.test.ts > new task screenshot draft persistence (0510) > keeps pending screenshots across close and reopen"
 handoff_signal_retry_count: 1
 ---
@@ -59,3 +59,4 @@ A long queue wait is visible but does not stop the engineer. The task card shows
 - 2026-10-29T18:26:16Z · body
 - 2026-10-29T21:21:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T22:40:13Z · status active→review
+- 2026-10-29T22:40:14Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (459c56a6c) during finalization (#0734)
