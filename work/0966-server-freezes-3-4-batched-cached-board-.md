@@ -15,7 +15,6 @@ created_at: "2026-10-27T12:02:34Z"
 updated_at: "2026-10-29T08:51:43Z"
 handoff_signal_retry_count: 2
 dev_error_count: 6
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-29T08:12:49.909Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-29T08:13:15.281Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-29T08:13:43.691Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Split from #0962. The board computes git state per task/branch (ahead counts, merged checks, work-file history), spawning hundreds of git processes on ~900 tasks and ~100 branches.
