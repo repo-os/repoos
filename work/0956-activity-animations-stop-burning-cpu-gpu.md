@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0956"
 title: "Activity animations: stop burning CPU/GPU (pause when hidden or off screen, reduced motion, cap concurrent, cheaper rendering)"
 type: feature
@@ -12,7 +11,8 @@ branch: feat/activity-animations-stop-burning-cpu-gpu
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T03:58:48Z"
-updated_at: "2026-10-29T00:34:05Z"
+updated_at: "2026-10-29T02:11:06Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -76,4 +76,6 @@ Animated indicators stay fun and visible, but they cost almost nothing: they onl
 - 2026-10-28T22:10:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T22:10:02Z · message_delivered: 1 message(s)
 - 2026-10-29T00:34:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-
+- 2026-10-29T00:49:42Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0975 check (pid 10403, alive), #0968 check (pid 14633, alive) for 10m · next step: let it finish — the wait clears itself when the check starts running; investigate only if it persists
+- 2026-10-29T00:55:28Z · watchdog: check wait ended — cleared needs_input
+- 2026-10-29T02:11:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
