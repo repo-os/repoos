@@ -357,7 +357,10 @@ export const sendTaskDebuggerToEngineer: RouteHandler = async (ctx, req, res, pa
   const wtRes = ensureWorktree(config.root, branch);
   index.applyFileChange(updated.absPath);
   await index.refreshBranchesAsync();
-  const cwd = wtRes.ok ? wtRes.path : config.root;
+  if (!wtRes.ok) {
+    return json(res, 500, { error: `Could not create the task worktree: ${wtRes.reason}` });
+  }
+  const cwd = wtRes.path;
   const taskForLaunch = index.getTask(updated.id) ?? updated;
   const bootResult = await bootstrap(config, taskForLaunch, branch, cwd);
   if (!bootResult.ok) {

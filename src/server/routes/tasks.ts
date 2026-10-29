@@ -2896,7 +2896,14 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         });
       }
     }
-    const cwd = wtRes.ok ? wtRes.path : config.root;
+    // Never start an engineer in the main checkout when the worktree failed.
+    if (!wtRes.ok) {
+      return json(res, 500, {
+        ok: false,
+        error: `Could not create the task worktree: ${(wtRes as { reason?: string }).reason ?? "unknown error"}`,
+      });
+    }
+    const cwd = wtRes.path;
 
     const taskForLaunch = index.getTask(updated.id) ?? updated;
     const bootResult = await bootstrap(config, taskForLaunch, branch, cwd);
