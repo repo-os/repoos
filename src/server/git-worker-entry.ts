@@ -16,7 +16,7 @@ import {
   worktreePathForBranchAsync,
 } from "../core/git.js";
 import { buildIndexDetailedAsync } from "../core/indexer.js";
-import { taskDependencyBlockersForAll } from "../core/task-dependencies.js";
+import { taskDependencyBlockersForAllAsync } from "../core/task-dependencies.js";
 import { countWorktrees, sweepStaleWorktrees, type GcMode } from "../core/worktree-gc.js";
 import { setGitCallSink } from "../core/git-inflight.js";
 import { availableMemBytes } from "../core/sysmem.js";
@@ -49,10 +49,12 @@ async function gitOverview(root: string): Promise<RepoGitOverview> {
 function overviewToWire(overview: RepoGitOverview): Record<string, unknown> {
   return {
     useGit: overview.useGit,
+    head: overview.head,
     baseBranch: overview.baseBranch,
     branches: [...overview.branches],
     heads: [...overview.heads],
     aheadCounts: [...overview.aheadCounts],
+    mergedBranches: [...overview.mergedBranches],
     worktrees: [...overview.worktrees],
     fingerprint: overview.fingerprint,
   };
@@ -93,6 +95,7 @@ async function respond(message: RequestMessage): Promise<unknown> {
     case "build-index": {
       const result = await buildIndexDetailedAsync(payload.config as RepoOSConfig, {
         fastWorktreeStatus: payload.fastWorktreeStatus === true,
+        overview: await gitOverview((payload.config as RepoOSConfig).root),
       });
       overviewCache.set((payload.config as RepoOSConfig).root, result.git);
       return { index: result.index, git: overviewToWire(result.git) };
@@ -119,10 +122,10 @@ async function respond(message: RequestMessage): Promise<unknown> {
       const config = payload.config as RepoOSConfig;
       const relPath = payload.relPath as string;
       const branch = typeof payload.branch === "string" ? payload.branch : null;
-      const [commits, overview] = await Promise.all([
-        lastCommitsForDirAsync(config.root, config.workDir),
-        gitOverview(config.root),
-      ]);
+      const overview = await gitOverview(config.root);
+      const commits = overview.useGit
+        ? await lastCommitsForDirAsync(config.root, config.workDir, overview.head || undefined)
+        : new Map();
       let status: WorktreeStatus = { path: null, dirty: false };
       if (branch) {
         const resolved = await resolveWorktreeStatuses(config.root, [branch], {
@@ -199,7 +202,7 @@ async function respond(message: RequestMessage): Promise<unknown> {
     case "dependency-blockers": {
       const root = payload.root as string;
       const tasks = payload.tasks as Task[];
-      return [...taskDependencyBlockersForAll(root, tasks)];
+      return [...(await taskDependencyBlockersForAllAsync(root, tasks, await gitOverview(root)))];
     }
     case "sweep": {
       const config = payload.config as RepoOSConfig;
@@ -246,8 +249,9 @@ process.stdin.on("data", (chunk: string) => {
           generation = message.generation;
           // Invalidation travels with the next queued request: it cannot expire
           // behind a slow history walk and leave the child serving stale facts.
+          // The child starts in its installation directory, not the queried repo.
+          for (const root of overviewCache.keys()) invalidateGitReadCaches(root);
           overviewCache.clear();
-          invalidateGitReadCaches(process.cwd());
         }
         const value = await respond(message);
         process.stdout.write(`${JSON.stringify({ id: message.id, ok: true, value })}\n`);

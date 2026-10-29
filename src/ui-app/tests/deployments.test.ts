@@ -4,7 +4,7 @@
  * main/prod), freshness scoped to a service's subdirectory, and the deploy
  * action's safety guards (dirty refusal, fast-forward-only, never force-push).
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { execSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -13,6 +13,8 @@ import type { RepoOSConfig } from "../../core/types";
 import { loadConfig } from "../../core/config";
 import { DEPLOYMENTS_NAV, NAV, RELEASE_NAV, navFor } from "../src/nav";
 import { startServer, type ServerHandle } from "../../server/server";
+import { LiveIndex } from "../../server/live-index.js";
+import { GitWorker } from "../../server/git-worker.js";
 import {
   deployBranch,
   deployRoot,
@@ -799,6 +801,40 @@ async function postDeploy(url: string, branch: string): Promise<Response> {
 }
 
 describe("deploy API contract (real server + real git)", () => {
+  it("polling tasks, Control cleanup and deployments never rebuilds the index", async () => {
+    const { root } = makeSiteRepo();
+    await withServer(root, async (server) => {
+      // Startup has completed its initial index; fail any subsequent rebuild.
+      const fail = () => {
+        throw new Error("GET polling rebuilt the full index");
+      };
+      const sync = vi.spyOn(LiveIndex.prototype, "refreshAll").mockImplementation(fail);
+      const async = vi.spyOn(LiveIndex.prototype, "refreshAllAsync").mockImplementation(fail);
+      const build = vi.spyOn(GitWorker.prototype, "buildIndex").mockImplementation(fail);
+      try {
+        for (let poll = 0; poll < 3; poll++) {
+          for (const route of [
+            "/api/tasks",
+            "/api/tasks?full=1",
+            "/api/system/worktree-gc",
+            "/api/deployments",
+          ]) {
+            const response = await fetch(`${server.url}${route}`);
+            expect(response.status, route).toBe(200);
+            await response.json();
+          }
+        }
+        expect(sync).not.toHaveBeenCalled();
+        expect(async).not.toHaveBeenCalled();
+        expect(build).not.toHaveBeenCalled();
+      } finally {
+        sync.mockRestore();
+        async.mockRestore();
+        build.mockRestore();
+      }
+    });
+  });
+
   it("serves the grid and carries refusal text in `error` on 409", async () => {
     const { root } = makeSiteRepo({ dirty: true });
     await withServer(root, async (s) => {
