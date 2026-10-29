@@ -1150,15 +1150,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         context,
       );
   });
-  setGitMaintenanceLockSink(({ path, state, ageMs }) => {
-    logger.system(
-      state === "removed" ? "info" : "warn",
-      state === "removed"
-        ? "Removed stale git index.lock"
-        : "Live git process still holds stale index.lock",
-      { path, ageMs },
-    );
-  });
   // Best-effort: enable git's fsmonitor + untracked-cache on the main checkout
   // only — preview/shot servers and linked task worktrees share `.git/config`
   // and must not re-enable watchers or spawn another daemon per start (#0958).
@@ -1461,6 +1452,27 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const bumpAttention = (): void => {
     emitEvent({ type: "attention.updated", at: new Date().toISOString() });
   };
+  setGitMaintenanceLockSink(({ path, state, ageMs }) => {
+    const id = `gitLock:${path}`;
+    if (state === "live") {
+      logger.system("warn", "Live git process still holds stale git index.lock", { path, ageMs });
+      attentionEvents.record({
+        id,
+        kind: "gitLock",
+        taskId: null,
+        message: "Git is still holding a stale index lock",
+        detail: `${path} has been present for ${Math.floor(ageMs / 60_000)} minutes. Git writes may be blocked until the process releases it.`,
+        at: new Date().toISOString(),
+      });
+      bumpAttention();
+      return;
+    }
+    if (state === "removed") logger.system("info", "Removed stale git index.lock", { path, ageMs });
+    if (state === "cleared") {
+      attentionEvents.remove(id);
+      bumpAttention();
+    }
+  });
   wireAttentionNotifications(attentionEvents, bumpAttention);
   const recordRemoteFallbackAttention = (taskId: string, detail: string): void => {
     const at = new Date().toISOString();
