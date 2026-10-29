@@ -93,18 +93,27 @@ export function gitOutputAsync(
   return gitAsync(root, args, timeoutMs);
 }
 
-function gitAsync(root: string, args: string[], timeoutMs = 4000): Promise<string | null> {
+function gitAsync(
+  root: string,
+  args: string[],
+  timeoutMs = 4000,
+  input?: string,
+): Promise<string | null> {
   return new Promise((resolve) => {
     const untrack = trackGitCall(root, args);
-    execFile(
+    const child = execFile(
       "git",
       observationalGitArgs(args),
-      { cwd: root, encoding: "utf8", timeout: timeoutMs },
+      { cwd: root, encoding: "utf8", timeout: timeoutMs, maxBuffer: 64 * 1024 * 1024 },
       (error, stdout) => {
         untrack();
         resolve(error ? null : stdout.trim());
       },
     );
+    if (input !== undefined) {
+      child.stdin?.on("error", () => {});
+      child.stdin?.end(input);
+    }
   });
 }
 
@@ -301,6 +310,7 @@ export async function branchRefSnapshotAsync(
   const key = `${root}\0${base ?? ""}`;
   const hit = branchRefsCache.get(key);
   if (hit && hit.fingerprint === fingerprint) return cloneBranchRefs(hit.snapshot);
+  if (hit) mergedBranchesCache.delete(key);
   const withAhead = await gitAsync(root, branchRefArgs(base), base ? 60_000 : 4000);
   const refs = withAhead ?? (base ? await gitAsync(root, branchRefArgs(null), 4000) : null);
   const snapshot = parseBranchRefs(refs);
@@ -366,6 +376,46 @@ export async function mergedBranchesAsync(root: string, base: string): Promise<S
   );
   mergedBranchesCache.set(key, merged);
   return new Set(merged);
+}
+
+const reachableCommitsCache = new Map<string, Set<string>>();
+
+/** Batch arbitrary commit checks; no process count depends on the number of tasks. */
+export async function commitAncestrySnapshotAsync(
+  root: string,
+  commits: string[],
+  baseCommit: string,
+): Promise<Map<string, boolean | null>> {
+  const wanted = [...new Set(commits)];
+  const result = new Map<string, boolean | null>(wanted.map((sha) => [sha, null]));
+  if (!wanted.length) return result;
+  const key = `${root}\0${baseCommit}`;
+  let reachable = reachableCommitsCache.get(key);
+  if (!reachable) {
+    const out = await gitAsync(root, ["rev-list", baseCommit, "--"], 60_000);
+    if (out === null) return result;
+    reachable = new Set(out.split("\n").filter(Boolean));
+    // Object ids are immutable: branch-only mutations can reuse this set.
+    for (const oldKey of reachableCommitsCache.keys()) {
+      if (oldKey.startsWith(`${root}\0`)) reachableCommitsCache.delete(oldKey);
+    }
+    reachableCommitsCache.set(key, reachable);
+  }
+  // A missing object is cancelled, while an existing unmerged commit is waiting.
+  // Batch-check accepts stdin so the argv size stays bounded on large boards.
+  const out = await gitAsync(
+    root,
+    ["cat-file", "--batch-check=%(objectname) %(objecttype)"],
+    60_000,
+    `${wanted.join("\n")}\n`,
+  );
+  if (out === null) return result;
+  const rows = out.split("\n");
+  wanted.forEach((sha, index) => {
+    const [oid, type] = (rows[index] ?? "").split(" ");
+    if (type === "commit") result.set(sha, reachable.has(oid));
+  });
+  return result;
 }
 
 /** Last commit subject + ISO date touching a specific file. */
@@ -551,13 +601,14 @@ export function lastCommitsForDir(root: string, relDir: string): Map<string, Las
 export async function lastCommitsForDirAsync(
   root: string,
   relDir: string,
+  sampledHead?: string,
 ): Promise<Map<string, LastCommit>> {
   // Share one walk between callers that refresh at the same moment, so a burst
   // of index refreshes does not start several multi-second history walks.
   const flightKey = `${root}\0${relDir}`;
   const running = dirLogInflight.get(flightKey);
   if (running) return new Map(await running);
-  const walk = lastCommitsForDirAsyncUncoalesced(root, relDir);
+  const walk = lastCommitsForDirAsyncUncoalesced(root, relDir, sampledHead);
   dirLogInflight.set(flightKey, walk);
   try {
     return new Map(await walk);
@@ -569,8 +620,9 @@ export async function lastCommitsForDirAsync(
 async function lastCommitsForDirAsyncUncoalesced(
   root: string,
   relDir: string,
+  sampledHead?: string,
 ): Promise<Map<string, LastCommit>> {
-  const head = await gitAsync(root, ["rev-parse", "HEAD"]);
+  const head = sampledHead ?? (await gitAsync(root, ["rev-parse", "HEAD"]));
   if (!head) return parseDirLog(await gitAsync(root, dirLogArgs(relDir)));
   const key = `${root}\0${relDir}`;
   const cached = dirLogCache.get(key) ?? loadDirLogCache(root, relDir);
@@ -834,28 +886,40 @@ export async function currentBranchAsync(root: string): Promise<string | null> {
 
 export interface RepoGitOverview {
   useGit: boolean;
+  /** HEAD of the queried checkout, including detached linked worktrees. */
+  head: string | null;
   baseBranch: string | null;
   branches: Set<string>;
   heads: Map<string, string>;
   aheadCounts: Map<string, number>;
+  mergedBranches: Set<string>;
   worktrees: Map<string, WorktreeEntry>;
   fingerprint: string;
 }
 
-/** One worktree-list plus one for-each-ref, shared by every board consumer. */
+/** One worktree-list, ref snapshot and merged-branch query shared by board consumers. */
 export async function repoGitOverviewAsync(root: string): Promise<RepoGitOverview> {
   const infos = await listWorktreesAsync(root);
   if (infos.length === 0) {
     return {
       useGit: false,
+      head: null,
       baseBranch: null,
       branches: new Set(),
       heads: new Map(),
       aheadCounts: new Map(),
+      mergedBranches: new Set(),
       worktrees: new Map(),
       fingerprint: "",
     };
   }
+  let checkoutRoot = root;
+  try {
+    checkoutRoot = realpathSync(root);
+  } catch {
+    /* keep the configured root */
+  }
+  const head = infos.find((info) => info.path === root || info.path === checkoutRoot)?.head || null;
   const worktrees = new Map<string, WorktreeEntry>();
   for (const info of infos) {
     if (info.branch) worktrees.set(info.branch, { path: info.path, head: info.head });
@@ -866,7 +930,16 @@ export async function repoGitOverviewAsync(root: string): Promise<RepoGitOvervie
     .sort()
     .join(",");
   const refs = await branchRefSnapshotAsync(root, baseBranch, fingerprint);
-  return { useGit: true, baseBranch, worktrees, fingerprint, ...refs };
+  const merged = baseBranch ? await mergedBranchesAsync(root, baseBranch) : new Set<string>();
+  return {
+    useGit: true,
+    head,
+    baseBranch,
+    worktrees,
+    fingerprint,
+    ...refs,
+    mergedBranches: merged,
+  };
 }
 
 /**

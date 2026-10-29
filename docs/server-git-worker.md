@@ -40,7 +40,28 @@ has no timer expiry. The work watcher invalidates it when Git metadata changes,
 including shared refs and linked-worktree HEADs. A generation travels with each
 request when dispatched, so invalidation cannot expire behind a cold history
 walk. Results started before invalidation may answer their original caller but
-must not repopulate the parent cache.
+must not repopulate the parent cache. Generation changes invalidate each queried
+repository root, rather than the child's installation-directory cwd.
+
+Each ref generation shares one `worktree list --porcelain`, one `for-each-ref`
+with object ids and `%(ahead-behind:<base>)`, and one `branch --merged <base>`.
+Older Git versions without ahead counts use that same merged-branch set for
+zero/nonzero ahead state, never a per-branch count process. Full index builds
+and task-file updates reuse these facts; the sampled worktree HEAD also keys
+the incremental `log --name-only -- work` cache without a per-task HEAD probe.
+Working-tree status reconciliation remains a separate per-worktree operation.
+
+Board dependency checks reuse the ref snapshot. Recorded merge commits, even
+when their branch was deleted, are checked with one `rev-list <base object id>`
+and one stdin-fed `cat-file --batch-check`, rather than a process per task.
+The reachable set is cached against the immutable base object id; an existing
+unmerged commit remains waiting and a missing commit is cancelled. A changed
+base gets a new reachable set, including after a history rewrite.
+
+UI polling (`GET /api/tasks`, including `full=1`, `GET /api/system/worktree-gc`,
+and `GET /api/deployments`) never rebuilds the task index. Cleanup GETs return
+the last explicit cleanup report or an empty placeholder. Deployments keeps
+its own configured-row Git reads and does not scan the board.
 
 The default `GET /api/tasks` response is `{ tasks, nextCursor }`, with 100 rows
 by default and a maximum limit of 500. Its default fields are `id`, `title`,
@@ -57,7 +78,7 @@ offline local-index fallback.
 The scope of #0962 was narrowed on 2026-10-27 to the worker boundary for migrated
 calls, the paged Tasks API, and the asynchronous lifecycle regressions. Remaining
 blocking calls and the transitive guard belong to #0965; board query batching and
-cache coverage to #0966 (partially covered by #0974's durable directory cache; route/spawn-count verification remains); request-duration/STUCK diagnostics to #0967; reload
+cache coverage to #0966 (covered by fake-runner scale and polling-route regressions); request-duration/STUCK diagnostics to #0967; reload
 handover to #0968; and the one-hour latency measurement to #0969.
 
 A source-text check of server imports alone cannot prove that every request or

@@ -171,15 +171,15 @@ export interface AsyncIndexBuild {
 
 export async function buildIndexDetailedAsync(
   config: RepoOSConfig,
-  opts: { fastWorktreeStatus?: boolean } = {},
+  opts: { fastWorktreeStatus?: boolean; overview?: RepoGitOverview } = {},
 ): Promise<AsyncIndexBuild> {
   const workPath = join(config.root, config.workDir);
   const files = walkFiles(workPath, config.taskExtensions);
 
-  const overview = await repoGitOverviewAsync(config.root);
+  const overview = opts.overview ?? (await repoGitOverviewAsync(config.root));
   const { useGit, branches, worktrees, baseBranch } = overview;
   const lastCommits = useGit
-    ? await lastCommitsForDirAsync(config.root, config.workDir)
+    ? await lastCommitsForDirAsync(config.root, config.workDir, overview.head || undefined)
     : new Map<string, { subject: string | null; date: string | null }>();
 
   let skippedTaskFiles = 0;
