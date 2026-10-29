@@ -170,6 +170,15 @@ export function isGitLockContention(text: string): boolean {
   );
 }
 
+let gitLockFailureSink: ((root: string, message: string, detail: string) => void) | null = null;
+
+/** Install the server's durable logging hook for fail-soft bookkeeping commits. */
+export function setGitLockFailureSink(
+  sink: ((root: string, message: string, detail: string) => void) | null,
+): void {
+  gitLockFailureSink = sink;
+}
+
 /** `retryOnGitLock` predicate for a raw `runGit` result: the lock text, or null. */
 export function gitRunLockContention(r: { status: number | null; stderr: string }): string | null {
   return r.status !== 0 && isGitLockContention(r.stderr) ? r.stderr : null;
@@ -2004,11 +2013,18 @@ export function commitFiles(root: string, absPaths: string[], message: string): 
   const status = git(root, ["status", "--porcelain", "--", ...rels]);
   if (status === null) return false;
   if (status.trim() === "") return true;
-  if (git(root, ["add", "-A", "--", ...rels]) === null) return false;
+  const add = gitCapture(root, ["add", "-A", "--", ...rels]);
+  if (add.status !== 0) {
+    if (isGitLockContention(add.stderr)) gitLockFailureSink?.(root, message, add.stderr.trim());
+    return false;
+  }
   // `--only` with a pathspec commits just these files and leaves everything
   // else already in the index staged (#0353): a plain `git commit` would sweep
   // in whatever a human or agent had staged in the checkout under our message.
-  const committed = git(root, ["commit", "-o", "-m", message, "--", ...rels]) !== null;
+  const commit = gitCapture(root, ["commit", "-o", "-m", message, "--", ...rels]);
+  const committed = commit.status === 0;
+  if (!committed && isGitLockContention(commit.stderr))
+    gitLockFailureSink?.(root, message, commit.stderr.trim());
   // RepoOS's own bookkeeping commits are the main reason the sidebar git-state
   // indicator would otherwise flicker stale — tell it to recompute (#0584).
   if (committed) notifyGitMutation(root, "commit");
