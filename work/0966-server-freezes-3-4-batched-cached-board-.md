@@ -5,7 +5,7 @@ type: refactor
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "2026-10-29T05:51:00.122235Z ERROR codex_core::session: failed to record rollout items: thread 01a183c5-418c-7f12-8fd8-474ebb286d77 not found"
+needs_input_detail: Reading additional input from stdin...
 priority: p1
 area: core
 depends_on: ["0962"]
@@ -15,10 +15,10 @@ branch: feat/server-freezes-3-4-batched-cached-board-
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T12:02:34Z"
-updated_at: "2026-10-29T05:51:00Z"
+updated_at: "2026-10-29T05:51:11Z"
 handoff_signal_retry_count: 2
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T05:51:00.721Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T05:51:00.721Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T05:51:11.888Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Split from #0962. The board computes git state per task/branch (ahead counts, merged checks, work-file history), spawning hundreds of git processes on ~900 tasks and ~100 branches.
@@ -55,3 +55,4 @@ Depends on #0962. Same rules as the other split tasks: no server restarts, no pr
 - 2026-10-29T05:44:48Z · message_delivered: 1 message(s)
 - 2026-10-29T05:51:00Z · agent exited with an error (codex) · 2026-10-29T05:51:00.122235Z ERROR codex_core::session: failed to record rollout items: thread 01a183c5-418c-7f12-8fd8-474ebb286d77 not found
 - 2026-10-29T05:51:00Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · 2026-10-29T05:51:00.122235Z ERROR codex_core::session: failed to record rollout items: thread 01a183c5-418c-7f12-8fd8-474ebb286d77 not found
+- 2026-10-29T05:51:11Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · Reading additional input from stdin...
