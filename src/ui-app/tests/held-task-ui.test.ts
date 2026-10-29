@@ -75,7 +75,47 @@ describe("held task UI", () => {
       props: { task: task(holdFields), dragEnabled: false },
       global: { plugins: [pinia], stubs: { ActivityIndicator: true } },
     });
-    expect(wrapper.find(".tc-held").exists()).toBe(visible);
+    const chip = wrapper.find(".tc-held");
+    expect(chip.exists()).toBe(visible);
+    if (visible) {
+      expect(chip.attributes("role")).toBe("img");
+      expect(chip.attributes("aria-label")).toContain("Task held");
+    }
+    wrapper.unmount();
+  });
+
+  it("shows the short auto-release date on the chip", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const wrapper = mount(TaskCard, {
+      props: {
+        task: task({ isHeld: true, holdUntil: "2030-12-01T00:00:00Z" }),
+        dragEnabled: false,
+      },
+      global: { plugins: [pinia], stubs: { ActivityIndicator: true } },
+    });
+    const untilLabel = new Date("2030-12-01T00:00:00Z").toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+    expect(wrapper.find(".tc-held").text()).toContain(`until ${untilLabel}`);
+    wrapper.unmount();
+  });
+
+  it("keeps the held status hint separate from the held chip on active cards", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const wrapper = mount(TaskCard, {
+      props: {
+        task: task({ status: "active", isHeld: true, holdReason: "Waiting for review" }),
+        dragEnabled: false,
+      },
+      global: { plugins: [pinia], stubs: { ActivityIndicator: true } },
+    });
+
+    expect(wrapper.find(".tc-held").exists()).toBe(true);
+    expect(wrapper.find(".tc-held-hint").text()).toContain("held");
+    expect(wrapper.find(".tc-held-hint").classes()).not.toContain("tc-held");
     wrapper.unmount();
   });
 });
