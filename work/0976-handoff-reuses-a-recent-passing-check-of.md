@@ -11,7 +11,7 @@ branch: feat/handoff-reuses-a-recent-passing-check-of
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-29T05:51:30Z"
-updated_at: "2026-10-29T08:16:39Z"
+updated_at: "2026-10-29T08:31:00Z"
 dev_error_count: 9
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T08:11:48.473Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T08:12:46.260Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T08:13:14.780Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -29,6 +29,19 @@ Handoff reuses a recent passing check of the same tree instead of repeating it, 
 
 ## Notes for AI
 `src/server/handoff.ts` (runCheck), `src/core/check-store.ts` (check_runs has worktree, candidate_sha, scope, outcome). Engineers' self-check runs may not record candidate_sha today; record it. Do not edit repoos.toml.
+
+## Shots
+```json
+[
+{
+  "label": "Passing handoff check shows the reused self-check ID",
+  "target": "default",
+  "route": "/checks",
+  "highlight": "[data-test-id=\"reused-check\"]",
+  "state": "checks:reuse"
+}
+]
+```
 
 ## Activity
 
@@ -51,3 +64,4 @@ Handoff reuses a recent passing check of the same tree instead of repeating it, 
 - 2026-10-29T08:12:46Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · 2026-10-29T08:12:32.353699Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
 - 2026-10-29T08:13:14Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-29T08:16:36Z · needs_input
+- 2026-10-29T08:31:00Z · body
