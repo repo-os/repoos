@@ -141,6 +141,32 @@ export type DeployCommandRunner = (
   timeout?: number,
 ) => Promise<CommandResult>;
 
+// Status requests often ask the same read-only git question from multiple
+// branch summaries (most notably rev-parse main). Share only work that is
+// currently in flight: refs and the working tree can change between requests.
+const deploymentGitCalls = new WeakMap<DeployCommandRunner, Map<string, Promise<CommandResult>>>();
+
+function coalesceDeploymentGitCalls(exec: DeployCommandRunner): DeployCommandRunner {
+  let pending = deploymentGitCalls.get(exec);
+  if (!pending) {
+    pending = new Map();
+    deploymentGitCalls.set(exec, pending);
+  }
+  return (command, args, cwd, timeout) => {
+    const key = JSON.stringify([command, args, cwd, timeout]);
+    const existing = pending?.get(key);
+    if (existing) return existing;
+    const request = exec(command, args, cwd, timeout);
+    pending?.set(key, request);
+    void request
+      .finally(() => {
+        if (pending?.get(key) === request) pending.delete(key);
+      })
+      .catch(() => undefined);
+    return request;
+  };
+}
+
 export function captureOutput(stdout: string, stderr: string): string {
   return [stdout.trim(), stderr.trim()].filter(Boolean).join("\n");
 }
@@ -369,6 +395,7 @@ export async function getDeploymentsStatus(
     };
   }
   const cwd = deployRoot(config);
+  exec = coalesceDeploymentGitCalls(exec);
   const environmentBindings = readProjectEnvironmentBindings(config.root).bindings;
   const registryPath = join(config.root, ".repoos/environments.json");
   const knownEnvironments = existsSync(registryPath)
