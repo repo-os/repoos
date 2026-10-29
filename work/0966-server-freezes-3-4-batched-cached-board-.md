@@ -12,7 +12,7 @@ branch: feat/server-freezes-3-4-batched-cached-board-
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T12:02:34Z"
-updated_at: "2026-10-29T04:29:30Z"
+updated_at: "2026-10-29T05:43:49Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -44,3 +44,5 @@ Depends on #0962. Same rules as the other split tasks: no server restarts, no pr
 - 2026-10-28T18:39:57Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-28T19:04:48Z · message_delivered: 1 message(s)
 - 2026-10-29T04:29:30Z · status ready→active
+- 2026-10-29T04:33:18Z · message_queued at 2026-10-29T04:33:18.916Z
+- 2026-10-29T05:43:49Z · message_overdue: still queued after 60m without being delivered
