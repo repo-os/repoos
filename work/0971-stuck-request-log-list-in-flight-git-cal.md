@@ -2,17 +2,17 @@
 id: "0971"
 title: "STUCK request log: list in-flight git calls and their age"
 type: feature
-status: ready
+status: active
 priority: p2
 area: core
 depends_on: ["0962", "0967"]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/stuck-request-log-list-in-flight-git-cal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-27T22:11:30Z"
-updated_at: "2026-10-29T04:31:59Z"
+updated_at: "2026-10-29T04:32:14Z"
 ---
 ## Problem
 #0967 landed per-request timing and a STUCK log line, but the STUCK line only names the route and its age; it cannot list the in-flight git calls because the git worker that tracks them lands with #0962.
@@ -32,3 +32,4 @@ Small. Run only the affected tests; never restart the RepoOS server or request a
 - 2026-10-27T22:11:30Z · created · njachowski@gmail.com
 - 2026-10-29T04:31:33Z · cli_override, model_override
 - 2026-10-29T04:31:59Z · status inbox→ready
+- 2026-10-29T04:32:14Z · status ready→active, branch
