@@ -8,7 +8,6 @@ import {
   changedPathsVsBase,
   type RepoGitOverview,
   type WorktreeDirtyEntry,
-  type WorktreeStatus,
   runGit,
   preflightMerge,
   removeWorktree,
@@ -126,15 +125,14 @@ async function respond(message: RequestMessage): Promise<unknown> {
       const commits = overview.useGit
         ? await lastCommitsForDirAsync(config.root, config.workDir, overview.head || undefined)
         : new Map();
-      let status: WorktreeStatus = { path: null, dirty: false };
-      if (branch) {
-        const resolved = await resolveWorktreeStatuses(config.root, [branch], {
-          baseBranch: overview.baseBranch,
-          worktrees: overview.worktrees,
-          aheadCounts: overview.aheadCounts,
-        });
-        status = resolved.statuses.get(branch) ?? status;
-      }
+      // Per-file watcher updates must never start a per-branch `git status`.
+      // The periodic batched reconciliation fills uncommitted dirtiness; here
+      // use the already sampled worktree path and ahead count only.
+      const entry = branch ? overview.worktrees.get(branch) : undefined;
+      const status = {
+        path: entry?.path ?? null,
+        dirty: !!branch && (overview.aheadCounts.get(branch) ?? 0) > 0,
+      };
       const last = commits.get(relPath);
       return {
         lastCommit: last?.subject ?? null,
