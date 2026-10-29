@@ -47,3 +47,4 @@ Depends on #0962. Same rules as the other split tasks: no server restarts, no pr
 - 2026-10-29T04:33:18Z · message_queued at 2026-10-29T04:33:18.916Z
 - 2026-10-29T05:43:49Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-29T05:44:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T05:44:48Z · message_delivered: 1 message(s)
