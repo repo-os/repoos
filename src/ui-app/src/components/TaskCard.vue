@@ -412,7 +412,7 @@ async function retryStalledPipeline(): Promise<void> {
 /** A live agent process that has gone silent past STUCK_SILENCE_MS, or the
  *  normal "coding" hint when it's still producing output. */
 function codingOrStuckHint(taskId: string): CardHint {
-  const localQueued = localQueueHintForTask(repo.resourceQueueMarkers, taskId);
+  const localQueued = localQueueHintForTask(repo.resourceQueueMarkers, taskId, new Date(now.value));
   if (localQueued) {
     return { label: localQueued.label, title: localQueued.title, cls: "tc-queued" };
   }
@@ -573,6 +573,10 @@ const hint = computed<CardHint | null>(() => {
       title: "the PM agent is fleshing out this draft — it moves to inbox when done",
       cls: "tc-pm-working",
     };
+  }
+  if ((t.status === "active" || t.status === "review") && !t.needsInput) {
+    const wait = localQueueHintForTask(repo.resourceQueueMarkers, t.id, new Date(now.value));
+    if (wait) return { ...wait, cls: "tc-queued" };
   }
   if (t.status === "review") {
     const role = pipelineRole.value;

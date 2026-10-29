@@ -31,8 +31,9 @@ The boot index build retains its three-attempt retry.
 `repoos stats` lists each in-flight git job per lane with its queue wait and
 run time (via `/api/system`'s `gitJobs`), and the STUCK request log appends the
 same list. A check that waits — pressure guard, heavy slot, git queue — is
-surfaced on the task card and in the run record; past ten minutes the watchdog
-escalates it to `needs_input` (#0974, `user-docs/check.md`).
+surfaced on the task card and in the run record; the watchdog only
+sets `needs_input` for a dead/stalled holder or an expired handoff deadline
+(#0983, `user-docs/check.md`).
 
 Board facts use the batched ref/ahead-count and worktree queries in
 `repoGitOverviewAsync`, plus the incremental directory-commit cache. Ref state

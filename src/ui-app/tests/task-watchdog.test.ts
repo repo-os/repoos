@@ -10,7 +10,7 @@
  * fixture PATH, reproducing the #0172 "agent went silent and never handed
  * off" shape and the "killed mid-turn" shape (#0154/#0155 signal bugs).
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import {
   mkdtempSync,
@@ -38,7 +38,17 @@ import {
   handoffSinceLastCommit,
 } from "../../server/task-watchdog";
 import { parseTask } from "../../core/task";
-import { writeQueueMarker, type LocalQueueKind } from "../../core/local-queue-marker";
+import {
+  localCheckLockRoot,
+  playwrightLockRoot,
+  localFallbackSerializeLockRoot,
+} from "../../core/cross-process-slots";
+import { HANDOFF_DEADLINE_MS } from "../../server/handoff";
+import {
+  writeQueueMarker,
+  readQueueMarkers,
+  type LocalQueueKind,
+} from "../../core/local-queue-marker";
 import { worktreePathForBranch } from "../../core/git";
 import { createRepoOS } from "../../core/repoos";
 import {
@@ -1412,23 +1422,122 @@ describe("watchdog check-wait escalation (#0974)", () => {
     });
   }
 
-  it("surfaces a check that has waited past ten minutes instead of hanging silently", async () => {
-    const fx = makeFx(500); // fresh task: the stuck-agent path must NOT fire
-    marker(fx, "pressure", 26 * 60_000, "machine is under memory pressure");
+  it.each(["local-check", "playwright", "serialize", "pressure"] as const)(
+    "keeps a 15-minute %s wait non-blocking behind a live holder",
+    async (pool) => {
+      const fx = makeFx(500);
+      vi.stubEnv("REPOOS_LOCAL_CHECK_SLOT_HOME", fx.root);
+      const kind = pool === "serialize" ? "local-check" : pool;
+      marker(fx, kind, 15 * 60_000);
+      const lockRoot =
+        pool === "playwright"
+          ? playwrightLockRoot(fx.root, ".repoos")
+          : pool === "serialize"
+            ? localFallbackSerializeLockRoot(fx.root, ".repoos")
+            : localCheckLockRoot(fx.root, ".repoos");
+      const slot = join(lockRoot, "0");
+      mkdirSync(slot, { recursive: true });
+      writeFileSync(join(slot, ".holder"), String(process.pid));
+      writeFileSync(join(slot, ".meta.json"), "{}");
+      if (pool === "serialize") {
+        const [m] = readQueueMarkers(fx.root, ".repoos");
+        writeQueueMarker(fx.root, ".repoos", { ...m, pool: "local-fallback-serialize" });
+      }
+      const index = new LiveIndex(fx.config);
+      index.refreshAll();
+      const runner = new AgentRunner(fx.config, () => {});
+      try {
+        await new TaskWatchdog(fx.config, index, runner, 1000).checkNow();
+        expect(parseTaskAt(fx).needsInput).toBe(false);
+        expect(readQueueMarkers(fx.root, ".repoos")).toHaveLength(1);
+      } finally {
+        runner.dispose();
+        fx.clean();
+        vi.unstubAllEnvs();
+      }
+    },
+  );
+
+  it.each(["dead", "stalled", "deadline"] as const)(
+    "escalates an abnormal %s wait",
+    async (reason) => {
+      const fx = makeFx(500);
+      vi.stubEnv("REPOOS_LOCAL_CHECK_SLOT_HOME", fx.root);
+      marker(fx, "local-check", reason === "deadline" ? HANDOFF_DEADLINE_MS + 1000 : 15 * 60_000);
+      const slot = join(localCheckLockRoot(fx.root, ".repoos"), "0");
+      mkdirSync(slot, { recursive: true });
+      writeFileSync(join(slot, ".holder"), String(reason === "dead" ? 2147483647 : process.pid));
+      writeFileSync(join(slot, ".meta.json"), "{}");
+      if (reason === "stalled") {
+        const old = new Date(Date.now() - 31 * 60_000);
+        utimesSync(slot, old, old);
+      }
+      const index = new LiveIndex(fx.config);
+      index.refreshAll();
+      const runner = new AgentRunner(fx.config, () => {});
+      try {
+        const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+        await watchdog.checkNow();
+        expect(parseTaskAt(fx).needsInput).toBe(true);
+        expect(parseTaskAt(fx).needsInputReason).toBe("check-wait");
+        expect(parseTaskAt(fx).needsInputDetail).toContain(
+          reason === "dead" ? "is dead" : reason === "stalled" ? "no progress" : "deadline",
+        );
+        const once = readFileSync(fx.taskPath, "utf8");
+        await watchdog.checkNow();
+        expect(readFileSync(fx.taskPath, "utf8")).toBe(once);
+      } finally {
+        runner.dispose();
+        fx.clean();
+        vi.unstubAllEnvs();
+      }
+    },
+  );
+
+  it("clears a legacy check-wait flag while keeping a normal queue wait visible", async () => {
+    const fx = makeFx(500);
+    writeFileSync(
+      fx.taskPath,
+      readFileSync(fx.taskPath, "utf8").replace(
+        "status: active",
+        "status: active\nneeds_input: true\nneeds_input_reason: check-wait",
+      ),
+    );
+    marker(fx, "pressure", 15 * 60_000);
     const index = new LiveIndex(fx.config);
     index.refreshAll();
     const runner = new AgentRunner(fx.config, () => {});
-    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+    try {
+      await new TaskWatchdog(fx.config, index, runner, 1000).checkNow();
+      expect(parseTaskAt(fx).needsInput).toBe(false);
+      expect(readQueueMarkers(fx.root, ".repoos")).toHaveLength(1);
+    } finally {
+      runner.dispose();
+      fx.clean();
+    }
+  });
 
-    await watchdog.checkNow();
-
-    const task = parseTaskAt(fx);
-    expect(task.needsInput).toBe(true);
-    expect(task.needsInputReason).toBe("check-wait");
-    expect(task.needsInputDetail).toContain("waiting: machine is under memory pressure for 26m");
-    expect(readFileSync(fx.taskPath, "utf8")).toContain("watchdog: check wait escalated");
-    runner.dispose();
-    fx.clean();
+  it("keeps unrelated human input requests while a check waits normally", async () => {
+    const fx = makeFx(500);
+    writeFileSync(
+      fx.taskPath,
+      readFileSync(fx.taskPath, "utf8").replace(
+        "status: active",
+        "status: active\nneeds_input: true\nneeds_input_reason: needs-human-step",
+      ),
+    );
+    marker(fx, "pressure", 15 * 60_000);
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    const runner = new AgentRunner(fx.config, () => {});
+    try {
+      await new TaskWatchdog(fx.config, index, runner, 1000).checkNow();
+      expect(parseTaskAt(fx).needsInputReason).toBe("needs-human-step");
+      expect(parseTaskAt(fx).needsInput).toBe(true);
+    } finally {
+      runner.dispose();
+      fx.clean();
+    }
   });
 
   it("does not escalate a wait under ten minutes", async () => {
@@ -1449,7 +1558,7 @@ describe("watchdog check-wait escalation (#0974)", () => {
 
   it("clears the flag once the wait has ended and the check is running", async () => {
     const fx = makeFx(500);
-    marker(fx, "local-check", 12 * 60_000);
+    marker(fx, "pressure", HANDOFF_DEADLINE_MS + 1000);
     const index = new LiveIndex(fx.config);
     index.refreshAll();
     const runner = new AgentRunner(fx.config, () => {});
@@ -1460,9 +1569,7 @@ describe("watchdog check-wait escalation (#0974)", () => {
 
     // The gate acquired its slot: markers are gone. The escalation was
     // informational — it must clear itself, not linger for a human.
-    rmSync(
-      join(fx.root, fx.config.cacheDir ?? ".repoos", "queue-markers", "0001-local-check.json"),
-    );
+    rmSync(join(fx.root, fx.config.cacheDir ?? ".repoos", "queue-markers", "0001-pressure.json"));
     writeQueueMarker(fx.root, fx.config.cacheDir ?? ".repoos", {
       taskId: "9999",
       kind: "local-check",
@@ -1476,6 +1583,7 @@ describe("watchdog check-wait escalation (#0974)", () => {
     const task = parseTaskAt(fx);
     expect(task.needsInput).toBe(false);
     expect(task.needsInputReason).toBeUndefined();
+    expect(readQueueMarkers(fx.root, ".repoos").some((m) => m.taskId === "0001")).toBe(false);
     expect(readFileSync(fx.taskPath, "utf8")).toContain("watchdog: check wait ended");
     runner.dispose();
     fx.clean();
@@ -1523,7 +1631,7 @@ describe("watchdog check-wait escalation (#0974)", () => {
 
   it("leaves an already-flagged task alone", async () => {
     const fx = makeFx(500);
-    marker(fx, "local-check", 15 * 60_000);
+    marker(fx, "pressure", HANDOFF_DEADLINE_MS + 1000);
     const index = new LiveIndex(fx.config);
     index.refreshAll();
     const runner = new AgentRunner(fx.config, () => {});

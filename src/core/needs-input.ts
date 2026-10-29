@@ -8,8 +8,8 @@ export const MAX_AUTO_REVIEW_ROUNDS = 2;
 export function needsInputClearsOnNewEngineerRun(reason: string | undefined): boolean {
   if (!reason || reason === UNDERSPECIFIED_NEEDS_INPUT_REASON) return true;
   if (reason === "review-human-attention") return true;
-  // #0974: a check-wait flag was informational — the gate was queued. Once the
-  // engineer runs again the wait is over, so the flag must not linger.
+  // A fresh engineer run retries an abnormal check wait (#0983). If the
+  // underlying holder is still dead/stalled, the watchdog will raise it again.
   if (reason === "check-wait") return true;
   return reason === "provider-failure" || reason === "degenerate-output";
 }
