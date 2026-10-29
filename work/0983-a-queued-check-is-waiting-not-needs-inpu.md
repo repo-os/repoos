@@ -8,8 +8,10 @@ area: [core, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6.1-sol
 created_at: "2026-10-29T15:23:58Z"
-updated_at: "2026-10-29T15:23:58Z"
+updated_at: "2026-10-29T15:24:02Z"
 ---
 ## Problem
 #0974's check-wait escalation sets `needs_input` (reason `check-wait`) when a check has waited 10 minutes for a slot or the pressure guard. Engineers read "needs input" as blocked and end their turn: on 2026-10-29 #0980 and #0982 finished their code, waited for a check slot, were flagged, and stopped, so the driver had to land both by hand. A queued check is normal and expected; it is not a request for human input.
@@ -29,3 +31,4 @@ A long queue wait is visible but does not stop the engineer. The task card shows
 ## Activity
 
 - 2026-10-29T15:23:58Z · created · njachowski@gmail.com
+- 2026-10-29T15:24:02Z · cli_override, model_override
