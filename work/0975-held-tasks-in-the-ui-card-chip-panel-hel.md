@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "0975"
 title: "Held tasks in the UI: card chip, panel held card with release, Hold button"
 type: feature
@@ -12,7 +13,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-28T12:02:51Z"
 updated_at: "2026-10-28T23:47:26Z"
-handoff_signal_retry_count: 1
 ---
 ## Problem
 #0960 added a durable "hold" (`repoos hold` / `unhold`, `POST /api/tasks/:id/hold` and `/unhold`) and a **Held (N)** list in the Work page footer. In the UI it is hard to tell a task is held, and a human cannot place or lift a hold from the task panel:
@@ -90,3 +90,4 @@ handoff_signal_retry_count: 1
 - 2026-10-28T18:28:46Z · message_delivered: 1 message(s)
 - 2026-10-28T20:22:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T23:47:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
