@@ -2,7 +2,7 @@
 id: "0978"
 title: Recover from a stale .git/index.lock; keep the handoff format test out of the real checkout
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-29T11:48:54Z"
-updated_at: "2026-10-29T12:13:06Z"
+updated_at: "2026-10-29T12:13:33Z"
 ---
 ## Problem
 On 2026-10-29 a `.git/index.lock` in the main checkout was left behind at 10:33Z by a git process that died mid-write. For over an hour every git write on main failed with "Unable to create .git/index.lock: File exists": RepoOS's own task-file commits silently stayed uncommitted, `repoos` commands were slow, and the driver's merge of #0977 was refused while its check then ran on unmerged code. Nothing reported it.
@@ -34,3 +34,4 @@ The task-file commit path is fail-soft (`commitTaskFile`); keep it fail-soft but
 
 - 2026-10-29T11:48:54Z · created · njachowski@gmail.com
 - 2026-10-29T12:13:06Z · cli_override, model_override
+- 2026-10-29T12:13:33Z · status inbox→ready
