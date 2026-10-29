@@ -24,12 +24,25 @@ describe("request timing (#0967)", () => {
       res,
       now: () => clock,
       log: (level, message) => lines.push({ level, message }),
+      gitInFlight: () => [
+        {
+          id: 4,
+          label: "git status --short",
+          ageMs: 3210,
+          queueWaitMs: 0,
+          runMs: 3210,
+          lane: "fast",
+          state: "running",
+        },
+      ],
     });
 
     clock += 10_000;
     vi.advanceTimersByTime(10_000);
 
-    expect(lines).toEqual([{ level: "warn", message: "STUCK POST /api/slow 10000ms" }]);
+    expect(lines).toEqual([
+      { level: "warn", message: "STUCK POST /api/slow 10000ms git=git status --short 3210ms" },
+    ]);
 
     clock += 2_500;
     res.emit("finish");
