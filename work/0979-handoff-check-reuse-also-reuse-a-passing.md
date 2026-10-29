@@ -8,8 +8,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-29T12:34:06Z"
-updated_at: "2026-10-29T12:34:06Z"
+updated_at: "2026-10-29T12:34:20Z"
 ---
 ## Problem
 #0976 replaced handoff's remote self-check reuse (`findReusableRemotePreReviewPass` in `src/server/engineer-remote-self-check.ts`) with the new local reuse in `src/core/check-reuse.ts`, which needs a `reuseContext` on the check row. Remote engineer self-checks do not record one, so once remote validation is turned back on, a passing remote self-check on the same commit is no longer reused at handoff and the remote gate runs again.
@@ -29,3 +31,4 @@ Remote validation is currently off in repoos.toml; tests must use fakes. Do not 
 ## Activity
 
 - 2026-10-29T12:34:06Z · created · njachowski@gmail.com
+- 2026-10-29T12:34:20Z · cli_override, model_override
