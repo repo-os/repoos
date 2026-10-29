@@ -358,7 +358,6 @@ const STYLE_SELECTORS: Record<string, { selector: string; pseudo: string | null 
   "wheelie-courier": { selector: ".ai-wheel-spokes", pseudo: null },
   "boo-swoop": { selector: ".ai-ghost-bank", pseudo: null },
   "pumpkin-spell": { selector: ".ai-pumpkin-bounce", pseudo: null },
-  "three-dots": { selector: ".ai-dot", pseudo: null },
 };
 
 /** Primary animated node + expected animation name per #0833 artwork style. */
@@ -410,7 +409,13 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
         { css: pageCss },
       );
 
-      for (const [style, subject] of Object.entries(STYLE_SELECTORS)) {
+      // three-dots is checked here only: the shared map feeds tests that
+      // compare artwork styles, which the dot style is not.
+      const styles = {
+        ...STYLE_SELECTORS,
+        "three-dots": { selector: ".ai-dot", pseudo: null },
+      };
+      for (const [style, subject] of Object.entries(styles)) {
         const result = await page.evaluate(
           ({ html, selector, pseudo, webFont }) => {
             document.body.innerHTML = `<div style="font-family:${webFont};font-size:12px">${html}</div>`;
