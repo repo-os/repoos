@@ -27,6 +27,7 @@ import {
   cmdSync,
   cmdVerify,
   controlApiServerDownMessage,
+  waitForReviewHandoff,
 } from "../../commands/control-api";
 import { RepoOsApi } from "../../cli/repoos-api";
 
@@ -317,6 +318,62 @@ describe("control API CLI", () => {
       expect(reviewed).toMatchObject({ ok: true, pendingHandoff: true });
     });
   }, 30_000);
+
+  it("waits through a long finalization check and follows progress", async () => {
+    let elapsed = 0;
+    const progress: string[] = [];
+    const fakeServer = {
+      async requestOk(_method: string, path: string) {
+        if (path.endsWith("/logs")) {
+          return { logs: [{ message: "Server finalization: check" }] };
+        }
+        elapsed += 1;
+        return { status: elapsed >= 4 ? "review" : "active", pendingHandoff: elapsed < 4 };
+      },
+    };
+    const outcome = await waitForReviewHandoff(fakeServer, "0982", {
+      timeoutMs: 500,
+      intervalMs: 2,
+      onProgress: (step) => progress.push(step),
+    });
+    expect(outcome.kind).toBe("success");
+    expect(progress).toContain("check");
+    expect(elapsed).toBeGreaterThanOrEqual(4);
+  });
+
+  it("reports the failed finalization step and reason", async () => {
+    const fakeServer = {
+      async requestOk(_method: string, path: string) {
+        return path.endsWith("/logs")
+          ? {
+              logs: [
+                {
+                  message:
+                    "✗ Server finalization stopped at check: repoos check failed: type error. The task stays active — fix the failure.",
+                },
+              ],
+            }
+          : { status: "active", pendingHandoff: false };
+      },
+    };
+    await expect(waitForReviewHandoff(fakeServer, "0982", { timeoutMs: 100 })).resolves.toEqual({
+      kind: "failure",
+      step: "check",
+      reason: "repoos check failed: type error",
+    });
+  });
+
+  it("returns a clear timeout while finalization is still running", async () => {
+    const fakeServer = {
+      async requestOk(_method: string, path: string) {
+        return path.endsWith("/logs")
+          ? { logs: [{ message: "Server finalization: check" }] }
+          : { status: "active", pendingHandoff: true };
+      },
+    };
+    const outcome = await waitForReviewHandoff(fakeServer, "0982", { timeoutMs: 5, intervalMs: 1 });
+    expect(outcome).toEqual({ kind: "timeout" });
+  });
 
   it("override --json resolves effective engineer from server config", async () => {
     const fx = makeFixture(false);

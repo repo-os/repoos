@@ -491,29 +491,82 @@ export async function cmdReview(args: string[]): Promise<number> {
       else console.log(c.green("  ✓ ") + c.dim(`handoff started for #${id} (use --wait to block)`));
       return 0;
     }
-    const result = await pollUntil(
-      async () => {
-        const t = await api.requestOk("GET", `/api/tasks/${id}`);
-        if (t.status === "review") return t;
-        if (t.pendingHandoff) return null;
-        if (t.status === "active") {
-          const reason =
-            typeof t.last_check_failure === "string"
-              ? t.last_check_failure
-              : "handoff did not move task to review";
-          throw new RepoOsApiError(reason, 400, t);
-        }
-        return null;
+    const outcome = await waitForReviewHandoff(api, id, {
+      timeoutMs: HANDOFF_DEADLINE_MS,
+      onProgress: (step) => {
+        if (!opts.json) console.log(c.dim(`  … handoff: ${step}`));
       },
-      { label: `handoff for #${id}`, timeoutMs: HANDOFF_DEADLINE_MS },
-    );
-    if (opts.json) printJson({ ok: true, task: result });
-    else console.log(c.green("  ✓ ") + c.dim(`#${id} is in review`));
-    return 0;
+    });
+    if (outcome.kind === "success") {
+      if (opts.json) printJson({ ok: true, task: outcome.task });
+      else console.log(c.green("  ✓ ") + c.dim(`#${id} is in review`));
+      return 0;
+    }
+    if (outcome.kind === "failure") {
+      const message = `handoff stopped at ${outcome.step}: ${outcome.reason}`;
+      if (opts.json) printJson({ ok: false, pendingHandoff: false, failure: outcome });
+      else printErr(message);
+      return 1;
+    }
+    const timeoutMessage = `handoff for #${id} is still running — check with repoos show ${id}`;
+    if (opts.json)
+      printJson({ ok: false, pendingHandoff: true, stillRunning: true, error: timeoutMessage });
+    else printErr(timeoutMessage);
+    return 1;
   } catch (e) {
     printErr((e as RepoOsApiError).message);
     return 1;
   }
+}
+
+type ReviewWaitApi = Pick<RepoOsApi, "requestOk">;
+export type ReviewHandoffOutcome =
+  | { kind: "success"; task: ApiJson }
+  | { kind: "failure"; step: string; reason: string }
+  | { kind: "timeout" };
+
+/** Wait for the server's durable finalization outcome; pendingHandoff can clear before it is logged. */
+export async function waitForReviewHandoff(
+  api: ReviewWaitApi,
+  id: string,
+  opts: { timeoutMs?: number; intervalMs?: number; onProgress?: (step: string) => void } = {},
+): Promise<ReviewHandoffOutcome> {
+  const deadline = Date.now() + (opts.timeoutMs ?? HANDOFF_DEADLINE_MS);
+  const intervalMs = opts.intervalMs ?? 500;
+  let shownProgress = "";
+  while (Date.now() < deadline) {
+    const task = await api.requestOk("GET", `/api/tasks/${id}`);
+    if (task.status === "review") return { kind: "success", task };
+    const logs = await api.requestOk("GET", `/api/tasks/${id}/logs`);
+    const entries = Array.isArray(logs.logs) ? logs.logs : [];
+    const messages = entries
+      .map((entry) => (entry && typeof entry === "object" ? (entry as ApiJson).message : null))
+      .filter((message): message is string => typeof message === "string");
+    // Logs are newest-first. Ignore terminal records from an earlier attempt;
+    // the current attempt begins at its most recent "started" marker.
+    const startIndex = messages.findIndex((message) =>
+      message.startsWith("Server finalization started"),
+    );
+    const currentMessages = startIndex >= 0 ? messages.slice(0, startIndex) : messages;
+    const final = currentMessages.find((message) =>
+      message.startsWith("✗ Server finalization stopped at "),
+    );
+    if (final) {
+      const match = final.match(
+        /^✗ Server finalization stopped at ([^:]+): (.*?)(?:\. The task stays|\. The same worktree|$)/,
+      );
+      return match
+        ? { kind: "failure", step: match[1]!, reason: match[2]! }
+        : { kind: "failure", step: "unknown", reason: final };
+    }
+    const progress = currentMessages.find((message) => message.startsWith("Server finalization: "));
+    if (progress && progress !== shownProgress) {
+      shownProgress = progress;
+      opts.onProgress?.(progress.slice("Server finalization: ".length));
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  return { kind: "timeout" };
 }
 
 export async function cmdIntegration(args: string[]): Promise<number> {
