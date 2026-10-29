@@ -2750,24 +2750,74 @@
   box-shadow: 0 0 6px var(--red);
   animation: tcpulse 1.1s ease-in-out infinite;
 }
-/* #0960: the "Held" badge — a deliberate, durable state that parks the task
-   out of ALL automation. Violet distinguishes it from the amber "paused" pill:
-   a pause is a transient stop, a hold is an intentional, documented block. */
+/* #0975: warm warning cue for a durable hold, distinct from the violet Human chip. */
 .tc-held {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  color: var(--violet);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  gap: 3px;
+  color: var(--amber);
+  font-size: 9.5px;
+  font-weight: 600;
   font-family: "JetBrains Mono", monospace;
-  padding: 2px 8px;
+  line-height: 1.3;
+  padding: 2px 6px;
   border-radius: 6px;
-  border: 1px solid var(--violet-border-tint);
-  background: var(--violet-dim);
+  border: 1px solid var(--amber-border-tint);
+  background: var(--amber-tint);
   cursor: help;
+}
+.tc-held-icon {
+  width: 10px;
+  height: 10px;
+  flex: none;
+}
+.held-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 10px 0;
+  padding: 11px 12px;
+  border: 1px solid var(--amber-border-tint);
+  border-radius: 10px;
+  background: var(--amber-tint);
+  color: var(--foreground);
+}
+.held-panel-copy {
+  min-width: 0;
+}
+.held-panel-copy strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--amber);
+  font-size: 12px;
+}
+.held-panel-copy strong svg {
+  width: 14px;
+  height: 14px;
+}
+.held-panel-copy p {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+.held-panel-copy small {
+  display: block;
+  margin-top: 4px;
+  color: var(--txt-dim);
+  font-size: 10px;
+}
+.held-panel-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+@media (max-width: 560px) {
+  .held-panel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 .tc-held-until {
   opacity: 0.75;
@@ -3090,6 +3140,14 @@
      `--cycle`: 1s while coding, a slower 1.35s reviewing beat and 1.2s for
      generic agent work (#0807). */
   --cycle: 1s;
+}
+.ai-motion-paused,
+.ai-motion-paused *,
+.ai-motion-paused::before,
+.ai-motion-paused::after,
+.ai-motion-paused *::before,
+.ai-motion-paused *::after {
+  animation-play-state: paused !important;
 }
 .ai-compact.ai-motion-reviewing {
   --cycle: 1.35s;
@@ -3847,11 +3905,13 @@
   font-size: 11px;
   font-weight: 500;
   opacity: 0.35;
-  animation: ai-code-rise calc(1.667s * var(--ai-art-mult)) linear infinite;
+  /* The keystorm is pixel art; stepping its motion avoids continuous SVG
+     repainting while keeping the typing/rising rhythm legible (~5–9 updates/s). */
+  animation: ai-code-rise calc(1.667s * var(--ai-art-mult)) steps(8, end) infinite;
 }
 .ai-key {
   opacity: 0.85;
-  animation: ai-key-wave calc(0.9s * var(--ai-art-mult)) ease-in-out infinite;
+  animation: ai-key-wave calc(0.9s * var(--ai-art-mult)) steps(8, end) infinite;
 }
 .ai-kbd-underline {
   fill: none;
@@ -3859,7 +3919,7 @@
   stroke-linecap: round;
 }
 .ai-finger {
-  animation: ai-finger-tap calc(0.571s * var(--ai-art-mult)) ease-in-out infinite;
+  animation: ai-finger-tap calc(0.571s * var(--ai-art-mult)) steps(6, end) infinite;
 }
 @keyframes ai-key-wave {
   0%,

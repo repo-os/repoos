@@ -99,7 +99,9 @@ worktreeWarnThreshold = 20     # 0 disables the warning
 servePort = 7171   # omit to derive a stable per-repo port (7200-7999)
 activityAnimationStyle = "orbital-pixel"   # compact agent-activity indicator; see table below
 activityAnimationSize = "16"               # fixed pixels: 8, 12, 16, 20 or 24; see table below
+activityAnimationConcurrency = 6            # simultaneous visible animations; 0 disables motion
 strictBuild = false
+autoReload = true
 
 # ── Close-out (Move to done) ─────────────────────────────────────────────
 closeOut.timeoutMs = 360000  # 6-minute budget per close-out attempt; 0 = no limit
@@ -468,8 +470,10 @@ activityAnimationSize = "auto"
 | --- | --- | --- | --- | --- |
 | `servePort` | number | derived per repo | yes | Port `repoos serve` binds by default. If omitted, RepoOS derives a stable port from the repo's path in the 7200–7999 range, so two checkouts never collide. Must be 1–65535. `--port` on the command line overrides it. |
 | `strictBuild` | boolean | `false` | yes | When true, a stale build makes `repoos` exit with an error instead of printing a warning. `REPOOS_STRICT_BUILD=1` (environment) and the `--strict-build` flag do the same without changing the file. |
+| `autoReload` | boolean | `true` | yes | Automatically hands over to a replacement server when a newer build is available. Edit in **Settings → General**; changing it takes effect after the next server start. After three failed handovers the server stops retrying and the UI reports that a restart is needed. |
 | `activityAnimationStyle` | select | `orbital-pixel` | yes | Motion beside coding, reviewing, and other agent-activity labels in the web UI. Values: `orbital-pixel` (default compact orbit), `cursor-scan-pulse`, `breathing-brackets`, `micro-dot-matrix`, `tiny-signal-bars`, `spark-diamond`, `arcade-hopper` (alien that jumps and tilts), `puppy-tracks` (two alternating paw prints), `bird-quick-trail` (fast alternating bird footprints), `rgb-keystorm` (multicolor keyboard with a moving key wave, typing fingers and rising code), `wheelie-courier` (motorcycle and rider doing repeated wheelies), `boo-swoop` (ghost swooping with a rippling hem and orbiting wisps), `pumpkin-spell` (bouncing jack-o'-lantern with a witch hat and rising sparks), or `three-dots` (legacy horizontal dots). Omitted config uses `orbital-pixel`. Edit in **Settings → General → Activity animation**; the page previews all three activity states before save. Honors `prefers-reduced-motion` with a static indicator. |
 | `activityAnimationSize` | select | `16` | yes | Fixed pixel width of the activity animation, rendered at the same size on every surface (task cards, the Dev page and the Settings preview) regardless of the surrounding font. Values are the quoted strings `"8"`, `"12"`, `"16"`, `"20"`, `"24"`; a hand-written numeric TOML value (`16`) is normalized to the same value. Omitted config uses `16`. Legacy character-width values (`"auto"`, `"1"`–`"3"`) still load and are mapped onto the pixel ladder by ordinal, so existing configs keep their relative size. Edit in **Settings → General → Activity animation** with a single slider (no Auto toggle; the default is marked with a tick); the preview updates live. Honors `prefers-reduced-motion` at every size. |
+| `activityAnimationConcurrency` | number | `6` | yes | Maximum number of visible activity indicators animated simultaneously. Additional and off-screen indicators hold a still frame without changing their footprint. Values are integers 0–24; 0 pauses all motion. Hidden documents and `prefers-reduced-motion` also pause animation. Edit in **Settings → General → Activity animation**. |
 
 Appearance is **not** a `repoos.toml` setting. The dark/light/system theme and
 the UI design language are per-browser preferences stored in the browser, so

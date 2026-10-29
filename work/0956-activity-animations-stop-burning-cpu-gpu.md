@@ -2,7 +2,7 @@
 id: "0956"
 title: "Activity animations: stop burning CPU/GPU (pause when hidden or off screen, reduced motion, cap concurrent, cheaper rendering)"
 type: feature
-status: active
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,9 @@ branch: feat/activity-animations-stop-burning-cpu-gpu
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T03:58:48Z"
-updated_at: "2026-10-28T16:49:12Z"
+updated_at: "2026-10-29T04:28:09Z"
+handoff_signal_retry_count: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:10:27.670Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -71,3 +73,16 @@ Animated indicators stay fun and visible, but they cost almost nothing: they onl
 - 2026-10-28T16:46:40Z · status ready→active, branch
 - 2026-10-28T16:48:34Z · body
 - 2026-10-28T16:49:12Z · message_queued at 2026-10-28T16:49:12.187Z
+- 2026-10-28T18:26:53Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-28T22:10:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-28T22:10:02Z · message_delivered: 1 message(s)
+- 2026-10-29T00:34:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T00:49:42Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0975 check (pid 10403, alive), #0968 check (pid 14633, alive) for 10m · next step: let it finish — the wait clears itself when the check starts running; investigate only if it persists
+- 2026-10-29T00:55:28Z · watchdog: check wait ended — cleared needs_input
+- 2026-10-29T02:11:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T03:05:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T03:10:27Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-29T03:35:55Z · engineer stopped by request
+- 2026-10-29T03:35:55Z · held, held-reason, held-by, held-at
+- 2026-10-29T04:27:48Z · released
+- 2026-10-29T04:28:09Z · status active→done

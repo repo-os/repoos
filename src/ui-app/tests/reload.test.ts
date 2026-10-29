@@ -13,6 +13,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  adaptiveHandshakeTimeoutMs,
   ReloadManager,
   readBuildHash,
   substituteUiIndexBuildHash,
@@ -48,7 +49,7 @@ const server = http.createServer((req, res) => {
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ ok: false }));
 });
-server.listen(port, host);
+setTimeout(() => server.listen(port, host), Number(process.env.REPOOS_RELOAD_FAKE_DELAY || 0));
 `;
 
 /** Dead-on-arrival variant: exits immediately — the no-outage failure path. */
@@ -307,6 +308,7 @@ function makeManager(
 
 afterEach(() => {
   delete process.env.REPOOS_RELOAD_FAKE_LOG;
+  delete process.env.REPOOS_RELOAD_FAKE_DELAY;
 });
 
 beforeAll(() => {
@@ -314,6 +316,12 @@ beforeAll(() => {
 });
 
 describe("ReloadManager", () => {
+  it("scales the automatic handshake window from the last successful boot", () => {
+    expect(adaptiveHandshakeTimeoutMs(0)).toBe(90_000);
+    expect(adaptiveHandshakeTimeoutMs(60_000)).toBe(90_000);
+    expect(adaptiveHandshakeTimeoutMs(10 * 60_000)).toBe(5 * 60_000);
+  });
+
   it("substitutes index.html without turning digit-leading hashes into invalid JS", () => {
     const shell = `<meta content="${UI_INDEX_BUILD_HASH_PLACEHOLDER}" /><script>window.__REPOOS_BUILD_HASH__ = "${UI_INDEX_BUILD_HASH_PLACEHOLDER}";</script>`;
     const hash = "2deadbeef";
@@ -357,6 +365,27 @@ describe("ReloadManager", () => {
       // The manager reported the handover only after the replacement answered
       // health with the handshake — not before it was ready.
       expect(calls.drained).toBeGreaterThan(0);
+    } finally {
+      await killReplacement(fx);
+      manager.stop();
+      fx.clean();
+    }
+  });
+
+  it("waits for a slow replacement to answer the readiness handshake", async () => {
+    const fx = await makeFixture();
+    process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
+    process.env.REPOOS_RELOAD_FAKE_DELAY = "1500";
+    const { manager, calls } = makeManager(fx, { handshakeTimeoutMs: undefined });
+    try {
+      manager.start();
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-slow" }),
+      );
+      expect(manager.requestReload("slow boot").state).toBe("reloading");
+      await waitFor(() => calls.confirmed > 0, "slow replacement readiness");
+      expect(calls.failed).toBe(0);
     } finally {
       await killReplacement(fx);
       manager.stop();
@@ -504,6 +533,33 @@ describe("ReloadManager", () => {
       expect(manual.state).toBe("reloading");
       await waitFor(() => calls.failed > 1, "second reload failure reported");
       expect(spawns(fx).length).toBe(2);
+    } finally {
+      manager.stop();
+      fx.clean();
+    }
+  });
+
+  it("gives up after three failed handovers and exposes restart-needed state", async () => {
+    const fx = await makeFixture();
+    process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
+    const { manager, calls } = makeManager(fx, {
+      cliEntry: () => fx.deadCli,
+      handshakeTimeoutMs: 300,
+    });
+    try {
+      manager.start();
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-bbb" }),
+      );
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        expect(manager.requestReload("manual retry", { manual: true }).state).toBe("reloading");
+        await waitFor(() => calls.failed >= attempt, `failed handover ${attempt}`);
+      }
+      expect(manager.needsRestart).toBe(true);
+      expect(calls.failedReason).toContain("restart needed");
+      expect(manager.requestReload("automatic poll").state).toBe("not-stale");
+      expect(spawns(fx)).toHaveLength(3);
     } finally {
       manager.stop();
       fx.clean();
