@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0981"
 title: repoos checks slots lists stale queue positions after a check got its slot
 type: bug
@@ -34,3 +35,4 @@ The slots listing shows only real, current waiters, with true positions.
 - 2026-10-29T14:45:06Z · status inbox→ready
 - 2026-10-29T14:45:09Z · status ready→active, branch
 - 2026-10-29T15:06:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
