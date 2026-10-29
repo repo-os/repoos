@@ -12,7 +12,7 @@ branch: feat/stuck-request-log-list-in-flight-git-cal
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-27T22:11:30Z"
-updated_at: "2026-10-29T04:48:07Z"
+updated_at: "2026-10-29T04:48:42Z"
 ---
 ## Problem
 #0967 landed per-request timing and a STUCK log line, but the STUCK line only names the route and its age; it cannot list the in-flight git calls because the git worker that tracks them lands with #0962.
@@ -37,3 +37,4 @@ Small. Run only the affected tests; never restart the RepoOS server or request a
 - 2026-10-29T04:48:05Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-29T04:48:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T04:48:07Z · message_delivered: 1 message(s)
+- 2026-10-29T04:48:42Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
