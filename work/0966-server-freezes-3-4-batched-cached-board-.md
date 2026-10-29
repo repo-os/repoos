@@ -12,7 +12,7 @@ branch: feat/server-freezes-3-4-batched-cached-board-
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-27T12:02:34Z"
-updated_at: "2026-10-29T05:43:49Z"
+updated_at: "2026-10-29T05:44:48Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -46,3 +46,4 @@ Depends on #0962. Same rules as the other split tasks: no server restarts, no pr
 - 2026-10-29T04:29:30Z · status ready→active
 - 2026-10-29T04:33:18Z · message_queued at 2026-10-29T04:33:18.916Z
 - 2026-10-29T05:43:49Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-29T05:44:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
