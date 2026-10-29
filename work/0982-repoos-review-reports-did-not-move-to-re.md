@@ -3,9 +3,6 @@ id: "0982"
 title: "repoos review reports \"did not move to review\" while the handoff is still running"
 type: bug
 status: done
-needs_input: true
-needs_input_reason: check-wait
-needs_input_detail: "waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0981 check (pid 66147, alive), #0978 check (pid 67065, alive) for 10m"
 priority: p2
 area: core
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/repoos-review-reports-did-not-move-to-re
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-29T14:44:40Z"
-updated_at: "2026-10-29T15:41:03Z"
+updated_at: "2026-10-29T15:41:06Z"
 ---
 ## Problem
 `repoos review <id>` printed "✗ handoff did not move task to review" several times on 2026-10-28/29 while the server's handoff was still running its check; minutes later the task reached review. The command gives up waiting and reports a failure that did not happen, so drivers re-ran handoffs or took over tasks unnecessarily.
@@ -41,3 +38,4 @@ CLI side: `src/commands/control-api.ts` (review). Server: `src/server/handoff.ts
 - 2026-10-29T15:17:31Z · held, held-reason, held-by, held-at
 - 2026-10-29T15:40:58Z · released
 - 2026-10-29T15:41:03Z · status active→done
+- 2026-10-29T15:41:06Z · watchdog: check wait ended — cleared needs_input
