@@ -12,9 +12,10 @@ branch: feat/server-freezes-3-4-batched-cached-board-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-27T12:02:34Z"
-updated_at: "2026-10-29T08:51:43Z"
+updated_at: "2026-10-29T08:56:47Z"
 handoff_signal_retry_count: 2
 dev_error_count: 6
+engineer_stall_resume_log: "[{\"at\":\"2026-10-29T08:56:47.889Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 Split from #0962. The board computes git state per task/branch (ahead counts, merged checks, work-file history), spawning hundreds of git processes on ~900 tasks and ~100 branches.
@@ -61,3 +62,4 @@ Depends on #0962. Same rules as the other split tasks: no server restarts, no pr
 - 2026-10-29T08:13:43Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-29T08:16:51Z · needs_input
 - 2026-10-29T08:51:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T08:56:47Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
