@@ -11,7 +11,7 @@ branch: feat/held-tasks-in-the-ui-card-chip-panel-hel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-28T12:02:51Z"
-updated_at: "2026-10-29T01:58:17Z"
+updated_at: "2026-10-29T02:00:22Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-29T01:44:47.439Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-29T01:58:17.578Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -46,32 +46,36 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T01:44:47.439Z\",\"reason\":\"c
 ```json
 [
 {
-"label": "Board card with the Held chip",
-"target": "default",
-"route": "/work",
-"highlight": ".tc-held",
-"state": "card:held"
+  "label": "Held chip on the board",
+  "target": "default",
+  "route": "/work?shotState=card:held",
+  "highlight": ".tc-held",
+  "state": "card:held"
 },
 {
-"label": "Held task panel with release controls",
-"target": "default",
-"route": "/work?task=0000",
-"highlight": ".held-panel",
-"state": "drawer:held"
+  "label": "Held task panel and release controls",
+  "target": "default",
+  "route": "/work?shotState=drawer:held&task=9999",
+  "highlight": ".held-panel",
+  "state": "drawer:held"
 },
 {
-"label": "Hold dialog with the required reason field",
-"target": "default",
-"route": "/work?task=0975",
-"highlight": ".cc-modal",
-"steps": [
-{
-"click": "[data-test-id=\"hold-task\"]"
-},
-{
-"waitMs": 300
-}
-]
+  "label": "Hold dialog with reason field",
+  "target": "default",
+  "route": "/work?task=0975",
+  "highlight": ".cc-modal",
+  "steps": [
+    {
+      "click": "[data-test-id=hold-task]"
+    },
+    {
+      "waitFor": ".cc-modal textarea"
+    },
+    {
+      "fill": ".cc-modal textarea",
+      "text": "Waiting for the release window"
+    }
+  ]
 }
 ]
 ```
@@ -100,3 +104,4 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T01:44:47.439Z\",\"reason\":\"c
 - 2026-10-29T01:44:47Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-29T01:53:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T01:58:17Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-10-29T02:00:22Z · body
