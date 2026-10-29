@@ -10,6 +10,7 @@
 import { CLOSEOUT_CHECK_ARGS, planJobCapabilities, resolveCheckPlan } from "../core/check-plan.js";
 import type { CheckRunPhase } from "../core/check-store.js";
 import type { RepoOSConfig } from "../core/types.js";
+import type { CheckSnapshot } from "../core/check-reuse.js";
 import {
   offloadBrowserStepsEnabled,
   REPOOS_BROWSER_STEPS_REMOTE,
@@ -198,6 +199,7 @@ export async function runRemotePreReviewGate(params: {
   remoteValidator: RemoteValidator;
   worktreePath: string;
   taskId: string;
+  reuseContext?: CheckSnapshot | null;
   /** Which gate is calling — recorded in the check-run history (#0564). */
   phase?: CheckRunPhase;
   checkProfile?: string;
@@ -278,6 +280,7 @@ export async function runRemotePreReviewGate(params: {
     ...(capabilities.length ? { capabilities } : {}),
     ...(params.deadlineAt !== undefined ? { deadlineAt: params.deadlineAt } : {}),
     ...(changedRef ? { changedRef } : {}),
+    ...(params.reuseContext ? { reuseContext: params.reuseContext } : {}),
     ...(params.onUploadProgress ? { onUploadProgress: params.onUploadProgress } : {}),
     ...(params.uploadProgressIntervalMs !== undefined
       ? { uploadProgressIntervalMs: params.uploadProgressIntervalMs }
