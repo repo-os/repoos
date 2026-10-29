@@ -3382,12 +3382,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/stats/daily", getDailyTotals);
 
   // System resource routes
-  // The dry-run builds a full index and spawns git per branch ON THE MAIN
-  // THREAD (seconds to minutes with ~100 branches), and the Control page polls
-  // it. Serve a cached report for 5 minutes so the HTTP loop is not blocked on
-  // every poll (server freeze, 2026-10-26); POST invalidates it.
-  let worktreeGcPreview: { at: number; report: ReturnType<typeof sweepStaleWorktrees> } | null =
-    null;
+  // Polls only read the last cleanup result; they never build an index or run git.
+  let worktreeGcPreview: { report: ReturnType<typeof sweepStaleWorktrees> } | null = null;
   router.register("GET", "/api/system/worktree-gc", (_ctx, _req, res) => {
     const jobs = jobCoordinator.allJobs().filter((j) => j.phase !== "done" && j.phase !== "failed");
     // Never compute here: the dry-run takes ~30 s of blocking git on the main
@@ -3419,7 +3415,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       });
     }
     const result = await getGitWorker(config.root).sweep(config, { mode: "full" });
-    worktreeGcPreview = { at: Date.now(), report: result.report };
+    worktreeGcPreview = { report: result.report };
     return json(res, 200, result.report);
   });
   router.register("POST", "/api/system/kill-process", async (_ctx, req, res) => {

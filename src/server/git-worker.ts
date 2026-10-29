@@ -20,10 +20,12 @@ import type { ContextPackGitFacts } from "../core/context-pack.js";
 
 interface OverviewWire {
   useGit: boolean;
+  head: string | null;
   baseBranch: string | null;
   branches: string[];
   heads: Array<[string, string]>;
   aheadCounts: Array<[string, number]>;
+  mergedBranches: string[];
   worktrees: Array<[string, WorktreeEntry]>;
   fingerprint: string;
 }
@@ -80,10 +82,12 @@ export interface GitWorkerJobInfo {
 function overviewFromWire(wire: OverviewWire): RepoGitOverview {
   return {
     useGit: wire.useGit,
+    head: wire.head,
     baseBranch: wire.baseBranch,
     branches: new Set(wire.branches),
     heads: new Map(wire.heads),
     aheadCounts: new Map(wire.aheadCounts),
+    mergedBranches: new Set(wire.mergedBranches),
     worktrees: new Map(wire.worktrees),
     fingerprint: wire.fingerprint,
   };

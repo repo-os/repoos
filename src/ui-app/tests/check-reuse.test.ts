@@ -72,6 +72,13 @@ describe("handoff self-check reuse", () => {
       expect(await f.find()).toMatchObject({ id: 1, candidateSha: f.snapshot.candidateSha });
     },
   );
+  it("reuses a remote engineer self-check on the same clean tree, but not another commit", async () => {
+    const f = await fixture();
+    f.record({ phase: "pre-review", remote: true, scope: "full" });
+    expect(await f.find()).toMatchObject({ id: 1, remote: true });
+    git(f.root, "commit", "--allow-empty", "-qm", "new remote candidate");
+    expect(await f.find()).toBeNull();
+  });
   it.each(["commit", "dirty", "untracked", "main", "missing-main"])(
     "does not reuse after %s changes",
     async (change) => {
