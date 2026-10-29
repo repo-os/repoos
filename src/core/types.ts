@@ -556,6 +556,8 @@ export interface RepoOSConfig {
    * read.
    */
   activityAnimationSize?: ActivityAnimationSize;
+  /** Maximum activity indicators allowed to animate at once. Defaults to 6. */
+  activityAnimationConcurrency?: number;
   /** User-defined agents (defaults are applied at runtime when this is empty). */
   agents?: Agent[];
   /** When true, RepoOS automatically selects and starts ready tasks up to maxActiveTasks. */

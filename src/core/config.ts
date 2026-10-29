@@ -277,6 +277,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   defaultTaskMode: "freeform",
   activityAnimationStyle: "orbital-pixel",
   activityAnimationSize: DEFAULT_ACTIVITY_ANIMATION_SIZE,
+  activityAnimationConcurrency: 6,
   tunnelEnabled: false,
   ntfyEnabled: false,
   ntfyTopic: "",
@@ -1590,6 +1591,9 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     }
     const activitySize = normalizeActivityAnimationSize(get("activityAnimationSize"));
     if (activitySize) cfg.activityAnimationSize = activitySize;
+    const activityConcurrency = get("activityAnimationConcurrency");
+    if (typeof activityConcurrency === "number" && Number.isFinite(activityConcurrency))
+      cfg.activityAnimationConcurrency = Math.max(0, Math.min(24, Math.round(activityConcurrency)));
     if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
     if (typeof get("autoEngineeringMode") === "boolean")
       cfg.autoEngineeringMode = get("autoEngineeringMode") as boolean;
@@ -2547,6 +2551,8 @@ export interface ConfigFieldMeta {
   description: string;
   /** Minimum value for number fields */
   min?: number;
+  /** Maximum value for number fields */
+  max?: number;
   /** Step size for number fields; if > 1, decimals are not allowed */
   step?: number;
 }
@@ -2704,6 +2710,19 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       })),
       description:
         "Inline space for the activity animation, in pixels. The same fixed size renders everywhere it appears — task cards, the Dev page and this preview — regardless of the surrounding text size.",
+    },
+    {
+      key: "activityAnimationConcurrency",
+      label: "Animated indicators at once",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.activityAnimationConcurrency,
+      min: 0,
+      max: 24,
+      step: 1,
+      description:
+        "Maximum number of activity indicators animated at once. Others stay on a still frame; set to 0 to pause all animation.",
     },
     {
       key: "defaultAssignee",
@@ -4183,6 +4202,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "defaultTaskMode",
   "activityAnimationStyle",
   "activityAnimationSize",
+  "activityAnimationConcurrency",
   "maxActiveTasks",
   "autoEngineeringMode",
   "autoEngineering.pmVeto",

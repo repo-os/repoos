@@ -1,7 +1,7 @@
 <script setup lang="ts">
 defineOptions({ name: "ActivityIndicator" });
 
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { getActivePinia } from "pinia";
 import {
   ACTIVITY_ANIMATION_STYLE_SLOT,
@@ -14,6 +14,7 @@ import {
   type ActivityAnimationStyle,
 } from "../../../core/activity-animation.js";
 import { useConfigStore } from "../stores/config";
+import { useActivityMotion } from "../lib/activity-motion";
 import BooSwoopArt from "./activity-art/BooSwoopArt.vue";
 import PumpkinSpellArt from "./activity-art/PumpkinSpellArt.vue";
 import RgbKeystormArt from "./activity-art/RgbKeystormArt.vue";
@@ -44,6 +45,12 @@ const props = withDefaults(
 
 const pinia = getActivePinia();
 const config = pinia ? useConfigStore(pinia) : null;
+const root = ref<HTMLElement | null>(null);
+const animationLimit = computed(() => {
+  const value = config?.form.activityAnimationConcurrency;
+  return typeof value === "number" ? value : 6;
+});
+const animate = useActivityMotion(root, animationLimit);
 
 const style = computed((): ActivityAnimationStyle => {
   if (props.animationStyle) return props.animationStyle;
@@ -108,6 +115,7 @@ const matrixPositions = [
 
 <template>
   <span
+    ref="root"
     class="ai"
     :class="[
       size === 'md' ? 'ai-md' : 'ai-sm',
@@ -115,6 +123,7 @@ const matrixPositions = [
       legacyDots ? 'ai-legacy-dots' : 'ai-compact',
       !legacyDots && `ai-style-${style}`,
       !legacyDots && `ai-motion-${motion}`,
+      !animate ? 'ai-motion-paused' : '',
       sized ? 'ai-sized' : '',
     ]"
     :style="sizeStyle"
