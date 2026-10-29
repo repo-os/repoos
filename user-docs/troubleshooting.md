@@ -134,6 +134,24 @@ bun run build
 
 Published installs (no `src/` directory) never see this warning.
 
+## The UI says the server is not running, or not responding
+
+The banner names the project and the address the page talks to, and tells two
+cases apart:
+
+- **Not running.** The connection was refused: nothing is listening on that
+  port. The banner shows a command to copy that restarts this project's server:
+  the `launchctl kickstart` line for a server installed with
+  `repoos service install`, or `repoos serve --port <port>` from the project
+  folder for one you started by hand. The browser cannot start it for you.
+- **Not responding.** The server is running but did not answer within the time
+  limit. It may be busy; retry in a moment. Restarting is not the first step.
+
+**Retry** says what it checked (for example, the connection was refused for
+30 seconds) and when the page last reached the server. Every project runs its
+own server on its own port, so a banner on one project's tab says nothing about
+the others.
+
 ## The server won't restart on the port
 
 Each repo's server is recorded in a per-port lockfile so a new `repoos serve`
