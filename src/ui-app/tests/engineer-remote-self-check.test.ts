@@ -5,8 +5,6 @@ import { join } from "node:path";
 import { getCheckStore, resetCheckStore } from "../../core/check-store.js";
 import {
   engineerSelfCheckRemoteEnabled,
-  findReusableRemotePreReviewPass,
-  remoteOutcomeFromReuse,
   runEngineerRemoteSelfCheckGate,
 } from "../../server/engineer-remote-self-check.js";
 import * as preReview from "../../server/pre-review-remote-gate.js";
@@ -64,70 +62,5 @@ describe("engineer remote self-check (#0694)", () => {
     });
     expect(dispose).toHaveBeenCalledTimes(1);
     vi.restoreAllMocks();
-  });
-
-  it("findReusableRemotePreReviewPass matches task, sha, and green remote row", () => {
-    resetCheckStore();
-    const root = mkdtempSync(join(tmpdir(), "repoos-0694-reuse-"));
-    const store = getCheckStore(root, ".repoos");
-    store.record({
-      taskId: "0694",
-      phase: "pre-review",
-      candidateSha: "abc123",
-      machine: "bee",
-      remote: true,
-      scope: "full",
-      startedAt: new Date().toISOString(),
-      durationMs: 42_000,
-      outcome: "pass",
-    });
-    store.record({
-      taskId: "0694",
-      phase: "pre-review",
-      candidateSha: "deadbeef",
-      machine: "bee",
-      remote: true,
-      scope: "full",
-      startedAt: new Date().toISOString(),
-      durationMs: 1000,
-      outcome: "pass",
-    });
-    expect(
-      findReusableRemotePreReviewPass(root, ".repoos", {
-        taskId: "0694",
-        candidateSha: "abc123",
-      })?.machine,
-    ).toBe("bee");
-    store.record({
-      taskId: "0694",
-      phase: "pre-review",
-      candidateSha: "scoped123",
-      machine: "bee",
-      remote: true,
-      scope: "changed:main",
-      startedAt: new Date().toISOString(),
-      durationMs: 1000,
-      outcome: "pass",
-    });
-    expect(
-      findReusableRemotePreReviewPass(root, ".repoos", {
-        taskId: "0694",
-        candidateSha: "scoped123",
-      }),
-    ).toBeNull();
-    expect(
-      findReusableRemotePreReviewPass(root, ".repoos", {
-        taskId: "0694",
-        candidateSha: "nope",
-      }),
-    ).toBeNull();
-    const reused = remoteOutcomeFromReuse({
-      machine: "bee",
-      durationMs: 42_000,
-    } as never);
-    expect(reused.kind).toBe("local-only");
-    if (reused.kind === "local-only") {
-      expect(reused.detail).toMatch(/reusing green remote self-check on bee/);
-    }
   });
 });

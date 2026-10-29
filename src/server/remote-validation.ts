@@ -303,6 +303,8 @@ export interface ValidateOptions {
   worktreePath: string;
   /** Expected `git rev-parse HEAD` of `worktreePath` — the VM asserts it matches. */
   candidateSha: string;
+  /** Clean local git inputs captured before dispatch, for handoff reuse. */
+  reuseContext?: { candidateSha: string; mainSha: string; mergeBase: string } | null;
   /** Live output sink (SSE, status bar). The per-task log file is always written. */
   onChunk?: (chunk: string) => void;
   /**
@@ -5016,6 +5018,11 @@ function recordRemoteRunHistory(
       taskId,
       phase: opts.phase ?? "pre-review",
       candidateSha: opts.candidateSha,
+      worktree: opts.worktreePath,
+      reuseContext:
+        opts.reuseContext?.candidateSha === opts.candidateSha
+          ? { mainSha: opts.reuseContext.mainSha, mergeBase: opts.reuseContext.mergeBase }
+          : null,
       machine,
       remote: true,
       scope:
