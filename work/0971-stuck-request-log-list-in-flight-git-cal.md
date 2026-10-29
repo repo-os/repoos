@@ -9,8 +9,10 @@ depends_on: ["0962", "0967"]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-10-27T22:11:30Z"
-updated_at: "2026-10-29T04:31:32Z"
+updated_at: "2026-10-29T04:31:33Z"
 ---
 ## Problem
 #0967 landed per-request timing and a STUCK log line, but the STUCK line only names the route and its age; it cannot list the in-flight git calls because the git worker that tracks them lands with #0962.
@@ -28,3 +30,4 @@ Small. Run only the affected tests; never restart the RepoOS server or request a
 ## Activity
 
 - 2026-10-27T22:11:30Z · created · njachowski@gmail.com
+- 2026-10-29T04:31:33Z · cli_override, model_override
