@@ -11,7 +11,7 @@ branch: feat/held-tasks-in-the-ui-card-chip-panel-hel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-28T12:02:51Z"
-updated_at: "2026-10-29T02:24:33Z"
+updated_at: "2026-10-29T02:25:41Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-29T01:58:17.578Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-10-29T02:24:33.457Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -46,36 +46,32 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T01:58:17.578Z\",\"reason\":\"c
 ```json
 [
 {
-"label": "Held chip on the board",
-"target": "default",
-"route": "/work?shotState=card:held",
-"highlight": ".tc-held",
-"state": "card:held"
+  "label": "Held task chip on board",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".tc-held",
+  "state": "card:held"
 },
 {
-"label": "Held task panel and release controls",
-"target": "default",
-"route": "/work?shotState=drawer:held&task=9999",
-"highlight": ".held-panel",
-"state": "drawer:held"
+  "label": "Held task panel with release controls",
+  "target": "default",
+  "route": "/work?task=0899",
+  "highlight": ".held-panel",
+  "state": "drawer:held"
 },
 {
-"label": "Hold dialog with reason field",
-"target": "default",
-"route": "/work?task=0975",
-"highlight": ".cc-modal",
-"steps": [
-{
-  "click": "[data-test-id=hold-task]"
-},
-{
-  "waitFor": ".cc-modal textarea"
-},
-{
-  "fill": ".cc-modal textarea",
-  "text": "Waiting for the release window"
-}
-]
+  "label": "Hold task dialog",
+  "target": "default",
+  "route": "/work?task=0899",
+  "highlight": ".cc-modal",
+  "steps": [
+    {
+      "click": "button[data-test-id=\"hold-task\"]"
+    },
+    {
+      "waitMs": 200
+    }
+  ]
 }
 ]
 ```
@@ -107,3 +103,4 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T01:58:17.578Z\",\"reason\":\"c
 - 2026-10-29T02:00:22Z · body
 - 2026-10-29T02:19:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T02:24:33Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-10-29T02:25:41Z · body
