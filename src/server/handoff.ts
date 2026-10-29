@@ -1,3 +1,8 @@
+import {
+  checkSnapshot,
+  compatibleCheckSnapshots,
+  findReusableHandoffCheck,
+} from "../core/check-reuse.js";
 /**
  * Trusted finalization for a handoff capability.
  *
@@ -58,17 +63,14 @@ import { recordWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
 import { closingOutRefusal, isTaskClosingOut } from "./close-out-lock.js";
 import { clearHandoffFailureLoopMetadata } from "./handoff-failure-loop.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
-import {
-  engineerSelfCheckRemoteEnabled,
-  findReusableRemotePreReviewPass,
-  remoteOutcomeFromReuse,
-} from "./engineer-remote-self-check.js";
 import { DEFAULT_HOST_LOCK_WAIT_SECS, type RemoteValidator } from "./remote-validation.js";
 import { remoteBrowserEvidenceTransport } from "./browser-capture-policy.js";
 import {
   remotePreReviewEnabled,
   runRemotePreReviewGate,
   checkEnvAfterRemoteGate,
+  REPOOS_CHECK_GATE_NOTE,
+  REPOOS_REMOTE_VALIDATION_DONE,
   spawnedRepoosCheckArgs,
   type RemotePreReviewOutcome,
 } from "./pre-review-remote-gate.js";
@@ -660,34 +662,31 @@ async function runHandoffFinalization(
               opts.remoteValidator && remotePreReviewEnabled(config) ? "remote host" : undefined,
           })
         : undefined;
+    const reusedCheck = await findReusableHandoffCheck(
+      config.root,
+      config.cacheDir,
+      task.id,
+      workdir,
+    );
+    const reuseNote = reusedCheck
+      ? `reused check ${reusedCheck.id} — same clean commit and main base`
+      : undefined;
+    if (reuseNote) {
+      opts.onTaskLog?.(task.id, "info", reuseNote);
+      checkHandle?.chunk?.(`\n[${reuseNote}]\n`);
+    }
     let remoteOutcome: RemotePreReviewOutcome | { kind: "skip" } = { kind: "skip" };
-    if (opts.remoteValidator && remotePreReviewEnabled(config)) {
-      const headRes = await runGit(workdir, ["rev-parse", "HEAD"], 10_000);
-      const candidateSha = headRes.status === 0 ? headRes.stdout.trim() : "";
-      const reusable =
-        candidateSha && engineerSelfCheckRemoteEnabled(config)
-          ? findReusableRemotePreReviewPass(config.root, config.cacheDir, {
-              taskId: task.id,
-              candidateSha,
-            })
-          : null;
-      if (reusable) {
-        remoteOutcome = remoteOutcomeFromReuse(reusable);
-        checkHandle?.chunk?.(
-          `\n[${remoteOutcome.kind === "local-only" ? remoteOutcome.detail : "reusing remote self-check"}]\n`,
-        );
-      } else {
-        remoteOutcome = await runRemotePreReviewGate({
-          config,
-          remoteValidator: opts.remoteValidator,
-          worktreePath: workdir,
-          taskId: task.id,
-          phase: "pre-review",
-          kind: "handoff",
-          onChunk: checkHandle?.chunk,
-          deadlineAt: handoffDeadlineAt,
-        });
-      }
+    if (!reusedCheck && opts.remoteValidator && remotePreReviewEnabled(config)) {
+      remoteOutcome = await runRemotePreReviewGate({
+        config,
+        remoteValidator: opts.remoteValidator,
+        worktreePath: workdir,
+        taskId: task.id,
+        phase: "pre-review",
+        kind: "handoff",
+        onChunk: checkHandle?.chunk,
+        deadlineAt: handoffDeadlineAt,
+      });
       if (remoteOutcome.kind === "fail") {
         checkHandle?.done(1);
         return {
@@ -702,7 +701,16 @@ async function runHandoffFinalization(
       workdir,
       config,
       checkHandle?.chunk,
-      checkEnvAfterRemoteGate(remoteOutcome, config),
+      {
+        ...checkEnvAfterRemoteGate(remoteOutcome, config),
+        ...(reuseNote
+          ? {
+              REPOOS_SKIP_TESTS: "1",
+              [REPOOS_REMOTE_VALIDATION_DONE]: "1",
+              [REPOOS_CHECK_GATE_NOTE]: reuseNote,
+            }
+          : {}),
+      },
       remoteOutcome,
       task.id,
       changedBase,
@@ -716,6 +724,20 @@ async function runHandoffFinalization(
       const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
       if (branchAddsBuildableProjectMarker(workdir, baseBranch)) {
         return fail("check", BRANCH_ADDS_PROJECT_NO_CHECK_PLAN);
+      }
+    }
+    if (reusedCheck) {
+      const current = await checkSnapshot(workdir);
+      if (
+        !reusedCheck.candidateSha ||
+        !reusedCheck.reuseContext ||
+        !(await compatibleCheckSnapshots(
+          workdir,
+          { candidateSha: reusedCheck.candidateSha, ...reusedCheck.reuseContext },
+          current,
+        ))
+      ) {
+        return fail("check", "reused check inputs changed during handoff — run the check again");
       }
     }
     clearCheckRetryCount(config.root, task.absPath);

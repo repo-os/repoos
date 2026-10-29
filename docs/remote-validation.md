@@ -144,7 +144,7 @@ run it again. Server-spawned checks also pass `--local-tests` when remote is
 enabled but that path opted out (e.g. release with `useForReleases = false`,
 close-out without a build step). With `remoteValidation.enabled`, standalone
 `repoos check` runs the remote half first unless you pass `--local-tests` or either env
-var is already set. **`--changed` / `REPOOS_CHECK_CHANGED` scopes the remote test step too** (#0695): engineer self-checks bundle the merge-base ref alongside `HEAD` and run `bun run test -- --changed <ref>` on the runner (install + build still run). Handoff and close-out omit `changedRef`, so they still run the **full** suite on the runner. Each run bundles only what the host does not already hold when possible (#0717): RepoOS probes a persistent bare mirror on the host (`~/.repoos-cache/<repo>-<hash>.git`), and when the mirror contains a commit the candidate descends from, the upload is a partial **`git bundle create … <base>..<candidate>`** (kilobytes, not the full history). The first run on a host, a cleared mirror, or a probe failure falls back to a full bundle; `validate.sh` still hard-verifies `git rev-parse HEAD == <expected-sha>`. Only committed work reaches the runner, and local tests are skipped after a green remote pass. What is tested must be what is committed (#0512), which the two
+var is already set. **`--changed` / `REPOOS_CHECK_CHANGED` scopes the remote test step too** (#0695): engineer self-checks bundle the merge-base ref alongside `HEAD` and run `bun run test -- --changed <ref>` on the runner (install + build still run). Handoff and close-out omit `changedRef` when dispatching, so those runner passes still run the **full** suite. Handoff may instead reuse a recent, clean self-check with `changed:main` coverage (see `user-docs/check.md`). Each run bundles only what the host does not already hold when possible (#0717): RepoOS probes a persistent bare mirror on the host (`~/.repoos-cache/<repo>-<hash>.git`), and when the mirror contains a commit the candidate descends from, the upload is a partial **`git bundle create … <base>..<candidate>`** (kilobytes, not the full history). The first run on a host, a cleared mirror, or a probe failure falls back to a full bundle; `validate.sh` still hard-verifies `git rev-parse HEAD == <expected-sha>`. Only committed work reaches the runner, and local tests are skipped after a green remote pass. What is tested must be what is committed (#0512), which the two
 entry points guarantee differently:
 
 - **Handoff** commits the worktree first (the commit gate runs before the check),
@@ -299,9 +299,11 @@ The pre-review, close-out and release gates share `runRemotePreReviewGate` (`src
   worktree at `HEAD`, runs install + build + test on the runner, then local
   guards with `REPOOS_SKIP_TESTS=1`. When `remoteValidation.engineerSelfCheckRemote`
   is on (default), a managed engineer's self-check uses the same remote half; handoff
-  **reuses** a green remote row in `.repoos/checks.db` at the same `candidate_sha`
-  instead of running twice. Reuse is keyed on `git rev-parse HEAD` after handoff's
-  commit gate (and auto-format): if the engineer's last self-check ran on an earlier
+  **reuses** a recent passing self-check in `.repoos/checks.db` with full or
+  `changed:main` coverage and clean-tree evidence instead of running twice.
+  Local and remote-backed self-checks qualify. Reuse requires the same
+  `git rev-parse HEAD`, unchanged main source and merge base, and a clean
+  worktree after handoff's commit gate (and auto-format): if the engineer's last self-check ran on an earlier
   sha — common when handoff-only formatting landed afterward — handoff still runs the
   full remote gate once. Task activity records which host ran the self-check and
   how long it took. Logs land in
