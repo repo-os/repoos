@@ -90,6 +90,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0787 — active engineer run on the board so captures can show the compact
   // coding indicator on a task card.
   "board:activeCoding",
+  // #0980 — six active cards for activity-animation captures and profiling.
+  "board:severalWorkingCards",
   // #0822 — ready task with Start work in flight so the card shows Starting….
   "board:startWorkPending",
   // #0822 — same pending state with the task drawer open on the fixture card.
