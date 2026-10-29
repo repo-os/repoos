@@ -8,8 +8,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6.1-sol
 created_at: "2026-10-29T05:51:30Z"
-updated_at: "2026-10-29T05:51:30Z"
+updated_at: "2026-10-29T05:51:43Z"
 ---
 ## Problem
 The server's handoff check re-runs the test suite even when the engineer's own `repoos check --changed main` just passed on the exact same commit. Under load the repeat run is what fails: on 2026-10-29 #0971's handoff check timed out at the 40-minute test limit and #0955's sat 40 minutes behind a stuck typecheck, although both engineers' own checks had passed in minutes (check_runs 9822, 9823). The driver had to land both by hand.
@@ -29,3 +31,4 @@ Handoff reuses a recent passing check of the same tree instead of repeating it, 
 ## Activity
 
 - 2026-10-29T05:51:30Z · created · njachowski@gmail.com
+- 2026-10-29T05:51:43Z · cli_override, model_override
