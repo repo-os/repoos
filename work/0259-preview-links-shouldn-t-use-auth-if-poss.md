@@ -3,6 +3,7 @@ id: "0259"
 title: Preview links should inherit main auth or be auth-free
 type: feature
 status: inbox
+is_archived: true
 priority: p2
 area: web
 assigned_to: ai
@@ -12,7 +13,7 @@ model_override: default
 review_cli_override: claude code
 review_model_override: default
 created_at: "2026-08-19T18:46:11Z"
-updated_at: "2026-08-29T07:54:09Z"
+updated_at: "2026-10-29T13:59:28Z"
 ---
 ## Problem
 
@@ -73,3 +74,4 @@ preview links shouldn't use auth if possible, or it should inherit the auth of t
 - 2026-08-26T11:22:21Z · review_model_override
 - 2026-08-26T11:22:29Z · pm_model_override
 - 2026-08-29T07:54:09Z · status ready→inbox
+- 2026-10-29T13:59:28Z · archived
