@@ -11,7 +11,7 @@ branch: feat/repoos-checks-slots-lists-stale-queue-po
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-29T14:44:37Z"
-updated_at: "2026-10-29T14:45:09Z"
+updated_at: "2026-10-29T15:06:30Z"
 ---
 ## Problem
 `repoos checks slots` printed "queue position 3: #0973, waiting 1431s" while slot 1 was free and the real waiter directory (`~/.repoos/local-check-slots/.queue`) was empty (2026-10-28). The position comes from queue-marker files under `.repoos/queue-markers/` that are not cleared when a check gets its slot or dies, so the listing shows waits that ended long ago. Drivers and humans read it as a stuck queue.
@@ -33,3 +33,4 @@ The slots listing shows only real, current waiters, with true positions.
 - 2026-10-29T14:45:02Z · cli_override, model_override
 - 2026-10-29T14:45:06Z · status inbox→ready
 - 2026-10-29T14:45:09Z · status ready→active, branch
+- 2026-10-29T15:06:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
