@@ -46,6 +46,23 @@ afterEach(() => {
 });
 
 describe("CheckRunsPanel loading (#0950)", () => {
+  it("shows the reused run id on a passing check without expanding the row", async () => {
+    api.mockResolvedValue({
+      ok: true,
+      runs: [
+        run({
+          detail: "reused check 9822 — same clean commit and main base",
+          skippedSteps: ["tests"],
+        }),
+      ],
+    } as never);
+    const wrapper = mount(CheckRunsPanel);
+    await flushPromises();
+    expect(wrapper.get('[data-test-id="reused-check"]').text()).toContain("reused check 9822");
+    expect(wrapper.find(".cr-detail-row").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   it("shows a skeleton instead of a bare loading line on first load", async () => {
     api.mockImplementation(() => new Promise(() => {}));
     const wrapper = mount(CheckRunsPanel);

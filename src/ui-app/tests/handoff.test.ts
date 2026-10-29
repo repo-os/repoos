@@ -6,6 +6,7 @@ import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { parseTask } from "../../core/task";
 import { getCheckStore, resetCheckStore } from "../../core/check-store.js";
+import { checkSnapshot } from "../../core/check-reuse.js";
 import { handoffTask } from "../../server/handoff";
 import { TaskCheckManager } from "../../server/task-check";
 import type { RemoteValidator } from "../../server/remote-validation";
@@ -123,6 +124,58 @@ function request(fx: Fixture, overrides: Record<string, string> = {}) {
 }
 
 describe("trusted server-side handoff", { timeout: 15_000 }, () => {
+  it("reuses a proven self-check, still invokes local guards and logs its id", async () => {
+    const fx = makeFixture();
+    const oldPath = process.env.PATH;
+    process.env.PATH = `${fx.bin}:${oldPath ?? ""}`;
+    try {
+      writeFileSync(join(fx.worktree, ".gitignore"), ".repoos/\ndist/cli/\n");
+      git(fx.worktree, ["add", "-A"]);
+      git(fx.worktree, ["commit", "-qm", "engineer checked commit"]);
+      const snapshot = (await checkSnapshot(fx.worktree))!;
+      expect(snapshot).not.toBeNull();
+      getCheckStore(fx.root).record({
+        taskId: "0001",
+        phase: "cli",
+        worktree: fx.worktree,
+        candidateSha: snapshot.candidateSha,
+        reuseContext: { mainSha: snapshot.mainSha, mergeBase: snapshot.mergeBase },
+        scope: "changed:main",
+        startedAt: new Date().toISOString(),
+        outcome: "pass",
+      });
+      const row = getCheckStore(fx.root).list({ taskId: "0001" })[0]!;
+      const cli = join(fx.worktree, "dist", "cli", "index.js");
+      mkdirSync(join(fx.worktree, "dist", "cli"), { recursive: true });
+      writeFileSync(
+        cli,
+        `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(join(fx.root, ".repoos", "check-env.json"))}, JSON.stringify(process.env));\n`,
+      );
+      const logs: string[] = [];
+      const result = await handoffTask(
+        fx.config,
+        readTask(fx),
+        request(fx),
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        (_id, _level, message) => logs.push(message),
+      );
+      expect(result.ok, result.detail).toBe(true);
+      expect(logs.join("\n")).toContain(`reused check ${row.id}`);
+      const env = JSON.parse(readFileSync(join(fx.root, ".repoos", "check-env.json"), "utf8"));
+      expect(env.REPOOS_SKIP_TESTS).toBe("1");
+      expect(env.REPOOS_CHECK_GATE_NOTE).toContain(`reused check ${row.id}`);
+      expect(env.REPOOS_BROWSER_STEPS_REMOTE).not.toBe("1");
+    } finally {
+      process.env.PATH = oldPath;
+      resetCheckStore();
+      fx.clean();
+    }
+  });
   it("commits, checks, moves both task copies to review, and is idempotent", async () => {
     const fx = makeFixture();
     const oldPath = process.env.PATH ?? "";
@@ -464,7 +517,7 @@ describe("trusted server-side handoff", { timeout: 15_000 }, () => {
 
         const result = await handoffTask(fx.config, readTask(fx), request(fx));
 
-        expect(result.ok).toBe(true);
+        expect(result.ok, result.detail).toBe(true);
         expect(git(fx.worktree, ["show", "--name-only", "--format=", "HEAD"])).toBe(
           "work/0001-handoff.md",
         );
@@ -772,7 +825,7 @@ exit 0
       }
     });
 
-    it("skips runner dispatch when checks.db already has a green pass at HEAD (#0694)", async () => {
+    it("does not reuse a legacy remote pass without clean-tree and main evidence (#0976)", async () => {
       resetCheckStore();
       const fx = remoteFixture();
       fx.config.remoteValidation = { enabled: true, engineerSelfCheckRemote: true };
@@ -811,7 +864,7 @@ exit 0
           validator,
         );
         expect(result).toMatchObject({ ok: true, step: "done" });
-        expect(validate).not.toHaveBeenCalled();
+        expect(validate).toHaveBeenCalledTimes(1);
       } finally {
         process.env.PATH = oldPath;
         fx.clean();

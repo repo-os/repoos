@@ -12,6 +12,7 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "closeOut:checkProgressUnknown",
   "checks:progress",
   "checks:timings",
+  "checks:reuse",
   // Populated Work and Stories pages for full-height layout captures (#0951).
   "pages:scroll",
   // #0778 — like closeOut:active, but the attempt has been idle past the stall

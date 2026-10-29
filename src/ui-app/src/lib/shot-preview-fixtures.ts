@@ -796,7 +796,8 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [run];
       break;
     }
-    case "checks:timings": {
+    case "checks:timings":
+    case "checks:reuse": {
       // Illustrative fixture data, never used in the measured audit report.
       pinnedCheckRuns = [
         {
@@ -810,12 +811,20 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           durationMs: 29000,
           outcome: "pass",
           failedStep: null,
-          skippedSteps: ["rendered-contrast"],
+          skippedSteps:
+            fixture === "checks:reuse" ? ["tests", "rendered-contrast"] : ["rendered-contrast"],
           failedTests: [],
-          detail: null,
+          detail:
+            fixture === "checks:reuse"
+              ? "reused check 9822 — same clean commit and main base"
+              : null,
           steps: [
             { name: "build", status: "passed", durationMs: 12000 },
-            { name: "tests", status: "passed", durationMs: 17000 },
+            {
+              name: "tests",
+              status: fixture === "checks:reuse" ? "skipped" : "passed",
+              durationMs: fixture === "checks:reuse" ? 0 : 17000,
+            },
             { name: "rendered-contrast", status: "skipped", durationMs: 0 },
           ],
         },

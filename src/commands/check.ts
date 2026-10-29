@@ -1,3 +1,8 @@
+import {
+  checkSnapshot,
+  compatibleCheckSnapshots,
+  type CheckSnapshot,
+} from "../core/check-reuse.js";
 import { STEP_TIMING_MARKER, type CheckStepTiming } from "../core/check-timings.js";
 /**
  * `repoos check` — the definition-of-done gate.
@@ -1610,7 +1615,7 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
     const viaReuse = reuseNote ? /reus|identical|bookkeeping/i.test(reuseNote) : false;
     return skipped(
       viaReuse
-        ? `skipped — full suite reused from the handoff gate (${reuseNote})`
+        ? `skipped — tests reused (${reuseNote})`
         : "skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)",
     );
   }
@@ -2307,6 +2312,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       }
     }
   }
+  const validationStart = await checkSnapshot(repoRoot, changedRef);
+  let remoteTestsPassed = false;
   // The plan never runs when the remote gate fails, so the normal end-of-run
   // record is never written: persist the failure for the Checks surface too,
   // like a local failure and like the handoff path (fail-soft).
@@ -2355,6 +2362,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         process.exit(1);
       }
       if (gate.kind === "local-only" && gate.skipTests) {
+        remoteTestsPassed = true;
         process.env.REPOOS_SKIP_TESTS = "1";
         if (offloadBrowserStepsEnabled(cfg)) {
           process.env[REPOOS_BROWSER_STEPS_REMOTE] = "1";
@@ -2637,6 +2645,26 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   // Persist the run for the Checks surface (#0447) before exiting. Fail-soft:
   // visibility only, never a reason to fail an otherwise-green gate.
   const finishedAt = new Date();
+  const validationEnd = await checkSnapshot(repoRoot, changedRef);
+  const testSteps = plan.steps.filter((s) => s.kind === "tests");
+  const testsProven =
+    testSteps.length > 0 &&
+    testSteps.every((s) =>
+      results.some(
+        (r) =>
+          r.name === s.name &&
+          (r.status === "passed" || (remoteTestsPassed && r.status === "skipped")),
+      ),
+    );
+  // Partial profiles/--step and skipped suites must never mint reusable evidence.
+  const reusableSnapshot =
+    gatingFailures.length === 0 &&
+    !opts.steps?.length &&
+    profile === (plan.defaultProfile || DEFAULT_PROFILE) &&
+    testsProven &&
+    (await compatibleCheckSnapshots(repoRoot, validationStart, validationEnd))
+      ? validationStart
+      : null;
   const testProgress =
     [...results]
       .reverse()
@@ -2702,6 +2730,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     attribution: runContext,
     scope: changedRef ? `changed:${changedRef}` : "full",
     worktree: repoRoot,
+    snapshot: reusableSnapshot,
     startedAt: runStartedAt.toISOString(),
     durationMs: finishedAt.getTime() - runStartedAt.getTime(),
     outcome: gatingFailures.length === 0 ? "pass" : "fail",
@@ -2779,6 +2808,7 @@ function recordRunHistoryRow(row: {
   attribution: { taskId: string | null; phase: CheckRunPhase };
   scope: string;
   worktree?: string;
+  snapshot?: CheckSnapshot | null;
   startedAt: string;
   durationMs: number;
   outcome: "pass" | "fail" | "skipped";
@@ -2800,6 +2830,10 @@ function recordRunHistoryRow(row: {
       taskId,
       phase,
       worktree: row.worktree,
+      candidateSha: row.snapshot?.candidateSha,
+      reuseContext: row.snapshot
+        ? { mainSha: row.snapshot.mainSha, mergeBase: row.snapshot.mergeBase }
+        : null,
       machine: localMachineName(),
       remote: false,
       scope: row.scope,

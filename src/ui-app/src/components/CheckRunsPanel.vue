@@ -368,6 +368,12 @@ function outcomeLabel(r: CheckRunRow): string {
                 :title="r.skippedSteps.length ? `skipped: ${r.skippedSteps.join(', ')}` : undefined"
               >
                 {{ scopeLabel(r) }}
+                <span
+                  v-if="r.detail?.includes('reused check ')"
+                  class="cr-skipped"
+                  data-test-id="reused-check"
+                  >{{ r.detail }}</span
+                >
                 <span v-if="r.skippedSteps.length" class="cr-skipped"
                   >{{ r.skippedSteps.length }} skipped</span
                 >
