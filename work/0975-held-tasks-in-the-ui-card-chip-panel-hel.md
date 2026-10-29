@@ -11,7 +11,7 @@ branch: feat/held-tasks-in-the-ui-card-chip-panel-hel
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-28T12:02:51Z"
-updated_at: "2026-10-29T03:09:58Z"
+updated_at: "2026-10-29T03:11:57Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -46,33 +46,36 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"c
 ```json
 [
 {
-"label": "Board card with the Held chip",
-"target": "default",
-"route": "/work",
-"highlight": ".tc-held",
-"state": "card:held"
+  "label": "Held task chip on the board",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".tc-held",
+  "state": "card:held"
 },
 {
-"label": "Held task panel with release controls",
-"target": "default",
-"route": "/work?task=0975&tab=changes",
-"highlight": ".held-panel",
-"state": "drawer:held"
+  "label": "Held task panel with release controls",
+  "target": "default",
+  "route": "/work?task=shot-0975",
+  "highlight": ".held-panel",
+  "state": "drawer:held"
 },
 {
-"label": "Hold dialog with reason and auto-release date",
-"target": "default",
-"route": "/work?task=0975&tab=changes",
-"highlight": ".cc-modal",
-"steps": [
-{
-  "click": "button[data-test-id=\"hold-task\"]"
-},
-{
-  "waitMs": 250
-}
-],
-"state": "drawer:held"
+  "label": "Hold task dialog",
+  "target": "default",
+  "route": "/work?task=shot-0975",
+  "highlight": ".cc-modal",
+  "steps": [
+    {
+      "click": ".held-panel button"
+    },
+    {
+      "waitMs": 250
+    },
+    {
+      "click": "[data-test-id=\"hold-task\"]"
+    }
+  ],
+  "state": "drawer:held"
 }
 ]
 ```
@@ -110,3 +113,4 @@ engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:09:58.078Z\",\"reason\":\"c
 - 2026-10-29T02:38:44Z · body
 - 2026-10-29T03:04:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T03:09:58Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-29T03:11:57Z · body
