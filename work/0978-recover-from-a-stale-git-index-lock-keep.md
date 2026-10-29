@@ -11,7 +11,7 @@ branch: feat/recover-from-a-stale-git-index-lock-keep
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-29T11:48:54Z"
-updated_at: "2026-10-29T13:33:01Z"
+updated_at: "2026-10-29T13:33:02Z"
 ---
 ## Problem
 On 2026-10-29 a `.git/index.lock` in the main checkout was left behind at 10:33Z by a git process that died mid-write. For over an hour every git write on main failed with "Unable to create .git/index.lock: File exists": RepoOS's own task-file commits silently stayed uncommitted, `repoos` commands were slow, and the driver's merge of #0977 was refused while its check then ran on unmerged code. Nothing reported it.
@@ -37,3 +37,4 @@ The task-file commit path is fail-soft (`commitTaskFile`); keep it fail-soft but
 - 2026-10-29T12:13:33Z · status inbox→ready
 - 2026-10-29T12:13:42Z · status ready→active, branch
 - 2026-10-29T13:33:01Z · status active→review
+- 2026-10-29T13:33:02Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
