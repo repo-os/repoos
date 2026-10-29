@@ -2,10 +2,7 @@
 id: "0966"
 title: "Server freezes (3/4): batched, cached board git queries"
 type: refactor
-status: active
-needs_input: true
-needs_input_reason: check-wait
-needs_input_detail: "waiting: system load is high (3.7× per CPU, limit 3×) — waiting for headroom before starting more work; additional signals: macOS memory_pressure reports warn (advisory); memory compressor is holding 38% of RAM (9.1 GB of RAM) — not holding on occupancy alone for 10m"
+status: done
 priority: p1
 area: core
 depends_on: ["0962"]
@@ -15,7 +12,7 @@ branch: feat/server-freezes-3-4-batched-cached-board-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-27T12:02:34Z"
-updated_at: "2026-10-29T12:32:18Z"
+updated_at: "2026-10-29T12:32:57Z"
 handoff_signal_retry_count: 2
 dev_error_count: 6
 engineer_stall_resume_log: "[{\"at\":\"2026-10-29T08:56:47.889Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -70,3 +67,5 @@ Depends on #0962. Same rules as the other split tasks: no server restarts, no pr
 - 2026-10-29T10:37:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T11:44:15Z · held, held-reason, held-by, held-at
 - 2026-10-29T12:32:18Z · released
+- 2026-10-29T12:32:56Z · status active→done
+- 2026-10-29T12:32:57Z · watchdog: check wait ended — cleared needs_input
