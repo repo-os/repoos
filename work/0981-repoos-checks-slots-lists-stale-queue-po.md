@@ -2,7 +2,7 @@
 id: "0981"
 title: repoos checks slots lists stale queue positions after a check got its slot
 type: bug
-status: active
+status: done
 needs_input: true
 needs_input_reason: check-wait
 needs_input_detail: "waiting: system load is high (6.8× per CPU, limit 3×) — waiting for headroom before starting more work; additional signals: memory compressor use is high (32%, limit 35%) for 12m"
@@ -14,7 +14,7 @@ branch: feat/repoos-checks-slots-lists-stale-queue-po
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-29T14:44:37Z"
-updated_at: "2026-10-29T22:08:41Z"
+updated_at: "2026-10-29T22:08:45Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -42,3 +42,4 @@ The slots listing shows only real, current waiters, with true positions.
 - 2026-10-29T17:38:32Z · engineer stopped by request
 - 2026-10-29T17:38:32Z · held, held-reason, held-by, held-at
 - 2026-10-29T22:08:41Z · released
+- 2026-10-29T22:08:45Z · status active→done
