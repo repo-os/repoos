@@ -454,21 +454,22 @@ A waiting check says so, in three places:
 
 - **The run's own output** prints `waiting: <reason>` when the wait starts,
   repeats as `waiting: <reason> for Nm` every minute, and at ten minutes adds
-  "… this wait is being surfaced as needs input". A handoff check's output
+  "… queued checks are normal — keep waiting; do not end your turn". A handoff check's output
   streams into the task transcript, so the wait is readable there, live.
-- **The task card** shows a `waiting · Nm` chip (with queue position) whose
+- **The task card** shows a `waiting for a check slot · Nm` chip (with queue position) whose
   tooltip reads `waiting: <reason> for Nm`. It replaces the old silent `queued`
   chip. The drawer shows the same hint next to the check chip.
 - **The run record** stores the wait (`waited: { reason, ms }`) alongside the
   steps, so a finished run still says "this one sat 26 minutes before it
   started".
 
-A wait that passes **ten minutes** is escalated to `needs_input` by the task
-watchdog, with the wait reason and duration in the detail — the #0970
-incident was a handoff check that sat 26 minutes at 0% CPU behind a stale
-pressure guard with nothing on the card. The escalation is informational and
-clears itself: once the wait ends (the gate acquired its slot) or the next
-engineer run starts, the flag goes away without human action.
+Queue markers are a separate, non-blocking waiting state, with the reason and
+start time. Engineers keep waiting and hand off after the check passes; a
+normal queue wait does not set `needs_input`. Only an abnormal wait requests
+input: a dead slot holder, a holder without a heartbeat for **30 minutes**, or
+a wait exceeding the handoff deadline. The flag and waiting badge clear when
+the gate acquires its slot. Pressure waits follow the configured pressure
+guard and only escalate when they exceed the handoff deadline.
 
 Separately, git-queue waits are visible per job: `repoos stats` lists each
 in-flight git worker job with its lane (bulk/fast), queue wait and run time,

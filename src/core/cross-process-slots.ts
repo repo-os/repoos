@@ -555,7 +555,11 @@ export async function acquireLocalFallbackSerializeSlot(
     slots: 1,
     lockRoot: localFallbackSerializeLockRoot(repoRoot, cacheDir),
     waitTimeoutMs,
-    meta: { kind: "local-fallback-serialize", id: randomBytes(4).toString("hex") },
+    meta: {
+      kind: "local-fallback-serialize",
+      pid: process.pid,
+      id: randomBytes(4).toString("hex"),
+    },
     onQueued: (ahead) => onQueued?.(ahead),
   });
 }
