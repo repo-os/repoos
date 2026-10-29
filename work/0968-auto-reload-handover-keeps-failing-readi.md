@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-29T03:15:31.071Z: repoos check failed: tests — timed out — timed out after 2400s"
 id: "0968"
 title: "Auto-reload handover keeps failing: readiness-based handshake, give up after N, Settings toggle"
 type: bug
@@ -59,3 +61,4 @@ src/server/reload.ts and server.ts (reloadEnabled). No server restarts, no previ
 - 2026-10-28T23:08:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-28T23:14:19Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-29T00:33:55Z · body
+
