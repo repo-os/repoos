@@ -358,6 +358,7 @@ const STYLE_SELECTORS: Record<string, { selector: string; pseudo: string | null 
   "wheelie-courier": { selector: ".ai-wheel-spokes", pseudo: null },
   "boo-swoop": { selector: ".ai-ghost-bank", pseudo: null },
   "pumpkin-spell": { selector: ".ai-pumpkin-bounce", pseudo: null },
+  "three-dots": { selector: ".ai-dot", pseudo: null },
 };
 
 /** Primary animated node + expected animation name per #0833 artwork style. */
@@ -395,6 +396,50 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
       }
     });
   }
+
+  it("holds every activity style on its static frame for reduced motion", async () => {
+    const page = await browser!.newPage();
+    try {
+      await page.goto("about:blank", { waitUntil: "load", timeout: 10_000 });
+      await page.evaluate(
+        ({ css }) => {
+          const s = document.createElement("style");
+          s.textContent = css;
+          document.head.appendChild(s);
+        },
+        { css: pageCss },
+      );
+
+      for (const [style, subject] of Object.entries(STYLE_SELECTORS)) {
+        const result = await page.evaluate(
+          ({ html, selector, pseudo, webFont }) => {
+            document.body.innerHTML = `<div style="font-family:${webFont};font-size:12px">${html}</div>`;
+            const root = document.querySelector<HTMLElement>(".ai")!;
+            // This is the class the motion coordinator applies when
+            // prefers-reduced-motion matches; the coordinator behavior itself
+            // is covered by activity-motion-coordinator.test.ts.
+            root.classList.add("ai-motion-paused");
+            const el = document.querySelector(selector)!;
+            const playState = getComputedStyle(el, pseudo).animationPlayState;
+            const running = root
+              .getAnimations({ subtree: true })
+              .filter((animation) => animation.playState === "running").length;
+            return { playState, running };
+          },
+          {
+            html: renderHtml(style, "coding"),
+            selector: subject.selector,
+            pseudo: subject.pseudo,
+            webFont,
+          },
+        );
+        expect(result.playState, `${style}: computed animation state`).toBe("paused");
+        expect(result.running, `${style}: running animations`).toBe(0);
+      }
+    } finally {
+      await page.close();
+    }
+  });
 
   it("does not collapse reviewing/agent onto the coding motion", async () => {
     const page = await browser!.newPage();
