@@ -45,6 +45,7 @@ import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 import { useNow } from "../composables/useNow";
 import { isHoldActive } from "../../../core/task-selection.js";
+import { Clock3 } from "lucide-vue-next";
 
 const holdNow = useNow();
 const props = withDefaults(
@@ -559,7 +560,7 @@ const hint = computed<CardHint | null>(() => {
       title: `This task is held — automation will not start it.${
         t.holdReason ? ` Reason: ${t.holdReason}.` : ""
       } Release with "repoos unhold ${t.id}"${t.holdUntil ? ` or after ${t.holdUntil}` : ""}.`,
-      cls: "tc-held",
+      cls: "tc-held-hint",
     };
   }
   // The freeform-create PM agent is fleshing this draft out right now
@@ -1126,19 +1127,6 @@ async function openDebuggerFromError(): Promise<void> {
         >
         <HotfixBadge v-if="task.hotfix" :target="task.hotfixTarget" :branch="task.branch" />
         <span
-          v-if="held"
-          class="tc-held"
-          tabindex="0"
-          role="img"
-          aria-label="Task held — automation will not start it"
-          :data-tip="`Held${task.holdReason ? ` — ${task.holdReason}` : ''}${
-            task.holdBy ? ` by ${task.holdBy}` : ''
-          }${task.holdUntil ? ` · auto-releases ${task.holdUntil}` : ''}. Release with &quot;repoos unhold ${task.id}&quot;.`"
-          @click.stop
-        >
-          Held<span v-if="task.holdUntil" class="tc-held-until"> · auto</span>
-        </span>
-        <span
           class="ml-auto rounded-[5px] px-[6px] py-[2px] font-mono text-[9px] font-bold"
           :class="task.priority"
           >{{ task.priority }}</span
@@ -1158,6 +1146,32 @@ async function openDebuggerFromError(): Promise<void> {
         <DependencyChip v-for="blocker in task.blockedBy" :key="blocker.id" :blocker="blocker" />
         <span v-if="task.assignee === 'human'" class="tc-human-chip">
           <User class="tc-human-chip-icon" aria-hidden="true" />{{ task.assignedTo || "human" }}
+        </span>
+        <span
+          v-if="held"
+          class="tc-held"
+          tabindex="0"
+          role="img"
+          :aria-label="
+            task.holdUntil
+              ? `Task held until ${new Date(task.holdUntil).toLocaleDateString()}`
+              : 'Task held — automation will not start it'
+          "
+          :data-tip="`Held${task.holdReason ? ` — ${task.holdReason}` : ''}${task.holdBy ? ` by ${task.holdBy}` : ''}${task.holdUntil ? ` · auto-releases ${task.holdUntil}` : ''}.`"
+          @click.stop
+        >
+          <Clock3 class="tc-held-icon" aria-hidden="true" />Held<span
+            v-if="task.holdUntil"
+            class="tc-held-until"
+          >
+            · until
+            {{
+              new Date(task.holdUntil).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+              })
+            }}</span
+          >
         </span>
         <span
           v-if="diffStats && diffStats.filesChanged > 0"
