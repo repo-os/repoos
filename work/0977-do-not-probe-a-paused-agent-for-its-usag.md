@@ -2,7 +2,7 @@
 id: "0977"
 title: Do not probe a paused agent for its usage limit until its reset time
 type: bug
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/do-not-probe-a-paused-agent-for-its-usag
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-29T07:23:47Z"
-updated_at: "2026-10-29T07:24:29Z"
+updated_at: "2026-10-29T11:42:58Z"
 ---
 ## Problem
 Mission Control's Recent failures fills with "Usage-Limit-Probe · antigravity · gemini … agy exited with code 3: Individual quota reached" every few minutes (seen 2026-10-28), although Antigravity is paused on the budget allowlist until its quota resets in ~147 h. Each probe spends a process start and buries real failures in the list.
@@ -33,3 +33,4 @@ Probe call site: search for the `usage-limit-probe` session type. Pause data: `[
 - 2026-10-29T07:24:03Z · cli_override, model_override
 - 2026-10-29T07:24:22Z · status inbox→ready
 - 2026-10-29T07:24:29Z · status ready→active, branch
+- 2026-10-29T11:42:58Z · status active→review
