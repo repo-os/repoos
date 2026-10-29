@@ -11,8 +11,9 @@ branch: feat/activity-animations-stop-burning-cpu-gpu
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-25T03:58:48Z"
-updated_at: "2026-10-29T03:05:17Z"
+updated_at: "2026-10-29T03:10:27Z"
 handoff_signal_retry_count: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-10-29T03:10:27.670Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -80,3 +81,4 @@ Animated indicators stay fun and visible, but they cost almost nothing: they onl
 - 2026-10-29T00:55:28Z · watchdog: check wait ended — cleared needs_input
 - 2026-10-29T02:11:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-10-29T03:05:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T03:10:27Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
