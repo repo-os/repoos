@@ -91,9 +91,10 @@ RepoOS's own; in a managed repo it is that project's. See `docs/README.md`.
    `REPOOS_CHECK_CHANGED=main repoos check`) and confirm it passes — not after
    every edit; repeated runs create WIP checkpoint commits on the task branch.
    When `remoteValidation` is enabled, that scoped check runs install + build +
-   changed-path tests on the runner and fast guards locally. Handoff runs the
-   full suite; default close-out runs changed-path tests plus always-run safety
-   suites (release runs every test). Add `--fix` (or just `bun run fmt`)
+   changed-path tests on the runner and fast guards locally. Handoff reuses a
+   recent passing self-check only for the same clean commit and unchanged main
+   source/base; otherwise it runs the full suite. Default close-out runs
+   changed-path tests plus always-run safety suites (release runs every test). Add `--fix` (or just `bun run fmt`)
    to run the `format` step's fixer before the check; handoff also does this and
    commits the result itself. Rebuild after UI changes.
 4. Request handoff with `repoos mv <id> review` or finish your reply with

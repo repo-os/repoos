@@ -143,8 +143,10 @@ export interface CheckRunRow {
   remote: boolean;
   /** 'full' or 'changed:<ref>'. */
   scope: string;
-  /** Set for remote rows when the bundle SHA is known (#0694). */
+  /** Committed candidate tested by a remote bundle or a clean local self-check. */
   candidateSha: string | null;
+  /** Clean, stable inputs proven by a complete self-check (#0976). */
+  reuseContext?: { mainSha: string; mergeBase: string } | null;
   startedAt: string;
   durationMs: number | null;
   outcome: CheckRunOutcome;
@@ -172,8 +174,9 @@ export interface RecordCheckRunInput {
   taskId?: string | null;
   phase: CheckRunPhase;
   worktree?: string | null;
-  /** `git rev-parse HEAD` the remote bundle was built from (#0694 reuse). */
+  /** `git rev-parse HEAD` tested by this run, when proven. */
   candidateSha?: string | null;
+  reuseContext?: { mainSha: string; mergeBase: string } | null;
   machine?: string | null;
   remote?: boolean;
   scope?: string;
@@ -270,6 +273,9 @@ export class CheckStore {
     if (!cols.some((c) => c.name === "candidate_sha")) {
       this.db.exec("ALTER TABLE check_runs ADD COLUMN candidate_sha TEXT");
     }
+    if (!cols.some((c) => c.name === "reuse_context")) {
+      this.db.exec("ALTER TABLE check_runs ADD COLUMN reuse_context TEXT");
+    }
     if (!cols.some((c) => c.name === "step_timings")) {
       this.db.exec("ALTER TABLE check_runs ADD COLUMN step_timings TEXT");
     }
@@ -295,8 +301,8 @@ export class CheckStore {
           `INSERT INTO check_runs
              (task_id, phase, worktree, candidate_sha, machine, remote, scope, started_at, duration_ms,
               outcome, failed_step, skipped_steps, detail, failed_tests, isolation_note,
-              steps_done, steps_total, tests_done, tests_total, step_timings, test_file_timings)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              steps_done, steps_total, tests_done, tests_total, step_timings, test_file_timings, reuse_context)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           input.taskId ?? null,
@@ -324,6 +330,7 @@ export class CheckStore {
           input.testsTotal ?? null,
           input.steps ? JSON.stringify(readStepTimings(input.steps)) : null,
           JSON.stringify(input.testFileTimings ?? []),
+          input.reuseContext ? JSON.stringify(input.reuseContext) : null,
         );
       // Retention: delete everything older than the newest MAX_ROWS rows.
       this.db
@@ -400,6 +407,16 @@ export class CheckStore {
       phase: (r.phase ?? "cli") as CheckRunPhase,
       worktree: r.worktree ?? null,
       candidateSha: r.candidate_sha ?? null,
+      reuseContext: (() => {
+        try {
+          const value = JSON.parse(r.reuse_context ?? "null");
+          return typeof value?.mainSha === "string" && typeof value?.mergeBase === "string"
+            ? { mainSha: value.mainSha, mergeBase: value.mergeBase }
+            : null;
+        } catch {
+          return null;
+        }
+      })(),
       machine: r.machine ?? null,
       remote: Number(r.remote) === 1,
       scope: String(r.scope ?? "full"),
