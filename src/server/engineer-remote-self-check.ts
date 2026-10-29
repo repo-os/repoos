@@ -11,8 +11,7 @@
 
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import type { CheckRunRow } from "../core/check-store.js";
-import { getCheckStore, resolveCheckStoreRoot } from "../core/check-store.js";
+import { resolveCheckStoreRoot } from "../core/check-store.js";
 import { loadConfig } from "../core/config.js";
 import { runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
 import { REPOOS_TOML_REL } from "../core/repoos-toml-branch-guard.js";
@@ -25,6 +24,7 @@ import { runRemotePreReviewGate } from "./pre-review-remote-gate.js";
 import type { RemoteValidator } from "./remote-validation.js";
 import { createRemoteValidator } from "./remote-validation.js";
 import { Logger } from "../core/logger.js";
+import { checkSnapshot } from "../core/check-reuse.js";
 
 /** Default on when remote validation is enabled (#0694). */
 export function engineerSelfCheckRemoteEnabled(config: RepoOSConfig): boolean {
@@ -132,46 +132,10 @@ export async function appendEngineerSelfCheckActivity(
   }
 }
 
-/** Latest green remote pre-review run for this task at exactly this HEAD (#0694). */
-export function findReusableRemotePreReviewPass(
-  boardRoot: string,
-  cacheDir: string,
-  opts: { taskId: string; candidateSha: string },
-): CheckRunRow | null {
-  try {
-    const rows = getCheckStore(boardRoot, cacheDir).list({
-      taskId: opts.taskId,
-      remote: true,
-      limit: 50,
-    });
-    return (
-      rows.find(
-        (r) =>
-          r.outcome === "pass" &&
-          r.candidateSha === opts.candidateSha &&
-          (r.phase === "pre-review" || r.phase === "cli") &&
-          (r.scope ?? "full") === "full",
-      ) ?? null
-    );
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Handoff path: skip a second remote run when the engineer already got green at
  * this HEAD on a runner.
  */
-export function remoteOutcomeFromReuse(row: CheckRunRow): RemotePreReviewOutcome {
-  const host = row.machine ?? "runner";
-  const dur = formatSelfCheckDuration(row.durationMs);
-  return {
-    kind: "local-only",
-    skipTests: true,
-    detail: `reusing green remote self-check on ${host} (${dur}) — same HEAD, skipping duplicate runner pass`,
-  };
-}
-
 export async function runEngineerRemoteSelfCheckGate(params: {
   worktreeConfig: RepoOSConfig;
   worktreePath: string;
@@ -195,11 +159,13 @@ export async function runEngineerRemoteSelfCheckGate(params: {
   process.env.REPOOS_CHECK_STORE_ROOT = boardRoot;
   const startedAt = Date.now();
   try {
+    const snapshot = await checkSnapshot(params.worktreePath, params.changedRef);
     const gate = await runRemotePreReviewGate({
       config: boardCfg,
       remoteValidator,
       worktreePath: params.worktreePath,
       taskId: params.taskId,
+      reuseContext: snapshot,
       phase: "pre-review",
       kind: "self-check",
       changedRef: params.changedRef,
@@ -220,20 +186,10 @@ export async function runEngineerRemoteSelfCheckGate(params: {
       }
     }
     if (gate.kind === "local-only" && gate.skipTests && params.taskAbsPath) {
-      const headRes = await runGit(params.worktreePath, ["rev-parse", "HEAD"], 10_000);
-      const candidateSha = headRes.status === 0 ? headRes.stdout.trim() : "";
-      const row = candidateSha
-        ? findReusableRemotePreReviewPass(boardRoot, boardCfg.cacheDir, {
-            taskId: params.taskId,
-            candidateSha,
-          })
-        : null;
-      const machine = row?.machine ?? "remote host";
-      const dur = formatSelfCheckDuration(row?.durationMs ?? Date.now() - startedAt);
       void appendEngineerSelfCheckActivity(
         boardCfg,
         params.taskAbsPath,
-        `remote self-check on ${machine} (${dur})`,
+        `remote self-check (${formatSelfCheckDuration(Date.now() - startedAt)})`,
       );
     }
     return gate;
