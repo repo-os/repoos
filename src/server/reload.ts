@@ -151,6 +151,9 @@ const DEFAULT_POLL_MS = 5000;
 const DEFAULT_RETRY_MS = 2000;
 const DEFAULT_GRACE_MS = 2000;
 const DEFAULT_HANDSHAKE_TIMEOUT_MS = 30_000;
+const MIN_HANDSHAKE_TIMEOUT_MS = 90_000;
+const MAX_HANDSHAKE_TIMEOUT_MS = 5 * 60_000;
+const MAX_HANDOVER_FAILURES = 3;
 /** Manual reloads should fail visibly sooner than background self-healing. */
 const MANUAL_HANDSHAKE_TIMEOUT_MS = 15_000;
 /** Sustained-health window before a replacement handoff is confirmed. */
@@ -169,6 +172,17 @@ const WATCH_DEBOUNCE_MS = 60;
  */
 const BACKOFF_BASE_MS = 10_000;
 const BACKOFF_MAX_MS = 5 * 60_000;
+
+/** Allow cold boots room to become healthy, with headroom for startup variance. */
+export function adaptiveHandshakeTimeoutMs(successfulBootMs: number): number {
+  return Math.min(
+    MAX_HANDSHAKE_TIMEOUT_MS,
+    Math.max(
+      MIN_HANDSHAKE_TIMEOUT_MS,
+      successfulBootMs > 0 ? successfulBootMs * 1.5 : DEFAULT_HANDSHAKE_TIMEOUT_MS,
+    ),
+  );
+}
 
 /** GET a URL and JSON.parse it; resolves null on any failure (never throws). */
 function probeJson(url: string): Promise<Record<string, unknown> | null> {
@@ -215,6 +229,8 @@ export class ReloadManager {
   private consecutiveFailures = 0;
   /** Automatic (non-manual) reloads are refused until this time, post-failure. */
   private backoffUntil = 0;
+  private successfulBootMs = 0;
+  private restartNeeded = false;
   /**
    * Hash of a build parked by a close-out (0143). Never auto-reloaded — it
    * waits for the user to trigger POST /api/server/restart.
@@ -235,6 +251,10 @@ export class ReloadManager {
   /** True while the manager is actively handing over to a replacement process. */
   get isReloading(): boolean {
     return this.reloading;
+  }
+
+  get needsRestart(): boolean {
+    return this.restartNeeded;
   }
 
   /**
@@ -319,6 +339,8 @@ export class ReloadManager {
    */
   requestReload(reason: string, opts: { manual?: boolean } = {}): ReloadState {
     if (!this.enabled) return { state: "not-stale", reason: "auto-reload disabled" };
+    if (this.restartNeeded && !opts.manual)
+      return { state: "not-stale", reason: "restart needed after repeated reload failures" };
     if (this.stopped) return { state: "not-stale", reason: "server is shutting down" };
     if (this.reloading) return { state: "reloading", reason };
     const running = this.options.isBusy();
@@ -493,8 +515,12 @@ export class ReloadManager {
       );
     });
 
+    const timeoutMs =
+      handshakeTimeoutMs ??
+      this.options.handshakeTimeoutMs ??
+      adaptiveHandshakeTimeoutMs(this.successfulBootMs);
     this.log(
-      `reload: spawning replacement pid ${child.pid ?? "unknown"} on ${this.options.host}:${this.options.port} (${reason}); handshake timeout ${handshakeTimeoutMs ?? DEFAULT_HANDSHAKE_TIMEOUT_MS}ms`,
+      `reload: spawning replacement pid ${child.pid ?? "unknown"} on ${this.options.host}:${this.options.port} (${reason}); handshake timeout ${timeoutMs}ms`,
     );
     const confirmed = await this.waitForReplacement(secret, handshakeTimeoutMs);
 
@@ -523,6 +549,8 @@ export class ReloadManager {
       // A real handoff: whatever run of failures preceded it is over.
       this.consecutiveFailures = 0;
       this.backoffUntil = 0;
+      this.successfulBootMs = Date.now() - startedAt;
+      this.restartNeeded = false;
       this.stopped = true;
       child.unref?.();
       this.log(
@@ -549,6 +577,7 @@ export class ReloadManager {
       // retry in ~5s. Doubles per consecutive failure, capped at
       // BACKOFF_MAX_MS; a manual POST /api/server/restart still bypasses it.
       this.consecutiveFailures++;
+      this.restartNeeded = this.consecutiveFailures >= MAX_HANDOVER_FAILURES;
       const backoffMs = Math.min(
         BACKOFF_BASE_MS * 2 ** (this.consecutiveFailures - 1),
         BACKOFF_MAX_MS,
@@ -556,12 +585,16 @@ export class ReloadManager {
       this.backoffUntil = Date.now() + backoffMs;
       this.log(
         `reload: replacement failed to become ready${rebound === "bound" ? "" : ` — ${rebound} (server may be down)`}` +
-          ` after ${elapsed()} — backing off ${Math.round(backoffMs / 1000)}s (${this.consecutiveFailures} consecutive failure${this.consecutiveFailures === 1 ? "" : "s"})`,
+          (this.restartNeeded
+            ? ` after ${elapsed()} — giving up after ${this.consecutiveFailures} consecutive failures; restart needed`
+            : ` after ${elapsed()} — backing off ${Math.round(backoffMs / 1000)}s (${this.consecutiveFailures} consecutive failure${this.consecutiveFailures === 1 ? "" : "s"})`),
       );
       this.options.onReloadFailed?.(
-        rebound === "bound"
-          ? "replacement did not become ready"
-          : `replacement failed and ${rebound}`,
+        this.restartNeeded
+          ? `restart needed after ${this.consecutiveFailures} failed handovers`
+          : rebound === "bound"
+            ? "replacement did not become ready"
+            : `replacement failed and ${rebound}`,
       );
     }
     this.child = null;
@@ -582,7 +615,13 @@ export class ReloadManager {
    */
   private async waitForReplacement(secret: string, timeoutMs?: number): Promise<boolean> {
     const deadline =
-      Date.now() + (timeoutMs ?? this.options.handshakeTimeoutMs ?? DEFAULT_HANDSHAKE_TIMEOUT_MS);
+      Date.now() +
+      Math.min(
+        MAX_HANDSHAKE_TIMEOUT_MS,
+        timeoutMs ??
+          this.options.handshakeTimeoutMs ??
+          adaptiveHandshakeTimeoutMs(this.successfulBootMs),
+      );
     const graceUntil = Date.now() + (this.options.graceMs ?? DEFAULT_GRACE_MS);
     const confirmMs = this.options.confirmMs ?? DEFAULT_CONFIRM_MS;
     const url = `http://${this.options.host}:${this.options.port}/api/health?reload=${secret}`;
