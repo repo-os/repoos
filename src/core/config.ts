@@ -2916,7 +2916,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       group: "general",
       default: true,
       description:
-        "When an agent reports an explicit quota or HTTP 429 usage-limit error, pause that agent+model and let active work fail over. Without a reset time, RepoOS runs a low-token probe every 10 minutes and resumes the model after a successful response.",
+        "When an agent reports an explicit quota or HTTP 429 usage-limit error, pause that agent+model and let active work fail over. A pause is not probed until its reset time. After that, a low-token probe backs off (from 10 minutes, doubling up to 6 hours) and a still-limited reply extends the pause. A pause with no date stays until you resume it.",
     },
     {
       key: "watchdog.engineerCrashFailoverWindowMs",

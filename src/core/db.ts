@@ -11,6 +11,7 @@
 import { existsSync, mkdirSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
+import { isUsageLimitProbeConfirmation } from "./provider-usage-limit.js";
 
 let Database: any;
 let dbAvailable = false;
@@ -985,11 +986,16 @@ export class RepoOSDb {
       // The most recent errored sessions in range (newest first, capped), so
       // the Tokens panel can show why runs failed — the CTO's provider
       // credit/auth failures were previously anonymous (#0649).
-      const recentFailures = this.db
+      // Pull extra rows so quota-probe confirmations can be dropped without
+      // leaving the visible list short of real failures (#0977).
+      const recentFailureRows = this.db
         .prepare(
-          `SELECT * FROM sessions WHERE status = 'errored' ${startedFilterAnd} ORDER BY startedAt DESC LIMIT 8`,
+          `SELECT * FROM sessions WHERE status = 'errored' ${startedFilterAnd} ORDER BY startedAt DESC LIMIT 40`,
         )
         .all(...startedArgs) as SessionRecord[];
+      const recentFailures = recentFailureRows
+        .filter((row) => !isUsageLimitProbeConfirmation(row))
+        .slice(0, 8);
 
       return {
         totalSessions: summary.totalSessions || 0,
