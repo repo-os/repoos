@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-29T11:43:46Z"
-review_passes: 1
 id: "0977"
 title: Do not probe a paused agent for its usage limit until its reset time
 type: bug
-status: review
+status: done
 priority: p2
 area: core
 assigned_to: ai
@@ -13,6 +11,8 @@ branch: feat/do-not-probe-a-paused-agent-for-its-usag
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-29T07:23:47Z"
+updated_at: "2026-10-29T12:00:33Z"
+review_passes: 1
 dev_error_count: 5
 ---
 ## Problem
@@ -45,4 +45,4 @@ Probe call site: search for the `usage-limit-probe` session type. Pause data: `[
 - 2026-10-29T11:42:58Z · status active→review
 - 2026-10-29T11:42:58Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-29T11:43:46Z · note: review pass 1: good to go
-
+- 2026-10-29T12:00:33Z · status review→done
