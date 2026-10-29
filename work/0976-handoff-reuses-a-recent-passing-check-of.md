@@ -6,6 +6,10 @@ status: active
 needs_input: true
 needs_input_reason: check-wait
 needs_input_detail: "waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0966 check (pid 4593, alive), #0977 check (pid 11929, alive) for 10m"
+hold: true
+hold_reason: "Driver landing by hand (Nick, 2026-10-29)"
+hold_by: driver
+hold_at: "2026-10-29T11:44:14.877Z"
 priority: p1
 area: core
 assigned_to: ai
@@ -14,7 +18,7 @@ branch: feat/handoff-reuses-a-recent-passing-check-of
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-29T05:51:30Z"
-updated_at: "2026-10-29T08:39:13Z"
+updated_at: "2026-10-29T11:44:14Z"
 dev_error_count: 9
 ---
 ## Problem
@@ -70,3 +74,4 @@ Handoff reuses a recent passing check of the same tree instead of repeating it, 
 - 2026-10-29T08:34:12Z · body
 - 2026-10-29T08:38:17Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0966 check (pid 4593, alive), #0977 check (pid 11929, alive) for 10m · next step: let it finish — the wait clears itself when the check starts running; investigate only if it persists
 - 2026-10-29T08:39:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-29T11:44:14Z · held, held-reason, held-by, held-at
