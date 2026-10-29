@@ -1156,8 +1156,8 @@
   overflow: hidden;
   /* Full-height views own their scrollports and put the shared end inset on
      that scroller. Padding here would instead recreate an empty bottom band. */
+  /* The agent heads float over content like on /work: no blank right lane. */
   padding: 22px 26px 0;
-  padding-inline-end: max(26px, var(--page-inline-end-inset));
   min-width: 0;
 }
 /* Routed shells fill the pane so height:100% / nested flex scrollports resolve (#0951). */
@@ -13481,11 +13481,6 @@
     background: linear-gradient(to bottom, transparent, var(--bg) 70%);
     pointer-events: none;
   }
-  /* The agent heads float over the board like the bottom controls, so the
-     Work page uses the full width instead of reserving a blank head lane. */
-  .main:has(> .work-page) {
-    padding-inline-end: 26px;
-  }
   .work-page .archived-rows,
   .work-page .human-rows,
   .work-page .held-rows {
@@ -15379,9 +15374,14 @@
   color: var(--txt);
   min-width: 0;
 }
+/* Title at the top, environment controls on the same row (2026-10-28 redesign). */
+.secrets-page > .page-header {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
 .secrets-env-control {
-  width: min(310px, 100%);
   display: grid;
+  justify-items: end;
   gap: 6px;
   flex-shrink: 0;
 }
@@ -15395,17 +15395,18 @@
 }
 .secrets-picker-wrap {
   position: relative;
-  display: grid;
-  gap: 7px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .secrets-picker {
-  width: 100%;
+  width: 220px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 7px 10px;
   color: var(--txt);
   background: var(--panel-solid);
   font: inherit;
@@ -15424,7 +15425,7 @@
   outline-offset: 2px;
 }
 .secrets-create-inline {
-  justify-self: start;
+  flex: none;
 }
 .secrets-empty {
   display: grid;
@@ -15459,8 +15460,13 @@
 .secrets-empty code {
   color: var(--txt);
 }
+/* One card for the key list: heading, search and Add key in its header,
+   keys as divided rows rather than separate bordered bars. */
 .secrets-ledger {
-  padding-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-gradient);
+  padding: 16px 18px 8px;
 }
 .secrets-file {
   display: flex;
@@ -15492,10 +15498,13 @@
 }
 .secrets-ledger-top {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
   flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.secrets-ledger-heading {
+  margin-right: auto;
 }
 .secrets-ledger-heading {
   display: grid;
@@ -15513,8 +15522,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1 1 220px;
-  max-width: 380px;
+  flex: 0 1 300px;
   padding: 0 11px;
   border: 1px solid var(--border);
   border-radius: 7px;
@@ -15535,18 +15543,22 @@
 .secrets-rows {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  border-top: 1px solid var(--border);
 }
 .secrets-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  border: 1px solid var(--border);
-  background: var(--panel-gradient);
-  border-radius: 8px;
-  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  padding: 9px 6px;
   min-width: 0;
+}
+.secrets-row:last-child {
+  border-bottom: 0;
+}
+.secrets-row:hover {
+  background: color-mix(in srgb, var(--txt) 4%, transparent);
 }
 .secrets-row.is-editing {
   border-color: color-mix(in srgb, var(--cyan) 45%, var(--border));

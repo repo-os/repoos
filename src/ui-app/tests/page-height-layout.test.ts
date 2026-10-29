@@ -38,18 +38,19 @@ describe("standard page height and floating controls", () => {
     );
     // The floating heads carry no fade strip of their own; it read as a line.
     expect(css).not.toMatch(/\.body::after\s*\{/);
-    // Work floats its bottom controls on a fade and drops the blank head lane.
+    // Work floats its bottom controls on a fade.
     expect(css).toMatch(/\.work-page::after\s*\{[^}]*position:\s*fixed;[^}]*linear-gradient/s);
-    expect(css).toMatch(/\.main:has\(> \.work-page\)\s*\{[^}]*padding-inline-end:\s*26px/s);
     expect(css).toMatch(
       /--page-bottom-fade-size:\s*calc\(var\(--floating-head-stack-height\) \+ var\(--floating-head-bottom\)\)/,
     );
     expect(css).toMatch(
       /--page-inline-end-inset:\s*calc\(\s*var\(--floating-head-size\) \+ var\(--floating-head-inline-offset\) \+ 12px\s*\)/,
     );
-    expect(css).toMatch(
-      /\.main\s*\{[^}]*padding-inline-end:\s*max\(26px, var\(--page-inline-end-inset\)\)/s,
-    );
+    // Every page lets the agent heads float over content (as /work did): the
+    // desktop .main keeps no blank right lane for them (2026-10-28).
+    const desktopMain = css.match(/\n\.main\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(desktopMain).toContain("padding: 22px 26px 0;");
+    expect(desktopMain).not.toMatch(/padding-inline-end/);
     expect(css).toMatch(/--floating-head-size:\s*46px/);
     expect(css).toMatch(
       /@media \(max-width: 760px\)[\s\S]*?#app\s*\{[^}]*--floating-head-size:\s*46px/s,
