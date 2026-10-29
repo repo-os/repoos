@@ -3996,10 +3996,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       res,
       skipStuck: path === "/api/events",
       log: (level, message) => logger.system(level, message),
-      stuckDetail: () => {
-        const gitCalls = gitWorkerInFlight(config.root);
-        return gitCalls.length ? ` git=${JSON.stringify(gitCalls)}` : "";
-      },
+      gitInFlight: () => gitWorkerInFlight(config.root),
     });
 
     try {
