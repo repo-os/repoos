@@ -3,6 +3,10 @@ id: "0968"
 title: "Auto-reload handover keeps failing: readiness-based handshake, give up after N, Settings toggle"
 type: bug
 status: active
+hold: true
+hold_reason: "Driver taking over to land by hand (Nick, 2026-10-29)"
+hold_by: driver
+hold_at: "2026-10-29T03:35:56.083Z"
 priority: p1
 area: core
 assigned_to: ai
@@ -62,3 +66,4 @@ src/server/reload.ts and server.ts (reloadEnabled). No server restarts, no previ
 - 2026-10-28T23:14:19Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-10-29T00:33:55Z · body
 - 2026-10-29T03:35:56Z · engineer stopped by request
+- 2026-10-29T03:35:56Z · held, held-reason, held-by, held-at
