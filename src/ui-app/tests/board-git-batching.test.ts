@@ -186,18 +186,18 @@ describe("board Git queries", () => {
     expect(blockers.get("0001")).toEqual([]);
     expect(blockers.get("0002")).toEqual([{ id: "0001", state: "waiting" }]);
     expect(blockers.get("0003")).toEqual([{ id: "0002", state: "cancelled" }]);
-    expect(f.calls()).toHaveLength(6);
+    expect(f.calls()).toHaveLength(7); // +1: dependency blockers confirm worktree HEADs with one `worktree list`.
     // Neither elapsed time nor a new task-file read expires ref/HEAD facts.
     await f.worker.buildIndex(f.config, true);
     await f.worker.dependencyBlockers(f.root, index.tasks);
     for (let i = 0; i < 10; i++) await f.worker.taskFacts(f.config, `work/000${i}-task.md`, null);
-    expect(f.calls()).toHaveLength(6);
+    expect(f.calls()).toHaveLength(7);
 
     f.moveHead();
     const updated = await f.worker.buildIndex(f.config, true);
     expect(updated.index.tasks.find((task) => task.id === "0000")?.git.lastCommit).toBe("updated");
     expect(updated.index.tasks.find((task) => task.id === "0001")?.git.lastCommit).toBe("commit 1");
-    expect(f.calls()).toHaveLength(11);
+    expect(f.calls()).toHaveLength(12);
     expect(f.calls().at(-1)).toContain("..");
     expect(f.calls().filter((call) => call.startsWith("branch --merged"))).toHaveLength(2);
   });
@@ -247,7 +247,7 @@ describe("board Git queries", () => {
     expect((await f.worker.dependencyBlockers(f.root, tasks)).get("0001")).toEqual([
       { id: "0000", state: "cancelled" },
     ]);
-    expect(f.calls()).toHaveLength(7);
+    expect(f.calls()).toHaveLength(9);
   });
 
   it("rechecks recorded merge commits after the base history changes", async () => {

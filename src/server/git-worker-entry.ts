@@ -13,6 +13,7 @@ import {
   removeWorktree,
   commitTaskFile,
   worktreePathForBranchAsync,
+  listWorktreesAsync,
 } from "../core/git.js";
 import { buildIndexDetailedAsync } from "../core/indexer.js";
 import { taskDependencyBlockersForAllAsync } from "../core/task-dependencies.js";
@@ -43,6 +44,13 @@ async function gitOverview(root: string): Promise<RepoGitOverview> {
   const overview = await repoGitOverviewAsync(root);
   overviewCache.set(root, overview);
   return overview;
+}
+
+async function worktreeFingerprint(root: string): Promise<string> {
+  return (await listWorktreesAsync(root))
+    .map((info) => `${info.branch ?? ""}:${info.head}`)
+    .sort()
+    .join(",");
 }
 
 function overviewToWire(overview: RepoGitOverview): Record<string, unknown> {
@@ -200,6 +208,13 @@ async function respond(message: RequestMessage): Promise<unknown> {
     case "dependency-blockers": {
       const root = payload.root as string;
       const tasks = payload.tasks as Task[];
+      // Dependency state gates which tasks may start, so it must not rely on
+      // the watcher having invalidated the shared overview: one `worktree
+      // list` (fixed cost) confirms no worktree HEAD moved, e.g. a merge into
+      // main, before the cached overview is trusted.
+      const cached = overviewCache.get(root);
+      if (cached && (await worktreeFingerprint(root)) !== cached.fingerprint)
+        overviewCache.delete(root);
       return [...(await taskDependencyBlockersForAllAsync(root, tasks, await gitOverview(root)))];
     }
     case "sweep": {
