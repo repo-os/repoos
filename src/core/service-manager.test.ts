@@ -13,6 +13,7 @@ import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  restartCommand,
   serviceId,
   serviceLabel,
   detectPlatform,
@@ -433,5 +434,17 @@ describe("plist content validation", () => {
     expect(entry.label).toMatch(/^com\.repoos\.serve\./);
     expect(entry.port).toBeGreaterThan(0);
     expect(entry.port).toBeLessThan(65536);
+  });
+});
+
+describe("restartCommand (#0959)", () => {
+  it("falls back to repoos serve from the project root for a hand-run server", () => {
+    expect(restartCommand("/tmp/repoos-no-service-xyz", 7405)).toBe(
+      "cd /tmp/repoos-no-service-xyz && repoos serve --port 7405",
+    );
+  });
+
+  it("quotes a root with spaces and omits an unknown port", () => {
+    expect(restartCommand("/tmp/my project", null)).toBe("cd '/tmp/my project' && repoos serve");
   });
 });

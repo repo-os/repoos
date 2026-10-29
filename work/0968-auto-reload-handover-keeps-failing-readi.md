@@ -3,6 +3,10 @@ id: "0968"
 title: "Auto-reload handover keeps failing: readiness-based handshake, give up after N, Settings toggle"
 type: bug
 status: active
+hold: true
+hold_reason: "Driver taking over to land by hand (Nick, 2026-10-29)"
+hold_by: driver
+hold_at: "2026-10-29T03:35:56.083Z"
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +15,11 @@ branch: feat/auto-reload-handover-keeps-failing-readi
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-27T12:03:03Z"
-updated_at: "2026-10-28T16:44:33Z"
+updated_at: "2026-10-29T03:35:56Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-29T03:15:31.071Z: repoos check failed: tests — timed out — timed out after 2400s"
+handoff_signal_retry_count: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-10-28T23:14:19.787Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 The server's build-change auto-reload repeatedly failed: on 2026-10-27 the replacement process was killed by the 30 s handshake timeout 9 times in a row while the old process kept serving the old build, and each attempt dropped UI connections ("server connection issue"). Replacements need ~27-60 s to become ready on this machine. As a stopgap the launchd server now runs with REPOOS_NO_AUTO_RELOAD=1 (commit 4da413c4f) and drivers restart with `just revive`.
@@ -28,9 +36,34 @@ A new build is picked up reliably without dropping the UI, or not at all; never 
 ## Notes for AI
 src/server/reload.ts and server.ts (reloadEnabled). No server restarts, no previews, no repoos.toml edits.
 
+## Shots
+```json
+[
+{
+"label": "Automatic server reload setting",
+"target": "default",
+"route": "/settings?tab=general&section=general",
+"highlight": "#setting-autoReload"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-27T12:03:03Z · created · njachowski@gmail.com
 - 2026-10-28T16:44:00Z · cli_override, model_override
 - 2026-10-28T16:44:25Z · status inbox→ready
 - 2026-10-28T16:44:33Z · status ready→active, branch
+- 2026-10-28T16:46:13Z · message_queued at 2026-10-28T16:46:13.918Z
+- 2026-10-28T17:44:02Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0956 check (pid 47788, alive), #0975 check (pid 95121, alive) for 15m · next step: let it finish — the wait clears itself when the check starts running; investigate only if it persists
+- 2026-10-28T17:54:28Z · watchdog: check wait ended — cleared needs_input
+- 2026-10-28T18:26:52Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-28T18:29:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-28T18:29:20Z · message_delivered: 1 message(s)
+- 2026-10-28T19:04:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-28T22:03:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-28T23:08:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-28T23:14:19Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-29T00:33:55Z · body
+- 2026-10-29T03:35:56Z · engineer stopped by request
+- 2026-10-29T03:35:56Z · held, held-reason, held-by, held-at
