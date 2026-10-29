@@ -6,6 +6,10 @@ status: active
 needs_input: true
 needs_input_reason: check-wait
 needs_input_detail: "waiting: system load is high (6.8× per CPU, limit 3×) — waiting for headroom before starting more work; additional signals: memory compressor use is high (32%, limit 35%) for 12m"
+hold: true
+hold_reason: "Driver landing by hand (Nick, 2026-10-30)"
+hold_by: driver
+hold_at: "2026-10-29T17:38:31.306Z"
 priority: p1
 area: core
 assigned_to: ai
@@ -47,3 +51,4 @@ The task-file commit path is fail-soft (`commitTaskFile`); keep it fail-soft but
 - 2026-10-29T13:34:16Z · status review→active
 - 2026-10-29T16:46:22Z · watchdog: check wait escalated · waiting: system load is high (6.8× per CPU, limit 3×) — waiting for headroom before starting more work; additional signals: memory compressor use is high (32%, limit 35%) for 12m · next step: let it finish — the wait clears itself when the check starts running; investigate only if it persists
 - 2026-10-29T17:38:31Z · engineer stopped by request
+- 2026-10-29T17:38:31Z · held, held-reason, held-by, held-at
