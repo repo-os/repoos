@@ -3,6 +3,9 @@ id: "0976"
 title: Handoff reuses a recent passing check of the same tree instead of re-running tests
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-10-29T08:11:37.171767Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\")))"
 priority: p1
 area: core
 assigned_to: ai
@@ -11,9 +14,9 @@ branch: feat/handoff-reuses-a-recent-passing-check-of
 cli_override: codex
 model_override: gpt-6.1-sol
 created_at: "2026-10-29T05:51:30Z"
-updated_at: "2026-10-29T08:11:14Z"
-dev_error_count: 6
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T07:22:43.886Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T07:22:53.481Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T07:23:03.031Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-10-29T08:11:48Z"
+dev_error_count: 7
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-sol\",\"at\":\"2026-10-29T08:11:48.473Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The server's handoff check re-runs the test suite even when the engineer's own `repoos check --changed main` just passed on the exact same commit. Under load the repeat run is what fails: on 2026-10-29 #0971's handoff check timed out at the 40-minute test limit and #0955's sat 40 minutes behind a stuck typecheck, although both engineers' own checks had passed in minutes (check_runs 9822, 9823). The driver had to land both by hand.
@@ -46,3 +49,5 @@ Handoff reuses a recent passing check of the same tree instead of repeating it, 
 - 2026-10-29T07:22:53Z · engineer crash recovery: resuming codex + gpt-6.1-sol (2/3 crashes in 30m) · Reading additional input from stdin...
 - 2026-10-29T07:23:03Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-sol) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-10-29T08:11:12Z · needs_input
+- 2026-10-29T08:11:48Z · agent exited with an error (codex) · 2026-10-29T08:11:37.171767Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-10-29T08:11:48Z · engineer crash recovery: resuming codex + gpt-6.1-sol (1/3 crashes in 30m) · 2026-10-29T08:11:37.171767Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
