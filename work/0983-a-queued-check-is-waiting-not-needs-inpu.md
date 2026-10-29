@@ -1,5 +1,4 @@
 ---
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-29T22:14:27.382Z: repoos check failed: tests — stderr | tests/freeform-submit-ack.test.ts > new task screenshot draft persistence (0510) > keeps pending screenshots across close and reopen"
 handoff_signal_retry_count: 1
 id: "0983"
@@ -59,5 +58,6 @@ A long queue wait is visible but does not stop the engineer. The task card shows
 - 2026-10-29T17:38:37Z · status ready→active, branch
 - 2026-10-29T18:26:16Z · body
 - 2026-10-29T21:21:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
 
 
