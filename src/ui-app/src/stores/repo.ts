@@ -1454,7 +1454,19 @@ export const useRepoStore = defineStore("repo", () => {
       // Release the "Restarting…" state so the notice stays actionable.
       restarting.value = false;
       const reason = typeof e.reason === "string" && e.reason ? `: ${e.reason}` : "";
-      pushToast(`Restart failed${reason} — the server kept running the current build`, "error");
+      pushToast(
+        e.restartNeeded === true
+          ? `Restart needed${reason} — automatic reload stopped after repeated failures`
+          : `Restart failed${reason} — the server kept running the current build`,
+        "error",
+      );
+      if (e.restartNeeded === true) {
+        pushFeed(
+          `<b>restart needed</b> — automatic reload stopped after repeated failures`,
+          "#ff6b6b",
+          "reload.failed",
+        );
+      }
       return;
     }
     if (e.type === "close-out.outcome") {

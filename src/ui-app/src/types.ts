@@ -319,6 +319,8 @@ export interface Health {
   buildAvailableHash: string | null;
   /** On-disk build timestamp of the parked build, or null when none is parked. */
   buildAvailableAt: string | null;
+  /** Automatic reload exhausted its retry limit; an operator restart is needed. */
+  restartNeeded?: boolean;
   /** ISO start time of the serve process (derived from process.uptime()). */
   serverStartedAt?: string;
   /** True when the dev-only copy inspector is available on this server build. */
@@ -855,7 +857,7 @@ export type RepoEvent =
       buildAt: string | null;
       at: string;
     }
-  | { type: "reload.failed"; reason: string; at: string }
+  | { type: "reload.failed"; reason: string; restartNeeded?: boolean; at: string }
   | { type: "config.changed"; at: string }
   | {
       type: "auto-engineering.state";

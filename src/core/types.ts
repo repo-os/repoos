@@ -532,6 +532,8 @@ export interface RepoOSConfig {
   strictBuild?: boolean;
   /** Whether Cloudflare Tunnel controls are surfaced in the web UI. */
   tunnelEnabled?: boolean;
+  /** Automatically hand over to a replacement when a new build is available. */
+  autoReload?: boolean;
   /** When true, RepoOS publishes task lifecycle events to a ntfy topic. */
   ntfyEnabled?: boolean;
   /** The ntfy topic RepoOS publishes task events to (empty = never send). */

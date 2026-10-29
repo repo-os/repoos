@@ -164,7 +164,7 @@ export type RepoEvent =
       at: string;
     }
   /** A user-triggered reload could not hand over — the old build keeps serving. */
-  | { type: "reload.failed"; reason: string; at: string }
+  | { type: "reload.failed"; reason: string; restartNeeded?: boolean; at: string }
   /**
    * `repoos.toml` changed on disk (a hand edit, or a close-out merge to the
    * primary branch) and the running server re-read it (#0681). The UI refetches
