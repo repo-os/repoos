@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/make-repoos-org-and-docs-repoos-org-read
 pm_model_override: grok-4.7-medium
 created_at: "2026-10-30T05:37:53Z"
-updated_at: "2026-10-30T09:11:57Z"
+updated_at: "2026-10-30T09:12:16Z"
 review_passes: 3
 review_rounds: 2
 routing_switches: 1
@@ -177,3 +177,4 @@ The source robots files above remain unchanged.
 - 2026-10-30T09:11:23Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-30T09:11:57Z · body: Handoff summary (added)
 - 2026-10-30T09:11:57Z · message_queued at 2026-10-30T09:11:57.637Z
+- 2026-10-30T09:12:16Z · handoff_deferred: 1 queued message(s) must be read before review
