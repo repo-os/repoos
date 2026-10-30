@@ -1,21 +1,19 @@
 ---
-last_close_out_gate_ms: 210924
-last_close_out_gate_at: "2026-10-30T14:26:45.586Z"
 id: "0984"
 title: Make repoos.org and docs.repoos.org readable without JavaScript
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — Static `robots.txt` files are correct and built artifacts match, but live zones still serve Cloudflare’s comment-only r…"
+status: done
 priority: p2
 area: [landing, docs, infra]
+merged_commit: cad3280679c8ee816b3122b4bd7ed3361a91309d
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/make-repoos-org-and-docs-repoos-org-read
 pm_model_override: grok-4.7-medium
 created_at: "2026-10-30T05:37:53Z"
 updated_at: "2026-10-30T14:26:45Z"
+last_close_out_gate_ms: 210924
+last_close_out_gate_at: "2026-10-30T14:26:45.586Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
