@@ -2,7 +2,7 @@
 id: "0984"
 title: Make repoos.org and docs.repoos.org readable without JavaScript
 type: feature
-status: active
+status: review
 priority: p2
 area: [landing, docs, infra]
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/make-repoos-org-and-docs-repoos-org-read
 pm_model_override: grok-4.7-medium
 created_at: "2026-10-30T05:37:53Z"
-updated_at: "2026-10-30T05:43:08Z"
+updated_at: "2026-10-30T06:19:15Z"
 ---
 ## Problem
 
@@ -105,3 +105,4 @@ Constraints: don't change docs content or URLs, and don't remove the existing .m
 - 2026-10-30T05:40:20Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added); Related (added)
 - 2026-10-30T05:42:54Z · status inbox→ready
 - 2026-10-30T05:43:08Z · status ready→active, branch
+- 2026-10-30T06:19:15Z · status active→review
