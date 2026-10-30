@@ -176,3 +176,4 @@ The source robots files above remain unchanged.
 - 2026-10-30T09:11:23Z · status review→active
 - 2026-10-30T09:11:23Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-30T09:11:57Z · body: Handoff summary (added)
+- 2026-10-30T09:11:57Z · message_queued at 2026-10-30T09:11:57.637Z
