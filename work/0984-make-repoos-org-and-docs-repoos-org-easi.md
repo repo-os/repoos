@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/make-repoos-org-and-docs-repoos-org-read
 pm_model_override: grok-4.7-medium
 created_at: "2026-10-30T05:37:53Z"
-updated_at: "2026-10-30T06:19:16Z"
+updated_at: "2026-10-30T06:21:15Z"
 ---
 ## Problem
 
@@ -107,3 +107,4 @@ Constraints: don't change docs content or URLs, and don't remove the existing .m
 - 2026-10-30T05:43:08Z · status ready→active, branch
 - 2026-10-30T06:19:15Z · status active→review
 - 2026-10-30T06:19:16Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (cad328067) during finalization (#0734)
+- 2026-10-30T06:21:15Z · note: review pass 1: needs some work
