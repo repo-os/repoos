@@ -9,11 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-task-panel-landing-ca
 created_at: "2026-10-30T09:32:06Z"
-updated_at: "2026-10-30T16:53:47Z"
-last_check_failure: "repoos check at 2026-10-30T16:41:38.708Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Review failure status cards with ages and full-time tooltip (target \"default\"): hover .debug-status-detail:first-child .debug-status-time: hover: Timeout 5000ms exceeded. on /work?task=9999&tab=debug (http://127.0.0.1:50515/work?shotState=drawer:statusDetails)"
-review_rounds: 1
-routing_switches: 1
-review_passes: 1
+updated_at: "2026-10-30T16:00:32Z"
 ---
 ## Items
 
@@ -73,59 +69,10 @@ Web only. Keep the popover keyboard- and touch-usable.
 
 ![Task panel: red Not landable card, Status details cards, filename row](/api/tasks/0985/attachments/att_bb47a999-6529-404e-ade3-e55023463b71.webp)
 
-## Shots
-```json
-[
-{
-"label": "Review failure status cards with ages and full-time tooltip",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".debug-status-detail",
-"steps": [
-{
-"hover": ".debug-status-detail:has-text(\"Reviewer failed\") .debug-status-time"
-}
-],
-"state": "drawer:statusDetails"
-},
-{
-"label": "Task filename row with full path tooltip",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".drawer-task-filename",
-"steps": [
-{
-"hover": ".drawer-task-filename"
-}
-],
-"state": "drawer:statusDetails"
-},
-{
-"label": "Not-landable card padding above drawer tabs",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".drawer-status-summary",
-"state": "drawer:landable"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-30T09:32:06Z · created · njachowski@gmail.com
 - 2026-10-30T09:32:07Z · screenshots
 - 2026-10-30T09:32:14Z · status inbox→ready
 - 2026-10-30T15:20:50Z · status ready→active, branch
-- 2026-10-30T15:25:17Z · body
 - 2026-10-30T16:00:32Z · status active→review
-- 2026-10-30T16:00:34Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a58f63587) during finalization (#0734)
-- 2026-10-30T16:01:25Z · note: review pass 1: needs some work
-- 2026-10-30T16:01:26Z · status review→active
-- 2026-10-30T16:04:02Z · body
-- 2026-10-30T16:29:53Z · note: ui verification failed (1 issue(s)): [missing-target] Review failure status cards with ages and full-time tooltip (target "default"): hover .debug-status-time: hover: Error: strict mode violation: locator('.debug-status-time') resolved to 2 elements: on /work?task=9999&tab=debug (http://127.0.0.1:49499/work?shotState=drawer:statusDetails)
-- 2026-10-30T16:30:24Z · body
-- 2026-10-30T16:41:35Z · note: ui verification failed (1 issue(s)): [missing-target] Review failure status cards with ages and full-time tooltip (target "default"): hover .debug-status-detail:first-child .debug-status-time: hover: Timeout 5000ms exceeded. on /work?task=9999&tab=debug (http://127.0.0.1:50515/work?shotState=drawer:statusDetails)
-- 2026-10-30T16:42:09Z · body
-- 2026-10-30T16:52:50Z · status active→review
-- 2026-10-30T16:52:52Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (5a0f58242) during finalization (#0734)
-- 2026-10-30T16:53:47Z · note: review pass 2: good to go

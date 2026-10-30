@@ -148,7 +148,8 @@ describe("task drawer Held reason (#0960)", () => {
   it("shows the Held status detail with reason/by/until for a flag-held task", async () => {
     const pinia = setup();
     useRepoStore();
-    const wrapper = await mountDrawer(pinia, heldTask());
+    const holdAt = "2026-10-30T23:00:00.000Z";
+    const wrapper = await mountDrawer(pinia, heldTask({ holdAt }));
 
     const details = wrapper.findAll(".debug-status-detail");
     const held = details.find((d) => d.find("strong")?.text() === "Held");
@@ -157,6 +158,7 @@ describe("task drawer Held reason (#0960)", () => {
     expect(copy).toContain("waiting on design sign-off");
     expect(copy).toContain("njachowski@gmail.com");
     expect(copy).toContain("2030-01-01T00:00:00Z");
+    expect(held!.find(".debug-status-time").attributes("datetime")).toBe(holdAt);
   });
 
   it("shows the Held detail for a task held only by a `hold` tag", async () => {
