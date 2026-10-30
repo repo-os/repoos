@@ -3,6 +3,9 @@ id: "0984"
 title: Make repoos.org and docs.repoos.org readable without JavaScript
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Static `robots.txt` files are correct, but live zones still serve Cloudflare’s comment-only robots and handoff lacks th…"
 priority: p2
 area: [landing, docs, infra]
 assigned_to: ai
@@ -137,3 +140,4 @@ ai-train was deliberately left unset in both repository robots files for the own
 - 2026-10-30T06:26:25Z · message_delivered: 1 message(s)
 - 2026-10-30T06:26:25Z · status review→active
 - 2026-10-30T06:28:40Z · status active→review
+- 2026-10-30T06:28:40Z · needs_input
