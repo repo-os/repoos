@@ -109,6 +109,7 @@ describe("task drawer status summary (#0952)", () => {
     const pinia = setup();
     const repo = useRepoStore();
     const task = reviewTask({ needsInput: false });
+    const reportAt = "2026-10-31T01:00:00.000Z";
     repo.reviews = {
       "0001": {
         running: false,
@@ -116,7 +117,7 @@ describe("task drawer status summary (#0952)", () => {
         lines: [],
         report: {
           id: "0001",
-          at: new Date().toISOString(),
+          at: reportAt,
           agent: "reviewer",
           cli: "opencode",
           model: "default",
@@ -129,7 +130,7 @@ describe("task drawer status summary (#0952)", () => {
     const wrapper = await mountDrawer(pinia, task, {
       reviewReport: {
         id: "0001",
-        at: new Date().toISOString(),
+        at: reportAt,
         agent: "reviewer",
         cli: "opencode",
         model: "default",
@@ -147,6 +148,21 @@ describe("task drawer status summary (#0952)", () => {
     expect(summary.find(".drawer-status-l1").text()).toContain("Review failed");
     expect(summary.find(".drawer-status-l3").text()).toContain("No complete report");
     expect(summary.findAll(".drawer-status-row")).toHaveLength(3);
+
+    await wrapper
+      .findAll("button.tab-btn")
+      .find((tab) => tab.text().includes("Debug"))!
+      .trigger("click");
+    await wrapper
+      .findAll("button.debug-tab")
+      .find((tab) => tab.text().includes("Status details"))!
+      .trigger("click");
+    await flush();
+    const times = wrapper.findAll(".debug-status-time");
+    expect(times.length).toBeGreaterThanOrEqual(2);
+    expect(times.every((time) => time.attributes("datetime") === reportAt)).toBe(true);
+    expect(times[0].attributes("data-tip")).toBe(new Date(reportAt).toLocaleString());
+    expect(times[0].attributes("title")).toBeUndefined();
   });
 
   it("keeps the landable checklist off the card and opens Status details", async () => {
@@ -199,12 +215,13 @@ describe("task drawer status summary (#0952)", () => {
         dirty: false,
       },
     });
+    const startedAt = new Date(Date.now() - 70_000).toISOString();
     repo.taskChecks["0001"] = [
       {
         id: "0001-merge-gate-1",
         taskId: "0001",
         kind: "merge-gate",
-        startedAt: new Date(Date.now() - 70_000).toISOString(),
+        startedAt,
         finishedAt: null,
         durationMs: null,
         running: true,
@@ -235,7 +252,6 @@ describe("task drawer status summary (#0952)", () => {
     await flush();
     expect(useUiStore().activeTab).toBe("debug");
     expect(useUiStore().debugView).toBe("status");
-
     // No header chip for a routine running state.
     expect(wrapper.find(".drawer-status-chip").exists()).toBe(false);
   });
@@ -394,21 +410,29 @@ describe("task drawer status summary (#0952)", () => {
     expect(statusDetails.text()).toContain("Not landable");
     expect(statusDetails.text()).toContain("Merge with main");
     expect(statusDetails.text()).toContain("src/core/types.ts conflicts with main");
+    const landableTime = statusDetails
+      .findAll(".debug-status-detail")
+      .find((row) => row.text().includes("Not landable"))!
+      .find(".debug-status-time");
+    expect(landableTime.exists()).toBe(true);
+    expect(landableTime.attributes("datetime")).toBe(repo.landableFetchedAtFor("0001"));
   });
 
-  it("keeps the file path clamped to two lines via CSS", async () => {
+  it("shows a one-line filename without the work prefix and exposes the full path", async () => {
     const pinia = setup();
     const task = makeTask({
       path: "work/0001-very-long-task-title-that-would-wrap-without-clamping.md",
       absPath: "/tmp/repo/work/0001-very-long-task-title-that-would-wrap-without-clamping.md",
     });
     const wrapper = await mountDrawer(pinia, task);
-    const pathEl = wrapper.find(".tc-id");
+    const pathEl = wrapper.find(".drawer-task-filename");
     expect(pathEl.exists()).toBe(true);
     expect(pathEl.classes()).toContain("tc-id");
-    // The two-line clamp is declared on the .tc-id class in TaskDrawer.vue.
-    // jsdom does not compute -webkit-line-clamp, so we assert the class is
-    // present and the long path is rendered.
+    expect(pathEl.text()).not.toContain("work/");
+    expect(pathEl.attributes("data-tip")).toBe(task.path);
+    expect(pathEl.attributes("tabindex")).toBe("0");
+    expect(pathEl.attributes("title")).toBeUndefined();
+    expect(pathEl.classes()).toContain("drawer-task-filename");
     expect(pathEl.text()).toContain("0001-very-long-task-title");
   });
 });

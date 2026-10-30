@@ -842,6 +842,7 @@ const drawerStatusDetails = computed(() => {
   if (isHoldActive(task, holdNow.value)) {
     rows.push({
       title: "Held",
+      timestamp: task.holdAt,
       detail: `This task is held — automation will not start it.${task.holdReason ? `\nReason: ${task.holdReason}` : ""}${task.holdBy ? `\nBy: ${task.holdBy}` : ""}${task.holdUntil ? `\nAuto-releases: ${task.holdUntil}` : ""}\nRelease with "repoos unhold ${task.id}".`,
     });
   }
@@ -857,12 +858,13 @@ const drawerStatusDetails = computed(() => {
   )
     rows.push({
       title: "Reviewer failed — no complete report",
+      timestamp: review.value?.report?.at,
       detail: `${review.value?.report?.summary || "The reviewer did not produce a complete report."}\nOpen the Review tab to inspect the run and use Review again to retry.`,
     });
   if (landable.value)
     rows.push({
       title: landable.value.landable ? "Landable summary" : "Not landable checklist",
-      timestamp: task.updated_at,
+      timestamp: repo.landableFetchedAtFor(task.id),
       detail: landable.value.checks
         .map(
           (check) =>
@@ -896,6 +898,7 @@ const drawerStatusDetails = computed(() => {
   if (remoteActivityText.value || activeCheckRun.value)
     rows.push({
       title: "Checks running and remote validation",
+      timestamp: activeCheckRun.value?.startedAt ?? remoteActivity.value?.run?.startedAt,
       detail: `${remoteActivityText.value || "A check run is active."}${checkMachine.value ? `\nRunning on ${checkMachine.value}.` : ""}${activeCheckRun.value ? `\n${checkProgressLabel(activeCheckRun.value)}${activeCheckRun.value.output ? `\n${activeCheckRun.value.output}` : ""}` : ""}`,
     });
   if (checkChip.value && !activeCheckRun.value)
@@ -917,6 +920,7 @@ const drawerStatusDetails = computed(() => {
   if (task.status === "review" && review.value?.report?.state === "incomplete")
     rows.push({
       title: "Review retry guidance",
+      timestamp: review.value.report.at,
       detail:
         "Read the latest review report, then send the task to the engineer or use Review again. The Review tab keeps the full report and retry action.",
     });
@@ -4787,7 +4791,7 @@ watch(
               />
               <span
                 class="tc-id mono drawer-task-filename"
-                :data-tip="displayTaskFilename(ui.active.path)"
+                :data-tip="ui.active.path"
                 tabindex="0"
                 >{{ displayTaskFilename(ui.active.path) }}</span
               >
