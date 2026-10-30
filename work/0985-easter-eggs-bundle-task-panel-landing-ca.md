@@ -2,14 +2,14 @@
 id: "0985"
 title: "Easter eggs bundle: task panel landing card padding, status card times, filename row"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-30T09:32:06Z"
-updated_at: "2026-10-30T09:32:07Z"
+updated_at: "2026-10-30T09:32:14Z"
 ---
 ## Items
 
@@ -73,3 +73,4 @@ Web only. Keep the popover keyboard- and touch-usable.
 
 - 2026-10-30T09:32:06Z · created · njachowski@gmail.com
 - 2026-10-30T09:32:07Z · screenshots
+- 2026-10-30T09:32:14Z · status inbox→ready
