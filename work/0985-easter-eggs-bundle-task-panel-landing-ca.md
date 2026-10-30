@@ -2,14 +2,14 @@
 id: "0985"
 title: "Easter eggs bundle: task panel landing card padding, status card times, filename row"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-task-panel-landing-ca
 created_at: "2026-10-30T09:32:06Z"
-updated_at: "2026-10-30T15:25:17Z"
+updated_at: "2026-10-30T16:00:32Z"
 ---
 ## Items
 
@@ -73,16 +73,16 @@ Web only. Keep the popover keyboard- and touch-usable.
 ```json
 [
 {
-  "label": "Status cards with timestamp ages and filename row",
-  "target": "default",
-  "route": "/work?task=0985&tab=debug",
-  "highlight": ".debug-status-detail",
-  "steps": [
-    {
-      "waitMs": 300
-    }
-  ],
-  "state": "drawer:statusDetails"
+"label": "Status cards with timestamp ages and filename row",
+"target": "default",
+"route": "/work?task=0985&tab=debug",
+"highlight": ".debug-status-detail",
+"steps": [
+  {
+    "waitMs": 300
+  }
+],
+"state": "drawer:statusDetails"
 }
 ]
 ```
@@ -94,3 +94,4 @@ Web only. Keep the popover keyboard- and touch-usable.
 - 2026-10-30T09:32:14Z · status inbox→ready
 - 2026-10-30T15:20:50Z · status ready→active, branch
 - 2026-10-30T15:25:17Z · body
+- 2026-10-30T16:00:32Z · status active→review
