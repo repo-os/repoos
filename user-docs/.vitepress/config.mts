@@ -28,6 +28,7 @@ export default defineConfig({
   description:
     "AI dev teams for CTOs and builders. Bring your own agents and models. RepoOS manages the whole development lifecycle — all in your Git repo.",
   cleanUrls: true,
+  sitemap: { hostname: "https://docs.repoos.org" },
   // RepoOS owns appearance (dark/light) and design theme (Classic/Gruvbox).
   // `false` disables VitePress's built-in toggle and its `check-dark-mode`
   // script — that script reads `vitepress-theme-appearance`, which would fight
