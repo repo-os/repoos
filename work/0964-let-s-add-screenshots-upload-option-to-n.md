@@ -2,7 +2,7 @@
 id: "0964"
 title: Add screenshot upload to New Story
 type: feature
-status: active
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/add-screenshot-upload-to-new-story
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-updated_at: "2026-10-30T15:21:11Z"
+updated_at: "2026-10-30T15:26:26Z"
 ---
 ## Problem
 
@@ -59,3 +59,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-26T19:48:27Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-10-30T15:21:06Z · status inbox→ready
 - 2026-10-30T15:21:11Z · status ready→active, branch
+- 2026-10-30T15:26:26Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
