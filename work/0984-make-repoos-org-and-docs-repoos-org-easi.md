@@ -2,7 +2,7 @@
 id: "0984"
 title: Make repoos.org and docs.repoos.org readable without JavaScript
 type: feature
-status: active
+status: review
 priority: p2
 area: [landing, docs, infra]
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/make-repoos-org-and-docs-repoos-org-read
 pm_model_override: grok-4.7-medium
 created_at: "2026-10-30T05:37:53Z"
-updated_at: "2026-10-30T06:25:28Z"
+updated_at: "2026-10-30T06:25:29Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -130,4 +130,4 @@ ai-train was deliberately left unset in both repository robots files for the own
 - 2026-10-30T06:22:39Z · body: Round 2 handoff verification (added); Changes and artifact checks (added)
 - 2026-10-30T06:22:39Z · message_queued at 2026-10-30T06:22:39.535Z
 - 2026-10-30T06:24:32Z · note: handoff requested (ui-review)
-- 2026-10-30T06:25:28Z · engineer stopped by request
+- 2026-10-30T06:25:29Z · status active→review
