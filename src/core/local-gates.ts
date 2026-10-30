@@ -20,6 +20,7 @@ import {
   readQueueMarkers,
   writeQueueMarker,
   type LocalQueueKind,
+  type LocalQueueMarker,
 } from "./local-queue-marker.js";
 import { mainCheckoutRoot } from "./git.js";
 
@@ -46,6 +47,7 @@ function markQueue(
   ahead: number,
   position: number,
   message: string,
+  pool?: LocalQueueMarker["pool"],
 ): void {
   const taskId = taskIdFromEnv(env);
   if (!taskId) return;
@@ -59,6 +61,7 @@ function markQueue(
     position,
     message,
     since: since ?? new Date().toISOString(),
+    pool,
     pid: process.pid,
   });
 }
@@ -132,7 +135,16 @@ export async function acquireLocalCheckSlot(opts: AcquireLocalCheckSlotOpts): Pr
           ? "waiting for serialized local fallback slot"
           : `waiting for serialized local fallback (${ahead} ahead, position ${position})`;
       emit(`[queue] ${msg}`);
-      markQueue(board, cacheDir, opts.env, "local-check", ahead, position, msg);
+      markQueue(
+        board,
+        cacheDir,
+        opts.env,
+        "local-check",
+        ahead,
+        position,
+        msg,
+        "local-fallback-serialize",
+      );
     });
   }
 

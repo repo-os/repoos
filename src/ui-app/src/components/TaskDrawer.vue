@@ -465,6 +465,7 @@ watch(
     ui.active?.status,
     activeCheckRun.value?.id,
     lastCheckRun.value?.finishedAt,
+    repo.resourceQueueMarkers.some((marker) => marker.taskId === ui.active?.id),
   ],
   ([taskId]) => {
     if (!taskId) {
@@ -483,7 +484,11 @@ watch(
     // A task in `review` may be in a close-out whose remote gate is queued or
     // running (#0897) even though no local TaskCheckRun exists yet; polling
     // keeps its phase and queue position live in the drawer.
-    if (activeCheckRun.value || ui.active?.status === "review") {
+    if (
+      activeCheckRun.value ||
+      ui.active?.status === "review" ||
+      repo.resourceQueueMarkers.some((marker) => marker.taskId === taskId)
+    ) {
       startCheckLoops(taskId as string);
     } else {
       // Not running: hydrate once so the done-state fallback can read the
@@ -516,7 +521,17 @@ const checkMachine = computed(() => {
 /** Durable fallback stops being useful long after the tree it tested changed. */
 const DURABLE_CHIP_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
+const localCheckWait = computed(() => {
+  const taskId = ui.active?.id;
+  return taskId
+    ? localQueueHintForTask(repo.resourceQueueMarkers, taskId, new Date(checkNow.value))
+    : null;
+});
+
 const checkChip = computed(() => {
+  const wait = localCheckWait.value;
+  if (wait)
+    return { state: "running" as const, slow: false, slowDetail: null, elapsed: "", ...wait };
   const run = activeCheckRun.value;
   if (run) {
     const elapsed = formatDuration(Math.max(0, checkNow.value - Date.parse(run.startedAt)));
@@ -598,6 +613,15 @@ const drawerHeaderChip = computed(() => {
   const status = drawerStatusSummary.value;
   const running = checkChip.value?.state === "running" ? checkChip.value : null;
   const slowRun = running?.slow ? running : null;
+  if (status?.key === "checksRunning" && localCheckWait.value) {
+    return {
+      ...status,
+      label: localCheckWait.value.label,
+      duration: null,
+      slow: false,
+      slowDetail: null,
+    };
+  }
   if (
     !status ||
     (status.key === "waitingForYou" && showAgentQuestionsBanner.value) ||
@@ -685,7 +709,7 @@ const drawerStatusSummary = computed(() => {
       (review.value?.report?.state === "incomplete" || task.needsInputReason === "review-failed"),
     notLandable: task.status === "review" && Boolean(landable.value && !landable.value.landable),
     handoffFailed: Boolean(handoffError.value || repo.doneErrorFor(task.id)),
-    checksRunning: Boolean(activeCheckRun.value),
+    checksRunning: Boolean(activeCheckRun.value || localCheckWait.value),
     confirmingHandoff: handoffBusy.value || awaitingFreshReview.value,
     checksFailedAfterRetries: Boolean(
       checkChip.value?.state === "fail" && retryCountFrom(task, "check"),
@@ -741,7 +765,9 @@ const drawerStatusSummary = computed(() => {
     notLandable: landableChecklist || "This task is not ready to land yet.",
     handoffFailed: `${handoffError.value ?? repo.doneErrorFor(task.id)?.message ?? "The handoff did not finish."}\nFix it and click Review again.`,
     checksFailedAfterRetries: checkChip.value?.title ?? "Checks failed after retries.",
-    checksRunning: "The check gate is running — open the Debug tab for live output.",
+    checksRunning: localCheckWait.value
+      ? `${localCheckWait.value.title}. Queued checks are normal; keep waiting.`
+      : "The check gate is running — open the Debug tab for live output.",
     confirmingHandoff:
       "RepoOS is finalizing the handoff. The task stays active until the checks pass.",
     reviewerRunning: "The reviewer is inspecting this task.",
@@ -757,7 +783,13 @@ const drawerStatusSummary = computed(() => {
   const where = scopeWhere(checkRun?.scope, checkMachine.value ?? checkRun?.machine);
   const tone = isError ? "fail" : key === "checksRunning" ? "running" : "neutral";
   let lines: [string, string, string];
-  if (key === "checksRunning" && activeCheckRun.value) {
+  if (key === "checksRunning" && localCheckWait.value) {
+    lines = [
+      localCheckWait.value.label,
+      localCheckWait.value.title,
+      "Queued checks are normal — keep waiting.",
+    ];
+  } else if (key === "checksRunning" && activeCheckRun.value) {
     lines = ["Checks running", where, cardProgressLine(activeCheckRun.value)];
   } else if (key === "checksFailedAfterRetries") {
     const reason =

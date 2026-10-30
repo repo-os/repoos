@@ -9,15 +9,19 @@
  * `[queue]` status lines and write queue markers; this recorder turns those
  * lines into (a) a human-readable "waiting: <reason> for Nm" trail on stdout —
  * which the handoff transcript captures — and (b) a `waited` fact persisted on
- * the run's CheckRunRecord. A wait that crosses ten minutes says so once, so
- * the transcript names the escalation instead of hanging silently.
+ * the run's CheckRunRecord. A wait that crosses ten minutes reminds the
+ * engineer to keep waiting.
+ * Queueing is normal and does not itself request human input.
  */
 
 /** How often the "still waiting" line repeats while the wait continues. */
 export const CHECK_WAIT_REMINDER_MS = 60_000;
 
-/** A wait this long is surfaced as needs_input by the task watchdog. */
-export const CHECK_WAIT_ESCALATION_MS = 10 * 60_000;
+/** A long normal wait gets an explicit keep-waiting reminder. */
+export const CHECK_WAIT_REMINDER_THRESHOLD_MS = 10 * 60_000;
+
+/** Missing holder heartbeats for this long indicate an abnormal wait. */
+export const CHECK_WAIT_STALLED_MS = 30 * 60_000;
 
 export interface CheckWait {
   /** Latest observed reason, verbatim from the gate's status line. */
@@ -43,7 +47,7 @@ export function createCheckWaitRecorder(
 ): CheckWaitRecorder {
   let current: CheckWait | null = null;
   let lastAnnouncedAt = 0;
-  let announcedEscalation = false;
+  let announcedLongWait = false;
   return {
     onStatusLine(line: string): void {
       const reason = line.trim();
@@ -60,11 +64,11 @@ export function createCheckWaitRecorder(
         lastAnnouncedAt = now();
         emit(`waiting: ${reason} for ${formatWaitDuration(waitedMs)}`);
       }
-      if (!announcedEscalation && waitedMs >= CHECK_WAIT_ESCALATION_MS) {
-        announcedEscalation = true;
+      if (!announcedLongWait && waitedMs >= CHECK_WAIT_REMINDER_THRESHOLD_MS) {
+        announcedLongWait = true;
         emit(
           `waiting: ${reason} for ${formatWaitDuration(waitedMs)} — ` +
-            "this wait is being surfaced as needs input",
+            "queued checks are normal — keep waiting; do not end your turn",
         );
       }
     },

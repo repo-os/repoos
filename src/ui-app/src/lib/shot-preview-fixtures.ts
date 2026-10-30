@@ -1003,6 +1003,20 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       };
       break;
     }
+    case "checks:waiting":
+      ensureFixtureTask(repo, "active", { title: "Check waiting behind a live slot holder" });
+      repo.resourceQueueMarkers = [
+        {
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "local-check",
+          position: 1,
+          ahead: 0,
+          since: new Date(Date.now() - 15 * 60_000).toISOString(),
+          message: "waiting for a check slot behind a live holder",
+        },
+      ];
+      repo.runningIds = [...repo.runningIds, SHOT_PREVIEW_FIXTURE_TASK_ID];
+      break;
     case "board:activeCoding":
       ensureFixtureTask(repo, "active");
       if (!repo.runningIds.includes(SHOT_PREVIEW_FIXTURE_TASK_ID)) {
