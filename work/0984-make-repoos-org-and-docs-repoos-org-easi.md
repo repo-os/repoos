@@ -3,6 +3,9 @@ id: "0984"
 title: Make repoos.org and docs.repoos.org readable without JavaScript
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Repo `robots.txt` files are correct, but live zones still serve Cloudflare’s comment-only robots and handoff lacks requ…"
 priority: p2
 area: [landing, docs, infra]
 assigned_to: ai
@@ -141,3 +144,4 @@ ai-train was deliberately left unset in both repository robots files for the own
 - 2026-10-30T06:28:41Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (cad328067) during finalization (#0734)
 - 2026-10-30T09:09:47Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-10-30T09:10:50Z · note: review pass 3: needs some work
+- 2026-10-30T09:10:50Z · needs_input
