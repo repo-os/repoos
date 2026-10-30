@@ -175,6 +175,10 @@ const repo = useRepoStore();
 const ui = useUiStore();
 const notices = useNoticesStore();
 
+function displayTaskFilename(path: string): string {
+  return path.replace(/^work\//, "");
+}
+
 /** Every prerequisite, blocking ones flagged, each resolvable to a title. */
 const dependencyRows = computed(() => {
   const t = ui.active;
@@ -829,7 +833,7 @@ const drawerStatusSummary = computed(() => {
 const drawerStatusDetails = computed(() => {
   const task = ui.active;
   if (!task) return [];
-  const rows: { title: string; detail: string }[] = [];
+  const rows: { title: string; detail: string; timestamp?: string | null }[] = [];
   // #0960: a held task is inert for ALL automation — surface the hold (and its
   // reason/by/until) in the drawer's single status area so it is visible here
   // too, not just on the board card. `isHoldActive` is tag-aware and
@@ -844,6 +848,7 @@ const drawerStatusDetails = computed(() => {
   if (task.needsInput)
     rows.push({
       title: "Waiting for you",
+      timestamp: task.updated_at,
       detail: `${needsInputBannerText(task.needsInputReason, activeNeedsInputQuestions.value, task.needsInputDetail)}${activeNeedsInputDetailLine.value ? `\n${activeNeedsInputDetailLine.value}` : ""}${needsInputSuggestionText(task.needsInputReason, activeNeedsInputQuestions.value) ? `\n${needsInputSuggestionText(task.needsInputReason, activeNeedsInputQuestions.value)}` : ""}${activeTldrSentence.value ? `\n${activeTldrSentence.value}` : ""}`,
     });
   if (
@@ -857,6 +862,7 @@ const drawerStatusDetails = computed(() => {
   if (landable.value)
     rows.push({
       title: landable.value.landable ? "Landable summary" : "Not landable checklist",
+      timestamp: task.updated_at,
       detail: landable.value.checks
         .map(
           (check) =>
@@ -883,6 +889,7 @@ const drawerStatusDetails = computed(() => {
   if (awaitingFreshReview.value)
     rows.push({
       title: "Awaiting review guidance",
+      timestamp: review.value?.report?.at ?? task.updated_at,
       detail:
         "RepoOS should start the reviewer automatically. If it does not, use Review again in the Review tab.",
     });
@@ -892,7 +899,11 @@ const drawerStatusDetails = computed(() => {
       detail: `${remoteActivityText.value || "A check run is active."}${checkMachine.value ? `\nRunning on ${checkMachine.value}.` : ""}${activeCheckRun.value ? `\n${checkProgressLabel(activeCheckRun.value)}${activeCheckRun.value.output ? `\n${activeCheckRun.value.output}` : ""}` : ""}`,
     });
   if (checkChip.value && !activeCheckRun.value)
-    rows.push({ title: "Latest check result", detail: checkChip.value.title });
+    rows.push({
+      title: "Latest check result",
+      detail: checkChip.value.title,
+      timestamp: lastCheckRun.value?.finishedAt ?? lastDurableCheck.value?.finishedAt,
+    });
   if (checkChip.value?.state === "running" && checkChip.value.slow && checkChip.value.slowDetail)
     rows.push({ title: "Longer than expected", detail: checkChip.value.slowDetail });
   if (activeTldrSentence.value)
@@ -4774,7 +4785,12 @@ watch(
                 :path="`/work?task=${encodeURIComponent(ui.active.id)}`"
                 :aria-label="`Copy link to task ${ui.active.id}`"
               />
-              <span class="tc-id mono">{{ ui.active.path }}</span>
+              <span
+                class="tc-id mono drawer-task-filename"
+                :data-tip="displayTaskFilename(ui.active.path)"
+                tabindex="0"
+                >{{ displayTaskFilename(ui.active.path) }}</span
+              >
               <button
                 v-if="drawerHeaderChip"
                 type="button"
@@ -7491,12 +7507,12 @@ watch(
 
 .drawer-status-summary {
   display: grid;
-  grid-template-rows: 1.35em 1.35em 1.35em;
-  gap: 2px;
+  grid-template-rows: auto auto auto;
+  gap: 4px;
   align-content: center;
   width: 100%;
   margin: 8px 0;
-  padding: 12px;
+  padding: 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-2);
@@ -7506,6 +7522,21 @@ watch(
   line-height: 1.35;
   text-align: left;
   cursor: pointer;
+}
+
+.drawer-task-filename {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: help;
+}
+
+.drawer-task-filename:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .drawer-status-summary:focus-visible {
