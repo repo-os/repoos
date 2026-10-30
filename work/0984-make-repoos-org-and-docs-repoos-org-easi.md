@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/make-repoos-org-and-docs-repoos-org-read
 pm_model_override: grok-4.7-medium
 created_at: "2026-10-30T05:37:53Z"
-updated_at: "2026-10-30T06:21:24Z"
+updated_at: "2026-10-30T06:22:39Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -102,6 +102,21 @@ Leave ai-train unset unless the owner decides; flag that choice in your summary.
 
 Constraints: don't change docs content or URLs, and don't remove the existing .md twins, llms.txt, llms-full.txt or the rel=alternate links. If any fix lives in Cloudflare dashboard settings rather than the repo, say exactly what to change instead of guessing. Report back what you changed, where, and the output of each verification command.
 
+## Round 2 handoff verification
+## Changes and artifact checks
+
+Added static robots.txt files at landing/public/robots.txt and user-docs/public/robots.txt. Built artifact checks passed: landing/dist/robots.txt and user-docs/.vitepress/dist/robots.txt each contain User-agent: *, Content-Signal: search=yes, ai-input=yes, and Allow: /. Neither includes Sitemap (none exists) or ai-train. The docs build still emits llms.txt, llms-full.txt, and raw Markdown twins, including configuration.md.
+
+The landing build and current live https://repoos.org/ both contain the existing homepage fallback copy, install command, docs and llms.txt links, meta description, Open Graph description, and rel=alternate Markdown link. No homepage source change was needed.
+
+Production robots verification is pending deployment: curl -fsSL https://repoos.org/robots.txt and curl -fsSL https://docs.repoos.org/robots.txt currently return Cloudflare’s comment-only policy text and no User-agent, Content-Signal, or Allow directives. The branch artifact files are correct; recheck the live URLs after both static sites deploy.
+
+Cloudflare zone setting to check for repoos.org and docs.repoos.org: Dashboard > Security > Settings > Bot traffic > Configure AI bot policies. Set Search=Allow and Agent=Allow, keep Training=Allow so ai-train remains unset, and leave Enable Bot Preference Sync off if the current policy still overrides the origin robots.txt. Cloudflare documentation says Bot Preference Sync prepends managed directives only when enabled and at least one policy blocks; with all policies Allow it serves origin robots.txt unchanged.
+
+Optional docs negotiation was skipped because docs are static Cloudflare assets and supporting Accept-based routing requires adding request handling. Verified with curl -sSI -H Accept: text/markdown https://docs.repoos.org/configuration: HTTP/2 200, content-type: text/html, no Vary: Accept. Existing .md URL remains available as a raw Markdown artifact.
+
+ai-train was deliberately left unset in both repository robots files for the owner to decide.
+
 ## Activity
 
 - 2026-10-30T05:37:53Z · created · hello@repoos.org
@@ -112,3 +127,4 @@ Constraints: don't change docs content or URLs, and don't remove the existing .m
 - 2026-10-30T06:19:16Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (cad328067) during finalization (#0734)
 - 2026-10-30T06:21:15Z · note: review pass 1: needs some work
 - 2026-10-30T06:21:24Z · status review→active
+- 2026-10-30T06:22:39Z · body: Round 2 handoff verification (added); Changes and artifact checks (added)
