@@ -2,14 +2,14 @@
 id: "0985"
 title: "Easter eggs bundle: task panel landing card padding, status card times, filename row"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-task-panel-landing-ca
 created_at: "2026-10-30T09:32:06Z"
-updated_at: "2026-10-30T16:42:09Z"
+updated_at: "2026-10-30T16:52:50Z"
 last_check_failure: "repoos check at 2026-10-30T16:41:38.708Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Review failure status cards with ages and full-time tooltip (target \"default\"): hover .debug-status-detail:first-child .debug-status-time: hover: Timeout 5000ms exceeded. on /work?task=9999&tab=debug (http://127.0.0.1:50515/work?shotState=drawer:statusDetails)"
 review_rounds: 1
 routing_switches: 1
@@ -77,35 +77,35 @@ Web only. Keep the popover keyboard- and touch-usable.
 ```json
 [
 {
-  "label": "Review failure status cards with ages and full-time tooltip",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".debug-status-detail",
-  "steps": [
-    {
-      "hover": ".debug-status-detail:has-text(\"Reviewer failed\") .debug-status-time"
-    }
-  ],
-  "state": "drawer:statusDetails"
+"label": "Review failure status cards with ages and full-time tooltip",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".debug-status-detail",
+"steps": [
+  {
+    "hover": ".debug-status-detail:has-text(\"Reviewer failed\") .debug-status-time"
+  }
+],
+"state": "drawer:statusDetails"
 },
 {
-  "label": "Task filename row with full path tooltip",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".drawer-task-filename",
-  "steps": [
-    {
-      "hover": ".drawer-task-filename"
-    }
-  ],
-  "state": "drawer:statusDetails"
+"label": "Task filename row with full path tooltip",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".drawer-task-filename",
+"steps": [
+  {
+    "hover": ".drawer-task-filename"
+  }
+],
+"state": "drawer:statusDetails"
 },
 {
-  "label": "Not-landable card padding above drawer tabs",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:landable"
+"label": "Not-landable card padding above drawer tabs",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:landable"
 }
 ]
 ```
@@ -126,4 +126,4 @@ Web only. Keep the popover keyboard- and touch-usable.
 - 2026-10-30T16:30:24Z · body
 - 2026-10-30T16:41:35Z · note: ui verification failed (1 issue(s)): [missing-target] Review failure status cards with ages and full-time tooltip (target "default"): hover .debug-status-detail:first-child .debug-status-time: hover: Timeout 5000ms exceeded. on /work?task=9999&tab=debug (http://127.0.0.1:50515/work?shotState=drawer:statusDetails)
 - 2026-10-30T16:42:09Z · body
-
+- 2026-10-30T16:52:50Z · status active→review
