@@ -2,7 +2,7 @@
 id: "0984"
 title: Make repoos.org and docs.repoos.org readable without JavaScript
 type: feature
-status: active
+status: review
 priority: p2
 area: [landing, docs, infra]
 assigned_to: ai
@@ -179,3 +179,4 @@ The source robots files above remain unchanged.
 - 2026-10-30T09:11:57Z · message_queued at 2026-10-30T09:11:57.637Z
 - 2026-10-30T09:12:16Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-30T09:12:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-10-30T09:12:16Z · status active→review
