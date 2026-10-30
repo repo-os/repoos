@@ -821,6 +821,8 @@ export const useRepoStore = defineStore("repo", () => {
   const mergeConflicts = ref<Record<string, MergeConflictReport | undefined>>({});
   /** Landing pre-checks (#0867) per task; undefined until first load. */
   const landable = ref<Record<string, LandableResult | undefined>>({});
+  /** Client-observed fetch/seed time for the current landing pre-check result. */
+  const landableFetchedAt = ref<Record<string, string | undefined>>({});
   /** Captured preview shots per task (#0582), hydrated on demand. */
   const shots = ref<Record<string, ShotMeta[]>>({});
   /** Area/target mismatch warning per task (#0582), from the shots response. */
@@ -3157,6 +3159,7 @@ export const useRepoStore = defineStore("repo", () => {
    */
   function seedLandable(id: string, result: LandableResult): void {
     landable.value = { ...landable.value, [id]: result };
+    landableFetchedAt.value = { ...landableFetchedAt.value, [id]: new Date().toISOString() };
   }
 
   /**
@@ -3283,6 +3286,7 @@ export const useRepoStore = defineStore("repo", () => {
       // checklist shape; storing that would crash the drawer's template.
       if (!r || !Array.isArray(r.checks) || !r.summary) return;
       landable.value = { ...landable.value, [id]: r };
+      landableFetchedAt.value = { ...landableFetchedAt.value, [id]: new Date().toISOString() };
     } catch {
       /* endpoint unavailable — the checklist is advisory */
     }
@@ -3290,6 +3294,7 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Latest landing pre-checks for a task, or undefined until loaded. */
   const landableFor = (id: string) => landable.value[id] ?? undefined;
+  const landableFetchedAtFor = (id: string) => landableFetchedAt.value[id] ?? undefined;
 
   /**
    * Load the task's captured preview shots and mismatch warning (#0582).
@@ -4325,6 +4330,7 @@ export const useRepoStore = defineStore("repo", () => {
     loadLandable,
     landable,
     landableFor,
+    landableFetchedAtFor,
     loadShots,
     loadUiVerification,
     refreshEvidence,
