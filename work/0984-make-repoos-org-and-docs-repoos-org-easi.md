@@ -3,6 +3,9 @@ id: "0984"
 title: Make repoos.org and docs.repoos.org readable without JavaScript
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Repo `robots.txt` files are correct, but live zones still serve Cloudflare’s comment-only robots and handoff lacks requ…"
 priority: p2
 area: [landing, docs, infra]
 assigned_to: ai
@@ -183,3 +186,4 @@ The source robots files above remain unchanged.
 - 2026-10-30T09:12:16Z · message_delivered: 1 message(s)
 - 2026-10-30T09:12:17Z · note: handoff requested (cli)
 - 2026-10-30T09:15:13Z · status active→review
+- 2026-10-30T09:15:13Z · needs_input
