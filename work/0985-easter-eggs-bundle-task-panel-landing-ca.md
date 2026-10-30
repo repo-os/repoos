@@ -10,7 +10,6 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-task-panel-landing-ca
 created_at: "2026-10-30T09:32:06Z"
 updated_at: "2026-10-30T16:30:24Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-30T16:29:56.506Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Review failure status cards with ages and full-time tooltip (target \"default\"): hover .debug-status-time: hover: Error: strict mode violation: locator('.debug-status-time') resolved to 2 elements: on /work?task=9999&tab=debug (http://127.0.0.1:49499/work?shotState=drawer:statusDetails)"
 review_rounds: 1
 routing_switches: 1
@@ -125,3 +124,4 @@ Web only. Keep the popover keyboard- and touch-usable.
 - 2026-10-30T16:04:02Z · body
 - 2026-10-30T16:29:53Z · note: ui verification failed (1 issue(s)): [missing-target] Review failure status cards with ages and full-time tooltip (target "default"): hover .debug-status-time: hover: Error: strict mode violation: locator('.debug-status-time') resolved to 2 elements: on /work?task=9999&tab=debug (http://127.0.0.1:49499/work?shotState=drawer:statusDetails)
 - 2026-10-30T16:30:24Z · body
+
