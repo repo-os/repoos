@@ -2,15 +2,15 @@
 id: "0984"
 title: Make repoos.org and docs.repoos.org readable without JavaScript
 type: feature
-status: ready
+status: active
 priority: p2
 area: [landing, docs, infra]
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/make-repoos-org-and-docs-repoos-org-read
 pm_model_override: grok-4.7-medium
 created_at: "2026-10-30T05:37:53Z"
-updated_at: "2026-10-30T05:42:54Z"
+updated_at: "2026-10-30T05:43:08Z"
 ---
 ## Problem
 
@@ -90,10 +90,10 @@ Make repoos.org and docs.repoos.org easier for AI agents and fetch tools to read
 - Verify: `curl -sH 'Accept: text/markdown' https://docs.repoos.org/<any-page>` returns Markdown.
 
 3. robots.txt on both sites contains only Cloudflare's explanatory comments, with no directives and no Content-Signal line, so AI use is neither allowed nor forbidden. Add explicit rules, e.g.:
-  User-agent: *
-  Content-Signal: search=yes, ai-input=yes
-  Allow: /
-  Sitemap: <sitemap URL if one exists>
+User-agent: *
+Content-Signal: search=yes, ai-input=yes
+Allow: /
+Sitemap: <sitemap URL if one exists>
 Leave ai-train unset unless the owner decides; flag that choice in your summary.
 - Verify: `curl -s https://repoos.org/robots.txt` and the docs one show the new lines.
 
@@ -104,3 +104,4 @@ Constraints: don't change docs content or URLs, and don't remove the existing .m
 - 2026-10-30T05:37:53Z · created · hello@repoos.org
 - 2026-10-30T05:40:20Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added); Related (added)
 - 2026-10-30T05:42:54Z · status inbox→ready
+- 2026-10-30T05:43:08Z · status ready→active, branch
