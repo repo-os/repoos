@@ -2,7 +2,7 @@
 id: "0984"
 title: Make repoos.org and docs.repoos.org readable without JavaScript
 type: feature
-status: review
+status: active
 priority: p2
 area: [landing, docs, infra]
 assigned_to: ai
@@ -11,9 +11,10 @@ branch: feat/make-repoos-org-and-docs-repoos-org-read
 pm_model_override: grok-4.7-medium
 created_at: "2026-10-30T05:37:53Z"
 updated_at: "2026-10-30T06:26:25Z"
-review_passes: 2
-review_rounds: 1
+review_rounds: 2
 routing_switches: 1
+routing_escalations: 1
+review_passes: 2
 ---
 ## Problem
 
@@ -134,3 +135,4 @@ ai-train was deliberately left unset in both repository robots files for the own
 - 2026-10-30T06:25:30Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (cad328067) during finalization (#0734)
 - 2026-10-30T06:26:24Z · note: review pass 2: needs some work
 - 2026-10-30T06:26:25Z · message_delivered: 1 message(s)
+- 2026-10-30T06:26:25Z · status review→active
