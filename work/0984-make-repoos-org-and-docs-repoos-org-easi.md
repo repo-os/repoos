@@ -2,7 +2,7 @@
 id: "0984"
 title: Make repoos.org and docs.repoos.org readable without JavaScript
 type: feature
-status: review
+status: active
 priority: p2
 area: [landing, docs, infra]
 assigned_to: ai
@@ -143,3 +143,5 @@ ai-train was deliberately left unset in both repository robots files for the own
 - 2026-10-30T09:10:50Z · note: review pass 3: needs some work
 - 2026-10-30T09:10:50Z · needs_input
 - 2026-10-30T09:11:23Z · needs_input
+- 2026-10-30T09:11:23Z · status review→active
+- 2026-10-30T09:11:23Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
