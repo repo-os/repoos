@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-task-panel-landing-ca
 created_at: "2026-10-30T09:32:06Z"
-updated_at: "2026-10-30T16:01:26Z"
+updated_at: "2026-10-30T16:04:02Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -76,16 +76,35 @@ Web only. Keep the popover keyboard- and touch-usable.
 ```json
 [
 {
-"label": "Status cards with timestamp ages and filename row",
-"target": "default",
-"route": "/work?task=0985&tab=debug",
-"highlight": ".debug-status-detail",
-"steps": [
+  "label": "Review failure status cards with ages and full-time tooltip",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": ".debug-status-detail",
+  "steps": [
+    {
+      "hover": ".debug-status-time"
+    }
+  ],
+  "state": "drawer:statusDetails"
+},
 {
-"waitMs": 300
-}
-],
-"state": "drawer:statusDetails"
+  "label": "Task filename with full-path tooltip",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": ".drawer-task-filename",
+  "steps": [
+    {
+      "hover": ".drawer-task-filename"
+    }
+  ],
+  "state": "drawer:statusDetails"
+},
+{
+  "label": "Not-landable card with even padding",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:landable"
 }
 ]
 ```
@@ -101,3 +120,4 @@ Web only. Keep the popover keyboard- and touch-usable.
 - 2026-10-30T16:00:34Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a58f63587) during finalization (#0734)
 - 2026-10-30T16:01:25Z · note: review pass 1: needs some work
 - 2026-10-30T16:01:26Z · status review→active
+- 2026-10-30T16:04:02Z · body
