@@ -97,6 +97,11 @@ RepoOS's own; in a managed repo it is that project's. See `docs/README.md`.
    changed-path tests plus always-run safety suites (release runs every test). Add `--fix` (or just `bun run fmt`)
    to run the `format` step's fixer before the check; handoff also does this and
    commits the result itself. Rebuild after UI changes.
+   A queued check is normal, including a long wait behind a live slot holder
+   or the pressure guard. Keep waiting for the check to finish; do not end
+   your turn or treat the non-blocking waiting badge as a request for input.
+   RepoOS asks for input only for an abnormal wait (dead/stalled holder or
+   an expired handoff deadline).
 4. Request handoff with `repoos mv <id> review` or finish your reply with
    `::repoos-handoff-ready::`, then end your turn. In your own runner session,
    both record a request without changing status. RepoOS commits the branch,

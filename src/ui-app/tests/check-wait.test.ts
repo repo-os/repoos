@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  CHECK_WAIT_ESCALATION_MS,
+  CHECK_WAIT_REMINDER_THRESHOLD_MS,
   CHECK_WAIT_REMINDER_MS,
   createCheckWaitRecorder,
   formatWaitDuration,
@@ -48,15 +48,16 @@ describe("check wait recorder (#0974)", () => {
     expect(f.rec.waitedMs()).toBe(CHECK_WAIT_REMINDER_MS + 1);
   });
 
-  it("names the needs-input escalation exactly once past ten minutes", () => {
+  it("tells engineers to keep waiting exactly once past ten minutes", () => {
     const f = recorder();
     f.rec.onStatusLine("[pressure] memory pressure critical");
-    f.advance(CHECK_WAIT_ESCALATION_MS);
+    f.advance(CHECK_WAIT_REMINDER_THRESHOLD_MS);
     f.rec.onStatusLine("[pressure] memory pressure critical");
-    expect(f.lines.filter((l) => l.includes("surfaced as needs input"))).toHaveLength(1);
+    expect(f.lines.filter((l) => l.includes("keep waiting; do not end your turn"))).toHaveLength(1);
+    expect(f.lines.join("\n")).not.toContain("needs input");
     f.advance(CHECK_WAIT_REMINDER_MS);
     f.rec.onStatusLine("[pressure] memory pressure critical");
-    expect(f.lines.filter((l) => l.includes("surfaced as needs input"))).toHaveLength(1);
+    expect(f.lines.filter((l) => l.includes("keep waiting; do not end your turn"))).toHaveLength(1);
   });
 
   it("stays silent for a run that never waited", () => {

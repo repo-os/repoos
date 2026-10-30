@@ -817,6 +817,11 @@ function renderPack(
   push("```");
   push("");
 
+  push(
+    "A queued check is normal, including a long wait for a live slot holder or the pressure guard. Keep waiting until it passes, then hand off; do not end your turn because of the waiting badge. Only abnormal waits request input.",
+  );
+  push("");
+
   // ---- Managed Preview ----
   push("### Managed Preview");
   push("");

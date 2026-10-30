@@ -73,8 +73,14 @@ import {
 } from "../core/git.js";
 import { getGitWorker } from "./git-worker.js";
 import { clearQueueMarker, readQueueMarkers } from "../core/local-queue-marker.js";
-import { CHECK_WAIT_ESCALATION_MS, formatWaitDuration } from "../core/check-wait.js";
-import { scheduleHandoffSignalRetry } from "./handoff.js";
+import { CHECK_WAIT_STALLED_MS, formatWaitDuration } from "../core/check-wait.js";
+import {
+  inspectCrossProcessSlots,
+  localCheckLockRoot,
+  localFallbackSerializeLockRoot,
+  playwrightLockRoot,
+} from "../core/cross-process-slots.js";
+import { HANDOFF_DEADLINE_MS, scheduleHandoffSignalRetry } from "./handoff.js";
 import { isTaskClosingOut } from "./close-out-lock.js";
 import {
   DEFAULT_ENGINEER_STALL_RESUME_LIMIT,
@@ -100,9 +106,6 @@ import {
 
 const DEFAULT_STALENESS_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 const WATCHDOG_INTERVAL_MS = 15 * 1000; // Reconcile agent liveness and scan tasks every 15 seconds
-
-/** Activity-log marker the watchdog writes when a check wait is escalated. */
-const CHECK_WAIT_ESCALATED = /watchdog: check wait escalated/;
 
 /** Activity-log marker the watchdog writes/reads to bound surfacing once. */
 const SURFACED_ACTIVITY = /watchdog: auto-surfaced stuck task/;
@@ -947,15 +950,7 @@ export class TaskWatchdog {
     });
   }
 
-  /**
-   * #0974: a check that is still waiting — pressure guard, a heavy slot, the
-   * git queue — after ten minutes is surfaced as needs_input instead of
-   * hanging silently (the #0970 incident: 26 minutes behind a stale pressure
-   * guard with nothing on the card). The gates write queue markers while they
-   * wait; this scan reads them. The flag clears itself once the marker is
-   * gone (the wait ended and the check is actually running) or on the next
-   * engineer run — it is informational, not a permanent failure.
-   */
+  /** Queue markers are non-blocking waiting state. Only broken waits need input. */
   private escalateStaleQueueWaits(): void {
     let markers;
     try {
@@ -963,7 +958,7 @@ export class TaskWatchdog {
     } catch {
       return;
     }
-    const waiting = new Set<string>();
+    const abnormalWaits = new Map<string, { message: string; waitedMs: number }>();
     const now = Date.now();
     for (const marker of markers) {
       const since = Date.parse(marker.since);
@@ -981,27 +976,45 @@ export class TaskWatchdog {
         );
         continue;
       }
-      if (waitedMs < CHECK_WAIT_ESCALATION_MS) continue;
       const task = this.index.getTask(marker.taskId);
       // Only a task whose check can be running: never flag done or parked work.
       if (!task || (task.status !== "active" && task.status !== "review")) continue;
-      waiting.add(marker.taskId);
-      if (task.isArchived || task.needsInput) continue;
+      if (task.isArchived) continue;
       if (isHoldActive(task)) continue;
-      this.escalateCheckWait(task, marker.message, waitedMs);
+      const cacheDir = this.config.cacheDir ?? ".repoos";
+      const lockRoot =
+        marker.pool === "local-fallback-serialize"
+          ? localFallbackSerializeLockRoot(this.config.root, cacheDir)
+          : marker.kind === "playwright"
+            ? playwrightLockRoot(this.config.root, cacheDir)
+            : localCheckLockRoot(this.config.root, cacheDir);
+      const holders = marker.kind === "pressure" ? [] : inspectCrossProcessSlots(lockRoot);
+      const dead = holders.find((holder) => holder.dead);
+      const stalled = holders.find((holder) => holder.heartbeatAgeMs >= CHECK_WAIT_STALLED_MS);
+      const abnormal = dead
+        ? `slot holder ${dead.pid} is dead`
+        : stalled
+          ? "slot holder has made no progress for 30 minutes (no heartbeat)"
+          : waitedMs > HANDOFF_DEADLINE_MS
+            ? "wait exceeds the handoff deadline"
+            : null;
+      if (abnormal)
+        abnormalWaits.set(task.id, { message: `${marker.message}; ${abnormal}`, waitedMs });
     }
-    // A wait that ended — the gate acquired its slot — clears the flag again,
-    // whatever status the task has moved to since.
+    for (const [id, wait] of abnormalWaits) {
+      const task = this.index.getTask(id);
+      if (task) this.escalateCheckWait(task, wait.message, wait.waitedMs);
+    }
+    // Clear ended/recovered waits, including legacy informational flags (#0974).
     {
       for (const task of this.index.getTasks()) {
         if (!task.needsInput || task.needsInputReason !== "check-wait") continue;
-        if (!waiting.has(task.id)) this.clearCheckWaitEscalation(task);
+        if (!abnormalWaits.has(task.id)) this.clearCheckWaitEscalation(task);
       }
     }
   }
 
   private escalateCheckWait(task: Task, message: string, waitedMs: number): void {
-    if (CHECK_WAIT_ESCALATED.test(task.body)) return; // surfaced once per episode
     let current: Task;
     try {
       current = this.readCurrent(task);
@@ -1009,9 +1022,9 @@ export class TaskWatchdog {
       console.error(`[repoos] watchdog: failed to escalate #${task.id}: ${(err as Error).message}`);
       return;
     }
-    if (current.needsInput || CHECK_WAIT_ESCALATED.test(current.body)) return;
+    if (current.needsInput) return;
     const detail = `waiting: ${message || "for a free slot"} for ${formatWaitDuration(waitedMs)}`;
-    const note = `watchdog: check wait escalated · ${detail} · next step: let it finish — the wait clears itself when the check starts running; investigate only if it persists`;
+    const note = `watchdog: check wait escalated · ${detail} · next step: investigate the abnormal wait; the flag clears when the check starts`;
     try {
       current.needsInput = true;
       current.needsInputReason = "check-wait";
@@ -1038,7 +1051,7 @@ export class TaskWatchdog {
       current.needsInput = false;
       current.needsInputReason = undefined;
       current.needsInputDetail = undefined;
-      recordChange(current, "watchdog: check wait ended — cleared needs_input");
+      recordChange(current, "watchdog: check wait ended or recovered — cleared needs_input");
       this.writeTask(current);
     } catch {
       /* visibility only */

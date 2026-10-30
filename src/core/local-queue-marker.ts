@@ -11,6 +11,8 @@ export interface LocalQueueMarker {
   ahead: number;
   message: string;
   since: string;
+  /** Slot pool being waited on; absent on older markers. */
+  pool?: "local-check" | "local-fallback-serialize" | "playwright";
 }
 
 export function queueMarkersDir(repoRoot: string, cacheDir: string): string {

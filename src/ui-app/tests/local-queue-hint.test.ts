@@ -3,8 +3,8 @@ import { localQueueHintForTask } from "../src/lib/local-queue-hint";
 
 describe("local check queue wording", () => {
   it.each([
-    [1, "waiting · 0s"],
-    [3, "waiting #3 · 0s"],
+    [1, "waiting for a check slot · 0s"],
+    [3, "waiting for a check slot #3 · 0s"],
   ])("keeps position %i compact and puts the explanation in the tooltip", (position, label) => {
     const now = new Date("2026-10-28T12:00:00.000Z");
     expect(
@@ -46,7 +46,7 @@ describe("local check queue wording", () => {
         now,
       ),
     ).toEqual({
-      label: "waiting · 26m 00s",
+      label: "waiting: machine is under memory pressure · 26m 00s",
       title: "waiting: machine is under memory pressure for 26m 00s",
     });
   });
