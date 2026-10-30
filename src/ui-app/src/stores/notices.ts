@@ -42,6 +42,7 @@ export type NoticeKind =
   | "remoteFallback"
   | "remoteHostDegraded"
   | "ctoAction"
+  | "gitLock"
   | "reminderDue";
 
 export interface NoticeItem {
@@ -78,6 +79,7 @@ export const NOTICE_KIND_LABELS: Record<NoticeKind, string> = {
   remoteFallback: "Ran locally",
   remoteHostDegraded: "Remote runner degraded",
   ctoAction: "CTO safe action",
+  gitLock: "Git lock",
   reminderDue: "Reminder due",
 };
 
@@ -101,6 +103,7 @@ export const NOTICE_KIND_COLOR: Record<NoticeKind, string> = {
   remoteFallback: "var(--amber)",
   remoteHostDegraded: "var(--amber)",
   ctoAction: "var(--violet)",
+  gitLock: "var(--amber)",
   reminderDue: "var(--amber)",
 };
 
@@ -122,6 +125,7 @@ const ATTENTION_NOTICE_KINDS = new Set<NoticeKind>([
   "remoteFallback",
   "remoteHostDegraded",
   "ctoAction",
+  "gitLock",
 ]);
 
 export interface AttentionFeedItem {

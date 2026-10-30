@@ -122,6 +122,7 @@ describe("notifications store defaults + persistence", () => {
       remoteFallback: false,
       remoteHostDegraded: false,
       ctoAction: false,
+      gitLock: false,
     });
     expect(n.isActive).toBe(false);
   });
@@ -320,6 +321,7 @@ describe("NOTIFICATION_TYPE_LABELS", () => {
       "closeOutSucceeded",
       "closeOutTimedOut",
       "ctoAction",
+      "gitLock",
       "needsInput",
       "paused",
       "providerFailure",

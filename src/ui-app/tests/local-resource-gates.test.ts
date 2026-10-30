@@ -10,6 +10,7 @@ import type { RepoOSConfig } from "../../core/types.js";
 import {
   acquireCrossProcessSlot,
   heavyJobCounts,
+  listSlotWaiterPids,
   inspectCrossProcessSlots,
   reapOrphanedLocalCheckGroups,
   localCheckLockRoot,
@@ -24,6 +25,7 @@ import {
   playwrightMaxConcurrent,
 } from "../../core/resource-limits.js";
 import { REPOOS_REMOTE_FALLBACK_DETAIL } from "../../server/pre-review-remote-gate.js";
+import { currentQueueMarkers, type LocalQueueMarker } from "../../core/local-queue-marker.js";
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -66,6 +68,40 @@ describe("ConcurrencyGate", () => {
 });
 
 describe("cross-process local check slots", () => {
+  it("lists only live queue markers with positions based on live wait order", () => {
+    const marker = (taskId: string, pid: number, since: string): LocalQueueMarker => ({
+      taskId,
+      pid,
+      kind: "local-check",
+      position: 99,
+      ahead: 98,
+      message: "waiting",
+      since,
+    });
+    const markers = [
+      marker("0971", 301, "2026-10-29T00:00:00.000Z"),
+      marker("0972", 302, "2026-10-29T00:00:01.000Z"),
+      marker("0973", 303, "2026-10-28T00:00:00.000Z"),
+    ];
+    expect(currentQueueMarkers(markers, [])).toEqual([]); // acquired or dead waiters
+    expect(currentQueueMarkers(markers, [301, 302])).toMatchObject([
+      { taskId: "0971", position: 1 },
+      { taskId: "0972", position: 2 },
+    ]);
+  });
+
+  it("ignores a dead PID in the slot queue and keeps the live waiter", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-queue-pids-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const queue = join(lockRoot, ".queue");
+    mkdirSync(queue, { recursive: true });
+    writeFileSync(join(queue, `${process.pid}-live`), String(process.pid));
+    writeFileSync(join(queue, "2147483647-dead"), "2147483647");
+    expect(listSlotWaiterPids(lockRoot)).toEqual([process.pid]);
+    expect(existsSync(join(queue, "2147483647-dead"))).toBe(false);
+  });
+
   it("uses one host-wide root for every checkout", () => {
     const previous = process.env.REPOOS_LOCAL_CHECK_SLOT_HOME;
     try {
